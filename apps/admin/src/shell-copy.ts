@@ -22,6 +22,7 @@ const en = {
   orderNew: "Create order",
   returns: "Returns",
   cvsPrint: "Print shipping label",
+  shippingCenter: "Shipping center",
   products: "Products",
   product: "Edit product",
   productNew: "New product",
@@ -64,7 +65,7 @@ const en = {
   sessionExpired: "Your session has expired. Sign in again to continue.",
   signIn: "Sign in again",
   retry: "Try again",
-  forbidden: "403 · You do not have access to this page.",
+  forbidden: "This page cannot be opened",
   back: "Go to a page you can open",
 };
 export type ShellCopy = typeof en;
@@ -89,6 +90,7 @@ const zhCN: ShellCopy = {
   orderNew: "创建订单",
   returns: "退货",
   cvsPrint: "打印寄件标签",
+  shippingCenter: "发货中心",
   products: "商品",
   product: "编辑商品",
   productNew: "新增商品",
@@ -131,7 +133,7 @@ const zhCN: ShellCopy = {
   sessionExpired: "登录已过期，请重新登录后继续。",
   signIn: "重新登录",
   retry: "重试",
-  forbidden: "403 · 你没有访问此页面的权限。",
+  forbidden: "暂时无法打开此页面",
   back: "前往可用页面",
 };
 const zhTW: ShellCopy = {
@@ -154,6 +156,7 @@ const zhTW: ShellCopy = {
   orderNew: "建立訂單",
   returns: "退貨",
   cvsPrint: "列印寄件標籤",
+  shippingCenter: "出貨中心",
   products: "商品",
   product: "編輯商品",
   productNew: "新增商品",
@@ -196,7 +199,7 @@ const zhTW: ShellCopy = {
   sessionExpired: "登入已過期，請重新登入後繼續。",
   signIn: "重新登入",
   retry: "重試",
-  forbidden: "403 · 你沒有存取此頁面的權限。",
+  forbidden: "目前無法開啟此頁",
   back: "前往可用頁面",
 };
 export const shellCopy = { en, "zh-CN": zhCN, "zh-TW": zhTW };

@@ -17,7 +17,7 @@ import {createWriteStream} from "node:fs";
 import {tmpdir} from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
-import { reachCheckout, switchLocale } from "./shop-helpers.mjs";
+import { reachCheckout, switchLocale, confirmCheckoutAddress, openCheckoutDetails } from "./shop-helpers.mjs";
 import { isWebkitCancelledFetch, launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 import { displayTime } from "../../packages/format/src/index.ts";
 
@@ -145,7 +145,7 @@ async function quotePage(c,clock=false,p,bo01=false) {
 }
 async function fill(p,values=pii) {for(const [key,value] of Object.entries(values))await p.locator(`input[name="${key}"]`).fill(value);}
 async function confirm(p) {
-  await p.getByTestId("confirm-address").click();
+  await confirmCheckoutAddress(p);
   await expect(p.getByTestId("create-order")).toBeEnabled();
   await expect(p.getByRole("button",{name:"View quotation",exact:true})).not.toHaveClass(/\bprimary\b/);
 }
@@ -522,7 +522,7 @@ try {
   await expect(a.getByTestId("create-order")).toBeDisabled();
   pass("BO01 native address; three locales keep the pinned quote and carry no unsaved PII across the language switch");
   const destinationStart=calls.length,dropDest=arm("destination",{method:"PUT",drop:true,repeat:true});
-  await a.getByTestId("confirm-address").click();assert.equal(await dropDest.result.promise,200);
+  await confirmCheckoutAddress(a);assert.equal(await dropDest.result.promise,200);
   await expect(a.getByTestId("recover-purchase")).toBeVisible();hook=null;
   const destinationPending=await stored(a);assert.equal(destinationPending.kind,"destination");
   assert.deepEqual(Object.keys(destinationPending.body).sort(),["cart_version","country","expected_version","kind"]);
@@ -533,7 +533,7 @@ try {
 
   await a.locator('input[name="line2"]').fill("Synthetic Changed Unit");
   const dropReloadDest=arm("destination",{method:"PUT",drop:true,repeat:true});
-  await a.getByTestId("confirm-address").click();assert.equal(await dropReloadDest.result.promise,200);
+  await confirmCheckoutAddress(a);assert.equal(await dropReloadDest.result.promise,200);
   await expect(a.getByTestId("recover-purchase")).toBeVisible();hook=null;
   const pendingReloadDestination=await stored(a),beforeReloadDestination=calls.filter(x=>x.path==="/api/buyer/destination"&&x.method==="PUT").length;
   await a.reload();await expect(a.getByTestId("address-section")).toBeVisible();
@@ -599,7 +599,7 @@ try {
   const lostStart=calls.length,dropCheckout=arm("checkout",{method:"POST",drop:true,repeat:true});
   await lost.getByTestId("create-order").click();assert.equal(await dropCheckout.result.promise,200);await expect(lost.getByTestId("recover-purchase")).toBeVisible();hook=null;
   const lostPending=await stored(lost);assert.equal(lostPending.kind,"checkout");
-  await expect(lost.getByTestId("checkout-unknown")).toHaveText("Checking your order status");
+  await expect(lost.getByTestId("checkout-unknown")).toHaveText("Checking order status");
   await expect(lost.getByTestId("recover-purchase")).toHaveText("Check order status");
   await expect(lost.getByTestId("checkout-submit")).toBeDisabled();
   await expect(lost.getByTestId("checkout-review")).toContainText(pii.recipient_name);
@@ -610,7 +610,7 @@ try {
   await lost.reload();await expect(lost.getByTestId("recover-purchase")).toBeVisible();assert.deepEqual(await stored(lost),lostPending);
   await expect(lost.getByTestId("checkout-review")).toContainText(pii.recipient_name);
   await expect(lost.getByTestId("checkout-review")).toContainText(pii.phone);
-  await expect(lost.getByTestId("checkout-unknown")).toHaveText("Checking your order status");
+  await expect(lost.getByTestId("checkout-unknown")).toHaveText("Checking order status");
   await expect(lost.getByTestId("recover-purchase")).toHaveText("Check order status");
   await expect(lost.getByTestId("checkout-submit")).toBeDisabled();
   await lost.getByTestId("recover-purchase").click();await created(lost,q4);
@@ -641,13 +641,13 @@ try {
 
   // R2: late options hydration must never overwrite a newly confirmed address.
   const c8=await newContext(),{p:slow,quote:q8}=await quotePage(c8);await fill(slow);
-  const dropA=arm("destination",{method:"PUT",drop:true,repeat:true});await slow.getByTestId("confirm-address").click();assert.equal(await dropA.result.promise,200);
+  const dropA=arm("destination",{method:"PUT",drop:true,repeat:true});await confirmCheckoutAddress(slow);assert.equal(await dropA.result.promise,200);
   await expect(slow.getByTestId("recover-purchase")).toBeVisible();hook=null;
   const slowOptions=arm(`checkout-options?market_id=${q8.market_id}&country=TW&limit=100`,{method:"GET",after:true});
   await slow.reload();await slowOptions.entered.promise;
   await expect(slow.locator('input[name="line1"]')).toHaveValue(pii.line1);
   await slow.locator('input[name="line1"]').fill("Synthetic Confirmed New Address");
-  await slow.getByTestId("confirm-address").click();await expect.poll(()=>stored(slow)).toBeNull();
+  await confirmCheckoutAddress(slow);await expect.poll(()=>stored(slow)).toBeNull();
   slowOptions.release.resolve();await expect(slow.getByTestId("create-order")).toBeEnabled();
   await expect(slow.locator('input[name="line1"]')).toHaveValue("Synthetic Confirmed New Address");
   await slow.getByTestId("create-order").click();const order8=await created(slow,q8);
@@ -658,7 +658,7 @@ try {
   // R1: expiry cannot remove the only recovery surface; a fresh tab has no
   // session quote locator and still must recover the shared destination intent.
   const c9=await newContext(),{p:expiredDest,quote:q9}=await quotePage(c9,true);await fill(expiredDest);
-  const dropExpired=arm("destination",{method:"PUT",drop:true,repeat:true});await expiredDest.getByTestId("confirm-address").click();assert.equal(await dropExpired.result.promise,200);
+  const dropExpired=arm("destination",{method:"PUT",drop:true,repeat:true});await confirmCheckoutAddress(expiredDest);assert.equal(await dropExpired.result.promise,200);
   await expect(expiredDest.getByTestId("recover-purchase")).toBeVisible();hook=null;
   const expiredMarker=await stored(expiredDest);
   await control(`expire-quote/${q9.id}`,"POST");await expiredDest.clock.fastForward(61000);
@@ -673,7 +673,7 @@ try {
   // the sticky Choose delivery action instead. Still submit with one real click.
   await noQuoteTab.getByTestId("confirm-address").focus();
   await expect(noQuoteTab.getByTestId("confirm-address")).toBeFocused();
-  await noQuoteTab.getByTestId("confirm-address").click();
+  await confirmCheckoutAddress(noQuoteTab);
   await expect.poll(()=>stored(noQuoteTab)).toBeNull();
   const replacement=calls.filter(x=>x.path==="/api/buyer/destination"&&x.method==="PUT").at(-1);assert.notEqual(replacement.key,expiredMarker.key);
   assert(JSON.parse(replacement.body).expected_version>expiredMarker.body.expected_version);
@@ -779,6 +779,7 @@ try {
   const cookieHistory=(await c1.cookies(origin))[0].value;
   await a.evaluate(()=>{for(const key of Object.keys(localStorage))if(key.startsWith("commerce-purchase-order-v1:"))localStorage.removeItem(key);});
   await a.reload();await expect(a.getByTestId("toggle-order-history")).toBeEnabled();await expect(a.getByTestId("order-section")).toHaveCount(0);
+  await openCheckoutDetails(a); // signed review discloses the existing history control through View details
   const reloadedHistory=historyRead(a);await Promise.all([reloadedHistory,a.getByTestId("toggle-order-history").click()]);await expect(a.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(a,"en",await reloadedHistory);
   await a.locator(`button[data-order-id="${order1}"]`).click();await expect(a.getByTestId("order-id")).toHaveText(order1);
   assert.equal(await stored(a,"commerce-purchase-order-v1:"),null);assert.equal((await c1.cookies(origin))[0].value,cookieHistory);
@@ -788,11 +789,13 @@ try {
   // Same owned session, read-only history in UTC: no extra order or fixture row.
   const utcContext=await newContext(false,"UTC");await utcContext.addCookies(await c1.cookies(origin));
   const utcPage=await utcContext.newPage();await utcPage.goto(origin+checkoutPath);
+  await openCheckoutDetails(utcPage);
   assert.equal(await utcPage.evaluate(()=>Intl.DateTimeFormat().resolvedOptions().timeZone),"UTC");
   await expect(utcPage.getByTestId("toggle-order-history")).toBeEnabled();
   const utcHistory=historyRead(utcPage);await Promise.all([utcHistory,utcPage.getByTestId("toggle-order-history").click()]);
   await expect(utcPage.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(utcPage,"en",await utcHistory);
   await utcPage.reload();await expect(utcPage.getByTestId("toggle-order-history")).toBeEnabled();
+  await openCheckoutDetails(utcPage);
   const utcReloadHistory=historyRead(utcPage);await Promise.all([utcReloadHistory,utcPage.getByTestId("toggle-order-history").click()]);
   await expect(utcPage.locator(".history-list li")).toHaveCount(2);await assertHistoryTimes(utcPage,"en",await utcReloadHistory);
   await utcContext.close();
@@ -824,6 +827,7 @@ try {
   const foreignHistory=await api(foreign,"GET","orders?limit=1");assert.equal(foreignHistory.status,200);assert.deepEqual(foreignHistory.body,{items:[],next_cursor:""});
   assert.equal((await api(foreign,"GET",`orders?cursor=${encodeURIComponent(firstHistory.body.next_cursor)}`)).status,422);
   assert.equal((await api(a,"GET","orders?cursor=bad")).status,422);
+  await openCheckoutDetails(foreign);
   await foreign.getByTestId("toggle-order-history").click();await expect(foreign.getByTestId("order-history")).toContainText("No orders in this shopping session.");
   await foreign.getByTestId("toggle-order-history").click();await expect(foreign.getByTestId("address-section")).toBeVisible();
   pass("BH08 foreign buyer history is empty and foreign or malformed cursors are denied");

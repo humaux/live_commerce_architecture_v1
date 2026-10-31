@@ -1,0 +1,61 @@
+PARITY-STATES RED receipt
+Base/head before tests: df35b338b5cfde5de34bb590e2ba118efc17e4a4
+Branch: unit/parity-states
+PR base: r3/integration
+PR: #356 https://github.com/humaux/live_commerce_architecture_v1/pull/356
+RED candidate head: 7b2ab178b90b80bc18c099babdf8e371637a0d21
+WAIT_RUN: 41050630088 Foundation / job 124045491838 QUEUED
+WAIT_RUN: 41050630085 Gates / test jobs not yet registered
+CI assertion RED: PENDING (no failed assertion observed; queued is not RED)
+Expected causal RED: new signed StatePanel copy/variant assertions on real routes; never compile/setup failure.
+Implementation/GREEN: NOT_RUN until assertion RED is read from GitHub CI.
+Local node --check: tests/admin/parity-states.spec.ts, tests/storefront/parity-states.spec.mjs, tests/storefront/shop-real-gate.mjs exit 0.
+Generated browser ownership + --check exit 0 (53 modes); explicit card authorization.
+No local test/server/browser/build/database/container run.
+Next receipt: gh pr checks <PR>; gh run view <RUN> --log-failed, filtered to this card's assertions.
+Wait cutoff: no more than ~10 min polling; integrator relays a fresh session after Foundation/Gates concludes.
+
+RELAY 1 / original head 7b2ab178b90b80bc18c099babdf8e371637a0d21
+Foundation run 41050630088 / job 124045491838: FAILURE (registration, NOT causal assertion RED).
+Repair attempt 1: move all new assertions into registered parent gate files, remove import-only fragments; no production implementation.
+Origin integration3ea359f79 merged before deleting browser specs; generated ownership53 modes + --check exit0.
+node --check tests/admin/orders-ui.spec.ts and tests/storefront/shop-real-gate.mjs exit0.
+Original CI failed lines follow:
+foundation	Package docs and gate map are current	2026-10-30T11:57:37.6907134Z check-gates: tests/admin/parity-states.spec.ts is run by no gate (test-local.sh, tests/foundation, test-node.sh, or a selected playwright suite)
+foundation	Package docs and gate map are current	2026-10-30T11:57:37.6908998Z check-gates: tests/storefront/parity-states.spec.mjs is run by no gate (test-local.sh, tests/foundation, test-node.sh, or a selected playwright suite)
+foundation	Package docs and gate map are current	2026-10-30T11:57:37.7022978Z ##[error]Process completed with exit code 1.
+
+Correction: push0f197e893 contains only staged fragment deletions because an explicit missing-path git add failed and the shell continued. Follow-up contains the preserved cases in registered runners and generated ownership. Count as repair attempt2; no force-push. If this blocker persists on CI, STOP and report.
+
+RELAY 2 / head b3c4736a53279bb9557755e4540351f01c1ce126
+Gates run 41052469401 / bundle:01 job 124056245071: FAILURE.
+Tested synthetic merge: c6e49cf79ab86b427a5ee676ef87650a8200e50a.
+Foundation run 41052469470 / job 124051677598: SUCCESS (same PR head).
+Buyer artifact 12976991799 / gate-browser-storefront:
+  shop-real-gate.log:16 AssertionError: PARITY-STATES: signed panels and real recovery controls on buyer routes.
+  empty-zh-TW-1440 signed section[data-variant="empty"] heading absent.
+  offline/forbidden/expired/unknown signed panel assertions fail in three locales, desktop/mobile.
+  lookup-zh-TW-1440 expects InlineError wrapper DIV; actual legacy P (visible expected localized error).
+  CI reached new assertions; this is causal assertion RED, not compile/registry failure.
+Admin artifact 12976717841: downloading; not yet classified.
+No local tests/server/browser executed. Raw CI artifacts retained locally under relay2/.
+Admin artifact 12976717841 / playwright.log: 24 PARITY-STATES assertion failures; 21 original tests passed.
+  Signed forbidden heading absent at orders-ui.spec.ts:1351.
+  Shared offline panel absent at :1394 (loading assertions reached and passed).
+  Session expired panel absent at :1419.
+  Shell signed denial heading absent at :1438 (raw diagnostic in legacy render).
+All 24 failures are this card's new cases, no unrelated failure in this member.
+
+PARITY-STATES-FIX1 / inspected implementation head 88c147747271e71b60078afb647e03d1e56c2b83
+Gates run 41079438742 / tested synthetic merge b91e125e64bc87196879b25ad5f4a0e24e4a147b: FAILURE.
+Job 124153748956: TestBrowserStorefront / offline zh-CN+en at 1440+390; retry button detached before click; artifact 12992061186, shop-real-gate.log:16-55. 44/48 parity cases passed.
+Job 124153748986: TestBrowserMerchantOrdersUIRealChain / parcel-merge suggestions 403 old-copy assertion; actual signed heading This page cannot be opened; artifact 12990484924, playwright-parcel.log:7-42. All 45 main orders cases passed.
+Receipts job 124180894791: precisely two failing receipts above. Required job 124181437431 failed; aggregate job 124180894904 succeeded.
+Classification and directed changes: FIX1.md. Compact original excerpts: FIX1-ci.log. Current base run 41105181453 was queued at inspection; no base-green or identical-base failure claim.
+Local static E1 only; new-head GREEN PENDING; integrator owns CI-completion relay. No local runtime verification.
+
+2026-10-31 FIX1 relay 1: head cd6935deeb91b171d4777dcdf37c832500a6b2a1; tested merge 64811bc3648a3676d933451847e2a9c8d3069088.
+Foundation run 41106548606 / job 124237773182: FAILURE; 336 Node tests, 335 pass, 1 fail.
+Unchanged tests/ci/gate-waits.test.mjs:18 assertion RED: shop-real-gate.mjs:451 cartRequested is awaited only after another await.
+Wait-order blocker directed fix attempt 1: pre-register request inside try, await Promise.all([cartRequested, retry.click()]); preserve all held-read/recovery assertions and fixture payloads.
+Static node --check and ownership generate/--check: exit 0 / E1. New-head GREEN PENDING; no local runtime verification; integrator owns completion relay.

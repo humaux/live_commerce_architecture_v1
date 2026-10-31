@@ -1,3 +1,7 @@
+// Purpose: Validate orders-v2 scoped list/search projections and their immutable safe merchandise.
+// Depends on: ./orders-model.ts; merchant-orders-v2 wire contract.
+// Used by: orders-client and merchant order browser views.
+// Invariants: Counts are server-owned; private search is memory-only; merchandise never admits PII fields.
 // Read contract for BFF /api/stores/{store}/orders?view=v2 -> merchantorders.ListV2.
 // No transaction rules or client-side counts: reject malformed server projections.
 import { canonicalCursor, canonicalUUID, orderStates, parseSourcedOrderSummary, type OrderSummary } from "./orders-model.ts";
@@ -10,7 +14,8 @@ export const filterKeys = ["bucket", "q", "payment_mode", "delivery", "session_i
 export type OrderFilters = Record<Exclude<typeof filterKeys[number], "bucket">, string> & { bucket: Bucket };
 export const emptyFilters: OrderFilters = { bucket: "all", q: "", payment_mode: "", delivery: "", session_id: "", from: "", to: "" };
 export type OrderSession = { id: string; name: string };
-export type OrderSummaryV2 = OrderSummary & { order_number: string; recipient_masked: string; delivery_kind: typeof deliveries[number] | "unknown"; live_sessions: OrderSession[] };
+export type ItemSummary = { items: Array<{product_name: string; variant_label: string | null; quantity: number}>; total_item_count: number };
+export type OrderSummaryV2 = OrderSummary & { order_number: string; recipient_masked: string; delivery_kind: typeof deliveries[number] | "unknown"; live_sessions: OrderSession[]; item_summary: ItemSummary };
 export type OrderListV2 = { items: OrderSummaryV2[]; next_cursor: string; total: number; counts: Record<Bucket, number>; sessions: OrderSession[] };
 const member = (value: string, set: readonly string[]) => set.includes(value);
 function day(value: string) {
@@ -64,13 +69,29 @@ export function parseOrderListV2(value: unknown): OrderListV2 {
   if (!count(v.total) || Object.values(counts).some(n => !count(n)) || v.items.length > v.total) throw new Error("unavailable");
   const items = v.items.map(value => {
     if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("unavailable");
-    const { order_number, recipient_masked, delivery_kind, live_sessions, ...base } = value;
+    const { order_number, recipient_masked, delivery_kind, live_sessions, item_summary, ...base } = value;
     const summary = parseSourcedOrderSummary(base);
     if (order_number !== `LC-${summary.order_id.replaceAll("-", "").toUpperCase()}` || typeof recipient_masked !== "string" ||
         (recipient_masked !== "—" && ([...recipient_masked].length !== 4 || !recipient_masked.endsWith("***"))) ||
         (delivery_kind !== "unknown" && !member(delivery_kind, deliveries))) throw new Error("unavailable");
-    return { ...summary, order_number: order_number as string, recipient_masked, delivery_kind, live_sessions: sessions(live_sessions) } as OrderSummaryV2;
+    return { ...summary, order_number: order_number as string, recipient_masked, delivery_kind, live_sessions: sessions(live_sessions), item_summary: parseItemSummary(item_summary) } as OrderSummaryV2;
   });
   if (new Set(items.map(i => i.order_id)).size !== items.length) throw new Error("unavailable");
   return { items, next_cursor: v.next_cursor, total: v.total, counts: counts as Record<Bucket, number>, sessions: sessions(v.sessions) };
+}
+
+function parseItemSummary(value: unknown): ItemSummary {
+  const summary = object(value, ["items", "total_item_count"]);
+  if (!Array.isArray(summary.items) || summary.items.length<1 || summary.items.length>3 ||
+      !Number.isSafeInteger(summary.total_item_count) || (summary.total_item_count as number)<1) throw new Error("unavailable");
+  const text = (v: unknown): v is string => typeof v === "string" && v.length>0 && [...v].length<=200 && !/[\p{Cc}\p{Cf}\p{Cs}]/u.test(v);
+  const items = summary.items.map(value => {
+    const item = object(value, ["product_name", "variant_label", "quantity"]);
+    if (!text(item.product_name) || (item.variant_label!==null && !text(item.variant_label)) ||
+        !Number.isSafeInteger(item.quantity) || (item.quantity as number)<1) throw new Error("unavailable");
+    return item as ItemSummary["items"][number];
+  });
+  const shown = items.reduce((sum,item)=>sum+item.quantity,0);
+  if (!Number.isSafeInteger(shown) || shown>(summary.total_item_count as number)) throw new Error("unavailable");
+  return {items,total_item_count:summary.total_item_count as number};
 }

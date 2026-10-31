@@ -1,3 +1,8 @@
+// Purpose: mount merchant catalog and collection HTTP transport with bounded request grammar.
+// Depends on: internal/catalog commands, scoped authentication and existing body/list/upload adapters.
+// Used by: the admin BFF and authenticated merchant clients through registerCatalogV2Routes.
+// Invariants: server authentication selects scope; collection rules never accept body scope authority.
+
 package httpapi
 
 // collections.go mounts the catalog-v2 merchant routes of unit catalog-core (contracts/storefront-v2.md section A):
@@ -9,6 +14,7 @@ package httpapi
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"strings"
@@ -20,6 +26,19 @@ import (
 	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
 )
+
+// collectionCreateWire/collectionPatchWire explicitly discard untrusted body scope fields;
+// server authentication and the store path remain the only scope authority.
+type collectionCreateWire struct {
+	catalog.CollectionInput
+	TenantID json.RawMessage `json:"tenant_id,omitempty"`
+	StoreID  json.RawMessage `json:"store_id,omitempty"`
+}
+type collectionPatchWire struct {
+	catalog.CollectionPatch
+	TenantID json.RawMessage `json:"tenant_id,omitempty"`
+	StoreID  json.RawMessage `json:"store_id,omitempty"`
+}
 
 func registerCatalogV2Routes(mux *http.ServeMux, pool *pgxpool.Pool) {
 	const base = "/v1/admin/stores/{store_id}"
@@ -51,14 +70,14 @@ func registerCatalogV2Routes(mux *http.ServeMux, pool *pgxpool.Pool) {
 	mux.HandleFunc("GET "+collections, listRoute(pool, "catalog:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, page pagination.Request) (any, error) {
 		return catalog.ListCollectionsPage(ctx, tx, s, page)
 	}))
-	mux.HandleFunc("POST "+collections, bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.CollectionInput) (any, error) {
-		return catalog.CreateCollection(ctx, tx, s, r.Header.Get("Idempotency-Key"), in)
+	mux.HandleFunc("POST "+collections, bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in collectionCreateWire) (any, error) {
+		return catalog.CreateCollection(ctx, tx, s, r.Header.Get("Idempotency-Key"), in.CollectionInput)
 	}))
 	mux.HandleFunc("GET "+collections+"/{collection_id}", scoped(pool, "catalog:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
 		return catalog.GetCollection(ctx, tx, s, r.PathValue("collection_id"))
 	}))
-	mux.HandleFunc("PATCH "+collections+"/{collection_id}", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in catalog.CollectionPatch) (any, error) {
-		return catalog.PatchCollection(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("collection_id"), in)
+	mux.HandleFunc("PATCH "+collections+"/{collection_id}", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in collectionPatchWire) (any, error) {
+		return catalog.PatchCollection(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("collection_id"), in.CollectionPatch)
 	}))
 	mux.HandleFunc("POST "+collections+"/{collection_id}/delete", bodyRoute(pool, "catalog:write", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request, in versionInput) (any, error) {
 		return catalog.DeleteCollection(ctx, tx, s, r.Header.Get("Idempotency-Key"), r.PathValue("collection_id"), in.ExpectedVersion)

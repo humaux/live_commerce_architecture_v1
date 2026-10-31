@@ -128,8 +128,9 @@ for (const v of process.env.PRODUCT_EDITOR_ACCEPTANCE === "1" ? [] : variants) {
       await expect(page.getByTestId("products-ledger-link")).toBeAttached();
       // stop-bleed D03: the "stock ledger" link opens the inventory page, not the dashboard at /{locale}/
       await expect(page.getByTestId("products-ledger-link")).toHaveAttribute("href", new RegExp(`^/${L}/inventory(\\?store=[0-9a-f-]{36})?$`));
-      // The ledger remains a real merchant route under the single shared Advanced entry.
-      await page.getByTestId("products-advanced").click();
+      // The ledger remains a real merchant route under the signed Product tasks entry.
+      await expect(page.getByTestId("products-operations")).toHaveAccessibleName(catalogTaskCopy[L as "en" | "zh-TW"].operations);
+      await page.getByTestId("products-operations").click();
       await expect(page.getByTestId("products-ledger-link")).toBeVisible();
       // Read-only geometry measurement; the navigation itself uses the real click below.
       const ledgerTarget = await page.getByTestId("products-ledger-link").boundingBox();
@@ -243,9 +244,8 @@ for (const v of process.env.PRODUCT_EDITOR_ACCEPTANCE === "1" ? [] : variants) {
       expect(collectionMedia.cache).toContain("immutable");
 
       // ---- the merchant list reflects it: status, price range, stock, cover thumbnail, search, status filter ----
-      await page.goto(url("/products"));
-      await page.getByTestId("products-search").fill(uniq);
-      await page.getByTestId("products-search-submit").click();
+      // Read-only fixture scoping; the signed list replaces its old search form.
+      await page.goto(url(`/products?q=${encodeURIComponent(uniq)}`));
       const row = page.getByTestId(`product-row-${productId}`);
       await expect(row).toBeVisible();
       await expect(row).toContainText(catalogTaskCopy[L as "en" | "zh-TW"].active);
@@ -271,8 +271,8 @@ for (const v of process.env.PRODUCT_EDITOR_ACCEPTANCE === "1" ? [] : variants) {
       await shot(page, "list-active", L, v.vp);
 
       // ---- paging: the seeded drafts (60) walk 25 + 25 + 10 ----
-      await page.getByTestId("products-search").fill(`${tag} paging`);
-      await page.getByTestId("products-search-submit").click();
+      // Read-only fixture scoping; paging itself remains native clicks below.
+      await page.goto(url(`/products?q=${encodeURIComponent(`${tag} paging`)}`));
       const productRows = page.locator('[data-testid^="product-row-"]');
       await expect(productRows).toHaveCount(25);
       await expect(productRows.first()).toContainText(`${tag} paging`);

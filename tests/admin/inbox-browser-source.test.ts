@@ -78,6 +78,7 @@ test(`actual login settles ${home} and fixture store (${initialStore === fixture
         assert.equal(railOpen, true, "the Messages link must be visible for a native click");
       }
     },
+    async toPass() { await target(); },
     async toContainText() {},
     async toHaveCount() {},
     async toHaveValue(value: string) { assert.equal(selected, value, "selector must retain the fixture store"); },

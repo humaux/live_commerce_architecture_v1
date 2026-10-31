@@ -162,6 +162,42 @@ func TestCustomersBillingCB03List(t *testing.T) {
 
 	before := len(c.all(tok1, s1, ""))
 
+	t.Run("PARITY consent state distinguishes never withdrawn and regranted", func(t *testing.T) {
+		_, readToken := lcPrincipal(t, alice.s.p.f, alice.s.p.f.tenantA, []string{s1}, "store:read", "customers:read")
+		check := func(id, want string) {
+			t.Helper()
+			row := cblByID(c.all(readToken, s1, ""), id)
+			if row == nil {
+				t.Fatal("customer fixture missing")
+			}
+			raw, err := json.Marshal(row)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var wire struct {
+				State map[string]string `json:"consent_state"`
+			}
+			if err := json.Unmarshal(raw, &wire); err != nil {
+				t.Fatal(err)
+			}
+			if wire.State["marketing_messages"] != want {
+				t.Fatalf("PARITY-CONSENT-STATE: got %v want marketing=%s", wire.State, want)
+			}
+		}
+		check(aliceID, "granted")
+		check(bobID, "never")
+		err := platform.WithScope(ctx, e.f.runtime, tok1, s1, "store:read", func(tx pgx.Tx, scope platform.Scope) error {
+			_, err := customers.WithdrawConsent(ctx, tx, scope, tok1, t04Key("parity-withdraw"), aliceID, customers.WithdrawInput{Purpose: "marketing_messages", Channel: "meta_dm"})
+			return err
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		check(aliceID, "withdrawn")
+		c.grant(alice, "marketing_messages", "meta_dm")
+		check(aliceID, "granted")
+	})
+
 	t.Run("scope: own store only, cross-store is not found, no permission is forbidden", func(t *testing.T) {
 		l1, l2 := c.all(tok1, s1, ""), c.all(tok2, s2, "")
 		ids1, ids2 := map[string]bool{}, map[string]bool{}

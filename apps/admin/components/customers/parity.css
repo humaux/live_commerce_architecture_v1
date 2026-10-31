@@ -1,0 +1,23 @@
+/* Purpose: signed customer profile and privacy task/result layouts.
+ * Depends on: customers.css and shared admin semantic tokens.
+ * Used by: Customers and CustomerDetail.
+ * Invariants: module scoped, 44px targets, readable identities at 390px. */
+.people-v2 .people-result { max-width:736px; margin:24px 0; padding:24px 16px; }
+.people-v2 .people-result > h2 { font-size:24px; margin-bottom:24px; }
+.people-v2 .people-result > p { line-height:1.65; margin-bottom:20px; }
+.people-v2 .people-result > button { display:block; width:100%; }
+.people-v2 .customers-consent { margin:0; gap:0; }
+.people-v2 .customers-consent li { padding:16px 0; border-bottom:1px solid var(--ui-border); }
+.people-v2 .customers-consent li:first-child { padding-top:0; }
+.people-v2 .customers-consent li:last-child { padding-bottom:0; border:0; }
+.people-v2 .people-event { color:var(--ui-text); }
+.people-v2 .customers-actions button { width:100%; }
+.people-v2 .customers-back { min-height:44px; min-width:180px; padding:0 16px; border:1px solid var(--ui-border); border-radius:8px; background:var(--ui-surface); justify-content:center; text-decoration:none; color:var(--ui-text); }
+.people-v2 .people-dialog { position:relative; margin:24px 0; inset:auto; max-width:736px; width:100%; padding:24px 16px; border:1px solid var(--ui-border); border-radius:12px; background:var(--ui-surface); color:var(--ui-text); }
+.people-v2 .people-dialog h2 { margin:0 0 20px; }
+.people-v2 .people-dialog label { display:grid; gap:8px; margin:16px 0; }
+.people-v2 .people-dialog input:not([type="checkbox"]) { min-height:44px; padding:10px 12px; border:1px solid var(--ui-border); border-radius:8px; }
+.people-v2 .people-dialog .people-check { display:flex; }
+.people-v2 .people-dialog .orders-dialog-actions { display:flex; gap:8px; margin-top:20px; }
+.people-v2 .people-dialog .orders-dialog-actions > button { flex:1; min-height:44px; padding:8px 16px; }
+@media(max-width:680px) { .people-v2 .people-result { margin:16px 0; } .people-v2 .people-dialog { margin:16px 0; } }

@@ -1,0 +1,14 @@
+PARITY-STATES RELAY 3 — scoped recovery-alert locator, attempt 1
+PR #356; failed head 121d16300c44c2a2e19c62b5c769c7829f9889df
+Gates 41058992663 / bundle:02 job 124091034606: FAILURE
+Synthetic merge 9773319304fbdc872b5eff7e8f2a8bce12e24e06
+Artifact 12984047644 gate-browser-storefront; 48 cases: 36 PASS, 12 FAIL.
+All 12 failures: new offline/unknown failed-read assertions select both the actual InlineError and __next-route-announcer__ role=alert.
+Both expected localized inline-error DOM and route announcer are present in strict-mode diagnostics.
+Repair: scope only the new recovery alert assertions to their signed section[data-variant] panel, including order-offline.
+No assertion expectation, fixture, timeout, grant, threshold, production source or pre-card gate assertion changed.
+Foundation 41058992626 / 124073641046 SUCCESS; Gates bundle:01 124091034229 SUCCESS.
+Static E1: node --check tests/storefront/shop-real-gate.mjs exit 0; derive-browser-ownership + --check exit 0 (53 modes).
+Runtime verification: GitHub CI only, new head pending; no local tests or servers.
+Humaux store/canvas/coord unavailable; no shared-state success claimed.
+Integrator relay is the wakeup mechanism; no CI polling beyond ~10 min.

@@ -29,7 +29,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
 import { engine, launch, ctxOpts, phone, iosZoomOffenders } from "./browser-engine.mjs";
-import { reachCheckout } from "./shop-helpers.mjs";
+import { reachCheckout, confirmCheckoutAddress, openCheckoutDetails } from "./shop-helpers.mjs";
 import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 import { checkoutV2Suite, checkoutV2Cod, checkoutV2CodFeeChange } from "./checkout-v2.mjs";
 
@@ -212,7 +212,7 @@ async function surchargeRefresh(scenario) {
   const create = page.getByTestId("create-order"), confirm = page.getByTestId("confirm-address");
   const fillAddress = async () => { for (const [name, value] of Object.entries(pii)) await page.locator(`input[name="${name}"]`).fill(value); };
   if (!gap) {
-    await codMode.check(); await fillAddress(); await confirm.click(); await expect(create).toBeEnabled();
+    await codMode.check(); await fillAddress(); await confirm.click(); await openCheckoutDetails(page); await expect(create).toBeEnabled();
   }
   let releaseQuote, quoteSeen = false;
   const heldQuote = new Promise((resolve) => { releaseQuote = resolve; });
@@ -266,11 +266,11 @@ async function surchargeRefresh(scenario) {
     if (await page.getByTestId("quote-reconfirm").count()) {
       await expect(page.getByTestId("quote-reconfirm")).toBeVisible();
       await expect(page.getByTestId("checkout-submit")).toBeDisabled();
-      const acknowledgment = { "zh-TW": "確認更新後的金額", "zh-CN": "确认更新后的金额", en: "Confirm updated total" };
+      const acknowledgment = { "zh-TW": "確認新金額", "zh-CN": "确认新金额", en: "Confirm new total" };
       await page.getByRole("button", { name: acknowledgment[locale], exact: true }).click();
       await expect(page.getByTestId("quote-reconfirm")).toHaveCount(0);
     }
-    await confirm.click(); await expect(create).toBeEnabled();
+    await confirm.click(); await openCheckoutDetails(page); await expect(create).toBeEnabled();
     const submitted = page.waitForRequest((r) => new URL(r.url()).pathname === "/api/buyer/checkout" && r.method() === "POST");
     const [request] = await Promise.all([submitted, create.click()]);
     const body = request.postDataJSON();
@@ -314,6 +314,7 @@ async function place(buyer) {
     await expect(page.getByTestId("cod-cap-unavailable")).toBeVisible();
     await expect(page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]')).toHaveCount(0);
     await page.unroute("**/api/buyer/checkout-options?**", capRoute);
+    await openCheckoutDetails(page);
     await page.getByRole("button", { name: "重新選擇配送", exact: true }).click();
     await page.getByRole("button", { name: c.quote, exact: true }).click();
     await expect(page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]')).toBeVisible();
@@ -321,6 +322,7 @@ async function place(buyer) {
   for (const [key, value] of Object.entries(pii)) await page.locator(`input[name="${key}"]`).fill(value);
   // cash on delivery is offered only because the merchant enabled it: the mode row names the total plus the whole-TWD surcharge
   // (whole TWD amounts drop the decimals on every locale, so the label reads "TWD 25" / "NT$25", never "25.00")
+  await openCheckoutDetails(page);
   const fieldset = page.getByTestId("home-payment-mode");
   await expect(fieldset).toBeVisible();
   const codRow = fieldset.locator("label.sku-row", { has: page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]') });
@@ -329,22 +331,24 @@ async function place(buyer) {
   await expect(codText).toContainText(c.cod);
   await expect(codText).toContainText(String(total / 100));
   await expect(codText).toContainText(String(surcharge / 100));
-  // OC-09b: the bottom bar shows 「到貨需付」 with the server quote's cod_due_minor only while cash on delivery is the selected mode.
+  // PARITY-CHECKOUT: the unified final label retains OC-09b with the server quote's cod_due_minor only while cash on delivery is the selected mode.
   assert.equal(quote.cod_due_minor, total + surcharge, `${label}: the server quote carries cod_due_minor = total + surcharge`);
   const footer = page.locator(".purchase-footer");
-  await expect(footer).not.toContainText(c.due); // default (non-COD) mode: no COD due in the bar
+  await expect(footer.getByTestId("footer-cod-due")).toHaveCount(0); // default (non-COD) mode: no COD due in the bar
   await page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]').check();
-  await expect(footer).toContainText(c.due);
+  await expect(footer.getByTestId("footer-cod-due")).toBeVisible();
+  await expect(footer).toContainText(locale === "en" ? "Final amount due" : "最終應付");
   await expect(footer.locator("strong")).toHaveText(`NT$${(total + surcharge) / 100}`);
   await expect(footer).toContainText(`NT$${surcharge / 100}`);
   const cardMode = page.locator('input[name="home_payment_mode"][value="card"]');
   if (await cardMode.count()) {
     await cardMode.check();
-    await expect(footer).not.toContainText(c.due); // card: hidden
+    await expect(footer.getByTestId("footer-cod-due")).toHaveCount(0); // card: hidden
     await page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]').check();
-    await expect(footer).toContainText(c.due);
+    await expect(footer.getByTestId("footer-cod-due")).toBeVisible();
+    await expect(footer).toContainText(locale === "en" ? "Final amount due" : "最終應付");
   }
-  await page.getByTestId("confirm-address").click();
+  await confirmCheckoutAddress(page);
   await expect(page.getByTestId("create-order")).toBeEnabled();
   await expect(page.getByTestId("create-order")).toHaveText(c.createCod);
   await expect(page.locator(".order-note").filter({ hasText: c.note })).toBeVisible(); // no online charge
@@ -366,8 +370,8 @@ async function place(buyer) {
     await expect(page.getByTestId("create-order")).toBeDisabled();
     await expect.poll(() => optionReads).toBeGreaterThan(0);
     // CHECKOUT-V2: a definite fee change also needs a separate amount acknowledgment; original address/submit assertions stay intact.
-    await page.getByRole("button", { name: "確認更新後的金額", exact: true }).click();
-    await page.getByTestId("confirm-address").click();
+    await page.getByRole("button", { name: "確認新金額", exact: true }).click();
+    await confirmCheckoutAddress(page);
     await expect(page.getByTestId("create-order")).toBeEnabled();
     page.off("request", observe);
   }

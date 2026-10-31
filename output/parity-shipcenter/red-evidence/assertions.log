@@ -1,0 +1,119 @@
+  ✘   1 tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW first: select, review, print, return and refresh (14.8s)
+  ✘   2 tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW first-third: select, review, print, return and refresh (11.7s)
+  ✘   3 tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW review: select, review, print, return and refresh (11.7s)
+  ✘   4 tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW third: select, review, print, return and refresh (11.6s)
+  ✘   5 tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW first-review: select, review, print, return and refresh (11.4s)
+  ✘   6 tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW review-third: select, review, print, return and refresh (11.7s)
+  ✘   7 tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW all: select, review, print, return and refresh (11.3s)
+  ✘   8 tests/admin/shipping-center.spec.ts:240:5 › PARITY-SHIPCENTER zh-TW signed mobile single-order screen (11.4s)
+  ✘   9 tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-CN all: select, review, print, return and refresh (11.4s)
+  ✘  10 tests/admin/shipping-center.spec.ts:240:5 › PARITY-SHIPCENTER zh-CN signed mobile single-order screen (12.1s)
+  ✘  11 tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER en all: select, review, print, return and refresh (11.3s)
+  ✘  12 tests/admin/shipping-center.spec.ts:240:5 › PARITY-SHIPCENTER en signed mobile single-order screen (11.4s)
+  ✘  13 tests/admin/shipping-center.spec.ts:271:3 › PARITY-SHIPCENTER every selection/review cancellation and return control (11.4s)
+  ✘  14 tests/admin/shipping-center.spec.ts:322:3 › PARITY-SHIPCENTER existing server reads reach preview without synthetic DTO interception (11.3s)
+  ✘  15 tests/admin/shipping-center.spec.ts:353:3 › PARITY-SHIPCENTER detail read failure cannot print partial or invented slips; Retry recovers (11.8s)
+  1) tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW first: select, review, print, return and refresh
+    Error: signed shipping-center heading on the REAL route
+    expect(locator).toBeVisible() failed
+    Error: element(s) not found
+      - signed shipping-center heading on the REAL route getByTestId('shipping-center').getByRole('heading', { name: '出貨中心', exact: true }) with timeout 10000ms
+    > 157 |         await expect(content(page).getByRole("heading", { name: c.center, exact: true }), "signed shipping-center heading on the REAL route").toBeVisible();
+    output/playwright/merchant-orders-c-browser/20261030T114721.948568920/results/orders-ui-PARITY-SHIPCENTE-76a8b-ew-print-return-and-refresh/test-failed-1.png
+  2) tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW first-third: select, review, print, return and refresh
+    Error: signed shipping-center heading on the REAL route
+    expect(locator).toBeVisible() failed
+    Error: element(s) not found
+      - signed shipping-center heading on the REAL route getByTestId('shipping-center').getByRole('heading', { name: '出貨中心', exact: true }) with timeout 10000ms
+    > 157 |         await expect(content(page).getByRole("heading", { name: c.center, exact: true }), "signed shipping-center heading on the REAL route").toBeVisible();
+    output/playwright/merchant-orders-c-browser/20261030T114721.948568920/results/orders-ui-PARITY-SHIPCENTE-b778e-ew-print-return-and-refresh/test-failed-1.png
+  3) tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW review: select, review, print, return and refresh
+    Error: signed shipping-center heading on the REAL route
+    expect(locator).toBeVisible() failed
+    Error: element(s) not found
+      - signed shipping-center heading on the REAL route getByTestId('shipping-center').getByRole('heading', { name: '出貨中心', exact: true }) with timeout 10000ms
+    > 157 |         await expect(content(page).getByRole("heading", { name: c.center, exact: true }), "signed shipping-center heading on the REAL route").toBeVisible();
+    output/playwright/merchant-orders-c-browser/20261030T114721.948568920/results/orders-ui-PARITY-SHIPCENTE-4daef-ew-print-return-and-refresh/test-failed-1.png
+  4) tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW third: select, review, print, return and refresh
+    Error: signed shipping-center heading on the REAL route
+    expect(locator).toBeVisible() failed
+    Error: element(s) not found
+      - signed shipping-center heading on the REAL route getByTestId('shipping-center').getByRole('heading', { name: '出貨中心', exact: true }) with timeout 10000ms
+    > 157 |         await expect(content(page).getByRole("heading", { name: c.center, exact: true }), "signed shipping-center heading on the REAL route").toBeVisible();
+    output/playwright/merchant-orders-c-browser/20261030T114721.948568920/results/orders-ui-PARITY-SHIPCENTE-eaf7b-ew-print-return-and-refresh/test-failed-1.png
+  5) tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW first-review: select, review, print, return and refresh
+    Error: signed shipping-center heading on the REAL route
+    expect(locator).toBeVisible() failed
+    Error: element(s) not found
+      - signed shipping-center heading on the REAL route getByTestId('shipping-center').getByRole('heading', { name: '出貨中心', exact: true }) with timeout 10000ms
+    > 157 |         await expect(content(page).getByRole("heading", { name: c.center, exact: true }), "signed shipping-center heading on the REAL route").toBeVisible();
+    output/playwright/merchant-orders-c-browser/20261030T114721.948568920/results/orders-ui-PARITY-SHIPCENTE-3649d-ew-print-return-and-refresh/test-failed-1.png
+  6) tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW review-third: select, review, print, return and refresh
+    Error: signed shipping-center heading on the REAL route
+    expect(locator).toBeVisible() failed
+    Error: element(s) not found
+      - signed shipping-center heading on the REAL route getByTestId('shipping-center').getByRole('heading', { name: '出貨中心', exact: true }) with timeout 10000ms
+    > 157 |         await expect(content(page).getByRole("heading", { name: c.center, exact: true }), "signed shipping-center heading on the REAL route").toBeVisible();
+    output/playwright/merchant-orders-c-browser/20261030T114721.948568920/results/orders-ui-PARITY-SHIPCENTE-12d04-ew-print-return-and-refresh/test-failed-1.png
+  7) tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW all: select, review, print, return and refresh
+    Error: signed shipping-center heading on the REAL route
+    expect(locator).toBeVisible() failed
+    Error: element(s) not found
+      - signed shipping-center heading on the REAL route getByTestId('shipping-center').getByRole('heading', { name: '出貨中心', exact: true }) with timeout 10000ms
+    > 157 |         await expect(content(page).getByRole("heading", { name: c.center, exact: true }), "signed shipping-center heading on the REAL route").toBeVisible();
+    output/playwright/merchant-orders-c-browser/20261030T114721.948568920/results/orders-ui-PARITY-SHIPCENTE-ee3d7-ew-print-return-and-refresh/test-failed-1.png
+  8) tests/admin/shipping-center.spec.ts:240:5 › PARITY-SHIPCENTER zh-TW signed mobile single-order screen
+    Error: expect(locator).toBeVisible() failed
+    Error: element(s) not found
+    output/playwright/merchant-orders-c-browser/20261030T114721.948568920/results/orders-ui-PARITY-SHIPCENTE-2d640--mobile-single-order-screen/test-failed-1.png
+  9) tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-CN all: select, review, print, return and refresh
+    Error: signed shipping-center heading on the REAL route
+    expect(locator).toBeVisible() failed
+    Error: element(s) not found
+      - signed shipping-center heading on the REAL route getByTestId('shipping-center').getByRole('heading', { name: '发货中心', exact: true }) with timeout 10000ms
+    > 157 |         await expect(content(page).getByRole("heading", { name: c.center, exact: true }), "signed shipping-center heading on the REAL route").toBeVisible();
+    output/playwright/merchant-orders-c-browser/20261030T114721.948568920/results/orders-ui-PARITY-SHIPCENTE-cdb52-ew-print-return-and-refresh/test-failed-1.png
+  10) tests/admin/shipping-center.spec.ts:240:5 › PARITY-SHIPCENTER zh-CN signed mobile single-order screen
+    Error: expect(locator).toBeVisible() failed
+    Error: element(s) not found
+    output/playwright/merchant-orders-c-browser/20261030T114721.948568920/results/orders-ui-PARITY-SHIPCENTE-3d823--mobile-single-order-screen/test-failed-1.png
+  11) tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER en all: select, review, print, return and refresh
+    Error: signed shipping-center heading on the REAL route
+    expect(locator).toBeVisible() failed
+    Error: element(s) not found
+      - signed shipping-center heading on the REAL route getByTestId('shipping-center').getByRole('heading', { name: 'Shipping center', exact: true }) with timeout 10000ms
+    > 157 |         await expect(content(page).getByRole("heading", { name: c.center, exact: true }), "signed shipping-center heading on the REAL route").toBeVisible();
+    output/playwright/merchant-orders-c-browser/20261030T114721.948568920/results/orders-ui-PARITY-SHIPCENTE-07a51-ew-print-return-and-refresh/test-failed-1.png
+  12) tests/admin/shipping-center.spec.ts:240:5 › PARITY-SHIPCENTER en signed mobile single-order screen
+    Error: expect(locator).toBeVisible() failed
+    Error: element(s) not found
+    output/playwright/merchant-orders-c-browser/20261030T114721.948568920/results/orders-ui-PARITY-SHIPCENTE-1a93c--mobile-single-order-screen/test-failed-1.png
+  13) tests/admin/shipping-center.spec.ts:271:3 › PARITY-SHIPCENTER every selection/review cancellation and return control
+    Error: expect(locator).toBeVisible() failed
+    Error: element(s) not found
+    output/playwright/merchant-orders-c-browser/20261030T114721.948568920/results/orders-ui-PARITY-SHIPCENTE-bc684-ellation-and-return-control/test-failed-1.png
+  14) tests/admin/shipping-center.spec.ts:322:3 › PARITY-SHIPCENTER existing server reads reach preview without synthetic DTO interception
+    Error: expect(locator).toBeVisible() failed
+    Error: element(s) not found
+    output/playwright/merchant-orders-c-browser/20261030T114721.948568920/results/orders-ui-PARITY-SHIPCENTE-259c9--synthetic-DTO-interception/test-failed-1.png
+  15) tests/admin/shipping-center.spec.ts:353:3 › PARITY-SHIPCENTER detail read failure cannot print partial or invented slips; Retry recovers
+    Error: expect(locator).toBeVisible() failed
+    Error: element(s) not found
+    output/playwright/merchant-orders-c-browser/20261030T114721.948568920/results/orders-ui-PARITY-SHIPCENTE-f8d2c-vented-slips-Retry-recovers/test-failed-1.png
+  15 failed
+    tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW first: select, review, print, return and refresh
+    tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW first-third: select, review, print, return and refresh
+    tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW review: select, review, print, return and refresh
+    tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW third: select, review, print, return and refresh
+    tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW first-review: select, review, print, return and refresh
+    tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW review-third: select, review, print, return and refresh
+    tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-TW all: select, review, print, return and refresh
+    tests/admin/shipping-center.spec.ts:240:5 › PARITY-SHIPCENTER zh-TW signed mobile single-order screen
+    tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER zh-CN all: select, review, print, return and refresh
+    tests/admin/shipping-center.spec.ts:240:5 › PARITY-SHIPCENTER zh-CN signed mobile single-order screen
+    tests/admin/shipping-center.spec.ts:150:7 › PARITY-SHIPCENTER en all: select, review, print, return and refresh
+    tests/admin/shipping-center.spec.ts:240:5 › PARITY-SHIPCENTER en signed mobile single-order screen
+    tests/admin/shipping-center.spec.ts:271:3 › PARITY-SHIPCENTER every selection/review cancellation and return control
+    tests/admin/shipping-center.spec.ts:322:3 › PARITY-SHIPCENTER existing server reads reach preview without synthetic DTO interception
+    tests/admin/shipping-center.spec.ts:353:3 › PARITY-SHIPCENTER detail read failure cannot print partial or invented slips; Retry recovers
+  21 passed (5.1m)

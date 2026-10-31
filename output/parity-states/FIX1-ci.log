@@ -1,0 +1,159 @@
+
+storefront-failed.log
+125: gate (bundle:02)	Gate	2026-10-30T15:56:58.3340174Z matrix-receipts: {"mode":"--browser-payment","run_id":"41079438742","run_attempt":"1","sha":"b91e125e64bc87196879b25ad5f4a0e24e4a147b","status":"PASS","test_count":17,"spec_count":16}
+139: gate (bundle:02)	Gate	2026-10-30T15:57:56.1367797Z matrix-receipts: {"mode":"--browser-order","run_id":"41079438742","run_attempt":"1","sha":"b91e125e64bc87196879b25ad5f4a0e24e4a147b","status":"PASS","test_count":34,"spec_count":33}
+309: gate (bundle:02)	Gate	2026-10-30T15:58:30.6602098Z matrix-receipts: {"mode":"--browser-reports","run_id":"41079438742","run_attempt":"1","sha":"b91e125e64bc87196879b25ad5f4a0e24e4a147b","status":"PASS","test_count":51,"spec_count":8}
+341: gate (bundle:02)	Gate	2026-10-30T16:01:20.0745091Z --- FAIL: TestBrowserStorefront (165.36s)
+347: gate (bundle:02)	Gate	2026-10-30T16:01:20.3802393Z matrix-receipts: {"mode":"--browser-storefront","run_id":"41079438742","run_attempt":"1","sha":"b91e125e64bc87196879b25ad5f4a0e24e4a147b","status":"FAIL","test_count":27,"spec_count":10}
+
+orders-failed.log
+216: gate (bundle:09)	Gate	2026-10-30T15:51:39.4741638Z --- FAIL: TestBrowserMerchantOrdersUIRealChain (227.94s)
+222: gate (bundle:09)	Gate	2026-10-30T15:51:39.8685267Z matrix-receipts: {"mode":"--browser-merchant-orders-ui","run_id":"41079438742","run_attempt":"1","sha":"b91e125e64bc87196879b25ad5f4a0e24e4a147b","status":"FAIL","test_count":94,"spec_count":47}
+253: gate (bundle:09)	Gate	2026-10-30T15:53:37.0513837Z matrix-receipts: {"mode":"--browser-admin-shell","run_id":"41079438742","run_attempt":"1","sha":"b91e125e64bc87196879b25ad5f4a0e24e4a147b","status":"PASS","test_count":15,"spec_count":2}
+303: gate (bundle:09)	Gate	2026-10-30T15:54:30.0298920Z matrix-receipts: {"mode":"--browser-ops-polish","run_id":"41079438742","run_attempt":"1","sha":"b91e125e64bc87196879b25ad5f4a0e24e4a147b","status":"PASS","test_count":20,"spec_count":12}
+320: gate (bundle:09)	Gate	2026-10-30T15:55:09.0200048Z matrix-receipts: {"mode":"--browser-picklist","run_id":"41079438742","run_attempt":"1","sha":"b91e125e64bc87196879b25ad5f4a0e24e4a147b","status":"PASS","test_count":1,"spec_count":0}
+348: gate (bundle:09)	Gate	2026-10-30T15:55:39.2477282Z matrix-receipts: {"mode":"--browser-operations-ads","run_id":"41079438742","run_attempt":"1","sha":"b91e125e64bc87196879b25ad5f4a0e24e4a147b","status":"PASS","test_count":12,"spec_count":11}
+377: gate (bundle:09)	Gate	2026-10-30T15:55:52.4718284Z matrix-receipts: {"mode":"--browser-studio-bff","run_id":"41079438742","run_attempt":"1","sha":"b91e125e64bc87196879b25ad5f4a0e24e4a147b","status":"PASS","test_count":8,"spec_count":1}
+
+receipts-failed.log
+43: receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-30T16:27:14.5377378Z   receipt --browser-merchant-orders-ui: FAIL test_count=94 run=41079438742/1 sha=b91e125e64bc87196879b25ad5f4a0e24e4a147b
+62: receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-30T16:27:14.5407532Z   receipt --browser-storefront: FAIL test_count=27 run=41079438742/1 sha=b91e125e64bc87196879b25ad5f4a0e24e4a147b
+85: receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-30T16:27:14.5439242Z matrix-receipts: RED (2 problem(s))
+
+artifact 12992061186 / shop-real-gate.log
+1: browser engine: chromium
+2: PASS SFR01 home renders the five section types from the published design (photos from PG), nav-less phone layout, accent, footer contact, newest-first grid
+3: PASS SFR02 title/canonical/Open Graph, Product JSON-LD (real price range, availability, absolute photos), sitemap = active products only, robots, noindex on cart and checkout
+4: PASS SFR03 collection tiles (photo via /media/c/{id}/{image} from PG), collection page, price sort, price filter, cursor load more to every active product, no draft/archived
+5: PASS SFR04 variants and stock hints from real stock, sold-out and out-of-stock variants not addable, compare-at, 3-photo gallery from PG, id URL 308 -> slug, draft/archived/unknown/removed /products/Checkout are 404
+6: PASS SFR05 cart subtotal and free-delivery hint from the real policy threshold (below: remaining amount; at/above: qualified), the quote charges the fee below it and 0 above it, options rows carry the threshold
+7: PASS SFR06 preview token shows the saved draft with banner/no-store/noindex; unknown token and a forged header fall back to the published design
+8: PASS SFR07 merchant unpublish through control.set_storefront_published closes the shop (branded closed page, 404 products, no sitemap) and republish reopens it
+9: PASS SFR08 UI chrome follows the locale while merchant text stays as entered; unknown locale is a 404
+10: PASS SFR09 /{locale}/checkout is the checkout page; no page errors or hydration warnings across the walk-through
+11: OC11 error page: offline banner + single read-only reload, zh-TW/zh-CN/en at 390px, no write replayed
+12: node:internal/modules/run_main:107
+13:     triggerUncaughtException(
+14:     ^
+15:
+16: AssertionError [ERR_ASSERTION]: PARITY-STATES: signed panels and real recovery controls on buyer routes
+17: + actual - expected
+18:
+19: + [
+20: +   'offline-zh-CN-1440: locator.click: Timeout 30000ms exceeded.\n' +
+21: +     'Call log:\n' +
+22: +     "  - waiting for getByRole('button', { name: '重新加载', exact: true })\n" +
+23: +     '    - locator resolved to <button type="button" data-size="md" data-variant="primary" class="controls-module___Q_jqG__button ">重新加载</button>\n' +
+24: +     '  - attempting click action\n' +
+25: +     '    - waiting for element to be visible, enabled and stable\n' +
+26: +     '  - element was detached from the DOM, retrying\n',
+27: +   'offline-zh-CN-390: locator.click: Timeout 30000ms exceeded.\n' +
+28: +     'Call log:\n' +
+29: +     "  - waiting for getByRole('button', { name: '重新加载', exact: true })\n" +
+30: +     '    - locator resolved to <button type="button" data-size="md" data-variant="primary" class="controls-module___Q_jqG__button ">重新加载</button>\n' +
+31: +     '  - attempting click action\n' +
+32: +     '    - waiting for element to be visible, enabled and stable\n' +
+33: +     '    - element is not stable\n' +
+34: +     '  - retrying click action\n' +
+35: +     '    - waiting for element to be visible, enabled and stable\n' +
+36: +     '  - element was detached from the DOM, retrying\n',
+37: +   'offline-en-1440: locator.click: Timeout 30000ms exceeded.\n' +
+38: +     'Call log:\n' +
+39: +     "  - waiting for getByRole('button', { name: 'Reload', exact: true })\n" +
+40: +     '    - locator resolved to <button type="button" data-size="md" data-variant="primary" class="controls-module___Q_jqG__button ">Reload</button>\n' +
+41: +     '  - attempting click action\n' +
+42: +     '    - waiting for element to be visible, enabled and stable\n' +
+43: +     '    - element is not stable\n' +
+44: +     '  - retrying click action\n' +
+45: +     '    - waiting for element to be visible, enabled and stable\n' +
+46: +     '  - element was detached from the DOM, retrying\n',
+47: +   'offline-en-390: locator.click: Timeout 30000ms exceeded.\n' +
+48: +     'Call log:\n' +
+49: +     "  - waiting for getByRole('button', { name: 'Reload', exact: true })\n" +
+50: +     '    - locator resolved to <button type="button" data-size="md" data-variant="primary" class="controls-module___Q_jqG__button ">Reload</button>\n' +
+51: +     '  - attempting click action\n' +
+52: +     '    - waiting for element to be visible, enabled and stable\n' +
+53: +     '    - element is not stable\n' +
+54: +     '  - retrying click action\n' +
+55: +     '    - waiting for element to be visible, enabled and stable\n' +
+56: +     '  - element was detached from the DOM, retrying\n'
+57: + ]
+58: - []
+59:
+60:     at checkBuyerParityStates (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/shop-real-gate.mjs:486:10)
+
+artifact 12990484924 / playwright-parcel.log
+1:
+2: Running 1 test using 1 worker
+3:
+4:   ✘  1 tests/admin/parcel-merge.spec.ts:154:1 › W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped -> dissolve -> block -> 409 (22.3s)
+5:
+6:
+7:   1) tests/admin/parcel-merge.spec.ts:154:1 › W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped -> dissolve -> block -> 409 › suggestions 403 clears orders/detail/bulk/groups before stale read completions
+8:
+9:     Error: Timed out waiting for held order poll release
+10:
+11:       403 |     let timer: ReturnType<typeof setTimeout>;
+12:       404 |     const timeout = new Promise<never>((_, reject) => {
+13:     > 405 |       timer = setTimeout(() => reject(new Error(`Timed out waiting for ${description}`)), 10_000);
+14:           |                                       ^
+15:       406 |     });
+16:       407 |     try { return await Promise.race([work, timeout]); }
+17:       408 |     finally { clearTimeout(timer!); }
+18:         at Timeout.<anonymous> (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/parcel-merge.spec.ts:405:39)
+19:
+20:     Error: expect(locator).toContainText(expected) failed
+21:
+22:     Locator: getByTestId('merchant-orders')
+23:     Expected substring: "This account does not have permission to read orders."
+24:     Received string:    "OrdersReview saved orders and their frozen checkout details.This page cannot be openedThis link cannot be opened, or your account cannot use this feature. Return to an available feature.Ask the store owner if you need access to this feature.Back to workspace"
+25:     Timeout: 10000ms
+26:
+27:     Call log:
+28:       - Expect "toContainText" getByTestId('merchant-orders') with timeout 10000ms
+29:       - waiting for getByTestId('merchant-orders')
+30:         24 × locator resolved to <div class="orders-page orders-v2" data-testid="merchant-orders">…</div>
+31:            - unexpected value "OrdersReview saved orders and their frozen checkout details.This page cannot be openedThis link cannot be opened, or your account cannot use this feature. Return to an available feature.Ask the store owner if you need access to this feature.Back to workspace"
+32:
+33:
+34:       460 |         });
+35:       461 |         const expectPurged = async () => {
+36:     > 462 |           await expect(page.getByTestId("merchant-orders")).toContainText(copy);
+37:           |                                                             ^
+38:       463 |           await expect(page.getByTestId("orders-table")).toHaveCount(0);
+39:       464 |           await expect(page.getByTestId("order-detail")).toHaveCount(0);
+40:       465 |           await expect(page.getByTestId("pick-toolbar")).toHaveCount(0);
+41:         at expectPurged (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/parcel-merge.spec.ts:462:61)
+42:         at test.step.timeout (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/parcel-merge.spec.ts:474:17)
+43:         at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/parcel-merge.spec.ts:418:7
+
+artifact 12990484924 / playwright.log
+  ✓  45 tests/admin/orders-ui.spec.ts:1426:7 › PARITY-STATES admin shell removes raw diagnostic en 390 (3.3s)
+
+  45 passed (3.1m)
+
+FIX1 relay 1: head cd6935deeb91b171d4777dcdf37c832500a6b2a1; Foundation 41106548606 / 124237773182; tested merge 64811bc3648a3676d933451847e2a9c8d3069088.
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6472632Z test at tests/ci/gate-waits.test.mjs:18:1
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6472983Z ✖ browser gate scripts await every started wait before the next await (55.975063ms)
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6473733Z   AssertionError [ERR_ASSERTION]: a waitForResponse/waitForRequest promise is awaited only after another await; use `const [reply] = await Promise.all([pending, trigger()])` so the real first failure surfaces (#179)
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6474227Z   + actual - expected
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6474359Z
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6474461Z   + [
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6474889Z   +   'tests/storefront/shop-real-gate.mjs:451 cartRequested is awaited only after another await: await expect(panel.getByRole("alert")).toContainText(c.failed)'
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6475252Z   + ]
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6475360Z   - []
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6475476Z
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6475948Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/ci/gate-waits.test.mjs:20:10)
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6476653Z       at Test.runInAsyncScope (node:async_hooks:227:14)
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6477092Z       at Test.run (node:internal/test_runner/test:1402:25)
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6477627Z       at Test.start (node:internal/test_runner/test:1262:17)
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6478175Z       at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6478606Z     generatedMessage: false,
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6478880Z     code: 'ERR_ASSERTION',
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6479677Z     actual: [ 'tests/storefront/shop-real-gate.mjs:451 cartRequested is awaited only after another await: await expect(panel.getByRole("alert")).toContainText(c.failed)' ],
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6480300Z     expected: [],
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6480539Z     operator: 'deepStrictEqual',
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6480774Z     diff: 'simple'
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6480947Z   }
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6512312Z ## matrix-receipts node-test end
+foundation	UNKNOWN STEP	2026-10-30T18:29:31.6521733Z ##[error]Process completed with exit code 1.
