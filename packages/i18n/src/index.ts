@@ -4,7 +4,7 @@
 // Invariants: only supported locales and validated local paths can enter generated URLs.
 export const locales = ['zh-CN', 'zh-TW', 'en'] as const;
 export { shippingCopy } from './shipping.ts';
-export { stateRecoveryCopy } from './state-recovery.ts';
+export { stateRecoveryCopy, adminSignedStateCopy, buyerSignedStateCopy } from './state-recovery.ts';
 export { cvsPickerCopy } from './cvs-picker.ts';
 export { entryParityCopy } from './entry-parity.ts';
 export { editorCopy } from './editor.ts';

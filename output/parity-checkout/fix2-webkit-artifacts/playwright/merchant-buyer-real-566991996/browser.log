@@ -1,9 +1,0 @@
-browser engine: webkit
-PASS signed MOCK IdP and actual merchant product/SKU saves returned real scoped receipts
-PASS all three configured locale URLs serve actual Next documents with zero crawler effects
-PASS en exact configured URL has persisted product, SKU, price and mobile scope
-PASS zh-CN exact configured URL has persisted product, SKU, price and mobile scope
-PASS zh-TW exact configured URL has persisted product, SKU, price and mobile scope
-PASS foreign tenant product is absent and viewing creates no purchase facts
-PASS unpublish removes merchant URL and rejects existing-buyer new purchase and fresh page
-PASS independent database facts remain unchanged for orders, holds, quotes, providers and merchant writes

@@ -13,7 +13,7 @@ Running 1 test using 1 worker
   ✘  1 tests/admin/taiwan-cvs.spec.ts:133:1 › TCV08 merchant: create a label, copy the code, print in a new tab, timeline, UNKNOWN banner, collection and cancel actions, buyer_entered label (32.0s)
 
 
-  1) tests/admin/taiwan-cvs.spec.ts:133:1 › TCV08 merchant: create a label, copy the code, print in a new tab, timeline, UNKNOWN banner, collection and cancel actions, buyer_entered label 
+  1) tests/admin/taiwan-cvs.spec.ts:133:1 › TCV08 merchant: create a label, copy the code, print in a new tab, timeline, UNKNOWN banner, collection and cancel actions, buyer_entered label
 
     Error: expect(locator).toBeEnabled() failed
 
@@ -36,4 +36,3 @@ Running 1 test using 1 worker
       85 |   }
         at expand (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/taiwan-cvs.spec.ts:82:51)
         at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/taiwan-cvs.spec.ts:244:12
-
