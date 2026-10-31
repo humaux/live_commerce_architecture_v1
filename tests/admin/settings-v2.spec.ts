@@ -16,6 +16,7 @@ const copy = {
 // another test: the Go fixture independently requires exactly one session/store.
 export async function settingsV2Acceptance(page: Page, store: string, testInfo: TestInfo) {
   await noMarketAcceptance(page, store, testInfo);
+  await marketSelectionAcceptance(page, store);
   const path = `/en/settings?store=${store}`;
   await page.setViewportSize({ width: 390, height: 844 });
   for (const [locale, c] of Object.entries(copy)) {
@@ -967,5 +968,65 @@ async function deliverySwitches(page: Page, store: string, path: string) {
     for (const [, , label] of methods) await expect(page.getByRole("checkbox", { name: label, exact: true })).toBeChecked();
   } finally {
     await page.unroute(pattern);
+  }
+}
+
+/** RVFIX P1-1/P1-2: hidden-market selection rules (b tw, c single active, d none) and the existing-tw guard, MOCK on the real route. */
+async function marketSelectionAcceptance(source: Page, store: string) {
+  const row = (id: string, code: string, over: Record<string, unknown> = {}) =>
+    ({ id, code, name: code, currency: "TWD", active: true, version: 1, created_at: `2026-10-0${id.slice(-1)}T00:00:00Z`, ...over });
+  const A = "80000000-0000-4000-8000-000000000041", B = "80000000-0000-4000-8000-000000000042", C = "80000000-0000-4000-8000-000000000043";
+  const cases = [
+    // (b) active tw wins over an older active legacy market.
+    { name: "b: active tw", markets: [row(A, "legacy"), row(B, "tw")], post: false, target: B },
+    // (c) exactly one active same-currency market and no tw: that one, no create.
+    { name: "c: single active", markets: [row(A, "legacy"), row(B, "off", { active: false }), row(C, "usd", { currency: "USD" })], post: false, target: A },
+    // (d) two active non-tw markets: never guess by age, take the zero-market path (create tw).
+    { name: "d: ambiguous", markets: [row(A, "legacy"), row(B, "other")], post: true, target: "new" },
+    // P1-2 an existing tw that is inactive / other currency must block the create.
+    { name: "inactive tw", markets: [row(A, "tw", { active: false })], post: false, target: "", blocked: true },
+    { name: "usd tw", markets: [row(A, "tw", { currency: "USD" })], post: false, target: "", blocked: true },
+  ];
+  for (const k of cases) {
+    const page = await source.context().newPage();
+    const writes: Array<{ method: string; path: string; body: Record<string, unknown> }> = [];
+    const pattern = `**/api/stores/${store}/markets**`;
+    await page.route(pattern, async route => {
+      const request = route.request(), path = new URL(request.url()).pathname.split(`/api/stores/${store}/`)[1];
+      const reply = (value: unknown, status = 200) => route.fulfill({ status, contentType: "application/json", body: JSON.stringify(value) });
+      if (request.method() === "GET") {
+        if (path === "markets") return reply({ items: k.markets, next_cursor: "" });
+        if (path.endsWith("/delivery-services") || path.endsWith("/payment-methods")) return reply({ items: [], next_cursor: "" });
+        return reply({ code: "not_found", request_id: "rvfix-mock-absent", retryable: false, details: {} }, 404);
+      }
+      const body = request.postDataJSON() as Record<string, unknown>;
+      writes.push({ method: request.method(), path, body });
+      if (path === "markets") return reply({ ...body, id: C, active: true, version: 1 });
+      return reply({ ...body, version: 1 });
+    });
+    try {
+      await page.goto(`/en/settings?store=${store}`);
+      await page.getByRole("button", { name: "Edit settings", exact: true }).click();
+      await page.getByRole("button", { name: "Continue", exact: true }).click();
+      await page.getByRole("button", { name: "Continue", exact: true }).click();
+      const wizard = page.getByTestId("settings-wizard");
+      await wizard.getByLabel("Stable service code", { exact: true }).fill("home");
+      const policyForm = page.getByTestId("settings-policy-form");
+      await policyForm.getByLabel("Configuration reference / reason", { exact: true }).fill("RVFIX MOCK acceptance");
+      await policyForm.getByLabel("Enable pricing policy", { exact: true }).check();
+      await policyForm.getByRole("button", { name: "Save pricing policy", exact: true }).click();
+      if (k.blocked) {
+        await expect(page.getByRole("alert"), `${k.name}: existing tw blocks create with a clear sentence`).toContainText(/already exists but is inactive or uses a different currency/);
+        expect(writes, `${k.name}: no write at all`).toHaveLength(0);
+      } else {
+        await expect.poll(() => writes.some(w => w.method === "PUT"), `${k.name}: policy saved`).toBe(true);
+        expect(writes.filter(w => w.path === "markets").length > 0, `${k.name}: create-tw POST`).toBe(k.post);
+        const want = k.target === "new" ? C : k.target;
+        expect(writes.filter(w => w.method === "PUT").every(w => w.body.market_id === want), `${k.name}: policy targets ${want}`).toBe(true);
+      }
+    } finally {
+      await page.unroute(pattern);
+      await page.close();
+    }
   }
 }
