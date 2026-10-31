@@ -65,7 +65,9 @@ async function openTools(page: Page) {
   if(await tools.getAttribute("open")===null) await tools.locator(":scope > summary").click();
 }
 async function orderList(page: Page) {
-  if(await page.getByTestId("order-detail-back").count()) await page.getByTestId("order-detail-back").click();
+  if (page.url().match(/\/orders\/[0-9a-f-]{36}/) || (await page.getByTestId("order-detail").count()) || (await page.getByTestId("order-detail-back").count())) {
+    await page.getByTestId("order-detail-back").click();
+  }
   await expect(page.getByTestId("orders-list")).toBeVisible();
   await openTools(page);
 }
@@ -221,6 +223,7 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
       await expect(detail.locator('[data-state="MERCHANT_SHIPPED"]').first()).toBeVisible();
       await expect(detail.getByTestId("shipment-record")).toContainText(shipWaybill.tracking);
     }
+    await orderList(page);
   });
 
   await test.step("reload keeps the shipments; the SHIPPED group is history, so no OPEN panel is rebuilt", async () => {
@@ -229,6 +232,7 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
     await expect(page.locator('section[data-testid^="parcel-group-"]')).toHaveCount(0);
     // Persisted values of EACH member after the reload (record, link, history note, prefilled correction form).
     for (const id of [pm1, pm2]) await expectPersistedWaybill(page, id, shipWaybill);
+    await orderList(page);
   });
 
   await test.step("merge the dissolve pair; after a RELOAD the OPEN panel reappears and dissolves with the confirm pair", async () => {
@@ -308,6 +312,7 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
     await page.reload();
     await orderList(page);
     for (const id of [pd1, pd2]) await expectPersistedWaybill(page, id, knownWaybill);
+    await orderList(page);
   });
 
   await test.step("a failed suggestions read shows its error and Retry; the real retry recovers the banner and the card", async () => {
