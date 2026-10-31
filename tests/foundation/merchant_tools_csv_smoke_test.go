@@ -344,6 +344,14 @@ func TestMerchantToolsCSVAllOrNothing(t *testing.T) {
 
 func TestMerchantToolsCSVBoundaries(t *testing.T) {
 	a, p := mtCSVEnv(t)
+	t.Run("FIX-EXPORT-REAUTH product CSV", func(t *testing.T) {
+		checkExportReauth(t, p.f, a.token, a.store, func(store string) (int, []byte, http.Header) {
+			other := a
+			other.store = store
+			w := other.call("GET", "/products/export.csv", "", "", nil)
+			return w.Code, w.Body.Bytes(), w.Header()
+		}, nil)
+	})
 
 	t.Run("formula-looking cells survive export and import unchanged", func(t *testing.T) {
 		if code, res := a.importCSV(true, "handle,title,description,sku,price\r\nformula,'=1+1,'@home,'-SKU-1,5\r\n"); code != 200 || !res.Committed || res.CreatedProducts != 1 {

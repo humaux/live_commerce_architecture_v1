@@ -6,6 +6,7 @@
 //   csvimport.go abort), internal/command (Run/Audit/ValidID), internal/merchantorders
 //   (RecordShipment/NormalizeShipment), internal/platform (Scope), pgx/v5; SQL
 //   fulfillment.tracking_import_batches and fulfillment.tracking_import_precheck (migration 0126).
+//   Result downloads also require identity.authorize_tracking_result_export (0214) in the same transaction (§16).
 // Used by: internal/httpapi/merchanttools.go (the three tracking-import routes); pinned by the DB-free
 //   unit tests in internal/merchanttools/tracking_import_test.go and the smoke test
 //   tests/foundation/tracking_import_test.go.
@@ -201,9 +202,13 @@ func TrackingImportCommit(ctx context.Context, tx pgx.Tx, scope platform.Scope, 
 // TrackingResultCSV reads one committed batch and renders its result.csv: UTF-8 BOM (Excel), CRLF via
 // encoding/csv, guardCell on every cell, columns row,order_number,carrier,tracking_number,outcome,code.
 // onlyFailed keeps just the failed rows. There is no recipient, phone or address anywhere in the batch.
-func TrackingResultCSV(ctx context.Context, tx pgx.Tx, scope platform.Scope, batchID string, onlyFailed bool) ([]byte, error) {
-	if tx == nil || !command.ValidID(scope.TenantID) || !command.ValidID(scope.StoreID) || !command.ValidID(batchID) {
+func TrackingResultCSV(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, batchID string, onlyFailed bool) ([]byte, error) {
+	if tx == nil || !command.ValidID(scope.TenantID) || !command.ValidID(scope.StoreID) || !command.ValidID(batchID) || len(token) < 32 || len(token) > 512 {
 		return nil, command.ErrInvalid
+	}
+	hash := sha256.Sum256([]byte(token))
+	if _, err := tx.Exec(ctx, `SELECT identity.authorize_tracking_result_export($1,$2::uuid)`, hash[:], scope.StoreID); err != nil {
+		return nil, mapDashboardError(err)
 	}
 	var raw []byte
 	err := tx.QueryRow(ctx, `SELECT results FROM fulfillment.tracking_import_batches
