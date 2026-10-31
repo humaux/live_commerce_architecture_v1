@@ -462,7 +462,7 @@ async function checkBuyerParityStates({ browser, origin, evidence }) {
             await expect(page.locator('section[data-variant="unknown"]')).toHaveCount(0);
             await expect(page.getByTestId("pay-order")).toBeVisible();
           } else {
-            const route = kind === "empty" || kind === "offline" ? "cart" : "order-link";
+            const route = kind === "empty" || kind === "offline" ? "cart" : kind === "forbidden" ? `orders/${orderID}` : "order-link";
             await page.goto(`${origin}/${locale}/${route}`);
             const panel = page.locator(`section[data-variant="${kind}"]`);
             await expect(panel.getByRole("heading", { name: c[kind], exact: true })).toBeVisible();
@@ -470,7 +470,7 @@ async function checkBuyerParityStates({ browser, origin, evidence }) {
             if (c[`${kind}Note`]) await expect(panel).toContainText(c[`${kind}Note`]);
             await expect(page.locator(".sf-empty")).toHaveCount(0);
             await expect(page.getByText(/403\s*·/)).toHaveCount(0);
-            const frames = { empty: ["1429-35150", "1429-35170"], offline: ["1429-35230", "1429-35249"], expired: ["1429-35268", "1429-35288"] };
+            const frames = { empty: ["1429-35150", "1429-35170"], forbidden: ["1429-35190", "1429-35210"], offline: ["1429-35230", "1429-35249"], expired: ["1429-35268", "1429-35288"] };
             await shot(frames[kind][width === 1440 ? 0 : 1]);
             if (kind === "offline") {
               const retry = page.getByRole("button", { name: c.retry, exact: true });
@@ -503,8 +503,8 @@ async function checkBuyerParityStates({ browser, origin, evidence }) {
             } else {
               await page.reload();
               await expect(panel).toBeVisible();
-              const actionName = kind === "empty" ? c.browse : c.lookup;
-              const suffix = kind === "empty" ? "/products" : "/orders/lookup";
+              const actionName = kind === "empty" ? c.browse : kind === "forbidden" ? c.home : c.lookup;
+              const suffix = kind === "empty" ? "/products" : kind === "forbidden" ? "" : "/orders/lookup";
               await panel.getByRole("link", { name: actionName, exact: true }).click();
               await expect(page).toHaveURL(new RegExp(`/${locale}${suffix}/?$`));
             }

@@ -74,7 +74,11 @@ async function selectFixtureStore(page: Page, next: string) {
 async function enterMessages(page: Page) {
   const nav = page.getByTestId("nav-group-messages");
   await expect(nav).toBeAttached();
-  if (!await nav.isVisible()) await page.getByRole("button", { name: "Open navigation", exact: true }).click();
+  if (!await nav.isVisible()) {
+    const url = page.url();
+    const name = url.includes("/zh-CN/") ? "打开导航" : url.includes("/zh-TW/") ? "開啟導覽" : "Open navigation";
+    await page.getByRole("button", { name, exact: true }).click();
+  }
   await expect(nav).toBeVisible();
   await nav.click();
   await expect(page.getByTestId("inbox-page")).toBeVisible();

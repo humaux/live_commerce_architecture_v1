@@ -25,10 +25,12 @@ export default function OrderPage({ locale, orderID }: { locale: Locale; orderID
   const [retried, setRetried] = useState(false);
   const [paymentBusy, setPaymentBusy] = useState(false);
   const epoch = useRef(0);
+  const orderRef = useRef<Order | null>(null);
+  orderRef.current = order;
 
   async function load(isRetry = false) {
     const mine = ++epoch.current;
-    if (!isRetry) setState("loading");
+    if (!isRetry && !orderRef.current) setState("loading");
     try {
       const session = await readBuyerSession();
       if (session.state !== "active" || !session.context) throw new BuyerClientError("requires_reset");
