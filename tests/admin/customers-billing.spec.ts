@@ -96,12 +96,17 @@ for (const locale of moneyLocales) for (const width of moneyWidths) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
     await signedLogin(page);
     const target = `/${locale}/finance?store=${store}&from=${financeDay(-1)}&to=${financeDay()}`;
-    const reading = page.waitForResponse(response => response.request().method() === "GET" && /\/finance\/summary\?/.test(response.url())).then(response => response.json());
+    // Every summary read is recorded as it lands (a later navigation evicts the body): the page re-reads when its server render key
+    // changes, so the shown timestamp must equal the generated_at of one of the server responses, never browser time.
+    const issued: unknown[] = [];
+    page.on("response", response => {
+      if (response.request().method() === "GET" && /\/finance\/summary\?/.test(response.url())) void response.json().then(body => issued.push(body.generated_at), () => undefined);
+    });
     await page.goto(target);
     await moneyOverview(page, locale);
-    const summary = await reading; // body is read as soon as the response lands: a later navigation evicts it
-    expect(typeof summary.generated_at, "PARITY-MONEY server timestamp required; browser time is not a substitute").toBe("string");
-    await expect(page.getByTestId("finance-generated-at")).toHaveAttribute("datetime", summary.generated_at);
+    await expect.poll(() => issued.length, "PARITY-MONEY server summary read").toBeGreaterThan(0);
+    for (const stamp of issued) expect(typeof stamp, "PARITY-MONEY server timestamp required; browser time is not a substitute").toBe("string");
+    await expect.poll(async () => issued.includes(await page.getByTestId("finance-generated-at").getAttribute("datetime")), "PARITY-MONEY shown time is a server time").toBe(true);
     await moneyShot(page, evidence, "overview", locale, width);
     await moneyClick(page, evidence, c.daily, "signed daily ledger and return control", async () => {
       await page.getByRole("button", { name: c.daily, exact: true }).click();
