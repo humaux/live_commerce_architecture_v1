@@ -114,7 +114,7 @@ function visualShards(of) {
     const size = `${v.size.width}x${v.size.height}`;
     for (const id of units) keys.push(`admin|${id}|${l}|${size}`);
     for (const id of ["home", "products", "cart"]) keys.push(`storefront|${id}|${l}|${size}`);
-    for (const id of ["home", "privacy"]) keys.push(`platform|${id}|${l}|${size}`);
+    for (const id of ["home", "privacy", "terms", "data-deletion", "contact"]) keys.push(`platform|${id}|${l}|${size}`);
   }
   const owner = assignShards(keys.map((key) => ({ key, weight: 1 })), of);
   return Array.from({ length: of }, (_, k) => {

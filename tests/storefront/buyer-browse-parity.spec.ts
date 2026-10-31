@@ -402,7 +402,8 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
         await page.goto(`${origin}/${locale}/products?sort=price_asc`);
         await capture(sortAscFrame);
         await recordStep(sortAscFrame, `/${locale}/products?sort=price_asc`, "sort-asc-check", "signed price_asc option active", async () => {
-          await expect(page.locator(`[data-sort="price_asc"]`)).toBeVisible({ timeout: 2000 });
+          // The native select also carries data-sort; the signed frame assertion targets the active sheet option.
+          await expect(page.locator(`a[data-sort="price_asc"]`)).toBeVisible({ timeout: 2000 });
         });
 
         // Sort price_desc
@@ -410,7 +411,7 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
         await page.goto(`${origin}/${locale}/products?sort=price_desc`);
         await capture(sortDescFrame);
         await recordStep(sortDescFrame, `/${locale}/products?sort=price_desc`, "sort-desc-check", "signed price_desc option active", async () => {
-          await expect(page.locator(`[data-sort="price_desc"]`)).toBeVisible({ timeout: 2000 });
+          await expect(page.locator(`a[data-sort="price_desc"]`)).toBeVisible({ timeout: 2000 });
         });
 
         // Sort title
@@ -418,7 +419,7 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
         await page.goto(`${origin}/${locale}/products?sort=title`);
         await capture(sortTitleFrame);
         await recordStep(sortTitleFrame, `/${locale}/products?sort=title`, "sort-title-check", "signed title sort active", async () => {
-          await expect(page.locator(`[data-sort="title"]`)).toBeVisible({ timeout: 2000 });
+          await expect(page.locator(`a[data-sort="title"]`)).toBeVisible({ timeout: 2000 });
         });
 
         if (isMobile) {
@@ -489,7 +490,8 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
         await capture(cartFrame);
 
         await recordStep(cartFrame, `/${locale}/cart`, "cart-heading", `signed cart heading "${c.cartTitle}"`, async () => {
-          await expect(page.getByRole("heading", { name: c.cartTitle })).toBeVisible({ timeout: 2000 });
+          // The empty-state panel has an h2 that contains the cart title; assert the h1 page heading.
+          await expect(page.getByRole("heading", { name: c.cartTitle, level: 1 })).toBeVisible({ timeout: 2000 });
         });
         await recordStep(cartFrame, `/${locale}/cart`, "legacy-loading-gone", "no legacy 載入中 SSR text", async () => {
           await expect(page.locator("body")).not.toContainText("載入中…");

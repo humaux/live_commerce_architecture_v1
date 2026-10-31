@@ -291,10 +291,12 @@ async function measureCart(p,surface) {
       if(empty)state.empty++;
       if(state.seen_line&&!lines.length)state.line_loss++;
       if(lines.length)state.seen_line=true;
-      // CartView renders a skeleton (aria-busy) while the session/cart read is still pending.
-      // A blank cart grid is never interchangeable with that explicit loading state.
-      const loading=host.querySelector('[data-testid="cart-empty"] [aria-busy="true"]');
-      const detailLoading=loading?loading.getAttribute('aria-label')||"Loading…":null;
+      // CartView renders a skeleton (aria-busy) while the session/cart read is still pending;
+      // once the cart is non-empty, CartLines renders a role="status" loading paragraph until
+      // detail hydration finishes. Both are explicit signed-frame loading states; a blank grid is not.
+      const emptyLoading=host.querySelector('[data-testid="cart-empty"] [aria-busy="true"]');
+      const linesLoading=host.querySelector('[data-testid="cart-page"] p[role="status"]');
+      const detailLoading=(emptyLoading?.getAttribute('aria-label'))||(linesLoading?.textContent)||null;
       const row={title:title||null,lines:lines.length,qty:host.querySelector('[data-testid="cart-line-qty"]')?.textContent||null,detail_loading:detailLoading};
       if(JSON.stringify(row)!==JSON.stringify(state.samples.at(-1)))state.samples.push(row);
     };

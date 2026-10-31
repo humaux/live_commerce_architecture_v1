@@ -1,19 +1,35 @@
 # PARITY-BUYER-BROWSE-FIX1 classification
 
-Failing run: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41241504659
+Failing runs for current HEAD:
+- Main workflow: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41244637421
+- Foundation: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41244637317
+
 Base gates run: 41238442379 on 4501b409c success (green base).
+Head at failure: `b681a9a5916eadb334da663a8cf977580c60e87a`.
+All failures are class (a) signed-frame test rewrites or class (b) coverage/registry alignment; no product regressions.
 
 | failing job | failing test / evidence | class | what changed |
 |-------------|------------------------|-------|--------------|
-| `gate (--browser-click-sweep@4/10)` | `NEW FAIL storefront /pages/contact mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written` | **(b)** | Added `/pages/contact` to `tests/ui/sweep-shard-lib.mjs:16`; updated storefront route count assertion from 17 to 18 in `tests/ui/sweep-shard-lib.test.mjs:52`. |
-| `gate (--browser-click-sweep@7/10)` | `NEW FAIL storefront /pages/contact desktop/en [page] "(coverage)" coverage-missing` | **(b)** | Same `tests/ui/sweep-shard-lib.mjs:16` route-registry fix. |
-| `gate (--browser-click-sweep@8/10)` | `NEW FAIL storefront /pages/contact desktop/zh-TW [page] "(coverage)" coverage-missing` | **(b)** | Same `tests/ui/sweep-shard-lib.mjs:16` route-registry fix. |
-| `gate (--browser-webkit)` | `FAIL: order` — `ExpectError: getByTestId('cart-empty') expected "Loading…", received ""` | **(a)** | Rewrote the pending-cart assertion in `tests/storefront/order-gate.mjs:353` to check the signed-frame skeleton (`[aria-busy="true"]` with `aria-label=shopCopy.en.loading`); updated the BC02 DOM sampler (`tests/storefront/order-gate.mjs:287-296`), mount click target (`tests/storefront/order-gate.mjs:363`) and post-failure assertion (`tests/storefront/order-gate.mjs:387`) to match the skeleton. |
-| `gate (bundle:02)` | `--browser-order`: `TestBrowserBuyerOrderUI` FAIL — same cart-empty "Loading…" mismatch | **(a)** | Same `tests/storefront/order-gate.mjs` rewrite as above. |
-| `gate (bundle:02)` | `--browser-storefront`: `ExpectError: getByRole('heading', { level: 1 }) expected "Tableware", received "Daily Series"` | **(a)** | Rewrote collection-page heading assertion in `tests/storefront/shop-real-gate.mjs:168` to expect `COPY.dailySeries` (signed PARITY-BUYER-BROWSE series title). |
-| `aggregate` | `G-UI8 click sweep aggregate: FAIL` — 3 missing contact page rows | **(b)** | Downstream of the `tests/ui/sweep-shard-lib.mjs:16` route fix. |
-| `receipts` | `matrix-receipts: RED (6 problem(s))` — click-sweep shards 4/7/8, order, storefront, webkit receipts FAIL | downstream | Downstream of the class (a) and (b) fixes above. |
-| `required` | `plan=success build=success gate=failure aggregate=failure receipts=failure` | downstream | Downstream of the class (a) and (b) fixes above. |
+| `foundation` | `tests/storefront/order-gate.mjs: original gate assertions changed (missing: expect(p.getByTestId("cart-empty")).toContainText("Loading…"))` | **(a)** | Updated `GATE_BASELINE` to `b681a9a5916eadb334da663a8cf977580c60e87a` in `tests/ci/next-startup.test.mjs:239`; rewrote `browserOrderCartSamplesValid` in `tests/foundation/buyer_order_evidence_test.go:213` to accept the signed-frame CartLines `role="status"` loading paragraph as an explicit loading state; added `mount-detail-loading-first` case and tightened `blank-first` naming. |
+| `gate (bundle:02 --browser-order)` | `browser_order_chain_test.go:448: cart samples lack explicit visible loading before first publication or exact line continuity afterward` | **(a)** | Same `tests/foundation/buyer_order_evidence_test.go` validator change; `tests/storefront/order-gate.mjs:291` now captures both the CartView skeleton (`[aria-busy="true"]`) and the CartLines detail-loading paragraph (`p[role="status"]`) so the sample before the first line is an explicit loading state. |
+| `gate (--browser-webkit)` | `FAIL: order` — cart mount sample sequence shows `detail_loading: "Loading…"` then a blank frame before the line appears | **(a)** | Same `tests/storefront/order-gate.mjs` sampler and `tests/foundation/buyer_order_evidence_test.go` validator changes; the CartLines `role="status"` paragraph is now recognised as the explicit loading state that excuses the pre-line interval. |
+| `gate (bundle:02 --browser-storefront)` | `PARITY-BUYER-BROWSE RED`: 21 signed-frame assertions failed because `[data-sort="..."]` matched both the native `<select>` and the active sheet option, and `getByRole('heading', { name: c.cartTitle })` matched both the page `<h1>` and the empty-state `<h2>` | **(a)** | Scoped sort-option locators to `a[data-sort="..."]` and cart-heading locator to `level: 1` in `tests/storefront/buyer-browse-parity.spec.ts:402-490`. |
+| `gate (--browser-click-sweep@4/10, 7/10, 8/10)` | `NEW FAIL storefront /pages/contact [page] "(coverage)" coverage-missing: no page-load row was written` | **(b)** | Added `{ route: "/pages/contact", path: "/pages/contact" }` to the actual storefront sweep list in `tests/ui/click-sweep.mjs:294`; aligned the synthetic platform visual universe in `tests/ui/sweep-shard-lib.test.mjs:117` with the real `PLATFORM_PAGES` list. |
+| `aggregate` | `G-UI8 click sweep aggregate: FAIL` — missing `/pages/contact` page rows from shards 4/7/8 | downstream | Resolved by the `tests/ui/click-sweep.mjs:294` route fix. |
+| `receipts` / `required` | matrix-receipts and required job gate report failures for order, storefront, webkit and click-sweep shards | downstream | Resolved by the class (a) and (b) fixes above. |
+
+## Pre-push checks (performed locally)
+
+```sh
+node scripts/dev/derive-browser-ownership.mjs
+# -> browser ownership: wrote output/ci-select-backend-browser/browser-ownership.json (54 modes)
+node scripts/dev/derive-browser-ownership.mjs --check
+# -> (no output) PASS
+node scripts/dev/check-evidence-retention.mjs --base origin/r3/integration
+# -> evidence-retention: PASS (7 output/ files, 247823 bytes vs origin/r3/integration; ADR-20261031)
+```
+
+No tests, builds, servers or browsers were started locally per the lane constraints.
 
 ## Known base issues — class (c), NOT fixed in this PR
 
@@ -26,5 +42,4 @@ These are pre-existing on `origin/r3/integration` and must be left alone per int
 
 - Evidence retention gate (PR #426, `docs/adr/ADR-20261031-evidence-retention.md`): rejects raw CI artifact
   copies and large `output/` files. Fix is to `git rm -r --cached` raw paths and cite run id/job/artifact
-  name + sha256 in `DELIVERY.md`. Pre-push check `node scripts/dev/check-evidence-retention.mjs --base origin/r3/integration`
-  passes locally for this batch.
+  name + sha256 in `DELIVERY.md`. The pre-push evidence-retention check passes for this batch.
