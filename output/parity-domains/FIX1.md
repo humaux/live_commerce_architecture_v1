@@ -26,6 +26,15 @@ Merged `origin/r3/integration` at commit `3c8997eb3` into `unit/parity-domains` 
 | 124551295809 (aggregate) | Click sweep / Visual lint | Downstream failure caused by missing build artifact. | Downstream consequence of job 124551071912. |
 | 124551389764 (required) | Required aggregate | Downstream failure caused by upstream build/receipts/aggregate. | Downstream consequence of job 124551071912. |
 
+#### Relay 2 (CI Run 41206762471 on head 13fb49b6)
+
+| Failing job | Failing test | Evidence | Class / Root fix |
+|---|---|---|---|
+| 124554003084 (bundle:04, mode `--browser-design`) | `TestBrowserStoreDesign` (`tests/admin/domains-parity.spec.ts:132:3` >> `PARITY-DOMAINS [zh-TW/zh-CN/en] [mobile/desktop]: all signed states, DNS and persisted commands`) | `error-context.md`: `Error: expect(locator).toBeVisible() failed; Locator: getByTestId('design-domains').getByRole('heading', { name: '操作結果', exact: true }); Expected: visible; Error: element(s) not found`. Heading rendered as `先確認這一次操作` (`c.pending`). | (b) Synthetic response verification token off-by-one arithmetic error. `tests/admin/domains-parity.spec.ts:20` defined `proof = "domain-fixture-" + "a".repeat(29)`, which has 15 + 29 = 44 characters. However, `migrations/0106_store_domains.sql:162`, `contracts/invariants.json`, and `apps/admin/lib/storefront-model.ts:11` strictly enforce `tokenShape = /^[A-Za-z0-9_-]{43}$/` (32 bytes unpadded base64url). The 44-character token caused `parseDomainRequest` to throw `Error("storefront_shape")`, which `storefront-client.ts:94` handled as an uncertain write (`{ ok: false, uncertain: true }`), transitioning `DesignDomains.tsx` to `pending` ("先確認這一次操作") instead of `receipt` ("操作結果"). Corrected `proof` to `"domain-fixture-" + "a".repeat(28)` (exactly 43 characters). |
+| receipts | `matrix-receipts` | Receipt for member `--browser-design` was `FAIL` due to job 124554003084. | Downstream consequence of job 124554003084. Resolves with root fix above. |
+| aggregate | Required suite aggregate | Downstream failure caused by bundle:04 failure. | Downstream consequence. |
+| required | Required checks | Downstream failure caused by bundle:04 failure. | Downstream consequence. |
+
 ### Verification & Artifact Integrity
 - `node scripts/dev/derive-browser-ownership.mjs --check` exits 0 (54 browser modes registered).
 - `gofmt -l tests/foundation/browser_store_design_test.go` clean (exits 0).
