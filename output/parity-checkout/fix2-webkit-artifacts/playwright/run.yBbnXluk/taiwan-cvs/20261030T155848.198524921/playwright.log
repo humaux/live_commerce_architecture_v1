@@ -1,6 +1,0 @@
-
-Running 1 test using 1 worker
-
-  ✓  1 tests/admin/taiwan-cvs.spec.ts:122:1 › TCV08 merchant: create a label, copy the code, print in a new tab, timeline, UNKNOWN banner, collection and cancel actions, buyer_entered label (27.5s)
-
-  1 passed (28.4s)
