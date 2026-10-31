@@ -851,15 +851,20 @@ function AdvancedSettings({
         setNotice(c.saved);
       } else if (resource.endsWith("/policy")) {
         const saved = value as Policy;
+        const target = `${saved.market_id}:${saved.country}:${draft.serviceCode}`;
         setPolicy(saved);
         saveDraft({
           ...draftRef.current,
+          marketID: saved.market_id,
           reference: "",
           policyObservation: {
-            target: `${saved.market_id}:${saved.country}:${draft.serviceCode}`,
+            target,
             version: saved.version,
             dirty: false,
           },
+          serviceObservation: draftRef.current.serviceObservation?.target === target
+            ? draftRef.current.serviceObservation
+            : { target, version: 0, dirty: false },
         });
         setNotice(c.policySaved);
       } else if (resource.includes("delivery-services")) {
@@ -1009,52 +1014,60 @@ function AdvancedSettings({
         },
         (createdMarketValue) => {
           const savedMarket = createdMarketValue as Market;
-          setMarkets((rows) => [
-            ...rows.filter((r) => r.id !== savedMarket.id),
-            savedMarket,
-          ]);
           const current = draftRef.current;
-          const updatedDraft = {
-            ...current,
-            marketID: savedMarket.id,
-            serviceObservation: {
-              target: `${savedMarket.id}:${current.country}:${current.serviceCode}`,
-              version: 0,
-              dirty: false,
-            },
-          };
-          saveDraft(updatedDraft);
           // Now save the pricing policy for this newly created market
-          const policyResource = `markets/${savedMarket.id}/countries/${updatedDraft.country}/delivery-services/${updatedDraft.serviceCode}/policy`;
+          const policyResource = `markets/${savedMarket.id}/countries/${current.country}/delivery-services/${current.serviceCode}/policy`;
           command(
             "PUT",
             policyResource,
             {
               market_id: savedMarket.id,
-              country: updatedDraft.country,
-              method: `delivery:${updatedDraft.serviceCode}`,
+              country: current.country,
+              method: `delivery:${current.serviceCode}`,
               currency: savedMarket.currency,
               shipping_mode: "country_flat",
               shipping_minor: shipping,
               ...(free === null ? {} : { free_shipping_threshold_minor: free }),
-              tax_mode: updatedDraft.taxMode,
-              tax_basis: updatedDraft.taxBasis,
+              tax_mode: current.taxMode,
+              tax_basis: current.taxBasis,
               tax_rate_bps: tax,
               quote_ttl_seconds: ttl,
-              enabled: updatedDraft.policyEnabled,
+              enabled: current.policyEnabled,
               expected_version: 0,
               configuration_ref: ref,
             },
             (policyValue) => {
               const savedPolicy = policyValue as Policy;
+              const target = `${savedMarket.id}:${current.country}:${current.serviceCode}`;
+              policyRead.current += 1;
+              serviceRead.current += 1;
+              setMarkets((rows) => [
+                ...rows.filter((r) => r.id !== savedMarket.id),
+                savedMarket,
+              ]);
               setPolicy(savedPolicy);
-              const target = `${savedMarket.id}:${updatedDraft.country}:${updatedDraft.serviceCode}`;
               saveDraft({
                 ...draftRef.current,
+                marketID: savedMarket.id,
+                shipping: fromMinor(savedPolicy.shipping_minor, savedMarket.currency),
+                freeShipping:
+                  savedPolicy.free_shipping_threshold_minor == null
+                    ? ""
+                    : fromMinor(savedPolicy.free_shipping_threshold_minor, savedMarket.currency),
+                taxMode: savedPolicy.tax_mode,
+                taxBasis: savedPolicy.tax_basis,
+                taxRate: String(savedPolicy.tax_rate_bps),
+                ttl: String(savedPolicy.quote_ttl_seconds),
+                policyEnabled: savedPolicy.enabled,
                 reference: "",
                 policyObservation: {
                   target,
                   version: savedPolicy.version,
+                  dirty: false,
+                },
+                serviceObservation: {
+                  target,
+                  version: 0,
                   dirty: false,
                 },
               });
