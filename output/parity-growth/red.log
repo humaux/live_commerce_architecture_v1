@@ -118,3 +118,9 @@ RELAY4_WAKE=integrator completion relay after WAIT_RUN
 RVFIX366_RED=expected failures at this head (tests only, CI to confirm): promotions-gate growthEnabledAndDeepLink (a) ads-enabled store + draft: /promotions has no ads-draft-<id> and still shows g.off/g.noDrafts because Promotions.tsx:56-57 reads no ads state; (b) /promotions?view=codes: H1 stays the ad-drafts heading and promotion-form is absent because Promotions.tsx:42 keeps codes in useState, not the URL
 RVFIX366_STATIC=E1; node --check promotions-gate.mjs, derive-browser-ownership + --check exit0
 RVFIX366_GREEN=PENDING implementation push after CI shows the RED
+
+RVFIX366_RELAY1_HEAD=a12f5391b run 41237371015 (tested merge f43a736d1d23f148efa21a674ddacb015ca29f33)
+RVFIX366_RELAY1_FAILURE=gate bundle:05 member --browser-promotions FAIL (TestBrowserPromotions, browser_promotions_test.go:147); receipts/required red only as consequence; all other jobs pass
+RVFIX366_RELAY1_CLASS=expected RED on the new assertions (growthEnabledAndDeepLink); not drift, not infra
+RVFIX366_IMPL=Promotions.tsx reads ads settings+drafts; ?view=codes in URL; Refresh re-reads ads
+RVFIX366_GREEN=PENDING next-head CI
