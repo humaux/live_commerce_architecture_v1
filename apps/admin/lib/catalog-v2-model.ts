@@ -1,3 +1,6 @@
+// Purpose: catalog v2 admin wire types, parsers and pure editor helpers (unit catalog-core, contracts/storefront-v2.md section A).
+// Depends on: packages/format (toMinor, fromMinor), apps/admin/lib/orders-model.ts (canonicalCursor, canonicalUUID, wholeOnly).
+// Used by: apps/admin/lib/catalog-v2-client.ts, CollectionManager, ProductDocumentForm, tests/admin/catalog-v2-model.test.ts.
 import { fractionDigits, toMinor, fromMinor } from "../../../packages/format/src/index.ts";
 export { fractionDigits, toMinor, fromMinor } from "../../../packages/format/src/index.ts";
 // Catalog v2 admin model (unit catalog-core, contracts/storefront-v2.md section A): wire types and parsers for the
@@ -66,6 +69,7 @@ export type ProductDetail = {
 };
 export type CollectionStatus = "active" | "hidden";
 export type CollectionSort = "manual" | "newest" | "price_asc" | "price_desc";
+export type CollectionMembershipMode = "manual" | "automatic";
 export type Collection = {
   id: string;
   slug: string;
@@ -76,6 +80,7 @@ export type Collection = {
   image_id: string | null;
   product_count: number;
   version: number;
+  membership_mode: CollectionMembershipMode;
 };
 export type CollectionMember = {
   product_id: string;
@@ -198,22 +203,33 @@ export function parseLedgerStock(v: unknown): LedgerStock[] {
 }
 export function parseCollection(v: unknown): Collection {
   const r = rec(v);
+  const mode: CollectionMembershipMode =
+    r.membership_mode === undefined
+      ? "manual"
+      : oneOf(r.membership_mode, ["manual", "automatic"] as const);
+  const maxProducts =
+    mode === "automatic" ? Number.MAX_SAFE_INTEGER : limits.collectionProducts;
   return {
     id: uuid(r.id), slug: str(r.slug, limits.slug, 1), title: str(r.title, limits.collectionTitle, 1),
     description: str(r.description, limits.collectionDescription), sort_mode: oneOf(r.sort_mode, ["manual", "newest", "price_asc", "price_desc"] as const),
     status: oneOf(r.status, ["active", "hidden"] as const), image_id: nullable(r.image_id, uuid),
-    product_count: int(r.product_count, 0, limits.collectionProducts), version: int(r.version, 1, Number.MAX_SAFE_INTEGER),
+    product_count: int(r.product_count, 0, maxProducts), version: int(r.version, 1, Number.MAX_SAFE_INTEGER),
+    membership_mode: mode,
   };
 }
 export function parseCollectionDetail(v: unknown): CollectionDetail {
   const r = rec(v);
+  const base = parseCollection(v);
+  const isAuto = base.membership_mode === "automatic";
+  const maxProducts = isAuto ? Number.MAX_SAFE_INTEGER : limits.collectionProducts;
+  const maxPosition = isAuto ? Number.MAX_SAFE_INTEGER : limits.collectionProducts - 1;
   return {
-    ...parseCollection(v),
-    products: list(r.products, limits.collectionProducts, (x) => {
+    ...base,
+    products: list(r.products, maxProducts, (x) => {
       const m = rec(x);
       return {
         product_id: uuid(m.product_id), name: str(m.name, limits.name, 1), slug: str(m.slug, limits.slug, 1), status: oneOf(m.status, statuses),
-        position: int(m.position, 0, limits.collectionProducts - 1), cover_image_id: nullable(m.cover_image_id, uuid),
+        position: int(m.position, 0, maxPosition), cover_image_id: nullable(m.cover_image_id, uuid),
       };
     }),
   };
