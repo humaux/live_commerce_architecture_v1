@@ -234,6 +234,9 @@ export function registerCatalogSimplifiedAcceptance() {
           await expect(bar).toBeVisible();
           expect(await bar.evaluate(el => getComputedStyle(el).position)).toMatch(/sticky|fixed/);
           await page.getByRole('button', { name: c.variants, exact: true }).click();
+          // Variant prices live in a per-variant disclosure (as product-editor.acceptance.ts exercises): open each with a real click.
+          await page.getByTestId('catalog-variant-0').locator('summary').click();
+          await page.getByTestId('catalog-variant-1').locator('summary').click();
           await expect(page.getByTestId('catalog-price-0')).toBeVisible();
           await expect(page.getByTestId('catalog-price-1')).toBeVisible();
           await page.getByTestId('catalog-stock-0').click();
