@@ -55,7 +55,7 @@
     "tests/admin/design-gate.test.ts": "d2f5fe2e7bf54f05035d55d7fd242c096a158ca09ddf6c04779ae0024e31c726",
     "tests/admin/design-model.test.ts": "d25d83d536ec555ab2b7c6090952915cc5b8c46aa75d27c839a9bdb1d4027159",
     "tests/admin/design.spec.ts": "a448eade0b4f3d18b93989e8944c59c5940c5d6492f4bf4c162097e01d930295",
-    "tests/admin/domains-parity.spec.ts": "9526ffacd8cb10d0f91934bf7ae0461144d95e0cf16358d432638cbae856ba5e",
+    "tests/admin/domains-parity.spec.ts": "047b4503bf923d5826ae6a8a8e47bd2e3e80f651458a0536434a8ac013e6d0cb",
     "tests/admin/ds-states-clicks.mjs": "82c913d8470a1531cae0ef06d29d8a3fe12d43be91fb6e1d7ce4afd701bce521",
     "tests/admin/editor-v2.spec.ts": "cc6ad5382e8bf11842a694bc9ad6f25dee97228299ccb7abd28aac13bc368eb3",
     "tests/admin/entry.spec.ts": "88136f8f826bf0ab73eaa0c9316276f109ea8afedc34fddcc9be791f8ab95f4d",
