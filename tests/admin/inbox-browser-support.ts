@@ -74,9 +74,17 @@ async function selectFixtureStore(page: Page, next: string) {
 async function enterMessages(page: Page) {
   const nav = page.getByTestId("nav-group-messages");
   await expect(nav).toBeAttached();
-  if (!await nav.isVisible()) await page.getByRole("button", { name: "Open navigation", exact: true }).click();
-  await expect(nav).toBeVisible();
-  await nav.click();
+  // The pre-redirect role-home page (e.g. a signed denial on /en) also renders the shell, and the client redirect remounts it:
+  // an instant isVisible() there misreads desktop as mobile (2026-10-31 #356). Retry open+click as one unit until it lands.
+  await expect(async () => {
+    if (!await nav.isVisible()) {
+      const url = page.url();
+      const name = url.includes("/zh-CN/") ? "打开导航" : url.includes("/zh-TW/") ? "開啟導覽" : "Open navigation";
+      await page.getByRole("button", { name, exact: true }).click({ timeout: 2_000 });
+    }
+    await expect(nav).toBeVisible({ timeout: 2_000 });
+    await nav.click({ timeout: 2_000 });
+  }).toPass({ timeout: 20_000 });
   await expect(page.getByTestId("inbox-page")).toBeVisible();
 }
 

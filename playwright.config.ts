@@ -16,7 +16,7 @@ const suites: Record<string, string[]> = {
   "entry-mock": ["entry.spec.ts"],
   "identity-real": ["auth-real.spec.ts"],
   // PA11 (merchant-password-auth-v1): started by tests/foundation/browser_password_auth_test.go.
-  "password-auth": ["password-auth.spec.ts"],
+  "password-auth": ["password-auth.spec.ts", "parity-entry.spec.ts"],
   // staff-team (R4 independent gate): started by tests/foundation/browser_staff_team_test.go in the same mode.
   "staff-team": ["staff-team.spec.ts"],
   // OC-04 re-auth dialog and reauth_required handling: started by tests/foundation/browser_oc_test.go in the same mode.

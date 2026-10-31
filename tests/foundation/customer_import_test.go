@@ -316,6 +316,11 @@ func TestCustomerImport(t *testing.T) {
 		  WHERE e.tenant_id=$1 AND e.external_id='=EVIL-3'`, f.tenantA).Scan(&name); err != nil || name != "=SUM(1+1)" {
 			t.Fatalf("unguarded stored name: %q %v", name, err)
 		}
+		t.Run("FIX-EXPORT-REAUTH import result CSV", func(t *testing.T) {
+			checkExportReauth(t, f, c.adminTok, c.store, func(store string) (int, []byte, http.Header) {
+				return c.call("GET", c.imports(store)+"/"+cm["batch_id"].(string)+"/results.csv", c.adminTok, "")
+			}, nil)
+		})
 		st, raw, hdr := c.call("GET", c.imports(c.store)+"/"+cm["batch_id"].(string)+"/results.csv", c.adminTok, "")
 		if st != 200 || !strings.HasPrefix(string(raw), "\xEF\xBB\xBF") || !strings.HasPrefix(hdr.Get("Content-Type"), "text/csv") || hdr.Get("Cache-Control") != "no-store, private" {
 			t.Fatalf("results.csv: %d %q %v", st, raw, hdr)

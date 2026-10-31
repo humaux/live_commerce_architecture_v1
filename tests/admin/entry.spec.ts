@@ -270,7 +270,7 @@ test("wizard preserves draft and recovers an unknown result with exact bytes", a
   await page.getByRole("button", { name: "Open workspace" }).click();
   // merchant-tools G1 (migration 0094): the workspace landing is the dashboard; the stock ledger moved to /inventory.
   await expect(
-    page.getByRole("heading", { name: shellCopy.en.dashboard, level: 1, exact: true }),
+    page.getByRole("heading", { name: "Dashboard", level: 1, exact: true }),
   ).toBeVisible();
 });
 
