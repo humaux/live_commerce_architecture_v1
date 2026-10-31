@@ -1,6 +1,7 @@
 // Purpose: execute the actual inbox login helper against a pending auth/store navigation counterexample.
 // Depends on: Node test/assert/fs, typescript-api; reads the real shared inbox-browser-support.ts without running a browser.
 // Used by: LC-U2b Node/static gate; MOCK Page covers navigation ordering only, browser acceptance remains CI.
+// Invariants: execute real helper dependencies; settle auth/store before native navigation on both rail layouts.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
@@ -15,11 +16,14 @@ const other = "20000000-0000-4000-8000-000000000002";
 for (const initialStore of [other, fixture]) {
 for (const home of ["/en", "/en/inventory", "/en/messages"]) {
 for (const scoped of [false, true]) {
-test(`actual login settles ${home} and fixture store (${initialStore === fixture ? "already selected" : "real switch"}, scoped=${scoped})`, async () => {
+for (const mobile of [false, true]) {
+test(`actual login settles ${home} and fixture store (${initialStore === fixture ? "already selected" : "real switch"}, scoped=${scoped}, mobile=${mobile})`, async () => {
   const helpers = source.statements.filter((n: any) => ts.isFunctionDeclaration(n) &&
-    ["login", "selectFixtureStore"].includes(n.name?.text)).map((n: any) => n.getText(source)).join("\n");
+    ["login", "selectFixtureStore", "enterMessages"].includes(n.name?.text)).map((n: any) => n.getText(source)).join("\n");
   assert.ok(helpers.includes("async function login"), "exercise the real login declaration");
+  assert.ok(helpers.includes("async function enterMessages"), "exercise the real responsive navigation dependency");
   let url = `${origin}/en/`, selected = initialStore, authPending = false, switching: string | null = null;
+  let railOpen = !mobile;
   const events: string[] = [];
   const matches = (value: string | RegExp | ((url: URL) => boolean)) =>
     typeof value === "string" ? url === value : value instanceof RegExp ? value.test(url) : value(new URL(url));
@@ -34,24 +38,47 @@ test(`actual login settles ${home} and fixture store (${initialStore === fixture
       else if (switching) { selected = switching; switching = null; url = `${origin}${selected === fixture ? "/en" : "/en/messages"}?store=${selected}`; events.push("store settled"); }
       assert.equal(matches(value), true, "actual navigation destination must match the requested wait");
     },
-    getByRole: () => ({ async click() { authPending = true; events.push("sign in"); } }),
+    getByRole: (role: string, options: { name: string; exact?: boolean }) => ({
+      async click() {
+        assert.equal(role, "button");
+        if (options.name === "Sign in with identity service") {
+          authPending = true; events.push("sign in");
+        } else {
+          assert.equal(options.name, "Open navigation");
+          assert.equal(options.exact, true);
+          assert.equal(authPending, false, "settle authentication before opening the navigation menu");
+          assert.equal(railOpen, false, "only open a collapsed rail");
+          railOpen = true; events.push("open navigation");
+        }
+      },
+    }),
     getByTestId(id: string) {
       return {
         id,
+        async isVisible() { return id !== "nav-group-messages" || railOpen; },
         async inputValue() { return selected; },
         async selectOption(value: string) { switching = value; events.push("real selectOption"); },
         async click() {
           if (id === "nav-group-messages") {
             assert.equal(authPending, false, "do not use a pre-authentication navigation snapshot");
             assert.equal(switching, null, "await the full store navigation before entering Messages");
+            assert.equal(railOpen, true, "open the collapsed mobile rail before clicking Messages");
             url = `${origin}/en/messages${new URL(url).search}`; events.push("Messages");
+            railOpen = !mobile;
           }
         },
       };
     },
   };
   const expect = (target: any) => ({
-    async toBeVisible() { if (target.id === "nav-group-messages") settleAuth(); },
+    async toBeAttached() { if (target.id === "nav-group-messages") settleAuth(); },
+    async toBeVisible() {
+      if (target.id === "nav-group-messages") {
+        settleAuth();
+        assert.equal(railOpen, true, "the Messages link must be visible for a native click");
+      }
+    },
+    async toPass() { await target(); },
     async toContainText() {},
     async toHaveCount() {},
     async toHaveValue(value: string) { assert.equal(selected, value, "selector must retain the fixture store"); },
@@ -68,6 +95,8 @@ test(`actual login settles ${home} and fixture store (${initialStore === fixture
   );
   await login(page);
   assert.equal(events.filter((event) => event === "real selectOption").length, initialStore === fixture && scoped ? 0 : 1);
+  assert.equal(events.filter((event) => event === "Messages").length, 2);
+  assert.equal(events.filter((event) => event === "open navigation").length, mobile ? 2 : 0);
   assert.ok(events.indexOf("auth settled") < events.indexOf("Messages"));
   if (initialStore !== fixture || !scoped) {
     assert.ok(events.indexOf("auth settled") < events.indexOf("real selectOption"));
@@ -75,6 +104,7 @@ test(`actual login settles ${home} and fixture store (${initialStore === fixture
   }
   assert.equal(url, `${origin}/en/messages?store=${fixture}`);
 });
+}
 }
 }
 }

@@ -1,0 +1,8 @@
+RELAY4 static checks only
+tsc --noEmit -p output/parity-orders/static-tsconfig.json: exit 0
+Existing read-only dependency trees used via temporary worktree symlinks; both links removed.
+node scripts/dev/derive-browser-ownership.mjs: exit 0
+node scripts/dev/derive-browser-ownership.mjs --check: exit 0
+git diff --check: exit 0
+Source: tests/admin/taiwan-cvs.spec.ts SHA256 589cc5eed65fb8b8830ca15e6007606ce06a1f81e9bee7a0c66234316b2c697d
+Local tests/servers/browser/PG/containers: NOT_RUN (prohibited).

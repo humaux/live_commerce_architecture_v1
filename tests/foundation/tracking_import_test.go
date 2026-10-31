@@ -9,6 +9,7 @@ package foundation_test
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"net/http"
 	"strings"
 	"testing"
 	"time"
@@ -138,6 +139,11 @@ func TestTrackingImportSmoke(t *testing.T) {
 		}
 
 		// result.csv: BOM, header, both order ids, exactly two applied rows, private CSV content type.
+		t.Run("FIX-EXPORT-REAUTH tracking result CSV", func(t *testing.T) {
+			checkExportReauth(t, e.f, o1.token(), o1.store(), func(store string) (int, []byte, http.Header) {
+				return e.call("GET", "/v1/admin/stores/"+store+"/shipments/tracking-import/"+batchID+"/result.csv", o1.token(), nil, "")
+			}, nil)
+		})
 		status, raw, ctype = e.tiCall("GET", path+"/"+batchID+"/result.csv", o1.token(), "")
 		if status != 200 || ctype != "text/csv; charset=utf-8" {
 			t.Fatalf("result.csv answered %d ctype %q: %s", status, ctype, raw)

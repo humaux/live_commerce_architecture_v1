@@ -89,7 +89,8 @@ async function authCookies(context: BrowserContext) {
 async function signUp(page: Page, locale: Locale, email: string, password: string) {
   await page.goto(`/${locale}/signup`);
   await page.locator('input[type="email"]').fill(email);
-  await page.locator('input[type="password"]').fill(password);
+  await page.locator('input[name="password"]').fill(password);
+  await page.locator('input[name="confirm_password"]').fill(password);
   await page.locator('form button[type="submit"]').click();
   await expect(page.locator('input[autocomplete="one-time-code"]')).toBeVisible();
   await page.locator('input[autocomplete="one-time-code"]').fill(codeOf(await nthMail(email, 1)));
@@ -154,6 +155,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
         page.on("response", (response) => { if (new URL(response.url()).pathname === endpoint) statuses.push(response.status()); });
         page.on("download", (download) => downloads.push(download.suggestedFilename()));
         await page.goto(`/${locale}/${route}`);
+        if (kind === "orders") await page.getByTestId("orders-more-filters").click();
         if (kind === "finance") await page.getByRole("button",{name:moneyDesign[locale].csv,exact:true}).click();
         const control = page.getByTestId(kind === "orders" ? "orders-export" : "finance-csv");
         await expect(control).toBeVisible();
@@ -186,6 +188,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
         await signedIn(page);
         expect(new URL(page.url()).pathname).toBe(`/${locale}/${kind}`);
         await page.reload();
+        if (kind === "orders") await page.getByTestId("orders-more-filters").click();
         await expect(control).toBeVisible();
         await expect(modal(page)).toHaveCount(0);
         expect(urls, "refresh must not repeat the download").toHaveLength(2);

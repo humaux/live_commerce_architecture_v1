@@ -72,6 +72,16 @@ import { SettingsV2 } from "./SettingsV2";
 
 // A missing/unresolved read is not a version conflict. Do not offer Save until
 // the target's baseline is known; retain baseline()'s real stale-version guard.
+// Hidden-market choice (the API returns no created_at, so never sort or guess): the draft's market, else active tw,
+// else the only active market in the store currency, else null (zero-market path).
+function pickMarket(markets: Market[], currency: string, draftID: string): Market | null {
+  const ok = markets.filter((m) => m.active && m.currency === currency);
+  return (
+    ok.find((m) => m.id === draftID) ??
+    ok.find((m) => m.code === "tw") ??
+    (ok.length === 1 ? ok[0] : null)
+  );
+}
 function hasBaseline(observed: Observation | null, target: string) {
   return !!observed && !!target && observed.target === target && observed.version >= 0;
 }
@@ -140,15 +150,13 @@ function AdvancedSettings({
   // Whether "API (ECPay)" may be chosen for a CVS service: the store's ECPay connection is enabled and checked.
   // Read-only probe (GET logistics/ecpay, integration:read); a 403/404/failure simply leaves API mode unavailable.
   const [ecpayReady, setEcpayReady] = useState(false);
-  const activeMarket =
-    markets.find((item) => item.id === draft.marketID) ?? null;
+  const storeCurrency = store?.currency ?? "TWD";
+  const activeMarket = pickMarket(markets, storeCurrency, draft.marketID);
   const activeService =
     services.find((item) => item.code === draft.serviceCode) ?? null;
   const serviceTarget =
-    draft.marketID &&
-    validCountry(draft.country) &&
-    validCode(draft.serviceCode)
-      ? `${draft.marketID}:${draft.country}:${draft.serviceCode}`
+    validCountry(draft.country) && validCode(draft.serviceCode)
+      ? `${activeMarket?.id ?? "zero"}:${draft.country}:${draft.serviceCode}`
       : "";
 
   const probeEcpay = store?.id ?? "";
@@ -222,6 +230,7 @@ function AdvancedSettings({
       return c.session;
     if (value.code === "conflict") return c.conflict;
     if (value.code === "forbidden") return c.forbidden;
+    if (value.code === "market_code_taken") return c.twTaken;
     if (value.code === "invalid_money") return c.invalidMoney;
     if (value.code === "invalid_request" || value.code === "invalid_json")
       return c.invalid;
@@ -397,8 +406,33 @@ function AdvancedSettings({
         (await sessionBoundary()) !== boundary.current
       )
         return;
-      setMarkets(marketPage.items);
-      setMarketCursor(marketPage.next_cursor);
+      let allItems = marketPage.items;
+      let cursor = marketPage.next_cursor;
+      while (
+        cursor &&
+        !allItems.some(
+          (m) =>
+            m.active &&
+            m.currency === (store.currency ?? "TWD") &&
+            m.code === "tw",
+        )
+      ) {
+        const next = await readSettings<Page<Market>>(
+          store.id,
+          `markets?cursor=${encodeURIComponent(cursor)}`,
+        );
+        allItems = [...allItems, ...next.items];
+        cursor = next.next_cursor;
+      }
+      setMarkets(allItems);
+      setMarketCursor(cursor);
+
+      const currency = store.currency ?? "TWD";
+      const chosen = pickMarket(allItems, currency, draftRef.current.marketID);
+      if (chosen && chosen.id !== draftRef.current.marketID) {
+        draftRef.current = { ...draftRef.current, marketID: chosen.id };
+        setDraft((d) => ({ ...d, marketID: chosen.id }));
+      }
     } catch (value) {
       if (mounted.current && token === epoch.current && (await stillSession()))
         setError(safeError(value));
@@ -680,6 +714,7 @@ function AdvancedSettings({
     setError(null);
     setNotice("");
     const startEpoch = epoch.current;
+    const postAction: { run: (() => void) | null } = { run: null };
     try {
       await navigator.locks.request(journalKey.current, async () => {
         if ((await sessionBoundary()) !== boundary.current)
@@ -727,7 +762,7 @@ function AdvancedSettings({
           setError(result.error);
           return;
         }
-        after(result.value);
+        postAction.run = () => after(result.value);
       });
     } catch (value) {
       if (value instanceof Error && value.message === "session_changed") {
@@ -746,6 +781,7 @@ function AdvancedSettings({
       busyRef.current = false;
       if (mounted.current) setBusy(false);
     }
+    if (postAction.run) postAction.run();
   }
   function command(
     method: "POST" | "PUT",
@@ -776,25 +812,34 @@ function AdvancedSettings({
         ]);
         commitDraft(
           {
-            ...draft,
+            ...draftRef.current,
             marketID: saved.id,
             policyObservation: null,
-            serviceObservation: null,
+            serviceObservation: {
+              target: `${saved.id}:${draftRef.current.country}:${draftRef.current.serviceCode}`,
+              version: 0,
+              dirty: false,
+            },
           },
           3,
         );
         setNotice(c.saved);
       } else if (resource.endsWith("/policy")) {
         const saved = value as Policy;
+        const target = `${saved.market_id}:${saved.country}:${draftRef.current.serviceCode}`;
         setPolicy(saved);
         saveDraft({
           ...draftRef.current,
+          marketID: saved.market_id,
           reference: "",
           policyObservation: {
-            target: `${saved.market_id}:${saved.country}:${draft.serviceCode}`,
+            target,
             version: saved.version,
             dirty: false,
           },
+          serviceObservation: draftRef.current.serviceObservation?.target === target
+            ? draftRef.current.serviceObservation
+            : { target, version: 0, dirty: false },
         });
         setNotice(c.policySaved);
       } else if (resource.includes("delivery-services")) {
@@ -900,7 +945,7 @@ function AdvancedSettings({
   }
   function policySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const currency = activeMarket?.currency ?? "TWD";
+    const currency = activeMarket?.currency ?? store?.currency ?? "TWD";
     const shipping = toMinor(draft.shipping, currency),
       // Empty = no threshold; anything else is major-unit text turned into minor units here (the Go quote re-validates).
       free =
@@ -915,7 +960,7 @@ function AdvancedSettings({
       return;
     }
     if (
-      !activeMarket ||
+      !store ||
       !validCountry(draft.country) ||
       !validCode(draft.serviceCode) ||
       (draft.serviceKind !== "home" && draft.country !== "TW") ||
@@ -931,6 +976,105 @@ function AdvancedSettings({
       setError({ ...unknown, code: "invalid_request" });
       return;
     }
+
+    if (!activeMarket) {
+      // An existing tw row (inactive / other currency) would hit UNIQUE(store, code): never POST over it.
+      if (markets.some((m) => m.code === "tw")) {
+        setError({ ...unknown, code: "market_code_taken", retryable: false });
+        return;
+      }
+      // Zero-market delivery setup (AD-04/AD-05): create default market first
+      command(
+        "POST",
+        "markets",
+        {
+          code: "tw",
+          name: "台灣",
+          currency: store.currency,
+        },
+        (createdMarketValue) => {
+          const savedMarket = createdMarketValue as Market;
+          const current = draftRef.current;
+          // RVFIX2-403: keep the created tw row now; a failed/lost policy PUT must not send the next save down the zero-market path (second POST).
+          // draft.marketID still changes only in the PUT success callback (no early loadPolicy).
+          setMarkets((rows) => [
+            ...rows.filter((r) => r.id !== savedMarket.id),
+            savedMarket,
+          ]);
+          // The row now makes activeMarket non-null, so the form needs a baseline for it or Save stays disabled after a 403:
+          // a brand-new market has no policy yet, version 0 is exactly what the first PUT sends.
+          saveDraft({
+            ...draftRef.current,
+            policyObservation: {
+              target: `${savedMarket.id}:${current.country}:${current.serviceCode}`,
+              version: 0,
+              dirty: false,
+            },
+          });
+          // Now save the pricing policy for this newly created market
+          const policyResource = `markets/${savedMarket.id}/countries/${current.country}/delivery-services/${current.serviceCode}/policy`;
+          command(
+            "PUT",
+            policyResource,
+            {
+              market_id: savedMarket.id,
+              country: current.country,
+              method: `delivery:${current.serviceCode}`,
+              currency: savedMarket.currency,
+              shipping_mode: "country_flat",
+              shipping_minor: shipping,
+              ...(free === null ? {} : { free_shipping_threshold_minor: free }),
+              tax_mode: current.taxMode,
+              tax_basis: current.taxBasis,
+              tax_rate_bps: tax,
+              quote_ttl_seconds: ttl,
+              enabled: current.policyEnabled,
+              expected_version: 0,
+              configuration_ref: ref,
+            },
+            (policyValue) => {
+              const savedPolicy = policyValue as Policy;
+              const target = `${savedMarket.id}:${current.country}:${current.serviceCode}`;
+              policyRead.current += 1;
+              serviceRead.current += 1;
+              setMarkets((rows) => [
+                ...rows.filter((r) => r.id !== savedMarket.id),
+                savedMarket,
+              ]);
+              setPolicy(savedPolicy);
+              saveDraft({
+                ...draftRef.current,
+                marketID: savedMarket.id,
+                shipping: fromMinor(savedPolicy.shipping_minor, savedMarket.currency),
+                freeShipping:
+                  savedPolicy.free_shipping_threshold_minor == null
+                    ? ""
+                    : fromMinor(savedPolicy.free_shipping_threshold_minor, savedMarket.currency),
+                taxMode: savedPolicy.tax_mode,
+                taxBasis: savedPolicy.tax_basis,
+                taxRate: String(savedPolicy.tax_rate_bps),
+                ttl: String(savedPolicy.quote_ttl_seconds),
+                policyEnabled: savedPolicy.enabled,
+                reference: "",
+                policyObservation: {
+                  target,
+                  version: savedPolicy.version,
+                  dirty: false,
+                },
+                serviceObservation: {
+                  target,
+                  version: 0,
+                  dirty: false,
+                },
+              });
+              setNotice(c.policySaved);
+            },
+          );
+        },
+      );
+      return;
+    }
+
     const expected = baseline(
       draft.policyObservation,
       serviceTarget,
@@ -1046,6 +1190,7 @@ function AdvancedSettings({
     );
   }
   const needsPolicySave =
+    !activeMarket ||
     !policy ||
     draft.reference.trim() !== "" ||
     policy.shipping_minor !== toMinor(draft.shipping, currencyOf(draft.marketID)) ||
@@ -1188,36 +1333,15 @@ function AdvancedSettings({
             )}
             {store && step === 3 && (
               <>
-                <h2 className="settings-section-title">{c.marketTitle}</h2>
-                <div className="settings-fields">
-                  <label>
-                    {c.market}
-                    <select
-                      disabled={!ready || busy || !!pending}
-                      value={draft.marketID}
-                      onChange={(event) =>
-                        update("marketID", event.target.value)
-                      }
-                    >
-                      <option value="">{c.createMarket}</option>
-                      {markets.map((item) => (
-                        <option key={item.id} value={item.id}>
-                          {item.name} · {item.code} · {item.currency}
-                          {!item.active ? ` · ${c.marketInactive}` : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {marketCursor && (
-                    <button
-                      type="button"
-                      disabled={busy || !!pending}
-                      onClick={() => void moreMarkets()}
-                    >
-                      {c.loadMore}
-                    </button>
-                  )}
-                  {activeMarket && (
+                <h2 className="settings-section-title">
+                  {c.deliveryTitle}
+                </h2>
+                <p className="settings-note">{c.sequential}</p>
+                {activeMarket && !activeMarket.active && (
+                  <p className="message error">{c.marketInactive}</p>
+                )}
+                {activeMarket && (
+                  <div className="settings-actions">
                     <button
                       type="button"
                       data-testid="settings-reload-current"
@@ -1226,61 +1350,9 @@ function AdvancedSettings({
                     >
                       {c.reloadCurrent}
                     </button>
-                  )}
-                </div>
-                {!activeMarket && (
-                  <form
-                    data-testid="settings-market-form"
-                    onSubmit={marketSubmit}
-                    className="settings-fields"
-                  >
-                    <label>
-                      {c.marketCode}
-                      <input
-                        required
-                        pattern="[a-z][a-z0-9_-]{0,39}"
-                        value={draft.marketCode}
-                        onChange={(event) =>
-                          update("marketCode", event.target.value)
-                        }
-                      />
-                    </label>
-                    <label>
-                      {c.marketName}
-                      <input
-                        required
-                        maxLength={120}
-                        value={draft.marketName}
-                        onChange={(event) =>
-                          update("marketName", event.target.value)
-                        }
-                      />
-                    </label>
-                    <p className="settings-note">
-                      {c.currency}: {store.currency}
-                    </p>
-                    <div className="settings-actions">
-                      <button
-                        className="primary"
-                        disabled={!ready || !!pending || busy}
-                        type="submit"
-                      >
-                        {c.createMarket}
-                      </button>
-                    </div>
-                  </form>
+                  </div>
                 )}
-                {activeMarket && (
-                  <>
-                    {!activeMarket.active && (
-                      <p className="message error">{c.marketInactive}</p>
-                    )}
-                    <>
-                        <h2 className="settings-section-title settings-subtitle">
-                          {c.deliveryTitle}
-                        </h2>
-                        <p className="settings-note">{c.sequential}</p>
-                        <div className="settings-fields">
+                <div className="settings-fields">
                           <label>
                             {c.country}
                             <input
@@ -1298,12 +1370,21 @@ function AdvancedSettings({
                           <label>
                             {c.service}
                             <select
+                              aria-label={c.service}
                               value={activeService?.code ?? ""}
                               onChange={(event) => {
                                 const selected = services.find(
                                   (item) => item.code === event.target.value,
                                 );
                                 if (selected) {
+                                  if (
+                                    draft.serviceCode === selected.code &&
+                                    policy &&
+                                    hasBaseline(draft.policyObservation, serviceTarget)
+                                  ) {
+                                    saveDraft(hydrateService(draft, selected));
+                                    return;
+                                  }
                                   const next = {
                                     ...draft,
                                     serviceCode: selected.code,
@@ -1312,6 +1393,7 @@ function AdvancedSettings({
                                   try {
                                     setPolicy(null);
                                     saveDraft(hydrateService(next, selected));
+                                    void loadPolicy(next.marketID, next.country, selected.code);
                                   } catch {
                                     storageError();
                                   }
@@ -1350,6 +1432,7 @@ function AdvancedSettings({
                           <label>
                             {c.deliveryKind}
                             <select
+                              aria-label={c.deliveryKind}
                               value={draft.serviceKind}
                               onChange={(event) =>
                                 update(
@@ -1370,6 +1453,7 @@ function AdvancedSettings({
                           <label>
                             {lc.modeLabel}
                             <select
+                              aria-label={lc.modeLabel}
                               data-testid="settings-service-mode"
                               value={draft.serviceMode}
                               disabled={draft.serviceKind === "home"}
@@ -1413,6 +1497,7 @@ function AdvancedSettings({
                             <label>
                               {`${c.freeShipping} (${currencySign(activeMarket?.currency ?? "TWD")})`}
                               <input
+                                aria-label={`${c.freeShipping} (${currencySign(activeMarket?.currency ?? "TWD")})`}
                                 type="text"
                                 inputMode="decimal"
                                 autoComplete="off"
@@ -1427,6 +1512,7 @@ function AdvancedSettings({
                             <label>
                               {c.taxMode}
                               <select
+                                aria-label={c.taxMode}
                                 value={draft.taxMode}
                                 onChange={(event) =>
                                   update(
@@ -1447,6 +1533,7 @@ function AdvancedSettings({
                             <label>
                               {c.taxBasis}
                               <select
+                                aria-label={c.taxBasis}
                                 value={draft.taxBasis}
                                 onChange={(event) =>
                                   update(
@@ -1501,6 +1588,7 @@ function AdvancedSettings({
                           <label>
                             {c.ref}
                             <input
+                              aria-label={c.ref}
                               required={needsPolicySave}
                               maxLength={240}
                               value={draft.reference}
@@ -1512,7 +1600,7 @@ function AdvancedSettings({
                           </label>
                           {needsPolicySave && (
                             <div className="settings-actions">
-                              {!hasBaseline(draft.policyObservation, serviceTarget) && (
+                              {activeMarket && !hasBaseline(draft.policyObservation, serviceTarget) && (
                                 <p role="status">{c.loading}</p>
                               )}
                               <button
@@ -1521,8 +1609,9 @@ function AdvancedSettings({
                                   !ready ||
                                   !!pending ||
                                   busy ||
-                                  !hasBaseline(draft.policyObservation, serviceTarget) ||
-                                  !activeMarket.active
+                                  (activeMarket
+                                    ? (!hasBaseline(draft.policyObservation, serviceTarget) || !activeMarket.active)
+                                    : (!validCode(draft.serviceCode) || !draft.reference.trim()))
                                 }
                                 type="submit"
                               >
@@ -1623,7 +1712,7 @@ function AdvancedSettings({
                                   !hasBaseline(draft.serviceObservation, serviceTarget) ||
                                   !hasBaseline(draft.policyObservation, serviceTarget) ||
                                   !policy?.enabled ||
-                                  !activeMarket.active
+                                  !activeMarket?.active
                                 }
                               >
                                 {busy ? c.pending : c.saveService}
@@ -1631,9 +1720,6 @@ function AdvancedSettings({
                             </div>
                           </form>
                         )}
-                    </>
-                  </>
-                )}
               </>
             )}
             {store && step === 4 && (

@@ -5,13 +5,14 @@
 import type { OrdersCopy } from "@/lib/orders-copy";
 
 /** Presents the mounted selection without inferring shipment or payment facts. */
-export function OrderSelectionBar({ numbers, c, onView, onClear }: {
-  numbers: string[]; c: OrdersCopy; onView: () => void; onClear: () => void;
+export function OrderSelectionBar({ numbers, c, onView, onClear, shippingHref, shippingLabel }: {
+  numbers: string[]; c: OrdersCopy; shippingHref: string; shippingLabel: string; onView: () => void; onClear: () => void;
 }) {
   return <aside className="orders-selection-bar" data-testid="orders-selection-bar" aria-label={c.selectionTitle}>
     <strong>{c.selectionSelected} <span data-testid="orders-selection-count">{numbers.length}</span> {c.selectionUnit}</strong>
     <ul className="orders-selection-identities">{numbers.map(number => <li key={number}>{number}</li>)}</ul>
     <div className="orders-form-actions">
+      <a className="primary" href={shippingHref}>{shippingLabel}</a>
       <button type="button" className="primary" data-testid="orders-selection-view" onClick={onView}>{c.selectionView}</button>
       <button type="button" data-testid="orders-selection-cancel" onClick={onClear}>{c.cancel}</button>
     </div>

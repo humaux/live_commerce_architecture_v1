@@ -33,9 +33,9 @@ the same fresh final SQL revocation fence as v1 applies, even for an empty resul
 ## Response
 
 `{items, next_cursor, total, counts, sessions}`. Items extend the existing strict
-summary with `order_number`, `recipient_masked`, `delivery_kind`, `live_sessions`.
+summary with `order_number`, `recipient_masked`, `delivery_kind`, `live_sessions`, and additive `item_summary` (PARITY-ORDERS integrator ruling, 2026-10-30).
 Order number is the collision-free readable `LC-` + complete uppercase UUID hex,
-not a fabricated short/sequence number. Recipient exposes only the first Unicode
+not a fabricated short/sequence number. The signed UI displays `#` plus its final five hex characters; the full UUID/reference remains the routing and command key. Recipient exposes only the first Unicode
 character plus `***`; no phone/address/snapshot is returned in list responses.
 Legacy missing/blank recipients use `—`; unrecognized delivery projections use
 `delivery_kind: "unknown"` with a localized UI label. These are display-only row
@@ -53,6 +53,19 @@ as the rows. Counts are overlapping task queues, not a sum of exclusive states.
 The sessions picker contains store-scoped order-linked sessions, independent of
 the selected filters, and never exposes actors. It is bounded to 100 entries;
 old selected session IDs remain valid even if not among the latest 100 choices.
+
+### Safe frozen merchandise (2026-10-30 amendment)
+
+`item_summary: {items: [{product_name, variant_label, quantity}], total_item_count}`
+is present on every v2 list and private-search row. Items are the first at most
+three frozen checkout lines in snapshot order. `total_item_count` counts units
+across all frozen lines. Historical snapshots do not contain a variant label;
+that field is `null`, never inferred from a live catalog or SKU. No buyer name,
+phone, address, destination, snapshot or extra key is included. Existing fields
+remain unchanged. The scoped store reader batches page IDs in one bounded query
+through the existing authorized reader and projects merchandise inside SQL;
+recipient data never crosses that query result. The final permission fence runs
+after the batch. No schema migration or new runtime grant is required.
 
 ## Bucket predicates (read-only, no new state machine)
 
@@ -75,7 +88,7 @@ old selected session IDs remain valid even if not among the latest 100 choices.
 <1s (10 measured HTTP reads), exact SQL counts, same-tenant and cross-tenant
 isolation, scoped/filter-bound cursors, invalid requests, no full list PII,
 read-only fingerprints, role ACLs and a blocked-query revocation fence. Record
-pre-implementation RED then GREEN. Preserve MOU01–06 assertions; legacy draft
+pre-implementation RED then GREEN. Preserve MOU01–06 authority/privacy/financial/lifecycle intents; migrate their table/inline presentation expectations to signed card list/standalone detail (integrator ruling 2026-10-30); legacy draft
 inspection explicitly selects all rather than silently relying on defaults.
 The reader is created with `jit=off` (one statement costed above PG's JIT thresholds; JIT compile was
 0.3-0.7 s of every call, the cause of the intermittent >1 s on the 10k gate).

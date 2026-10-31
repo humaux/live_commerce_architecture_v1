@@ -76,7 +76,7 @@ const codeOf = (mail: Mail) => {
 };
 
 const emailInput = (page: Page) => page.locator('input[type="email"]');
-const passwordInput = (page: Page) => page.locator('input[type="password"]');
+const passwordInput = (page: Page) => page.locator('input[name="password"]');
 const codeInput = (page: Page) => page.locator('input[autocomplete="one-time-code"]');
 const submitButton = (page: Page) => page.locator('form button[type="submit"]');
 
@@ -143,6 +143,7 @@ async function signUp(page: Page, locale: string, email: string, password: strin
   await expect(page.locator('form[data-hydrated="true"]'), "sign-up form hydrated before typing").toBeVisible();
   await emailInput(page).fill(email);
   await passwordInput(page).fill(password);
+  await page.locator('input[name="confirm_password"]').fill(password);
   await expect(emailInput(page)).toHaveValue(email);
   await expect(passwordInput(page)).toHaveValue(password);
   await submitButton(page).click();
@@ -172,7 +173,9 @@ type Net = { requests: { url: string; type: string; method: string; referer: str
 function watch(page: Page): Net {
   const net: Net = { requests: [], console: [] };
   page.on("request", (r) => {
-    void r.headerValue("referer").then((referer) => net.requests.push({ url: r.url(), type: r.resourceType(), method: r.method(), referer }));
+    void r.headerValue("referer")
+      .then((referer) => net.requests.push({ url: r.url(), type: r.resourceType(), method: r.method(), referer }))
+      .catch(() => {});
   });
   page.on("console", (m) => net.console.push(m.text()));
   page.on("pageerror", (e) => net.console.push(String(e)));
@@ -184,7 +187,10 @@ function watch(page: Page): Net {
 const navEntry = (page: Page, id: "team" | "billing") => page.locator("[data-shell-rail]").getByTestId(`nav-${id}`);
 const roleWord = { en: "Fulfilment", "zh-TW": "履約" } as const;
 const subjectRe = { en: /invited/i, "zh-TW": /邀請/ } as const;
-const routeForbidden = { en: /403 · You do not have access to this page\./, "zh-TW": /403 · 你沒有存取此頁面的權限。/ } as const;
+const routeForbidden = {
+  en: /This link cannot be opened, or your account cannot use this feature\./,
+  "zh-TW": /此連結無法開啟，或目前帳號沒有此操作權限。/,
+} as const;
 
 const chains: { locale: Locale; vp: VP; first: boolean }[] = [
   { locale: "zh-TW", vp: "desktop", first: true },
@@ -295,13 +301,13 @@ for (const { locale, vp, first } of chains) {
 
       // ---- fulfilment powers: sees orders; exact order-side bundle; no billing, no team management ----------------------------
       await invitee.page.goto(`/${locale}/orders?store=${storeId}`);
+      await invitee.page.getByTestId("orders-more-filters").click();
       await expect(invitee.page.getByTestId("orders-refresh")).toBeVisible();
       await expect(invitee.page.getByTestId("orders-export"), "fulfilment holds orders:export").toBeVisible();
       await noHorizontalScroll(invitee.page, "orders page (fulfilment)");
       await shot(invitee.page, "orders-fulfilment", locale, vp);
       if (vp === "mobile") {
         // Opening More filters adds the status select above Refresh/Export; the pair must stay on its own row, in view.
-        await invitee.page.getByTestId("orders-more-filters").click();
         await expect(invitee.page.getByTestId("state-filter")).toBeVisible();
         await expect(invitee.page.getByTestId("orders-export")).toBeVisible();
         await noHorizontalScroll(invitee.page, "orders page (fulfilment, filters open)");
@@ -362,6 +368,7 @@ for (const { locale, vp, first } of chains) {
         status: 200, body: { refund: false, fulfillment_write: false, orders_export: false },
       });
       await invitee.page.goto(`/${locale}/orders?store=${storeId}`);
+      await invitee.page.getByTestId("orders-more-filters").click();
       await expect(invitee.page.getByTestId("orders-refresh")).toBeVisible();
       await expect(invitee.page.getByTestId("orders-export"), "viewer lost orders:export on the next request").toHaveCount(0);
       expect((await browserJSON(invitee.page, `/api/stores/${storeId}/orders`)).status, "viewer keeps orders:read").toBe(200);
@@ -383,7 +390,7 @@ for (const { locale, vp, first } of chains) {
         expect([401, 403, 404], `${path} after removal -> ${r.status}`).toContain(r.status);
       }
       await invitee.page.goto(`/${locale}/orders?store=${storeId}`);
-      await expect(invitee.page.getByTestId("orders-table")).toHaveCount(0);
+      await expect(invitee.page.getByTestId("orders-list")).toHaveCount(0);
       await expect(invitee.page.getByTestId("orders-export")).toHaveCount(0);
       await shot(invitee.page, "orders-after-removal", locale, vp);
       // the used link stays dead: same generic refusal, and the removal was not undone by it
