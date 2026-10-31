@@ -443,8 +443,7 @@ async function journeyProduct(state, journeys) {
     }, page);
     await step(unit, "the merchant list shows the product (search + click)", "the row is listed with status active", async () => {
       await page.goto(u("/products"));
-      await page.getByTestId("products-search").fill(tag);
-      await page.getByTestId("products-search-submit").click();
+      await page.getByTestId("products-tab-active").click();
       await expect(page.locator('[data-testid^="product-row-"]').filter({ hasText: title }).first()).toBeVisible();
     }, page);
     // the storefront: a buyer finds it by clicking
