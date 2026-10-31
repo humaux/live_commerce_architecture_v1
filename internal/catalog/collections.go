@@ -1,3 +1,7 @@
+// Purpose: own merchant collection commands, rule validation and scoped SQL reads.
+// Depends on: command ledger, platform scopes, PostgreSQL collection rule predicates (0212).
+// Used by: internal/httpapi collection handlers.
+// Invariants: versioned writes are atomic; automatic reads never replace retained manual memberships.
 package catalog
 
 // collections.go owns merchant collections (contracts/storefront-v2.md section A, migrations/0086): create, read,
@@ -9,9 +13,11 @@ package catalog
 // from images.go (CM1/CM2), never a second validator.
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 
 	"github.com/jackc/pgx/v5"
 	"livecommerce/internal/command"
@@ -30,16 +36,50 @@ var (
 	collectionStatuses  = map[string]bool{"active": true, "hidden": true}
 )
 
+// CollectionRules is the saved, bounded rule grammar shared with migration 0212.
+type CollectionRules struct {
+	Match      string                `json:"match"`
+	Conditions []CollectionCondition `json:"conditions"`
+}
+
+type CollectionCondition struct {
+	Field    string `json:"field"`
+	Operator string `json:"operator"`
+	Days     int    `json:"days"`
+}
+
+// parseCollectionRules converts malformed or unsupported rule semantics to 422, not transport errors.
+func parseCollectionRules(raw json.RawMessage) (*CollectionRules, error) {
+	if len(raw) == 0 {
+		return nil, nil
+	}
+	var rules CollectionRules
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.DisallowUnknownFields()
+	if dec.Decode(&rules) != nil || (rules.Match != "all" && rules.Match != "any") || len(rules.Conditions) < 1 || len(rules.Conditions) > 20 {
+		return nil, command.ErrInvalid
+	}
+	for _, c := range rules.Conditions {
+		if c.Field != "created_at" || c.Operator != "within_days" || c.Days < 1 || c.Days > 3650 {
+			return nil, command.ErrInvalid
+		}
+	}
+	return &rules, nil
+}
+func validCollectionMode(mode string) bool { return mode == "manual" || mode == "automatic" }
+
 type Collection struct {
-	ID           string  `json:"id"`
-	Slug         string  `json:"slug"`
-	Title        string  `json:"title"`
-	Description  string  `json:"description"`
-	SortMode     string  `json:"sort_mode"`
-	Status       string  `json:"status"`
-	ImageID      *string `json:"image_id"`
-	ProductCount int     `json:"product_count"`
-	Version      int64   `json:"version"`
+	MembershipMode string           `json:"membership_mode"`
+	Rules          *CollectionRules `json:"rules"`
+	ID             string           `json:"id"`
+	Slug           string           `json:"slug"`
+	Title          string           `json:"title"`
+	Description    string           `json:"description"`
+	SortMode       string           `json:"sort_mode"`
+	Status         string           `json:"status"`
+	ImageID        *string          `json:"image_id"`
+	ProductCount   int              `json:"product_count"`
+	Version        int64            `json:"version"`
 }
 
 // CollectionProduct is one member of a collection, in manual order.
@@ -60,21 +100,25 @@ type CollectionDetail struct {
 
 // CollectionInput creates a collection. SortMode "" = manual, Status "" = active, Slug "" = generated.
 type CollectionInput struct {
-	Title       string `json:"title"`
-	Slug        string `json:"slug,omitempty"`
-	Description string `json:"description,omitempty"`
-	SortMode    string `json:"sort_mode,omitempty"`
-	Status      string `json:"status,omitempty"`
+	MembershipMode string          `json:"membership_mode,omitempty"`
+	Rules          json.RawMessage `json:"rules,omitempty"`
+	Title          string          `json:"title"`
+	Slug           string          `json:"slug,omitempty"`
+	Description    string          `json:"description,omitempty"`
+	SortMode       string          `json:"sort_mode,omitempty"`
+	Status         string          `json:"status,omitempty"`
 }
 
 // CollectionPatch is a partial update; nil fields are unchanged. ExpectedVersion is mandatory.
 type CollectionPatch struct {
-	Title           *string `json:"title,omitempty"`
-	Slug            *string `json:"slug,omitempty"`
-	Description     *string `json:"description,omitempty"`
-	SortMode        *string `json:"sort_mode,omitempty"`
-	Status          *string `json:"status,omitempty"`
-	ExpectedVersion int64   `json:"expected_version"`
+	MembershipMode  *string         `json:"membership_mode,omitempty"`
+	Rules           json.RawMessage `json:"rules,omitempty"`
+	Title           *string         `json:"title,omitempty"`
+	Slug            *string         `json:"slug,omitempty"`
+	Description     *string         `json:"description,omitempty"`
+	SortMode        *string         `json:"sort_mode,omitempty"`
+	Status          *string         `json:"status,omitempty"`
+	ExpectedVersion int64           `json:"expected_version"`
 }
 
 // CollectionProductsInput replaces the whole ordered membership (add, remove and reorder in one command).
@@ -101,11 +145,16 @@ type CollectionImage struct {
 
 const collectionSelect = `SELECT c.id::text,c.slug,c.title,c.description,c.sort_mode,c.status,
 	(SELECT i.id::text FROM catalog.collection_images i WHERE i.tenant_id=c.tenant_id AND i.store_id=c.store_id AND i.collection_id=c.id),
-	(SELECT count(*) FROM catalog.collection_products m WHERE m.tenant_id=c.tenant_id AND m.store_id=c.store_id AND m.collection_id=c.id),
-	c.version FROM catalog.collections c`
+	CASE WHEN c.membership_mode='manual' THEN
+ (SELECT count(*) FROM catalog.collection_products m WHERE m.tenant_id=c.tenant_id AND m.store_id=c.store_id AND m.collection_id=c.id)
+ ELSE (SELECT count(*) FROM catalog.products p WHERE p.tenant_id=c.tenant_id AND p.store_id=c.store_id AND p.status='active'
+ AND catalog.collection_rule_matches(p.created_at,c.rules)
+ AND EXISTS (SELECT 1 FROM catalog.skus s JOIN control.stores st ON st.tenant_id=s.tenant_id AND st.id=s.store_id
+ WHERE s.tenant_id=p.tenant_id AND s.store_id=p.store_id AND s.product_id=p.id AND s.status='active' AND s.currency=st.currency)) END,
+ c.version,c.membership_mode,c.rules FROM catalog.collections c`
 
 func collectionFields(c *Collection) []any {
-	return []any{&c.ID, &c.Slug, &c.Title, &c.Description, &c.SortMode, &c.Status, &c.ImageID, &c.ProductCount, &c.Version}
+	return []any{&c.ID, &c.Slug, &c.Title, &c.Description, &c.SortMode, &c.Status, &c.ImageID, &c.ProductCount, &c.Version, &c.MembershipMode, &c.Rules}
 }
 
 func readCollection(ctx context.Context, tx pgx.Tx, scope platform.Scope, id string) (Collection, error) {
@@ -127,6 +176,17 @@ func validCollectionTitle(t string) bool { return utf8Count(t) >= 1 && utf8Count
 // letters or digits gets a random 12-hex slug (collections have no id-prefix trigger). An explicit taken slug is
 // ErrConflict.
 func CreateCollection(ctx context.Context, tx pgx.Tx, scope platform.Scope, key string, in CollectionInput) (out Collection, err error) {
+	mode := in.MembershipMode
+	if mode == "" {
+		mode = "manual"
+	}
+	rules, rerr := parseCollectionRules(in.Rules)
+	if rerr != nil || !validCollectionMode(mode) || (mode == "automatic" && rules == nil) {
+		return out, command.ErrInvalid
+	}
+	if rules != nil {
+		in.Rules, _ = json.Marshal(rules)
+	}
 	sortMode, status := in.SortMode, in.Status
 	if sortMode == "" {
 		sortMode = "manual"
@@ -138,6 +198,8 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, scope platform.Scope, key 
 		(in.Slug != "" && !validSlug(in.Slug)) {
 		return out, command.ErrInvalid
 	}
+	// Legacy command receipts predate membership_mode; their saved result was manual.
+	out.MembershipMode = "manual"
 	err = command.Run(ctx, tx, scope, "catalog.collection.create", key, in, &out, func() error {
 		if !validScope(tx, scope) {
 			return command.ErrInvalid
@@ -157,9 +219,9 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, scope platform.Scope, key 
 			}
 		}
 		var id string
-		if err := tx.QueryRow(ctx, `INSERT INTO catalog.collections(tenant_id,store_id,slug,title,description,sort_mode,status)
-			VALUES($1,$2,coalesce($3,left(replace(gen_random_uuid()::text,'-',''),12)),$4,$5,$6,$7) RETURNING id::text`,
-			scope.TenantID, scope.StoreID, slug, in.Title, in.Description, sortMode, status).Scan(&id); err != nil {
+		if err := tx.QueryRow(ctx, `INSERT INTO catalog.collections(tenant_id,store_id,slug,title,description,sort_mode,status,membership_mode,rules)
+			VALUES($1,$2,coalesce($3,left(replace(gen_random_uuid()::text,'-',''),12)),$4,$5,$6,$7,$8,$9) RETURNING id::text`,
+			scope.TenantID, scope.StoreID, slug, in.Title, in.Description, sortMode, status, mode, rules).Scan(&id); err != nil {
 			return err
 		}
 		var rerr error
@@ -173,16 +235,25 @@ func CreateCollection(ctx context.Context, tx pgx.Tx, scope platform.Scope, key 
 
 // PatchCollection applies a partial update under the row lock and the optimistic version.
 func PatchCollection(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, id string, in CollectionPatch) (out Collection, err error) {
-	if !command.ValidID(id) || in.ExpectedVersion < 1 || (in.Title == nil && in.Slug == nil && in.Description == nil && in.SortMode == nil && in.Status == nil) ||
+	if !command.ValidID(id) || in.ExpectedVersion < 1 || (in.Title == nil && in.Slug == nil && in.Description == nil && in.SortMode == nil && in.Status == nil && in.MembershipMode == nil && len(in.Rules) == 0) ||
 		(in.Title != nil && !validCollectionTitle(*in.Title)) || (in.Description != nil && utf8Count(*in.Description) > 2000) ||
 		(in.Slug != nil && !validSlug(*in.Slug)) || (in.SortMode != nil && !collectionSortModes[*in.SortMode]) ||
-		(in.Status != nil && !collectionStatuses[*in.Status]) {
+		(in.Status != nil && !collectionStatuses[*in.Status]) || (in.MembershipMode != nil && !validCollectionMode(*in.MembershipMode)) {
 		return out, command.ErrInvalid
+	}
+	rules, rerr := parseCollectionRules(in.Rules)
+	if rerr != nil {
+		return out, rerr
+	}
+	if rules != nil {
+		in.Rules, _ = json.Marshal(rules)
 	}
 	request := struct {
 		ID string `json:"id"`
 		CollectionPatch
 	}{id, in}
+	// Legacy command receipts predate membership_mode; their saved result was manual.
+	out.MembershipMode = "manual"
 	err = command.Run(ctx, tx, scope, "catalog.collection.update", key, request, &out, func() error {
 		version, err := lockCollection(ctx, tx, scope, id)
 		if err != nil {
@@ -195,6 +266,15 @@ func PatchCollection(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, 
 		if err != nil {
 			return err
 		}
+		if in.MembershipMode != nil {
+			cur.MembershipMode = *in.MembershipMode
+		}
+		if len(in.Rules) > 0 {
+			cur.Rules = rules
+		}
+		if cur.MembershipMode == "automatic" && cur.Rules == nil {
+			return command.ErrInvalid
+		}
 		for _, f := range []struct {
 			set *string
 			dst *string
@@ -203,8 +283,8 @@ func PatchCollection(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, 
 				*f.dst = *f.set
 			}
 		}
-		if _, err := tx.Exec(ctx, `UPDATE catalog.collections SET title=$4,slug=$5,description=$6,sort_mode=$7,status=$8,version=version+1,updated_at=clock_timestamp()
-			WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, scope.TenantID, scope.StoreID, id, cur.Title, cur.Slug, cur.Description, cur.SortMode, cur.Status); err != nil {
+		if _, err := tx.Exec(ctx, `UPDATE catalog.collections SET title=$4,slug=$5,description=$6,sort_mode=$7,status=$8,membership_mode=$9,rules=$10,version=version+1,updated_at=clock_timestamp()
+			WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, scope.TenantID, scope.StoreID, id, cur.Title, cur.Slug, cur.Description, cur.SortMode, cur.Status, cur.MembershipMode, cur.Rules); err != nil {
 			return err
 		}
 		if out, err = readCollection(ctx, tx, scope, id); err != nil {
@@ -267,12 +347,21 @@ func SetCollectionProducts(ctx context.Context, tx pgx.Tx, scope platform.Scope,
 		ID string `json:"id"`
 		CollectionProductsInput
 	}{id, in}
+	// Legacy command receipts predate membership_mode; their saved result was manual.
+	out.MembershipMode = "manual"
 	err = command.Run(ctx, tx, scope, "catalog.collection.set_products", key, request, &out, func() error {
 		version, err := lockCollection(ctx, tx, scope, id)
 		if err != nil {
 			return err
 		}
 		if version != in.ExpectedVersion {
+			return command.ErrConflict
+		}
+		var mode string
+		if err := tx.QueryRow(ctx, `SELECT membership_mode FROM catalog.collections WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, scope.TenantID, scope.StoreID, id).Scan(&mode); err != nil {
+			return err
+		}
+		if mode == "automatic" {
 			return command.ErrConflict
 		}
 		// Positions are UNIQUE DEFERRABLE, so delete + insert in one transaction is legal; FK catalog.products
@@ -301,10 +390,22 @@ func readCollectionDetail(ctx context.Context, tx pgx.Tx, scope platform.Scope, 
 	if d.Collection, err = readCollection(ctx, tx, scope, id); err != nil {
 		return d, err
 	}
-	rows, err := tx.Query(ctx, `SELECT p.id::text,p.name,p.slug,p.status,m.position,
+	query := `SELECT p.id::text,p.name,p.slug,p.status,m.position,
 		(SELECT i.id::text FROM catalog.product_images i WHERE i.tenant_id=p.tenant_id AND i.store_id=p.store_id AND i.product_id=p.id AND i.role='main' ORDER BY i.position LIMIT 1)
 		FROM catalog.collection_products m JOIN catalog.products p ON p.tenant_id=m.tenant_id AND p.store_id=m.store_id AND p.id=m.product_id
-		WHERE m.tenant_id=$1 AND m.store_id=$2 AND m.collection_id=$3 ORDER BY m.position`, scope.TenantID, scope.StoreID, id)
+		WHERE m.tenant_id=$1 AND m.store_id=$2 AND m.collection_id=$3 ORDER BY m.position`
+	if d.MembershipMode == "automatic" {
+		query = `SELECT p.id::text,p.name,p.slug,p.status,(row_number() OVER (ORDER BY
+ CASE WHEN c.sort_mode='price_asc' THEN prices.lo END ASC,
+ CASE WHEN c.sort_mode='price_desc' THEN prices.hi END DESC,p.created_at DESC,p.id)-1)::integer,
+ (SELECT i.id::text FROM catalog.product_images i WHERE i.tenant_id=p.tenant_id AND i.store_id=p.store_id AND i.product_id=p.id AND i.role='main' ORDER BY i.position LIMIT 1)
+ FROM catalog.collections c JOIN catalog.products p ON p.tenant_id=c.tenant_id AND p.store_id=c.store_id
+ JOIN LATERAL (SELECT min(s.price_minor) lo,max(s.price_minor) hi FROM catalog.skus s JOIN control.stores st ON st.tenant_id=s.tenant_id AND st.id=s.store_id
+ WHERE s.tenant_id=p.tenant_id AND s.store_id=p.store_id AND s.product_id=p.id AND s.status='active' AND s.currency=st.currency HAVING count(*)>0) prices ON true
+ WHERE c.tenant_id=$1 AND c.store_id=$2 AND c.id=$3 AND p.status='active' AND catalog.collection_rule_matches(p.created_at,c.rules)
+ ORDER BY 5`
+	}
+	rows, err := tx.Query(ctx, query, scope.TenantID, scope.StoreID, id)
 	if err != nil {
 		return d, mapError(err)
 	}
@@ -419,6 +520,8 @@ func DeleteCollectionImage(ctx context.Context, tx pgx.Tx, scope platform.Scope,
 	request := struct {
 		CollectionID string `json:"collection_id"`
 	}{id}
+	// Legacy command receipts predate membership_mode; their saved result was manual.
+	out.MembershipMode = "manual"
 	err = command.Run(ctx, tx, scope, "catalog.collection.image_delete", key, request, &out, func() error {
 		if _, err := lockCollection(ctx, tx, scope, id); err != nil {
 			return err
