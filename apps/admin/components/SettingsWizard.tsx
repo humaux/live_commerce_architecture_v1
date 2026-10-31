@@ -739,7 +739,7 @@ function AdvancedSettings({
     setError(null);
     setNotice("");
     const startEpoch = epoch.current;
-    let afterCallback: (() => void) | null = null;
+    const postAction: { run: (() => void) | null } = { run: null };
     try {
       await navigator.locks.request(journalKey.current, async () => {
         if ((await sessionBoundary()) !== boundary.current)
@@ -787,7 +787,7 @@ function AdvancedSettings({
           setError(result.error);
           return;
         }
-        afterCallback = () => after(result.value);
+        postAction.run = () => after(result.value);
       });
     } catch (value) {
       if (value instanceof Error && value.message === "session_changed") {
@@ -806,7 +806,7 @@ function AdvancedSettings({
       busyRef.current = false;
       if (mounted.current) setBusy(false);
     }
-    if (afterCallback) afterCallback();
+    if (postAction.run) postAction.run();
   }
   function command(
     method: "POST" | "PUT",
