@@ -38,7 +38,8 @@ export default function CartView({ locale }: { locale: Locale }) {
         <div data-testid="cart-empty">
           {ready ? <StorefrontState locale={locale} variant="empty" />
             : <p className="sf-empty__title" role="status">{copy.loading}</p>}
-        </div>      ) : (
+        </div>
+      ) : (
         <div className="sf-cartpage__grid">
           <CartLines locale={locale} />
           <aside className="sf-cartpage__aside" aria-label={copy.subtotal}>
