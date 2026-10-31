@@ -64,6 +64,13 @@ const ui = {
 
 test.use({ baseURL: origin, trace: "retain-on-failure", screenshot: "only-on-failure" });
 
+async function revealSavedFacts(page: Page) {
+  const url=new URL(page.url());
+  if(!/\/orders\/[0-9a-f-]{36}$/.test(url.pathname)&&!url.searchParams.has("order"))return;
+  const facts=page.getByTestId("order-more-details");
+  await expect(facts).toBeVisible();
+  if(await facts.getAttribute("open")===null)await facts.locator("summary").first().click();
+}
 async function signedLogin(page: Page) {
   await page.goto(new URL("/en/", origin).toString());
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
@@ -80,21 +87,26 @@ async function openOrders(page: Page, locale: string) {
   if (await selector.count()) {
     if ((await selector.inputValue()) !== store) await selector.selectOption(store);
   }
-  await expect(page.getByTestId("orders-table")).toBeVisible();
+  await expect(page.getByTestId("orders-list")).toBeVisible();
+  const more=page.getByTestId("orders-more-filters");
+  if(await more.getAttribute("aria-expanded")==="false") await more.click();
 }
 
 async function expand(page: Page, id: string): Promise<Locator> {
+  if(await page.getByTestId("order-detail-back").count()) await page.getByTestId("order-detail-back").click();
   for (let pageNo = 0; pageNo < 3; pageNo++) {
     const button = page.getByTestId(`order-expand-${id}`);
     if (await button.count()) {
       if ((await button.getAttribute("aria-expanded")) !== "true") await button.click();
       const detail = page.getByTestId("order-detail");
       await expect(detail).toHaveAttribute("aria-label", new RegExp(id));
-      return detail;
+      const facts=page.getByTestId("order-more-details");
+      if(await facts.getAttribute("open")===null) await facts.locator("summary").first().click();
+      return detail.getByTestId("order-facts");
     }
     await expect(page.getByTestId("orders-next")).toBeEnabled();
     await page.getByTestId("orders-next").click();
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await expect(page.getByTestId("orders-list")).toBeVisible();
   }
   throw new Error("fixture order was absent from three real cursor pages");
 }
@@ -193,7 +205,8 @@ test("MF07 merchant marks a paid order shipped, corrects, voids and re-ships; bu
   await expect(history).toContainText(/wrong[ _]tracking|錯誤單號|错误单号/i);
   await expect(history).toContainText(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/); // principal UUID, merchants only
   await expect(page.locator("body")).not.toContainText(ui.delivered);
-  // the list filters follow the head
+  // The signed Back control restores the list; its filters follow the saved head.
+  await page.getByTestId("order-detail-back").click();
   const filter = page.getByLabel(ui.state).first();
   if (await filter.count()) {
     // Filters are collapsed on every viewport; reveal with a real merchant click.
@@ -204,10 +217,12 @@ test("MF07 merchant marks a paid order shipped, corrects, voids and re-ships; bu
     await filter.selectOption("shipped");
     await expect(page.getByTestId(`order-expand-${shipOrder}`)).toBeVisible();
     await expect(page.getByTestId(`order-expand-${reshipOrder}`)).toHaveCount(0);
+    if(await more.getAttribute("aria-expanded")==="false") await more.click();
     await filter.selectOption("unshipped");
     await expect(page.getByTestId(`order-expand-${reshipOrder}`)).toBeVisible();
     await expect(page.getByTestId(`order-expand-${shipOrder}`)).toHaveCount(0);
     await expect(page.getByTestId(`order-expand-${draftOrder}`)).toHaveCount(0);
+    if(await more.getAttribute("aria-expanded")==="false") await more.click();
     await filter.selectOption("all");
   }
 });
@@ -289,9 +304,9 @@ test("MF07 CVS snapshot order: frozen pickup store, manual ship, reload persists
     carrier_name: null, tracking_url: `https://track.example.com/t?n=${cvsTracking}`, note: "MF07 internal note", void_reason: null,
   });
   // A refresh re-reads the order: the shipped head and the snapshot pickup store both survive.
-  await page.reload();
-  await expect(page.getByTestId("orders-table")).toBeVisible();
-  const after = await expand(page, cvsOrder);
+  await page.reload(); await revealSavedFacts(page);
+  await expect(page.getByTestId("order-detail")).toHaveAttribute("aria-label", new RegExp(cvsOrder));
+  const after = page.getByTestId("order-facts");
   await expect(after.locator('[data-state="MERCHANT_SHIPPED"]').first()).toBeVisible();
   await expect(after).toContainText(cvsTracking);
   await expect(after).toContainText(cvsPickupName);

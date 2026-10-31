@@ -172,7 +172,9 @@ type Net = { requests: { url: string; type: string; method: string; referer: str
 function watch(page: Page): Net {
   const net: Net = { requests: [], console: [] };
   page.on("request", (r) => {
-    void r.headerValue("referer").then((referer) => net.requests.push({ url: r.url(), type: r.resourceType(), method: r.method(), referer }));
+    void r.headerValue("referer")
+      .then((referer) => net.requests.push({ url: r.url(), type: r.resourceType(), method: r.method(), referer }))
+      .catch(() => {});
   });
   page.on("console", (m) => net.console.push(m.text()));
   page.on("pageerror", (e) => net.console.push(String(e)));
@@ -298,13 +300,13 @@ for (const { locale, vp, first } of chains) {
 
       // ---- fulfilment powers: sees orders; exact order-side bundle; no billing, no team management ----------------------------
       await invitee.page.goto(`/${locale}/orders?store=${storeId}`);
+      await invitee.page.getByTestId("orders-more-filters").click();
       await expect(invitee.page.getByTestId("orders-refresh")).toBeVisible();
       await expect(invitee.page.getByTestId("orders-export"), "fulfilment holds orders:export").toBeVisible();
       await noHorizontalScroll(invitee.page, "orders page (fulfilment)");
       await shot(invitee.page, "orders-fulfilment", locale, vp);
       if (vp === "mobile") {
         // Opening More filters adds the status select above Refresh/Export; the pair must stay on its own row, in view.
-        await invitee.page.getByTestId("orders-more-filters").click();
         await expect(invitee.page.getByTestId("state-filter")).toBeVisible();
         await expect(invitee.page.getByTestId("orders-export")).toBeVisible();
         await noHorizontalScroll(invitee.page, "orders page (fulfilment, filters open)");
@@ -365,6 +367,7 @@ for (const { locale, vp, first } of chains) {
         status: 200, body: { refund: false, fulfillment_write: false, orders_export: false },
       });
       await invitee.page.goto(`/${locale}/orders?store=${storeId}`);
+      await invitee.page.getByTestId("orders-more-filters").click();
       await expect(invitee.page.getByTestId("orders-refresh")).toBeVisible();
       await expect(invitee.page.getByTestId("orders-export"), "viewer lost orders:export on the next request").toHaveCount(0);
       expect((await browserJSON(invitee.page, `/api/stores/${storeId}/orders`)).status, "viewer keeps orders:read").toBe(200);
@@ -386,7 +389,7 @@ for (const { locale, vp, first } of chains) {
         expect([401, 403, 404], `${path} after removal -> ${r.status}`).toContain(r.status);
       }
       await invitee.page.goto(`/${locale}/orders?store=${storeId}`);
-      await expect(invitee.page.getByTestId("orders-table")).toHaveCount(0);
+      await expect(invitee.page.getByTestId("orders-list")).toHaveCount(0);
       await expect(invitee.page.getByTestId("orders-export")).toHaveCount(0);
       await shot(invitee.page, "orders-after-removal", locale, vp);
       // the used link stays dead: same generic refusal, and the removal was not undone by it

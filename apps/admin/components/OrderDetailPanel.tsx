@@ -2,20 +2,19 @@
 // Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/client, @/lib/orders-model, @/lib/orders-copy,
 //   @/lib/cod-copy, @/lib/returns-model, @/lib/returns-client, @/lib/returns-copy, ./OrderRefunds, ./OrderReturns, ./OrderShipment,
 //   ./OrderCvsShipment, ./OrderBankTransfer, ./OrderCodCollection, ./orders/OrderStatusBadge
-// Used by: apps/admin/components/MerchantOrders.tsx
+// Used by: apps/admin/components/OrderDetailView.tsx, apps/admin/components/MerchantOrders.tsx
 // Invariants: Frozen server detail owns identities and amounts; return navigation retains the mounted list scope.
 "use client";
 
-// Inline detail row of the merchant orders page (items, totals, recipient, statuses and the refund / returns / cancel /
-// transfer / CVS / COD / shipment sections), split out of MerchantOrders.tsx (G-UI3 legacy ceiling). detailPanel is a plain
-// render function: MerchantOrders owns the list, polling and selection and passes the loaded detail in; the cancel button is
-// the one stateful child defined here (returns-v1 §3), the rest live in their section components.
+// Saved financial/recipient facts and existing refund, return, cancel and fulfillment actions.
+// The standalone view reveals this render function through a native disclosure; the
+// controller still owns server reads, session fencing and command readback.
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { TableFrame } from "@live-commerce/ui";
 import { presentationCopy } from "@/lib/presentation-copy";
 import { money } from "@/lib/client";
-import type { OrderActions, OrderDetail } from "@/lib/orders-model";
+import { displayTime, type OrderActions, type OrderDetail } from "@/lib/orders-model";
 import type { OrdersCopy } from "@/lib/orders-copy";
 import { codCopy } from "@/lib/cod-copy";
 import { cancellableStates, cancelOrderBody, cancelReasonText, type CancellableState } from "@/lib/returns-model";
@@ -43,6 +42,7 @@ export function badge(state: string, c: OrdersCopy) {
 /** Describes Sections values shared by this presentation module. */
 export type Sections = {
   orderNumber?: string;
+  parcelBadge?: string;
   onBack?: () => void;
   store: string;
   actions: OrderActions;
@@ -210,10 +210,11 @@ export function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, 
   return (
     <section
       className="orders-expanded"
-      data-testid="order-detail"
+      data-testid="order-facts"
       aria-label={`${c.order} ${detail.order_id}`}
     >
       {sections.onBack && <div className="orders-detail-heading"><strong>{sections.orderNumber}</strong><button type="button" data-testid="order-detail-back" onClick={sections.onBack}>{c.backToList}</button></div>}
+      <p className="orders-created-time">{c.created}: {displayTime(locale, detail.created_at)}</p>
       <div className="orders-items">
         <h2>{c.items}</h2>
         <TableFrame label={c.items} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-items-scroll">
