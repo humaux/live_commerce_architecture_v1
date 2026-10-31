@@ -2,34 +2,34 @@
  * Depends on: existing entry markup and shared focus/reset styles.
  * Used by: Entry and PasswordAuth.
  * Invariants: 448px desktop / 358px at 390px; natural height and scrolling for errors/locales. */
-.entry-root.entry-parity { background: #f6f7f8; color: #142942; font-family: "Noto Sans SC", "Noto Sans TC", Arial, sans-serif; }
+.entry-root.entry-parity { background: rgb(246, 247, 248); color: var(--ds-ink); font-family: "Noto Sans SC", "Noto Sans TC", Arial, sans-serif; }
 .entry-parity .entry-topbar { height: 64px; min-height: 64px; border: 0; }
-.entry-parity .entry-brand { padding: 0 64px; font-size: 22px; font-weight: 500; letter-spacing: 0; color: #142942; }
+.entry-parity .entry-brand { padding: 0 64px; font-size: 22px; font-weight: 500; letter-spacing: 0; color: var(--ds-ink); }
 .entry-parity .entry-account-tools { margin-left: auto; padding: 10px 24px; }
-.entry-parity .entry-language select { min-height: 44px; height: 44px; color: #142942; background: #fff; border: 1px solid #dce3ed; border-radius: 5px; }
+.entry-parity .entry-language select { min-height: 44px; height: 44px; color: var(--ds-ink); background: var(--ds-surface); border: 1px solid var(--line); border-radius: 5px; }
 .entry-parity .entry-main { width: min(448px, calc(100% - 32px)); margin: 0 auto; padding: 76px 0 48px; }
-.entry-parity .entry-auth-panel { width: 100%; margin: 0; padding: 32px; border: 1px solid #dce3ed; border-radius: 12px; background: #fff; text-align: left; }
-.entry-parity .entry-auth-panel h1 { margin: 0 0 12px; font-size: 26px; line-height: 39px; font-weight: 500; letter-spacing: 0; color: #142942; }
-.entry-parity .entry-auth-panel > p { margin: 0 0 12px; max-width: none; font-size: 14px; line-height: 21px; color: #52637d; }
+.entry-parity .entry-auth-panel { width: 100%; margin: 0; padding: 32px; border: 1px solid var(--line); border-radius: 12px; background: var(--ds-surface); text-align: left; }
+.entry-parity .entry-auth-panel h1 { margin: 0 0 12px; font-size: 26px; line-height: 39px; font-weight: 500; letter-spacing: 0; color: var(--ds-ink); }
+.entry-parity .entry-auth-panel > p { margin: 0 0 12px; max-width: none; font-size: 14px; line-height: 21px; color: var(--muted); }
 .entry-parity .entry-auth-panel form { margin-top: 0; }
 .entry-parity .entry-form { display: flex; flex-direction: column; gap: 12px; }
-.entry-parity .entry-form label { display: grid; gap: 6px; font-size: 14px; font-weight: 500; line-height: 21px; color: #1f2937; }
-.entry-parity .entry-form input { width: 100%; height: 44px; min-height: 44px; padding: 10px 12px; border: 1px solid #dce3ed; border-radius: 5px; box-shadow: none; font: inherit; font-weight: 400; color: #142942; background: #fff; caret-color: #142942; }
-.entry-parity input::placeholder { color: #68758a; opacity: 1; }
-.entry-parity .entry-form small { font-size: 12px; line-height: 18px; color: #52637d; }
+.entry-parity .entry-form label { display: grid; gap: 6px; font-size: 14px; font-weight: 500; line-height: 21px; color: var(--ui-text); }
+.entry-parity .entry-form input { width: 100%; height: 44px; min-height: 44px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 5px; box-shadow: none; font: inherit; font-weight: 400; color: var(--ds-ink); background: var(--ds-surface); caret-color: var(--ds-ink); }
+.entry-parity input::placeholder { color: rgb(104, 117, 138); opacity: 1; }
+.entry-parity .entry-form small { font-size: 12px; line-height: 18px; color: var(--muted); }
 .entry-parity .entry-actions, .entry-parity .entry-sent-actions { display: flex; flex-direction: column; gap: 12px; margin: 0; }
 .entry-parity .entry-auth-panel button, .entry-parity .entry-auth-panel a { display: flex; align-items: center; justify-content: center; min-height: 44px; width: 100%; padding: 10px 12px; font-size: 14px; line-height: 22px; font-weight: 500; border-radius: 5px; text-decoration: none; }
-.entry-parity .entry-auth-panel button { background: #fff; border: 1px solid #dce3ed; color: #142942; }
-.entry-parity .entry-auth-panel .entry-primary { background: #142942; color: #fff; border-color: #142942; }
-.entry-parity .entry-auth-panel .entry-primary:hover:enabled { background: #24415e; }
+.entry-parity .entry-auth-panel button { background: var(--ds-surface); border: 1px solid var(--line); color: var(--ds-ink); }
+.entry-parity .entry-auth-panel .entry-primary { background: var(--ds-ink); color: var(--ds-surface); border-color: var(--ds-ink); }
+.entry-parity .entry-auth-panel .entry-primary:hover:enabled { background: rgb(36, 65, 94); }
 .entry-parity .entry-auth-panel button:disabled { opacity: .55; cursor: not-allowed; }
 .entry-parity .entry-code-actions:not(.entry-reset-code) .entry-primary { order: -1; }
 .entry-parity .entry-auth-panel .entry-scope { display: flex; flex-direction: column; gap: 12px; font-size: 0; margin: 12px 0; }
-.entry-parity .entry-scope a { border: 1px solid #dce3ed; color: #142942 !important; }
-.entry-parity .entry-auth-panel > .entry-parity-operator { margin: 12px 0 0; font-size: 12px; line-height: 18px; color: #52637d; }
-.entry-parity .entry-auth-panel .entry-message.error { padding: 12px; border: 1px solid #f0bdc4; border-radius: 6px; background: #fff2f3; color: #9f2738; }
-.entry-parity :is(button, a, input, select):focus-visible { outline: 3px solid #1675b5; outline-offset: 3px; }
-.entry-parity ::selection { color: #fff; background: #24415e; }
+.entry-parity .entry-scope a { border: 1px solid var(--line); color: var(--ds-ink) !important; }
+.entry-parity .entry-auth-panel > .entry-parity-operator { margin: 12px 0 0; font-size: 12px; line-height: 18px; color: var(--muted); }
+.entry-parity .entry-auth-panel .entry-message.error { padding: 12px; border: 1px solid rgb(240, 189, 196); border-radius: 6px; background: rgb(255, 242, 243); color: rgb(159, 39, 56); }
+.entry-parity :is(button, a, input, select):focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.entry-parity ::selection { color: var(--ds-surface); background: rgb(36, 65, 94); }
 @media (max-width: 680px) {
   .entry-parity .entry-brand { padding: 0 16px; font-size: 18px; }
   .entry-parity .entry-account-tools { padding: 10px 16px; }

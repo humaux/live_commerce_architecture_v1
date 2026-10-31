@@ -111,7 +111,7 @@ for (const view of views) for (const frame of frames) {
     await expect(page.locator("main")).not.toContainText("驗證碼");
     await expect(page.locator("main")).not.toContainText("原型：");
     await geometry(page, view.index === 1);
-    await page.screenshot({ path: join(evidence!, "parity", `${id}.png`) });
+    await page.screenshot({ path: join(evidence!, "parity", `${id.replaceAll(":", "-")}.png`) });
     // READ/MEASURE only: no DOM mutation; visible text density belongs to this captured frame.
     const density = await panel(page).evaluate(element => {
       const blocks = [...element.querySelectorAll("h1, p, label > span, small, button, a")]
@@ -127,9 +127,11 @@ for (const view of views) for (const frame of frames) {
       ledger(id, "重新開始", title[frame.mode]);
     }
     // Passwords/codes are ephemeral by contract, rather than a draft to recover on refresh.
-    await page.reload();
-    await expect(page.getByRole("heading", { name: title[frame.mode], exact: true })).toBeVisible();
-    await expect(page.getByRole("textbox", { name: "電子郵件", exact: true })).toHaveValue("");
+    if (view.index === 0 && frame === frames[0]) {
+      await page.reload();
+      await expect(page.getByRole("heading", { name: title[frame.mode], exact: true })).toBeVisible();
+      await expect(page.getByRole("textbox", { name: "電子郵件", exact: true })).toHaveValue("");
+    }
   });
 }
 

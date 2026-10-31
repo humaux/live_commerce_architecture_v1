@@ -90,7 +90,7 @@ export async function dashboardParity(page: Page, evidence: string) {
   };
   const receipt = (frame: string, control: string, result: string) => appendFileSync(join(evidence, "parity-clicks.jsonl"), JSON.stringify({ frame, route: page.url(), control, operation: "click", expected: result, actual: "assertion passed", environment: "MOCK" }) + "\n");
   const screenshot = async (id: string) => {
-    await page.screenshot({ path: join(evidence, "parity", `${id}.png`) });
+    await page.screenshot({ path: join(evidence, "parity", `${id.replaceAll(":", "-")}.png`) });
     // READ/MEASURE only: capture current viewport text density without changing DOM.
     const density = await page.getByTestId("dashboard-page").evaluate(element => {
       const blocks = [...element.querySelectorAll("h1, h2, h3, p, dt, dd, label, button, a")]

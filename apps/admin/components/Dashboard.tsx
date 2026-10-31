@@ -42,7 +42,7 @@ export function Dashboard({ locale, stores: _stores, store, initialError, render
     <div className={`entry-dashboard${view !== "overview" ? " entry-dashboard-task" : ""}`} data-testid="dashboard-page">
       {view !== "overview" && store ? <DashboardTasks key={scope} locale={locale} store={store.id} currency={store.currency} view={view} scope={scope} link={link} /> : <>
         <header className="entry-dashboard-heading"><div><h1>{c.title}</h1>{d && <p>{day} · {c.ship} {d.todos.to_ship}</p>}</div>
-          <div className="entry-dashboard-actions" data-testid="dashboard-actions"><Link href={link("products/new")}>{c.createProduct}</Link><Link className="entry-task-primary" href={link("studio")}>{c.startLive}</Link></div>
+          <div className="entry-dashboard-actions" data-testid="dashboard-actions"><Link href={link("orders/new")} data-testid="action-create-order">{old.createOrder}</Link><Link href={link("products/new")}>{c.createProduct}</Link><Link className="entry-task-primary" href={link("studio")}>{c.startLive}</Link></div>
         </header>
         {(read.status === "loading" || read.status === "hidden") && <p role="status">{c.loading}</p>}
         {failure && <div role="status"><p>{failure}</p><button onClick={read.reload}>{old.retry}</button></div>}
