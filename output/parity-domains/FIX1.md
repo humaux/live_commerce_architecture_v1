@@ -35,6 +35,15 @@ Merged `origin/r3/integration` at commit `3c8997eb3` into `unit/parity-domains` 
 | aggregate | Required suite aggregate | Downstream failure caused by bundle:04 failure. | Downstream consequence. |
 | required | Required checks | Downstream failure caused by bundle:04 failure. | Downstream consequence. |
 
+#### Relay 3 (CI Run 41208736454 on head 4b3be53a)
+
+| Failing job | Failing test | Evidence | Class / Root fix |
+|---|---|---|---|
+| 124559978416 (bundle:03, mode `--browser-design`) | `TestBrowserStoreDesign` (`tests/admin/domains-parity.spec.ts:155:36` >> `PARITY-DOMAINS [zh-TW/zh-CN/en] [mobile/desktop]: all signed states, DNS and persisted commands`) | `error-context.md` / `playwright.log:91`: `Error: expect(locator).toBeVisible() failed; Locator: getByTestId('design-domains').getByRole('heading', { name: '網域設定', exact: true }); Expected: visible; Timeout: 10000ms; Error: element(s) not found`. The snapshot confirmed the page returned to `tab === 'hub'` rendering `<button>網店網址</button>` rather than `<section data-testid="design-domains">`. | (b) Active tab state loss across page reload. In `apps/admin/components/Design.tsx`, `tab` was held only in non-persisted React component state `useState<Tab>("hub")`. When Playwright executed `await page.reload()` during domain reload persistence testing (lines 154, 187, 197), `Design` remounted with default `tab === "hub"`, unmounting `DesignDomains`. Persisted active `'domains'` tab and command journal recovery view in `sessionStorage` under `lc.design.tab.${store}` and `storefront-domains-cmd:${store}`. On component mount, restore `tab = "domains"` if either key is present; when navigating away from `'domains'`, remove `lc.design.tab.${store}`. |
+| receipts | `matrix-receipts` | Downstream failure caused by failed member `--browser-design` in bundle:03. | Downstream consequence of job 124559978416. |
+| aggregate | Required suite aggregate | Downstream failure caused by bundle:03 failure. | Downstream consequence. |
+| required | Required checks | Downstream failure caused by bundle:03 failure. | Downstream consequence. |
+
 ### Verification & Artifact Integrity
 - `node scripts/dev/derive-browser-ownership.mjs --check` exits 0 (54 browser modes registered).
 - `gofmt -l tests/foundation/browser_store_design_test.go` clean (exits 0).

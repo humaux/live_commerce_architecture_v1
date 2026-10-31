@@ -16,7 +16,7 @@
 // owns (the server's 422 path is shown on the field) and never keeps the preview token (it only opens the link).
 // Unlike the PII pages it does NOT drop its state when the tab is hidden: unsaved edits must survive a tab switch; every
 // write is still fenced by the session boundary.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { displayTime } from "@live-commerce/format";
 import { Badge } from "@live-commerce/ui";
@@ -205,7 +205,34 @@ function Editor({
   const [live, setLive] = useState(initial.draft.published_version);
   const [media, setMedia] = useState(initial.media);
   const [versions, setVersions] = useState(initial.versions);
-  const [tab, setTab] = useState<Tab>("hub");
+  const [tab, setTabState] = useState<Tab>(() => {
+    try {
+      if (
+        sessionStorage.getItem(`lc.design.tab.${store}`) === "domains" ||
+        sessionStorage.getItem(`storefront-domains-cmd:${store}`)
+      ) {
+        return "domains";
+      }
+    } catch {
+      // storage unavailable in some environments
+    }
+    return "hub";
+  });
+  const setTab = useCallback(
+    (next: Tab) => {
+      try {
+        if (next === "domains") {
+          sessionStorage.setItem(`lc.design.tab.${store}`, "domains");
+        } else {
+          sessionStorage.removeItem(`lc.design.tab.${store}`);
+        }
+      } catch {
+        // ignore storage errors
+      }
+      setTabState(next);
+    },
+    [store],
+  );
   const [address, setAddress] = useState('');
   const [receipt, setReceipt] = useState<VersionList['items'][number] | null>(null);
   const [publishedDoc, setPublishedDoc] = useState<DesignDocument | null>(null);
