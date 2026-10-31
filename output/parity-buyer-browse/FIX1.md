@@ -1,22 +1,17 @@
 # PARITY-BUYER-BROWSE-FIX1 classification
 
 Failing runs for current HEAD:
-- Main workflow: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41244637421
-- Foundation: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41244637317
+- Main workflow: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41249740186
+- Foundation: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41249740189
 
 Base gates run: 41238442379 on 4501b409c success (green base).
-Head at failure: `b681a9a5916eadb334da663a8cf977580c60e87a`.
-All failures are class (a) signed-frame test rewrites or class (b) coverage/registry alignment; no product regressions.
+Head at failure: `fa84c559cc44418951b0f6ec504d2f498645283a`.
 
 | failing job | failing test / evidence | class | what changed |
 |-------------|------------------------|-------|--------------|
-| `foundation` | `tests/storefront/order-gate.mjs: original gate assertions changed (missing: expect(p.getByTestId("cart-empty")).toContainText("Loading…"))` | **(a)** | Updated `GATE_BASELINE` to `b681a9a5916eadb334da663a8cf977580c60e87a` in `tests/ci/next-startup.test.mjs:239`; rewrote `browserOrderCartSamplesValid` in `tests/foundation/buyer_order_evidence_test.go:213` to accept the signed-frame CartLines `role="status"` loading paragraph as an explicit loading state; added `mount-detail-loading-first` case and tightened `blank-first` naming. |
-| `gate (bundle:02 --browser-order)` | `browser_order_chain_test.go:448: cart samples lack explicit visible loading before first publication or exact line continuity afterward` | **(a)** | Same `tests/foundation/buyer_order_evidence_test.go` validator change; `tests/storefront/order-gate.mjs:291` now captures both the CartView skeleton (`[aria-busy="true"]`) and the CartLines detail-loading paragraph (`p[role="status"]`) so the sample before the first line is an explicit loading state. |
-| `gate (--browser-webkit)` | `FAIL: order` — cart mount sample sequence shows `detail_loading: "Loading…"` then a blank frame before the line appears | **(a)** | Same `tests/storefront/order-gate.mjs` sampler and `tests/foundation/buyer_order_evidence_test.go` validator changes; the CartLines `role="status"` paragraph is now recognised as the explicit loading state that excuses the pre-line interval. |
-| `gate (bundle:02 --browser-storefront)` | `PARITY-BUYER-BROWSE RED`: 21 signed-frame assertions failed because `[data-sort="..."]` matched both the native `<select>` and the active sheet option, and `getByRole('heading', { name: c.cartTitle })` matched both the page `<h1>` and the empty-state `<h2>` | **(a)** | Scoped sort-option locators to `a[data-sort="..."]` and cart-heading locator to `level: 1` in `tests/storefront/buyer-browse-parity.spec.ts:402-490`. |
-| `gate (--browser-click-sweep@4/10, 7/10, 8/10)` | `NEW FAIL storefront /pages/contact [page] "(coverage)" coverage-missing: no page-load row was written` | **(b)** | Added `{ route: "/pages/contact", path: "/pages/contact" }` to the actual storefront sweep list in `tests/ui/click-sweep.mjs:294`; aligned the synthetic platform visual universe in `tests/ui/sweep-shard-lib.test.mjs:117` with the real `PLATFORM_PAGES` list. |
-| `aggregate` | `G-UI8 click sweep aggregate: FAIL` — missing `/pages/contact` page rows from shards 4/7/8 | downstream | Resolved by the `tests/ui/click-sweep.mjs:294` route fix. |
-| `receipts` / `required` | matrix-receipts and required job gate report failures for order, storefront, webkit and click-sweep shards | downstream | Resolved by the class (a) and (b) fixes above. |
+| `gate (bundle:02 --browser-storefront)` | `PARITY-BUYER-BROWSE RED`: 9 signed-frame assertions failed — desktop sort-option locators (`a[data-sort="..."]`) resolved to hidden elements because the mobile sort sheet is `display: none` on desktop; the signed desktop frames expose the active sort through the visible native `<select>` | **(a)** | Rewrote desktop sort assertions in `tests/storefront/buyer-browse-parity.spec.ts:404-436` to assert the visible `<select name="sort">` has the active value; kept mobile assertions on the visible sheet option. |
+| `receipts` | `matrix-receipts: RED (1 problem)` — `--browser-storefront` receipt is FAIL | downstream | Resolved by the class (a) fix above. |
+| `required` | `plan=success build=success gate=failure aggregate=success receipts=failure` | downstream | Resolved by the class (a) fix above. |
 
 ## Pre-push checks (performed locally)
 
@@ -26,7 +21,7 @@ node scripts/dev/derive-browser-ownership.mjs
 node scripts/dev/derive-browser-ownership.mjs --check
 # -> (no output) PASS
 node scripts/dev/check-evidence-retention.mjs --base origin/r3/integration
-# -> evidence-retention: PASS (7 output/ files, 247823 bytes vs origin/r3/integration; ADR-20261031)
+# -> evidence-retention: PASS (9 output/ files, 253428 bytes vs origin/r3/integration; ADR-20261031)
 ```
 
 No tests, builds, servers or browsers were started locally per the lane constraints.

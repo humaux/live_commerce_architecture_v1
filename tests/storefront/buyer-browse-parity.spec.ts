@@ -402,8 +402,13 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
         await page.goto(`${origin}/${locale}/products?sort=price_asc`);
         await capture(sortAscFrame);
         await recordStep(sortAscFrame, `/${locale}/products?sort=price_asc`, "sort-asc-check", "signed price_asc option active", async () => {
-          // The native select also carries data-sort; the signed frame assertion targets the active sheet option.
-          await expect(page.locator(`a[data-sort="price_asc"]`)).toBeVisible({ timeout: 2000 });
+          if (isMobile) {
+            // Mobile signed frame renders the sort sheet with the active option visible.
+            await expect(page.locator(`a[data-sort="price_asc"]`)).toBeVisible({ timeout: 2000 });
+          } else {
+            // Desktop signed frame renders the native sort select with the active value.
+            await expect(page.locator('select[name="sort"]')).toHaveValue("price_asc", { timeout: 2000 });
+          }
         });
 
         // Sort price_desc
@@ -411,7 +416,11 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
         await page.goto(`${origin}/${locale}/products?sort=price_desc`);
         await capture(sortDescFrame);
         await recordStep(sortDescFrame, `/${locale}/products?sort=price_desc`, "sort-desc-check", "signed price_desc option active", async () => {
-          await expect(page.locator(`a[data-sort="price_desc"]`)).toBeVisible({ timeout: 2000 });
+          if (isMobile) {
+            await expect(page.locator(`a[data-sort="price_desc"]`)).toBeVisible({ timeout: 2000 });
+          } else {
+            await expect(page.locator('select[name="sort"]')).toHaveValue("price_desc", { timeout: 2000 });
+          }
         });
 
         // Sort title
@@ -419,7 +428,11 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
         await page.goto(`${origin}/${locale}/products?sort=title`);
         await capture(sortTitleFrame);
         await recordStep(sortTitleFrame, `/${locale}/products?sort=title`, "sort-title-check", "signed title sort active", async () => {
-          await expect(page.locator(`a[data-sort="title"]`)).toBeVisible({ timeout: 2000 });
+          if (isMobile) {
+            await expect(page.locator(`a[data-sort="title"]`)).toBeVisible({ timeout: 2000 });
+          } else {
+            await expect(page.locator('select[name="sort"]')).toHaveValue("title", { timeout: 2000 });
+          }
         });
 
         if (isMobile) {

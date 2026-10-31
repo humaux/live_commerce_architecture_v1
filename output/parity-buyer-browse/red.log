@@ -1,0 +1,21 @@
+# PARITY-BUYER-BROWSE RED record
+
+Run: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41249740186
+Head: fa84c559cc44418951b0f6ec504d2f498645283a (merge sha 89f346c6f877f4149900885cf88b37304817c269)
+Base: origin/r3/integration at 4501b409c88542dc63182e619cffd819b194f928 (green)
+
+The previous push (b681a9a59 / fa84c559c) was a tests-only RED adjustment for PARITY-BUYER-BROWSE-FIX1.
+The new signed-frame assertions in tests/storefront/buyer-browse-parity.spec.ts targeted the mobile
+sort-sheet option (`a[data-sort="..."]`) on desktop as well as mobile. On desktop the sort sheet
+is intentionally hidden by CSS (`apps/storefront/app/shop.css:192`) and the signed desktop frames
+(782:3907, 782:3967, 782:4027) expose the active sort through the visible native `<select>`.
+This aligns with the canonical click-sweep evidence (desktop "Sort by" exercised via `selectOption`)
+and the existing product implementation in apps/storefront/components/ListControls.tsx.
+
+Fix (this round): rewrite the desktop sort assertions to check the visible `<select name="sort">`
+value, while keeping the mobile assertions on the visible sheet option. No product code change was
+required because the production UI already matches the signed desktop frame.
+
+Files changed:
+- tests/storefront/buyer-browse-parity.spec.ts:404-436
+- output/ci-select-backend-browser/browser-ownership.json (regenerated)
