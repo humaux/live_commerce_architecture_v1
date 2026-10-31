@@ -404,12 +404,6 @@ function Body({
         </ul>
 
       </section>
-
-      {detail.privacy_actions.length > 0 && <section className="customers-section" aria-label={c.actionsSection}>
-        <h2>{c.actionsSection}</h2><table className="orders-actions-table" data-testid="privacy-actions"><tbody>
-          {detail.privacy_actions.map((action, index) => <tr key={index}><td>{displayTime(locale, action.completed_at)}</td><td>{c.kinds[action.kind.toLowerCase()] ?? "—"}</td></tr>)}
-        </tbody></table>
-      </section>}
       </div>
 
       </div>
