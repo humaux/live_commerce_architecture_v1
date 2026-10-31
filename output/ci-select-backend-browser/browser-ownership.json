@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registryHash": "2c18710235f82d7ca43a6cf6dc1dda8dc89204c7ebf5662b9e765899ad43c701",
+  "registryHash": "196b580890a63075fb77d550a7a4b2290696005b8cea800625f4c17521bfdf26",
   "sources": {
     "tests/admin/ads-model.test.ts": "a89483826fba28e2e86fcc1196475cefe1851cec367e66cfdc7bb69def18f309",
     "tests/admin/ads-request.test.ts": "190103fd72ab76050512616cef988d13d7e3725659883f142710555f36686de5",
@@ -726,6 +726,7 @@
     "tests/storefront/amount-match.test.mjs": "1a82f40cbc42b92c7d5c79c7a171cb88cfd239ed76a3614f7f4e7f2dd15c3d74",
     "tests/storefront/browser-engine.mjs": "5dec33e55e6a5eb155a2b00fc0ed9c564cebf06c55cb24d5e93ea149b29bb711",
     "tests/storefront/browser-gate.mjs": "a90c0697ce659eb77a572f2517617f447930903f9274e808a9e33be21a744ddb",
+    "tests/storefront/buyer-after-parity.mjs": "871164f4d17d0c0b221183089f2ccb3b7bf823c7678977449c4267e6a54fa330",
     "tests/storefront/buyer-comms-gate.mjs": "55c8bb40907fd003258b9fa5909aa9c379845d8e76334e8aafa26b008e134f86",
     "tests/storefront/catalog-media-gate.mjs": "2a88ccf112a2e945b07e9fbc4a9b78f4934111b4c7cd1317bfe0bb0031eabbca",
     "tests/storefront/checkout-v2.mjs": "84b37bc46423bdeac8ffa6a369dacaf06148c950e3335e1d85b0a5f421f7addb",
@@ -779,7 +780,7 @@
     "tests/ui/visual-lint-lib.test.mjs": "5e28a7b30ab357bb6bf266c3426d6fbd1122811fc7a156a077b213095086edd0",
     "tests/ui/visual-scroll-capture.mjs": "538525d5cb94cdc26e91954c0589a48372b5d4ce771721dcbbeb76e6b81a0229",
     "tests/ui/visual-scroll-capture.test.mjs": "1cf6d1a8bcb8481c65d19cd69e7bc1e25701067d4041e86f29b9a0a8cc8a58a5",
-    "scripts/dev/test-local.sh": "2c18710235f82d7ca43a6cf6dc1dda8dc89204c7ebf5662b9e765899ad43c701",
+    "scripts/dev/test-local.sh": "196b580890a63075fb77d550a7a4b2290696005b8cea800625f4c17521bfdf26",
     "playwright.config.ts": "ad5ff56ccc1c4302c7a9daad01eb9e40c3ba02383e1b8692c9a7cf42f6c47c04",
     "apps/admin/package.json": "8ff4057bb534e821455b9cb47b93429a0d66040faad1d9c25edeabd4864dbbb4",
     "apps/storefront/package.json": "e25eed3dcbc88ef821828200325f2cb7f92934447e1978998efdd4fa58eb8987",
@@ -3257,6 +3258,30 @@
       "evidence": [
         "registry:--browser-admin-parity -> tests/admin/parity-shell-browser.mjs",
         "scripts/dev/test-local.sh:--browser-admin-parity:lc_build=admin"
+      ]
+    },
+    "--browser-buyer-after-parity": {
+      "specs": [
+        "tests/storefront/buyer-after-parity.mjs"
+      ],
+      "inputs": [
+        "tests/browser-evidence.mjs",
+        "tests/helpers/next-startup.mjs",
+        "tests/storefront/browser-engine.mjs",
+        "tests/storefront/buyer-after-parity.mjs",
+        "tests/storefront/shop-fake-api.mjs"
+      ],
+      "apps": [
+        "storefront"
+      ],
+      "unresolved": [],
+      "foundationInputs": [],
+      "foundationUnresolvedInputs": [],
+      "evidence": [
+        "registry:--browser-buyer-after-parity -> tests/storefront/buyer-after-parity.mjs",
+        "scripts/dev/test-local.sh:--browser-buyer-after-parity:lc_build=storefront",
+        "tests/storefront/buyer-after-parity.mjs:server/import apps/storefront",
+        "tests/storefront/shop-fake-api.mjs:server/import apps/storefront"
       ]
     }
   }
