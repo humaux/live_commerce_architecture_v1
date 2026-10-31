@@ -40,6 +40,9 @@ const frames: Frame[] = [
   { ids: ["1253:18496", "1253:18519"], mode: "reset", state: "code", error: "throttled", message: "嘗試次數過多，請 15 分鐘後再試。" },
   { ids: ["1253:18557", "1253:18577"], mode: "signup", state: "code" },
 ];
+// #369 review P2-2: the reload witness must start from entered state, otherwise an empty field proves nothing.
+const reloadWitness = frames.find(f => f.mode === "signin" && f.state === "code" && f.error === "invalid_code");
+if (!reloadWitness) throw new Error("parity-entry: no signin code/invalid_code frame for the reload witness");
 const title = { signin: "登入商家工作區", signup: "建立商家帳號", reset: "重設密碼" };
 const submit = { signin: "繼續", signup: "建立帳號", reset: "寄送確認碼" };
 const verify = { signin: "登入", signup: "建立帳號", reset: "設定密碼並登入" };
@@ -126,10 +129,13 @@ for (const view of views) for (const frame of frames) {
       await expect(page.getByRole("heading", { name: title[frame.mode], exact: true })).toBeVisible();
       ledger(id, "重新開始", title[frame.mode]);
     }
-    // Passwords/codes are ephemeral by contract, rather than a draft to recover on refresh.
-    if (view.index === 0 && frame === frames[0]) {
+    // Passwords/codes are ephemeral by contract, rather than a draft to recover on refresh. The single reload runs on a
+    // frame with typed email, password and code (signin code step after invalid_code), so "empty after reload" can fail.
+    if (view.index === 0 && frame === reloadWitness) {
+      await expect(page.getByLabel("6 位數確認碼", { exact: true })).toHaveCount(1);
       await page.reload();
       await expect(page.getByRole("heading", { name: title[frame.mode], exact: true })).toBeVisible();
+      await expect(page.getByLabel("6 位數確認碼", { exact: true })).toHaveCount(0);
       await expect(page.getByRole("textbox", { name: "電子郵件", exact: true })).toHaveValue("");
     }
   });
