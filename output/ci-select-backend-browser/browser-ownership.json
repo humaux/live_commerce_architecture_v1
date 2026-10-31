@@ -188,7 +188,7 @@
     "tests/admin/returns-request.test.ts": "7716794c6a76666e182797bec5c7c8b38816101ac36de445cd3f4c8127613c80",
     "tests/admin/returns-ui.spec.ts": "56a4f906c616b4d8fe50ca565a4afa534027b0894af3e5beff900fa63a2352c3",
     "tests/admin/safe-json-cancel.test.ts": "ab24bd8a7156d66a0f738ec12cc24c6a742c947fd8bbe08f534a07f42c60e8ee",
-    "tests/admin/settings-real.spec.ts": "98f169456b5aa8538648981ec93a0af41c7e77b22ac74eed66770e9b5721abab",
+    "tests/admin/settings-real.spec.ts": "fab62f376fea61b8d15b4a9b7ecace36355430881fd08f80791904e3e81df164",
     "tests/admin/settings-v2.spec.ts": "cea92c0c14643b9df45c60a0b34389c265a809e68036d689e201917ed8880caa",
     "tests/admin/settlements.spec.ts": "fbf66fcae09219c01f5fa3e123755dfe2b0d94e9b488667fa9951317106a9bbb",
     "tests/admin/shell-architecture.test.mjs": "f324d97d97de3c8883a35523519c1f9b7ecc6a6a90c936e8e93114b3f2ce592b",

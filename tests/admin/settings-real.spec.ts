@@ -330,7 +330,7 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await expect(page.getByTestId("settings-status")).toContainText("home");
 
   await page
-    .getByRole("button", { name: "Delivery", exact: false })
+    .getByRole("button", { name: /^\d+\s*Delivery$/ })
     .click();
   await expect(
     page
@@ -398,7 +398,7 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await expect(svcName).toHaveValue("Remote saved name");
   await page.reload();
   await page.getByRole("button", { name: "Edit settings", exact: true }).click();
-  await page.getByRole("button", { name: "Delivery", exact: false }).click();
+  await page.getByRole("button", { name: /^\d+\s*Delivery$/ }).click();
   await expect(svcName).toHaveValue("Remote saved name"); // persisted
   // Lost response WITHOUT a page reload: the write commits, the reply is lost, the pending banner offers an exact-replay retry.
   const svcWrites: Array<{ key: string; body: string }> = [];
@@ -434,7 +434,7 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page.unroute(svcPath);
   await page.reload();
   await page.getByRole("button", { name: "Edit settings", exact: true }).click();
-  await page.getByRole("button", { name: "Delivery", exact: false }).click();
+  await page.getByRole("button", { name: /^\d+\s*Delivery$/ }).click();
   await expect(svcName).toHaveValue("Lost reply name"); // persisted after the replay
   const originalCSRF = (await context.cookies()).find(
     (c) => c.name === "__Host-commerce_csrf",
