@@ -24,7 +24,7 @@ export async function dashboardParity(page: Page, evidence: string) {
   };
   const dashboardURL = "**/api/stores/*/tools/dashboard";
   // FIXTURE only: an existing closed dashboard response, including a historical offline order; never a real order write.
-  const order = { order_id: "33333333-3333-4333-8333-333333333333", created_at: "2026-10-30T01:00:00Z", updated_at: "2026-10-30T01:00:00Z",
+  const order = { order_id: "33333333-3333-4333-8333-333333333333", created_at: "2026-10-30T01:00:00.000000Z", updated_at: "2026-10-30T01:00:00.000000Z",
     currency: "TWD", total_minor: 2500, commercial_state: "AWAITING_TRANSFER", fulfillment_state: "MANUAL_UNASSIGNED", payment_state: "NOT_STARTED",
     test_mode: false, work_state: "NONE", refunded_minor: 0, refund_pending_minor: 0, pickup_source: null, payment_mode: "bank_transfer",
     collection_state: null, cod_surcharge_minor: null, cod_collect_minor: null, source: "merchant_manual" };

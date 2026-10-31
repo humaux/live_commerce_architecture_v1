@@ -349,19 +349,21 @@ export function PasswordAuth({
 
           </label>
           {mode === "reset" && (
-            <label>
-              <span>{c.newPassword}</span>
-              <input
-                name="new_password"
-                type="password"
-                autoComplete="new-password"
-                value={newPassword}
-                onChange={(event) => setNewPassword(event.target.value)}
-                disabled={busy}
-                required
-              />
+            <>
+              <label>
+                <span>{c.newPassword}</span>
+                <input
+                  name="new_password"
+                  type="password"
+                  autoComplete="new-password"
+                  value={newPassword}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                  disabled={busy}
+                  required
+                />
+              </label>
               <small>{c.policyHint}</small>
-            </label>
+            </>
           )}
           <div className={`entry-actions entry-code-actions${mode === "reset" ? " entry-reset-code" : ""}`}>
             <button type="button" onClick={() => void sendStep1(true)} disabled={busy || secondsLeft > 0}>
