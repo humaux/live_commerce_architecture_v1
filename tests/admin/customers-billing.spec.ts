@@ -177,7 +177,10 @@ test("CB11 customer detail: facts, orders, claims, consent; withdrawal is one ke
   expect(exports[0].status).toBe(200);
   expect(exports[0].key).toMatch(/^[A-Za-z0-9_.:-]{8,128}$/);
   expect(exports[0].body ?? "").toBe("");
-  await expect(page.getByText(en.downloadDone)).toBeVisible();
+  // The signed flow acknowledges the same successful export on a dedicated result screen.
+  await expect(page.getByRole("heading", { name: en.people.downloaded, exact: true })).toBeVisible();
+  await page.getByRole("button", { name: en.people.backCustomer, exact: true }).click();
+  await expect(page.getByTestId("customer-orders")).toBeVisible();
   // the EXPORT is now a privacy action of this customer: the detail must still decode and list it after the re-read
   await expect(page.getByText(en.unavailable)).toHaveCount(0);
   await page.reload();
@@ -221,13 +224,16 @@ test("CB11 erase: typed confirmation, what is kept, refused while a payment is o
   await dialog.getByRole("checkbox", { name: en.people.checked, exact: true }).check();
   await expect(submit).toBeEnabled();
   await submit.click();
-  await expect(page.getByTestId("erase-problem")).toHaveText(en.errors.erasure_blocked);
+  // Refusal is now a signed result screen; retain the transaction refusal and unchanged-customer checks.
+  await expect(page.getByRole("heading", { name: en.people.blocked, exact: true })).toBeVisible();
+  await expect(page.getByText(en.people.blockedBody, { exact: true })).toBeVisible();
   expect(posts).toHaveLength(1);
   expect(posts[0].status).toBe(409);
   expect(posts[0].body).toBe(JSON.stringify({ confirm: "ERASE" }));
   expect(posts[0].key).toMatch(/^[A-Za-z0-9_.:-]{8,128}$/);
   await expect(page.getByTestId("customer-erased")).toHaveCount(0);
-  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: en.people.backCustomer, exact: true }).click();
+  await expect(page.getByTestId(`customer-order-${order}`)).toBeVisible();
 
   // (b) the erasable customer: one request, a summary, the erased state survives a reload and shows in the list
   await page.goto(`/en/customers/${erasable}?store=${store}`);
@@ -249,7 +255,7 @@ test("CB11 erase: typed confirmation, what is kept, refused while a payment is o
   await expect(page.getByTestId("consent-marketing_messages")).toContainText(en.people.withdrawn);
   await page.goto(`/en/customers?store=${store}`);
   await expect(page.getByTestId(`customer-row-${erasable}`)).toContainText(en.erased);
-  await expect(page.getByTestId(`customer-row-${erasable}`)).toContainText(en.consentNone);
+  await expect(page.getByTestId(`customer-row-${erasable}`)).toContainText(en.people.withdrawn);
   await noSecrets(page);
 });
 

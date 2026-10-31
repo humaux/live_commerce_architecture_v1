@@ -72,6 +72,26 @@ test("customer row invariants: nulls for bundle-only/erased, counts, money, cons
   assert.equal(parseCustomer(erased).active, false);
 });
 
+test("additive consent state distinguishes absence and withdrawal without accepting a contradictory grant", () => {
+  for (const marketing of ["never", "withdrawn", "granted"] as const) {
+    const consent_state = { marketing_messages: marketing, ads_personalization: "never" };
+    const row = { ...customer(), consents: { marketing_messages: marketing === "granted", ads_personalization: false }, consent_state };
+    assert.deepEqual(parseCustomerList({ items: [row], next_cursor: "" }).items[0].consent_state, consent_state);
+    assert.deepEqual(parseCustomerDetail({ ...detail(), ...row }, id).consent_state, consent_state);
+  }
+  for (const consent_state of [
+    { marketing_messages: "withdrawn", ads_personalization: "never" }, // boolean still true
+    { marketing_messages: "granted", ads_personalization: "granted" }, // ads boolean still false
+    { marketing_messages: "granted", ads_personalization: "unknown" },
+    { marketing_messages: "granted" },
+    { marketing_messages: "granted", ads_personalization: "never", tenant_id: id },
+    null,
+  ]) {
+    assert.throws(() => parseCustomer({ ...customer(), consent_state }));
+    assert.throws(() => parseCustomerDetail({ ...detail(), consent_state }, id));
+  }
+});
+
 test("customer detail: bounded lists, order summaries reuse the orders parser, id must match", () => {
   const parsed = parseCustomerDetail(detail(), id);
   assert.equal(parsed.orders.length, 1);
