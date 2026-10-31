@@ -1,15 +1,19 @@
 # PARITY-BUYER-BROWSE-FIX1 classification
 
-Failing run: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41240375377
+Failing run: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41241504659
 Base gates run: 41238442379 on 4501b409c success (green base).
 
 | failing job | failing test / evidence | class | what changed |
 |-------------|------------------------|-------|--------------|
-| `build` | `app/[locale]/search/page.tsx(31,38): error TS2339: Property 'searchQuery' does not exist on type 'Copy'.` | **(b)** | Added `searchQuery` to `apps/storefront/lib/shop-copy.ts` for all three locales (`en`: "Tote", `zh-TW`/`zh-CN`: "托特包"). |
-| `foundation` | `G-UI8 storefront pages and the sweep's STOREFRONT_ROUTES are the same set`: actual includes `/pages/contact`, expected set does not. | **(b)** | Added `/pages/contact` to `tests/ui/sweep-shard-lib.mjs` `STOREFRONT_ROUTES`; updated assertion count from 17 to 18 storefront routes in `tests/ui/sweep-shard-lib.test.mjs`. |
-| `aggregate` | `no click-sweep shard evidence found: every shard job failed before writing it` / `no visual-lint shard evidence found` | **(b)** | Downstream of `build` failure; should pass once build is green. |
-| `receipts` | `matrix-receipts: RED (77 problem(s))` — all modes report `no receipt (job wrote none)` | **(b)** | Downstream of `build` failure and skipped gate; should pass once build/foundation are green. |
-| `required` | `plan=success build=failure gate=skipped aggregate=failure receipts=failure` | **(b)** | Downstream of `build`/`aggregate`/`receipts` failures. |
+| `gate (--browser-click-sweep@4/10)` | `NEW FAIL storefront /pages/contact mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written` | **(b)** | Added `/pages/contact` to `tests/ui/sweep-shard-lib.mjs:16`; updated storefront route count assertion from 17 to 18 in `tests/ui/sweep-shard-lib.test.mjs:52`. |
+| `gate (--browser-click-sweep@7/10)` | `NEW FAIL storefront /pages/contact desktop/en [page] "(coverage)" coverage-missing` | **(b)** | Same `tests/ui/sweep-shard-lib.mjs:16` route-registry fix. |
+| `gate (--browser-click-sweep@8/10)` | `NEW FAIL storefront /pages/contact desktop/zh-TW [page] "(coverage)" coverage-missing` | **(b)** | Same `tests/ui/sweep-shard-lib.mjs:16` route-registry fix. |
+| `gate (--browser-webkit)` | `FAIL: order` — `ExpectError: getByTestId('cart-empty') expected "Loading…", received ""` | **(a)** | Rewrote the pending-cart assertion in `tests/storefront/order-gate.mjs:353` to check the signed-frame skeleton (`[aria-busy="true"]` with `aria-label=shopCopy.en.loading`); updated the BC02 DOM sampler (`tests/storefront/order-gate.mjs:287-296`), mount click target (`tests/storefront/order-gate.mjs:363`) and post-failure assertion (`tests/storefront/order-gate.mjs:387`) to match the skeleton. |
+| `gate (bundle:02)` | `--browser-order`: `TestBrowserBuyerOrderUI` FAIL — same cart-empty "Loading…" mismatch | **(a)** | Same `tests/storefront/order-gate.mjs` rewrite as above. |
+| `gate (bundle:02)` | `--browser-storefront`: `ExpectError: getByRole('heading', { level: 1 }) expected "Tableware", received "Daily Series"` | **(a)** | Rewrote collection-page heading assertion in `tests/storefront/shop-real-gate.mjs:168` to expect `COPY.dailySeries` (signed PARITY-BUYER-BROWSE series title). |
+| `aggregate` | `G-UI8 click sweep aggregate: FAIL` — 3 missing contact page rows | **(b)** | Downstream of the `tests/ui/sweep-shard-lib.mjs:16` route fix. |
+| `receipts` | `matrix-receipts: RED (6 problem(s))` — click-sweep shards 4/7/8, order, storefront, webkit receipts FAIL | downstream | Downstream of the class (a) and (b) fixes above. |
+| `required` | `plan=success build=success gate=failure aggregate=failure receipts=failure` | downstream | Downstream of the class (a) and (b) fixes above. |
 
 ## Known base issues — class (c), NOT fixed in this PR
 
