@@ -418,7 +418,7 @@ for (const [key, n, kind, frames] of [["home", 0, "home", { d: "29:1064", m: "29
 // terminal order views (no payment entry)
 for (const [key, n, o, frames, text, headings] of [
   ["completed", 0, { line: "bag", unit: 48000, commercial: "CONFIRMED", fulfillment: "MERCHANT_SHIPPED", pay: { state: "CAPTURED", handoff: "CLOSED", methods: false },
-    shipment: { status: "SHIPPED", carrier_code: "other", carrier_name: "其他物流", // validShipment (lib/purchase.ts) refuses "other" with a null name tracking_number: "TRK12345", tracking_url: null, recorded_at: iso(-3600e3) } },
+    shipment: { status: "SHIPPED", carrier_code: "other", carrier_name: "其他物流", /* validShipment (lib/purchase.ts) refuses "other" with a null name */ tracking_number: "TRK12345", tracking_url: null, recorded_at: iso(-3600e3) } },
     { d: "63:1475", m: "63:1476" }, ["已完成", "這筆訂單已完成", "訂單資訊保留供您核對。", "收納袋 × 1", "付款狀態", "已付款", "訂單狀態", "商品金額", "NT$480", "運費", "NT$0", "合計"], ["訂購商品", "付款與配送"]],
   ["cancelled", 0, { line: "bag", unit: 48000, commercial: "CANCELLED", pay: { state: "NOT_STARTED", handoff: "NONE", methods: false } },
     { d: "63:1477", m: "63:1478" }, ["已取消", "這筆訂單已取消", "無需再為這筆訂單付款。", "收納袋 × 1", "付款狀態", "未付款", "訂單狀態", "商品金額", "NT$480", "這筆訂單已取消，不提供付款入口。", "合計"], ["訂購商品", "付款與配送"]],
