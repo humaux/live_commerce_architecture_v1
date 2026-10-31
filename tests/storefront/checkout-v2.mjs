@@ -396,9 +396,9 @@ export async function checkoutV2Suite({ newContext, origin, product, recipient, 
 // PARITY-CHECKOUT authority: ux-checkout/DELIVERY.md, current controls polish 2026-10-29.
 // Expectations are signed buyer copy, independent of the implementation's translation exports.
 const parityCopy = {
-  "zh-TW": { title: "核對訂單", total: "最終應付", details: "查看明細", help: "付款時機說明", online: "送出後線上付款", cod: "貨到付款", submit: "送出訂單", submitting: "正在送出訂單", unknown: "確認訂單狀態中", confirm: "確認新金額", legacy: ["結帳", "本次報價商品"], legacyTotal: "訂單金額" },
-  "zh-CN": { title: "核对订单", total: "最终应付", details: "查看明细", help: "付款时间说明", online: "提交后在线付款", cod: "货到付款", submit: "提交订单", submitting: "正在提交订单", unknown: "正在确认订单状态", confirm: "确认新金额", legacy: ["结账", "本次报价商品"], legacyTotal: "订单金额" },
-  en: { title: "Review your order", total: "Final amount due", details: "View details", help: "Payment timing help", online: "Pay online after placing the order", cod: "Cash on delivery", submit: "Place order", submitting: "Submitting order", unknown: "Checking order status", confirm: "Confirm new total", legacy: ["Checkout", "Items in this quotation"], legacyTotal: "Order total" },
+  "zh-TW": { title: "核對訂單", total: "最終應付", codDue: "到貨需付", details: "查看明細", help: "付款時機說明", online: "送出後線上付款", cod: "貨到付款", submit: "送出訂單", submitting: "正在送出訂單", unknown: "確認訂單狀態中", confirm: "確認新金額", legacy: ["結帳", "本次報價商品"], legacyTotal: "訂單金額" },
+  "zh-CN": { title: "核对订单", total: "最终应付", codDue: "到货需付", details: "查看明细", help: "付款时间说明", online: "提交后在线付款", cod: "货到付款", submit: "提交订单", submitting: "正在提交订单", unknown: "正在确认订单状态", confirm: "确认新金额", legacy: ["结账", "本次报价商品"], legacyTotal: "订单金额" },
+  en: { title: "Review your order", total: "Final amount due", codDue: "Due on delivery", details: "View details", help: "Payment timing help", online: "Pay online after placing the order", cod: "Cash on delivery", submit: "Place order", submitting: "Submitting order", unknown: "Checking order status", confirm: "Confirm new total", legacy: ["Checkout", "Items in this quotation"], legacyTotal: "Order total" },
 };
 const parityFrames = {
   card: { default: ["1429:23435", "1429:23484"], reconfirm: ["1429:23533", "1429:23577"], submitting: ["1429:23621", "1429:23661"], unknown: ["1429:23701", "1429:23741"] },
@@ -476,7 +476,8 @@ async function checkoutParitySuite({ newContext, origin, product, recipient, evi
       await check("required facts", "destination, recipient and phone remain together; a single server final total anchors the bar", async () => {
         for (const key of ["recipient_name", "phone", "line1", "city"]) await expect(review).toContainText(recipient[key]);
         await expect(radio).toBeChecked();
-        await expect(footer.getByText(c.total, { exact: true })).toBeVisible();
+        // #422: the COD bar carries the Figma due label (OC-09b); every other mode keeps the final-total label.
+        await expect(footer.getByText(mode === "cash_on_delivery" ? c.codDue : c.total, { exact: true })).toBeVisible();
         await expect(footer.locator("strong")).toHaveText(payable);
         await expect(page.getByText(payable, { exact: true }).and(page.locator(":visible"))).toHaveCount(1);
         await expect(footer).toContainText(mode === "cash_on_delivery" ? c.cod : c.online);

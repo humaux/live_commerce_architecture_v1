@@ -694,7 +694,7 @@ export default function CheckoutFlow({
               const controls = !!quote && !busy && pendingKind !== "checkout";
               return <div className="checkout-bar-summary" data-testid={due ? "footer-cod-due" : undefined}>
                 <div className="checkout-bar-amount">
-                  <span>{quote ? v2.total : copy.subtotal}</span>
+                  <span>{due ? due.label : quote ? v2.total : copy.subtotal}</span>
                   {controls && <button type="button" className="checkout-details-toggle" data-testid="checkout-details-toggle" aria-expanded={detailsOpen} aria-controls="checkout-details"
                     onClick={() => setDetailsOpen((open) => !open)}>{v2.details}</button>}
                   <strong>{pendingKind === "checkout" ? "—" : due ? due.amount : quote
