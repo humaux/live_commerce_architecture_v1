@@ -1,5 +1,6 @@
 // Purpose: signed-frame copy (zh-TW / zh-CN / en) of the buyer privacy and data-deletion pages (frames 5:15460.. 5:15793, 26:888/1150, 29:950.., 37:1083..1298).
-// Depends on: @live-commerce/i18n (Locale). Used by: components/PrivacyCenter.tsx, app/[locale]/data-deletion/page.tsx.
+// Depends on: @live-commerce/i18n (Locale).
+// Used by: components/PrivacyCenter.tsx, app/[locale]/data-deletion/page.tsx, components/order-status/{OrderStatusView,OrderTerminalView,format}.tsx|ts.
 // Invariants: zh-TW is the verbatim frame text; prototype-only strings of the frames (原型, 預填示範, 示範回應) are deliberately not carried; the privacy notice
 // wording and its LC_PRIVACY_POLICY_VERSION stay in lib/privacy-copy.ts (changing that wording bumps the version there).
 import type { Locale } from "@live-commerce/i18n";

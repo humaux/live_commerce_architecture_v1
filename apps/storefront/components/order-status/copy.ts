@@ -1,5 +1,6 @@
 // Purpose: signed-frame copy (zh-TW / zh-CN / en) of the buyer order status page (frames 4:9963.. 1198:14549.. 1207:11941.. 1222:19371.. 63:1475.. 29:1064..).
-// Depends on: @live-commerce/i18n (Locale). Used by: components/order-status/OrderStatusView.tsx and OrderTerminalView.tsx.
+// Depends on: @live-commerce/i18n (Locale).
+// Used by: components/order-status/OrderStatusView.tsx, OrderTerminalView.tsx and format.ts.
 // Invariants: zh-TW is the verbatim frame text; prototype-only frame strings (原型示範 notices, 示範 tags, prototype switches) are not carried; pickup and
 // cash-on-delivery wording stays in lib/cvs-copy.ts and lib/cod-copy.ts (their frame text already matches), so those states are not duplicated here.
 import type { Locale } from "@live-commerce/i18n";

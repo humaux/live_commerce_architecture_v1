@@ -1959,9 +1959,7 @@
         "admin",
         "storefront"
       ],
-      "unresolved": [
-        "tests/storefront/privacy-buyer.mjs: unresolved import ../../apps/storefront/components/privacy/copy.ts"
-      ],
+      "unresolved": [],
       "foundationInputs": [
         "tests/admin/customer-tags-bff.test.ts",
         "tests/admin/customer-tags-client.test.mjs",
@@ -2044,6 +2042,7 @@
         "tests/foundation/browser_w6_customers_reports_test.go -> tests/admin/customer-tags.spec.ts",
         "tests/foundation/browser_w6_customers_reports_test.go -> tests/admin/reports.spec.ts",
         "tests/foundation/browser_w6_customers_reports_test.go:server/import apps/admin",
+        "tests/storefront/privacy-buyer.mjs:import apps/storefront/components/privacy/copy.ts",
         "tests/storefront/privacy-buyer.mjs:import apps/storefront/lib/privacy-copy.ts",
         "tests/storefront/privacy-buyer.mjs:server/import apps/storefront",
         "tests/storefront/shop-helpers.mjs:server/import apps/storefront"
@@ -2153,9 +2152,7 @@
         "admin",
         "storefront"
       ],
-      "unresolved": [
-        "tests/storefront/ads-consent.mjs: unresolved import ../../apps/storefront/components/privacy/copy.ts"
-      ],
+      "unresolved": [],
       "foundationInputs": [
         "tests/admin/ads-model.test.ts"
       ],
@@ -2181,6 +2178,7 @@
         "tests/foundation/browser_meta_ads_test.go -> tests/admin/ads.spec.ts",
         "tests/foundation/browser_meta_ads_test.go -> tests/storefront/ads-consent.mjs",
         "tests/foundation/browser_meta_ads_test.go:server/import apps/admin",
+        "tests/storefront/ads-consent.mjs:import apps/storefront/components/privacy/copy.ts",
         "tests/storefront/ads-consent.mjs:import apps/storefront/lib/privacy-copy.ts",
         "tests/storefront/ads-consent.mjs:server/import apps/storefront"
       ]
