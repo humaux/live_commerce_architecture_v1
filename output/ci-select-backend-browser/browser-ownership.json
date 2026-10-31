@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registryHash": "2c18710235f82d7ca43a6cf6dc1dda8dc89204c7ebf5662b9e765899ad43c701",
+  "registryHash": "030fe445b149cabd531a36dbffde4d5855adbb34c4c9044ca76e6949511b3eba",
   "sources": {
     "tests/admin/ads-model.test.ts": "a89483826fba28e2e86fcc1196475cefe1851cec367e66cfdc7bb69def18f309",
     "tests/admin/ads-request.test.ts": "190103fd72ab76050512616cef988d13d7e3725659883f142710555f36686de5",
@@ -268,7 +268,7 @@
     "tests/foundation/browser_live_claims_test.go": "cb4a217ced49ab1dc30c2597a62ef5ceb11713528c74f0296941ec9c377db513",
     "tests/foundation/browser_live_console_comments_fixture_test.go": "30afeb5745b665957624fd2dbe0ce04eb20c636ac231846f42ddc0ff23d7ac39",
     "tests/foundation/browser_live_console_diagnostics_test.go": "aff7fb01466f32317503a57f58ac976d88bb6483eaafa3614181d08eb403bc29",
-    "tests/foundation/browser_live_console_test.go": "5897250fdfbf207fff597e805da780df7286912e4ee3fdd2d2794194ba8f2320",
+    "tests/foundation/browser_live_console_test.go": "b7c78cb2ee1044f84c93292dbcb5d477ef6f135aaa45ca685fc49c002692db52",
     "tests/foundation/browser_live_settings_fixture_test.go": "898d27f641f35dfacf6e64ec7c12784329be629d17293c800c7fb2158b9177ab",
     "tests/foundation/browser_live_settings_test.go": "82940e2343aea47e6fd2dab88aaf0cc8f52c20e5107481270a7009151c1fe176",
     "tests/foundation/browser_live_tools_test.go": "a2338a21eac70e1738c5786e87b23dfb2e32371e91c00f81635d2ba42284145b",
@@ -780,7 +780,7 @@
     "tests/ui/visual-lint-lib.test.mjs": "5e28a7b30ab357bb6bf266c3426d6fbd1122811fc7a156a077b213095086edd0",
     "tests/ui/visual-scroll-capture.mjs": "538525d5cb94cdc26e91954c0589a48372b5d4ce771721dcbbeb76e6b81a0229",
     "tests/ui/visual-scroll-capture.test.mjs": "1cf6d1a8bcb8481c65d19cd69e7bc1e25701067d4041e86f29b9a0a8cc8a58a5",
-    "scripts/dev/test-local.sh": "2c18710235f82d7ca43a6cf6dc1dda8dc89204c7ebf5662b9e765899ad43c701",
+    "scripts/dev/test-local.sh": "030fe445b149cabd531a36dbffde4d5855adbb34c4c9044ca76e6949511b3eba",
     "playwright.config.ts": "ad5ff56ccc1c4302c7a9daad01eb9e40c3ba02383e1b8692c9a7cf42f6c47c04",
     "apps/admin/package.json": "8ff4057bb534e821455b9cb47b93429a0d66040faad1d9c25edeabd4864dbbb4",
     "apps/storefront/package.json": "e25eed3dcbc88ef821828200325f2cb7f92934447e1978998efdd4fa58eb8987",
@@ -1732,6 +1732,44 @@
         "tests/admin/live-console.spec.ts:import apps/admin/src/features/live/workspace-copy.ts",
         "tests/admin/live-console.spec.ts:server/import apps/admin",
         "tests/foundation/browser_live_console_diagnostics_test.go -> tests/admin/live-console.spec.ts",
+        "tests/foundation/browser_live_console_test.go -> tests/admin/comment-label-print.spec.ts",
+        "tests/foundation/browser_live_console_test.go -> tests/admin/live-console.spec.ts",
+        "tests/foundation/browser_live_console_test.go:server/import apps/admin",
+        "tests/foundation/browser_live_console_test.go:suite=live-console -> tests/admin/comment-label-print.spec.ts",
+        "tests/foundation/browser_live_console_test.go:suite=live-console -> tests/admin/live-console.spec.ts"
+      ]
+    },
+    "--browser-live-console-parity": {
+      "specs": [
+        "tests/admin/comment-label-print.spec.ts",
+        "tests/admin/live-console.spec.ts"
+      ],
+      "inputs": [
+        "tests/admin/comment-label-print.spec.ts",
+        "tests/admin/comment-label-strict-fixture.ts",
+        "tests/admin/fixtures/live-console-controls.ts",
+        "tests/admin/fixtures/native-device.ts",
+        "tests/admin/inbox-private-evidence.ts",
+        "tests/admin/live-console.spec.ts"
+      ],
+      "apps": [
+        "admin"
+      ],
+      "unresolved": [],
+      "foundationInputs": [],
+      "foundationUnresolvedInputs": [],
+      "evidence": [
+        "harness:tests/foundation/browser_live_console_test.go",
+        "registry:--browser-live-console-parity -> tests/admin/live-console.spec.ts",
+        "scripts/dev/test-local.sh:--browser-live-console-parity:lc_build=admin",
+        "tests/admin/comment-label-strict-fixture.ts:server/import apps/admin",
+        "tests/admin/live-console.spec.ts:import apps/admin/lib/claims-model.ts",
+        "tests/admin/live-console.spec.ts:import apps/admin/lib/inbox-types.ts",
+        "tests/admin/live-console.spec.ts:import apps/admin/src/features/live/comment-copy.ts",
+        "tests/admin/live-console.spec.ts:import apps/admin/src/features/live/comment-model.ts",
+        "tests/admin/live-console.spec.ts:import apps/admin/src/features/live/console-model.ts",
+        "tests/admin/live-console.spec.ts:import apps/admin/src/features/live/workspace-copy.ts",
+        "tests/admin/live-console.spec.ts:server/import apps/admin",
         "tests/foundation/browser_live_console_test.go -> tests/admin/comment-label-print.spec.ts",
         "tests/foundation/browser_live_console_test.go -> tests/admin/live-console.spec.ts",
         "tests/foundation/browser_live_console_test.go:server/import apps/admin",

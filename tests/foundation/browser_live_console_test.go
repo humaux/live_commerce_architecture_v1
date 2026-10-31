@@ -3,7 +3,7 @@
 // Purpose: LC-U1 MOCK Console gate plus LC-U2a real Go/PG comment/inbox browser fixtures.
 // Depends on: lcSetup/newBrowserIDP, real identity/PG scope, packaged Next BFF and Playwright;
 // LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE, LC_TEST_DATABASE_ALLOWED, LC_BROWSER_EVIDENCE_ROOT, optional LC_BROWSER_CONSOLE_GREP.
-// Used by: scripts/dev/test-local.sh --browser-live-console; REAL_PG comments, MOCK Graph and legacy Console scenes.
+// Used by: scripts/dev/test-local.sh --browser-live-console and --browser-live-console-parity; REAL_PG comments, MOCK Graph and legacy Console scenes.
 // Invariants: I01/I02/I06/I11/I14/I18; browser writes cross actual session/Origin/CSRF checks.
 package foundation_test
 
@@ -342,12 +342,22 @@ func (m *consoleMock) serve(w http.ResponseWriter, r *http.Request, store string
 // TestBrowserLiveConsoleRealChain runs signed MOCK OIDC, Next and Go with LC-U1 MOCK scenes
 // and LC-U2a real PG comments/inbox services. No LIVE Graph or production acceptance.
 func TestBrowserLiveConsoleRealChain(t *testing.T) {
-	t.Run("workspace", func(t *testing.T) { runBrowserLiveConsole(t, false) })
-	t.Run("labels", func(t *testing.T) { runBrowserLiveConsole(t, true) })
+	t.Run("workspace", func(t *testing.T) { runBrowserLiveConsole(t, false, "--grep-invert") })
+	t.Run("labels", func(t *testing.T) { runBrowserLiveConsole(t, true, "--grep-invert") })
+}
+
+// consoleParityTitle is the describe title of the signed current-Figma frames in live-console.spec.ts.
+const consoleParityTitle = "PARITY-LIVE current Figma route parity"
+
+// TestBrowserLiveConsoleParityRealChain runs only the signed-frame block (~110 real-click tests) in its own
+// go test budget; the legacy chain above excludes it, so neither run shares one 780s timeout.
+func TestBrowserLiveConsoleParityRealChain(t *testing.T) {
+	runBrowserLiveConsole(t, false, "--grep")
 }
 
 // runBrowserLiveConsole keeps label claims isolated from the frozen one-claim workspace fixture.
-func runBrowserLiveConsole(t *testing.T, labels bool) {
+// titleFlag selects the workspace spec's PARITY-LIVE block: "--grep-invert" skips it, "--grep" runs only it.
+func runBrowserLiveConsole(t *testing.T, labels bool, titleFlag string) {
 	if os.Getenv("LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use scripts/dev/test-local.sh --browser-live-console")
 	}
@@ -610,6 +620,9 @@ func runBrowserLiveConsole(t *testing.T, labels bool) {
 		spec = "tests/admin/comment-label-print.spec.ts"
 	}
 	cmd := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", spec, "--reporter=list", "--output="+filepath.Join(evidence, "results"))
+	if !labels {
+		cmd.Args = append(cmd.Args, titleFlag, consoleParityTitle)
+	}
 	if grep := os.Getenv("LC_BROWSER_CONSOLE_GREP"); grep != "" {
 		// Optional local focused-spec run; a filtered success is not acceptance of the full mode.
 		// The workspace and labels subtests run different specs with the same grep; the non-target one matches
