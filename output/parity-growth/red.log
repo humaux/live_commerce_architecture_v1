@@ -114,3 +114,7 @@ RELAY4_FIX=await every delayed continuation before unroute; retain all assertion
 RELAY4_STATIC=E1; syntax, generated ownership check, packet and whitespace exit0; receipt includes file hashes
 RELAY4_GREEN=PENDING next-head GitHub CI; original causal RED unchanged
 RELAY4_WAKE=integrator completion relay after WAIT_RUN
+
+RVFIX366_RED=expected failures at this head (tests only, CI to confirm): promotions-gate growthEnabledAndDeepLink (a) ads-enabled store + draft: /promotions has no ads-draft-<id> and still shows g.off/g.noDrafts because Promotions.tsx:56-57 reads no ads state; (b) /promotions?view=codes: H1 stays the ad-drafts heading and promotion-form is absent because Promotions.tsx:42 keeps codes in useState, not the URL
+RVFIX366_STATIC=E1; node --check promotions-gate.mjs, derive-browser-ownership + --check exit0
+RVFIX366_GREEN=PENDING implementation push after CI shows the RED

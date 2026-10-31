@@ -134,7 +134,7 @@ async function scenario(index, run) {
   const merchant = await context.newPage();
   merchant.on("pageerror", error => uiErrors.push(`${label} merchant ${error.name}: ${error.message}`));
   await signIn(merchant);
-  if (index === 0) await growthMarketingParity(merchant, { origin: adminOrigin, evidence });
+  if (index === 0) { await growthMarketingParity(merchant, { origin: adminOrigin, evidence }); await growthEnabledAndDeepLink(merchant, { origin: adminOrigin }); }
   await merchant.goto(`${adminOrigin}/${run.locale}/promotions`);
   await expect(merchant.getByTestId("promotions-page")).toBeVisible();
   // C3: the marketing fallback links to the existing code-management task.
@@ -397,5 +397,45 @@ async function growthMarketingParity(page, { origin, evidence }) {
       }
       await appendFile(path.join(evidence, "growth-click-ledger.jsonl"), JSON.stringify({ route: page.url(), control: retry, operation: "click + reload", expected: disabled, actual: "visible", result: "PASS" }) + "\n");
     }
+  }
+}
+
+/** RVFIX-366 P1-1/P2-1: /promotions shows the ads state the SERVER reports (never a default), and ?view=codes survives reload. */
+async function growthEnabledAndDeepLink(page, { origin }) {
+  const id = "00000000-0000-4000-8000-0000000000d1", binding = "00000000-0000-4000-8000-0000000000b1";
+  const at = new Date(Date.now() + 3600e3).toISOString(), later = new Date(Date.now() + 86400e3).toISOString();
+  // Fixture preparation (not a click substitute): the ads-enabled store's two authenticated reads the Ads screens use; no write path is faked.
+  const json = body => route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+  await page.route("**/api/stores/*/ads/settings", json({
+    environment: "SANDBOX", allowance_currency: "TWD", max_active_budget_minor: 500000, sandbox_ad_account: null,
+    recent_refusals: [], capi: { enabled: false, dataset_binding_id: null, test_event_code: null }, connections: [], identities: [],
+  }));
+  await page.route("**/api/stores/*/ads/drafts", json({ items: [{
+    id, revision: 1, publish_attempt: 0, status: "DRAFT", approved_revision: null, ended_at: null, created_at: at,
+    ad_binding_id: binding, identity_binding_id: binding, template: "BOOST_POST", source_ref: "post-1", currency: "TWD",
+    lifetime_budget_minor: 100000, starts_at: at, ends_at: later, countries: ["TW"], age_min: 18, age_max: 65, remote: {}, ops: [], ads_manager_url: null,
+  }] }));
+  await page.setViewportSize({ width: 1440, height: 900 });
+  for (const [locale, off, none] of [
+    ["en", "Ads are off for this store until the platform enables them.", "No saved ad drafts yet"],
+    ["zh-TW", "平台啟用前，此商店的廣告功能為關閉狀態。", "還沒有已儲存的廣告草稿"],
+  ]) {
+    await page.goto(`${origin}/${locale}/promotions`);
+    await expect(page.getByTestId(`ads-draft-${id}`)).toBeVisible();
+    await expect(page.getByText(off, { exact: true })).toHaveCount(0);
+    await expect(page.getByText(none, { exact: true })).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByTestId(`ads-draft-${id}`)).toBeVisible();
+    await expect(page.getByText(off, { exact: true })).toHaveCount(0);
+  }
+  await page.unroute("**/api/stores/*/ads/settings");
+  await page.unroute("**/api/stores/*/ads/drafts");
+  for (const [locale, legacy] of [["zh-TW", "優惠碼"], ["en", "Discount codes"]]) {
+    await page.goto(`${origin}/${locale}/promotions?view=codes`);
+    await expect(page.getByRole("heading", { level: 1, name: legacy, exact: true })).toBeVisible();
+    await expect(page.getByTestId("promotion-form")).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1, name: legacy, exact: true })).toBeVisible();
+    await expect(page.getByTestId("promotion-form")).toBeVisible();
   }
 }
