@@ -1,0 +1,116 @@
+PARITY-GROWTH tests-only RED stage
+HEAD_SHA=bddc4380602d63ddf0e06487f18e5ac2e3ec69b2
+PR=366 https://github.com/humaux/live_commerce_architecture_v1/pull/366
+GATES_RUN=41052985274 (queued; plan is not test evidence)
+FOUNDATION_RUN=41052985242
+FOUNDATION_JOB=124053376997 (FAIL at Package docs and gate map are current)
+RED_ASSERTION_RESULT=NOT_REACHED; registration failure is not assertion RED
+FAILED_LOG=output/parity-growth/relay1-foundation-failed.log
+ROOT_CAUSE=check-gates inventories directly registered spec files; imported registration-only fragments were not recognized
+REPAIR_ATTEMPT=1/2 for this registration blocker
+REPAIR=move every C3 assertion unchanged into ads.spec.ts, attribution.spec.ts and promotions-gate.mjs; remove import-only fragments; retain original fixture registration and call conditions
+REPAIR_BASE=origin/r3/integration fetched and merged before spec deletion; already up to date at 3ea359f796d36153bb4b8aa7259e4e0c27676b86
+REPAIR_RUN=PENDING_PUSH; tests-only, implementation still gated on assertion RED
+EXPECTED_RED=real-route signed heading/control assertions; not compile
+LOCAL_STATIC=node --check (three registered browser entries), git diff --check, generated ownership --check; exit0
+LOCAL_TESTS=NOT_RUN (owner CI-only rule)
+IMPLEMENTATION=NOT_PUSHED; wait for CI assertion RED
+GREEN=NOT_RUN
+WAKE_OWNER=integrator relays a fresh session after the run concludes (card instruction)
+
+RELAY1_CANDIDATE_HEAD=e37bb6524349e47f1d5ed600cc4dcb765627e96a
+RELAY1_FOUNDATION_RUN=41054278546
+RELAY1_FOUNDATION_JOB=124057780561 (queued)
+RELAY1_GATES_RUN=41054278594 (pending; no test jobs assigned yet)
+RELAY1_ASSERTION_RED=PENDING
+INTERMEDIATE_HEAD=9c9d62681 superseded; staging mistake omitted generated ownership, corrected immediately in candidate head
+RECEIPT_STORAGE=PR comment + local red.log for next implementation commit; no evidence-only push
+
+RELAY2_ASSERTION_RED=CONFIRMED (E3, GitHub CI, MOCK)
+HEAD=e37bb6524349e47f1d5ed600cc4dcb765627e96a
+TESTED_MERGE_SHA=8c7cf2404ce307a2d6fc893a94c2ddd8da6815b6
+RED_RUN=41054278594
+RED_JOB=124066658713 (gate bundle:01, failure)
+FOUNDATION_RUN=41054278546
+FOUNDATION_JOB=124057780561 (success)
+
+ARTIFACT=gate-browser-meta-ads
+  ✓   2 tests/admin/ads.spec.ts:231:1 › MA09a flow › MA09a state_mismatch, state_expired, meta_connect_failed and Start again: fixed codes, never a guess, the code is not exchanged on a mismatch (2.8s)
+  ✘   9 tests/admin/ads.spec.ts:671:7 › PARITY-GROWTH signed ads states › C3 list, state explanations, assets and read feedback 1440 (10.9s)
+  ✘  10 tests/admin/ads.spec.ts:706:7 › PARITY-GROWTH signed ads states › C3 editor, settings, leave and source 1440 (11.1s)
+  ✘  11 tests/admin/ads.spec.ts:727:7 › PARITY-GROWTH signed ads states › C3 persisted saved, review and status 1440 (11.2s)
+  ✘  12 tests/admin/ads.spec.ts:752:7 › PARITY-GROWTH signed ads states › C3 concurrent edit preserves local work 1440 (11.1s)
+  ✘  13 tests/admin/ads.spec.ts:671:7 › PARITY-GROWTH signed ads states › C3 list, state explanations, assets and read feedback 390 (11.0s)
+  ✘  14 tests/admin/ads.spec.ts:706:7 › PARITY-GROWTH signed ads states › C3 editor, settings, leave and source 390 (11.0s)
+  ✘  15 tests/admin/ads.spec.ts:727:7 › PARITY-GROWTH signed ads states › C3 persisted saved, review and status 390 (11.1s)
+  ✘  16 tests/admin/ads.spec.ts:752:7 › PARITY-GROWTH signed ads states › C3 concurrent edit preserves local work 390 (11.1s)
+  ✘  17 tests/admin/ads.spec.ts:789:5 › PARITY-GROWTH signed ads states › C3 ads main screen in all three locales (10.9s)
+  1) tests/admin/ads.spec.ts:671:7 › PARITY-GROWTH signed ads states › C3 list, state explanations, assets and read feedback 1440
+    Error: expect(locator).toBeVisible() failed
+    Locator: getByText('先核對版本，再核准與發布。內部核准不等於 Meta 審核通過。', { exact: true })
+    output/playwright/run.5kSJBQfo/meta-ads/20261030T125915.023804702/results/ads-PARITY-GROWTH-signed-a-edb54-sets-and-read-feedback-1440/test-failed-1.png
+  2) tests/admin/ads.spec.ts:706:7 › PARITY-GROWTH signed ads states › C3 editor, settings, leave and source 1440
+    Error: expect(locator).toBeVisible() failed
+    Locator: getByRole('heading', { name: '建立廣告草稿', exact: true })
+    output/playwright/run.5kSJBQfo/meta-ads/20261030T125915.023804702/results/ads-PARITY-GROWTH-signed-a-158a2-tings-leave-and-source-1440/test-failed-1.png
+  3) tests/admin/ads.spec.ts:727:7 › PARITY-GROWTH signed ads states › C3 persisted saved, review and status 1440
+    Error: expect(locator).toBeVisible() failed
+    Locator: getByRole('heading', { name: '建立廣告草稿', exact: true })
+    output/playwright/run.5kSJBQfo/meta-ads/20261030T125915.023804702/results/ads-PARITY-GROWTH-signed-a-36700-aved-review-and-status-1440/test-failed-1.png
+  4) tests/admin/ads.spec.ts:752:7 › PARITY-GROWTH signed ads states › C3 concurrent edit preserves local work 1440
+    Error: expect(locator).toBeVisible() failed
+    Locator: getByRole('heading', { name: '建立廣告草稿', exact: true })
+    output/playwright/run.5kSJBQfo/meta-ads/20261030T125915.023804702/results/ads-PARITY-GROWTH-signed-a-e65a3-t-preserves-local-work-1440/test-failed-1.png
+  5) tests/admin/ads.spec.ts:671:7 › PARITY-GROWTH signed ads states › C3 list, state explanations, assets and read feedback 390
+    Error: expect(locator).toBeVisible() failed
+    Locator: getByText('先核對版本，再核准與發布。內部核准不等於 Meta 審核通過。', { exact: true })
+    output/playwright/run.5kSJBQfo/meta-ads/20261030T125915.023804702/results/ads-PARITY-GROWTH-signed-a-57153-ssets-and-read-feedback-390/test-failed-1.png
+
+ARTIFACT=gate-browser-ads-attribution
+  6 passed (12.5s)
+
+ARTIFACT=gate-browser-ads-attribution
+  ✘  7 tests/admin/attribution.spec.ts:1068:33 › PARITY-GROWTH attribution › C3 signed attribution task screens 1440 (10.8s)
+  -  8 tests/admin/attribution.spec.ts:1068:33 › PARITY-GROWTH attribution › C3 signed attribution task screens 390
+  -  9 tests/admin/attribution.spec.ts:1095:3 › PARITY-GROWTH attribution › C3 attribution main screen in all three locales
+  1) tests/admin/attribution.spec.ts:1068:33 › PARITY-GROWTH attribution › C3 signed attribution task screens 1440
+    Error: expect(locator).toBeVisible() failed
+    Locator: getByRole('heading', { name: '歸因報表', exact: true })
+    output/playwright/run.vFBPMZmg/ads-attribution-report/20261030T125642.674066405/results/attribution-PARITY-GROWTH--c46d9-tribution-task-screens-1440/test-failed-1.png
+  1 failed
+    tests/admin/attribution.spec.ts:1068:33 › PARITY-GROWTH attribution › C3 signed attribution task screens 1440
+  6 passed (1.6m)
+
+ARTIFACT=gate-browser-promotions
+ExpectError: expect(locator).toBeVisible() failed
+Locator: getByRole('heading', { name: '廣告草稿', exact: true, level: 1 })
+    message: 'expect(locator).toBeVisible() failed\n' +
+      "Locator: getByRole('heading', { name: '廣告草稿', exact: true, level: 1 })\n" +
+
+IMPLEMENTATION=Relay 2 candidate; one batched implementation commit follows causal RED
+LOCAL_STATIC=E1 (tsc, node --check, packet structure, diff whitespace); see relay2-static.json
+GREEN=PENDING implementation-head GitHub CI
+INDEPENDENT_REVIEW=NOT_RUN
+WAKE_OWNER=integrator completion relay after WAIT_RUN concludes
+
+RELAY3_IMPLEMENTATION_BASELINE=f239dbc50b89df1a0c2c622a18f269bfc0d51552
+RELAY3_RUN=41065293413
+RELAY3_JOB=124113569764 (bundle:04, failure)
+RELAY3_TESTED_MERGE_SHA=b42b92a81ccee6ca56f3c586dd1a3123356f1914
+RELAY3_FAILURE=Bundle member 1 evidence; GitHub upload-artifact rejects colon in parity/1151:9420.png
+RELAY3_GATE_STEP=success; all six bundle members success; job failure is evidence upload
+RELAY3_ASSERTION_RED=not a new assertion RED; preserve tests-only RED 41054278594 / 124066658713
+RELAY3_FIX_ATTEMPT=1/2 for artifact filename blocker
+RELAY3_FIX=all owned parity emitters use hyphen filenames and exact Figma ids in mapping; prior raw-operation-copy P1 corrected in same batch
+RELAY3_GREEN=PENDING next-head CI; no evidence-only push after GREEN
+
+RELAY4_BASELINE=5ef4cc44857ff92e40e551edf484e851d136c182
+RELAY4_RUN=41075396782
+RELAY4_JOB=124143813883 (bundle:03, failure)
+RELAY4_TESTED_MERGE_SHA=9b3ab3af402c500b69add3923c115ac1b524c713
+RELAY4_FAILURE=15 ads tests pass, desktop/mobile loading fixture fails Route is already handled; trace: interception removed before delayed continuation
+RELAY4_FIX_ATTEMPT=1/2 for route-fixture lifecycle blocker
+RELAY4_FIX=await every delayed continuation before unroute; retain all assertions/screenshots, error propagation, original response and real clicks
+RELAY4_STATIC=E1; syntax, generated ownership check, packet and whitespace exit0; receipt includes file hashes
+RELAY4_GREEN=PENDING next-head GitHub CI; original causal RED unchanged
+RELAY4_WAKE=integrator completion relay after WAIT_RUN
