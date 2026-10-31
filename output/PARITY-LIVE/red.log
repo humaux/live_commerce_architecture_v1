@@ -1,0 +1,111 @@
+PARITY-LIVE — causal RED ESTABLISHED in RELAY 2; prior relay receipt retained below
+base=df35b338b5cfde5de34bb590e2ba118efc17e4a4
+head=898e71a829d7f4bce261eebc95ec5028693f8901
+branch=unit/parity-live
+pr=355
+Foundation_run=41050615992 job=124045445870 status=success (gh pr checks 355)
+Gates_run=41050616128 attempt=1 job=124051353169 status=failure name=gate (--browser-live-console)
+synthetic_merge_sha=57cbd1545e0651859bf8366829acbabe16d8f232 (job matrix receipt)
+job_log=gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/124051353169/logs
+original_requested_command=gh run view 41050616128 --log-failed --job 124051353169
+original_command_result=run still in progress; logs unavailable via gh run view; read completed job logs through jobs API instead
+failure=panic: test timed out after 13m0s; running TestBrowserLiveConsoleRealChain/workspace
+failure_time=2026-10-30T12:24:14.4769774Z
+preceding_errors=http proxy context canceled; then dial tcp loopback connection refused
+causal_root=UNKNOWN; no emitted Playwright assertion summary in job log; do not infer which test failed
+artifact_id=12975464801 name=gate-browser-live-console size=6688271
+artifact_download_1=gh run download via configured proxy; no returned content after >2min; task-owned download terminated
+artifact_download_2=direct transport; subprocess timeout at 60 seconds; no artifact content obtained
+assertion_RED=NOT_ESTABLISHED (timeout is not a new assertion failure)
+GREEN=NOT_RUN
+implementation=NOT_RUN (RED prerequisite unmet)
+relay_source_edits=NONE
+relay_push=NONE
+local_tests_servers_builds=NOT_RUN
+WAIT_RUN=41050616128 (other jobs still queued at lookup; browser job already failed; attempt 1, no rerun requested)
+wakeup=integrator relay required with browser failure artifact or authorized harness/root-cause resolution; no task-owned background process remains
+
+RELAY2: assertion_RED=ESTABLISHED from complete CRC32-verified ZIP entries in partial artifact12975464801
+Desktop1429:39502 /1429:39683: expect(getByRole('heading',{name:'留言與私訊',exact:true})).toBeVisible failed, element not found, timeout10000ms.
+Evidence=output/PARITY-LIVE/red-diagnostics/*8a9e8*.md.gz and *e09b0*.md.gz
+Desktop39502_sha256=90e3273b1e0ba0f7fbe377a08e81fbb37d2a5e09948e7fd782ec306ce9f10ed2
+Desktop39683_sha256=f6d8a0495166b6eed818d0faf60272a3c3b8473a3e8a1291dd1df0ab7fbf28fd
+Mobile39782/39607/39834: missing tab留言 causes click timeout110000ms.
+Download attempts bounded45s/90s, partial ZIP3668964bytes; no further process remains. Outer workflow failure remains timeout, not full test summary.
+
+implementation_static=E1 tsc7.0.2 noEmit incremental=false resolver config exit0; syntax/ownership/diff checks exit0
+implementation_runtime=NOT_RUN locally; await own CI after batch push
+raw_context_packaging=byte-identical gzip (mtime0) to retain GitHub trailing whitespace without a source whitespace exemption; SHA256 values refer to decompressed original bytes
+
+IMPLEMENTATION_PUSH head=a6e9876dce5d0b5231f4ca3b83f9fde5a3ef8e99 pr=355
+WAIT_RUN Foundation=41060952171 job=124080250278 status=queued
+WAIT_RUN Gates=41060952253 status=queued browser_job=NOT_CREATED
+GREEN=PENDING own_PR_CI only; author=E0 static=E1
+Post-push receipts remain uncommitted; no extra evidence-only push.
+Wakeup=integrator fresh-session relay on these run conclusions; no local watcher/process.
+
+RELAY3 regression receipt (implementation head, not tests-only RED):
+head=a6e9876dce5d0b5231f4ca3b83f9fde5a3ef8e99
+Foundation_run=41060952171 job=124080250278 status=failure
+failure=15 PR31 soldout cases: en/zh-TW/zh-CN x SUCCEEDED/ACKNOWLEDGED/READY/DISPATCHING/UNKNOWN; existing delivery-state warning remains visible assertion
+suite=105 tests,90 pass,15 fail; exit1
+root=channel-specific signed composer wording reused by generic stream delivery badges
+fix_attempt=1; independent three-locale delivery_* copy keys used only by stream badges; existing assertions untouched
+raw_filtered_receipt=output/PARITY-LIVE/relay3-foundation.log
+local_runtime_tests_servers=NOT_RUN by owner instruction
+local_syntax=FAILED_ENV node24.15.0 --check cannot parse the pre-existing TypeScript type alias (file/stdin, strip-types flag); tsc unavailable in this worktree; CI must compile
+local_browser_ownership_check=exit0; local_git_diff_check=exit0
+GREEN=PENDING new own-head CI; no merge/auto-merge/deploy
+
+RELAY3_PUSH head=efcec5444a3c00c7ca1785df3286637d1ba174d4 pr=355
+WAIT_RUN Foundation=41063731968 job=124089669565 status=queued
+WAIT_RUN Gates=41063731987 status=pending gate_jobs=NOT_CREATED
+GREEN=PENDING own_PR_CI; author=E0; no runtime acceptance claimed
+logs=gh run view 41063731968 --log-failed --job 124089669565 (once completed)
+wakeup=integrator fresh-session relay on these runs; no task-owned process/watcher; bounded CI lookup ended below10min
+Post-push receipts remain local; no evidence-only push.
+
+RELAY4 regression receipt (not the original tests-only RED):
+head=efcec5444a3c00c7ca1785df3286637d1ba174d4
+Foundation_run=41063731968 job=124089669565 status=failure
+failure=2 existing live-console-render tests crash at Object.values(data.capabilities) before assertions; suite14/pass12/fail2
+root=SSR A1 fixture bypasses frozen parseConsole and omits mandatory capabilities
+repair=complete DTO + satisfies ConsoleSnapshot; additive three-locale evidence/denial marker assertions; existing assertions verbatim
+fix_attempt=1 for missing-capabilities fixture blocker
+raw_filtered_receipt=output/PARITY-LIVE/relay4-foundation.log
+static_ownership_generate=exit0; static_ownership_check=exit0; static_diff_check=exit0
+local_tests_servers=NOT_RUN; GREEN=PENDING own new-head CI
+
+RELAY4_PUSH head=8296581fb4e84058b9c0f35d52af4b0cb4e496a0 pr=355
+WAIT_RUN Foundation=41065893297 job=124097075104 status=queued
+WAIT_RUN Gates=41065893191 status=pending gate_jobs=NOT_CREATED
+GREEN=PENDING own_PR_CI; author=E0; no E3/E4 acceptance claimed
+wakeup=integrator fresh-session relay on run conclusion; no local watcher/process
+Post-push receipts remain local and in PR comment; no evidence-only push.
+
+FIX1: 2026-10-31 directed attempt 1, no new RED-only push per FIX1 card
+input_head=8296581fb4e84058b9c0f35d52af4b0cb4e496a0
+merged_base=a3dc78e4d5ec72831aaf6a376793f0f6a7a56425 merge=a3f0514d6
+RED_Gates=41065893191 job124101780679 (live-settings12fail and ui-gallery hex ratchet), job124101780824 (closed-disclosure locator timeout)
+RED_Foundation=41065893297 job124097075104 (same hex ratchet)
+RED_tested_merge=4ab11bbbb9a1149f1861be4256ce03952dcee10d
+evidence=fix1-evidence/assertions.log + artifact-manifest.json; classification=FIX1.md
+static=node --check (helper/live-console/live-settings), ownership generate/--check, git diff --check all exit0; runtime/independent acceptance NOT_RUN
+GREEN=PENDING; integrate relay must stop if same assertion remains RED
+
+FIX1_WAIT_HEAD=f51a0c2db2a5262e1083150d95ed0f73d014dae0
+WAIT_RUN=41106774257 Foundation job124238545940; 41106774405 Gates
+final_diff_check=exit2 assertions.log150 blank EOF; pre-artifact diff check exit0 only; no second push
+GREEN=PENDING integrator relay on completion
+
+FIX1_RELAY1: 2026-10-31 second shared-helper directed repair
+RED_head=f51a0c2db2a5262e1083150d95ed0f73d014dae0
+RED_Gates=41106774405 job=124240810483 tested_merge=0e2f4f452cb7166d53dbbf28d95d7a948ee78b84
+RED=live-settings 6 failed / 16 passed; all six desktop en/zh-TW/zh-CN fail getByRole(tab).first toBeAttached at helper line9, timeout10000ms
+artifact=13001713943 gate-browser-live-settings; evidence=fix1-relay1/assertions.json + six byte-preserved .md.gz contexts + job-filtered.log.gz
+root=shared locator excludes CSS-hidden mobile tabs on desktop; repair=includeHidden:true for attachment, retain visible-only click guard
+prior_ui_gallery=member_success 6matrix/1267ledger; prior_Foundation=41106774257 job124238545940 success; not new-head GREEN
+base41105181453=queued; no identical-base exemption
+static=node --check helper exit0; ownership generate exit0; ownership --check exit0
+local_tests_servers=NOT_RUN; replacement GREEN=PENDING; Humaux store/canvas/coord=NOT_RUN tools unavailable
+next_same_assertion=BLOCKED; no third directed fix

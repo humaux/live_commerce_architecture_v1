@@ -1,0 +1,20 @@
+PARITY-LIVE static receipts (E1 only)
+tsc7.0.2 --noEmit --incremental false -p output/PARITY-LIVE/static-tsconfig.json: exit0
+node --check tests/admin/live-console.spec.ts: exit0
+node --check tests/admin/live-console-render.test.ts: exit0
+node scripts/dev/derive-browser-ownership.mjs: exit0
+node scripts/dev/derive-browser-ownership.mjs --check: exit0
+git diff --check (source before evidence import): exit0
+Final raw Markdown evidence had trailing whitespace; original bytes retained in .md.gz, not modified; final candidate diff rechecked before push
+Runtime tests/build/server/browser/PG: NOT_RUN locally
+Source SHA256 bindings:
+f5f9ec3a43039eaf65b1cc78cc911f0bd42827af979de33c1bcf0c5cf0a59da7 apps/admin/components/BuyerPanel.tsx
+87ea4d43dbd08e93d946234ffdaecf7f2b407b45a1d370f5291cde32d0e92113 apps/admin/components/CommentReply.tsx
+83e6cbedcac48434bc6d9c0f73e7fc0f918c72efe2af5eb351231f89fa9d54d6 apps/admin/components/CommentStream.tsx
+2434968866fe613362d3c2427198ddd8a2ad23719f9d5dbdc87b4a73d507fb7a apps/admin/components/LiveConsole.tsx
+241fa925fb673657ad18e3d6b2d376369bf7980f8fdcbf6aae9d2d244f139845 apps/admin/components/LiveWorkspace.tsx
+02d9729470e510f1e02ab51ba08bcbc42b1961769e30a71360a35da19cb39f1e apps/admin/src/features/live/comment-copy.ts
+a392dd52ef472bb3bdb3b1c44b711688084ee83ded0febf05e3eb580c17a3715 apps/admin/src/features/live/workspace-copy.ts
+1f5158b66f54ae62986f3dd62a355d3de83efb229ef60e144a12136c4cd4ae5d tests/admin/live-console-render.test.ts
+790ab46f411e83fc76aa92ed787357c8392a4f54a0084cda2e21ad90cbeb3481 tests/admin/live-console.spec.ts
+4a6a21246d22f9c1b430cb3c7acdde3206d7947c35172e670d2f792f4dad31a9 apps/admin/components/studio/live-console.css
