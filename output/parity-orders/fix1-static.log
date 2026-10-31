@@ -1,0 +1,27 @@
+FIX1 static-only checks, 2026-10-31
+node --check on all seven changed TS/MJS browser sources: exit 0 (Node v24.15.0).
+node scripts/dev/derive-browser-ownership.mjs: exit 0
+node scripts/dev/derive-browser-ownership.mjs --check: exit 0
+bash scripts/dev/depmap.sh: exit 0; generated depmap unchanged
+python3 scripts/check_packet.py: exit 0; packet-only output restored
+git diff --check: exit 0
+Extended standalone tsc --noEmit: exit 1 on picklist JS fixture/helper declaration/inference. Two configuration attempts, stopped; no source/fixture/strictness changes. Latest diagnostics:
+tests/admin/picklist.spec.ts(34,62): error TS7031: Binding element 'port' implicitly has an 'any' type.
+tests/admin/picklist.spec.ts(34,68): error TS7031: Binding element 'attempt' implicitly has an 'any' type.
+tests/admin/picklist.spec.ts(34,77): error TS7031: Binding element 'track' implicitly has an 'any' type.
+tests/admin/picklist.spec.ts(192,45): error TS2339: Property 'csv' does not exist on type 'never'.
+tests/admin/picklist.spec.ts(217,54): error TS2339: Property 'ids' does not exist on type 'never'.
+tests/admin/picklist.spec.ts(227,32): error TS2339: Property 'route' does not exist on type 'never'.
+tests/admin/picklist.spec.ts(228,24): error TS2339: Property 'body' does not exist on type 'never'.
+tests/admin/picklist.spec.ts(396,28): error TS2339: Property 'route' does not exist on type 'never'.
+tests/admin/picklist.spec.ts(397,27): error TS2339: Property 'key' does not exist on type 'never'.
+tests/admin/picklist.spec.ts(400,52): error TS2339: Property 'key' does not exist on type 'never'.
+
+Temporary dependency links removed; no install. NOT_RUN: local tests, browser, servers, PG, containers, provider, production, independent review. GREEN pending own-head CI.
+76745d29bd4fd71f395822db298fdd18f64796390757182f23c6734057131514  tests/admin/manual-fulfilment.spec.ts
+0b047b0551b2a8bb563a08a134328f043a03a111661f0c01832f386e3975edad  tests/admin/oc/reauth.spec.ts
+35efd9b429fc10171276668d095a1898c4b610e4522c0ab33bd98eb112b849bc  tests/admin/orders-ui.spec.ts
+a9de0d32b1a295723a2cd97c50b97f84daf7be4027b308b80a39051e4d8418cb  tests/admin/picklist.spec.ts
+549057a63f4c1a16e599d0bec174cb1ab144f60fd0fdcc10dbbd9b7695b68830  tests/e2e/deal-loop.spec.ts
+8a50f4cac06f0a393c1ecc568e0b272993091828cb11868cb29bcfec5afa5dc6  tests/storefront/promotions-gate.mjs
+72433a6282ce0f5856677b902a129fec9f7efd9984c07de8debdcad98bf2b7ae  tests/ui/click-sweep.mjs

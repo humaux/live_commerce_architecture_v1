@@ -1,0 +1,218 @@
+[
+  {
+    "frame": "1429:23435",
+    "locale": "zh-TW",
+    "mode": "card",
+    "state": "default",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "route": "/zh-TW/checkout",
+    "screenshot": "parity/1429-23435.png"
+  },
+  {
+    "frame": "1429:23621",
+    "locale": "zh-TW",
+    "mode": "card",
+    "state": "submitting",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "route": "/zh-TW/checkout",
+    "screenshot": "parity/1429-23621.png"
+  },
+  {
+    "frame": "1429:23701",
+    "locale": "zh-TW",
+    "mode": "card",
+    "state": "unknown",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "route": "/zh-TW/checkout",
+    "screenshot": "parity/1429-23701.png"
+  },
+  {
+    "frame": "1429:23484",
+    "locale": "zh-TW",
+    "mode": "card",
+    "state": "default",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "route": "/zh-TW/checkout",
+    "screenshot": "parity/1429-23484.png"
+  },
+  {
+    "frame": "1429:23661",
+    "locale": "zh-TW",
+    "mode": "card",
+    "state": "submitting",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "route": "/zh-TW/checkout",
+    "screenshot": "parity/1429-23661.png"
+  },
+  {
+    "frame": "1429:23741",
+    "locale": "zh-TW",
+    "mode": "card",
+    "state": "unknown",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "route": "/zh-TW/checkout",
+    "screenshot": "parity/1429-23741.png"
+  },
+  {
+    "frame": null,
+    "locale": "zh-CN",
+    "mode": "card",
+    "state": "default",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "route": "/zh-CN/checkout",
+    "screenshot": "parity/zh-CN-card-default-1440.png"
+  },
+  {
+    "frame": null,
+    "locale": "zh-CN",
+    "mode": "card",
+    "state": "submitting",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "route": "/zh-CN/checkout",
+    "screenshot": "parity/zh-CN-card-submitting-1440.png"
+  },
+  {
+    "frame": null,
+    "locale": "zh-CN",
+    "mode": "card",
+    "state": "unknown",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "route": "/zh-CN/checkout",
+    "screenshot": "parity/zh-CN-card-unknown-1440.png"
+  },
+  {
+    "frame": null,
+    "locale": "zh-CN",
+    "mode": "card",
+    "state": "default",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "route": "/zh-CN/checkout",
+    "screenshot": "parity/zh-CN-card-default-390.png"
+  },
+  {
+    "frame": null,
+    "locale": "zh-CN",
+    "mode": "card",
+    "state": "submitting",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "route": "/zh-CN/checkout",
+    "screenshot": "parity/zh-CN-card-submitting-390.png"
+  },
+  {
+    "frame": null,
+    "locale": "zh-CN",
+    "mode": "card",
+    "state": "unknown",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "route": "/zh-CN/checkout",
+    "screenshot": "parity/zh-CN-card-unknown-390.png"
+  },
+  {
+    "frame": null,
+    "locale": "en",
+    "mode": "card",
+    "state": "default",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "route": "/en/checkout",
+    "screenshot": "parity/en-card-default-1440.png"
+  },
+  {
+    "frame": null,
+    "locale": "en",
+    "mode": "card",
+    "state": "submitting",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "route": "/en/checkout",
+    "screenshot": "parity/en-card-submitting-1440.png"
+  },
+  {
+    "frame": null,
+    "locale": "en",
+    "mode": "card",
+    "state": "unknown",
+    "viewport": {
+      "width": 1440,
+      "height": 900
+    },
+    "route": "/en/checkout",
+    "screenshot": "parity/en-card-unknown-1440.png"
+  },
+  {
+    "frame": null,
+    "locale": "en",
+    "mode": "card",
+    "state": "default",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "route": "/en/checkout",
+    "screenshot": "parity/en-card-default-390.png"
+  },
+  {
+    "frame": null,
+    "locale": "en",
+    "mode": "card",
+    "state": "submitting",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "route": "/en/checkout",
+    "screenshot": "parity/en-card-submitting-390.png"
+  },
+  {
+    "frame": null,
+    "locale": "en",
+    "mode": "card",
+    "state": "unknown",
+    "viewport": {
+      "width": 390,
+      "height": 844
+    },
+    "route": "/en/checkout",
+    "screenshot": "parity/en-card-unknown-390.png"
+  }
+]

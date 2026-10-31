@@ -1,0 +1,338 @@
+[
+  {
+    "page": "/zh-TW/claim",
+    "control": "claim-add",
+    "operation": "real click/fill/select",
+    "expected": "one click opens checkout with chosen SKU and quantity",
+    "actual": "one click opens checkout with chosen SKU and quantity",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "delivery",
+    "operation": "real click/fill/select",
+    "expected": "delivery selector opens",
+    "actual": "delivery selector opens",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "7-ELEVEN",
+    "operation": "real click/fill/select",
+    "expected": "7-ELEVEN selected",
+    "actual": "7-ELEVEN selected",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "quote",
+    "operation": "real click/fill/select",
+    "expected": "quote and pickup form visible",
+    "actual": "quote and pickup form visible",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "cvs-recipient-name",
+    "operation": "real click/fill/select",
+    "expected": "input value retained",
+    "actual": "input value retained",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "cvs-recipient-phone",
+    "operation": "real click/fill/select",
+    "expected": "input value retained",
+    "actual": "input value retained",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "cvs-entered-code",
+    "operation": "real click/fill/select",
+    "expected": "input value retained",
+    "actual": "input value retained",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "pay-at-pickup",
+    "operation": "real click/fill/select",
+    "expected": "pay-at-pickup selected",
+    "actual": "pay-at-pickup selected",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "confirm-address",
+    "operation": "real click/fill/select",
+    "expected": "order action enabled",
+    "actual": "order action enabled",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "create-order",
+    "operation": "real click/fill/select",
+    "expected": "confirmed pay-at-pickup order",
+    "actual": "confirmed pay-at-pickup order",
+    "pass": true
+  },
+  {
+    "page": "/zh-CN/claim",
+    "control": "claim-add",
+    "operation": "real click/fill/select",
+    "expected": "one click opens checkout with chosen SKU and quantity",
+    "actual": "one click opens checkout with chosen SKU and quantity",
+    "pass": true
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "delivery",
+    "operation": "real click/fill/select",
+    "expected": "delivery selector opens",
+    "actual": "delivery selector opens",
+    "pass": true
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "7-ELEVEN",
+    "operation": "real click/fill/select",
+    "expected": "7-ELEVEN selected",
+    "actual": "7-ELEVEN selected",
+    "pass": true
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "quote",
+    "operation": "real click/fill/select",
+    "expected": "quote and pickup form visible",
+    "actual": "quote and pickup form visible",
+    "pass": true
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "cvs-recipient-name",
+    "operation": "real click/fill/select",
+    "expected": "input value retained",
+    "actual": "input value retained",
+    "pass": true
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "cvs-recipient-phone",
+    "operation": "real click/fill/select",
+    "expected": "input value retained",
+    "actual": "input value retained",
+    "pass": true
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "cvs-entered-code",
+    "operation": "real click/fill/select",
+    "expected": "input value retained",
+    "actual": "input value retained",
+    "pass": true
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "pay-at-pickup",
+    "operation": "real click/fill/select",
+    "expected": "pay-at-pickup selected",
+    "actual": "pay-at-pickup selected",
+    "pass": true
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "confirm-address",
+    "operation": "real click/fill/select",
+    "expected": "order action enabled",
+    "actual": "order action enabled",
+    "pass": true
+  },
+  {
+    "page": "/zh-CN/checkout",
+    "control": "create-order",
+    "operation": "real click/fill/select",
+    "expected": "confirmed pay-at-pickup order",
+    "actual": "confirmed pay-at-pickup order",
+    "pass": true
+  },
+  {
+    "page": "/en/claim",
+    "control": "claim-add",
+    "operation": "real click/fill/select",
+    "expected": "one click opens checkout with chosen SKU and quantity",
+    "actual": "one click opens checkout with chosen SKU and quantity",
+    "pass": true
+  },
+  {
+    "page": "/en/checkout",
+    "control": "delivery",
+    "operation": "real click/fill/select",
+    "expected": "delivery selector opens",
+    "actual": "delivery selector opens",
+    "pass": true
+  },
+  {
+    "page": "/en/checkout",
+    "control": "7-ELEVEN",
+    "operation": "real click/fill/select",
+    "expected": "7-ELEVEN selected",
+    "actual": "7-ELEVEN selected",
+    "pass": true
+  },
+  {
+    "page": "/en/checkout",
+    "control": "quote",
+    "operation": "real click/fill/select",
+    "expected": "quote and pickup form visible",
+    "actual": "quote and pickup form visible",
+    "pass": true
+  },
+  {
+    "page": "/en/checkout",
+    "control": "cvs-recipient-name",
+    "operation": "real click/fill/select",
+    "expected": "input value retained",
+    "actual": "input value retained",
+    "pass": true
+  },
+  {
+    "page": "/en/checkout",
+    "control": "cvs-recipient-phone",
+    "operation": "real click/fill/select",
+    "expected": "input value retained",
+    "actual": "input value retained",
+    "pass": true
+  },
+  {
+    "page": "/en/checkout",
+    "control": "cvs-entered-code",
+    "operation": "real click/fill/select",
+    "expected": "input value retained",
+    "actual": "input value retained",
+    "pass": true
+  },
+  {
+    "page": "/en/checkout",
+    "control": "pay-at-pickup",
+    "operation": "real click/fill/select",
+    "expected": "pay-at-pickup selected",
+    "actual": "pay-at-pickup selected",
+    "pass": true
+  },
+  {
+    "page": "/en/checkout",
+    "control": "confirm-address",
+    "operation": "real click/fill/select",
+    "expected": "order action enabled",
+    "actual": "order action enabled",
+    "pass": true
+  },
+  {
+    "page": "/en/checkout",
+    "control": "create-order",
+    "operation": "real click/fill/select",
+    "expected": "confirmed pay-at-pickup order",
+    "actual": "confirmed pay-at-pickup order",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/claim",
+    "control": "claim-add",
+    "operation": "real click/fill/select",
+    "expected": "one click opens checkout with chosen SKU and quantity",
+    "actual": "one click opens checkout with chosen SKU and quantity",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "delivery",
+    "operation": "real click/fill/select",
+    "expected": "delivery selector opens",
+    "actual": "delivery selector opens",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "7-ELEVEN",
+    "operation": "real click/fill/select",
+    "expected": "7-ELEVEN selected",
+    "actual": "7-ELEVEN selected",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "quote",
+    "operation": "real click/fill/select",
+    "expected": "quote and pickup form visible",
+    "actual": "quote and pickup form visible",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "cvs-recipient-name",
+    "operation": "real click/fill/select",
+    "expected": "input value retained",
+    "actual": "input value retained",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "cvs-recipient-phone",
+    "operation": "real click/fill/select",
+    "expected": "input value retained",
+    "actual": "input value retained",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "cvs-entered-code",
+    "operation": "real click/fill/select",
+    "expected": "input value retained",
+    "actual": "input value retained",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "pay-at-pickup",
+    "operation": "real click/fill/select",
+    "expected": "pay-at-pickup selected",
+    "actual": "pay-at-pickup selected",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "confirm-address",
+    "operation": "real click/fill/select",
+    "expected": "order action enabled",
+    "actual": "order action enabled",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "create-order",
+    "operation": "real click/fill/select",
+    "expected": "confirmed pay-at-pickup order",
+    "actual": "confirmed pay-at-pickup order",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/claim",
+    "control": "claim-add",
+    "operation": "real click/fill/select",
+    "expected": "one click opens checkout with chosen SKU and quantity",
+    "actual": "one click opens checkout with chosen SKU and quantity",
+    "pass": true
+  },
+  {
+    "page": "/zh-TW/checkout",
+    "control": "back-to-cart",
+    "operation": "real click/fill/select",
+    "expected": "merged items can be reviewed in the cart",
+    "actual": "locator.click: Timeout 30000ms exceeded.",
+    "pass": false
+  }
+]

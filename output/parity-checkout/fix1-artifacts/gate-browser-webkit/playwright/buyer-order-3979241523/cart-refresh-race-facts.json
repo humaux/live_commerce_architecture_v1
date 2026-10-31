@@ -1,0 +1,254 @@
+[
+  {
+    "case_id": "BC02 native focus failure preserves held real cart on retained drawer and fresh mount",
+    "cart_id": "de753317-2424-4572-8bfb-f68f4ecd5104",
+    "key": "89ad8d7a-189e-46f6-9a57-77dc0148d512",
+    "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+    "before": {
+      "id": "de753317-2424-4572-8bfb-f68f4ecd5104",
+      "version": 1,
+      "writes": 1,
+      "receipts": 1,
+      "receipt_version": 1,
+      "request_hash": "fe6a7628ebc361828cba59f0765ddfedb8194b57697a6cd19658308cba8f8f68",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 1
+        }
+      ]
+    },
+    "after": {
+      "id": "de753317-2424-4572-8bfb-f68f4ecd5104",
+      "version": 1,
+      "writes": 1,
+      "receipts": 1,
+      "receipt_version": 1,
+      "request_hash": "fe6a7628ebc361828cba59f0765ddfedb8194b57697a6cd19658308cba8f8f68",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 1
+        }
+      ]
+    },
+    "phases": [
+      {
+        "surface": "drawer",
+        "held_status": 200,
+        "session_status": 503,
+        "measurement": {
+          "focus": [
+            {
+              "type": "blur",
+              "trusted": true
+            },
+            {
+              "type": "focus",
+              "trusted": true
+            },
+            {
+              "type": "blur",
+              "trusted": true
+            },
+            {
+              "type": "focus",
+              "trusted": true
+            }
+          ],
+          "samples": [
+            {
+              "title": null,
+              "lines": 1,
+              "qty": "1",
+              "detail_loading": null
+            }
+          ],
+          "empty": 0,
+          "line_loss": 0,
+          "seen_line": true,
+          "sequence": 6,
+          "fetches": [
+            {
+              "status": 200,
+              "settlement": "resolved",
+              "sequence": 1
+            },
+            {
+              "status": 503,
+              "settlement": "resolved",
+              "sequence": 3
+            }
+          ],
+          "locks": [
+            {
+              "name": "commerce-buyer-session-v1",
+              "settlement": "resolved",
+              "sequence": 2
+            },
+            {
+              "name": "commerce-buyer-session-v1",
+              "settlement": "rejected",
+              "code": "request_failed",
+              "status": 503,
+              "sequence": 4
+            }
+          ]
+        },
+        "held_cart": {
+          "id": "de753317-2424-4572-8bfb-f68f4ecd5104",
+          "currency": "USD",
+          "version": 1,
+          "items": [
+            {
+              "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+              "quantity": 1
+            }
+          ]
+        },
+        "session_failures": 1,
+        "settlement": {
+          "fetch": {
+            "status": 503,
+            "settlement": "resolved",
+            "sequence": 3
+          },
+          "lock": {
+            "name": "commerce-buyer-session-v1",
+            "settlement": "rejected",
+            "code": "request_failed",
+            "status": 503,
+            "sequence": 4
+          },
+          "fetch_count": 1,
+          "lock_count": 1,
+          "barrier": {
+            "name": "commerce-buyer-session-v1",
+            "acquired_sequence": 5,
+            "settled_sequence": 6
+          }
+        }
+      },
+      {
+        "surface": "mount",
+        "held_status": 200,
+        "session_status": 503,
+        "measurement": {
+          "focus": [
+            {
+              "type": "blur",
+              "trusted": true
+            },
+            {
+              "type": "focus",
+              "trusted": true
+            }
+          ],
+          "samples": [
+            {
+              "title": "Loading…",
+              "lines": 0,
+              "qty": null,
+              "detail_loading": null
+            },
+            {
+              "title": null,
+              "lines": 0,
+              "qty": null,
+              "detail_loading": "Loading…"
+            },
+            {
+              "title": null,
+              "lines": 1,
+              "qty": "1",
+              "detail_loading": null
+            }
+          ],
+          "empty": 0,
+          "line_loss": 0,
+          "seen_line": true,
+          "sequence": 10,
+          "fetches": [
+            {
+              "status": 503,
+              "settlement": "resolved",
+              "sequence": 1
+            },
+            {
+              "status": 200,
+              "settlement": "resolved",
+              "sequence": 5
+            },
+            {
+              "status": 200,
+              "settlement": "resolved",
+              "sequence": 7
+            },
+            {
+              "status": 200,
+              "settlement": "resolved",
+              "sequence": 9
+            }
+          ],
+          "locks": [
+            {
+              "name": "commerce-buyer-session-v1",
+              "settlement": "rejected",
+              "code": "request_failed",
+              "status": 503,
+              "sequence": 2
+            },
+            {
+              "name": "commerce-buyer-session-v1",
+              "settlement": "resolved",
+              "sequence": 6
+            },
+            {
+              "name": "commerce-buyer-session-v1",
+              "settlement": "resolved",
+              "sequence": 8
+            },
+            {
+              "name": "commerce-buyer-session-v1",
+              "settlement": "resolved",
+              "sequence": 10
+            }
+          ]
+        },
+        "held_cart": {
+          "id": "de753317-2424-4572-8bfb-f68f4ecd5104",
+          "currency": "USD",
+          "version": 1,
+          "items": [
+            {
+              "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+              "quantity": 1
+            }
+          ]
+        },
+        "session_failures": 1,
+        "settlement": {
+          "fetch": {
+            "status": 503,
+            "settlement": "resolved",
+            "sequence": 1
+          },
+          "lock": {
+            "name": "commerce-buyer-session-v1",
+            "settlement": "rejected",
+            "code": "request_failed",
+            "status": 503,
+            "sequence": 2
+          },
+          "fetch_count": 1,
+          "lock_count": 1,
+          "barrier": {
+            "name": "commerce-buyer-session-v1",
+            "acquired_sequence": 3,
+            "settled_sequence": 4
+          }
+        }
+      }
+    ]
+  }
+]

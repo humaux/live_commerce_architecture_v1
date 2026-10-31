@@ -220,6 +220,7 @@ function adminURL(route, locale) {
   const q = (extra = "") => `?store=${store}${extra}`;
   const p = route.path;
   const sub = {
+    "/orders/[order]": `/orders/${orderIDs.cash_on_delivery}`,
     "/products/[product]": `/products/${facts.products[0].id}`, "/customers/[customer]": `/customers/${facts.customer}`, "/invite/[token]": `/invite/${"A".repeat(43)}`,
     "/studio/claims": "/studio/claims", "/orders/cvs-print": "/orders/cvs-print",
   }[p] ?? p;
@@ -354,8 +355,8 @@ async function placeCodOrder(page, v, product) {
   await expect(radio).toBeVisible();
   await radio.check();
   await page.getByTestId("confirm-address").click();
-  await expect(page.getByTestId("create-order")).toBeEnabled();
-  await page.getByTestId("create-order").click();
+  await expect(page.getByTestId("checkout-submit")).toBeEnabled();
+  await page.getByTestId("checkout-submit").click();
   await expect(page.getByTestId("order-section")).toBeVisible({ timeout: 30000 });
   const id = (await page.getByTestId("order-id").innerText()).trim();
   assert.match(id, /^[a-f0-9-]{36}$/);
@@ -478,11 +479,11 @@ async function journeyAdminOrder(state, placed, journeys) {
     let detail;
     await step({ ...unit, journey: "J2" }, "admin Orders: the storefront COD order is listed (click through pages)", "the row of the order id can be expanded", async () => {
       await page.goto(`${adminOrigin}/zh-TW/orders?store=${store}`);
-      await expect(page.getByTestId("orders-table")).toBeVisible();
+      await expect(page.getByTestId("orders-list")).toBeVisible();
       for (let p = 0; p < 6; p++) {
         const button = page.getByTestId(`order-expand-${order.id}`);
-        if (await button.count()) { await button.click(); detail = page.getByTestId("order-detail"); await expect(detail).toHaveAttribute("aria-label", new RegExp(order.id)); return; }
-        await expect(page.getByTestId("orders-next")).toBeEnabled(); await page.getByTestId("orders-next").click(); await expect(page.getByTestId("orders-table")).toBeVisible();
+        if (await button.count()) { await button.click(); detail = page.getByTestId("order-detail"); await expect(detail).toHaveAttribute("aria-label", new RegExp(order.id)); await page.getByTestId("order-more-details").locator("summary").first().click(); detail = detail.getByTestId("order-facts"); return; }
+        await expect(page.getByTestId("orders-next")).toBeEnabled(); await page.getByTestId("orders-next").click(); await expect(page.getByTestId("orders-list")).toBeVisible();
       }
       throw new Error("the order is not on the first 6 pages of the order list");
     }, page);
@@ -503,16 +504,12 @@ async function journeyAdminOrder(state, placed, journeys) {
       await expect(cod.getByTestId("cod-collection-state")).toHaveAttribute("data-state", "COLLECTED");
       await expect(cod.getByTestId("cod-collected")).toHaveCount(0);
     }, page);
-    await step(unit, "reload the order list: collected persists", "COLLECTED is still shown after a reload", async () => {
+    await step(unit, "reload the standalone order: collected persists", "COLLECTED is still shown after a reload", async () => {
       await page.reload();
-      await expect(page.getByTestId("orders-table")).toBeVisible();
-      await page.waitForLoadState("networkidle"); // a click before hydration is lost: the user waits for the page to be live as well
-      for (let p = 0; p < 6; p++) {
-        const button = page.getByTestId(`order-expand-${order.id}`);
-        if (await button.count()) { if ((await button.getAttribute("aria-expanded")) !== "true") await button.click(); /* the list keeps the opened order in its URL: only open it when it is closed */ await expect(page.getByTestId("order-detail")).toBeVisible(); await expect(page.getByTestId("order-detail").getByTestId("cod-collection-state")).toHaveAttribute("data-state", "COLLECTED"); return; }
-        await page.getByTestId("orders-next").click(); await expect(page.getByTestId("orders-table")).toBeVisible();
-      }
-      throw new Error("the order vanished after a reload");
+      const detail = page.getByTestId("order-detail");
+      await expect(detail).toHaveAttribute("aria-label", new RegExp(order.id));
+      await page.getByTestId("order-more-details").locator("summary").first().click();
+      await expect(detail.getByTestId("cod-collection-state")).toHaveAttribute("data-state", "COLLECTED");
     }, page);
     // the buyer's lookup: a fresh browser finds the order by clicking
     const lc = await browser.newContext(ctxOptions(VARIANTS[0]));
@@ -583,7 +580,7 @@ async function journeySignOut(state) {
     }, page);
     await step(unit, "reload after sign out", "the dashboard is not shown without a session", async () => {
       await page.goto(`${adminOrigin}/zh-TW/orders?store=${store}`);
-      await expect(page.getByTestId("orders-table")).toHaveCount(0);
+      await expect(page.getByTestId("orders-list")).toHaveCount(0);
     }, page);
   } finally { await c.close().catch(() => {}); }
 }

@@ -31,9 +31,11 @@ async function login(page: Page, locale: Locale) {
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
   await expect(page.getByTestId("nav-orders")).toHaveCount(1);
   await page.goto(`${origin}/${locale}/orders?store=${store}`);
-  await expect(page.getByTestId("orders-table")).toBeVisible();
+  await expect(page.getByTestId("orders-list")).toBeVisible();
 }
 async function open(page: Page, locale: Locale) {
+  const more=page.getByTestId("orders-more-filters");
+  if(await more.getAttribute("aria-expanded")==="false") await more.click();
   await expect(page.getByRole("button", { name: text[locale].action, exact: true })).toBeVisible();
   await click(page, "tracking-open", () => page.getByRole("button", { name: text[locale].action, exact: true }).click(), () => expect(page.getByRole("dialog")).toBeVisible(), "tracking dialog visible");
 }
@@ -114,8 +116,9 @@ for (const [locale, code] of [["zh-TW", "tw"], ["zh-CN", "cn"], ["en", "en"]] as
     await click(page, "choose-different-result", () => page.getByRole("button", { name: text[locale].change, exact: true }).click(), () => expect(page.getByRole("heading", { name: text[locale].result, exact: true })).toHaveCount(0), "result reset for a new file without losing order refresh");
     await click(page, "close", () => page.getByRole("button", { name: text[locale].close, exact: true }).click(), () => expect(page.getByRole("dialog")).toHaveCount(0), "result closed and orders refreshed");
     await page.reload();
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await expect(page.getByTestId("orders-list")).toBeVisible();
     for (const [suffix, number] of [["a", "0012345678"], ["b", "0009876543"]]) {
+      if(await page.getByTestId("order-detail-back").count()) await page.getByTestId("order-detail-back").click();
       if (await page.getByTestId("state-filter").inputValue() !== "all") {
         if (!await page.getByTestId("state-filter").isVisible()) {
           await expect(page.getByTestId("orders-v2-filters")).toHaveAttribute("data-expanded", "false");
@@ -199,7 +202,7 @@ test("lost reply recovers the same file/count; viewer gets no write action", asy
   await viewer.getByRole("button", { name: "Sign in with identity service" }).click();
   await expect(viewer.getByTestId("nav-orders")).toHaveCount(1);
   await viewer.goto(`${viewerOrigin}/en/orders?store=${store}`);
-  await expect(viewer.getByTestId("orders-table")).toBeVisible();
+  await expect(viewer.getByTestId("orders-list")).toBeVisible();
   await expect(viewer.getByRole("button", { name: text.en.action, exact: true })).toHaveCount(0);
   await context.close();
 });

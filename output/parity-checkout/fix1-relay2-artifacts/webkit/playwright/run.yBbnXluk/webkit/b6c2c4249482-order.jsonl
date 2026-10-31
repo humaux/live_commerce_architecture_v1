@@ -1,0 +1,11 @@
+{"Time":"2026-10-30T15:55:27.395568856Z","Action":"start","Package":"livecommerce/tests/foundation"}
+{"Time":"2026-10-30T15:55:27.517441187Z","Action":"run","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerOrderUI"}
+{"Time":"2026-10-30T15:55:27.517527408Z","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerOrderUI","Output":"=== RUN   TestBrowserBuyerOrderUI\n","OutputType":"frame"}
+{"Time":"2026-10-30T15:55:30.46039422Z","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerOrderUI","Output":"    browser_order_chain_test.go:35: HARNESS_SETUP_POOLS released=2\n"}
+{"Time":"2026-10-30T15:57:31.422820093Z","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerOrderUI","Output":"    browser_order_chain_test.go:231: buyer order browser gate failed; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/buyer-order-2250117649\n","OutputType":"error"}
+{"Time":"2026-10-30T15:57:31.424275622Z","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerOrderUI","Output":"    harness_pool_capacity_test.go:159: HARNESS_PG_CAPACITY sampled_peak=13 samples=2420 limit=54 max=60 reserved=0 super=3 margin=3 observer_timeout_retries=0\n"}
+{"Time":"2026-10-30T15:57:31.440706252Z","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerOrderUI","Output":"--- FAIL: TestBrowserBuyerOrderUI (123.92s)\n","OutputType":"frame"}
+{"Time":"2026-10-30T15:57:31.440783065Z","Action":"fail","Package":"livecommerce/tests/foundation","Test":"TestBrowserBuyerOrderUI","Elapsed":123.92}
+{"Time":"2026-10-30T15:57:31.444765819Z","Action":"output","Package":"livecommerce/tests/foundation","Output":"FAIL\n","OutputType":"frame"}
+{"Time":"2026-10-30T15:57:31.461661596Z","Action":"output","Package":"livecommerce/tests/foundation","Output":"FAIL\tlivecommerce/tests/foundation\t124.066s\n","OutputType":"frame"}
+{"Time":"2026-10-30T15:57:31.461710617Z","Action":"fail","Package":"livecommerce/tests/foundation","Elapsed":124.066}

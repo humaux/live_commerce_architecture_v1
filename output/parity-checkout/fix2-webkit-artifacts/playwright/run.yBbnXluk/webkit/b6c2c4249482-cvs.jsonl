@@ -1,0 +1,13 @@
+{"Time":"2026-10-30T15:58:47.636508197Z","Action":"start","Package":"livecommerce/tests/foundation"}
+{"Time":"2026-10-30T15:58:47.762251623Z","Action":"run","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs"}
+{"Time":"2026-10-30T15:58:47.762355208Z","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs","Output":"=== RUN   TestBrowserTaiwanCvs\n","OutputType":"frame"}
+{"Time":"2026-10-30T15:58:47.762689396Z","Action":"run","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit"}
+{"Time":"2026-10-30T15:58:47.762704384Z","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit","Output":"=== RUN   TestBrowserTaiwanCvs/WebKit\n","OutputType":"frame"}
+{"Time":"2026-10-30T16:01:20.610906561Z","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit","Output":"    browser_taiwan_cvs_test.go:220: TCV08 BROWSER (MOCK) buyer half + TCV14 buyer_entered UI half passed; screenshots hashed; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.yBbnXluk/taiwan-cvs/20261030T155848.198524921\n"}
+{"Time":"2026-10-30T16:01:20.711708828Z","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit","Output":"--- PASS: TestBrowserTaiwanCvs/WebKit (152.95s)\n","OutputType":"frame"}
+{"Time":"2026-10-30T16:01:20.711802745Z","Action":"pass","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit","Elapsed":152.95}
+{"Time":"2026-10-30T16:01:20.711843912Z","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs","Output":"--- PASS: TestBrowserTaiwanCvs (152.95s)\n","OutputType":"frame"}
+{"Time":"2026-10-30T16:01:20.711857508Z","Action":"pass","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs","Elapsed":152.95}
+{"Time":"2026-10-30T16:01:20.715896658Z","Action":"output","Package":"livecommerce/tests/foundation","Output":"PASS\n","OutputType":"frame"}
+{"Time":"2026-10-30T16:01:21.740094403Z","Action":"output","Package":"livecommerce/tests/foundation","Output":"ok  \tlivecommerce/tests/foundation\t154.103s\n"}
+{"Time":"2026-10-30T16:01:21.74014612Z","Action":"pass","Package":"livecommerce/tests/foundation","Elapsed":154.104}

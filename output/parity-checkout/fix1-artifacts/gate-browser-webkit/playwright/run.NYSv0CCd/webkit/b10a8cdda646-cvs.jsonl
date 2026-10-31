@@ -1,0 +1,13 @@
+{"Time":"2026-10-30T14:22:50.60552452Z","Action":"start","Package":"livecommerce/tests/foundation"}
+{"Time":"2026-10-30T14:22:50.716579561Z","Action":"run","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs"}
+{"Time":"2026-10-30T14:22:50.716655443Z","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs","Output":"=== RUN   TestBrowserTaiwanCvs\n","OutputType":"frame"}
+{"Time":"2026-10-30T14:22:50.717014665Z","Action":"run","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit"}
+{"Time":"2026-10-30T14:22:50.717029703Z","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit","Output":"=== RUN   TestBrowserTaiwanCvs/WebKit\n","OutputType":"frame"}
+{"Time":"2026-10-30T14:24:06.186424733Z","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit","Output":"    browser_taiwan_cvs_test.go:159: storefront browser gate failed: exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.NYSv0CCd/taiwan-cvs/20261030T142251.095706200\n","OutputType":"error"}
+{"Time":"2026-10-30T14:24:06.222903792Z","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit","Output":"--- FAIL: TestBrowserTaiwanCvs/WebKit (75.51s)\n","OutputType":"frame"}
+{"Time":"2026-10-30T14:24:06.223018086Z","Action":"fail","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs/WebKit","Elapsed":75.51}
+{"Time":"2026-10-30T14:24:06.223051819Z","Action":"output","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs","Output":"--- FAIL: TestBrowserTaiwanCvs (75.51s)\n","OutputType":"frame"}
+{"Time":"2026-10-30T14:24:06.223061367Z","Action":"fail","Package":"livecommerce/tests/foundation","Test":"TestBrowserTaiwanCvs","Elapsed":75.51}
+{"Time":"2026-10-30T14:24:06.228806804Z","Action":"output","Package":"livecommerce/tests/foundation","Output":"FAIL\n","OutputType":"frame"}
+{"Time":"2026-10-30T14:24:06.246265375Z","Action":"output","Package":"livecommerce/tests/foundation","Output":"FAIL\tlivecommerce/tests/foundation\t75.640s\n","OutputType":"frame"}
+{"Time":"2026-10-30T14:24:06.24629499Z","Action":"fail","Package":"livecommerce/tests/foundation","Elapsed":75.641}
