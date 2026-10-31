@@ -1,7 +1,7 @@
-// Purpose: Register orders list, standalone details and existing action-route navigation metadata.
-// Depends on: ../../route-types.ts; permissions are display metadata, Go remains authority.
-// Used by: apps/admin/src/routes.ts and admin shell route matching.
-// Invariants: Detail routes never add a sidebar item or grant a permission.
+// Purpose: Declare order task routes and their permissions, navigation placement and browser coverage.
+// Depends on: ../../route-types.ts and the localized shell label keys.
+// Used by: apps/admin/src/routes.ts and route-registry/browser-ownership gates.
+// Invariants: Detail and action routes never add a sidebar item or grant a permission; orders remains a singleton rail entry.
 // W0 route metadata only; data/authorization remain in the existing BFF and Go.
 import type { RouteEntry } from "../../route-types.ts";
 export const ordersRoutes = [
@@ -44,6 +44,18 @@ export const ordersRoutes = [
     // browser spec clicks (WorkspaceFrame). Reached from the orders list ("退貨與取消" link in OrderListFilters).
     nav: false,
     spec: "tests/admin/returns-ui.spec.ts",
+  },
+  {
+    id: "shipping-center",
+    path: "/orders/shipping",
+    group: "orders",
+    labelKey: "shippingCenter",
+    icon: "orders",
+    permission: "orders:read",
+    template: "workspace",
+    // Keep the orders navigation singleton. Shipping is reached by its real task URL.
+    nav: false,
+    spec: "tests/admin/shipping-center.spec.ts",
   },
   {
     id: "cvs-print",
