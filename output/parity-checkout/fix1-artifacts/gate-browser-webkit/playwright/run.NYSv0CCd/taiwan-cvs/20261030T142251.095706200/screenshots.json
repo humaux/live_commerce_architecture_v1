@@ -1,0 +1,56 @@
+[
+  {
+    "File": "cvs-store-card-zh-TW-desktop.png",
+    "Sha256": "3f87c077458d167b2b9adf26e7b68cd3bf148370efce71633eb1f081beb616df",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "cvs-picker-errors-zh-TW-desktop.png",
+    "Sha256": "8429823b7d1c58c513e493e05025486c3714b4fa2ffa06abb7b1921d9c37ca60",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "cvs-store-card-en-mobile.png",
+    "Sha256": "db909c39293c3a4e96b13e555a762c63c36e0409cc6c79786e03a0a1d183e8b7",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "cvs-picker-errors-en-mobile.png",
+    "Sha256": "5e20e9c923b88fe9e4413faba17ca56a71a63f0da2450dbf41a8f13155ef711b",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "cvs-store-card-zh-CN-desktop.png",
+    "Sha256": "ac026bf8bf52efabc160d74c7c8472d74139d1fcbd30e2da04be141551caeca6",
+    "Locale": "zh-CN",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "cvs-picker-errors-zh-CN-desktop.png",
+    "Sha256": "b628cdc9ac718e1a5ca361278ee566044b1b3bedc7dfccf04ddd87f34ca7b559",
+    "Locale": "zh-CN",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "cvs-store-card-zh-TW-mobile.png",
+    "Sha256": "b3685a5ac870d0ade4784bec12e5608d88d7a357342d4c663d374111615df04a",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "cvs-picker-errors-zh-TW-mobile.png",
+    "Sha256": "1840079da58531a86fc3a40e0484343194a959e7c8cfc051ec6274acf3b425f2",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "cvs-pay-at-pickup-order-en-desktop.png",
+    "Sha256": "4f4297f7c23e9f81f58864f58f2c74df8df51b3a211f613cf765b853748e9ada",
+    "Locale": "en",
+    "Viewport": "desktop"
+  }
+]

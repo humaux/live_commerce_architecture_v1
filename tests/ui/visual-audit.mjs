@@ -385,8 +385,8 @@ export async function main() {
       for (const [k, value] of Object.entries(pii)) await page.locator(`input[name="${k}"]`).fill(value);
       await page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]').check();
       await page.getByTestId("confirm-address").click();
-      await expect(page.getByTestId("create-order")).toBeEnabled();
-      await page.getByTestId("create-order").click();
+      await expect(page.getByTestId("checkout-submit")).toBeEnabled();
+      await page.getByTestId("checkout-submit").click();
       await expect(page.getByTestId("order-section")).toBeVisible({ timeout: 30000 });
       return (await page.getByTestId("order-id").innerText()).trim();
     };

@@ -1,0 +1,110 @@
+[
+  {
+    "File": "cvs-store-card-zh-TW-desktop.png",
+    "Sha256": "3f87c077458d167b2b9adf26e7b68cd3bf148370efce71633eb1f081beb616df",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "cvs-picker-errors-zh-TW-desktop.png",
+    "Sha256": "9344643465eabed98ce3ae316a0d347fda49072fe3864c9bddf1fc0d352ea832",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "cvs-store-card-en-mobile.png",
+    "Sha256": "db909c39293c3a4e96b13e555a762c63c36e0409cc6c79786e03a0a1d183e8b7",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "cvs-picker-errors-en-mobile.png",
+    "Sha256": "1068dc02ade490c567f2a937ca4275b4515f67a7bd08324716792ff57cb55cfd",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "cvs-store-card-zh-CN-desktop.png",
+    "Sha256": "ac026bf8bf52efabc160d74c7c8472d74139d1fcbd30e2da04be141551caeca6",
+    "Locale": "zh-CN",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "cvs-picker-errors-zh-CN-desktop.png",
+    "Sha256": "690f5aec25dc77f306c74176b37f2ad102ac4c59e339947fdd6c69530b582d39",
+    "Locale": "zh-CN",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "cvs-store-card-zh-TW-mobile.png",
+    "Sha256": "b3685a5ac870d0ade4784bec12e5608d88d7a357342d4c663d374111615df04a",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "cvs-picker-errors-zh-TW-mobile.png",
+    "Sha256": "fa3709596b933501248364e27ce618f211cfa9cbfc0bdb77d933e950c55fc024",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "cvs-pay-at-pickup-order-en-desktop.png",
+    "Sha256": "0424ff9442152dc498979447d75e73550134e835b4487f5c3839a4bf5260dd65",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "cvs-picker-zh-TW-mobile.png",
+    "Sha256": "22a13032ff4c4cb283b479d05eb790d2df5c2f74fa0ae46b9f008f88f6bf49f4",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "cvs-picker-zh-CN-desktop.png",
+    "Sha256": "85e58c428a51eb0d50bd0cedd9603b54e049086ccbfb54e6f22b836dbdc90c14",
+    "Locale": "zh-CN",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "cvs-picker-en-mobile.png",
+    "Sha256": "588254e0bbc2e94f07e4a43655e07dc22a9e6e09d0d96d62c126898c929cfa9d",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "cvs-entered-zh-TW-desktop.png",
+    "Sha256": "1c6be1d8f47b7f036ecf82ced63a95ebc53b08ea477caa15d618fea016899c63",
+    "Locale": "zh-TW",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "cvs-entered-en-mobile.png",
+    "Sha256": "e13d4a36f4a435718a2df52952e6756b37d59bb1e7563f82a165ce23b2c9f9fb",
+    "Locale": "en",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "cvs-entered-zh-CN-desktop.png",
+    "Sha256": "e0d7fe212d691f3e22117266d95a897b072cbe1c14f4f2384c349e899ed963f5",
+    "Locale": "zh-CN",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "cvs-admin-create-dialog-en-desktop.png",
+    "Sha256": "b28fbd9bd513e7e8dd3e5c1bd7395a166a1803f09e06ab82059ea969a8557d47",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "cvs-admin-created-en-desktop.png",
+    "Sha256": "63dd5996f1ecc152f5499aaa778cbb43c818ee5f92311e0175ceafeda48d1733",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "cvs-admin-entered-label-en-desktop.png",
+    "Sha256": "2c3a501a0dc0d2c8f601a4aa87a0deb6ed0a434980dede5a84886a28906c9484",
+    "Locale": "en",
+    "Viewport": "desktop"
+  }
+]

@@ -32,8 +32,7 @@ export default function CheckoutDeliveryOptions({ locale, options, method, chose
     <select id="delivery" value={method} disabled={disabled} onChange={(e) => onSelect(e.target.value)}>
       {options.map((o) => (
         <option key={optionKey(o)} value={optionKey(o)} disabled={isUnavailable(o)}>
-          {locale === "zh-CN" ? o.name_hans : locale === "zh-TW" ? o.name_hant : o.name_en}{" "}
-          · {o.country}
+          {locale === "zh-CN" ? o.name_hans : locale === "zh-TW" ? o.name_hant : o.name_en}
           {isUnavailable(o) ? ` · ${cvsCopy[locale].comingSoon}` : ""}
         </option>
       ))}

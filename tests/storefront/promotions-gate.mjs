@@ -15,6 +15,7 @@
 //     /finance shows the confirmed amount; /promotions shows the code's usage 1.
 // The only host mapping is a disposable TLS/CONNECT edge for https://buyer.example.
 import { startNextWithPortRetry, nextAttemptLog } from "../helpers/next-startup.mjs";
+import { confirmCheckoutAddress, openCheckoutDetails } from "./shop-helpers.mjs";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import http from "node:http";
@@ -184,10 +185,11 @@ async function scenario(index, run) {
   await buyer.getByTestId("cart-checkout").click();
   await buyer.waitForURL(`**/${run.locale}/checkout`); // 0093 (storefront-integration): the checkout surface is /{locale}/checkout (apps/storefront/lib/routes.ts), no longer the product-form path
   await buyer.getByRole("button", { name: words.delivery, exact: true }).click();
-  await buyer.getByLabel(words.deliveryLabel).selectOption({ label: `${run.locale === "zh-TW" ? fx.delivery_hant : fx.delivery_en} · TW` });
+  await buyer.getByLabel(words.deliveryLabel).selectOption({ label: `${run.locale === "zh-TW" ? fx.delivery_hant : fx.delivery_en}` });
   const quoted = buyer.waitForResponse(r => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST");
   await Promise.all([quoted, buyer.getByRole("button", { name: words.quote, exact: true }).click()]);
   assert.equal((await quoted).status(), 200);
+  await openCheckoutDetails(buyer);
   const quotation = buyer.locator(".quotation");
   await expect(quotation).toBeVisible();
   await expect(quotation).toContainText(amt(subtotal + shipping)); // no code yet: goods + shipping
@@ -220,6 +222,7 @@ async function scenario(index, run) {
   assert.equal(body.amount.total_minor, total);
   assert.equal(body.amount.shipping_minor, shipping, "a code never touches shipping");
   assert.deepEqual([body.promotion.code, body.promotion.kind, body.promotion.percent], [cell.code, "percent", 10]);
+  await openCheckoutDetails(buyer);
   await expect(buyer.getByTestId("promo-applied")).toContainText(cell.code);
   await expect(buyer.getByTestId("promo-applied")).toContainText(amt(discount));
   await expect(buyer.getByTestId("promo-problem")).toHaveCount(0);
@@ -234,12 +237,14 @@ async function scenario(index, run) {
   const removed = promoQuote();
   await buyer.getByTestId("promo-remove").click();
   assert.equal((await removed).status(), 200);
+  await openCheckoutDetails(buyer);
   await expect(buyer.getByTestId("promo-applied")).toHaveCount(0);
   await expect(quotation).toContainText(amt(subtotal + shipping));
   const again = promoQuote();
   await buyer.getByTestId("promo-input").fill(cell.code);
   await buyer.getByTestId("promo-apply").click();
   assert.equal((await again).status(), 200);
+  await openCheckoutDetails(buyer);
   await expect(quotation.locator(".total")).toContainText(amt(total));
   pass(`${label} buyer: removing the code restores goods + shipping, applying it again restores ${money(total)}`);
 
@@ -251,7 +256,7 @@ async function scenario(index, run) {
   await buyer.getByTestId("home-payment-mode").getByRole("radio", { name: words.bank }).check();
   await buyer.locator('input[name="buyer_email"]').fill(`promo-${index}@example.com`);
   await buyer.getByTestId("quote-reconfirm").getByRole("button").click();
-  await buyer.getByTestId("confirm-address").click();
+  await confirmCheckoutAddress(buyer);
   await expect(buyer.getByTestId("create-order")).toBeEnabled();
   await buyer.getByTestId("create-order").click();
   await expect(buyer.getByTestId("order-section")).toBeVisible({ timeout: 30000 });

@@ -1,0 +1,20 @@
+browser engine: webkit
+PASS CDC chosen SKU/quantity/live price -> order -> reload; Taipei expiry in zh-TW/America/Los_Angeles
+PASS CDC chosen SKU/quantity/live price -> order -> reload; Taipei expiry in zh-CN/UTC
+PASS CDC chosen SKU/quantity/live price -> order -> reload; Taipei expiry in en/America/Los_Angeles
+PASS CDC continueShopping prevents repeat purchase of old cart
+PASS CDC unpaid merge survives reload and other item removal preserves chosen SKU/quantity
+PASS CDC claim-page removal with live price survives revisit and checkout
+PASS CDC partial sold-out skip
+PASS CDC partial claim revisit checks out applied A despite pending sold-out B
+PASS CDC all sold out is disabled
+PASS CDC replenishment keeps pending and permits a fresh checkout click
+PASS CDC expired uniform 404
+PASS CDC expired origin uses catalog quote
+PASS CDC B1/B2 stock race settles sold-out without cart write/navigation
+PASS CDC double click sends one redeem
+PASS CDC back navigation forgets token and asks to reopen the message link
+PASS CDC double-click journey yields exactly one persisted order
+PASS CDC stock disappearing after quote is refused at Begin
+PASS CDC in-flight order recovers without B2
+PASS CDC 409 cart recovery through actual remove click

@@ -264,6 +264,7 @@ try {
   });
   assert(optionRows.length >= 1 && optionRows.every((o) => o.free_shipping_threshold_minor === T), `options must carry the policy threshold ${T}: ${JSON.stringify(optionRows.map((o) => o.free_shipping_threshold_minor))}`);
   await p.getByRole("button", { name: "Get current total", exact: true }).click();
+  await p.getByTestId("checkout-details-toggle").click();
   await expect(p.locator(".quotation")).toBeVisible();
   await expect(p.locator(".quotation dl div").filter({ hasText: "Delivery" }).locator("dd")).toHaveText(shop$(F)); // below the threshold the quote charges the fee
   const pc2 = await phone(), q = await pc2.newPage();
@@ -276,6 +277,7 @@ try {
   await q.getByRole("button", { name: "Choose delivery", exact: true }).click();
   await expect(q.getByTestId("checkout-free-shipping")).toContainText(COPY.freeShipReached);
   await q.getByRole("button", { name: "Get current total", exact: true }).click();
+  await q.getByTestId("checkout-details-toggle").click();
   await expect(q.locator(".quotation")).toBeVisible();
   await expect(q.locator(".quotation dl div").filter({ hasText: "Delivery" }).locator("dd")).toHaveText(shop$(0)); // at or above the threshold shipping is free
   await expect(q.getByTestId("address-section")).toBeVisible();

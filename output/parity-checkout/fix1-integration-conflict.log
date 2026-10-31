@@ -1,0 +1,12 @@
+d6cc627063bdd691c034829d5a385df7382597df
+100644 4f91f0bc667d86a58b0d50b51d294defd5ee946c 1	output/ci-select-backend-browser/browser-ownership.json
+100644 f94dd410979ec83f4ab916a78cc0fc597505a6f2 2	output/ci-select-backend-browser/browser-ownership.json
+100644 af0118b1dcdf36bfff9a7059a929f7d6164b238f 3	output/ci-select-backend-browser/browser-ownership.json
+100644 0ea7a7e7c3bb230ca31939d1044e39b81e668003 1	tests/storefront/cvs-picker.mjs
+100644 9c71948ae297d1600aa83360e91a4b398d00bd4c 2	tests/storefront/cvs-picker.mjs
+100644 24f495ebc04aa9bde1cd134fe6f2289d65169412 3	tests/storefront/cvs-picker.mjs
+
+Auto-merging output/ci-select-backend-browser/browser-ownership.json
+CONFLICT (content): Merge conflict in output/ci-select-backend-browser/browser-ownership.json
+Auto-merging tests/storefront/cvs-picker.mjs
+CONFLICT (content): Merge conflict in tests/storefront/cvs-picker.mjs

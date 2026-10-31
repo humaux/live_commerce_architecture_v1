@@ -219,8 +219,8 @@
     "tests/admin/w6-real-route-loader.mjs": "64c32f6e3c9088d1395c5fc8cb5aeaa2b62c635e37f41558daef4932af4ccc73",
     "tests/admin/w6-route-seam.test.mjs": "8e2254dcb729b718a962dd849e2ec119a1ec9dafc6ff07990d205f85582fee87",
     "tests/browser-evidence.mjs": "37fca6070130b26a900e723a767c6d3034c6e721a43fdf3e188a7b9e91fd829a",
-    "tests/e2e/deal-loop.spec.ts": "549057a63f4c1a16e599d0bec174cb1ab144f60fd0fdcc10dbbd9b7695b68830",
-    "tests/e2e/live-tools.spec.ts": "1b9c52947a557c7765c405490b9c9481c8c6caeb7afd4c0195b45fe49aad3891",
+    "tests/e2e/deal-loop.spec.ts": "35a915f1e3caf29ea4627065cfd5c5f1c65cb0bc2cc1a1a6b373d429b8370d3b",
+    "tests/e2e/live-tools.spec.ts": "00c2f0a08b15580bac542f964b250577c14f68fe8473126d0d8f327bfc0ac37f",
     "tests/foundation/acceptance_test.go": "6ed85632c5029cfa218c3ea7ac32ccf69d361c71a5ac9d673663250d9b8688e4",
     "tests/foundation/account_onboarding_test.go": "e573d6f56f0eabe35231d87f21335463d1790801ca09a52d3e81f973941fcade",
     "tests/foundation/account_process_test.go": "213c2801cee78b59821a8fd7e8721cf3099cc5d57dfa1f9aadb45fdf41ed5ede",
@@ -714,47 +714,47 @@
     "tests/helpers/next-startup.mjs": "c7c5606a472a37ec3732ebc13a3cb53c8585759805b27d5682bbfbe907137039",
     "tests/helpers/owned-child.mjs": "f087e525f04ce0e1dfeb1190a71025db5c167a76e801fa937f0b249ac8cda611",
     "tests/storefront/ad-link.mjs": "8ff0d04d1953b3440e50967051efd3e089c38e96ad9c5ceab2907a8bff2a6525",
-    "tests/storefront/ads-attribution.mjs": "7c960609e2c825433cdf821df925459bc89582a9cc8f77f052e3a6eea045b710",
+    "tests/storefront/ads-attribution.mjs": "1d6095e58c42743c452b343ecfd83a845fbe73d060321025cbd52b44c9c1efb0",
     "tests/storefront/ads-consent.mjs": "21283a0849d5941c419656f335aa0f24d4974aa5567d55bbe1065c9e2fae4107",
     "tests/storefront/amount-match.mjs": "db1f29bf92ecfa334d6e5bf10735ddb1607d8a7bb888839d94ad5b3d710eaf5f",
     "tests/storefront/amount-match.test.mjs": "1a82f40cbc42b92c7d5c79c7a171cb88cfd239ed76a3614f7f4e7f2dd15c3d74",
     "tests/storefront/browser-engine.mjs": "5dec33e55e6a5eb155a2b00fc0ed9c564cebf06c55cb24d5e93ea149b29bb711",
-    "tests/storefront/browser-gate.mjs": "ccd813a36eae3d4690b5cfa9ba6bc04334f8219e249428f988f34ef369163e3e",
-    "tests/storefront/buyer-comms-gate.mjs": "fa596c899e92ca7bccb21b2a31e13765a9c7a88169478820862a42933a3e7597",
+    "tests/storefront/browser-gate.mjs": "a90c0697ce659eb77a572f2517617f447930903f9274e808a9e33be21a744ddb",
+    "tests/storefront/buyer-comms-gate.mjs": "55c8bb40907fd003258b9fa5909aa9c379845d8e76334e8aafa26b008e134f86",
     "tests/storefront/catalog-media-gate.mjs": "2a88ccf112a2e945b07e9fbc4a9b78f4934111b4c7cd1317bfe0bb0031eabbca",
-    "tests/storefront/checkout-v2.mjs": "aff32df963f723da5336e1337c91ee2ec19975bca20d960bf9125d8e88e1f9eb",
-    "tests/storefront/claim-checkout.mjs": "36464fd177b07072bd0ee77f8c2376ee680edf5f8a467d37a88e3509dc477930",
+    "tests/storefront/checkout-v2.mjs": "b3825531431f18b986497d350049816506e88c12d757750b00f671fa82e1d136",
+    "tests/storefront/claim-checkout.mjs": "8c3f22b47a79f3d309ab7f28f3dff824cf43497d41b471c96941157037c09245",
     "tests/storefront/cod-footer.spec.ts": "a6fc969d7189f98edd2c1fb90deb9175aafe5150524046de79a0b69f34fc761b",
     "tests/storefront/collector-buyer.mjs": "6d4dc2824450901bfd2cf9389452ff3013a767ce944023994108b1f54045a7cf",
-    "tests/storefront/cvs-buyer.mjs": "a21d97baff17e00598da29de691963bf67ed474f5ba077ec791c851693328a2d",
-    "tests/storefront/cvs-pap-only.mjs": "aca08fab00471cd7615a7fcbc36d6cc62f314e0c1f8e8beb45b8398e734589ea",
-    "tests/storefront/cvs-picker.mjs": "8c81c6e63b1dab0c9152fc98cab74aabd8f9108d2029a5bfe4afd73e0afd3536",
-    "tests/storefront/home-cod-buyer.mjs": "f67f85048b62422fbda4bd0f7a2829af487cffec40052dd1639573c6454ab22f",
+    "tests/storefront/cvs-buyer.mjs": "27a52b9961ee86ab9914d5c57c12ef92969d981f25fe54da8d94f362f9ed31dc",
+    "tests/storefront/cvs-pap-only.mjs": "5cfb53e5dee4fb24445919f5444bfd0540a2eaea25123ff7475a95a5d9e10e14",
+    "tests/storefront/cvs-picker.mjs": "92a4fc0c4ae2f3198b3e6502f93e0b6100ba8c0737a43f9a6075d4e683c70851",
+    "tests/storefront/home-cod-buyer.mjs": "81eb928b45f5610975f21583a235ec81c1dbd9210b8a25273dae1547412a785d",
     "tests/storefront/legal-pages.mjs": "75096e2148250a804a3ed4a35d29eae48aa017dec6978c569deb2a03d9341cbf",
     "tests/storefront/manual-order-link-gate.mjs": "5e58a7e8414a47e511b88f079f3bad20ca269b03b4e3e793f146cb0157ca04f3",
     "tests/storefront/media-sizes-perf.mjs": "cda916ddd4385236dffca710f0d22169f91ceaab2e0390dc7d56a809e5d77ac6",
     "tests/storefront/merchant-buyer-gate.mjs": "a217ad228d06445a43f00291b9a68fbcdda835e058bc27e0cc5028dabf54daa0",
     "tests/storefront/merchant-product.mjs": "d9d43b036a6be9e7ab938d5e56ce8e28be2e21301a537c381ff3121d5f8e93b5",
-    "tests/storefront/offline-buyer.mjs": "9e3e0ba24d8e30b2394a9ef20f24890b8dcbab98aef2470ada64c2f48a3a6c84",
+    "tests/storefront/offline-buyer.mjs": "3b73b2d8339323af0d3508175c0e9f385934d3afa651425fcf7134bc332b5129",
     "tests/storefront/offline-error.spec.ts": "bf531d759ba26fbb7731aa556a7de6c40a8e1686585e40a8250d62f1abe1969b",
-    "tests/storefront/order-gate.mjs": "e5ebd56569c9e267751104355446cace55933ceb933d532620944bba77732093",
-    "tests/storefront/privacy-buyer.mjs": "bd6d26ec72354141bcdf319ef4c137e6ca5d9d7709a4b42ddef0891a3204cedc",
-    "tests/storefront/promotions-gate.mjs": "8a50f4cac06f0a393c1ecc568e0b272993091828cb11868cb29bcfec5afa5dc6",
+    "tests/storefront/order-gate.mjs": "2de390c4c61a964e07a66d0ff804f3a2b0253158267a19804dae4b9c7817c82e",
+    "tests/storefront/privacy-buyer.mjs": "ce7a34da7f4f7e410320b80a5f659d4e6accb3855a366a564f648ab1664ece9c",
+    "tests/storefront/promotions-gate.mjs": "4f9309f4dea11dfb5b4bd760d57d94b958adc1036f59cab2f170ee02f47d7e4b",
     "tests/storefront/refund-buyer.mjs": "e89297f2997f0153b811175d7c00718dec9657de3e606b759512248ca53acaca",
     "tests/storefront/shipment-buyer.mjs": "bedeb90babda691f1db89879711ffbdc0a29da2b476772eb367f00d5e1faf1db",
     "tests/storefront/shop-fake-api.mjs": "6889624193e209e269d43dd8b84122b7301239c10f512ed2bd88d0ea90b5d39a",
-    "tests/storefront/shop-gate.mjs": "bd89c5aee6fa15fdcea00b226eb12175cc49fe0b501074f52ac6afad08965006",
-    "tests/storefront/shop-helpers.mjs": "16c06381216b980ebd40ea4dbb085de999fd511a6cfa1fa05f8259f914d29654",
+    "tests/storefront/shop-gate.mjs": "fe0f18018ef43ef87347f62ad9b4f185d780bbd9f8609fcfe15548ee59b46077",
+    "tests/storefront/shop-helpers.mjs": "87d4a11b6a30c688c40701ea4a71fb311c80b4d9c968f8edd2390e0ae6cd7d20",
     "tests/storefront/shop-r5-checks.mjs": "9837f3874c1ff56322d4df72be3230f304505ca90da2eb5736720ae1b2121b8d",
-    "tests/storefront/shop-real-gate.mjs": "bb19c162a5e7dbbeacc3e4aae7cba2c23ca34fa4af5f0f77e0a4525ad24c0e5b",
+    "tests/storefront/shop-real-gate.mjs": "3a4b3848053cbea7aa98ddf73df8e00d65474c3203c229f213dbae10a37c8535",
     "tests/storefront/store-domains-gate.mjs": "94d3d543b931453ce9176b3801161b3aae809796dee0ef7793ff32e951497185",
     "tests/storefront/storefront-publish-gate.mjs": "7f47df8fc3a9ab9f751b0b8eb1cf596b150de32aa3d7b4979b09970144249cf3",
-    "tests/storefront/stripe-browser.mjs": "0e968a4ee71a2cd9aa13adb3c3d38704e266943e016cb64873237b017848cbbe",
+    "tests/storefront/stripe-browser.mjs": "eb067cbf66d65a95f73418bcd1f2d412e50271a1eeddd3973f02f4dfc2359512",
     "tests/ui/click-sweep-known-defects.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
     "tests/ui/click-sweep-lib.mjs": "5cd36a9104e3589076a62f067f62105a932c3f0b9088a2e214a337807bc914e6",
     "tests/ui/click-sweep-lib.test.mjs": "1141c0b49fd0975dd6a8b27a1208829f1c368c67cce23df2e03634a50489f914",
     "tests/ui/click-sweep-weights.json": "1ce9453d358225ba0b69268cc19b431d18b0da701834301a04079c22e6f1aaa3",
-    "tests/ui/click-sweep.mjs": "85e647922f935ece0c18967f821f76371d583583c10f5c4eafcef74b60d6ae90",
+    "tests/ui/click-sweep.mjs": "531b593258805628ed7bece7c9b61d1756837e695ecc912aff042b24d4c78f9d",
     "tests/ui/ds-figma-parity.mjs": "f79a93f632c98c20c56b2167fbfa6898d54930ec8da6654e25c465355a89c6ed",
     "tests/ui/ds-hex-ratchet.test.mjs": "2c28f6fa575cad74475d40f2cd44518f8b393903badd7d3f749593a8a1bc6b8d",
     "tests/ui/ds-logic.test.ts": "cf897067751b3cc56b3531e143e9544e396b0ef9c99ad69886f3f618603ed3f0",
@@ -767,7 +767,7 @@
     "tests/ui/sweep-aggregate.mjs": "96b17bae5f7ed4cc3df60671b12b7a42bb23ebca24c473eb0c819924720d9c3a",
     "tests/ui/sweep-shard-lib.mjs": "918806dc37d079986785de2c9c6b54dbb107ab46da57934d9cd94d1274422c7c",
     "tests/ui/sweep-shard-lib.test.mjs": "4c1f91c5301c193710ed793280615ce13a3bbf2adc1478ff8ce713807b9f3a9d",
-    "tests/ui/visual-audit.mjs": "2a45d36d00e7e797f8fc2f8e98cf10a58f27a7a698215e28e56a96b9a66ca690",
+    "tests/ui/visual-audit.mjs": "414ab92a4ad72151dd9cda861fecbdbb1b97a009588313013252e1b56cc06ada",
     "tests/ui/visual-lint-canary.mjs": "31f23d3e13a38aa3c1ae4fc62515bc28e0805e1960810e8668eca660cde02745",
     "tests/ui/visual-lint-lib.mjs": "d236975b2c2843ff536400d26507e7cf5d3230a18e6fca5e31235f28ee1ce480",
     "tests/ui/visual-lint-lib.test.mjs": "5e28a7b30ab357bb6bf266c3426d6fbd1122811fc7a156a077b213095086edd0",
@@ -1264,7 +1264,8 @@
         "tests/helpers/next-startup.mjs",
         "tests/storefront/amount-match.mjs",
         "tests/storefront/browser-engine.mjs",
-        "tests/storefront/promotions-gate.mjs"
+        "tests/storefront/promotions-gate.mjs",
+        "tests/storefront/shop-helpers.mjs"
       ],
       "apps": [
         "admin",
@@ -1278,7 +1279,8 @@
         "registry:--browser-promotions -> tests/storefront/promotions-gate.mjs",
         "scripts/dev/test-local.sh:--browser-promotions:lc_build=both",
         "tests/foundation/browser_promotions_test.go -> tests/storefront/promotions-gate.mjs",
-        "tests/storefront/promotions-gate.mjs:server/import apps/storefront"
+        "tests/storefront/promotions-gate.mjs:server/import apps/storefront",
+        "tests/storefront/shop-helpers.mjs:server/import apps/storefront"
       ]
     },
     "--browser-password-auth": {
@@ -2176,7 +2178,8 @@
         "tests/admin/attribution.test.ts",
         "tests/helpers/next-startup.mjs",
         "tests/storefront/ads-attribution.mjs",
-        "tests/storefront/browser-engine.mjs"
+        "tests/storefront/browser-engine.mjs",
+        "tests/storefront/shop-helpers.mjs"
       ],
       "apps": [
         "admin",
@@ -2220,7 +2223,8 @@
         "tests/foundation/browser_ads_attribution_test.go -> tests/storefront/ads-attribution.mjs",
         "tests/storefront/ads-attribution.mjs:import apps/storefront/lib/ad-touch.ts",
         "tests/storefront/ads-attribution.mjs:import apps/storefront/lib/purchase-copy.ts",
-        "tests/storefront/ads-attribution.mjs:server/import apps/storefront"
+        "tests/storefront/ads-attribution.mjs:server/import apps/storefront",
+        "tests/storefront/shop-helpers.mjs:server/import apps/storefront"
       ]
     },
     "--browser-cvs": {
@@ -2667,7 +2671,8 @@
         "tests/admin/ops-polish.spec.ts",
         "tests/helpers/next-startup.mjs",
         "tests/storefront/browser-engine.mjs",
-        "tests/storefront/cvs-pap-only.mjs"
+        "tests/storefront/cvs-pap-only.mjs",
+        "tests/storefront/shop-helpers.mjs"
       ],
       "apps": [
         "admin",
@@ -2687,7 +2692,8 @@
         "tests/admin/ops-polish-model.test.ts:server/import apps/admin",
         "tests/foundation/browser_ops_polish_test.go -> tests/admin/ops-polish.spec.ts",
         "tests/foundation/browser_ops_polish_test.go -> tests/storefront/cvs-pap-only.mjs",
-        "tests/storefront/cvs-pap-only.mjs:server/import apps/storefront"
+        "tests/storefront/cvs-pap-only.mjs:server/import apps/storefront",
+        "tests/storefront/shop-helpers.mjs:server/import apps/storefront"
       ]
     },
     "--browser-meta-connect": {

@@ -1,0 +1,22 @@
+{
+  "A": {
+    "id": "f5f3a5a4-80e7-4e2e-bf26-af8744e1f7ad",
+    "locale": "zh-TW",
+    "mobile": false
+  },
+  "B": {
+    "id": "20fd1cdf-ed5a-43e2-85b2-22c6cb4992a1",
+    "locale": "en",
+    "mobile": false
+  },
+  "C": {
+    "id": "09f9b084-0e89-4d0a-86b2-4bc949cd2532",
+    "locale": "zh-TW",
+    "mobile": true
+  },
+  "D": {
+    "id": "d51edeb7-4379-41a7-8eee-6a73c260c393",
+    "locale": "en",
+    "mobile": true
+  }
+}

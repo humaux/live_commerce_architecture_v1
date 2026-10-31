@@ -1,0 +1,11 @@
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:47:13.2120923Z ✖ failing tests:
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:47:13.2121054Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:47:13.2121338Z test at apps/storefront/tests/order-gate-timeout.test.mjs:118:1
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:47:13.2122095Z ✖ BO03 quote-less address reconfirmation reaches its control during a focus-scroll race (1.460136ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:47:13.2122756Z   ReferenceError [Error]: confirmCheckoutAddress is not defined
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:47:13.2123208Z       at evalmachine.<anonymous>:6:3
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:47:13.2124299Z       at async TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/storefront/tests/order-gate-timeout.test.mjs:124:3)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:47:13.2125719Z       at async Test.run (node:internal/test_runner/test:1409:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:47:13.2126996Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:47:13.2161143Z ## matrix-receipts node-test end
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:47:13.2180522Z ##[error]Process completed with exit code 1.
