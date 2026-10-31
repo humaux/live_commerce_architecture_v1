@@ -28,6 +28,15 @@ node_modules
 test-results/
 playwright-report/
 output/playwright/
+# Evidence retention (docs/adr/ADR-20261031-evidence-retention.md): raw CI artifact copies stay local and in GitHub Actions;
+# DELIVERY.md cites run id/job/artifact + sha256. scripts/dev/check-evidence-retention.mjs rejects force-added ones.
+output/**/*-artifact/
+output/**/*-artifacts/
+output/**/playwright/run.*/
+output/**/test-results/
+output/**/*.gz
+output/**/*.zip
+output/**/*.webm
 output/visual-review/
 # Agent-tool isolated worktrees (Claude Code workflows); never repository content.
 .claude/worktrees/

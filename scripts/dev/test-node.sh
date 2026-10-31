@@ -101,4 +101,4 @@ node scripts/dev/check-hex-ratchet.mjs
 node --test --experimental-strip-types tests/admin/live-settings-bff.test.ts tests/admin/live-settings-model.test.ts
 node --test --experimental-transform-types tests/admin/live-settings-hooks.test.ts
 # Browser-run artifact isolation and regression write-root counterexamples.
-node --test tests/admin/browser-evidence.test.mjs tests/ci/browser-evidence-paths.test.mjs
+node --test tests/admin/browser-evidence.test.mjs tests/ci/browser-evidence-paths.test.mjs tests/ci/evidence-retention.test.mjs

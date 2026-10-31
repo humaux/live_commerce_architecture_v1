@@ -37,6 +37,8 @@ go test ./scripts/dev/contractdrift
 go run ./scripts/dev/contractdrift
 # Browser artifact writes must stay in ignored run roots; history is input, never a mutable output.
 node scripts/dev/check-browser-evidence.mjs
+# Evidence retention (ADR-20261031): no raw CI artifact copies, no file > 1 MiB, <= 4 MiB new output/ per PR.
+node scripts/dev/check-evidence-retention.mjs
 # UI W0 G-UI1 registry/parity and G-UI3/G-UI5 architecture ratchet.
 node --test --experimental-strip-types tests/admin/shell-registry.test.ts tests/admin/shell-architecture.test.mjs
 node scripts/dev/ui-architecture-gate.mjs
