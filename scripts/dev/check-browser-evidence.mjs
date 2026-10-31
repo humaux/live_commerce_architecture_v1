@@ -1,5 +1,5 @@
 // Purpose: reject browser evidence writes outside the ignored per-run output tree.
-// Depends on: Git tracked paths, TypeScript syntax parsing, and explicit filesystem write sinks.
+// Depends on: Git tracked paths (whole-repo list, maxBuffer 256 MiB: the path list passed 1 MiB on 2026-10-31), TypeScript syntax parsing, and explicit filesystem write sinks.
 // Used by: check-gates.sh and browser-evidence-paths.test.mjs; historical read-only inputs are allowed.
 import fs from 'node:fs';
 import path from 'node:path';
@@ -137,7 +137,7 @@ export function browserProducer(file){
 }
 /** Audit the tracked producer source and tracked output history without running a browser or writing files. */
 export function checkBrowserEvidence(root=process.cwd()){
- const tracked=execFileSync('git',['ls-files','-z'],{cwd:root,encoding:'utf8',maxBuffer:64<<20}).split('\0').filter(Boolean);
+ const tracked=execFileSync('git',['ls-files','-z'],{cwd:root,encoding:'utf8',maxBuffer:1<<28}).split('\0').filter(Boolean);
  return tracked.filter(browserProducer).flatMap(file=>inspectEvidenceSource(file,fs.readFileSync(path.join(root,file),'utf8'),{tracked}));
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){

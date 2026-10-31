@@ -88,7 +88,8 @@ async function authCookies(context: BrowserContext) {
 async function signUp(page: Page, locale: Locale, email: string, password: string) {
   await page.goto(`/${locale}/signup`);
   await page.locator('input[type="email"]').fill(email);
-  await page.locator('input[type="password"]').fill(password);
+  await page.locator('input[name="password"]').fill(password);
+  await page.locator('input[name="confirm_password"]').fill(password);
   await page.locator('form button[type="submit"]').click();
   await expect(page.locator('input[autocomplete="one-time-code"]')).toBeVisible();
   await page.locator('input[autocomplete="one-time-code"]').fill(codeOf(await nthMail(email, 1)));

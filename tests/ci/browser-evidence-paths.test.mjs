@@ -61,3 +61,20 @@ test('Go OpenFile rejects create/write flags but preserves historical read-only 
  assert.ok(inspectEvidenceSource(file,`package example\nfunc test(){ flags := os.O_CREATE|os.O_WRONLY\n os.OpenFile("output/product-ui-v2/x",flags,0600) }`).length);
  assert.deepEqual(inspectEvidenceSource(file,bad.replace('os.O_CREATE|os.O_WRONLY','os.O_RDONLY')),[]);
 });
+// 2026-10-31 #363 foundation: the committed path list passed 1 MiB and execFileSync's default maxBuffer killed
+// `git ls-files -z` (ENOBUFS). A synthetic index of ~1.3 MiB of paths (no files on disk) must still be audited.
+test('checkBrowserEvidence lists a repository whose tracked paths exceed 1 MiB',async()=>{
+ const {checkBrowserEvidence}=await import('../../scripts/dev/check-browser-evidence.mjs');
+ const {execFileSync}=await import('node:child_process');
+ const {mkdtempSync,rmSync,realpathSync}=await import('node:fs');
+ const {tmpdir}=await import('node:os'); const path=await import('node:path');
+ const repo=realpathSync(mkdtempSync(path.join(tmpdir(),'lc-ls-files-buffer-')));
+ try{
+  const git=(args,input)=>execFileSync('git',args,{cwd:repo,input,encoding:'utf8',maxBuffer:1<<26});
+  git(['init','-q']); const blob=git(['hash-object','-w','--stdin'],'').trim();
+  const lines=[];for(let i=0;i<12000;i++)lines.push(`100644 ${blob} 0\toutput/evidence-${String(i).padStart(5,'0')}/${'x'.repeat(80)}.log`);
+  git(['update-index','--index-info'],lines.join('\n')+'\n');
+  assert.ok(git(['ls-files','-z']).length>(1<<20),'fixture must exceed the 1 MiB default buffer');
+  assert.deepEqual(checkBrowserEvidence(repo),[]);
+ }finally{rmSync(repo,{recursive:true,force:true});}
+});
