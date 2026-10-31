@@ -149,13 +149,13 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page.setViewportSize({ width: 1586, height: 992 });
 
   await page.getByRole("button", { name: "Continue", exact: true }).click();
-  const policyForm = page.getByTestId("settings-policy-form");
-  await expect(policyForm).toBeVisible();
+  const initialPolicyForm = page.getByTestId("settings-policy-form");
+  await expect(initialPolicyForm).toBeVisible();
   await page.getByLabel("Stable service code", { exact: true }).fill("home");
-  await policyForm
+  await initialPolicyForm
     .getByLabel(/^Configuration reference \/ reason/)
     .fill("Fixture initial delivery setup");
-  await policyForm.getByLabel("Enable pricing policy", { exact: true }).check();
+  await initialPolicyForm.getByLabel("Enable pricing policy", { exact: true }).check();
   // Lose only the response after the real command commits. No mocked success.
   const marketRequests: Array<{ key: string; body: string }> = [];
   let loseMarketResponse = true;
@@ -185,7 +185,7 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
       await route.abort("failed").catch(() => undefined);
     } else await route.continue();
   });
-  await policyForm
+  await initialPolicyForm
     .getByRole("button", { name: "Save pricing policy", exact: true })
     .click();
   await committedMarket;
