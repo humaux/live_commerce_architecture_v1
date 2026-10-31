@@ -1016,7 +1016,7 @@ async function marketSelectionAcceptance(source: Page, store: string) {
       await policyForm.getByLabel("Enable pricing policy", { exact: true }).check();
       await policyForm.getByRole("button", { name: "Save pricing policy", exact: true }).click();
       if (k.blocked) {
-        await expect(page.getByRole("alert"), `${k.name}: existing tw blocks create with a clear sentence`).toContainText(/already exists but is inactive or uses a different currency/);
+        await expect(wizard.getByRole("alert"), `${k.name}: existing tw blocks create with a clear sentence`).toContainText(/already exists but is inactive or uses a different currency/);
         expect(writes, `${k.name}: no write at all`).toHaveLength(0);
       } else {
         await expect.poll(() => writes.some(w => w.method === "PUT"), `${k.name}: policy saved`).toBe(true);
