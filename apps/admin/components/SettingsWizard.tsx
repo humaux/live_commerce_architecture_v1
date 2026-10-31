@@ -1433,6 +1433,7 @@ function AdvancedSettings({
                           <label>
                             {lc.modeLabel}
                             <select
+                              aria-label={lc.modeLabel}
                               data-testid="settings-service-mode"
                               value={draft.serviceMode}
                               disabled={draft.serviceKind === "home"}
@@ -1476,6 +1477,7 @@ function AdvancedSettings({
                             <label>
                               {`${c.freeShipping} (${currencySign(activeMarket?.currency ?? "TWD")})`}
                               <input
+                                aria-label={`${c.freeShipping} (${currencySign(activeMarket?.currency ?? "TWD")})`}
                                 type="text"
                                 inputMode="decimal"
                                 autoComplete="off"
@@ -1564,6 +1566,7 @@ function AdvancedSettings({
                           <label>
                             {c.ref}
                             <input
+                              aria-label={c.ref}
                               required={needsPolicySave}
                               maxLength={240}
                               value={draft.reference}

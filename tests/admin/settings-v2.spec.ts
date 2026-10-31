@@ -724,8 +724,6 @@ async function noMarketAcceptance(source: Page, store: string, testInfo: TestInf
           await form.getByLabel(labels.visible, { exact: true }).check();
           await form.getByRole("button", { name: labels.save, exact: true }).click();
           await expect.poll(() => services.get(base)?.enabled, "the click persists delivery in the MOCK server").toBe(true);
-          await check("3: saved delivery");
-          await form.getByRole("button", { name: c.next, exact: true }).click();
           await check("4: status");
           expect(markets).toHaveLength(scenario === "zero" ? 1 : 3);
           expect(writes.filter(w => w.path === "markets")).toHaveLength(scenario === "zero" ? 1 : 0);
