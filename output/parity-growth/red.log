@@ -129,3 +129,7 @@ RVFIX366_RELAY2_HEAD=39a5c1c80 run 41240042189 job 124652791014 (bundle:05 --bro
 RVFIX366_RELAY2_CLASS=b (own regression: ads routes unmounted -> 404 shown as not-found instead of the signed off frame)
 RVFIX366_RELAY2_FIX_ATTEMPT=1/2 Promotions.tsx maps ads not-found to off; node stderr not in CI log, cause inferred from registerAdsRoutes
 RVFIX366_GREEN=PENDING next-head CI
+
+RVFIX2_366_RED=expected failures (tests only, CI to confirm): tests/admin/ads.spec.ts outsideAdvanced() asserts ads-approve (review screen), ads-pause (ACTIVE status) and the Meta refusal text (FAILED draft) are visible outside the ads-advanced disclosure; today AdsDraft.tsx:196-416 renders them inside it, so these fail
+RVFIX2_366_STATIC=E0 not run locally (owner rule); derive-browser-ownership + --check run before commit
+RVFIX2_366_GREEN=PENDING implementation push after CI shows the RED

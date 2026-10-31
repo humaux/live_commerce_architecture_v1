@@ -123,6 +123,11 @@ async function auditDraft(page: Page) {
   if (await details.getAttribute("open") === null) await details.locator(":scope > summary").click();
 }
 
+// Matches only nodes inside the detail screen that are NOT descendants of the Advanced disclosure.
+function outsideAdvanced(page: Page) {
+  return page.locator('xpath=//*[@data-testid="ads-detail"]//*[not(ancestor-or-self::*[@data-testid="ads-advanced"])]');
+}
+
 async function driveUntil(page: Page, status: string) {
   await expect(async () => {
     await ctl("drive");
@@ -403,6 +408,9 @@ test("MA09a draft -> approve -> publish -> pause -> copy: statuses, one keyed re
   await cancelEdit(page);
 
   // approve
+  // RVFIX2-366 P1: Approve is rendered directly on the review screen, not inside the Advanced disclosure
+  await expect(outsideAdvanced(page).getByTestId("ads-approve")).toBeVisible();
+  await expect(outsideAdvanced(page).getByTestId("ads-approve")).toBeEnabled();
   await auditDraft(page);
   await page.getByTestId("ads-approve").click();
   await expect(page.getByTestId("ads-banner")).toHaveText(en.approved);
@@ -441,6 +449,8 @@ test("MA09a draft -> approve -> publish -> pause -> copy: statuses, one keyed re
   await expect(page.getByTestId("ads-remote")).toContainText(g.campaign[0].ID);
   await expect(page.getByTestId("ads-remote")).toContainText(g.ad[0].ID);
   await expect(page.getByTestId("ads-pause")).toBeVisible();
+  // RVFIX2-366 P1: Pause (the only spend-stopping control) is never inside the closed-by-default Advanced disclosure
+  await expect(outsideAdvanced(page).getByTestId("ads-pause")).toBeVisible();
   await expect(page.getByTestId("ads-publish")).toHaveCount(0);
   await noSecrets(page);
 
@@ -632,6 +642,8 @@ test("MA09a Meta refusal original text survives refresh in three locales and per
   await page.getByTestId("ads-publish").click();
   await driveUntil(page,"FAILED");
   const original = "Meta original: 請完成驗證 & retry.";
+  // RVFIX2-366 P1: the refusal text is shown outside the Advanced disclosure (driveUntil opened it; the node must not be inside it)
+  await expect(outsideAdvanced(page).getByText(original, { exact: false }).first()).toBeVisible();
   for (const locale of ["zh-TW","zh-CN","en"] as const) {
     for (const viewport of ["desktop","mobile"] as const) {
       await page.setViewportSize(viewport==="desktop" ? {width:1586,height:992} : {width:390,height:844});
