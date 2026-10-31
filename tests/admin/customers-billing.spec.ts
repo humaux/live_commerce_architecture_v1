@@ -96,10 +96,10 @@ for (const locale of moneyLocales) for (const width of moneyWidths) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
     await signedLogin(page);
     const target = `/${locale}/finance?store=${store}&from=${financeDay(-1)}&to=${financeDay()}`;
-    const reading = page.waitForResponse(response => response.request().method() === "GET" && /\/finance\/summary\?/.test(response.url()));
+    const reading = page.waitForResponse(response => response.request().method() === "GET" && /\/finance\/summary\?/.test(response.url())).then(response => response.json());
     await page.goto(target);
     await moneyOverview(page, locale);
-    const summary = await (await reading).json();
+    const summary = await reading; // body is read as soon as the response lands: a later navigation evicts it
     expect(typeof summary.generated_at, "PARITY-MONEY server timestamp required; browser time is not a substitute").toBe("string");
     await expect(page.getByTestId("finance-generated-at")).toHaveAttribute("datetime", summary.generated_at);
     await moneyShot(page, evidence, "overview", locale, width);

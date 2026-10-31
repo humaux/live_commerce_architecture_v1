@@ -138,6 +138,8 @@ for (const locale of moneyLocales) for (const width of moneyWidths) {
         await page.getByRole("button", { name: c.backCod, exact: true }).click();
       });
       await page.reload();
+      // After a reload the signed overview is shown again: re-enter the wizard through Edit settings, then step 2.
+      await page.getByRole("button", { name: locale === "en" ? "Edit settings" : locale === "zh-CN" ? "编辑设置" : "編輯設定", exact: true }).click();
       await page.getByRole("button", { name: new RegExp(sc.steps[1]) }).click();
       await expect(card.getByRole("checkbox", { name: c.codEnabled, exact: true })).toBeChecked();
       await expect(card.getByLabel(c.cap, { exact: true })).toHaveValue("19000");
