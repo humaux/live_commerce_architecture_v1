@@ -1,0 +1,16 @@
+browser engine: webkit
+(node:9949) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS multi-tab initialization reuses one context; HttpOnly cookie absent from JS
+PASS actual catalog/options/cart/quote/home/checkout/order; cross-instance replay
+PASS Next process restart preserves cookie and real-PG order
+PASS reset denies stale-tab write; logout leaves inert cookie
+PASS definite local422 clears pending journal and permits explicit retry
+PASS lost prepare before headers stays fail-closed without remint
+PASS abort after Set-Cookie headers recovers same prepared context
+PASS tab death releases Web Lock; another tab reconciles persisted journal
+PASS lost activation response reads committed session without duplicate issue
+PASS logout retires token before delayed activation from closed tab
+PASS cross-origin, private authority injection, malformed/forged inputs rejected
+PASS actual lost cart response plus second-tab reset recovers new session without revocation or stale pending deadlock
+PASS approved B real product route; mobile/desktop, three locales, preserved quantity, cart and recovered quote; no payment claim

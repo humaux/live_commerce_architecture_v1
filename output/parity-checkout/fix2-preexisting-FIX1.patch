@@ -1,0 +1,56 @@
+diff --git a/output/parity-checkout/FIX1.md b/output/parity-checkout/FIX1.md
+index 12df29254..15178f1cf 100644
+--- a/output/parity-checkout/FIX1.md
++++ b/output/parity-checkout/FIX1.md
+@@ -1,4 +1,4 @@
+-# PARITY-CHECKOUT-FIX1 — directed repair, CI pending
++# PARITY-CHECKOUT-FIX1 — BLOCKED after same-test RED
+ 
+ Authority: owner FIX1 dispatch; AGENTS.md; buyer-checkout-v1 and buyer-checkout-options-v1 contracts; signed checkout controls polish referenced by this PR. Source of failures: Gates [41063668416](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41063668416), head `44a9e2eb3e456fd2ade2abab52950f14f396cf4a`, synthetic merge `b10a8cdda646783a5d30f7c856baa49d9767e975`. These are regression receipts, not a new tests-only RED.
+ 
+@@ -69,3 +69,45 @@ Merged integration `2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f`. Two actual confli
+ E1 receipts: `node scripts/dev/derive-browser-ownership.mjs`, the same command with `--check`, `node --check tests/storefront/cvs-picker.mjs`, `node --check tests/storefront/cvs-buyer.mjs`, and `git diff --check`: exit 0. No local tests or servers. Final SHA/run IDs go in the PR handoff comment; no evidence-only push after GREEN.
+ 
+ Humaux tools are available in this relay: fix stored under title `[fix] PARITY-CHECKOUT FIX1 relay1 resolve integration CVS helper conflict`, changed helper submitted to code-index, and own relay canvas updated under an acquired lock. Earlier tool-unavailability statements describe their historical sessions. CI acceptance and independent review remain NOT_RUN/PENDING. Integrator relays the exact-head Gates/Foundation conclusions; same-test RED after FIX1 means BLOCKED, no third approach.
++
++## FIX1 RELAY 2 — BLOCKED (2026-10-31)
++
++Current PR head is `7351f892764b0b61b5c9088239ba34dc72adfa7c`; fetched and merged `origin/r3/integration` (`2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f`) first: already up to date. No product/test edits or new push in this relay. The card explicitly says: "If the same test is still red after this fix ... write BLOCKED with the exact assertion and evidence." The same six Home COD re-quote tests remain RED after FIX1; stop condition applies.
++
++Native current-head Gates run `41082084811`, synthetic merge `b6c2c424948228ee2c45d6c4fe737bb8023beb7d`. Its aggregate is still queued/in progress; completed job logs were obtained through the GitHub jobs/logs API because `gh run view --log-failed --job` refuses an unfinished run. Local copies are under `fix1-relay2-artifacts/`; native artifacts are the durable evidence.
++
++| Current failing job | Failing test / exact assertion | Native evidence | Classification / disposition |
++|---|---|---|---|
++| `124156997127` bundle:06 / --browser-home-cod | `TestBrowserHomeCod`; `AssertionError [ERR_ASSERTION]: CHECKOUT-V2 new behaviour assertions`; all six zh-TW/zh-CN/en × 1440/390 card re-quote cases: `locator.fill: Timeout 30000ms exceeded`, waiting for `input[name="recipient_name"]`, `element is not enabled` | Artifact `12992431420` (gate-browser-home-cod); `playwright/run.kQZGgKGK/home-cod/20261030T160005.186853690/home-cod-buyer.mjs.log:8-30`; `parity-checkout-click-ledger.json:75-80` (first case; other cases at 267/459/555/651/747) | BLOCKED, same re-quote test/selector as the original FIX1 inventory. Details disclosure alone did not make the field editable. Cannot classify this as an intentional signed-frame control replacement or a base failure; no gate/fixture/timeout change. |
++| `124156996798` --browser-webkit | `TestBrowserBuyerOrderUI`; `locator.click: Timeout 30000ms exceeded`, waiting for `getByTestId('toggle-order-history')`, `element is not visible`, at `tests/storefront/order-gate.mjs:830:53` | Artifact `12991143455` (gate-browser-webkit); `playwright/buyer-order-2250117649/browser.log:36-54`; `failure-12.txt:47` still shows View details; native job log `fix1-current-webkit.log:2146-2154` | (a) another history caller still bypasses signed disclosure; BLOCKED per same-test stop rule. Earlier BH05 repair now passes (`browser.log:28-29`), but a later history click fails at line 830. Other buyer/payment/merchant-buyer/CVS/password-auth/claim-checkout subgates pass. |
++
++Current-head Foundation `41082084746`, job `124153541124`: success (E3 for Foundation only). Whole PR GREEN is absent. Historical tests-only RED remains `41051681920` / `124052345726`; these current failures are regression receipts, not a new tests-only RED.
++
++Static handoff clue (E0 diagnosis, not proven root cause): `checkout-v2.mjs:544-545` expands details and immediately fills; `OrderFlow.tsx:392` disables the address fieldset while busy/blocked/head loading/options unavailable/expired. Preserve those guards and the changed-total acknowledgment behavior; any further repair needs integrator disposition of the explicit stop condition. No local tests or servers ran.
++
++Humaux search/store/canvas/coord tools are absent in this relay (tool discovery returned none); no shared state was changed. This local report and the PR handoff comment preserve evidence without an evidence-only CI push. Outside-card source files touched this relay: none. NOT_RUN: whole-PR GREEN, independent review/E4, local runtime tests/servers (prohibited), providers/production. WAIT_RUN: Gates `41082084811`; integrator owns the completion relay. No continuing CI polling, merge-to-integration, auto-merge or deployment.
++
++## FIX1 RELAY 3 — stop condition reconfirmed (2026-10-31)
++
++Fetched and merged `origin/r3/integration` first: already up to date at `2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f`. PR API still binds head `7351f892764b0b61b5c9088239ba34dc72adfa7c` to base `r3/integration`. No source/test change, commit or push this relay.
++
++Native jobs API confirms `124156997127` (bundle:06) completed with failure at `2026-10-30T16:05:16Z`, and `124156996798` (WebKit) completed with failure at `2026-10-30T16:04:04Z`, both in Gates `41082084811`. `gh run view --job 124156997127 --log-failed` still refuses the unfinished aggregate; direct jobs/logs API was used without rerunning CI. The run API currently reports queued with null conclusion; no whole-run failure/success is invented.
++
++The relay2 table above remains current: Home COD artifact ledger lines 79/271/463/559/655/751 each report `locator.fill: Timeout 30000ms exceeded` on `input[name="recipient_name"]`, ultimately `element is not enabled`; buyer log line 8 is `AssertionError [ERR_ASSERTION]: CHECKOUT-V2 new behaviour assertions`. WebKit buyer-order log lines 36–54 report hidden `toggle-order-history`, at `order-gate.mjs:830:53`; native WebKit log lines 2147–2148 confirm order subgate failure. This is repeated regression RED after FIX1, not the tests-only phase. **BLOCKED under the explicit card stop condition; no third approach.** Home COD root cause remains unproven; no classification (c) is claimed.
++
++Foundation run `41082084746` completed success on this exact PR head (job `124153541124`): E3 for Foundation only. Historical causal tests-only RED remains run `41051681920`, job `124052345726`. Whole-PR GREEN and independent E4 remain NOT_RUN. No local runtime test/server or new static test run. Existing evidence and uncommitted work preserved.
++
++Humaux tools became available after initial discovery; this relay records its blocked evidence in Humaux under a shared-state lock and updates only its own `integrator-sub-parity-checkout-fix1-relay3` canvas element. No separate coord claim: dispatched-lane exemption. WAIT_RUN `41082084811` is the existing Gates workflow, not a plan job or a new push. Integrator owns the remaining completion relay and stop-condition disposition. No source paths outside the card changed; this report is intentionally uncommitted.
++
++## FIX1 RELAY 4 — BLOCKED, no third approach (2026-10-31)
++
++Re-read AGENTS.md and 架构.md §§0/1/2/26/27. Native PR API confirms head `7351f892764b0b61b5c9088239ba34dc72adfa7c`, base `r3/integration`. Fetched integration and merged first: already up to date at `2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f`. Existing uncommitted evidence was preserved. No source/test edits, commit or push.
++
++`gh pr checks 351` and native jobs API confirm Gates `41082084811` job `124156997127` bundle:06 FAILURE and job `124156996798` WebKit FAILURE. Requested `gh run view --job 124156997127 --log-failed` refuses the unfinished run; direct jobs/logs API confirms `--- FAIL: TestBrowserHomeCod` at native lines 1992 and 2146. Current run API remains queued/null conclusion; this does not override completed job failures.
++
++| Job | Exact remaining assertion / evidence | Disposition |
++|---|---|---|
++| 124156997127 | Six card re-quote cases; `CHECKOUT-V2 new behaviour assertions`; fill `input[name="recipient_name"]` times out because `element is not enabled`. Existing native artifact 12992431420, home-cod-buyer.mjs.log:8–31 and ledger lines 79/271/463/559/655/751. | Repeated RED after FIX1; BLOCKED under explicit card stop condition. Root cause remains unproven; preserve guards and assertions. |
++| 124156996798 | `TestBrowserBuyerOrderUI`, hidden `toggle-order-history`; artifact 12991143455 buyer-order-2250117649/browser.log:36–54, order-gate.mjs:830:53. | Previously reported same-suite RED; no third repair or assertion weakening. |
++
++Foundation `41082084746` job `124153541124` passes on this head (E3 Foundation only). Original tests-only RED `41051681920` / `124052345726` remains historical; the current failures are regression receipts. GREEN for the whole PR absent; author acceptance E0. WAIT_RUN `41082084811` is the existing Gates workflow, not a newly triggered run. Integrator owns the completion relay and stop-condition disposition. NOT_RUN: local tests/servers (prohibited), whole-PR GREEN, independent E4, provider/production. This relay touches only this local report; no outside-card source paths. Humaux problem stored and own relay4 canvas updated under acquired shared-state lock. No processes started or new temporary artifacts created; existing failure evidence retained.

@@ -1,0 +1,17 @@
+
+Running 12 tests using 1 worker
+
+  ✓   1 tests/admin/password-auth.spec.ts:175:1 › full chain: sign-up -> code -> onboarding -> logout -> sign-in -> code -> workspace; forgot -> reset -> signed in, old session revoked (zh-TW, desktop) (6.3s)
+  ✓   2 tests/admin/password-auth.spec.ts:303:1 › BFF contract: Origin, query, client IP, strict keys, cookie clearing on 200/409 only, sessions survive a failed verify, no secret in any body (813ms)
+  ✓   3 tests/admin/password-auth.spec.ts:430:1 › SSR: no form with a password field lacks method=post (/, /signup, /reset) (74ms)
+  ✓   4 tests/admin/password-auth.spec.ts:450:1 › slow hydration: an early typist on the invite sign-up never loses the address (#236) (5.5s)
+  ✓   5 tests/admin/password-auth.spec.ts:483:1 › throttled UI state and the 60 s resend cooldown (1.1m)
+  ✓   6 tests/admin/password-auth.spec.ts:538:5 › matrix zh-CN desktop: forms, autocomplete attributes, code step, screenshots, mail language (3.0s)
+  ✓   7 tests/admin/password-auth.spec.ts:538:5 › matrix zh-TW desktop: forms, autocomplete attributes, code step, screenshots, mail language (3.0s)
+  ✓   8 tests/admin/password-auth.spec.ts:538:5 › matrix en desktop: forms, autocomplete attributes, code step, screenshots, mail language (3.1s)
+  ✓   9 tests/admin/password-auth.spec.ts:538:5 › matrix zh-CN mobile: forms, autocomplete attributes, code step, screenshots, mail language (1.7s)
+  ✓  10 tests/admin/password-auth.spec.ts:538:5 › matrix zh-TW mobile: forms, autocomplete attributes, code step, screenshots, mail language (1.6s)
+  ✓  11 tests/admin/password-auth.spec.ts:538:5 › matrix en mobile: forms, autocomplete attributes, code step, screenshots, mail language (1.6s)
+  ✓  12 tests/admin/password-auth.spec.ts:594:1 › matrix: locale copy differs per locale and the reset wording is the same for known and unknown addresses (1.5s)
+
+  12 passed (1.6m)

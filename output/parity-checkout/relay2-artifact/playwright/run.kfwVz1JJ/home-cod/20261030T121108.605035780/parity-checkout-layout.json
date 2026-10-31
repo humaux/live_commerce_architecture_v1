@@ -1,0 +1,38 @@
+[
+  {
+    "label": "zh-TW/1440/card",
+    "bottom": 900,
+    "height": 900,
+    "overflow": false
+  },
+  {
+    "label": "zh-TW/390/card",
+    "bottom": 844,
+    "height": 844,
+    "overflow": false
+  },
+  {
+    "label": "zh-CN/1440/card",
+    "bottom": 900,
+    "height": 900,
+    "overflow": false
+  },
+  {
+    "label": "zh-CN/390/card",
+    "bottom": 844,
+    "height": 844,
+    "overflow": false
+  },
+  {
+    "label": "en/1440/card",
+    "bottom": 900,
+    "height": 900,
+    "overflow": false
+  },
+  {
+    "label": "en/390/card",
+    "bottom": 844,
+    "height": 844,
+    "overflow": false
+  }
+]

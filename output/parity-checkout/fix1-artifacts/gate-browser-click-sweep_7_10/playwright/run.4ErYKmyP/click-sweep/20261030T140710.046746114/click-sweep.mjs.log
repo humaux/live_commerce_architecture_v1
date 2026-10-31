@@ -1,0 +1,52 @@
+browser engine: chromium
+[   3s] stack up; admin http://127.0.0.1:39555, storefront https://buyer.example (Next :46087); 33 registry routes; workers=1 sample=3
+[  11s] / desktop/zh-TW [skip] 1 controls, 1 classes sampled
+[  39s] / desktop/zh-TW [topbar] 3 controls, 3 classes sampled
+[  98s] / desktop/zh-TW [rail] 10 controls, 10 classes sampled
+[ 195s] / desktop/zh-TW [main] 15 controls, 15 classes sampled
+[ 331s] admin / desktop/zh-TW done
+[ 339s] /orders/new desktop/en [main] 5 controls, 5 classes sampled
+[ 381s] admin /orders/new desktop/en done
+[ 389s] /customers/[customer] mobile/zh-TW [main] 9 controls, 9 classes sampled
+[ 486s] admin /customers/[customer] mobile/zh-TW done
+[ 495s] /ads mobile/zh-TW [main] 10 controls, 10 classes sampled
+[ 582s] admin /ads mobile/zh-TW done
+[ 590s] /design mobile/zh-TW [main] 8 controls, 8 classes sampled
+[ 660s] admin /design mobile/zh-TW done
+[ 668s] /team desktop/en [main] 5 controls, 5 classes sampled
+[ 710s] admin /team desktop/en done
+[ 718s] /billing desktop/en [main] 2 controls, 2 classes sampled
+[ 734s] admin /billing desktop/en done
+[ 743s] /settings/settlements desktop/zh-TW [main] 1 controls, 1 classes sampled
+[ 750s] admin /settings/settlements desktop/zh-TW done
+[ 750s] /invite/[token] desktop/en [main] 2 controls, 2 classes sampled
+[ 753s] admin /invite/[token] desktop/en done
+[ 754s] /reset desktop/zh-TW [main] 3 controls, 3 classes sampled
+[ 758s] admin /reset desktop/zh-TW done
+[ 767s] /cart desktop/en [main] 5 controls, 5 classes sampled
+[ 779s] /checkout desktop/en [main] 4 controls, 4 classes sampled
+[ 818s] shard 7/10: 12 page/viewport/locale units opened (0 with a page-load failure), 89 control clicks (86 pass, 0 fail, 3 skip), 0 journey steps (0 pass, 0 fail); failures: known 0, new 16; stale known-defect entries 0.
+NEW FAIL storefront /(storefront) desktop/en [page] "(sweep)" sweep-error: locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('create-order')
+    - locator resolved to <button type="submit" data-testid="create-order" class="primary create-order">Place order (cash on delivery)</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not visible
+    - retrying click action
+    - waitin (output/playwright/run.4ErYKmyP/ui-click-sweep/screenshots/r00102.png)
+NEW FAIL storefront / desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /products desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /collections desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /collections/[slug] desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /products/[slug] desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /search desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /orders/lookup desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /orders/[orderID] desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /order-link desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /claim desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /legal/anti-fraud desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /legal/[slug] desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /privacy desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /data-deletion desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /pages/[slug] desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant

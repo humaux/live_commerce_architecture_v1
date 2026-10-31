@@ -1,0 +1,34 @@
+## matrix-receipts node-test begin
+✔ design: garbage and hostile documents collapse to the safe default shape (3.941236ms)
+✔ design: links, preview token propagation, nav resolution (0.426827ms)
+✔ design: any merchant accent yields readable button text and link colour (WCAG AA) (0.969439ms)
+✔ variants: resolution, disabled out-of-stock combinations, initial choice, price bounds (0.575985ms)
+✔ catalog-v2 parsers accept the frozen shapes and refuse drift (2.195107ms)
+✔ free-delivery progress words the hint only when a threshold exists (0.33211ms)
+✔ list query: only whitelisted, canonical values survive (0.861077ms)
+✔ seo: JSON-LD cannot break out of its script tag; offers reflect stock and price range (15.583226ms)
+✔ seo: sitemap escapes and carries hreflang; robots refuses everything for a closed host (0.681151ms)
+✔ money: whole amounts drop cents, minor digits come from the currency, filters round-trip (1.417356ms)
+✔ cart line write: replaces one line, keeps the others, 0 removes, CAS version is the one shown (1.899084ms)
+✔ cart problems map to buyer-facing classes without leaking transport detail (0.232474ms)
+✔ checkout options accept the optional free-shipping threshold only as a positive integer or null (0.6269ms)
+✔ no-image placeholder copy: exactly the locale label a photo-less card or gallery renders (0.25657ms)
+✔ storefront image caps equal the Go catalog caps (internal/catalog MaxMainImages, MaxDetailImages) (15.859654ms)
+✔ design text limits count code points like Go, never splitting a surrogate pair (0.978106ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 220.361452
+## matrix-receipts node-test end
+prebuilt: storefront restored from b10a8cdda646783a5d30f7c856baa49d9767e975
+## matrix-receipts browser-run begin
+=== RUN   TestBrowserStorefront
+    browser_storefront_test.go:393: storefront real-stack gate failed: exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.N1CWr7ev/storefront/20261030T143003.848444413
+--- FAIL: TestBrowserStorefront (17.42s)
+FAIL
+FAIL	livecommerce/tests/foundation	17.557s
+FAIL

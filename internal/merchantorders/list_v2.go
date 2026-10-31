@@ -39,7 +39,20 @@ type SummaryV2 struct {
 	RecipientMasked string         `json:"recipient_masked"`
 	DeliveryKind    string         `json:"delivery_kind"`
 	LiveSessions    []OrderSession `json:"live_sessions"`
+	ItemSummary     ItemSummary    `json:"item_summary"`
 }
+
+// ItemSummary is a bounded projection of immutable checkout merchandise, never recipient data.
+type ItemSummary struct {
+	Items          []SummaryItem `json:"items"`
+	TotalItemCount int64         `json:"total_item_count"`
+}
+type SummaryItem struct {
+	ProductName  string  `json:"product_name"`
+	VariantLabel *string `json:"variant_label"`
+	Quantity     int64   `json:"quantity"`
+}
+
 type PageV2 struct {
 	Items      []SummaryV2      `json:"items"`
 	NextCursor string           `json:"next_cursor"`
@@ -192,8 +205,69 @@ func ListV2(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, 
 			return PageV2{}, ErrUnavailable
 		}
 	}
+	if err := attachItemSummaries(ctx, tx, scope, hash[:], empty.Items); err != nil {
+		return PageV2{}, err
+	}
+	if err := platform.RequirePermission(ctx, tx, scope, token, "orders:read"); err != nil {
+		return PageV2{}, err
+	}
 	return empty, nil
 }
+
+// attachItemSummaries uses one bounded query and the existing scoped reader. Only
+// merchandise is projected in SQL: destination/phone/address never leave PG.
+// Historical snapshots have no variant label; NULL is deliberate, never a live
+// catalog lookup or a guess based on SKU code. Each nested reader rechecks auth.
+func attachItemSummaries(ctx context.Context, tx pgx.Tx, scope platform.Scope, hash []byte, items []SummaryV2) error {
+	if len(items) == 0 {
+		return nil
+	}
+	ids := make([]string, len(items))
+	for i := range items {
+		ids[i] = items[i].OrderID
+	}
+	var raw []byte
+	err := tx.QueryRow(ctx, `SELECT jsonb_object_agg(order_id, summary) FROM (
+ SELECT id AS order_id, jsonb_build_object(
+  'items', (SELECT jsonb_agg(jsonb_build_object(
+    'product_name', line->'name', 'variant_label', NULL, 'quantity', line->'quantity') ORDER BY position)
+    FROM jsonb_array_elements(detail->'items') WITH ORDINALITY AS lines(line, position) WHERE position<=3),
+  'total_item_count', (SELECT sum((line->>'quantity')::bigint) FROM jsonb_array_elements(detail->'items') AS lines(line))
+ ) AS summary
+ FROM unnest($3::uuid[]) AS orders(id)
+ CROSS JOIN LATERAL jsonb_array_elements(identity.read_merchant_orders($1,$2::uuid,id,1,NULL,NULL,'all')) AS details(detail)
+) AS summaries`, hash, scope.StoreID, ids).Scan(&raw)
+	if err != nil {
+		return mapError(err)
+	}
+	var summaries map[string]ItemSummary
+	if len(raw) > 128<<10 || json.Unmarshal(raw, &summaries) != nil || len(summaries) != len(items) {
+		return ErrUnavailable
+	}
+	for i := range items {
+		summary, ok := summaries[items[i].OrderID]
+		if !ok || len(summary.Items) == 0 || len(summary.Items) > 3 || summary.TotalItemCount < 1 || !money(summary.TotalItemCount) {
+			return ErrUnavailable
+		}
+		var shown int64
+		for _, item := range summary.Items {
+			if !textValue(item.ProductName, 200, true) || item.VariantLabel != nil || item.Quantity < 1 || !money(item.Quantity) {
+				return ErrUnavailable
+			}
+			var sumErr error
+			shown, sumErr = add(shown, item.Quantity)
+			if sumErr != nil {
+				return ErrUnavailable
+			}
+		}
+		if shown > summary.TotalItemCount {
+			return ErrUnavailable
+		}
+		items[i].ItemSummary = summary
+	}
+	return nil
+}
+
 func validOrderSessions(items []OrderSession, max int) bool {
 	if items == nil || len(items) > max {
 		return false

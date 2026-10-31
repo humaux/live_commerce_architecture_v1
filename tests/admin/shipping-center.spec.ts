@@ -66,7 +66,17 @@ function fixture(locale: Locale) {
       cod_surcharge_minor: null, cod_collect_minor: null,
     };
     return {
-      summary: { ...summary, order_number: `LC-${id.replaceAll("-", "").toUpperCase()}`, recipient_masked: "示***", delivery_kind: "home", live_sessions: [] },
+      summary: {
+        ...summary,
+        order_number: `LC-${id.replaceAll("-", "").toUpperCase()}`,
+        recipient_masked: "示***",
+        delivery_kind: "home",
+        live_sessions: [],
+        item_summary: {
+          items: [{ product_name: copies[locale].items[i], variant_label: null, quantity }],
+          total_item_count: quantity,
+        },
+      },
       detail: { ...summary, country: "TW", service_code: "manual_home",
         items: [{ sku_id: `22222222-2222-4222-8222-2222222${numbers[i]}`, code: `SYNTHETIC-${i}`, name: copies[locale].items[i], quantity,
           unit_price_minor: 128000 / quantity, amount: { subtotal_minor: 128000, discount_minor: 0, tax_minor: 0, total_minor: 128000 } }],
@@ -97,7 +107,7 @@ async function mockReads(page: Page, store: string, locale: Locale, rows = fixtu
       const offset = url.searchParams.has("cursor") ? pageSize : 0;
       const items = rows.slice(offset, offset + pageSize).map(r => r.summary);
       const next_cursor = offset + pageSize < rows.length ? "shipping-page-2" : "";
-      await route.fulfill({ headers, json: url.searchParams.get("view") === "v2" ? { items, next_cursor, total: rows.length, counts, sessions: [] } : { items: items.map(({ order_number, recipient_masked, delivery_kind, live_sessions, ...base }) => base), next_cursor } });
+      await route.fulfill({ headers, json: url.searchParams.get("view") === "v2" ? { items, next_cursor, total: rows.length, counts, sessions: [] } : { items: items.map(({ order_number, recipient_masked, delivery_kind, live_sessions, item_summary, ...base }) => base), next_cursor } });
     } else {
       const i = rows.findIndex(row => url.pathname === `/api/stores/${store}/orders/${row.summary.order_id}`);
       if (i >= 0) await route.fulfill({ headers, json: rows[i].detail });
@@ -155,13 +165,15 @@ export function registerShippingCenterTests(login: (page: Page) => Promise<void>
       const base = fixture(locale)[0];
       const rows = Array.from({ length: 20 }, (_, i) => {
         const id = `11111111-1111-4111-8111-${String(90000 + i).padStart(12, "0")}`;
-        return { summary: { ...base.summary, order_id: id, order_number: `LC-${id.replaceAll("-", "").toUpperCase()}` },
-          detail: { ...base.detail, order_id: id, items: Array.from({ length: 4 }, (_, j) => ({
-            ...base.detail.items[0], sku_id: `22222222-2222-4222-8222-${String(80000 + j).padStart(12, "0")}`,
-            code: `SYNTHETIC-BATCH-${j}`, name: `${c.items[j % c.items.length]} · ${c.items[(j + 1) % c.items.length]}`,
-            quantity: 1, unit_price_minor: 32000,
-            amount: { subtotal_minor: 32000, discount_minor: 0, tax_minor: 0, total_minor: 32000 },
-          })) } };
+        const items = Array.from({ length: 4 }, (_, j) => ({
+          ...base.detail.items[0], sku_id: `22222222-2222-4222-8222-${String(80000 + j).padStart(12, "0")}`,
+          code: `SYNTHETIC-BATCH-${j}`, name: `${c.items[j % c.items.length]} · ${c.items[(j + 1) % c.items.length]}`,
+          quantity: 1, unit_price_minor: 32000,
+          amount: { subtotal_minor: 32000, discount_minor: 0, tax_minor: 0, total_minor: 32000 },
+        }));
+        return { summary: { ...base.summary, order_id: id, order_number: `LC-${id.replaceAll("-", "").toUpperCase()}`,
+            item_summary: { items: items.slice(0, 3).map(it => ({ product_name: it.name, variant_label: null, quantity: it.quantity })), total_item_count: 4 } },
+          detail: { ...base.detail, order_id: id, items } };
       });
       const { writes } = await mockReads(page, store, locale, rows, 10);
       const ledger = ledgerFor(info, locale);

@@ -2,6 +2,7 @@
 // Depends on: Playwright; the parent runner's real Next/BFF/Go/PG fixture and public store snapshot.
 // Used by: cvs-buyer.mjs, TestBrowserTaiwanCvs MOCK / WebKit in GitHub CI.
 // Invariants: no per-keystroke backend writes, no automatic choice, canonical server facts persist.
+import { confirmCheckoutAddress } from "./shop-helpers.mjs";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile } from "node:fs/promises";
@@ -9,9 +10,9 @@ import path from "node:path";
 import { expect } from "@playwright/test";
 
 const localeCopy = {
-  "zh-TW": { title: "選擇取貨門市", query: "地址、門市名稱或編號", empty: "找不到符合的門市", confirm: "確認取貨門市", confirmTotal: "確認更新後的金額", source: "資料：綠界門市清單 · 更新 2026-10-28" },
-  "zh-CN": { title: "选择自提门店", query: "地址、门店名称或编号", empty: "未找到匹配的门店", confirm: "确认自提门店", confirmTotal: "确认更新后的金额", source: "数据：绿界门店清单 · 更新 2026-10-28" },
-  en: { title: "Choose pickup store", query: "Address, store name or code", empty: "No matching stores", confirm: "Confirm pickup store", confirmTotal: "Confirm updated total", source: "Source: ECPay stores · Updated 2026-10-28" },
+  "zh-TW": { title: "選擇取貨門市", query: "地址、門市名稱或編號", empty: "找不到符合的門市", confirm: "確認取貨門市", confirmTotal: "確認新金額", source: "資料：綠界門市清單 · 更新 2026-10-28" },
+  "zh-CN": { title: "选择自提门店", query: "地址、门店名称或编号", empty: "未找到匹配的门店", confirm: "确认自提门店", confirmTotal: "确认新金额", source: "数据：绿界门店清单 · 更新 2026-10-28" },
+  en: { title: "Choose pickup store", query: "Address, store name or code", empty: "No matching stores", confirm: "Confirm pickup store", confirmTotal: "Confirm new total", source: "Source: ECPay stores · Updated 2026-10-28" },
 };
 
 const signedCopy = {
@@ -211,12 +212,11 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
   };
   const measure = async (state) => { if (mobile && locale === "zh-TW") await density(picker, densities, state); };
   try {
-    await openCheckout();
+    const deliveryKey = await openCheckout();
     await exerciseSignedCvsParity({ page, locale, ledger, densities });
     await page.getByTestId("cvs-recipient-name").fill("王小明"); // existing synthetic recipient, never a real buyer
     await page.getByTestId("cvs-recipient-phone").fill("0912345678");
     // CheckoutFlow's optionKey is market:country:method, while CVS accepts only the service suffix.
-    const deliveryKey = await page.locator("#delivery").inputValue();
     const selectedDelivery = /^[^:]+:[A-Z]{2}:delivery:([a-z0-9_-]+)$/.exec(deliveryKey);
     assert.ok(selectedDelivery, "selected checkout option must contain market, country and a delivery service");
     const service = selectedDelivery[1];
@@ -258,7 +258,7 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
     for (const key of ["tenant_id", "amount", "total_minor"]) assert.equal(Object.hasOwn(posts[0], key), false);
     await expect(page.getByTestId("cvs-store-name")).toContainText("久旺");
     await expect(page.getByTestId("cvs-store-address")).toHaveText(saved.address);
-    await page.getByTestId("confirm-address").click();
+    await confirmCheckoutAddress(page);
     await expect(page.getByTestId("create-order")).toBeEnabled();
     assert.equal(posts.length, 1, "parent ensure reuses the confirmed pickup");
     record("exact code / row / confirm / checkout", "one server-validated kind/code; canonical full name/address in summary");
@@ -397,7 +397,7 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
     await reviewChoice();
     await page.getByTestId("cvs-picker-confirm").click();
     const destinationSaved = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/destination" && r.request().method() === "PUT");
-    const [destinationResponse] = await Promise.all([destinationSaved, page.getByTestId("confirm-address").click()]);
+    const [destinationResponse] = await Promise.all([destinationSaved, confirmCheckoutAddress(page)]);
     assert.equal(destinationResponse.status(), 200);
     const resumedDestination = await destinationResponse.json();
     assert.equal(resumedDestination.recipient_name, "王小明", "CVS resume must override the older home recipient after hydration");

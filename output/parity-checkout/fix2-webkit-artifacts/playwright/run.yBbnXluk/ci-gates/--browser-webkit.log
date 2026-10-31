@@ -1,0 +1,13 @@
+prebuilt: storefront restored from b6c2c424948228ee2c45d6c4fe737bb8023beb7d
+prebuilt: admin restored from b6c2c424948228ee2c45d6c4fe737bb8023beb7d
+check-gallery-bundle: OK expect=absent files=73 markers=0 dir=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/admin/.next/static
+## matrix-receipts browser-run begin
+buyer: pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=32s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.yBbnXluk/webkit/b6c2c4249482-buyer.jsonl
+order: pass=0 fail=1 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=1 verdict=1 duration=126s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.yBbnXluk/webkit/b6c2c4249482-order.jsonl
+FAIL: order (go test exit=1, parse verdict=1)
+payment: pass=2 fail=0 skip=0 leaf_pass=1 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=47s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.yBbnXluk/webkit/b6c2c4249482-payment.jsonl
+merchant-buyer: pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=21s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.yBbnXluk/webkit/b6c2c4249482-merchant-buyer.jsonl
+cvs: pass=2 fail=0 skip=0 leaf_pass=1 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=156s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.yBbnXluk/webkit/b6c2c4249482-cvs.jsonl
+password-auth: pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=103s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.yBbnXluk/webkit/b6c2c4249482-password-auth.jsonl
+claim-checkout: pass=2 fail=0 skip=0 leaf_pass=1 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=50s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.yBbnXluk/webkit/b6c2c4249482-claim-checkout.jsonl
+FAIL: --browser-webkit (see logs in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.yBbnXluk/webkit)

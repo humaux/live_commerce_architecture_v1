@@ -1,0 +1,52 @@
+browser engine: chromium
+[   2s] stack up; admin http://127.0.0.1:43867, storefront https://buyer.example (Next :37975); 33 registry routes; workers=1 sample=3
+[  10s] /studio/settings desktop/zh-TW [main] 4 controls, 4 classes sampled
+[  44s] admin /studio/settings desktop/zh-TW done
+[  52s] /returns desktop/en [main] 7 controls, 7 classes sampled
+[ 113s] admin /returns desktop/en done
+[ 121s] /products/[product] desktop/en [main] 7 controls, 7 classes sampled
+[ 182s] admin /products/[product] desktop/en done
+[ 190s] /customers desktop/en [main] 9 controls, 9 classes sampled
+[ 324s] admin /customers desktop/en done
+[ 332s] /ads/attribution desktop/zh-TW [main] 5 controls, 5 classes sampled
+[ 375s] admin /ads/attribution desktop/zh-TW done
+[ 383s] /promotions mobile/zh-TW [main] 3 controls, 3 classes sampled
+[ 408s] admin /promotions mobile/zh-TW done
+[ 416s] /finance/reports mobile/zh-TW [main] 7 controls, 7 classes sampled
+[ 477s] admin /finance/reports mobile/zh-TW done
+[ 485s] /settings/payments/card desktop/en [main] 2 controls, 2 classes sampled
+[ 501s] admin /settings/payments/card desktop/en done
+[ 510s] /cart mobile/zh-TW [main] 5 controls, 5 classes sampled
+[ 523s] /checkout mobile/zh-TW [main] 4 controls, 4 classes sampled
+[ 562s] J1 catalog response 200 /api/stores/f943649b-73f9-40a1-87cb-89915847d0fe/warehouses: {"items":[{"id":"21474144-24f2-4bc1-902c-942e520eef67","name":"t04-3f6d8156cf7a"}],"next_cursor":""}
+[ 562s] J1 catalog response 200 /api/stores/f943649b-73f9-40a1-87cb-89915847d0fe/products/document: {"id":"79d3d8f1-b7c9-43ff-9ad4-86502e32cf3f","name":"Sweep Journey Tee 596b994cdfdb","description":"Synthetic click-sweep journey product","status":"draft","version":1,"slug":"sweep-journey-tee-596b994cdfdb","seo_title":"","seo_description":"","options":[{"name":"Size","values":["S","M"]}],"skus":[{"id":"623fcaa7-3bec-464b-8158-0171fb742c57","product_id":"79d3d8f1-b7c9-43ff-9ad4-86502e32cf3f","code":"sweep-journey-tee-596b994cdfdb","status":"active","currency":"TWD","price_minor":45000,"version":1,"weight_grams":0,"length_mm":0,"width_mm":0,"height_mm":0,"origin_country":"","customs_name":"","hs_candidate":"","option_values":["S"],"title":"S","compare_at_minor":null,"inventory_tracked":true},{"id":"68b913a3-df9d-41ac-8474-b4de5af10960","product_id":"79d3d8f1-b7c9-43ff-9ad4-86502e32cf3f","code":"sweep-journey-tee-596b994cdfdb-2","status":"active","currency":"TWD","price_minor":48000,"version":1,"weight_grams":0,"length_mm":0,"width_mm":0,"height_mm":0,"origin_country":"","customs_name":"","hs_candidate":"","option_values":["M"],"title":"M","compare_at_minor":null,"inventory_tracked":true}]}
+[ 563s] J1 catalog response 200 /api/stores/f943649b-73f9-40a1-87cb-89915847d0fe/warehouses: null
+[ 563s] J1 catalog response 200 /api/stores/f943649b-73f9-40a1-87cb-89915847d0fe/warehouses: null
+[ 563s] J1 catalog response 200 /api/stores/f943649b-73f9-40a1-87cb-89915847d0fe/warehouses: {"items":[{"id":"21474144-24f2-4bc1-902c-942e520eef67","name":"t04-3f6d8156cf7a"}],"next_cursor":""}
+[ 563s] J1 catalog response 200 /api/stores/f943649b-73f9-40a1-87cb-89915847d0fe/warehouses: {"items":[{"id":"21474144-24f2-4bc1-902c-942e520eef67","name":"t04-3f6d8156cf7a"}],"next_cursor":""}
+[ 564s] shard 4/10: 10 page/viewport/locale units opened (0 with a page-load failure), 59 control clicks (57 pass, 0 fail, 2 skip), 8 journey steps (8 pass, 0 fail); failures: known 0, new 16; stale known-defect entries 0.
+NEW FAIL storefront /(storefront) mobile/zh-TW [page] "(sweep)" sweep-error: locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for getByTestId('create-order')
+    - locator resolved to <button type="submit" data-testid="create-order" class="primary create-order">送出訂單（貨到付款）</button>
+  - attempting click action
+    2 × waiting for element to be visible, enabled and stable
+      - element is not visible
+    - retrying click action
+    - waiting 20ms
+    2 × waiti (output/playwright/run.iyZLnFzj/ui-click-sweep/screenshots/r00070.png)
+NEW FAIL storefront / mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /products mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /collections mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /collections/[slug] mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /products/[slug] mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /search mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /orders/lookup mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /orders/[orderID] mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /order-link mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /claim mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /legal/anti-fraud mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /legal/[slug] mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /privacy mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /data-deletion mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+NEW FAIL storefront /pages/[slug] mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant

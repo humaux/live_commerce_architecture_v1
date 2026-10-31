@@ -9,12 +9,13 @@ import type { PaymentMode } from "../../lib/cvs-contract";
 import type { Option, Quote } from "../../lib/purchase";
 import { bankTransferCopy } from "../../lib/bank-transfer-copy";
 import { codCopy } from "../../lib/cod-copy";
+import { checkoutCopy } from "../../lib/checkout-copy";
 
-export default function CheckoutPaymentChoices({ locale, quote, option, modes, selected, disabled, money, onChange }: {
+export default function CheckoutPaymentChoices({ locale, quote, option, modes, selected, disabled, money, onChange, detailsOpen = false }: {
   locale: Locale; quote: Quote; option: Option; modes: PaymentMode[]; selected: PaymentMode; disabled: boolean;
-  money: (amount: number, currency: string) => string; onChange: (mode: PaymentMode) => void;
+  money: (amount: number, currency: string) => string; onChange: (mode: PaymentMode) => void; detailsOpen?: boolean;
 }) {
-  const bank = bankTransferCopy[locale], cod = codCopy[locale];
+  const bank = bankTransferCopy[locale], copy = checkoutCopy[locale];
   return <fieldset disabled={disabled} className="sku-options wide" data-testid="home-payment-mode">
     <legend>{bank.paymentLegend}</legend>
     {modes.map((mode) => <label key={mode} className={mode === selected ? "sku-row selected" : "sku-row"}
@@ -22,7 +23,7 @@ export default function CheckoutPaymentChoices({ locale, quote, option, modes, s
       <input type="radio" name="home_payment_mode" style={{ width: 20, height: 20, padding: 0, flex: "none" }}
         value={mode} checked={mode === selected} onChange={() => onChange(mode)} />
       <span>{mode === "bank_transfer" ? bank.payBank : mode === "cash_on_delivery"
-        ? cod.codLabel(money(quote.amount.total_minor, quote.currency), option.cod_surcharge_minor ? money(option.cod_surcharge_minor, option.currency) : null)
+        ? detailsOpen ? codCopy[locale].codLabel(money(quote.amount.total_minor, quote.currency), option.cod_surcharge_minor ? money(option.cod_surcharge_minor, option.currency) : null) : copy.cod
         : bank.payCard}</span>
     </label>)}
   </fieldset>;

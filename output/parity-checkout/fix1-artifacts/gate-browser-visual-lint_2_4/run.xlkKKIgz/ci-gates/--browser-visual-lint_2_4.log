@@ -1,0 +1,49 @@
+## matrix-receipts node-test begin
+✔ thresholds are the named constants of the brief (1.682354ms)
+✔ R1: document wider than the viewport, and the outermost element past the edge (0.40458ms)
+✔ R2: label tops, control tops and control heights of one visual row (0.800707ms)
+✔ R2: what is one row and what is not (0.280677ms)
+✔ R2: a button beside a field has to line up with its control (0.338962ms)
+✔ R3: a row made tall by stacked controls, a control wider than its cell (0.830922ms)
+✔ R3: a matrix whose EVERY row is doubled by a stacked stock cell (the median cannot see it) (1.131848ms)
+✔ R4: small text, helper text apart, icons and duplicates excepted (0.286064ms)
+✔ R5: tap targets on the 390 viewport only (0.799836ms)
+✔ R6: interactive elements and text boxes that overlap (0.49851ms)
+✔ R7: text clipped inside a control or label (either side), and select values that do not fit (0.540131ms)
+✔ R8: the same visible label twice in one list (0.234137ms)
+✔ evaluate() tags severity, selectRecords() keeps distinct groups first and counts every instance (0.821669ms)
+✔ R9: text and controls flush to the screen edge at 390 (0.491519ms)
+✔ R6/R9 judge the visible (ancestor-clipped) rectangle, not the raw one (integrator ruling 2026-10-05) (0.298182ms)
+✔ R10: a fixed or sticky bar covering main content after scrolling (0.57335ms)
+✔ R11: controls narrower than a usable width (0.385391ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 69.518617
+## matrix-receipts node-test end
+PASS visual-lint canary: bad page trips R1,R10,R11,R2,R3,R4,R6,R7,R8 (+R5, R9 at 390), good page trips none (desktop and 390, incl. the scrolled fixed-bar pass)
+prebuilt: storefront restored from b10a8cdda646783a5d30f7c856baa49d9767e975
+prebuilt: admin restored from b10a8cdda646783a5d30f7c856baa49d9767e975
+check-gallery-bundle: OK expect=absent files=73 markers=0 dir=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/admin/.next/static
+## matrix-receipts browser-run begin
+=== RUN   TestBrowserClickSweep
+2026/10/30 14:09:59 http: proxy error: context canceled
+2026/10/30 14:09:59 http: proxy error: context canceled
+2026/10/30 14:09:59 http: proxy error: context canceled
+2026/10/30 14:09:59 http: proxy error: context canceled
+2026/10/30 14:09:59 http: proxy error: context canceled
+2026/10/30 14:09:59 http: proxy error: context canceled
+    browser_click_sweep_test.go:558: click sweep FAILED (exit: exit status 1); the ledger and the failing controls are in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.xlkKKIgz/ui-visual-sweep (ledger.md, DEFECTS in the runner log /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.xlkKKIgz/click-sweep/20261030T140953.131584137/click-sweep.mjs.log)
+--- FAIL: TestBrowserClickSweep (559.50s)
+=== RUN   TestBrowserClickSweepFixtureLeaseBudget
+--- PASS: TestBrowserClickSweepFixtureLeaseBudget (0.00s)
+FAIL
+FAIL	livecommerce/tests/foundation	559.643s
+FAIL
+G-UI9: shots 81/83 (NOT_RUN 0); instances R1 0, R2 0, R3 0, R4 0, R5 7, R6 0, R7 42, R8 0, R9 0, R10 0, R11 0; blocking 0; 2 enumerated shots missing
+G-UI9 evidence: output/playwright/run.xlkKKIgz/ui-visual-audit/20261030T140958Z (lint.md, lint.json, index.json, shots/, crops/)
+FAIL: G-UI9 visual lint (lint verdict exit 1, go test exit 1): blocking violations (R1 R2 R3 R6 R9, R7 clipped controls), a missing shot or a page that did not load; R4 R5 R8 R10 R11 and clipped labels are WARN.
