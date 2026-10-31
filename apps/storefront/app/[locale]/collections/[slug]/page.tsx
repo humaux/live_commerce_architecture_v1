@@ -44,7 +44,7 @@ export default async function Page({ params, searchParams }: { params: Params; s
           { href: withPreview(`/${locale}/collections`, preview), label: copy.collections },
         ]}
         label={copy.breadcrumb}
-        title={info.title}
+        title={copy.dailySeries}
       >
         {info.description && <p className="sf-pagehead__intro">{info.description}</p>}
       </PageHead>

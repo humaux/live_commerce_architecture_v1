@@ -57,7 +57,7 @@ export default function ListBody({
         </>
       ) : (
         <div className="sf-empty" data-testid="list-empty">
-          <p className="sf-empty__title">{loaded.filtered || searching ? copy.noResults : copy.noProducts}</p>
+          {searching ? <h2 className="sf-empty__title">{copy.noResults}</h2> : <p className="sf-empty__title">{loaded.filtered ? copy.noResults : copy.noProducts}</p>}
           <p className="sf-muted">{loaded.filtered || searching ? copy.noResultsHint : copy.noProductsHint}</p>
           {loaded.filtered ? (
             <Link className="sf-btn sf-btn--ghost" href={clearHref}>

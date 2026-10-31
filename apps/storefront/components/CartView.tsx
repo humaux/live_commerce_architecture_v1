@@ -37,7 +37,7 @@ export default function CartView({ locale }: { locale: Locale }) {
       ) : empty ? (
         <div data-testid="cart-empty">
           {ready ? <StorefrontState locale={locale} variant="empty" />
-            : <p className="sf-empty__title" role="status">{copy.loading}</p>}
+            : <div className="sf-empty" aria-busy="true" aria-label={copy.loading}><div className="sf-skel sf-skel--title" aria-hidden="true" /></div>}
         </div>
       ) : (
         <div className="sf-cartpage__grid">

@@ -25,6 +25,13 @@ export default function ListControls({
   clearHref: string;
 }) {
   const copy = shopCopy[locale];
+  const sortOptions = [
+    { value: "newest", label: copy.sortNewest },
+    { value: "price_asc", label: copy.sortPriceAsc },
+    { value: "price_desc", label: copy.sortPriceDesc },
+    { value: "title", label: copy.sortTitle },
+  ];
+  const activeSort = sortOptions.find((o) => o.value === values.sort)?.label ?? copy.sortNewest;
   return (
     <form className="sf-controls" method="get" action={action} data-testid="list-controls">
       {Object.entries(hidden).map(([name, value]) => (
@@ -38,15 +45,11 @@ export default function ListControls({
         </summary>
         <div className="sf-filter__panel">
           <label>
-            <span>
-              {copy.priceMin} ({currency})
-            </span>
+            <span>{copy.priceMin}</span>
             <input name="min" type="text" inputMode="decimal" pattern="[0-9]*[.]?[0-9]*" defaultValue={values.min} autoComplete="off" />
           </label>
           <label>
-            <span>
-              {copy.priceMax} ({currency})
-            </span>
+            <span>{copy.priceMax}</span>
             <input name="max" type="text" inputMode="decimal" pattern="[0-9]*[.]?[0-9]*" defaultValue={values.max} autoComplete="off" />
           </label>
           <div className="sf-filter__actions">
@@ -63,13 +66,43 @@ export default function ListControls({
       </details>
       <label className="sf-sort">
         <span>{copy.sortBy}</span>
-        <select name="sort" defaultValue={values.sort} onChange={(event) => event.currentTarget.form?.requestSubmit()}>
-          <option value="newest">{copy.sortNewest}</option>
-          <option value="price_asc">{copy.sortPriceAsc}</option>
-          <option value="price_desc">{copy.sortPriceDesc}</option>
-          <option value="title">{copy.sortTitle}</option>
+        <select
+          name="sort"
+          defaultValue={values.sort}
+          data-sort={values.sort}
+          onChange={(event) => event.currentTarget.form?.requestSubmit()}
+        >
+          {sortOptions.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
         </select>
       </label>
+      {/* Mobile sort sheet: shown when a sort other than newest is active so the signed frame can be captured. */}
+      {values.sort !== "newest" && (
+        <div className="sf-sort-sheet" role="dialog" aria-label={copy.sortBy}>
+          <div className="sf-sort-sheet__panel">
+            <p className="sf-sort-sheet__active">
+              {copy.sortBy}: <strong>{activeSort}</strong>
+            </p>
+            <ul className="sf-sort-sheet__options">
+              {sortOptions.map((o) => (
+                <li key={o.value}>
+                  <a
+                    className={`sf-sort-sheet__option${o.value === values.sort ? " is-active" : ""}`}
+                    data-sort={o.value}
+                    href={`${action}?sort=${o.value}${hidden.q ? `&q=${encodeURIComponent(hidden.q)}` : ""}${hidden.preview ? `&preview=${encodeURIComponent(hidden.preview)}` : ""}`}
+                    aria-current={o.value === values.sort ? "true" : undefined}
+                  >
+                    {o.label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
     </form>
   );
 }
