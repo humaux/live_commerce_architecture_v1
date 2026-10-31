@@ -228,10 +228,16 @@ export default function OrderFlow({
         const modes = offeredPaymentModes(found, currentQuote.amount.total_minor);
         const selected = modes.includes(savedMode as PaymentMode) ? savedMode
           : modes.includes(paymentMode) ? paymentMode : modes[0];
-        // Online review does not depend on a COD-only read. Selected/automatic
-        // COD and fee-refusal recovery still require fresh matching server due.
-        const latest = optionRefresh || selected === "cash_on_delivery"
-          ? await refreshCodQuote(context, currentQuote, found) : currentQuote;
+        // Always refresh a mismatched server COD due; fall back to currentQuote on
+        // card/online review only when GET quotes/{id} returned 200 with stale COD due
+        // (e.g. a pinned card re-quote), never when the refresh HTTP request itself fails.
+        let latest = currentQuote;
+        try {
+          latest = await refreshCodQuote(context, currentQuote, found);
+        } catch (reason) {
+          if (optionRefresh || selected === "cash_on_delivery" || (reason instanceof BuyerClientError && reason.status !== undefined))
+            throw reason;
+        }
         if (version !== live.current) return;
         if (optionRefresh || latest !== quote) onQuoteRefresh?.(latest);
         // OP1: card may not be offered (no payment service); keep the buyer's mode only if this row still offers it, else pre-select its first.
