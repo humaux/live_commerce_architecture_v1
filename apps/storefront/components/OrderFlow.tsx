@@ -228,10 +228,9 @@ export default function OrderFlow({
         const modes = offeredPaymentModes(found, currentQuote.amount.total_minor);
         const selected = modes.includes(savedMode as PaymentMode) ? savedMode
           : modes.includes(paymentMode) ? paymentMode : modes[0];
-        // A COD-selected review, or an option refresh, rethrows every refresh failure. A card/online
-        // review keeps currentQuote only when the refresh fails without an HTTP status (e.g. a pinned
-        // card re-quote). The COD due is hidden for non-COD modes (codFooter returns null), so a stale
-        // due is never shown or submitted.
+        // A COD-selected review, or an option refresh, rethrows every refresh failure. A card/online review keeps
+        // currentQuote only when the refresh fails without an HTTP status (e.g. a pinned card re-quote); the COD
+        // due is hidden for non-COD modes (codFooter returns null), so a stale due is never shown or submitted.
         let latest = currentQuote;
         try {
           latest = await refreshCodQuote(context, currentQuote, found);
