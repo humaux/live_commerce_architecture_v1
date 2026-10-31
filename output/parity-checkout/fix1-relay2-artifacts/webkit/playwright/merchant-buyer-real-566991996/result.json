@@ -1,0 +1,54 @@
+{
+  "cases": 8,
+  "product_id": "1bb74824-dec6-4935-925e-ec9b58df220e",
+  "sku_id": "4dd6f611-b5ed-48b0-a4c6-e303cd528350",
+  "name": "Joint browser product 1793375911105",
+  "code": "JOINT-1793375911105",
+  "locales": [
+    "en",
+    "zh-CN",
+    "zh-TW"
+  ],
+  "urls": {
+    "en": "https://buyer.example/en/products/1bb74824-dec6-4935-925e-ec9b58df220e",
+    "zh-CN": "https://buyer.example/zh-CN/products/1bb74824-dec6-4935-925e-ec9b58df220e",
+    "zh-TW": "https://buyer.example/zh-TW/products/1bb74824-dec6-4935-925e-ec9b58df220e"
+  },
+  "after_saves": {
+    "buyer.capability_events": 1,
+    "buyer.capability_sessions": 1,
+    "buyer.command_results": 3,
+    "buyer.owners": 1,
+    "checkout.command_results": 0,
+    "checkout.orders": 0,
+    "checkout.payment_attempts": 0,
+    "integration.operation_events": 0,
+    "integration.operations": 0,
+    "inventory.ledger": 2,
+    "inventory.reservations": 0,
+    "ops.command_results": 15,
+    "storefront.cart_lines": 1,
+    "storefront.carts": 1,
+    "storefront.events": 2,
+    "storefront.quotes": 1
+  },
+  "after": {
+    "buyer.capability_events": 2,
+    "buyer.capability_sessions": 2,
+    "buyer.command_results": 3,
+    "buyer.owners": 2,
+    "checkout.command_results": 0,
+    "checkout.orders": 0,
+    "checkout.payment_attempts": 0,
+    "integration.operation_events": 0,
+    "integration.operations": 0,
+    "inventory.ledger": 2,
+    "inventory.reservations": 0,
+    "ops.command_results": 15,
+    "storefront.cart_lines": 1,
+    "storefront.carts": 1,
+    "storefront.events": 2,
+    "storefront.quotes": 1
+  },
+  "boundary": "production Next; signed MOCK IdP; synthetic local TLS/CONNECT and publication evidence; no deployment DNS/TLS or provider acceptance"
+}

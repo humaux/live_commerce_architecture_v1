@@ -3,6 +3,7 @@
 // No page.route, synthesized order, payment completion, CAPI consent, or Meta request is part of this driver.
 // Required LC_AT_*: ORIGIN, PRODUCT, DRAFT, EVIDENCE, CONTROL, CONTROL_KEY; COMMERCE_BUYER_* as ads-consent.mjs.
 // Control POST /order-check: X-Gate-Key + {order_id,draft_id} -> {order_id,path:'ad_click',draft_id}.
+import { openCheckoutDetails } from "./shop-helpers.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import http from "node:http";
@@ -438,6 +439,7 @@ async function place(locale, width) {
   assert(destinationResponse.ok(), "real destination accepted");
   const destination = await destinationResponse.json();
   assert(uuid.test(destination.id), "real confirmed destination ID");
+  await openCheckoutDetails(page);
   await expect(page.getByTestId("create-order")).toBeEnabled();
   await shot(page, "checkout", locale, width);
   const beginWait = page.waitForResponse((response) =>

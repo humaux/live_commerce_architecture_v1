@@ -14,7 +14,7 @@
 // Purpose: drive the SP18/SU07/SU09/OBS Stripe buyer UI browser gates described above.
 // Depends on: ./shop-helpers.mjs, ./browser-engine.mjs, @playwright/test, the Go control server (LC_STRIPE_CONTROL), openssl.
 // Used by: tests/foundation/browser_stripe_test.go (TestBrowserStripeCheckout launches this script per case).
-import { reachCheckout, switchLocale } from "./shop-helpers.mjs";
+import { reachCheckout, switchLocale, confirmCheckoutAddress } from "./shop-helpers.mjs";
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
 import http from "node:http";
@@ -201,7 +201,7 @@ async function newOrder(page,{pay=true}={}){
   await Promise.all([quotation,page.getByRole("button",{name:"Get current total",exact:true}).click()]);assert.equal((await quotation).status(),200);
   await ex(page.getByTestId("address-section")).toBeVisible();
   for(const [key,value] of Object.entries(pii))await page.locator(`input[name="${key}"]`).fill(value);
-  await page.getByTestId("confirm-address").click();await ex(page.getByTestId("create-order")).toBeEnabled();
+  await confirmCheckoutAddress(page);await ex(page.getByTestId("create-order")).toBeEnabled();
   await page.getByTestId("create-order").click();await ex(page.getByTestId("order-section")).toBeVisible();
   const id=(await page.getByTestId("order-id").innerText()).trim();assert.match(id,/^[0-9a-f-]{36}$/);orders.push(id);
   await ex(page.getByTestId("order-payment")).toBeVisible();await ex(page.getByTestId("payment-status")).toHaveAttribute("data-state","NOT_STARTED");

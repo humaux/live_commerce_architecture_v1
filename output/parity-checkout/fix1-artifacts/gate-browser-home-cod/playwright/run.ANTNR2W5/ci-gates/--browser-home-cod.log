@@ -1,0 +1,15 @@
+prebuilt: storefront restored from b10a8cdda646783a5d30f7c856baa49d9767e975
+prebuilt: admin restored from b10a8cdda646783a5d30f7c856baa49d9767e975
+check-gallery-bundle: OK expect=absent files=73 markers=0 dir=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/admin/.next/static
+## matrix-receipts browser-run begin
+=== RUN   TestBrowserHomeCod
+2026/10/30 14:34:59 http: proxy error: context canceled
+2026/10/30 14:34:59 http: proxy error: context canceled
+2026/10/30 14:34:59 http: proxy error: context canceled
+2026/10/30 14:35:00 http: proxy error: context canceled
+2026/10/30 14:35:01 http: proxy error: context canceled
+    browser_home_cod_test.go:154: the buyer script ended before "placed": exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.ANTNR2W5/home-cod/20261030T143453.339365776
+--- FAIL: TestBrowserHomeCod (252.13s)
+FAIL
+FAIL	livecommerce/tests/foundation	252.271s
+FAIL

@@ -1,0 +1,314 @@
+[
+  {
+    "case_id": "BC01 en drawer visible cart Retry preserves key/body and one committed write after reload",
+    "locale": "en",
+    "surface": "drawer",
+    "key": "86ad2910-5d1e-4622-ab81-e926ff64895a",
+    "request_body": "{\"expected_version\":0,\"items\":[{\"sku_id\":\"98b75383-6f19-4a5f-b09c-977eb17b5f6d\",\"quantity\":1}]}",
+    "cart_id": "ab591abe-459a-42bf-bec2-4895c39f9aa0",
+    "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+    "quantity": 1,
+    "before": {
+      "id": "ab591abe-459a-42bf-bec2-4895c39f9aa0",
+      "version": 1,
+      "writes": 1,
+      "receipts": 1,
+      "receipt_version": 1,
+      "request_hash": "fe6a7628ebc361828cba59f0765ddfedb8194b57697a6cd19658308cba8f8f68",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 1
+        }
+      ]
+    },
+    "after": {
+      "id": "ab591abe-459a-42bf-bec2-4895c39f9aa0",
+      "version": 1,
+      "writes": 1,
+      "receipts": 1,
+      "receipt_version": 1,
+      "request_hash": "fe6a7628ebc361828cba59f0765ddfedb8194b57697a6cd19658308cba8f8f68",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 1
+        }
+      ]
+    },
+    "reloaded": {
+      "id": "ab591abe-459a-42bf-bec2-4895c39f9aa0",
+      "version": 1,
+      "writes": 1,
+      "receipts": 1,
+      "receipt_version": 1,
+      "request_hash": "fe6a7628ebc361828cba59f0765ddfedb8194b57697a6cd19658308cba8f8f68",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 1
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "BC01 en cart-page visible cart Retry preserves key/body and one committed write after reload",
+    "locale": "en",
+    "surface": "cart-page",
+    "key": "e53c6c7f-d81c-4e3f-88a4-1e3ddc819ea9",
+    "request_body": "{\"expected_version\":1,\"items\":[{\"sku_id\":\"98b75383-6f19-4a5f-b09c-977eb17b5f6d\",\"quantity\":2}]}",
+    "cart_id": "ab591abe-459a-42bf-bec2-4895c39f9aa0",
+    "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+    "quantity": 2,
+    "before": {
+      "id": "ab591abe-459a-42bf-bec2-4895c39f9aa0",
+      "version": 2,
+      "writes": 2,
+      "receipts": 1,
+      "receipt_version": 2,
+      "request_hash": "5b35552d15661bcb9b69673f9c39db60900688effe3a7bac03f1c30c4783f4c8",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 2
+        }
+      ]
+    },
+    "after": {
+      "id": "ab591abe-459a-42bf-bec2-4895c39f9aa0",
+      "version": 2,
+      "writes": 2,
+      "receipts": 1,
+      "receipt_version": 2,
+      "request_hash": "5b35552d15661bcb9b69673f9c39db60900688effe3a7bac03f1c30c4783f4c8",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 2
+        }
+      ]
+    },
+    "reloaded": {
+      "id": "ab591abe-459a-42bf-bec2-4895c39f9aa0",
+      "version": 2,
+      "writes": 2,
+      "receipts": 1,
+      "receipt_version": 2,
+      "request_hash": "5b35552d15661bcb9b69673f9c39db60900688effe3a7bac03f1c30c4783f4c8",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 2
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "BC01 zh-CN drawer visible cart Retry preserves key/body and one committed write after reload",
+    "locale": "zh-CN",
+    "surface": "drawer",
+    "key": "c89b9db6-4d74-4797-bfb4-9a4462b1d972",
+    "request_body": "{\"expected_version\":0,\"items\":[{\"sku_id\":\"98b75383-6f19-4a5f-b09c-977eb17b5f6d\",\"quantity\":1}]}",
+    "cart_id": "6b47c3e8-ea65-4180-8d5b-b2294e623a8d",
+    "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+    "quantity": 1,
+    "before": {
+      "id": "6b47c3e8-ea65-4180-8d5b-b2294e623a8d",
+      "version": 1,
+      "writes": 1,
+      "receipts": 1,
+      "receipt_version": 1,
+      "request_hash": "fe6a7628ebc361828cba59f0765ddfedb8194b57697a6cd19658308cba8f8f68",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 1
+        }
+      ]
+    },
+    "after": {
+      "id": "6b47c3e8-ea65-4180-8d5b-b2294e623a8d",
+      "version": 1,
+      "writes": 1,
+      "receipts": 1,
+      "receipt_version": 1,
+      "request_hash": "fe6a7628ebc361828cba59f0765ddfedb8194b57697a6cd19658308cba8f8f68",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 1
+        }
+      ]
+    },
+    "reloaded": {
+      "id": "6b47c3e8-ea65-4180-8d5b-b2294e623a8d",
+      "version": 1,
+      "writes": 1,
+      "receipts": 1,
+      "receipt_version": 1,
+      "request_hash": "fe6a7628ebc361828cba59f0765ddfedb8194b57697a6cd19658308cba8f8f68",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 1
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "BC01 zh-CN cart-page visible cart Retry preserves key/body and one committed write after reload",
+    "locale": "zh-CN",
+    "surface": "cart-page",
+    "key": "225cf91a-ae59-434a-b460-7e7541678810",
+    "request_body": "{\"expected_version\":1,\"items\":[{\"sku_id\":\"98b75383-6f19-4a5f-b09c-977eb17b5f6d\",\"quantity\":2}]}",
+    "cart_id": "6b47c3e8-ea65-4180-8d5b-b2294e623a8d",
+    "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+    "quantity": 2,
+    "before": {
+      "id": "6b47c3e8-ea65-4180-8d5b-b2294e623a8d",
+      "version": 2,
+      "writes": 2,
+      "receipts": 1,
+      "receipt_version": 2,
+      "request_hash": "5b35552d15661bcb9b69673f9c39db60900688effe3a7bac03f1c30c4783f4c8",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 2
+        }
+      ]
+    },
+    "after": {
+      "id": "6b47c3e8-ea65-4180-8d5b-b2294e623a8d",
+      "version": 2,
+      "writes": 2,
+      "receipts": 1,
+      "receipt_version": 2,
+      "request_hash": "5b35552d15661bcb9b69673f9c39db60900688effe3a7bac03f1c30c4783f4c8",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 2
+        }
+      ]
+    },
+    "reloaded": {
+      "id": "6b47c3e8-ea65-4180-8d5b-b2294e623a8d",
+      "version": 2,
+      "writes": 2,
+      "receipts": 1,
+      "receipt_version": 2,
+      "request_hash": "5b35552d15661bcb9b69673f9c39db60900688effe3a7bac03f1c30c4783f4c8",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 2
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "BC01 zh-TW drawer visible cart Retry preserves key/body and one committed write after reload",
+    "locale": "zh-TW",
+    "surface": "drawer",
+    "key": "b45c9acf-d7e7-43c1-9865-54d60dd7b98c",
+    "request_body": "{\"expected_version\":0,\"items\":[{\"sku_id\":\"98b75383-6f19-4a5f-b09c-977eb17b5f6d\",\"quantity\":1}]}",
+    "cart_id": "4f442b1c-aaef-421e-8890-1ff26c72288c",
+    "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+    "quantity": 1,
+    "before": {
+      "id": "4f442b1c-aaef-421e-8890-1ff26c72288c",
+      "version": 1,
+      "writes": 1,
+      "receipts": 1,
+      "receipt_version": 1,
+      "request_hash": "fe6a7628ebc361828cba59f0765ddfedb8194b57697a6cd19658308cba8f8f68",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 1
+        }
+      ]
+    },
+    "after": {
+      "id": "4f442b1c-aaef-421e-8890-1ff26c72288c",
+      "version": 1,
+      "writes": 1,
+      "receipts": 1,
+      "receipt_version": 1,
+      "request_hash": "fe6a7628ebc361828cba59f0765ddfedb8194b57697a6cd19658308cba8f8f68",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 1
+        }
+      ]
+    },
+    "reloaded": {
+      "id": "4f442b1c-aaef-421e-8890-1ff26c72288c",
+      "version": 1,
+      "writes": 1,
+      "receipts": 1,
+      "receipt_version": 1,
+      "request_hash": "fe6a7628ebc361828cba59f0765ddfedb8194b57697a6cd19658308cba8f8f68",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 1
+        }
+      ]
+    }
+  },
+  {
+    "case_id": "BC01 zh-TW cart-page visible cart Retry preserves key/body and one committed write after reload",
+    "locale": "zh-TW",
+    "surface": "cart-page",
+    "key": "65cb654e-0e81-491d-92a7-ae533a877b39",
+    "request_body": "{\"expected_version\":1,\"items\":[{\"sku_id\":\"98b75383-6f19-4a5f-b09c-977eb17b5f6d\",\"quantity\":2}]}",
+    "cart_id": "4f442b1c-aaef-421e-8890-1ff26c72288c",
+    "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+    "quantity": 2,
+    "before": {
+      "id": "4f442b1c-aaef-421e-8890-1ff26c72288c",
+      "version": 2,
+      "writes": 2,
+      "receipts": 1,
+      "receipt_version": 2,
+      "request_hash": "5b35552d15661bcb9b69673f9c39db60900688effe3a7bac03f1c30c4783f4c8",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 2
+        }
+      ]
+    },
+    "after": {
+      "id": "4f442b1c-aaef-421e-8890-1ff26c72288c",
+      "version": 2,
+      "writes": 2,
+      "receipts": 1,
+      "receipt_version": 2,
+      "request_hash": "5b35552d15661bcb9b69673f9c39db60900688effe3a7bac03f1c30c4783f4c8",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 2
+        }
+      ]
+    },
+    "reloaded": {
+      "id": "4f442b1c-aaef-421e-8890-1ff26c72288c",
+      "version": 2,
+      "writes": 2,
+      "receipts": 1,
+      "receipt_version": 2,
+      "request_hash": "5b35552d15661bcb9b69673f9c39db60900688effe3a7bac03f1c30c4783f4c8",
+      "items": [
+        {
+          "sku_id": "98b75383-6f19-4a5f-b09c-977eb17b5f6d",
+          "quantity": 2
+        }
+      ]
+    }
+  }
+]

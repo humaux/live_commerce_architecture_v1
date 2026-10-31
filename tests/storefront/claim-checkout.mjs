@@ -7,7 +7,7 @@ import { writeFile } from "node:fs/promises";
 import path from "node:path";
 import { expect } from "@playwright/test";
 import { engine, launch, ctxOpts, phone, iosZoomOffenders, isWebkitCancelledFetch } from "./browser-engine.mjs";
-import { addToCart } from "./shop-helpers.mjs";
+import { addToCart, confirmCheckoutAddress } from "./shop-helpers.mjs";
 import { displayTime } from "../../packages/format/src/index.ts";
 import { claimCopy } from "../../apps/storefront/lib/claim-copy.ts";
 
@@ -99,7 +99,7 @@ async function checkout(page, link, locale = "zh-TW", partial = false) {
 }
 async function quote(page, locale = "zh-TW") {
   await action(page, "delivery", () => page.getByRole("button", { name: copy[locale].delivery, exact: true }).click(), "delivery selector opens", () => expect(page.locator("#delivery")).toBeVisible());
-  await action(page, "7-ELEVEN", () => page.locator("#delivery").selectOption({ label: "7-ELEVEN · TW" }), "7-ELEVEN selected", () => expect(page.getByRole("button", { name: copy[locale].quote, exact: true })).toBeEnabled());
+  await action(page, "7-ELEVEN", () => page.locator("#delivery").selectOption({ label: "7-ELEVEN" }), "7-ELEVEN selected", () => expect(page.getByRole("button", { name: copy[locale].quote, exact: true })).toBeEnabled());
   await action(page, "quote", () => page.getByRole("button", { name: copy[locale].quote, exact: true }).click(), "quote and pickup form visible", () => expect(page.getByTestId("address-section")).toBeVisible());
 }
 async function place(page, link, locale = "zh-TW", loseReply = false, deplete = null) {
@@ -111,7 +111,7 @@ async function place(page, link, locale = "zh-TW", loseReply = false, deplete = 
   await expect(page.getByTestId("cvs-entered-name")).toHaveCount(0);
   await expect(page.getByTestId("cvs-entered-address")).toHaveCount(0);
   await action(page, "pay-at-pickup", () => page.getByRole("radio", { name: copy[locale].pickup }).check(), "pay-at-pickup selected", () => expect(page.getByRole("radio", { name: copy[locale].pickup })).toBeChecked());
-  await action(page, "confirm-address", () => page.getByTestId("confirm-address").click(), "order action enabled", () => expect(page.getByTestId("create-order")).toBeEnabled());
+  await action(page, "confirm-address", () => confirmCheckoutAddress(page), "order action enabled", () => expect(page.getByTestId("create-order")).toBeEnabled());
   await expect(page.getByTestId("cvs-store-name")).toContainText("建盛");
   await expect(page.getByTestId("cvs-store-address")).toHaveText("新竹市東區建中一路52號1樓");
   await noLeaks(page, link);
@@ -177,7 +177,7 @@ try {
   assert.equal(merged.seen.cart.items.length, 2, "unpaid cart merges");
   await merged.reload(); await expect(merged.getByTestId("cart-line")).toHaveCount(2);
   const otherSKU = merged.seen.cart.items.find((item) => item.sku_id !== mergeLink.sku).sku_id;
-  await action(merged, "back-to-cart", () => merged.getByRole("link", { name: "返回購物車", exact: true }).click(), "merged items can be reviewed in the cart", () => expect(merged).toHaveURL(/\/zh-TW\/cart/));
+  await action(merged, "back-to-cart", () => merged.locator(".checkout-top").getByRole("link", { name: "返回", exact: true }).click(), "merged items can be reviewed in the cart", () => expect(merged).toHaveURL(/\/zh-TW\/cart/));
   await action(merged, "remove-other-cart-line", () => merged.locator(`[data-testid="cart-line"][data-sku="${otherSKU}"]`).getByRole("button", { name: /移出購物車/ }).click(), "only the other cart item is removed", async () => {
     await expect(merged.getByTestId("cart-line")).toHaveCount(1);
     await expect(merged.locator(`[data-testid="cart-line"][data-sku="${mergeLink.sku}"]`).getByTestId("cart-line-qty")).toHaveText("2");
