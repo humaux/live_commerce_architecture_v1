@@ -140,6 +140,7 @@ export function MerchantOrders({
   const [refresh, setRefresh] = useState(0);
   // Bumped by every successful poll; with `refresh` (Refresh button, retry, writes) it is the generation the parcel reads follow.
   const [pollGen, setPollGen] = useState(0);
+  const [retried, setRetried] = useState(false);
   const key = `${renderKey}|${locale}|${store?.id ?? ""}|${state}|${filterKey}|${cursor}|${order}|${initialError ?? ""}|${refresh}`;
   const [view, setView] = useState<View>({
     key: "",
@@ -282,6 +283,7 @@ export function MerchantOrders({
       const selected =
         Boolean(order);
       noteSeen(page);
+      setRetried(false);
       setView({
         key,
         status: "ready",
@@ -294,6 +296,7 @@ export function MerchantOrders({
         const detail = await readOrderDetail(store.id, order, active.signal);
         if (!(await stillCurrent(boundary)))
           throw new OrderReadError("signed-out");
+        setRetried(false);
         setView({ key, status: "ready", page, detail, detailStatus: "ready" });
       } catch (error) {
         if (active.signal.aborted || generation.current !== epoch) return;
@@ -537,6 +540,7 @@ export function MerchantOrders({
     if (current.status === "loading") return;
     blocked.current = false;
     clear("loading");
+    setRetried(true);
     if (initialError || !store) router.refresh();
     else setRefresh((value) => value + 1);
   }
@@ -633,6 +637,7 @@ export function MerchantOrders({
               title={current.status === "not-found" && !store ? c.noStore : message(current.status)}
               onRetry={retry}
               retryLabel={c.retry}
+              failed={retried}
             />
           )}
         <details className="signed-orders-tools" hidden={["hidden","signed-out","forbidden","not-found"].includes(current.status)}><summary>{p.advanced}</summary><div ref={pickTools}>

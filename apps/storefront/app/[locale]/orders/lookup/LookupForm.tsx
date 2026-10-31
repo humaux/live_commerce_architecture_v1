@@ -1,3 +1,7 @@
+// Purpose: Buyer order lookup form and signed in-place errors.
+// Depends on: lookup-copy, lookup-contract and state/StorefrontState.
+// Used by: localized order lookup route.
+// Invariants: no persisted lookup credentials; refusals never reveal which field matched.
 "use client";
 
 // Guest order lookup form: order number + (email or phone) -> BFF POST /api/buyer/orders/lookup -> Go POST /v1/buyer/orders/lookup
@@ -6,6 +10,7 @@
 // half was wrong. Nothing is stored in the browser and the values are never logged.
 import { useState, type FormEvent } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import { StorefrontReadFailure } from "../../../../components/state/StorefrontState";
 import { lookupCopy } from "../../../../lib/lookup-copy";
 import { validContact, validOrderRef, validLookupResult } from "../../../../lib/lookup-contract";
 
@@ -90,9 +95,9 @@ export default function LookupForm({ locale }: { locale: Locale }) {
         </button>
       </form>
       {problem && (
-        <p role="alert" data-testid="lookup-problem" data-problem={problem}>
-          {copy[problem]}
-        </p>
+        <div data-testid="lookup-problem" data-problem={problem}>
+          <StorefrontReadFailure message={copy[problem]} />
+        </div>
       )}
       <p className="order-note">{copy.sessionNote}</p>
     </main>
