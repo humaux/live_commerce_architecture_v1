@@ -1,0 +1,12 @@
+required	UNKNOWN STEP	2026-10-30T14:15:15.0014967Z   BUILD: success
+required	UNKNOWN STEP	2026-10-30T14:15:15.0015752Z   BUILD_EXPECTED: true
+required	UNKNOWN STEP	2026-10-30T14:15:15.0016550Z   GATE: failure
+required	UNKNOWN STEP	2026-10-30T14:15:15.0017275Z   AGG: success
+required	UNKNOWN STEP	2026-10-30T14:15:15.0018000Z   AGG_EXPECTED: true
+required	UNKNOWN STEP	2026-10-30T14:15:15.0018933Z   DEPLOY: skipped
+required	UNKNOWN STEP	2026-10-30T14:15:15.0019699Z   RECEIPTS: failure
+required	UNKNOWN STEP	2026-10-30T14:15:15.0020409Z   DEPLOY_EXPECTED: false
+required	UNKNOWN STEP	2026-10-30T14:15:15.0021374Z ##[endgroup]
+required	UNKNOWN STEP	2026-10-30T14:15:15.0265312Z plan=success build=success (expected true) gate=failure aggregate=success (expected true) deploy=skipped (expected false) receipts=failure
+required	UNKNOWN STEP	2026-10-30T14:15:15.0283951Z ##[error]Process completed with exit code 1.
+required	UNKNOWN STEP	2026-10-30T14:15:15.0476152Z Cleaning up orphan processes

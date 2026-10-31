@@ -151,6 +151,64 @@ export function registerCatalogSimplifiedAcceptance() {
   test.describe("CATV2 signed simplified catalog (MOCK responses)", () => {
     test.describe.configure({ mode: "default" });
     for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [390, 1440]) {
+      test(`K2 approved Copy entry and acknowledged draft ${locale} ${width}`, async ({ page }, info) => {
+        const copy = {
+          'zh-TW': { title: '複製為新草稿？', keep: '保留規格及售價；商品編號重新產生。', exclude: '不複製圖片、關鍵字及庫存。', saved: '草稿已建立', facts: '草稿 · 新商品編號 · 尚無圖片', cancel: '取消', edit: '編輯新草稿' },
+          'zh-CN': { title: '复制为新草稿？', keep: '保留规格和售价；重新生成商品编号。', exclude: '不复制图片、关键词和库存。', saved: '草稿已创建', facts: '草稿 · 新商品编号 · 暂无图片', cancel: '取消', edit: '编辑新草稿' },
+          en: { title: 'Copy as a new draft?', keep: 'Keep variants and prices. Product codes are generated again.', exclude: 'Images, keywords and stock are not copied.', saved: 'Draft created', facts: 'Draft · New product code · No images yet', cancel: 'Cancel', edit: 'Edit new draft' },
+        }[locale];
+        const ledger: Ledger = [], requests: { key: string; body: unknown }[] = [];
+        await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+        try {
+          const f = await setup(page, locale), createdID = id(40), createdName = `${signed[locale].names[0]}（复制）`;
+          const store = process.env.LC_BROWSER_STORE!;
+          // Isolated MOCK copy response only; no changes to incumbent fixtures/assertions.
+          await page.route(`**/api/stores/${store}/products/${productID}/copy`, async route => {
+            expect(route.request().method()).toBe('POST');
+            requests.push({ key: route.request().headers()['idempotency-key'], body: route.request().postDataJSON() });
+            if (requests.length === 1) f.rows.push({ ...f.rows[0], id: createdID, name: createdName, status: 'draft', version: 1, cover_image_id: null, available: 0 });
+            await route.fulfill({ status: 200, contentType: 'application/json', headers: { 'cache-control': 'no-store' }, body: JSON.stringify({ id: createdID, name: createdName, status: 'draft' }) });
+          });
+          await f.open();
+          await expect(page.getByTestId('products-copy-entry')).toBeDisabled();
+          await page.getByTestId(`product-row-${productID}`).getByRole('checkbox').check();
+          const review = async () => {
+            await page.getByTestId('products-operations').click();
+            await page.getByTestId('products-copy-entry').click();
+            await expect(page.getByRole('heading', { name: copy.title, exact: true })).toBeVisible();
+            for (const text of [signed[locale].names[0], copy.keep, copy.exclude]) await expect(page.getByTestId('product-copy-review')).toContainText(text);
+            if (width === 390) {
+              // READ/MEASURE only, scoped to the task content as in density-probe; no DOM writes.
+              const metrics = await page.getByTestId('product-copy-review').evaluate(root => {
+                const texts = Array.from(root.querySelectorAll('h2,p,button')).filter(el => el.checkVisibility()).map(el => el.textContent?.trim() ?? '');
+                return { blocks: texts.length, chars: texts.reduce((n, text) => n + Array.from(text.replace(/\s/g, '')).length, 0) };
+              });
+              expect(metrics.blocks).toBeLessThanOrEqual(12);
+              if (locale !== 'en') expect(metrics.chars).toBeLessThanOrEqual(100);
+              await info.attach('copy-review-density', { body: JSON.stringify(metrics), contentType: 'application/json' });
+            }
+
+          };
+          await action(ledger, page, 'Copy product', 'click', 'signed confirmation; no write before confirmation', review);
+          expect(requests).toHaveLength(0);
+          await page.getByRole('button', { name: copy.cancel, exact: true }).click();
+          expect(requests).toHaveLength(0);
+          await review();
+          await action(ledger, page, 'Confirm copy', 'click', 'one keyed command and acknowledged draft identity', async () => {
+            await page.getByTestId('products-copy-selected').click();
+            await expect(page.getByRole('heading', { name: copy.saved, exact: true })).toBeVisible();
+            await expect(page.getByTestId('product-batch-results')).toContainText(createdName);
+            await expect(page.getByTestId('product-batch-results')).toContainText(copy.facts);
+            await expect(page.getByTestId('product-copy-edit')).toHaveText(copy.edit);
+            await expect(page.getByTestId('product-copy-edit')).toHaveAttribute('href', `/${locale}/products/${createdID}?store=${store}`);
+          });
+          await info.attach('copy-signed-result', { body: await page.screenshot(), contentType: 'image/png' });
+          expect(requests).toEqual([{ key: expect.stringMatching(/^[0-9a-f-]{36}$/), body: { expected_version: 1 } }]);
+          await page.reload();
+          await expect(page.getByTestId(`product-row-${createdID}`)).toContainText(createdName);
+          expect(requests).toHaveLength(1);
+        } finally { await saveLedger(ledger, info); }
+      });
       test(`PARITY catalog signed controls ${locale} ${width}`, async ({ page }, info) => {
         const c = signed[locale], ledger: Ledger = [];
         await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });

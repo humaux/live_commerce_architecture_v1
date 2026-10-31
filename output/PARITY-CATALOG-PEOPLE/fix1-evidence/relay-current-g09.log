@@ -1,0 +1,14 @@
+1507:gate (shard:g09)	UNKNOWN STEP	2026-10-30T13:13:13.5149302Z          want active,captured_minor,claims_count,consent_state,consents,currency,customer_id,display_name,first_seen_at,imported,last_activity_at,orders_count,paid_orders_count,phone_last3,platforms,refunded_minor,tags
+1508:gate (shard:g09)	UNKNOWN STEP	2026-10-30T13:13:13.5153326Z     customers_billing_http_test.go:195: PARITY-CONSENT-STATE: absent events must be never, got map[]
+1511:gate (shard:g09)	UNKNOWN STEP	2026-10-30T13:13:13.5223915Z          want active,captured_minor,claims_count,consent_state,consents,currency,customer_id,display_name,first_seen_at,imported,last_activity_at,orders_count,paid_orders_count,phone_last3,platforms,refunded_minor,tags
+1512:gate (shard:g09)	UNKNOWN STEP	2026-10-30T13:13:13.5225413Z     customers_billing_http_test.go:195: PARITY-CONSENT-STATE: absent events must be never, got map[]
+1516:gate (shard:g09)	UNKNOWN STEP	2026-10-30T13:13:13.6434978Z          want active,captured_minor,claims,claims_count,consent_history,consent_state,consents,currency,customer_id,display_name,first_seen_at,imported,last_activity_at,notes,orders,orders_count,paid_orders_count,phone_last3,platforms,privacy_actions,refunded_minor,tags,tags_revision
+1525:gate (shard:g09)	UNKNOWN STEP	2026-10-30T13:13:16.3049091Z --- FAIL: TestCustomersBillingCB09HTTP (3.68s)
+1526:gate (shard:g09)	UNKNOWN STEP	2026-10-30T13:13:16.3071059Z     --- FAIL: TestCustomersBillingCB09HTTP/GET_customers:_permissions,_grammar,_shape,_paging,_method (0.13s)
+1527:gate (shard:g09)	UNKNOWN STEP	2026-10-30T13:13:16.3097394Z     --- FAIL: TestCustomersBillingCB09HTTP/GET_customers/{id}:_shape,_permissions,_cross-store (0.03s)
+1537:gate (shard:g09)	UNKNOWN STEP	2026-10-30T13:13:25.7620889Z === RUN   TestCustomersBillingCB03List/PARITY_consent_state_distinguishes_never_withdrawn_and_regranted
+1538:gate (shard:g09)	UNKNOWN STEP	2026-10-30T13:13:25.7715301Z     customers_billing_list_test.go:187: PARITY-CONSENT-STATE: got map[] want marketing=granted
+1547:gate (shard:g09)	UNKNOWN STEP	2026-10-30T13:13:26.7783936Z --- FAIL: TestCustomersBillingCB03List (10.47s)
+1548:gate (shard:g09)	UNKNOWN STEP	2026-10-30T13:13:26.7785181Z     --- FAIL: TestCustomersBillingCB03List/PARITY_consent_state_distinguishes_never_withdrawn_and_regranted (0.02s)
+2957:gate (shard:g09)	UNKNOWN STEP	2026-10-30T13:25:19.5474310Z --- FAIL: TestCustomersBillingCB09HTTP (3.68s)
+2958:gate (shard:g09)	UNKNOWN STEP	2026-10-30T13:25:19.5475249Z --- FAIL: TestCustomersBillingCB03List (10.47s)

@@ -1,0 +1,22 @@
+530-receipts	UNKNOWN STEP	2026-10-30T13:58:38.0927314Z   receipt --browser-checkout-offline: PASS test_count=17 run=41054099331/1 sha=c99fdd96001375527e6ec1a03bffc7fb2ceee4e6
+531:receipts	UNKNOWN STEP	2026-10-30T13:58:38.0928752Z FAIL: shard:unit: status FAIL
+532:receipts	UNKNOWN STEP	2026-10-30T13:58:38.0929779Z FAIL: shard:g09: status FAIL
+533:receipts	UNKNOWN STEP	2026-10-30T13:58:38.0930902Z FAIL: --browser-customers-billing: status FAIL
+534:receipts	UNKNOWN STEP	2026-10-30T13:58:38.0932035Z FAIL: --browser-product-editor: status FAIL
+535-receipts	UNKNOWN STEP	2026-10-30T13:58:38.0933561Z   receipt --browser-click-sweep@10/10: PASS test_count=18 run=41054099331/1 sha=c99fdd96001375527e6ec1a03bffc7fb2ceee4e6
+--
+544-receipts	UNKNOWN STEP	2026-10-30T13:58:38.0948294Z   receipt --browser-click-sweep@9/10: PASS test_count=18 run=41054099331/1 sha=c99fdd96001375527e6ec1a03bffc7fb2ceee4e6
+545:receipts	UNKNOWN STEP	2026-10-30T13:58:38.0949843Z   receipt --browser-customers-billing: FAIL test_count=178 run=41054099331/1 sha=c99fdd96001375527e6ec1a03bffc7fb2ceee4e6
+546-receipts	UNKNOWN STEP	2026-10-30T13:58:38.0951485Z   receipt --browser-e2e: PASS test_count=7 run=41054099331/1 sha=c99fdd96001375527e6ec1a03bffc7fb2ceee4e6
+--
+560-receipts	UNKNOWN STEP	2026-10-30T13:58:38.0975521Z   receipt --browser-payment: PASS test_count=17 run=41054099331/1 sha=c99fdd96001375527e6ec1a03bffc7fb2ceee4e6
+561:receipts	UNKNOWN STEP	2026-10-30T13:58:38.0977049Z   receipt --browser-product-editor: FAIL test_count=17 run=41054099331/1 sha=c99fdd96001375527e6ec1a03bffc7fb2ceee4e6
+562-receipts	UNKNOWN STEP	2026-10-30T13:58:38.0978611Z   receipt --browser-product-media-v2: PASS test_count=13 run=41054099331/1 sha=c99fdd96001375527e6ec1a03bffc7fb2ceee4e6
+--
+581-receipts	UNKNOWN STEP	2026-10-30T13:58:38.1008119Z   receipt shard:g08: PASS test_count=223 run=41054099331/1 sha=c99fdd96001375527e6ec1a03bffc7fb2ceee4e6
+582:receipts	UNKNOWN STEP	2026-10-30T13:58:38.1009551Z   receipt shard:g09: FAIL test_count=224 run=41054099331/1 sha=c99fdd96001375527e6ec1a03bffc7fb2ceee4e6
+583-receipts	UNKNOWN STEP	2026-10-30T13:58:38.1011111Z   receipt shard:g10: PASS test_count=238 run=41054099331/1 sha=c99fdd96001375527e6ec1a03bffc7fb2ceee4e6
+584:receipts	UNKNOWN STEP	2026-10-30T13:58:38.1012577Z   receipt shard:unit: FAIL test_count=1475 run=41054099331/1 sha=c99fdd96001375527e6ec1a03bffc7fb2ceee4e6
+585-receipts	UNKNOWN STEP	2026-10-30T13:58:38.1013984Z matrix-receipts: RED (4 problem(s))
+586:receipts	UNKNOWN STEP	2026-10-30T13:58:38.1029748Z ##[error]Process completed with exit code 1.
+587-receipts	UNKNOWN STEP	2026-10-30T13:58:38.1220820Z Post job cleanup.

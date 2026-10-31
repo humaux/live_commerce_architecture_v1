@@ -1,0 +1,42 @@
+[
+  {
+    "page": "/en",
+    "control": "Sign in with identity service",
+    "operation": "click",
+    "expected": "signed merchant workspace opens",
+    "actual": "signed merchant workspace opens",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "Download data",
+    "operation": "click",
+    "expected": "PEOPLE-V2-EXPORT-CONFIRM: review opens before any POST",
+    "actual": "PEOPLE-V2-EXPORT-CONFIRM: review opens before any POST",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "Confirm download",
+    "operation": "click",
+    "expected": "synchronous export delivers one file",
+    "actual": "synchronous export delivers one file",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "Refresh",
+    "operation": "reload",
+    "expected": "completed export remains in server history",
+    "actual": "completed export remains in server history",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "Advanced",
+    "operation": "click",
+    "expected": "completed server history becomes visible",
+    "actual": "completed server history becomes visible",
+    "result": "pass"
+  }
+]

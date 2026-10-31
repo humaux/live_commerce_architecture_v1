@@ -1,0 +1,68 @@
+[
+  {
+    "step": "customer search draft is visible",
+    "blocks": 9,
+    "characters": 193,
+    "width": 1440
+  },
+  {
+    "step": "search results retain the customer and query",
+    "blocks": 10,
+    "characters": 202,
+    "width": 1440
+  },
+  {
+    "step": "search persists after reload",
+    "blocks": 10,
+    "characters": 202,
+    "width": 1440
+  },
+  {
+    "step": "customer profile opens",
+    "blocks": 17,
+    "characters": 554,
+    "width": 1440
+  },
+  {
+    "step": "three server orders are visible",
+    "blocks": 17,
+    "characters": 554,
+    "width": 1440
+  },
+  {
+    "step": "consent facts remain visible",
+    "blocks": 17,
+    "characters": 554,
+    "width": 1440
+  },
+  {
+    "step": "privacy section opens",
+    "blocks": 17,
+    "characters": 554,
+    "width": 1440
+  },
+  {
+    "step": "return preserves search context",
+    "blocks": 10,
+    "characters": 202,
+    "width": 1440
+  },
+  {
+    "step": "clear restores all store customers",
+    "blocks": 5,
+    "characters": 72,
+    "width": 1440
+  },
+  {
+    "step": "phone suffix is accepted",
+    "blocks": 9,
+    "characters": 193,
+    "width": 1440
+  },
+  {
+    "step": "phone search returns the matching customer",
+    "blocks": 6,
+    "characters": 84,
+    "width": 1440
+  }
+]

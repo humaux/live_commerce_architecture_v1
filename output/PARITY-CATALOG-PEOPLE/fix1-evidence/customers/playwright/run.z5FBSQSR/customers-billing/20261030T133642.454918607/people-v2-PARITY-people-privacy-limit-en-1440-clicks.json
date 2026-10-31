@@ -1,0 +1,18 @@
+[
+  {
+    "page": "/en",
+    "control": "Sign in with identity service",
+    "operation": "click",
+    "expected": "signed merchant workspace opens",
+    "actual": "signed merchant workspace opens",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "Confirm download",
+    "operation": "click",
+    "expected": "one privacy command only",
+    "actual": "one privacy command only",
+    "result": "pass"
+  }
+]

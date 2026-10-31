@@ -1,0 +1,55 @@
+required	UNKNOWN STEP	﻿2026-10-30T14:15:14.8099268Z Current runner version: '2.338.0'
+required	UNKNOWN STEP	2026-10-30T14:15:14.8118362Z ##[group]Runner Image Provisioner
+required	UNKNOWN STEP	2026-10-30T14:15:14.8119151Z Hosted Compute Agent
+required	UNKNOWN STEP	2026-10-30T14:15:14.8119662Z Version: 20261021.618
+required	UNKNOWN STEP	2026-10-30T14:15:14.8120187Z Commit: 21505ad2541d5be6135ed84fc33697146cf75b8e
+required	UNKNOWN STEP	2026-10-30T14:15:14.8120823Z Build Date: 2026-10-21T00:45:21Z
+required	UNKNOWN STEP	2026-10-30T14:15:14.8121406Z Worker ID: {48f41b58-d923-4041-a68e-c1989136965f}
+required	UNKNOWN STEP	2026-10-30T14:15:14.8122328Z Region: westus3
+required	UNKNOWN STEP	2026-10-30T14:15:14.8122824Z Cloud: Azure
+required	UNKNOWN STEP	2026-10-30T14:15:14.8123278Z ##[endgroup]
+required	UNKNOWN STEP	2026-10-30T14:15:14.8124418Z ##[group]Operating System
+required	UNKNOWN STEP	2026-10-30T14:15:14.8124935Z Ubuntu
+required	UNKNOWN STEP	2026-10-30T14:15:14.8125356Z 24.04.5
+required	UNKNOWN STEP	2026-10-30T14:15:14.8125824Z LTS
+required	UNKNOWN STEP	2026-10-30T14:15:14.8126295Z ##[endgroup]
+required	UNKNOWN STEP	2026-10-30T14:15:14.8126794Z ##[group]Runner Image
+required	UNKNOWN STEP	2026-10-30T14:15:14.8127299Z Image: ubuntu-24.04
+required	UNKNOWN STEP	2026-10-30T14:15:14.8127759Z Version: 20261025.353.1
+required	UNKNOWN STEP	2026-10-30T14:15:14.8128788Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261025.353/images/ubuntu/Ubuntu2404-Readme.md
+required	UNKNOWN STEP	2026-10-30T14:15:14.8130087Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261025.353
+required	UNKNOWN STEP	2026-10-30T14:15:14.8130875Z ##[endgroup]
+required	UNKNOWN STEP	2026-10-30T14:15:14.8131942Z ##[group]GITHUB_TOKEN Permissions
+required	UNKNOWN STEP	2026-10-30T14:15:14.8133931Z Contents: read
+required	UNKNOWN STEP	2026-10-30T14:15:14.8134442Z Metadata: read
+required	UNKNOWN STEP	2026-10-30T14:15:14.8134892Z ##[endgroup]
+required	UNKNOWN STEP	2026-10-30T14:15:14.8136618Z Secret source: Actions
+required	UNKNOWN STEP	2026-10-30T14:15:14.8137375Z Cache mode: write
+required	UNKNOWN STEP	2026-10-30T14:15:14.8138261Z Prepare workflow directory
+required	UNKNOWN STEP	2026-10-30T14:15:14.8605289Z Prepare all required actions
+required	UNKNOWN STEP	2026-10-30T14:15:14.8667344Z Complete job name: required
+required	UNKNOWN STEP	2026-10-30T14:15:14.9451099Z ##[group]Run echo "plan=$PLAN build=$BUILD (expected $BUILD_EXPECTED) gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED) receipts=$RECEIPTS"
+required	UNKNOWN STEP	2026-10-30T14:15:14.9454139Z [36;1mecho "plan=$PLAN build=$BUILD (expected $BUILD_EXPECTED) gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED) receipts=$RECEIPTS"[0m
+required	UNKNOWN STEP	2026-10-30T14:15:14.9456041Z [36;1mrc=0[0m
+required	UNKNOWN STEP	2026-10-30T14:15:14.9457326Z [36;1mif [[ "$BUILD_EXPECTED" == true ]]; then [[ "$BUILD" == success ]] || rc=1; else [[ "$BUILD" == skipped ]] || rc=1; fi[0m
+required	UNKNOWN STEP	2026-10-30T14:15:14.9458735Z [36;1m[[ "$RECEIPTS" == success ]] || rc=1[0m
+required	UNKNOWN STEP	2026-10-30T14:15:14.9459617Z [36;1m[[ "$PLAN" == success ]] || rc=1[0m
+required	UNKNOWN STEP	2026-10-30T14:15:14.9460547Z [36;1m[[ "$GATE" == success ]] || rc=1[0m
+required	UNKNOWN STEP	2026-10-30T14:15:14.9462036Z [36;1mif [[ "$AGG_EXPECTED" == true ]]; then [[ "$AGG" == success ]] || rc=1; else [[ "$AGG" == skipped ]] || rc=1; fi[0m
+required	UNKNOWN STEP	2026-10-30T14:15:14.9463924Z [36;1mif [[ "$DEPLOY_EXPECTED" == true ]]; then [[ "$DEPLOY" == success ]] || rc=1; else [[ "$DEPLOY" == skipped ]] || rc=1; fi[0m
+required	UNKNOWN STEP	2026-10-30T14:15:14.9465197Z [36;1mexit "$rc"[0m
+required	UNKNOWN STEP	2026-10-30T14:15:15.0012269Z shell: /usr/bin/bash -e {0}
+required	UNKNOWN STEP	2026-10-30T14:15:15.0013494Z env:
+required	UNKNOWN STEP	2026-10-30T14:15:15.0014305Z   PLAN: success
+required	UNKNOWN STEP	2026-10-30T14:15:15.0014967Z   BUILD: success
+required	UNKNOWN STEP	2026-10-30T14:15:15.0015752Z   BUILD_EXPECTED: true
+required	UNKNOWN STEP	2026-10-30T14:15:15.0016550Z   GATE: failure
+required	UNKNOWN STEP	2026-10-30T14:15:15.0017275Z   AGG: success
+required	UNKNOWN STEP	2026-10-30T14:15:15.0018000Z   AGG_EXPECTED: true
+required	UNKNOWN STEP	2026-10-30T14:15:15.0018933Z   DEPLOY: skipped
+required	UNKNOWN STEP	2026-10-30T14:15:15.0019699Z   RECEIPTS: failure
+required	UNKNOWN STEP	2026-10-30T14:15:15.0020409Z   DEPLOY_EXPECTED: false
+required	UNKNOWN STEP	2026-10-30T14:15:15.0021374Z ##[endgroup]
+required	UNKNOWN STEP	2026-10-30T14:15:15.0265312Z plan=success build=success (expected true) gate=failure aggregate=success (expected true) deploy=skipped (expected false) receipts=failure
+required	UNKNOWN STEP	2026-10-30T14:15:15.0283951Z ##[error]Process completed with exit code 1.
+required	UNKNOWN STEP	2026-10-30T14:15:15.0476152Z Cleaning up orphan processes

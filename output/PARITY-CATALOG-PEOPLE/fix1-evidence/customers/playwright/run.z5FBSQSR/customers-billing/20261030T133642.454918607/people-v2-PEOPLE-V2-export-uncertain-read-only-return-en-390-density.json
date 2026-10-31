@@ -1,0 +1,38 @@
+[
+  {
+    "step": "PEOPLE-V2-EXPORT-CONFIRM: opens confirmation",
+    "blocks": 8,
+    "characters": 361,
+    "width": 390
+  },
+  {
+    "step": "unconfirmed result offers only the signed read-only path",
+    "blocks": 6,
+    "characters": 188,
+    "width": 390
+  },
+  {
+    "step": "existing unconfirmed request entry is visible",
+    "blocks": 6,
+    "characters": 188,
+    "width": 390
+  },
+  {
+    "step": "customer stays readable with both privacy commands locked",
+    "blocks": 20,
+    "characters": 702,
+    "width": 390
+  },
+  {
+    "step": "unconfirmed request is not silently replayed or unlocked",
+    "blocks": 20,
+    "characters": 702,
+    "width": 390
+  },
+  {
+    "step": "read-only return preserves customer identity",
+    "blocks": 6,
+    "characters": 188,
+    "width": 390
+  }
+]

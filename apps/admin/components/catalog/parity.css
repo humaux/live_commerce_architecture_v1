@@ -41,3 +41,9 @@
   .cat-save-bar { margin-left:-16px; margin-right:-16px; }
   .cat-task-editor .cat-save-bar { margin-left:0; margin-right:0; }
 }
+
+/* Signed K2 entry and result use the existing task surface and control tokens. */
+.cat-operations { margin-bottom:16px; }
+.cat-operations summary { min-height:44px; cursor:pointer; }
+.cat-operations > :is(button,a), .cat-task-panel > a { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:0 16px; border:1px solid var(--ui-border); border-radius:5px; background:var(--ui-surface); color:var(--ui-text); text-decoration:none; font:inherit; }
+.cat-task-panel { padding:20px 16px; background:var(--ui-surface); }

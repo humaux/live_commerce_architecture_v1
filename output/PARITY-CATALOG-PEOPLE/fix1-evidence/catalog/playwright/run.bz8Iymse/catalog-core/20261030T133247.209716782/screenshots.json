@@ -1,0 +1,98 @@
+[
+  {
+    "File": "catalog-list-start-en-desktop.png",
+    "Sha256": "ee275a34c6ac972d4221a6557e18918b6f263c08caf23905f4df0be1f1094d5a",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "catalog-create-en-desktop.png",
+    "Sha256": "bfb1acf6a213b0978a355e1483c0647d1c463dfab2c6e995a107400c4543380e",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "catalog-matrix-en-desktop.png",
+    "Sha256": "c338dd976b4823676f4368859a176eb4e6cb85b5c6fca32e715a1d7be8d85d0b",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "catalog-editor-en-desktop.png",
+    "Sha256": "93c46274d6bb53bd1b865d62fdeaec74f51b985875b7ef0e9ae8b84fbad8b897",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "catalog-collection-en-desktop.png",
+    "Sha256": "c259705d7c718dd7fef829ef99c47cecdce9d1267da4ec2ebfcfbd87d8caed99",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "catalog-list-active-en-desktop.png",
+    "Sha256": "03720336adcfeb0510853c49d6301761337c965a8ba1597066b7c2988ba6c01e",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "catalog-archived-variant-en-desktop.png",
+    "Sha256": "f0c50c7e7663778b17b16551dbdccc97ff27afa94b2e2ecfbf21d9f4fbb7e311",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "catalog-deactivated-en-desktop.png",
+    "Sha256": "b2320f59a188fcff4f7ef83baa3a503afb982b083318ab51a441e98b0a065d22",
+    "Locale": "en",
+    "Viewport": "desktop"
+  },
+  {
+    "File": "catalog-list-start-zh-TW-mobile.png",
+    "Sha256": "35dc5295ee2fe758a2d7f758f8f6cc8402741b20ed58457d94e2a4c9046236af",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "catalog-create-zh-TW-mobile.png",
+    "Sha256": "567228c9c1a46c15d8f623d4cfa80583dbcd0b9fde630adbad9604eb05d9908f",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "catalog-matrix-zh-TW-mobile.png",
+    "Sha256": "37d80d52da71e4be51c0e10d5e840b9482e85060e8546797ffded45e499cd97c",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "catalog-editor-zh-TW-mobile.png",
+    "Sha256": "e1474474cc2bddd023d48bc141bb29dee47d290effe5a01851d4e52253b97198",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "catalog-collection-zh-TW-mobile.png",
+    "Sha256": "ae9f50b0b25fe8873e3ebe1cae08cb3c8d9e5bb4ed43b78500a5fdb5aa8550ce",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "catalog-list-active-zh-TW-mobile.png",
+    "Sha256": "c4d511da59d4000d6438541efdf9c2c6bd3424df61a013a8da79d78b20682740",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "catalog-archived-variant-zh-TW-mobile.png",
+    "Sha256": "dc1fa08bba0357663e2deb5bcc6eb992c75382162dd02cd00f9c93789fae6882",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  },
+  {
+    "File": "catalog-deactivated-zh-TW-mobile.png",
+    "Sha256": "f8cd8fb1ac4407192553c7e26b14e494d8841ec30df05cf73539f304b5d0b76d",
+    "Locale": "zh-TW",
+    "Viewport": "mobile"
+  }
+]

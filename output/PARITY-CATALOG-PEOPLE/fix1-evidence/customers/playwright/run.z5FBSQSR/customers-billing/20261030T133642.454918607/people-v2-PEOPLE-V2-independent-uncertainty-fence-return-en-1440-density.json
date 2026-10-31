@@ -1,0 +1,38 @@
+[
+  {
+    "step": "erasure review opens",
+    "blocks": 9,
+    "characters": 527,
+    "width": 1440
+  },
+  {
+    "step": "exact customer name is visible",
+    "blocks": 9,
+    "characters": 527,
+    "width": 1440
+  },
+  {
+    "step": "scope is explicitly acknowledged",
+    "blocks": 9,
+    "characters": 527,
+    "width": 1440
+  },
+  {
+    "step": "lost response reaches the unconfirmed result",
+    "blocks": 6,
+    "characters": 187,
+    "width": 1440
+  },
+  {
+    "step": "pending entry offers the read-only customer view",
+    "blocks": 6,
+    "characters": 187,
+    "width": 1440
+  },
+  {
+    "step": "customer profile remains readable",
+    "blocks": 20,
+    "characters": 699,
+    "width": 1440
+  }
+]

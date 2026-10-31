@@ -32,7 +32,7 @@ const en = {
   fileSafety: "The file may contain protected order delivery details. Keep it secure.",
   customerPrivacy: "Customer privacy", forbiddenTitle: "Privacy permission required", forbiddenBody: "You can view this customer and their orders. Ask the store owner for privacy permission to download or erase data.",
   marketingShort: "Marketing messages", colon: ": ", never: "Not granted",
-  advanced: "Advanced", granted: "Consent given", withdrawn: "Consent withdrawn",
+  records: "Tags and records", advanced: "Advanced", granted: "Consent given", withdrawn: "Consent withdrawn",
 };
 type PeopleCopy = typeof en;
 
@@ -60,7 +60,7 @@ export const peopleCopy: Record<Locale, PeopleCopy> = {
     fileSafety: "受保護的訂單收件資料可能包含於檔案；請妥善保管。",
     customerPrivacy: "顧客隱私", forbiddenTitle: "需要隱私權限", forbiddenBody: "仍可查看此顧客與訂單；請向店主申請隱私權限，再下載或抹除資料。",
     marketingShort: "行銷訊息", colon: "：", never: "未同意",
-    advanced: "進階", granted: "已同意", withdrawn: "已撤回",
+    records: "標籤與紀錄", advanced: "進階", granted: "已同意", withdrawn: "已撤回",
   },
   "zh-CN": {
     title: "客户", search: "姓名开头／手机号尾号", clear: "清空搜索", view: "查看客户", back: "返回搜索结果",
@@ -84,6 +84,6 @@ export const peopleCopy: Record<Locale, PeopleCopy> = {
     fileSafety: "文件可能包含受保护的订单收件信息，请妥善保管。",
     customerPrivacy: "客户隐私", forbiddenTitle: "需要隐私操作权限", forbiddenBody: "仍可查看此客户及订单。请向店主申请隐私操作权限后，再下载或清除资料。",
     marketingShort: "营销消息", colon: "：", never: "未同意",
-    advanced: "高级", granted: "已同意", withdrawn: "已撤回授权",
+    records: "标签与记录", advanced: "高级", granted: "已同意", withdrawn: "已撤回授权",
   },
 };

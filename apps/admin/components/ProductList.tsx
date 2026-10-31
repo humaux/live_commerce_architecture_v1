@@ -1,9 +1,9 @@
 // Purpose: Browse catalog summaries and review explicit bulk changes before submitting them.
-// Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/catalog-v2-client, @/lib/catalog-v2-model, @/lib/catalog-v2-copy, @/lib/product-editor-copy, @/lib/product-document, @/lib/catalog-v2-write, @/lib/use-product-leave-guard, @/lib/images-client, ./WorkspaceFrame, ./AdminPageHeader, ./ProductPhoto, ./orders.css, ./ProductAdmin.css, ./ProductDocument.css
+// Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/catalog-v2-client, @/lib/catalog-v2-model, @/lib/catalog-v2-copy, @/lib/product-editor-copy, @/lib/product-document, @/lib/catalog-v2-write, @/lib/use-product-leave-guard, @/lib/images-client, ./WorkspaceFrame, ./AdminPageHeader, ./ProductPhoto, ./orders.css, ./ProductAdmin.css, ./ProductDocument.css, ./catalog/parity.css
 // Used by: apps/admin/app/[locale]/products/page.tsx
 // Invariants: product facts require a ready guarded read; selection replaces browse chrome; one Edit action per row; commands are fenced; archive preserves history; no inline editors.
 "use client";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { catalogTaskCopy, catalogText, type Locale } from "@live-commerce/i18n";
@@ -25,6 +25,7 @@ import { ProductPhoto } from "./ProductPhoto";
 import "./orders.css";
 import "./ProductAdmin.css";
 import "./ProductDocument.css";
+import "./catalog/parity.css";
 const href = (locale: Locale, store: string, q: string, status: string, after: string) => {
   const p = new URLSearchParams();
   if (store) p.set('store', store);
@@ -43,28 +44,29 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
 }) {
   const c = catalogTaskCopy[locale], pc = productEditorCopy[locale], legacy = catalogCopy[locale].list;
   const router = useRouter(), sid = store?.id ?? '';
-  const [draft, setDraft] = useState(q), [selected, setSelected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
   const [review, setReview] = useState<ProductSummary[] | null>(null), [results, setResults] = useState<BulkResult[]>([]);
   const [resultRows, setResultRows] = useState<ProductSummary[]>([]);
   const previous = useRef<string[]>([]);
+  const [copyReview, setCopyReview] = useState<ProductSummary | null>(null);
+  const [copied, setCopied] = useState<{ id: string; name: string; source: string } | null>(null);
   const read = useGuardedRead(`${renderKey}|${locale}|${sid}|${q}|${status}|${after}`,
     store ? signal => readProducts(sid, q, status, after, signal) : null, initialError);
   const write = useWrite(sid, read.boundary, code => code in pc ? pc[code as keyof typeof pc] : pc.failed, pc.uncertain, pc.listRecoveryRequired);
   const locked = write.busy || write.message?.kind === 'uncertain';
   useProductLeaveGuard({ dirty: false, locked }, pc.leave);
   const page = read.data, rows = page?.items ?? [];
-  useEffect(() => { setSelected([]); setReview(null); setResults([]); setResultRows([]); }, [sid]);
+  useEffect(() => { setSelected([]); setReview(null); setResults([]); setResultRows([]); setCopyReview(null); setCopied(null); }, [sid]);
   useEffect(() => {
     // Conceal snapshots during revalidation; a denied scope must not resurrect them after retry.
     if (read.status === 'signed-out' || read.status === 'forbidden' || read.status === 'not-found') {
-      setSelected([]); setReview(null); setResults([]); setResultRows([]);
+      setSelected([]); setReview(null); setResults([]); setResultRows([]); setCopyReview(null); setCopied(null);
     }
   }, [read.status]);
   const go = (nextStatus: string, nextQ = q, nextAfter = '') => {
-    setSelected([]); setResults([]); setReview(null);
+    setSelected([]); setResults([]); setReview(null); setCopyReview(null); setCopied(null);
     router.push(href(locale, sid, nextQ, nextStatus, nextAfter));
   };
-  const search = (event: FormEvent) => { event.preventDefault(); previous.current = []; go(status, draft.trim()); };
   const failure = read.status === 'signed-out' ? legacy.signedOut : read.status === 'forbidden' ? legacy.forbidden :
     read.status === 'not-found' ? legacy.noStore : read.status === 'unavailable' ? legacy.unavailable : '';
   const price = (r: ProductSummary) => r.price_min_minor === null ? legacy.noVariants :
@@ -78,19 +80,36 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
       async value => { setResultRows(items); setResults(value); setSelected([]); setReview(null); await read.refresh(); }, pc.success);
   }
   async function copySelected() {
-    const row = rows.find(r => selected.includes(r.id));
-    if (read.status !== 'ready' || locked || selected.length !== 1 || !row) return;
-    await write.run(command('POST', `products/${row.id}/copy`, { expected_version: row.version }), parseCreated,
-      async value => { setResultRows([row]); setResults([{ id: value.id, status: 'draft' }]); setSelected([]); await read.refresh(); }, pc.success);
+    const row = copyReview;
+    if (read.status !== 'ready' || locked || !row) return;
+    // The returned identity/name belongs to the acknowledged new draft; never guess its id from list order.
+    await write.run(command('POST', `products/${row.id}/copy`, { expected_version: row.version }), value => {
+      const created = parseCreated(value);
+      const name = (value as { name?: unknown }).name;
+      if (typeof name !== 'string' || !name.trim() || Array.from(name).length > 120) throw new Error('invalid_response');
+      return { ...created, name };
+    }, async value => { setCopied({ ...value, source: row.name }); setCopyReview(null); setSelected([]); await read.refresh(); }, c.copySaved);
   }
   const archiveResult = results.length > 0 && results.every(r => r.status === 'archived' || !!r.error);
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? legacy.noStore} active="products" locked={locked}>
     <div className="orders-page product-admin pe-catalog cat-task-list" data-testid="products-page">
-      <AdminPageHeader locale={locale} title={c.title} actions={store && (!selected.length || locked) && <Link className="product-primary" data-testid="product-new" href={`/${locale}/products/new?store=${sid}`}>{legacy.newProduct}</Link>} />
+      {!copyReview && !copied && <AdminPageHeader locale={locale} title={c.title} actions={store && (!selected.length || locked) && <Link className="product-primary" data-testid="product-new" href={`/${locale}/products/new?store=${sid}`}>{legacy.newProduct}</Link>} />}
       {write.message && write.message.kind !== 'success' && <div role="status"><p>{write.message.text}</p>
         {write.canRetry && <button type="button" disabled={write.busy} onClick={() => void write.retry()}>{pc.retry}</button>}
       </div>}
-      {read.status === 'ready' && review ? <section className="cat-task-panel" aria-labelledby="archive-review-title">
+      {!copyReview && !copied && <details className="cat-operations"><summary data-testid="products-operations">{c.operations}</summary>
+        <button type="button" data-testid="products-copy-entry" disabled={read.status !== 'ready' || locked || selected.length !== 1}
+          onClick={() => { const row = rows.find(r => selected.includes(r.id)); if (row) { setCopied(null); setReview(null); setResults([]); setCopyReview(row); } }}>{c.copyEntry}</button>
+        <Link data-testid="products-ledger-link" href={`/${locale}/inventory?store=${sid}`}>{legacy.inventory}</Link>
+      </details>}
+      {read.status === 'ready' && copyReview ? <section className="cat-task-panel" data-testid="product-copy-review">
+        <h2>{c.copyTitle}</h2><p>{copyReview.name}</p><p>{c.copyKeep}</p><p>{c.copyExclude}</p>
+        <div className="cat-actions cat-save-bar"><button type="button" className="product-primary" data-testid="products-copy-selected" disabled={locked} onClick={() => void copySelected()}>{c.copyConfirm}</button>
+          <button type="button" disabled={locked} onClick={() => setCopyReview(null)}>{c.copyCancel}</button></div>
+      </section> : read.status === 'ready' && copied ? <section className="cat-task-panel" data-testid="product-batch-results">
+        <h2>{c.copySaved}</h2><p>{copied.source}</p><p>{copied.name}</p><p>{c.copyFacts}</p>
+        <div className="cat-save-bar"><Link className="product-primary" data-testid="product-copy-edit" href={editHref(locale, sid, copied.id)}>{c.copyEdit}</Link></div>
+      </section> : read.status === 'ready' && review ? <section className="cat-task-panel" aria-labelledby="archive-review-title">
         <h2 id="archive-review-title">{catalogText(c.archiveTitle, { n: review.length })}</h2>
         <p>{c.archivePolicy}</p>
         <ul>{review.map(r => <li key={r.id}><strong>{r.name}</strong><p>{price(r)} · {stock(r)}</p></li>)}</ul>
@@ -106,34 +125,28 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
         <button type="button" onClick={() => setResults([])}>{c.view}</button>
       </section> : <>
         {!selected.length && <>
-        <TabStrip label={legacy.status} previousLabel={catalogPresentationCopy[locale].previousTabs} nextLabel={catalogPresentationCopy[locale].nextTabs}>
+        <div className="cat-chip-tabs"><TabStrip label={legacy.status} previousLabel={catalogPresentationCopy[locale].previousTabs} nextLabel={catalogPresentationCopy[locale].nextTabs}>
           {(['all', 'active', 'draft', 'archived'] as const).map(s => <button type="button" key={s} disabled={locked}
             data-testid={`products-tab-${s}`} aria-pressed={status === s} onClick={() => { previous.current = []; go(s); }}>
             {c[s]} {page ? s === 'all' ? page.total : page.status_counts[s] : ''}</button>)}
-        </TabStrip>
-        <form className="cat-search" role="search" onSubmit={search}>
-          <input type="search" aria-label={legacy.search} data-testid="products-search" placeholder={legacy.search} value={draft} maxLength={120} onChange={e => setDraft(e.target.value)} />
-          <button type="submit" aria-label={legacy.searchButton} data-testid="products-search-submit" disabled={locked || !store}><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg></button>
-        </form>
+        </TabStrip></div>
+
         </>}
         {(read.status === 'loading' || read.status === 'hidden') && <p role="status">{legacy.loading}</p>}
         {failure && <div role="alert"><p>{failure}</p><button type="button" onClick={read.reload}>{legacy.retry}</button></div>}
         {read.status === 'ready' && page && <>
           <div className="cat-list-tools">
-            <label className="pe-select"><input type="checkbox" data-testid="products-select-all" aria-label={catalogText(c.select, { n: rows.length })}
+            <label className="pe-select cat-select-all"><span>{catalogText(c.select, { n: rows.length })}</span><input type="checkbox" data-testid="products-select-all" aria-label={catalogText(c.select, { n: rows.length })}
               checked={!!rows.length && rows.every(r => selected.includes(r.id))} disabled={locked || !rows.length}
               onChange={e => setSelected(e.target.checked ? rows.slice(0, 100).map(r => r.id) : [])} /></label>
             <div data-testid="product-batch" className="cat-actions">
               {selected.length > 0 && <strong>{catalogText(c.selected, { n: selected.length })}</strong>}
               {(selected.length > 0 || locked) && <button type="button" disabled={locked} onClick={() => setReview(rows.filter(r => selected.includes(r.id)))}>{c.archive}</button>}
-              <details><summary data-testid="products-advanced">{c.advanced}</summary><div className="cat-actions">
-                <Link data-testid="products-ledger-link" href={`/${locale}/inventory?store=${sid}`}>{legacy.inventory}</Link>
-                {(selected.length > 0 || locked) && <>
+              {selected.length > 0 && <>
                 <button type="button" disabled={locked} onClick={() => void bulk('active')}>{pc.publishSelected}</button>
                 <button type="button" disabled={locked} onClick={() => void bulk('draft')}>{pc.unpublish}</button>
-                <button type="button" data-testid="products-copy-selected" disabled={locked || selected.length !== 1} onClick={() => void copySelected()}>{pc.copy}</button>
-                </>}
-              </div></details>
+              </>}
+
             </div>
           </div>
           {rows.length ? <table data-testid="products-table" aria-label={c.title} className="cat-products-table"><thead className="cat-sr-only"><tr>

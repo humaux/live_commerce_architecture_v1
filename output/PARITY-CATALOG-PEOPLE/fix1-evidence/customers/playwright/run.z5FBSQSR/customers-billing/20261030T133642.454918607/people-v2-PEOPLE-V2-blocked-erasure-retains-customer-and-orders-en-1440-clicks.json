@@ -1,0 +1,74 @@
+[
+  {
+    "page": "/en",
+    "control": "Sign in with identity service",
+    "operation": "click",
+    "expected": "signed merchant workspace opens",
+    "actual": "signed merchant workspace opens",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "Erase customer data",
+    "operation": "click",
+    "expected": "signed erasure confirmation opens",
+    "actual": "signed erasure confirmation opens",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "Customer name",
+    "operation": "fill",
+    "expected": "wrong customer name keeps erasure disabled",
+    "actual": "wrong customer name keeps erasure disabled",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "Customer name",
+    "operation": "fill",
+    "expected": "correct name alone does not authorize erasure",
+    "actual": "correct name alone does not authorize erasure",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "I checked what will change and what will be kept",
+    "operation": "check",
+    "expected": "correct name and checked scope enable confirmation",
+    "actual": "correct name and checked scope enable confirmation",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "I checked what will change and what will be kept",
+    "operation": "uncheck",
+    "expected": "unchecking scope disables erasure again",
+    "actual": "unchecking scope disables erasure again",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "I checked what will change and what will be kept",
+    "operation": "check",
+    "expected": "checking scope restores the ready state",
+    "actual": "checking scope restores the ready state",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "Confirm erasure",
+    "operation": "click",
+    "expected": "server refusal is visible without claiming erasure",
+    "actual": "server refusal is visible without claiming erasure",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "Refresh",
+    "operation": "reload",
+    "expected": "refused erasure keeps all three server orders",
+    "actual": "refused erasure keeps all three server orders",
+    "result": "pass"
+  }
+]

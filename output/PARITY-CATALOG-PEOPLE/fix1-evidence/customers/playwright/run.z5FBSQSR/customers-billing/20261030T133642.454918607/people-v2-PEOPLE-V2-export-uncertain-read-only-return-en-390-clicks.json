@@ -1,0 +1,58 @@
+[
+  {
+    "page": "/en",
+    "control": "Sign in with identity service",
+    "operation": "click",
+    "expected": "signed merchant workspace opens",
+    "actual": "signed merchant workspace opens",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "Download customer data",
+    "operation": "click",
+    "expected": "PEOPLE-V2-EXPORT-CONFIRM: opens confirmation",
+    "actual": "PEOPLE-V2-EXPORT-CONFIRM: opens confirmation",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "Confirm download",
+    "operation": "click",
+    "expected": "unconfirmed result offers only the signed read-only path",
+    "actual": "unconfirmed result offers only the signed read-only path",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "View pending request",
+    "operation": "click",
+    "expected": "existing unconfirmed request entry is visible",
+    "actual": "existing unconfirmed request entry is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "View customer data",
+    "operation": "click",
+    "expected": "customer stays readable with both privacy commands locked",
+    "actual": "customer stays readable with both privacy commands locked",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "Refresh",
+    "operation": "reload",
+    "expected": "unconfirmed request is not silently replayed or unlocked",
+    "actual": "unconfirmed request is not silently replayed or unlocked",
+    "result": "pass"
+  },
+  {
+    "page": "/en/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "Back to pending request",
+    "operation": "click",
+    "expected": "read-only return preserves customer identity",
+    "actual": "read-only return preserves customer identity",
+    "result": "pass"
+  }
+]

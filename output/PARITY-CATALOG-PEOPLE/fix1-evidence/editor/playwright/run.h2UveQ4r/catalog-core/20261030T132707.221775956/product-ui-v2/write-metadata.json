@@ -1,0 +1,242 @@
+[
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/collections",
+    "method": "POST",
+    "key": "a5bb8fe3-c83e-48f5-a1e2-775aa31a7d2e"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/document",
+    "method": "POST",
+    "key": "42aff04b-699a-4626-9e07-057166dc9e45"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/df140ea6-db9e-47df-bacf-f95b453ca5b0/images",
+    "method": "POST",
+    "key": "0becd2d7-6472-42bf-add1-aad28374e10c"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/df140ea6-db9e-47df-bacf-f95b453ca5b0/images",
+    "method": "POST",
+    "key": "c9ce3548-d5f6-48b9-967b-597aad690259"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/df140ea6-db9e-47df-bacf-f95b453ca5b0/images",
+    "method": "POST",
+    "key": "3d9a37eb-149b-485f-bf77-b0f8cc87b072"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/df140ea6-db9e-47df-bacf-f95b453ca5b0/images/order",
+    "method": "POST",
+    "key": "b8c95abc-39e3-419d-a51c-5789e38d721e"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/bulk-status",
+    "method": "POST",
+    "key": "05f4b16c-a350-4ba4-969b-1d119ef3f68e"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/document",
+    "method": "POST",
+    "key": "d994f2b6-2164-4c1d-83b4-8c6433e9efd5"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/5b2b6bdd-0a09-4745-bfa8-2a461bbafba0/images",
+    "method": "POST",
+    "key": "faa52bc6-e9fc-4c3d-8011-5d9754175cbf"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/5b2b6bdd-0a09-4745-bfa8-2a461bbafba0/document",
+    "method": "PUT",
+    "key": "e38b837a-7144-4585-98d7-20ca3ad8dba3"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/5b2b6bdd-0a09-4745-bfa8-2a461bbafba0/document",
+    "method": "PUT",
+    "key": "9cd26e65-eb2a-4be7-be41-0da0ee9d55f4"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/df140ea6-db9e-47df-bacf-f95b453ca5b0/copy",
+    "method": "POST",
+    "key": "31af27ce-480d-4925-9ad1-cf7c6942c99c"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/bulk-status",
+    "method": "POST",
+    "key": "0e0ae93a-4e70-4bb6-bfb4-84cbdcca6c78"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/df140ea6-db9e-47df-bacf-f95b453ca5b0/document",
+    "method": "PUT",
+    "key": "656e3cca-fc95-4230-b87c-9b64e209670b"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/df140ea6-db9e-47df-bacf-f95b453ca5b0/document",
+    "method": "PUT",
+    "key": "6bdb118e-ee07-4e29-ae87-2ba848a4d97f"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/df140ea6-db9e-47df-bacf-f95b453ca5b0/document",
+    "method": "PUT",
+    "key": "3d8f21fa-85ab-4b62-a15c-ca2619b737d3"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/df140ea6-db9e-47df-bacf-f95b453ca5b0/document",
+    "method": "PUT",
+    "key": "0fc0565f-0639-4131-9ac3-08b171d574e8"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/df140ea6-db9e-47df-bacf-f95b453ca5b0/document",
+    "method": "PUT",
+    "key": "b193a3ba-e473-4311-aad5-67ca08a333f7"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/df140ea6-db9e-47df-bacf-f95b453ca5b0/document",
+    "method": "PUT",
+    "key": "6af84afa-f7dc-41bb-889c-d64a8159bd05"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/5b2b6bdd-0a09-4745-bfa8-2a461bbafba0/document",
+    "method": "PUT",
+    "key": "38183509-d271-4f03-a53b-e313ac61ea5d"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/document",
+    "method": "POST",
+    "key": "d6e828b2-3f07-41e9-8ff4-3ef28c92ddc0"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/dfc187db-2479-4664-aa61-13b158b91f6e/document",
+    "method": "PUT",
+    "key": "cc74c832-c891-4901-9dfe-1fd2a3ff1c8a"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/dfc187db-2479-4664-aa61-13b158b91f6e/document",
+    "method": "PUT",
+    "key": "6dd17da2-db00-4a48-a489-c76beefe3deb"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/document",
+    "method": "POST",
+    "key": "847c8d96-930c-472d-a8bf-ea4f05d5e70c"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/35f16d1f-f1b9-4203-98bb-9bc8aa4c1df6/document",
+    "method": "PUT",
+    "key": "3b86d338-81a4-4211-9012-ba268f12eaff"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/35f16d1f-f1b9-4203-98bb-9bc8aa4c1df6/document",
+    "method": "PUT",
+    "key": "2a58c94e-9298-457f-80e5-3109bcf3839d"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/35f16d1f-f1b9-4203-98bb-9bc8aa4c1df6/document",
+    "method": "PUT",
+    "key": "50d63e9e-2703-4d4c-bde7-946526378928"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/35f16d1f-f1b9-4203-98bb-9bc8aa4c1df6/document",
+    "method": "PUT",
+    "key": "2d99c028-5b69-45fd-9ad0-2980724eba56"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/document",
+    "method": "POST",
+    "key": "af10a62e-cb58-4adc-9d62-b67840afe3cc"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/220edf78-46e6-4c29-b20e-9a7d66cd3a6a/document",
+    "method": "PUT",
+    "key": "6b1bdc76-a482-429a-acd2-ad44a6719c5b"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/220edf78-46e6-4c29-b20e-9a7d66cd3a6a/document",
+    "method": "PUT",
+    "key": "a3d36435-385b-40fa-b452-a29937ec0797"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/document",
+    "method": "POST",
+    "key": "915c794d-5eaf-4e1b-9fc7-aa3a0ee76cab"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/a7420ab3-799d-40e8-bf7f-edde9ac126b1/document",
+    "method": "PUT",
+    "key": "78100593-4c5a-407c-8313-6b6c2957d974"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/a7420ab3-799d-40e8-bf7f-edde9ac126b1/document",
+    "method": "PUT",
+    "key": "eafc2478-d1b0-4b43-ac58-1961e407942e"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/a7420ab3-799d-40e8-bf7f-edde9ac126b1/document",
+    "method": "PUT",
+    "key": "48012f2d-fbd6-4b9a-87f0-5be4165b1782"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/a7420ab3-799d-40e8-bf7f-edde9ac126b1/document",
+    "method": "PUT",
+    "key": "cbc837dc-0063-4f5d-b22b-f0ba8b453b1e"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/document",
+    "method": "POST",
+    "key": "621ca587-ce97-46bb-a8ce-22199a06af6f"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/0e0f0898-3b86-4287-b019-7489a7d6a592/document",
+    "method": "PUT",
+    "key": "f01c7ce7-51d9-43c7-9987-580bd6b01717"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/0e0f0898-3b86-4287-b019-7489a7d6a592/document",
+    "method": "PUT",
+    "key": "cef8fad4-158b-4bbf-8593-bbadf8e0f513"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/document",
+    "method": "POST",
+    "key": "077dd9ff-3ea2-46f9-8d8b-500a1d14b906"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/79e39c35-09a1-45a0-bd88-334f7c922c3b/document",
+    "method": "PUT",
+    "key": "6d476e88-f904-4826-a498-aff63beae9e8"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/79e39c35-09a1-45a0-bd88-334f7c922c3b/document",
+    "method": "PUT",
+    "key": "cf80ff21-ae41-4971-9615-64e754ac2936"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/79e39c35-09a1-45a0-bd88-334f7c922c3b/document",
+    "method": "PUT",
+    "key": "f9c26ead-85b0-4566-a190-f7264e52238d"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/79e39c35-09a1-45a0-bd88-334f7c922c3b/document",
+    "method": "PUT",
+    "key": "831f1de2-18af-422d-b168-c1e32874e1f2"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/df140ea6-db9e-47df-bacf-f95b453ca5b0/document",
+    "method": "PUT",
+    "key": "cd80bfd7-fa15-432b-8f9a-401a17d18f4c"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/df140ea6-db9e-47df-bacf-f95b453ca5b0/document",
+    "method": "PUT",
+    "key": "a16f44b1-7385-4877-8508-58dd57910c47"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/df140ea6-db9e-47df-bacf-f95b453ca5b0/document",
+    "method": "PUT",
+    "key": "8383e744-a948-4447-bcd3-2a46b301b4a4"
+  },
+  {
+    "path": "/api/stores/dda8ce98-4c10-4bbb-805e-28ec149483e2/products/df140ea6-db9e-47df-bacf-f95b453ca5b0/copy",
+    "method": "POST",
+    "key": "14ab891c-cb51-40a0-a513-a13c1f9d4e39"
+  }
+]

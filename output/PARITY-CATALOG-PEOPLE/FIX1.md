@@ -1,6 +1,70 @@
 # PARITY-CATALOG-PEOPLE-FIX1 — directed failure classification
 
-Status: **BLOCKED on native replacement entry; independent fixes prepared locally, no implementation push.**
+## FIX1 live review 2026-10-31 — native gate decision pending
+
+BLOCKED; no source edits, new commit or push in this review. Fresh fetch/merge exits 0 (already up to date at `2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f`); base Gates `41078151280` is completed/success. PR remote head remains `6e2cbdb1c338811d49e3723e23a9b55ab0ec233e`; prepared local partial head remains `a128fe4cd0205d6b263f6e7439a78055b473c994`.
+
+Fresh `gh pr checks 363` and `gh run view --job ... --log-failed` reconfirm all six failures in the table below. Original run `41054099331` completed/failure; no new WAIT_RUN. Catalog browser artifact asserts unsigned search Expected 0 / Received 1. Consent unit fails all four `types_test.go:388` map[] assertions. Receipts fails on the four test modes; required fails on gate/receipts, aggregate passes. No class (c) exemption.
+
+Fresh read-only Fleet Bridge metadata desktop/mobile `1429:62828` / `1429:62906` is saved at `fix1-evidence/fix1-review-{desktop,mobile}.json`. Existing menu entries lead to collections `6:19278` and draft editor `6:19574`; no approved Copy replacement is established. Retained `product-review.acceptance.ts:150-206` must issue native Copy before losing its committed response and verifying refused retry/original command key. `settings-v2.spec.ts:205-215,260-270` must create distinct competing drafts through native Copy; `catalog-document-driver.ts:195-199` still reaches the sole Copy entry through Advanced. Removing that entry or substituting archive/API preparation loses the required intent. One focused asynchronous question requests the approved native replacement frame/decision; no answer received at this review. Do not apply the old WIP blindly or weaken either gate.
+
+Regenerated browser ownership and ran `--check` (exit 0, no diff); `git diff --check` exit 0. No local runtime tests/servers, background watcher, Figma writes or service restarts. No additional source paths touched; only card output evidence. E1 static only; original CI RED is E3 failure evidence, author conclusions E0. GREEN/browser acceptance/independent E4/LIVE NOT_RUN. Humaux directed search/get/rejected and code-map reads performed; problem store accepted queued under coord lock; own child canvas `integrator-sub-parity-catalog-people-fix1-review` updated successfully under lock, locks released. Next wake-up: integrator clarification/fresh-session relay; WAIT_RUN: NONE.
+
+
+## FIX1 current-session readback — 2026-10-31 (supersedes current-status prose below)
+
+**BLOCKED; no source edits or push in this session.** `git fetch origin r3/integration` and `git merge --no-edit origin/r3/integration` both exited 0; merge says Already up to date. Integration remains `2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f`; live Gates 41078151280 conclusion=success. PR #363 remote head remains `6e2cbdb1c338811d49e3723e23a9b55ab0ec233e`; preserved local head `a128fe4cd0205d6b263f6e7439a78055b473c994`. Pre-existing dirty evidence/WIP is preserved. No new repair attempt was pushed.
+
+|Failing job|Failing test / evidence|Class / disposition|
+|---|---|---|
+|124070683762 bundle:02|TestBrowserCatalogCore/PE12-17-TWD; `fix1-evidence/relay-current-bundle02.log`; exact-run Playwright assertion in detailed table below: unsigned search Expected 0 Received 1|(b) new parity implementation missing at tests-only head. Retained Copy coverage creates the unresolved migration below.|
+|124070684239 bundle:05|TestBrowserCustomersBilling; `fix1-evidence/relay-current-bundle05.log`; detailed exact-run browser assertion table below|(b) missing signed controls/outcomes/read-only lookup/fences at tests-only head; preserved local partial fixes are unverified.|
+|124070683720 shard:g09|CB03List/PARITY_consent_state_distinguishes_never_withdrawn_and_regranted; CB09HTTP GET list/detail; `fix1-evidence/relay-current-g09.log`: consent_state absent / map[]|(b) additive consent projection; preserved local fix is unverified.|
+|124070684122 shard:unit|TestParityConsentStateProjection/{never,withdrawn,granted,regranted}; `fix1-evidence/relay-current-unit.log`: types_test.go:388 map[]|(b) same product projection root cause.|
+|124100320890 receipts|`fix1-evidence/relay-current-receipts.log`: unit/g09/customers-billing/product-editor status FAIL|Dependent failure; no standalone receipt-marker defect.|
+|124103568945 required|`fix1-evidence/relay-current-required.log`: gate=failure, receipts=failure, aggregate=success|Dependent failure; aggregate passed.|
+
+No class (c) exemption: base is green. Class (a) rewrites are authorized only with the same intent/coverage and real clicks. Current `tests/admin/catalog-v2-simplified.acceptance.ts:160-161` requires Search/Advanced absent. Existing `ProductList.tsx` remains the sole native Copy handler/entry (`rg products-copy-selected apps/admin`); `catalog-document-driver.ts:195-199` requires row selection and a real disclosure click. Required coverage includes:
+
+- `product-editor.acceptance.ts:451-497,1994-2035`: real Copy persistence/identity plus committed-copy response loss and reload fence; archive does not exercise that command.
+- **Additional directly affected security suite:** `product-review.acceptance.ts:150-206` issues Copy via the shared native driver, aborts the committed response, then tests retry/permission refusal and original command-key preservation. Merely rewriting the disclosure expectation cannot keep this path reachable if Copy is removed.
+- `settings-v2.spec.ts:205-215,260-270`: a second operator actually creates a distinct competing draft through Copy, preserving recovery isolation. Fixture/API preparation would remove the required native action.
+
+Fleet Bridge status was connected; fresh read-only `get_metadata` for signed desktop 1429:62828/mobile 1429:62906 is in `fix1-evidence/relay-current-catalog-{desktop,mobile}.json`. These current readbacks provide no Copy replacement. No Figma write/restart. A single focused question requests the approved native replacement frame/decision; no answer was received before handoff. This is an unresolved authority/coverage conflict, not a third implementation approach and not a claimed failure of the unpushed local implementation. No threshold, fixture, test or exemption was loosened.
+
+Static ownership `node scripts/dev/derive-browser-ownership.mjs --check` exits 0; no browser source changed, so regeneration has no new source input. `git diff --check` is recorded at handoff. E1 static conflict; E3 original CI failure only; author inference E0. No completion claim. No outside-card source edits this session, only card output evidence. Humaux search/store/coord/canvas unavailable; no successful shared-state write is claimed. No local tests/servers/processes, no merge/push/auto-merge/status writes to GitHub.
+
+WAIT_RUN: NONE (no new push, original 41054099331 is completed/failure). Next wake-up is integrator clarification and fresh-session relay. GREEN/current-head CI, independent E4, real-click/persistence/parity acceptance, Humaux writes and LIVE/production NOT_RUN.
+
+## Current FIX1 relay — 2026-10-31, live receipts rechecked
+
+**BLOCKED; no new implementation push.** Remote PR #363 head is still `6e2cbdb1c338811d49e3723e23a9b55ab0ec233e`; preserved local implementation head is `a128fe4cd0205d6b263f6e7439a78055b473c994`. Existing uncommitted task records/artifacts were preserved. No recursive delegation.
+
+`git fetch origin r3/integration` followed by `git merge --no-edit origin/r3/integration` exited 0 (Already up to date). Current integration is `2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f`; its Gates `41078151280` is success. Original RED `41054099331` is now **completed/failure**, not in progress. Fresh native `gh run view --job <id> --log-failed` receipts:
+
+|Failing job|Failing test / receipt|Fresh evidence|Class|
+|---|---|---|---|
+|124070683762 bundle:02|TestBrowserCatalogCore/PE12-17-TWD; browser-product-editor|`fix1-evidence/current-job-124070683762.log:1855-1862` plus exact-run browser assertion table below|(b) signed catalog implementation absent at RED head|
+|124070684239 bundle:05|TestBrowserCustomersBilling; browser-customers-billing|`fix1-evidence/current-job-124070684239.log:2123,2293` plus exact-run browser assertion table below|(b) signed people/privacy implementation absent at RED head|
+|124070683720 shard:g09|TestCustomersBillingCB09HTTP GET list/detail; TestCustomersBillingCB03List/PARITY_consent_state_distinguishes_never_withdrawn_and_regranted|`fix1-evidence/current-job-124070683720.log:1507-1548`: missing consent_state DTO key and state values|(b) product projection; prepared local implementation remains unverified|
+|124070684122 shard:unit|TestParityConsentStateProjection/{never,withdrawn,granted,regranted}|`fix1-evidence/current-job-124070684122.log:3000-3013`: types_test.go:388, got map[]|(b) product projection; prepared local implementation remains unverified|
+|124100320890 receipts|unit/g09/product-editor/customers-billing status FAIL|`fix1-evidence/current-job-124100320890.log:531-534`|Dependent on the four jobs above; no independent receipt defect|
+|124103568945 required|gate=failure, receipts=failure, aggregate=success|Fresh native required log read; original `fix1-evidence/job-124103568945.log:53`|Dependent; aggregate itself passed|
+
+No class (c) exemption: current base Gates is green. No failing old assertion has been rewritten or weakened. The unresolved migration is a native-entry authority gap:
+
+- New parity requires `products-search` and `products-advanced` count 0 (`tests/admin/catalog-v2-simplified.acceptance.ts:160-161`).
+- Retained browser coverage uses real search fill/submit (`tests/admin/catalog-core.spec.ts:247-248,274-275`) and real Copy POST/returned new identity (`tests/admin/settings-v2.spec.ts:208-215,263-270`; product-editor copy coverage remains too).
+- Fresh Fleet Bridge status shows one connected document. Read-only metadata for desktop `1429:62828`, mobile `1429:62906` and draft-edit target `6:19574` is in `fix1-evidence/recheck-catalog-{desktop,mobile,draft}.json`. No approved replacement search/copy path was found there. Existing `ProductList.tsx` is the only native Copy entry; deleting its handler, as the prior WIP does, would lose required coverage. No Figma writes/restarts.
+- Asked one focused clarification for the approved replacement frame/decision. No answer received at handoff. No new UI, API-only replacement, fixture change or gate relaxation was invented. Per the card's STOP rule, the all-fixes push is held.
+
+Static ownership `node scripts/dev/derive-browser-ownership.mjs --check` and `git diff --check`: exit 0. No spec changed this relay, so no ownership regeneration diff. Static conflict evidence E1; original CI failures E3 (failure only); author conclusions E0. Current GREEN/E4, new clicks/persistence/density, local tests/servers and LIVE/production NOT_RUN. Humaux tools unavailable: lookup/store/canvas/coord NOT_RUN; these are task evidence files, not substitute memory.
+
+Source hashes at this readback: catalog parity spec `5c1ee1a7dc316fffd5f80ec3c94e17354a1fcfc06a623dd97aff2314bfde435b`; settings browser spec `e76e956ad10ebdd8e14c7c2c0b9e3088d1b8ae7b404578d795face1e6de6b7a3`; catalog core spec `261cc448395ee2e71c3ffbba76732fc642643d54ad5dc64882cc1966fb5b49c7`; ProductList `d45725ff010bd076ecbebe2959a4a67556a21c4d0920328f79dd01e2faf8cbdc`.
+
+WAIT_RUN: NONE (no new push/run). Integrator clarification/fresh-session relay is required; no local background process was started. This relay changes only this card's output evidence, no additional source paths.
+
+Status: **BLOCKED on catalog native replacement entry; independent fixes prepared locally, no implementation push.**
 Author conclusions E0; static vet/packet E1; original CI RED E3 failure evidence only. GREEN/E4 NOT_RUN.
 
 Authority: latest user FIX1 card; AGENTS.md; architecture §§0/1/2/26/27; current repository customers/catalog contracts; live native GitHub receipts. Signed frame readback: Fleet Bridge `get_metadata` 1429:44485 (`fix1-evidence/figma-profile.log`). No Figma writes. Humaux tools are not exposed: search/get/rejected/coord/store/canvas/code-index NOT_RUN; no platform/local memories substituted.
@@ -90,7 +154,7 @@ Artifact names: `gate-browser-product-editor`, `gate-browser-customers-billing`.
 - Class (a) expectation migrations prepared in customers-billing.spec.ts and people-v2.spec.ts: toast/dialog refusal → exact signed outcome heading/body plus native return to the same customer's orders. Request count, key, payload, status, retained orders, refresh and double-click fences remain. Erased list now asserts the recorded withdrawal rather than no recorded consent.
 - Harness inventory: `rg -l 'CustomerDetail\.tsx|Customers\.tsx|ProductList\.tsx|CatalogSimplifiedEditor\.tsx' tests` identifies code-alignment-admin-state, import-integration, w6-integration, customer-tags-scope. New CSS imports are already handled by whole-module CSS allowlists or AST-only function extraction; no runtime import was added to those harness globals.
 
-## Exact remaining blocker; no gate weakening
+## Earlier blocker analysis; see fresh readback below for the people correction
 
 The supplied signed screens have no replacement for catalog Copy/bulk active/draft, customer tag management/filtering, or private-note editing. Existing retained gates test those business capabilities, not just disclosure styling:
 
@@ -116,3 +180,12 @@ One text clarification was requested for the already-approved replacement native
 Outside initial UI write paths prepared: `internal/customers/{read.go,types.go}` (direct consent-state root); `tests/admin/customers-model.test.ts`, `tests/admin/customers-billing.spec.ts`, `tests/admin/people-v2.spec.ts`; generated browser ownership/dependency map as required; this card's evidence. Exact list will be in PR body before a push. No shared contract, migration number, R2 pin, protected baseline/dispatcher or lockfile changed.
 
 NOT_RUN: current-fix CI/GREEN, actual new UI clicks/persistence/density, independent visual parity/E4, TypeScript compile, local tests/servers (forbidden), LIVE/production, Humaux store/canvas/coord. Original logs contain synthetic fixtures only. No merge, auto-merge, force push or commit status posted. Independent source changes are committed locally; required output evidence is retained with the same local change. No new WAIT_RUN exists because no implementation push was made; integrator's clarification/fresh-session relay is the next wake-up.
+
+## FIX1 resumed — current readback, 2026-10-31
+
+- Fetched `origin/r3/integration` and ran `git merge --no-edit origin/r3/integration`: Already up to date, exit 0. Base remains `2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f`; live Gates `41078151280` conclusion success. PR head remains `6e2cbdb1c338811d49e3723e23a9b55ab0ec233e`; local prepared commit is `a128fe4cd0205d6b263f6e7439a78055b473c994`, not pushed.
+- Re-read PR checks and native bundle:02/bundle:05 failed logs. Product-editor and customers-billing failures match the table above. Four subsequent job-log fetches returned GitHub HTTP 502; that is transport failure, not a new test result. Existing downloaded original g09/unit/receipts/required logs remain the evidence for those jobs, including unit line 3002 and g09 line 1538. No new test attempt or exemption.
+- Fleet Bridge status returned one connected document. Fresh read-only metadata for catalog desktop `1429:62828` and mobile `1429:62906` (depth 6, 62,323 and 48,893 bytes) is retained as `fix1-evidence/current-catalog-{desktop,mobile}-full.json`. Neither list supplies the search/copy replacement. The existing draft-edit navigation targets `6:19574`; its fresh metadata shows an individual draft editor, not a catalog search/copy workflow (`current-catalog-draft-target.json`). No Figma writes or restarts.
+- **Correction to earlier people blocker:** current customer mobile metadata contains `1469:157628` “標籤與紀錄” → `1469:142986`. Fresh target/content readback shows native “顧客標籤” and “顧客備註” controls. The old blanket statement that people has no design replacement is stale and must not be used as the reason to stop. This new design path has not been implemented or independently accepted by this card.
+- **Remaining exact conflict:** new `catalog-v2-simplified.acceptance.ts:160-161` requires zero `products-search`/`products-advanced` controls, while `product-editor.acceptance.ts:451-457` requires search followed by a real keyed copy write and `settings-v2.spec.ts:209-210,264-265` requires real competing-draft copy writes. Moving to archive does not preserve copy identity/idempotency coverage; setup-only API calls do not preserve the required native write. An approved catalog replacement entry is UNKNOWN. One clarification is pending; no unsigned replacement, test weakening or partial all-fixes push.
+- This resume changes only task evidence. The prior uncommitted documentation/artifacts and prepared source commit are preserved. No local tests/servers/processes were started. Humaux discovery returned no tools; store/canvas/coord remain NOT_RUN, with local task evidence as the available handoff. Evidence E1 for current static/readback findings, E3 for original CI failures only; author conclusions E0. `WAIT_RUN: NONE` — no new push, no new CI run. Integrator clarification/fresh-session relay is required to resume.

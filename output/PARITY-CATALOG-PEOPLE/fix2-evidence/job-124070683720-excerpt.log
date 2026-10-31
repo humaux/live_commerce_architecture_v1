@@ -1,0 +1,40 @@
+Source: GitHub actions/jobs/124070683720/logs; run41054099331; fetched2026-10-31 Asia/Shanghai
+1504: 2026-10-30T13:13:13.4983976Z === RUN   TestCustomersBillingCB09HTTP/GET_customers:_permissions,_grammar,_shape,_paging,_method
+1505: 2026-10-30T13:13:13.5144169Z     customers_billing_http_test.go:191: read: list row keys
+1506: 2026-10-30T13:13:13.5146406Z          got  active,captured_minor,claims_count,consents,currency,customer_id,display_name,first_seen_at,imported,last_activity_at,orders_count,paid_orders_count,phone_last3,platforms,refunded_minor,tags
+1507: 2026-10-30T13:13:13.5149302Z          want active,captured_minor,claims_count,consent_state,consents,currency,customer_id,display_name,first_seen_at,imported,last_activity_at,orders_count,paid_orders_count,phone_last3,platforms,refunded_minor,tags
+1508: 2026-10-30T13:13:13.5153326Z     customers_billing_http_test.go:195: PARITY-CONSENT-STATE: absent events must be never, got map[]
+1509: 2026-10-30T13:13:13.5217216Z     customers_billing_http_test.go:191: full: list row keys
+1510: 2026-10-30T13:13:13.5220438Z          got  active,captured_minor,claims_count,consents,currency,customer_id,display_name,first_seen_at,imported,last_activity_at,orders_count,paid_orders_count,phone_last3,platforms,refunded_minor,tags
+1511: 2026-10-30T13:13:13.5223915Z          want active,captured_minor,claims_count,consent_state,consents,currency,customer_id,display_name,first_seen_at,imported,last_activity_at,orders_count,paid_orders_count,phone_last3,platforms,refunded_minor,tags
+1512: 2026-10-30T13:13:13.5225413Z     customers_billing_http_test.go:195: PARITY-CONSENT-STATE: absent events must be never, got map[]
+1513: 2026-10-30T13:13:13.6286585Z === RUN   TestCustomersBillingCB09HTTP/GET_customers/{id}:_shape,_permissions,_cross-store
+1514: 2026-10-30T13:13:13.6428223Z     customers_billing_http_test.go:245: detail keys
+1515: 2026-10-30T13:13:13.6431088Z          got  active,captured_minor,claims,claims_count,consent_history,consents,currency,customer_id,display_name,first_seen_at,imported,last_activity_at,notes,orders,orders_count,paid_orders_count,phone_last3,platforms,privacy_actions,refunded_minor,tags,tags_revision
+1516: 2026-10-30T13:13:13.6434978Z          want active,captured_minor,claims,claims_count,consent_history,consent_state,consents,currency,customer_id,display_name,first_seen_at,imported,last_activity_at,notes,orders,orders_count,paid_orders_count,phone_last3,platforms,privacy_actions,refunded_minor,tags,tags_revision
+1517: 2026-10-30T13:13:13.6550732Z === RUN   TestCustomersBillingCB09HTTP/POST_consent-withdrawals:_key,_strict_body,_permission,_replay,_conflict
+1524: 2026-10-30T13:13:15.4873892Z === RUN   TestCustomersBillingCB09HTTP/no_error_body_or_response_carries_a_secret,_a_bearer_URL_or_another_domain's_id
+1525: 2026-10-30T13:13:16.3049091Z --- FAIL: TestCustomersBillingCB09HTTP (3.68s)
+1526: 2026-10-30T13:13:16.3071059Z     --- FAIL: TestCustomersBillingCB09HTTP/GET_customers:_permissions,_grammar,_shape,_paging,_method (0.13s)
+1527: 2026-10-30T13:13:16.3097394Z     --- FAIL: TestCustomersBillingCB09HTTP/GET_customers/{id}:_shape,_permissions,_cross-store (0.03s)
+1528: 2026-10-30T13:13:16.3099330Z     --- PASS: TestCustomersBillingCB09HTTP/POST_consent-withdrawals:_key,_strict_body,_permission,_replay,_conflict (0.02s)
+1529: 2026-10-30T13:13:16.3101453Z     --- PASS: TestCustomersBillingCB09HTTP/POST_exports:_attachment_headers,_envelope,_key,_permission,_bound (0.63s)
+1530: 2026-10-30T13:13:16.3103430Z     --- PASS: TestCustomersBillingCB09HTTP/POST_erasure:_typed_confirm,_blocked,_key,_permission,_replay,_retained_customer (0.10s)
+1536: 2026-10-30T13:13:16.3111008Z === RUN   TestCustomersBillingCB03List
+1537: 2026-10-30T13:13:25.7620889Z === RUN   TestCustomersBillingCB03List/PARITY_consent_state_distinguishes_never_withdrawn_and_regranted
+1538: 2026-10-30T13:13:25.7715301Z     customers_billing_list_test.go:187: PARITY-CONSENT-STATE: got map[] want marketing=granted
+1539: 2026-10-30T13:13:25.7812849Z === RUN   TestCustomersBillingCB03List/scope:_own_store_only,_cross-store_is_not_found,_no_permission_is_forbidden
+1540: 2026-10-30T13:13:25.8153670Z === RUN   TestCustomersBillingCB03List/forwarded_link_counts_under_Bob_only_and_creates_no_merge_(G09_case_1)
+1541: 2026-10-30T13:13:25.8382929Z === RUN   TestCustomersBillingCB03List/aggregates_equal_the_facts_(captured,_refunded,_later-failed_refund_excluded)
+1546: 2026-10-30T13:13:26.4230039Z === RUN   TestCustomersBillingCB03List/list_reads_customers,_not_every_visitor_(10k_idle_owners)
+1547: 2026-10-30T13:13:26.7783936Z --- FAIL: TestCustomersBillingCB03List (10.47s)
+1548: 2026-10-30T13:13:26.7785181Z     --- FAIL: TestCustomersBillingCB03List/PARITY_consent_state_distinguishes_never_withdrawn_and_regranted (0.02s)
+1549: 2026-10-30T13:13:26.7786772Z     --- PASS: TestCustomersBillingCB03List/scope:_own_store_only,_cross-store_is_not_found,_no_permission_is_forbidden (0.03s)
+1550: 2026-10-30T13:13:26.7788100Z     --- PASS: TestCustomersBillingCB03List/forwarded_link_counts_under_Bob_only_and_creates_no_merge_(G09_case_1) (0.02s)
+1551: 2026-10-30T13:13:26.7789171Z     --- PASS: TestCustomersBillingCB03List/aggregates_equal_the_facts_(captured,_refunded,_later-failed_refund_excluded) (0.03s)
+2956: 2026-10-30T13:25:19.5473102Z     claims_retention_test.go:3550: customers.apply_erasure (0078) present in this lane: true; CB05 is exercised by the customers-billing lane (NOT_RUN here)
+2957: 2026-10-30T13:25:19.5474310Z --- FAIL: TestCustomersBillingCB09HTTP (3.68s)
+2958: 2026-10-30T13:25:19.5475249Z --- FAIL: TestCustomersBillingCB03List (10.47s)
+2959: 2026-10-30T13:25:19.5476744Z     meta_ads_sandbox_test.go:148: NOT_RUN: META_ADS_SANDBOX=1 and the owner's sandbox inputs are required (app 大梦 roles, sandbox ad account); never run in CI
+2960: 2026-10-30T13:25:19.5477425Z FAIL
+2961: 2026-10-30T13:25:19.5477750Z FAIL	livecommerce/tests/foundation	873.235s

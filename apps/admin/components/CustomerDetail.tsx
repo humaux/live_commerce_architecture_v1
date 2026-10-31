@@ -242,7 +242,7 @@ function Body({
       <aside className="people-side">
       {detail.active && !!detail.tags?.length && <p className="customers-section">{detail.tags.map((tag) => tag.name).join(" · ")}</p>}
       {detail.active && !!detail.notes?.length && <p className="customers-section">{detail.notes[0].body}</p>}
-      <details className="people-advanced" data-testid="people-customer-tools"><summary>{p.advanced}</summary>{detail.active && <CustomerTags key={`${store}|${detail.customer_id}|${boundary}`} locale={locale} store={storeInfo}
+      <details className="people-advanced" data-testid="people-customer-tools"><summary>{p.records}</summary>{detail.active && <CustomerTags key={`${store}|${detail.customer_id}|${boundary}`} locale={locale} store={storeInfo}
         detail={detail} boundary={boundary} onChanged={refresh} onScopeLost={onScopeLost} />}
         <h3>{c.consentHistory}</h3>
         <p className="orders-hint">{c.withdrawHint}</p>

@@ -1,0 +1,6 @@
+2026-10-31 Asia/Shanghai
+gh run view --job124070684239 --log-failed: GitHub HTTP502 (not a CI result).
+gh run view --job124070683720 --log-failed: GitHub HTTP502; jobs/logs API fallback succeeded.
+gh api jobs/124070684239/logs: HTTP503.
+gh run download41054099331 -n gate-browser-customers-billing: HTTP503 Egress is over the account limit; no signed download URL retained.
+Exact-run previously downloaded artifact logs retained in ../fix1-evidence; historical failure evidence only, not current-head acceptance.

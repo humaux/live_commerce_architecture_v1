@@ -1,0 +1,2 @@
+Retained exact-run41054099331 job124103568945; not freshly downloaded; current status from pr-checks.log
+53: required	UNKNOWN STEP	2026-10-30T14:15:15.0265312Z plan=success build=success (expected true) gate=failure aggregate=success (expected true) deploy=skipped (expected false) receipts=failure

@@ -193,7 +193,7 @@ for (const width of [1440, 390]) {
     const download = page.waitForEvent("download");
     await act(page, copy.en.confirmDownload, "synchronous export delivers one file", () => page.getByRole("button", { name: copy.en.confirmDownload, exact: true }).click(), async () => { expect((await download).suggestedFilename()).toMatch(/\.json$/); expect(f.posts).toHaveLength(1); });
     await act(page, "Refresh", "completed export remains in server history", () => page.reload(), () => expect(page.getByTestId("privacy-actions")).toContainText("Data export"), "reload");
-    await act(page, "Advanced", "completed server history becomes visible", () => page.getByTestId("people-customer-tools").locator(":scope > summary").click(), () => expect(page.getByTestId("privacy-actions")).toBeVisible());
+    await act(page, "Tags and records", "completed server history becomes visible", () => page.getByTestId("people-customer-tools").locator(":scope > summary").click(), () => expect(page.getByTestId("privacy-actions")).toBeVisible());
     expect(f.posts).toHaveLength(1); expect(f.posts[0].key).toBeTruthy(); await fits(page);
   });
   test(`PEOPLE-V2 erasure name checkbox and persistence en-${width}`, async ({ page }) => {

@@ -1,0 +1,98 @@
+[
+  {
+    "page": "/en",
+    "control": "Sign in with identity service",
+    "operation": "click",
+    "expected": "signed merchant workspace opens",
+    "actual": "signed merchant workspace opens",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-CN/customers",
+    "control": "姓名开头／手机号尾号",
+    "operation": "fill",
+    "expected": "customer search draft is visible",
+    "actual": "customer search draft is visible",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-CN/customers",
+    "control": "搜索",
+    "operation": "click",
+    "expected": "search results retain the customer and query",
+    "actual": "search results retain the customer and query",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-CN/customers",
+    "control": "Refresh",
+    "operation": "reload",
+    "expected": "search persists after reload",
+    "actual": "search persists after reload",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-CN/customers",
+    "control": "查看客户",
+    "operation": "click",
+    "expected": "customer profile opens",
+    "actual": "customer profile opens",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-CN/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "订单",
+    "operation": "click",
+    "expected": "three server orders are visible",
+    "actual": "three server orders are visible",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-CN/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "授权记录",
+    "operation": "click",
+    "expected": "consent facts remain visible",
+    "actual": "consent facts remain visible",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-CN/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "隐私",
+    "operation": "click",
+    "expected": "privacy section opens",
+    "actual": "privacy section opens",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-CN/customers/1cfb962d-f39e-4d89-8d09-f3575e39b4ec",
+    "control": "返回搜索结果",
+    "operation": "click",
+    "expected": "return preserves search context",
+    "actual": "return preserves search context",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-CN/customers",
+    "control": "清空搜索",
+    "operation": "click",
+    "expected": "clear restores all store customers",
+    "actual": "clear restores all store customers",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-CN/customers",
+    "control": "姓名开头／手机号尾号",
+    "operation": "fill",
+    "expected": "phone suffix is accepted",
+    "actual": "phone suffix is accepted",
+    "result": "pass"
+  },
+  {
+    "page": "/zh-CN/customers",
+    "control": "搜索",
+    "operation": "click",
+    "expected": "phone search returns the matching customer",
+    "actual": "phone search returns the matching customer",
+    "result": "pass"
+  }
+]

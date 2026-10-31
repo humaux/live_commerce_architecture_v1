@@ -127,7 +127,7 @@ export function Customers({
           )}
         </form>
         </div>
-        <details className="people-advanced" data-testid="people-list-tools"><summary>{p.advanced}</summary>
+        <details className="people-advanced" data-testid="people-list-tools"><summary>{p.records}</summary>
           <div className="orders-controls">
           <button type="button" data-testid="customers-refresh" disabled={read.status === "loading"} onClick={read.reload}>
             <Icon name="refresh" size={18} />

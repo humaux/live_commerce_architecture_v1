@@ -1,4 +1,16 @@
-PARITY-CATALOG-PEOPLE — tests-only RED batch / relay 1
+CURRENT FIX1 RECHECK — 2026-10-31
+PR #363 remote head: 6e2cbdb1c338811d49e3723e23a9b55ab0ec233e
+Gates RED: 41054099331, completed/failure (fresh gh run view).
+Jobs: 124070683762 TestBrowserCatalogCore/PE12-17-TWD; 124070684239 TestBrowserCustomersBilling;
+124070683720 CB09HTTP list/detail missing consent_state + CB03List consent projection;
+124070684122 TestParityConsentStateProjection/{never,withdrawn,granted,regranted}, types_test.go:388 got map[].
+Dependent jobs: receipts 124100320890; required 124103568945. Aggregate success.
+Fresh exact-run logs: fix1-evidence/current-job-<job>.log (five failing test/receipt jobs).
+Current base 2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f, Gates 41078151280 success. No base exemption.
+No implementation push/new run: WAIT_RUN NONE. See FIX1.md current section for native-entry blocker.
+Evidence: E3 original CI failure only; author conclusions E0. GREEN NOT_RUN.
+
+HISTORICAL PARITY-CATALOG-PEOPLE — tests-only RED batch / relay 1
 PR: https://github.com/humaux/live_commerce_architecture_v1/pull/363
 Tests-only head: 54345049bc5c3e14d646b8984e14da8da1231091
 Gates run: 41052522915 (test jobs pending at relay; plan is not test evidence)
@@ -13,3 +25,36 @@ Repair attempt 1: add width to those titles only. All assertions/fixtures/thresh
 This failure is NOT causal assertion RED; implementation remains NOT_RUN until new assertions fail in CI.
 Local verification: no tests/servers; browser ownership generation/check only. CI collection and browser execution remain pending.
 Wake-up: integrator relays Gates/Foundation completion/failure/cancellation in a fresh session. Escalate queue beyond 3 hours; do not poll beyond 10 minutes.
+
+Relay 1 repaired RED head: 6e2cbdb1c338811d49e3723e23a9b55ab0ec233e
+WAIT_RUN: 41054099331 (Gates; pending)
+WAIT_RUN: 41054099291 (Foundation; queued), job 124057137224
+Head verified via gh pr view363 and gh run list; no plan job claimed.
+Causal assertion RED/GREEN still PENDING. Integrator completion/failure/cancellation relay is the wake-up; queue beyond3h escalates. No local process, tests, or server.
+
+Relay 2 causal RED, 2026-10-30:
+Head: 6e2cbdb1c338811d49e3723e23a9b55ab0ec233e
+Gates 41054099331 / job 124070683720, shard:g09 FAILURE.
+Synthetic merge tested: c99fdd96001375527e6ec1a03bffc7fb2ceee4e6.
+Native job logs: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/124070683720/logs
+TestCustomersBillingCB09HTTP: exact list/detail DTO keys missing consent_state; absent-events expected never, got map[].
+TestCustomersBillingCB03List/PARITY_consent_state_distinguishes_never_withdrawn_and_regranted: expected marketing=granted, got map[].
+These are new assertion failures, not compile/setup failures. Foundation41054099291/job124057137224 SUCCESS (partial, not product GREEN).
+
+Relay 3: re-read same exact-head native job124070683720; new consent_state DTO/never/granted assertions still causal RED. Foundation41054099291/job124057137224 success is partial. Bundle02 job124070683762 also fails TestBrowserCatalogCore/PE12-17-TWD; underlying browser assertion UNKNOWN from wrapper. Fresh fetched integration3ea359f796d36153bb4b8aa7259e4e0c27676b86 still has required Advanced/Copy and people tools disclosure clicks. STOP retained-gate entry contract; not consent ruling. No new implementation/push/run. WAIT_RUN41054099331 original tests-only; integrator fresh-session relay and entry/gate migration ruling needed. E3 failure only, static conflictE1, ownE0.
+
+Relay 4: head 6e2cbdb1c338811d49e3723e23a9b55ab0ec233e reverified via gh pr view363.
+Gates41054099331 / job124070684122 shard:unit FAILURE; native jobs/logs API read because gh run view refuses the still-in-progress workflow.
+2026-10-30T13:34:27Z types_test.go:388 TestParityConsentStateProjection: never/withdrawn/granted/regranted each got map[], expected marketing=never/withdrawn/granted/granted and ads=never. New assertion RED, not compilation failure (E3 failure only).
+Receipt synthetic merge SHA c99fdd96001375527e6ec1a03bffc7fb2ceee4e6; receipt status FAIL, test_count1475.
+Fresh fetched integration remains3ea359f796d36153bb4b8aa7259e4e0c27676b86. Existing settings-v2.spec.ts209-210,264-265 and customer-tags.spec.ts49-52 still require the signed-removed controls; no gate migration ruling found. STOP persists; consent ruling accepted.
+No source change, fix attempt, commit, push, or new run this relay. WAIT_RUN41054099331 is ORIGINAL tests-only workflow, still in_progress; integrator relay plus gate-entry ruling required. GREEN/implementation/E4 NOT_RUN.
+
+FIX1 re-read 2026-10-31: RED run 41054099331, head6e2cbdb1 synthetic c99fdd96. Jobs 124070683762 product-editor,124070684239 customers-billing,124070683720 g09,124070684122 unit; receipts124100320890/required124103568945 dependent. Base41078151280 success head2f61bf866. See FIX1.md for every original assertion. GREEN NOT_RUN; no implementation push.
+
+FIX1 current-session 2026-10-31: six original failed-job logs reread using gh run view --job --log-failed; filtered receipts fix1-evidence/relay-current-*.log. RED run41054099331 is completed/failure at remote head6e2cbdb1 (synthetic c99fdd96001375527e6ec1a03bffc7fb2ceee4e6). No new run. New directly affected coverage: product-review.acceptance.ts native Copy retry/permission-change fence. BLOCKED on approved replacement native entry; no test weakened.
+
+FIX1 live review 2026-10-31: original Gates41054099331 completed/failure, remote6e2cbdb1, local partiala128fe4cd. Four test job failures124070683762/124070684239/124070683720/124070684122 re-read; receipts124100320890 and required124103568945 dependent. No new push/WAIT_RUN. Browser ownership regenerate/check and whitespace exit0. BLOCKED pending approved native Copy replacement; details FIX1.md.
+FIX2 recheck 2026-10-31: gh pr checks confirms remote6e2cbdb1 original Gates41054099331 failures. Native API jobs/124070683720/logs recovered to fix2-evidence/recheck-g09.log:1512 absent events map[];1538 granted map[];1525-1527 CB09HTTP FAIL;1547-1548 CB03List FAIL. New-assertion RED E3 failure only. Localec39428e4 unpushed; integration629f42152 merge Already up to date. No implementation push/new WAIT_RUN; GREEN NOT_RUN. Current nativeCopy entry conflict remains BLOCKED; seeFIX2.md.
+
+FIX2 directed recheck 2026-10-31: original RED41054099331/G09job124070683720 log saved fix2-evidence/directed-g09.log; CB09HTTP consent_state missing and CB03List got map[] want marketing=granted. PR remote6e2cbdb1 localec39428e4; base41107905131 in_progress conclusion null. Current native Copy coverage conflict retained, no new source attempt/push/run. Ownership regenerate54/check and diff-check exit0 E1; originalRED E3 failure only. WAIT_RUN NONE, integrator approved-entry ruling is wakeup.

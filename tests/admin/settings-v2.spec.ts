@@ -1,9 +1,10 @@
 // Purpose: signed settings-v2 real-click acceptance within the existing single-session settings harness.
-// Depends on: Playwright, settings-real.spec.ts's signed MOCK IdP / isolated PG workspace and profile API.
+// Depends on: Playwright, catalog-document-driver selectProductForCopy, settings-real.spec.ts's signed MOCK IdP / isolated PG workspace and profile API.
 // Used by: settings-real.spec.ts; --browser-identity CI (never a second session or local server).
 // Invariants: clicks/fills drive writes; refresh checks persisted receipts; faults are explicitly MOCK;
 // no provider calls, fixture tenant authority, forced clicks, DOM writes or direct API mutations.
 import { expect, type Page, type TestInfo } from "@playwright/test";
+import { selectProductForCopy } from "./catalog-document-driver";
 
 const copy = {
   "zh-TW": { profile: "店舖資料 · 未填寫", delivery: "配送方式 · 已開啟 0 種", payment: "收款 · Stripe（平台代收）", edit: "編輯設定" },
@@ -206,8 +207,7 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
   await createObserver.goto(`/en/products?store=${store}`);
   const createCopied = createObserver.waitForResponse(r => r.request().method() === "POST" &&
     new URL(r.url()).pathname === `/api/stores/${store}/products/${createdProduct.id}/copy`);
-  await createObserver.getByTestId(`product-row-${createdProduct.id}`).getByRole("checkbox").click();
-  await createObserver.getByTestId("products-advanced").click();
+  await selectProductForCopy(createObserver, createdProduct.id);
   await createObserver.getByTestId("products-copy-selected").click();
   const createCopyResponse = await createCopied;
   expect(createCopyResponse.ok()).toBe(true);
@@ -261,8 +261,7 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
   await catalog.goto(`/en/products?store=${store}`);
   const copied = catalog.waitForResponse(r => r.request().method() === "POST" &&
     new URL(r.url()).pathname === `/api/stores/${store}/products/${productA}/copy`);
-  await catalog.getByTestId(`product-row-${productA}`).getByRole("checkbox").click();
-  await catalog.getByTestId("products-advanced").click();
+  await selectProductForCopy(catalog, productA);
   await catalog.getByTestId("products-copy-selected").click();
   const copiedResponse = await copied;
   expect(copiedResponse.ok(), "Catalog creates a real newer draft B").toBe(true);

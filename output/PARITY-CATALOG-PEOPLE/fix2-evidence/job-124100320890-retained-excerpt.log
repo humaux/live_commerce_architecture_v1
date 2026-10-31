@@ -1,0 +1,5 @@
+Retained exact-run41054099331 job124100320890; not freshly downloaded; current status from pr-checks.log
+531: receipts	UNKNOWN STEP	2026-10-30T13:58:38.0928752Z FAIL: shard:unit: status FAIL
+532: receipts	UNKNOWN STEP	2026-10-30T13:58:38.0929779Z FAIL: shard:g09: status FAIL
+533: receipts	UNKNOWN STEP	2026-10-30T13:58:38.0930902Z FAIL: --browser-customers-billing: status FAIL
+534: receipts	UNKNOWN STEP	2026-10-30T13:58:38.0932035Z FAIL: --browser-product-editor: status FAIL
