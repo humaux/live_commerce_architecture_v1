@@ -72,6 +72,16 @@ import { SettingsV2 } from "./SettingsV2";
 
 // A missing/unresolved read is not a version conflict. Do not offer Save until
 // the target's baseline is known; retain baseline()'s real stale-version guard.
+// Hidden-market choice (the API returns no created_at, so never sort or guess): the draft's market, else active tw,
+// else the only active market in the store currency, else null (zero-market path).
+function pickMarket(markets: Market[], currency: string, draftID: string): Market | null {
+  const ok = markets.filter((m) => m.active && m.currency === currency);
+  return (
+    ok.find((m) => m.id === draftID) ??
+    ok.find((m) => m.code === "tw") ??
+    (ok.length === 1 ? ok[0] : null)
+  );
+}
 function hasBaseline(observed: Observation | null, target: string) {
   return !!observed && !!target && observed.target === target && observed.version >= 0;
 }
@@ -141,24 +151,7 @@ function AdvancedSettings({
   // Read-only probe (GET logistics/ecpay, integration:read); a 403/404/failure simply leaves API mode unavailable.
   const [ecpayReady, setEcpayReady] = useState(false);
   const storeCurrency = store?.currency ?? "TWD";
-  const activeSameCurrency = markets.filter(
-    (m) => m.active && m.currency === storeCurrency,
-  );
-  const preferredMarket =
-    activeSameCurrency.find((m) => m.code === "tw") ??
-    (activeSameCurrency.length > 0
-      ? [...activeSameCurrency].sort((a, b) => {
-          const ta = (a as { created_at?: string }).created_at
-            ? Date.parse((a as { created_at?: string }).created_at!)
-            : 0;
-          const tb = (b as { created_at?: string }).created_at
-            ? Date.parse((b as { created_at?: string }).created_at!)
-            : 0;
-          return ta - tb;
-        })[0]
-      : null);
-  const activeMarket =
-    markets.find((item) => item.id === draft.marketID) ?? preferredMarket;
+  const activeMarket = pickMarket(markets, storeCurrency, draft.marketID);
   const activeService =
     services.find((item) => item.code === draft.serviceCode) ?? null;
   const serviceTarget =
@@ -237,6 +230,7 @@ function AdvancedSettings({
       return c.session;
     if (value.code === "conflict") return c.conflict;
     if (value.code === "forbidden") return c.forbidden;
+    if (value.code === "market_code_taken") return c.twTaken;
     if (value.code === "invalid_money") return c.invalidMoney;
     if (value.code === "invalid_request" || value.code === "invalid_json")
       return c.invalid;
@@ -434,26 +428,7 @@ function AdvancedSettings({
       setMarketCursor(cursor);
 
       const currency = store.currency ?? "TWD";
-      const candidates = allItems.filter(
-        (m) => m.active && m.currency === currency,
-      );
-      const preferred =
-        candidates.find((m) => m.code === "tw") ??
-        (candidates.length > 0
-          ? [...candidates].sort((a, b) => {
-              const ta = (a as { created_at?: string }).created_at
-                ? Date.parse((a as { created_at?: string }).created_at!)
-                : 0;
-              const tb = (b as { created_at?: string }).created_at
-                ? Date.parse((b as { created_at?: string }).created_at!)
-                : 0;
-              return ta - tb;
-            })[0]
-          : null);
-      const existing = allItems.find(
-        (m) => m.id === draftRef.current.marketID && m.active && m.currency === currency,
-      );
-      const chosen = existing ?? preferred;
+      const chosen = pickMarket(allItems, currency, draftRef.current.marketID);
       if (chosen && chosen.id !== draftRef.current.marketID) {
         draftRef.current = { ...draftRef.current, marketID: chosen.id };
         setDraft((d) => ({ ...d, marketID: chosen.id }));
@@ -1003,6 +978,11 @@ function AdvancedSettings({
     }
 
     if (!activeMarket) {
+      // An existing tw row (inactive / other currency) would hit UNIQUE(store, code): never POST over it.
+      if (markets.some((m) => m.code === "tw")) {
+        setError({ ...unknown, code: "market_code_taken", retryable: false });
+        return;
+      }
       // Zero-market delivery setup (AD-04/AD-05): create default market first
       command(
         "POST",

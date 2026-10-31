@@ -82,6 +82,8 @@ const en = {
   forbidden: "Your account cannot change this setting.",
   invalid: "Check the required values and their allowed ranges.",
   invalidMoney: "NT$ amounts are whole dollars, for example 60. Remove the decimals.",
+  twTaken:
+    "A default delivery area (code tw) already exists but is inactive or uses a different currency, so nothing was created. Fix it before saving delivery.",
   failed: "Request failed. Check access or connection, then reload.",
   storage:
     "Reliable browser storage or cross-tab lock is unavailable. Mutations are blocked.",
@@ -164,6 +166,8 @@ export const settingsCopy: Record<Locale, SettingsCopy> = {
     forbidden: "当前账户无权修改。",
     invalid: "请检查必填值及允许范围。",
     invalidMoney: "新台币金额为整数元，例如 60，请去掉小数。",
+    twTaken:
+      "默认配送区域（代码 tw）已存在，但已停用或币种不同，因此未创建。请先修正后再保存配送设置。",
     failed: "请求失败，请检查权限或连接后重新读取。",
     storage: "浏览器存储或跨标签页锁不可用，写入已阻止。",
     session: "会话已变化。请重新加载并登录后再保存。",
@@ -242,6 +246,8 @@ export const settingsCopy: Record<Locale, SettingsCopy> = {
     forbidden: "目前帳戶無權修改。",
     invalid: "請檢查必填值及允許範圍。",
     invalidMoney: "新台幣金額為整數元，例如 60，請去掉小數。",
+    twTaken:
+      "預設配送區域（代碼 tw）已存在，但已停用或幣別不同，因此未建立。請先修正後再儲存配送設定。",
     failed: "請求失敗，請檢查權限或連線後重新讀取。",
     storage: "瀏覽器儲存或跨分頁鎖不可用，寫入已阻止。",
     session: "工作階段已變更。請重新載入並登入後再儲存。",
