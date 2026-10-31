@@ -25,6 +25,7 @@
     "tests/admin/catalog-core.spec.ts": "4375610923f49aa997b7c6e5911c8c1233a7344780f3289e9f0c08716b8c9c97",
     "tests/admin/catalog-document-driver.ts": "da77d282f47c6b63104c917e7cf7bd97166091bd21d511b74699983180913f8e",
     "tests/admin/catalog-receipt.test.ts": "972625dffcda9c32dee20554bad573dc842bfdc82887b84f7899579dd8e1c1b4",
+    "tests/admin/catalog-v2-model.test.ts": "a358e29e75ddf33ddf20297a33f54fd5e127a0a8e28713e3c0a46ffeb60ca69f",
     "tests/admin/catalog-v2-simplified.acceptance.ts": "9891d007a4c8878bc7d73ee85d8ae8a3222fb4462f1cb0d70c48adc884501b77",
     "tests/admin/checkout-offline.spec.ts": "51998a4596a903003e932525a89e6d5fdb9b12ac90d44b413da8c11464650d71",
     "tests/admin/claim-source.test.ts": "cde93c642213d3ec5efeb7548e2954673e540a7e03ed7b66908fd8c2ba8b0706",
@@ -785,7 +786,7 @@
     "packages/format/package.json": "0a52b62b35e640298589968137e2d8899151bbcb2e0714f3f9204afc70beb3ed",
     "packages/i18n/package.json": "096562b66a71f0479808557beb6490deef65c7cf1626867ec23cffbdaedebfce",
     "packages/ui/package.json": "85891954909057d1783e4a0b8585e5b8f4609f9259116ae808ce34f1f4347078",
-    "scripts/dev/test-node.sh": "d813d49e718de027c7bd11d1872c7586ed268424e935efaa53eff65535470c61"
+    "scripts/dev/test-node.sh": "dbc6099ac8d83d1c84ef3618c69da212ae48a160c10f29aed8e90c265b4f8850"
   },
   "modes": {
     "--browser-inbox": {
