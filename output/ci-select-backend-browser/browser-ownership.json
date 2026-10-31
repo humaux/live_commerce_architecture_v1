@@ -165,7 +165,7 @@
     "tests/admin/product-document.test.ts": "343ebb592ef433e829f643e71780ad5811fa52d916c1c1535cf79143fe31c560",
     "tests/admin/product-editor-layout.acceptance.ts": "2e91382e776fc9973f0dd919a67e4c3600c3dc9eb602aa2c0b4c45898c20dca4",
     "tests/admin/product-editor-matrix-ledger.ts": "c2dc541bfc0962097fe00349efe4c95b860345ee0deae0ece0f94f7d66d5d5ee",
-    "tests/admin/product-editor.acceptance.ts": "90ec6a9c1accf8d71fd3b07ef0db48adfc915aacb3730dd66bd5d1f62d62cd4d",
+    "tests/admin/product-editor.acceptance.ts": "aea2fa2ae3ce42cca68e67bc6f9649422566dcb147d8fe45d3f98f9aa0923d9c",
     "tests/admin/product-feedback.acceptance.ts": "8308b62cf46606b7ef432e4b47dd3390b98ff5e635b46b539fbc88e7e9360d56",
     "tests/admin/product-list-layout.acceptance.ts": "1e61e4737d297fb95c094df3d422ef0572a5ed022964816782aee377a52302f9",
     "tests/admin/product-media-model.test.ts": "9d2e7abba16faf56ca6081a01ee1f2b429adc45ee5240f167ab8f5db6c492d59",

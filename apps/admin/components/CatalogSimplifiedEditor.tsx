@@ -119,9 +119,10 @@ export function CatalogSimplifiedEditor({ locale, store, detail, boundary, onNav
       <h2 ref={title} tabIndex={-1}>{c.stock}</h2>
       <p>{skuFacts(stockIndex)}</p><p>{rowStock(stockIndex)}</p>
       <fieldset className="cat-task-fields" disabled={locked}>
-        <label><input data-testid="catalog-stock-tracked" type="checkbox" checked={stockDraft.tracked} onChange={e => setStockDraft({ ...stockDraft, tracked: e.target.checked })} />{c.tracked}</label>
+        {/* Signed stock frame: tracking can only be switched on here; a tracked row edits the on-hand total alone. */}
+        {!draft.rows[stockIndex]?.tracked && <label><input data-testid="catalog-stock-tracked" type="checkbox" checked={stockDraft.tracked} onChange={e => setStockDraft({ ...stockDraft, tracked: e.target.checked })} />{c.tracked}</label>}
         {stockDraft.tracked ? <><label>{c.total}<input data-testid="catalog-stock-total" inputMode="numeric" value={stockDraft.quantity} onChange={e => setStockDraft({ ...stockDraft, quantity: e.target.value })} /></label>
-          <label>{c.delta}<input data-testid="catalog-stock-delta" inputMode="numeric" value={Number(stockDraft.quantity) - (baseline.skus[stockIndex]?.on_hand ?? 0)} onChange={e => { if (/^[-+]?\d+$/.test(e.target.value)) setStockDraft({ ...stockDraft, quantity: String((baseline.skus[stockIndex]?.on_hand ?? 0) + Number(e.target.value)) }); }} /></label></> :
+</> :
           <label>{pc.max}<input data-testid="catalog-stock-max" inputMode="numeric" value={stockDraft.max} onChange={e => setStockDraft({ ...stockDraft, max: e.target.value })} /></label>}
         <p>{c.reason}</p>
         {stockDraft.tracked && <p className="cat-stock-floor">{text(c.stockFloor, { n: baseline.skus[stockIndex]?.committed ?? 0 })}</p>}

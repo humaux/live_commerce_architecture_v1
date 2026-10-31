@@ -647,13 +647,13 @@ export function registerProductEditorAcceptance() {
       };
       await stageStock();
       await expect(page.getByTestId('catalog-stock-total')).toHaveValue('5');
-      await expect(page.getByTestId('catalog-stock-delta')).toHaveValue('0');
-      await page.getByTestId('catalog-stock-delta').fill('2');
-      await expect(page.getByTestId('catalog-stock-total')).toHaveValue('7');
+      // Signed stock frame: a tracked row edits the on-hand total only (no tracking toggle, no delta field).
+      await expect(page.getByTestId('catalog-stock-tracked')).toHaveCount(0);
+      await expect(page.getByTestId('catalog-stock-delta')).toHaveCount(0);
+      await page.getByTestId('catalog-stock-total').fill('7');
       await stageStock();
       await expect(page.getByTestId('catalog-stock-total')).toHaveValue('7');
       await page.getByTestId('catalog-stock-total').fill('0');
-      await expect(page.getByTestId('catalog-stock-delta')).toHaveValue('-7');
       await stageStock();
       await expect(page.getByTestId('catalog-stock-total')).toHaveValue('0');
       await page.keyboard.press('Escape');
