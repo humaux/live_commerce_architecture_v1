@@ -124,3 +124,8 @@ RVFIX366_RELAY1_FAILURE=gate bundle:05 member --browser-promotions FAIL (TestBro
 RVFIX366_RELAY1_CLASS=expected RED on the new assertions (growthEnabledAndDeepLink); not drift, not infra
 RVFIX366_IMPL=Promotions.tsx reads ads settings+drafts; ?view=codes in URL; Refresh re-reads ads
 RVFIX366_GREEN=PENDING next-head CI
+
+RVFIX366_RELAY2_HEAD=39a5c1c80 run 41240042189 job 124652791014 (bundle:05 --browser-promotions FAIL; receipts/required consequence)
+RVFIX366_RELAY2_CLASS=b (own regression: ads routes unmounted -> 404 shown as not-found instead of the signed off frame)
+RVFIX366_RELAY2_FIX_ATTEMPT=1/2 Promotions.tsx maps ads not-found to off; node stderr not in CI log, cause inferred from registerAdsRoutes
+RVFIX366_GREEN=PENDING next-head CI

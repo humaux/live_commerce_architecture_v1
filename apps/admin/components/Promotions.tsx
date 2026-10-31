@@ -54,7 +54,9 @@ export function Promotions({
     try {
       return { settings: await readSettings(store.id, signal), drafts: await readDrafts(store.id, signal) };
     } catch (error) {
-      if (error instanceof AdsReadError && (error.code === "signed-out" || error.code === "forbidden" || error.code === "not-found")) throw new ReadError(error.code);
+      // The ads routes are unmounted until the platform enables ads (internal/httpapi/ads.go registerAdsRoutes): that 404 is the server saying "off".
+      if (error instanceof AdsReadError && error.code === "not-found") return { settings: null, drafts: [] };
+      if (error instanceof AdsReadError && (error.code === "signed-out" || error.code === "forbidden")) throw new ReadError(error.code);
       throw error;
     }
   } : null, initialError);
@@ -65,7 +67,7 @@ export function Promotions({
     : shown.status === "not-found" ? (store ? c.notFound : c.noStore)
     : shown.status === "unavailable" ? c.unavailable
     : "";
-  const off = ads.data?.settings.max_active_budget_minor === 0;
+  const off = ads.data !== null && ads.data !== undefined && (ads.data.settings === null || ads.data.settings.max_active_budget_minor === 0);
   const drafts = ads.data?.drafts ?? [];
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="promotions">
