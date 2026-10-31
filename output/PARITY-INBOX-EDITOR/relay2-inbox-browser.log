@@ -101,7 +101,7 @@ Running 88 tests using 1 worker
   ✓  88 tests/admin/inbox-v2-ui.spec.ts:806:3 › PARITY inbox mobile: fixed filter slots, list/thread and help frames (2.6s)
 
 
-  1) tests/admin/inbox-ui.spec.ts:110:1 › INU01 live_operator actual list/filter/read/takeover/send/release persists in PG 
+  1) tests/admin/inbox-ui.spec.ts:110:1 › INU01 live_operator actual list/filter/read/takeover/send/release persists in PG
 
     Error: expect(locator).toBeVisible() failed
 
@@ -141,5 +141,5 @@ Running 88 tests using 1 worker
     ────────────────────────────────────────────────────────────────────────────────────────────────
 
   1 failed
-    tests/admin/inbox-ui.spec.ts:110:1 › INU01 live_operator actual list/filter/read/takeover/send/release persists in PG 
+    tests/admin/inbox-ui.spec.ts:110:1 › INU01 live_operator actual list/filter/read/takeover/send/release persists in PG
   87 passed (3.6m)
