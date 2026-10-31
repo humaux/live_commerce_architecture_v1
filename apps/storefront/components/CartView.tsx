@@ -7,7 +7,7 @@
 // The /{locale}/cart page body: lines with quantity edit/remove, subtotal, free-delivery progress and the Checkout button.
 // State from CartProvider (BFF /api/buyer/session, /api/buyer/cart -> Go /v1/buyer/session, /cart), details from
 // lib/cart-details.ts. Empty cart and "still loading the session" are distinct states (no flash of "empty").
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { StorefrontState } from "./state/StorefrontState";
 import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
@@ -19,6 +19,9 @@ export default function CartView({ locale }: { locale: Locale }) {
   const copy = shopCopy[locale];
   const { cart, ready, readProblem, refresh } = useCart();
   const [retried, setRetried] = useState(false);
+  useEffect(() => {
+    if (!readProblem) setRetried(false);
+  }, [readProblem]);
   const empty = !cart || cart.items.length === 0;
   return (
     <div className="sf-cartpage" data-testid="cart-page">
@@ -28,8 +31,8 @@ export default function CartView({ locale }: { locale: Locale }) {
           onRead={readProblem === "offline" ? async () => {
             // A click is not a failed read: announce the result only after this refresh settles.
             setRetried(false);
-            await refresh();
-            setRetried(true);
+            const result = await refresh();
+            if (result === false) setRetried(true);
           } : undefined} />
       ) : empty ? (
         <div data-testid="cart-empty">

@@ -3,7 +3,7 @@
 // Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx, shared admin boundaries and storefront/components/state/StorefrontState.tsx.
 // Invariants: StatePanel has one primary action and no external chevron. UNKNOWN actions only re-read the same operation/order status (for example 「查詢狀態」), never resubmit or replay a write. Forbidden renders no resource identifier. Offline/unknown updates use a polite status live region.
 "use client";
-import { useId, useRef, useState, type DragEvent, type ReactNode } from "react";
+import { useId, useRef, useState, type DragEvent, type MouseEvent, type ReactNode } from "react";
 import { Icon, type IconName } from "./Icon";
 import s from "./states.module.css";
 import { Button, ButtonLink } from "./Controls";
@@ -11,7 +11,7 @@ import { fileProblem, type FileProblem, type FileRule } from "./logic";
 
 export type StatePanelVariant = "empty" | "forbidden" | "offline" | "expired" | "unknown";
 export type StateAction =
-  | { label: string; href: string; onClick?: never; testId?: string }
+  | { label: string; href: string; onClick?: (event: MouseEvent<HTMLAnchorElement>) => void; testId?: string }
   | { label: string; onClick: () => void; href?: never; testId?: string };
 export type StatePanelProps = {
   variant: StatePanelVariant | "loading";
@@ -26,7 +26,7 @@ export type InlineErrorProps = { message: ReactNode; action?: StateAction };
 
 function StateActionControl({ action }: { action: StateAction }) {
   if (action.href !== undefined) {
-    return <ButtonLink variant="primary" href={action.href} data-testid={action.testId}>{action.label}</ButtonLink>;
+    return <ButtonLink variant="primary" href={action.href} onClick={action.onClick} data-testid={action.testId}>{action.label}</ButtonLink>;
   }
   return <Button variant="primary" onClick={action.onClick} data-testid={action.testId}>{action.label}</Button>;
 }

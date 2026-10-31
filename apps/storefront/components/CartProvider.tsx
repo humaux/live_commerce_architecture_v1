@@ -36,7 +36,7 @@ type CartApi = {
   setDrawerOpen: (open: boolean) => void;
   add: (sku: string, quantity: number) => Promise<boolean>;
   setQuantity: (sku: string, quantity: number) => Promise<boolean>;
-  refresh: () => Promise<void>;
+  refresh: () => Promise<boolean | null>;
   retry: () => Promise<void>;
   startNewCart: () => Promise<void>;
   dismiss: () => void;
@@ -81,20 +81,20 @@ export default function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Same-context read failures retain the last cart; a newly observed context starts empty.
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (): Promise<boolean | null> => {
     // Reads cannot supersede an in-flight command/its recovery context. Among successful
     // session observations, request order decides who may publish; starting a read is not authority.
-    if (working.current) return;
+    if (working.current) return null;
     const ticket = ++generation.current;
     try {
       const session = await readBuyerSession();
-      if (ticket < observedGeneration.current || working.current) return;
+      if (ticket < observedGeneration.current || working.current) return null;
       observedGeneration.current = ticket;
       if (session.state === "active" && session.context) {
         pendingObservation.current = ticket;
         adoptContext(session.context);
         const current = await readPurchase("cart", session.context, validCart);
-        if (ticket !== observedGeneration.current || working.current || currentContext.current !== session.context) return;
+        if (ticket !== observedGeneration.current || working.current || currentContext.current !== session.context) return null;
         setCart(current);
         setReadProblem(null);
         setOrderID(knownOrderID(session.context));
@@ -105,6 +105,7 @@ export default function CartProvider({ children }: { children: ReactNode }) {
         setCart(null);
         setOrderID(null);
       }
+      return true;
     } catch (reason) {
       // Keep a prior authoritative cart and its pending read eligible. Do not confuse a failed
       // read with an empty cart or route a read retry through durable command recovery.
@@ -114,6 +115,7 @@ export default function CartProvider({ children }: { children: ReactNode }) {
         setReadProblem(denied ? "forbidden" : "offline");
         if (denied) { setCart(null); setOrderID(null); }
       }
+      return false;
     } finally {
       if (pendingObservation.current === ticket) pendingObservation.current = null;
       // A failed newer session cannot settle a successful observation still awaiting its cart.

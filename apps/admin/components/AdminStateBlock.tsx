@@ -57,11 +57,12 @@ export type AdminStateBlockProps = StateProps & {
   variant: "empty" | "loading" | "error";
   onRetry?: () => void;
   retryLabel?: string;
+  failed?: boolean;
 };
 
 /** Display only: callers retain their existing read, retry and navigation behavior. */
 export function AdminStateBlock(props: AdminStateBlockProps) {
-  const { title, description, actionHref, actionLabel } = props;
+  const { title, description, actionHref, actionLabel, failed } = props;
   if (props.variant === "loading") {
     return <div className="admin-state-loading">
       <StatePanel variant="loading" title={title} body={description} status={
@@ -78,7 +79,7 @@ export function AdminStateBlock(props: AdminStateBlockProps) {
   return <div className="admin-state-block" data-kind={props.variant}>
     <StatePanel variant={props.variant === "error" ? "offline" : "empty"} title={title}
       body={description} action={action}
-      status={props.variant === "error" ? <InlineError message={description ?? title} /> : undefined} />
+      status={props.variant === "error" && failed ? <InlineError message={title} /> : undefined} />
     {props.variant === "error" && props.onRetry && actionHref && actionLabel &&
       <a className="admin-state-home" href={actionHref}>{actionLabel}</a>}
   </div>;

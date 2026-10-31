@@ -37,6 +37,7 @@ import OrderHistory from "./OrderHistory";
 import { CartLines } from "./CartLines";
 import { useCart } from "./CartProvider";
 import { useCartDetails } from "./CartLines";
+import { StorefrontState } from "./state/StorefrontState";
 import { checkoutPath } from "../lib/routes";
 import { shopCopy } from "../lib/shop-copy";
 import { formatMoney } from "../lib/money";
@@ -543,7 +544,17 @@ export default function CheckoutFlow({
         )}
         {historyOpen ? null : loading ? (
           <p role="status">{copy.loading}</p>
-        ) : order ? null : !cart || !cart.items.length ? (
+        ) : order ? null : shell.ready && shell.readProblem ? (
+          <StorefrontState
+            locale={locale}
+            variant={shell.readProblem}
+            failed={error === "failed"}
+            onRead={shell.readProblem === "offline" ? async () => {
+              void shell.refresh();
+              void load();
+            } : undefined}
+          />
+        ) : !cart || !cart.items.length ? (
           <div className="sf-empty" data-testid="checkout-empty">
             <p className="sf-empty__title">{shopCopy[locale].checkoutEmpty}</p>
             <Link className="sf-btn sf-btn--primary" href={`/${locale}/products`}>

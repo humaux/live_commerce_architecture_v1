@@ -26,9 +26,9 @@ export default function OrderPage({ locale, orderID }: { locale: Locale; orderID
   const [paymentBusy, setPaymentBusy] = useState(false);
   const epoch = useRef(0);
 
-  async function load() {
+  async function load(isRetry = false) {
     const mine = ++epoch.current;
-    if (!retried) setState("loading");
+    if (!isRetry) setState("loading");
     try {
       const session = await readBuyerSession();
       if (session.state !== "active" || !session.context) throw new BuyerClientError("requires_reset");
@@ -36,6 +36,7 @@ export default function OrderPage({ locale, orderID }: { locale: Locale; orderID
       if (mine !== epoch.current) return;
       setContext(session.context);
       setOrder(found);
+      setRetried(false);
       setState("ready");
     } catch (reason) {
       if (mine === epoch.current) {
@@ -67,7 +68,7 @@ export default function OrderPage({ locale, orderID }: { locale: Locale; orderID
             body={state === "failed" ? "" : undefined}
             note={state === "failed" ? "" : undefined}
             failed={retried && state === "failed"}
-            onRead={state === "failed" ? () => { setRetried(true); void load(); } : undefined} />
+            onRead={state === "failed" ? () => { setRetried(true); void load(true); } : undefined} />
         </div>
       )}
       {state === "ready" && order && (

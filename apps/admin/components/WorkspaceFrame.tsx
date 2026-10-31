@@ -422,7 +422,12 @@ export function WorkspaceFrame({
           <div className={s.status} role="status"><h1>{c.loading}</h1></div>
         ) : !allowed ? (
           <div className={s.status} data-testid="route-forbidden">
-            <AdminForbidden locale={locale} href={`/${locale}${home === "/" ? "" : home}${storeParam ? `?store=${encodeURIComponent(storeParam)}` : ""}`} headingLevel={1} />
+            <AdminForbidden
+              locale={locale}
+              href={localizedPath(locale, storeParam ? `${home}${home.includes("?") ? "&" : "?"}store=${encodeURIComponent(storeParam)}` : home)}
+              onNavigate={() => navigate(home)}
+              headingLevel={1}
+            />
           </div>
         ) : (
           <>

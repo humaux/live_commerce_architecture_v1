@@ -292,7 +292,7 @@ export default function OrderPayment({
     };
   }, [context, order, refreshToken]);
 
-  const signedUnknown = !!view && view.payment_state === "PENDING" &&
+  const signedUnknown = readFailure && !!view && view.payment_state === "PENDING" &&
     ["CREATING", "UNAVAILABLE"].includes(view.handoff_state);
   const stripeMarker = marker?.body.method_code === "stripe_checkout";
   const plan =
