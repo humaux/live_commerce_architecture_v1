@@ -13,7 +13,7 @@ export const CLICK_VARIANTS = [
   { viewport: "desktop", size: { width: 1586, height: 992 }, locale: "en", mobile: false },
 ];
 /** Every buyer route of docs/engineering/ui-architecture.md section 4 that the click sweep must open at every variant. */
-export const STOREFRONT_ROUTES = ["/", "/products", "/collections", "/collections/[slug]", "/products/[slug]", "/search", "/cart", "/checkout", "/orders/lookup", "/orders/[orderID]", "/order-link", "/claim", "/legal/anti-fraud", "/legal/[slug]", "/privacy", "/data-deletion", "/pages/[slug]"];
+export const STOREFRONT_ROUTES = ["/", "/products", "/collections", "/collections/[slug]", "/products/[slug]", "/search", "/cart", "/checkout", "/orders/lookup", "/orders/[orderID]", "/order-link", "/claim", "/legal/anti-fraud", "/legal/[slug]", "/privacy", "/data-deletion", "/pages/[slug]", "/pages/contact"];
 /** The `page` text of every journey ledger row; J2/J3 and J2b run after the storefront desktop/zh-TW session (they need its COD order), so they share its shard. */
 export const JOURNEY_PAGES = {
   J1: ["J1 product editor -> storefront", "J1 storefront"],
