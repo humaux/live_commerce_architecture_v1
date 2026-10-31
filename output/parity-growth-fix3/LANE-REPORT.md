@@ -1,8 +1,8 @@
 # PARITY-GROWTH-FIX3 Lane Report
 
-**Lane:** implementation (OpenCode opencode-go/qwen3.7-plus)  
-**Worktree:** /Volumes/data/live_commerce_architecture_v1/.worktrees/parity-growth  
-**Branch:** unit/parity-growth  
+**Lane:** implementation (OpenCode opencode-go/qwen3.7-plus)
+**Worktree:** /Volumes/data/live_commerce_architecture_v1/.worktrees/parity-growth
+**Branch:** unit/parity-growth
 **Base merge:** origin/r3/integration merged into local HEAD
 
 ## Failure Classification Table

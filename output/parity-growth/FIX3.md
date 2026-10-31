@@ -1,9 +1,9 @@
 # PARITY-GROWTH-FIX3 — Directed Fix Report
 
-**Date:** 2026-11-01 Asia/Taipei  
-**PR:** #366 (`unit/parity-growth` → `r3/integration`)  
-**Failing CI Run:** 41212193122 on head `e81a68dae` (tested merge `3f15aa5e908d`)  
-**Base Reference:** 41227668184 on `a8316b455` (success)  
+**Date:** 2026-11-01 Asia/Taipei
+**PR:** #366 (`unit/parity-growth` → `r3/integration`)
+**Failing CI Run:** 41212193122 on head `e81a68dae` (tested merge `3f15aa5e908d`)
+**Base Reference:** 41227668184 on `a8316b455` (success)
 **Previous Run:** 41084050704 on head `4fdf52f5` (webkit gate passed)
 
 ## Step 1: Merge origin/r3/integration
