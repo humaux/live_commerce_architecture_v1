@@ -64,6 +64,7 @@ export function DesignDomains({
   const [receiptDns, setReceiptDns] = useState<DomainRequestResult['dns'] | null>(null);
   const [hostnameInput, setHostnameInput] = useState('');
   const [addError, setAddError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [fullValueText, setFullValueText] = useState('');
   const [pendingCommand, setPendingCommand] = useState<JournalCommand | null>(null);
   const [pendingOrigin, setPendingOrigin] = useState<string>('');
@@ -131,6 +132,23 @@ export function DesignDomains({
     }
   }, []);
 
+  // A definitive rejection (4xx/conflict) means nothing was applied: drop the journal and fence, show the error.
+  // Only an uncertain outcome (reset, 5xx without receipt) keeps the journal and the pending fence.
+  const failDefinitive = (code: string, add = false) => {
+    try {
+      sessionStorage.removeItem(journalKey);
+    } catch {
+      // ignore
+    }
+    setPendingCommand(null);
+    if (add) {
+      setAddError(code === 'invalid_request' ? cCopy.invalid : cCopy.readFailed);
+    } else {
+      setActionError(cCopy.readFailed);
+      setViewMode('main');
+    }
+  };
+
   // Add domain apply
   const handleApplyAdd = async (e: FormEvent) => {
     e.preventDefault();
@@ -169,6 +187,10 @@ export function DesignDomains({
       setViewMode('pending');
       return;
     }
+    if (!outcome.ok) {
+      failDefinitive(outcome.code, true);
+      return;
+    }
     if (outcome.ok) {
       try {
         sessionStorage.removeItem(journalKey);
@@ -180,13 +202,12 @@ export function DesignDomains({
       setReceiptDns(outcome.result.dns);
       setViewMode('receipt');
       void loadDomains();
-    } else {
-      setAddError(cCopy.invalid);
     }
   };
 
   // Reapply action on existing custom domain
   const handleReapply = async () => {
+    setActionError(null);
     const origin = receiptDomain || selectedDomain?.origin;
     if (!origin) return;
     const hostname = origin.replace(/^https?:\/\//, '');
@@ -210,6 +231,10 @@ export function DesignDomains({
       setViewMode('pending');
       return;
     }
+    if (!outcome.ok) {
+      failDefinitive(outcome.code);
+      return;
+    }
     if (outcome.ok) {
       try {
         sessionStorage.removeItem(journalKey);
@@ -226,6 +251,7 @@ export function DesignDomains({
 
   // Suspend confirm
   const handleConfirmSuspend = async () => {
+    setActionError(null);
     const origin = receiptDomain || selectedDomain?.origin;
     if (!origin) return;
     const key = `storefront-domain-${crypto.randomUUID()}`;
@@ -247,6 +273,10 @@ export function DesignDomains({
       setViewMode('pending');
       return;
     }
+    if (!outcome.ok) {
+      failDefinitive(outcome.code);
+      return;
+    }
     if (outcome.ok) {
       try {
         sessionStorage.removeItem(journalKey);
@@ -263,6 +293,7 @@ export function DesignDomains({
 
   // Detach confirm
   const handleConfirmDetach = async () => {
+    setActionError(null);
     const origin = receiptDomain || selectedDomain?.origin;
     if (!origin) return;
     const key = `storefront-domain-${crypto.randomUUID()}`;
@@ -284,6 +315,10 @@ export function DesignDomains({
       setViewMode('pending');
       return;
     }
+    if (!outcome.ok) {
+      failDefinitive(outcome.code);
+      return;
+    }
     if (outcome.ok) {
       try {
         sessionStorage.removeItem(journalKey);
@@ -300,6 +335,7 @@ export function DesignDomains({
 
   // Retry pending journal command
   const handleRetry = async () => {
+    setActionError(null);
     if (!pendingCommand) return;
     if (pendingCommand.action === 'request') {
       const outcome = await requestDomain(
@@ -310,6 +346,10 @@ export function DesignDomains({
       );
       if (!outcome.ok && outcome.uncertain) {
         setViewMode('pending');
+        return;
+      }
+      if (!outcome.ok) {
+        failDefinitive(outcome.code);
         return;
       }
       if (outcome.ok) {
@@ -337,6 +377,10 @@ export function DesignDomains({
         setViewMode('pending');
         return;
       }
+      if (!outcome.ok) {
+        failDefinitive(outcome.code);
+        return;
+      }
       if (outcome.ok) {
         try {
           sessionStorage.removeItem(journalKey);
@@ -355,6 +399,11 @@ export function DesignDomains({
 
   return (
     <section className="design-panel" data-testid="design-domains">
+      {actionError && viewMode !== 'add' && (
+        <p className="design-error" role="alert">
+          {actionError}
+        </p>
+      )}
       {/* 1. Pending view (uncertain write recovery) */}
       {viewMode === 'pending' && (
         <div className="design-block">
@@ -479,67 +528,29 @@ export function DesignDomains({
 
               {/* CNAME or Apex (A/AAAA) */}
               {receiptDns.apex ? (
-                receiptDns.edge_addresses && receiptDns.edge_addresses.length >= 2 ? (
-                  (() => {
-                    const [edgeIpv4, edgeIpv6] = receiptDns.edge_addresses;
-                    return (
-                      <>
-                        <div data-testid="domain-dns-A" className="design-row">
-                          <span>A</span>
-                          <span>{edgeIpv4}</span>
-                          <div className="design-row-actions">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                void handleCopyValue(
-                                  (receiptDomain || selectedDomain?.origin || '').replace(
-                                    /^https?:\/\//,
-                                    '',
-                                  ),
-                                )
-                              }
-                            >
-                              {cCopy.copyHost}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void handleCopyValue(edgeIpv4)}
-                            >
-                              {cCopy.copyValue}
-                            </button>
-                          </div>
+                (() => {
+                  // Partition by IP family, not array position; one row per returned address, never invent one.
+                  const addrs = receiptDns.edge_addresses ?? [];
+                  const host = (receiptDomain || selectedDomain?.origin || '').replace(/^https?:\/\//, '');
+                  return (['A', 'AAAA'] as const).map((family) => {
+                    const list = addrs.filter((a) => a.includes(':') === (family === 'AAAA'));
+                    if (list.length === 0) return <p key={family}>{cCopy.missingIP}</p>;
+                    return list.map((addr) => (
+                      <div key={`${family}-${addr}`} data-testid={`domain-dns-${family}`} className="design-row">
+                        <span>{family}</span>
+                        <span>{addr}</span>
+                        <div className="design-row-actions">
+                          <button type="button" onClick={() => void handleCopyValue(host)}>
+                            {cCopy.copyHost}
+                          </button>
+                          <button type="button" onClick={() => void handleCopyValue(addr)}>
+                            {cCopy.copyValue}
+                          </button>
                         </div>
-                        <div data-testid="domain-dns-AAAA" className="design-row">
-                          <span>AAAA</span>
-                          <span>{edgeIpv6}</span>
-                          <div className="design-row-actions">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                void handleCopyValue(
-                                  (receiptDomain || selectedDomain?.origin || '').replace(
-                                    /^https?:\/\//,
-                                    '',
-                                  ),
-                                )
-                              }
-                            >
-                              {cCopy.copyHost}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void handleCopyValue(edgeIpv6)}
-                            >
-                              {cCopy.copyValue}
-                            </button>
-                          </div>
-                        </div>
-                      </>
-                    );
-                  })()
-                ) : (
-                  <p>{cCopy.missingIP}</p>
-                )
+                      </div>
+                    ));
+                  });
+                })()
               ) : (
                 <div data-testid="domain-dns-CNAME" className="design-row">
                   <span>CNAME</span>

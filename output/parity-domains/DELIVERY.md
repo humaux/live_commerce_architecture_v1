@@ -1,6 +1,14 @@
-# PARITY-DOMAINS · RED-stage handoff
+# PARITY-DOMAINS · implementation handoff (RVFIX-407)
 
-Observed 2026-10-30T18:45:34.060983+00:00. PR #407, tests-only head `34d85c73efbbbff8128085d0554d9ca468437f1b`. E1 structure only; author verdict E0. RED PENDING. Implementation, clicks, screenshots, persistence, GREEN and independent review NOT_RUN.
+Updated 2026-11-01. PR #407 on branch `unit/parity-domains`; implementation head = the commit that carries this file (tests-only RED head `c5c0bde7a`, tests `4ba42761d`). Author verdict E0; no local tests (NO_LOCAL_TESTS_OR_SERVERS), MOCK-level API only.
+
+## Evidence status (truthful)
+
+- The original domains-parity RED (tests-only head `34d85c73e`) was **not observed** before the implementation was written; its WAIT_RUN ids `41109244416`/`41109244430` were never recorded as a failing result. Do not cite them as RED.
+- This round's run is the **first observed RED**: Gates run `41223251352` on tests-only head `c5c0bde7a` - FAILED n=45: gate (bundle:03), gate (bundle:04), receipts, required. Cases targeted: (a) definitive 409 on add, (b) definitive 403 on suspend, (c) apex DNS v6-first, (d) apex DNS v4-only (see `red.log`; per-assertion text was not extracted from the job log by this lane).
+- GREEN: PENDING - run id recorded by the integrator after pushing the implementation; until then GREEN is NOT_RUN.
+- Implemented in `apps/admin/components/DesignDomains.tsx`: P1-1 `failDefinitive` clears journal and pendingCommand on a definitive (`!ok && !uncertain`) failure in add/reapply/suspend/detach/retry and shows `readFailed` (add keeps `invalid` only for code `invalid_request`); P1-2 apex rows partitioned by IP family (`:` = AAAA), one row per address, `missingIP` only for an empty family.
+- NOT_RUN: browser clicks and persistence, SANDBOX/LIVE DNS/TLS, independent review/E4.
 
 ## Authority and current-state audit
 

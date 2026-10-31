@@ -1,6 +1,6 @@
-PARITY-DOMAINS replaces the read-only design-domain list with the fourteen signed domain settings states. This first push is deliberately **tests only**. Implementation must wait for an assertion-level RED receipt from this PR's GitHub CI.
+PARITY-DOMAINS replaces the read-only design-domain list with the fourteen signed domain settings states. History: the first push was tests only; this head adds the RVFIX-407 implementation after an observed RED.
 
-Base: `629f42152f864621a99ac2247c3baf5d751a422f` (PR #361, PARITY-INBOX-EDITOR merged). Head: `34d85c73efbbbff8128085d0554d9ca468437f1b`.
+Base: `629f42152f864621a99ac2247c3baf5d751a422f` (PR #361, PARITY-INBOX-EDITOR merged). Head: this branch tip (tests-only RED head `c5c0bde7a`).
 
 Authority: [Figma page 4:8829](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X?node-id=4-8829), inventory §3 domains follow-up and Appendix A `U:domains`. All fourteen current frames read through Fleet Bridge on 2026-10-31 Asia/Shanghai; screenshots and raw reads retained in `output/parity-domains/figma/`. Domain rules remain `docs/delivery/units/store-domains.md`, current frontend DTOs/clients and Go domain service. DNS-only and certificate-on-demand remain unchanged.
 
@@ -34,12 +34,12 @@ Parity manifest below is the capture contract. Browser PNGs are **NOT_RUN** unti
 | 1076:7038 | parity/1076-7038.png | figma/1076-7038.log → IMAGE |
 | 1076:7039 | parity/1076-7039.png | figma/1076-7039.log → IMAGE |
 
-RED: PENDING. WAIT_RUN Gates `41109244416` (plan job `124247070200` only; not a test result); Foundation `41109244430` / job `124247071271`, both queued. Causal checkpoint first confirms the existing design route and returned custom domain, then asserts the signed domain title. Syntax/registration errors do not count as RED. GREEN: NOT_RUN; no implementation push yet. Local E1: `node --check tests/admin/domains-parity.spec.ts`, generated browser ownership plus `--check`, `git diff --check` all exit 0. No local tests or servers.
+**RED/GREEN (truthful).** The original domains-parity RED was not observed before implementation. This round's tests-only head `c5c0bde7a` produced the first observed RED: Gates run `41223251352` FAILED n=45 (gate bundle:03, bundle:04, receipts, required), covering the new cases (a) 409 add, (b) 403 suspend, (c) v6-first apex, (d) v4-only apex. GREEN: PENDING (run id recorded after the implementation push; NOT_RUN until then). MOCK level only; no local tests or servers.
+
+RVFIX-407 fixes: definitive 4xx failures now clear the sessionStorage journal/fence and show the action's error copy (only uncertain outcomes keep the fence); apex A/AAAA rows are partitioned by IP family with one row per returned address and no invented address. See `output/parity-domains/RVFIX.md`.
 
 Files outside literal component/route paths: `tests/admin/editor-v2.spec.ts` migrates existing domain assertions with the same intent; `playwright.config.ts` registers the new spec; `output/ci-select-backend-browser/browser-ownership.json` is generated. These are the card's authorized specs/registration/generated exceptions. No backend, contract, migration, pin, global stylesheet, lockfile, gate-adapter assertion, exemption or baseline edits.
 
 NOT_RUN: implementation, CI RED/GREEN, actual browser clicks and persistence, parity screenshots, independent review/E4, SANDBOX/LIVE DNS/TLS, production. Author assessment is E0. Rollback is a revert of this card's commits through an integrator-managed PR. No merge/automerge, status posting or deployment is authorized for this lane.
-
-WAIT: integrator relays Gates/Foundation completion into a fresh session; queue/run exceeding 3h escalates to integrator. Do not poll beyond 10min. Record current push run IDs in `output/parity-domains/red.log` and final handoff; never use the plan job ID as WAIT_RUN.
 
 🤖 Generated with Codex (dispatched by Claude Code integrator).

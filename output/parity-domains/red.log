@@ -6,3 +6,6 @@ Expected failing assertions in tests/admin/domains-parity.spec.ts (new cases):
  (c) "apex DNS rows by IP family: v6 first": domain-dns-A shows 2001:db8::20 instead of 192.0.2.20
  (d) "apex DNS rows by IP family: v4 only": missingIP shown, A row absent (length>=2 guard)
 Existing cases unchanged. GREEN=NOT_RUN. NO_LOCAL_TESTS_OR_SERVERS.
+
+RVFIX-407 observed RED: Gates run 41223251352 on tests-only head c5c0bde7a: FAILED n=45: gate (bundle:03), gate (bundle:04), receipts, required. First observed RED for this spec; the original 34d85c73e RED was never observed.
+GREEN: PENDING (integrator records run id after implementation push).
