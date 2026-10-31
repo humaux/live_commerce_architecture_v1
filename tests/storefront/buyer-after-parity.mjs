@@ -121,6 +121,11 @@ async function mine(req, res, pathname) {
     if (!m[2]) return send(res, 200, entry.order);
     if (!entry.pay) return error(res, 404, "not_found");
     if (!m[3]) return send(res, 200, entry.pay);
+    if (m[3] === "prepare") {
+      // Mirror the server: prepare moves a fresh attempt to a continuable one (PENDING/READY, not cancelled, AWAITING_PAYMENT); stripeHandoff re-reads it and aborts if it still looks fresh.
+      Object.assign(entry.pay, { payment_state: "PENDING", handoff_state: "READY", handoff_expires_at: iso(1800e3), cancel_requested: false, commercial_state: "AWAITING_PAYMENT" });
+      entry.order.commercial_state = "AWAITING_PAYMENT"; delete entry.order.hold_expires_at;
+    }
     if (m[3] === "prepare") return send(res, 200, { order_id: m[1], state: "PAYMENT_PENDING", currency: "TWD", amount_minor: entry.pay.total_minor });
     if (m[3] === "handoff") {
       Object.assign(entry.pay, { payment_state: "PENDING", handoff_state: "READY", handoff_expires_at: iso(1800e3), cancel_requested: false, methods: [], commercial_state: "AWAITING_PAYMENT" });
