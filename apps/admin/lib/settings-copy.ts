@@ -1,3 +1,6 @@
+// Purpose: Localized copy for merchant settings wizard.
+// Depends on: @live-commerce/i18n.
+// Used by: apps/admin/components/SettingsWizard.tsx.
 import type { Locale } from "@live-commerce/i18n";
 
 // Card payments are collected by the platform (settings/payments/card); this wizard configures merchant-arranged delivery only.
@@ -7,7 +10,7 @@ const en = {
   steps: [
     "Overview",
     "Delivery options",
-    "Market and delivery",
+    "Delivery",
     "Check status",
   ],
   platformTitle: "What you configure here",
@@ -19,14 +22,14 @@ const en = {
   refresh: "Refresh status",
   reloadCurrent: "Reload saved values",
   reloaded: "Saved values loaded. Review them before saving.",
-  marketTitle: "Market",
-  market: "Selected market",
-  createMarket: "Create market",
-  marketCode: "Market code",
-  marketName: "Market name",
+  marketTitle: "Delivery setup",
+  market: "Delivery setup",
+  createMarket: "Setup delivery",
+  marketCode: "Delivery code",
+  marketName: "Delivery name",
   currency: "Store currency",
   marketInactive:
-    "This market is inactive. Service changes require an active market.",
+    "Delivery service changes require an active delivery configuration.",
   country: "Country",
   enabled: "Enabled",
   visible: "Visible to buyers",
@@ -64,7 +67,7 @@ const en = {
   policySaved: "Pricing policy saved. Save the service separately.",
   serviceSaved: "Delivery service saved.",
   prereq:
-    "An active market and explicitly enabled policy are required before saving a service.",
+    "An explicitly enabled pricing policy is required before saving a delivery service.",
   sequential:
     "Policy and service are two separate saves. If service saving fails, the policy remains saved.",
   statusTitle: "Current setup status",
@@ -96,7 +99,7 @@ export const settingsCopy: Record<Locale, SettingsCopy> = {
   "zh-CN": {
     title: "物流与收款设置",
     subtitle: "设置商家自行安排的配送。刷卡收款由平台代收。",
-    steps: ["概览", "配送选项", "市场与配送", "检查状态"],
+    steps: ["概览", "配送选项", "配送", "检查状态"],
     platformTitle: "此处可配置的内容",
     manual: "商家自行安排配送",
     manualHint:
@@ -106,13 +109,13 @@ export const settingsCopy: Record<Locale, SettingsCopy> = {
     refresh: "刷新状态",
     reloadCurrent: "重新读取已保存值",
     reloaded: "已读取保存值，请核对后再提交。",
-    marketTitle: "市场",
-    market: "所选市场",
-    createMarket: "创建市场",
-    marketCode: "市场代码",
-    marketName: "市场名称",
+    marketTitle: "配送配置",
+    market: "配送配置",
+    createMarket: "配置配送",
+    marketCode: "配送代码",
+    marketName: "配送名称",
     currency: "店铺币种",
-    marketInactive: "该市场未激活。保存配送服务需要已激活市场。",
+    marketInactive: "保存配送服务需要有效的配送配置。",
     country: "国家/地区",
     enabled: "已启用",
     visible: "向买家展示",
@@ -148,7 +151,7 @@ export const settingsCopy: Record<Locale, SettingsCopy> = {
     saveService: "保存配送服务",
     policySaved: "价格政策已保存；配送服务需要单独保存。",
     serviceSaved: "配送服务已保存。",
-    prereq: "保存服务前，市场须已激活且政策须明确启用。",
+    prereq: "保存配送服务前，价格政策须明确启用。",
     sequential: "政策和服务分两次保存。服务失败时，已保存的政策会保留。",
     statusTitle: "当前设置状态",
     platform: "设置",
@@ -174,7 +177,7 @@ export const settingsCopy: Record<Locale, SettingsCopy> = {
   "zh-TW": {
     title: "物流與收款設定",
     subtitle: "設定商家自行安排的配送。刷卡收款由平台代收。",
-    steps: ["概覽", "配送選項", "市場與配送", "檢查狀態"],
+    steps: ["概覽", "配送選項", "配送", "檢查狀態"],
     platformTitle: "此處可設定的內容",
     manual: "商家自行安排配送",
     manualHint:
@@ -184,13 +187,13 @@ export const settingsCopy: Record<Locale, SettingsCopy> = {
     refresh: "重新整理狀態",
     reloadCurrent: "重新讀取已儲存值",
     reloaded: "已讀取儲存值，請核對後再送出。",
-    marketTitle: "市場",
-    market: "所選市場",
-    createMarket: "建立市場",
-    marketCode: "市場代碼",
-    marketName: "市場名稱",
+    marketTitle: "配送設定",
+    market: "配送設定",
+    createMarket: "設定配送",
+    marketCode: "配送代碼",
+    marketName: "配送名稱",
     currency: "店鋪幣別",
-    marketInactive: "該市場未啟用。儲存配送服務需要已啟用市場。",
+    marketInactive: "儲存配送服務需要有效的配送設定。",
     country: "國家／地區",
     enabled: "已啟用",
     visible: "向買家顯示",
@@ -226,7 +229,7 @@ export const settingsCopy: Record<Locale, SettingsCopy> = {
     saveService: "儲存配送服務",
     policySaved: "價格政策已儲存；配送服務需要另外儲存。",
     serviceSaved: "配送服務已儲存。",
-    prereq: "儲存服務前，市場須已啟用且政策須明確啟用。",
+    prereq: "儲存配送服務前，價格政策須明確啟用。",
     sequential: "政策和服務分兩次儲存。服務失敗時，已儲存的政策會保留。",
     statusTitle: "目前設定狀態",
     platform: "設定",
