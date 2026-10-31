@@ -133,3 +133,8 @@ RVFIX366_GREEN=PENDING next-head CI
 RVFIX2_366_RED=expected failures (tests only, CI to confirm): tests/admin/ads.spec.ts outsideAdvanced() asserts ads-approve (review screen), ads-pause (ACTIVE status) and the Meta refusal text (FAILED draft) are visible outside the ads-advanced disclosure; today AdsDraft.tsx:196-416 renders them inside it, so these fail
 RVFIX2_366_STATIC=E0 not run locally (owner rule); derive-browser-ownership + --check run before commit
 RVFIX2_366_GREEN=PENDING implementation push after CI shows the RED
+
+RVFIX2_366_RELAY1_HEAD=eb7527d04 run 41251144024 job 124685707869 (tested merge 952231ba8; bundle:03 --browser-meta-ads TestBrowserMetaAds FAIL, browser_meta_ads_test.go:271; receipts/required consequence; all other receipts PASS)
+RVFIX2_366_RELAY1_CLASS=expected RED on the new outsideAdvanced assertions (CI log has no node stderr; only the meta-ads mode is red)
+RVFIX2_366_IMPL=AdsDraft.tsx: ads-actions block, end-confirm and hints moved out of ads-advanced; ads-refusal shown for FAILED/REJECTED
+RVFIX2_366_GREEN=PENDING next-head CI

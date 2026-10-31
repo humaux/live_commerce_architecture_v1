@@ -171,6 +171,8 @@ export function DraftDetail({
   act: (d: Draft, a: "approve" | "publish" | "pause" | "end") => void;
 }) {
   const g = growthCopy[locale];
+  // Latest Meta refusal (by updated_at) is shown outside the Advanced disclosure for FAILED/REJECTED drafts.
+  const refusal = d.ops.filter((o) => o.error_user_msg).sort((x, y) => (x.updated_at ?? "").localeCompare(y.updated_at ?? "")).pop()?.error_user_msg;
   const link = d.ads_manager_url ? adsManagerHref(d.ads_manager_url) : null;
   const working = busy !== "";
   const remote: [string, string | null][] = [
@@ -193,63 +195,6 @@ export function DraftDetail({
         <Badge c={c} status={d.status} />
         {canEdit(d) && <button type="button" data-testid="ads-edit" disabled={working || formOpen} onClick={onEdit}>{c.edit}</button>}
       </div>
-      <details data-testid="ads-advanced"><summary>{growthCopy[locale].advanced}</summary>
-      <div className="ads-detail-head">
-        <h3>
-          {c.templates[d.template]} <Badge c={c} status={d.status} />
-        </h3>
-        {link && (
-          <a
-            href={link}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-testid="ads-manager-link"
-          >
-            {c.adsManager}
-          </a>
-        )}
-      </div>
-      {d.status === "UNKNOWN" && (
-        <p className="ads-bad" role="status" data-testid="ads-unknown-help">
-          {c.checkAdsManager}
-        </p>
-      )}
-      <dl className="ads-facts">
-        <div>
-          <dt>{c.budget}</dt>
-          <dd>{formatMinor(locale, d.currency, d.lifetime_budget_minor)}</dd>
-        </div>
-        <div>
-          <dt>{c.starts}</dt>
-          <dd>{when(locale, d.starts_at, "—")}</dd>
-        </div>
-        <div>
-          <dt>{c.ends}</dt>
-          <dd>{when(locale, d.ends_at, "—")}</dd>
-        </div>
-        <div>
-          <dt>{c.countries}</dt>
-          <dd>{d.countries.join(", ")}</dd>
-        </div>
-        <div>
-          <dt>{c.ages}</dt>
-          <dd>
-            {d.age_min}–{d.age_max}
-          </dd>
-        </div>
-        <div>
-          <dt>{c.source}</dt>
-          <dd className="ads-mono">{d.source_ref}</dd>
-        </div>
-        <div>
-          <dt>{c.revision}</dt>
-          <dd>{d.revision}</dd>
-        </div>
-        <div>
-          <dt>{c.attempt}</dt>
-          <dd>{d.publish_attempt}</dd>
-        </div>
-      </dl>
       <div className="ads-actions" data-testid="ads-actions">
         {canEdit(d) && (
           <button
@@ -347,6 +292,66 @@ export function DraftDetail({
           </div>
         </div>
       )}
+      {(d.status === "FAILED" || d.status === "REJECTED") && refusal && (
+        <p className="ads-bad" role="status" data-testid="ads-refusal">{refusal}</p>
+      )}
+      <details data-testid="ads-advanced"><summary>{growthCopy[locale].advanced}</summary>
+      <div className="ads-detail-head">
+        <h3>
+          {c.templates[d.template]} <Badge c={c} status={d.status} />
+        </h3>
+        {link && (
+          <a
+            href={link}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="ads-manager-link"
+          >
+            {c.adsManager}
+          </a>
+        )}
+      </div>
+      {d.status === "UNKNOWN" && (
+        <p className="ads-bad" role="status" data-testid="ads-unknown-help">
+          {c.checkAdsManager}
+        </p>
+      )}
+      <dl className="ads-facts">
+        <div>
+          <dt>{c.budget}</dt>
+          <dd>{formatMinor(locale, d.currency, d.lifetime_budget_minor)}</dd>
+        </div>
+        <div>
+          <dt>{c.starts}</dt>
+          <dd>{when(locale, d.starts_at, "—")}</dd>
+        </div>
+        <div>
+          <dt>{c.ends}</dt>
+          <dd>{when(locale, d.ends_at, "—")}</dd>
+        </div>
+        <div>
+          <dt>{c.countries}</dt>
+          <dd>{d.countries.join(", ")}</dd>
+        </div>
+        <div>
+          <dt>{c.ages}</dt>
+          <dd>
+            {d.age_min}–{d.age_max}
+          </dd>
+        </div>
+        <div>
+          <dt>{c.source}</dt>
+          <dd className="ads-mono">{d.source_ref}</dd>
+        </div>
+        <div>
+          <dt>{c.revision}</dt>
+          <dd>{d.revision}</dd>
+        </div>
+        <div>
+          <dt>{c.attempt}</dt>
+          <dd>{d.publish_attempt}</dd>
+        </div>
+      </dl>
       <h4>{c.remote}</h4>
       {hasRemote(d) ? (
         <dl className="ads-facts" data-testid="ads-remote">
