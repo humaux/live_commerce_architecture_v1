@@ -97,7 +97,7 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
       {write.message && write.message.kind !== 'success' && <div role="status"><p>{write.message.text}</p>
         {write.canRetry && <button type="button" disabled={write.busy} onClick={() => void write.retry()}>{pc.retry}</button>}
       </div>}
-      {!copyReview && !copied && <details className="cat-operations"><summary data-testid="products-operations"><span aria-hidden="true">{c.operations}</span></summary>
+      {!copyReview && !copied && <details className="cat-operations"><summary data-testid="products-operations" aria-label={c.operations}><span aria-hidden="true">{c.operations}</span></summary>
         <button type="button" data-testid="products-copy-entry" disabled={read.status !== 'ready' || locked || selected.length !== 1}
           onClick={() => { const row = rows.find(r => selected.includes(r.id)); if (row) { setCopied(null); setReview(null); setResults([]); setCopyReview(row); } }}>{c.copyEntry}</button>
         <Link data-testid="products-ledger-link" href={`/${locale}/inventory?store=${sid}`}>{legacy.inventory}</Link>

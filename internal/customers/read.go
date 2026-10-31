@@ -82,15 +82,6 @@ func List(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, in
 		if err != nil {
 			return empty, err
 		}
-		// The existing customers:read definer already scopes and validates the
-		// append-only history. Reuse it rather than adding a SQL grant/migration
-		// or guessing withdrawal from the list's false boolean. Page size is bounded.
-		detail, _, err := loadDetail(ctx, tx, scope, token, c.CustomerID)
-		if err != nil {
-			return empty, err
-		}
-		// Keep the boolean and display state from the same consent-history read.
-		c.Consents, c.ConsentState = detail.Consents, detail.ConsentState
 		empty.Items = append(empty.Items, c)
 	}
 	if len(empty.Items) > limit {

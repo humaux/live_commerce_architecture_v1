@@ -129,6 +129,7 @@ for (const v of process.env.PRODUCT_EDITOR_ACCEPTANCE === "1" ? [] : variants) {
       // stop-bleed D03: the "stock ledger" link opens the inventory page, not the dashboard at /{locale}/
       await expect(page.getByTestId("products-ledger-link")).toHaveAttribute("href", new RegExp(`^/${L}/inventory(\\?store=[0-9a-f-]{36})?$`));
       // The ledger remains a real merchant route under the signed Product tasks entry.
+      await expect(page.getByTestId("products-operations")).toHaveAccessibleName(catalogTaskCopy[L as "en" | "zh-TW"].operations);
       await page.getByTestId("products-operations").click();
       await expect(page.getByTestId("products-ledger-link")).toBeVisible();
       // Read-only geometry measurement; the navigation itself uses the real click below.

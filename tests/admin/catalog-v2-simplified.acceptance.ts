@@ -4,6 +4,7 @@
 // Invariants: additive assertions; MOCK response state survives reload, never claims PG/LIVE acceptance; no UI writes via API/evaluate.
 import { expect, test, type Page, type Route, type TestInfo } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
+import { catalogTaskCopy } from "../../packages/i18n/src/catalog";
 import { nativePage } from "./fixtures/native-device";
 
 const id = (n: number) => `11111111-1111-4111-8111-${String(n).padStart(12, "0")}`;
@@ -173,6 +174,7 @@ export function registerCatalogSimplifiedAcceptance() {
           await expect(page.getByTestId('products-copy-entry')).toBeDisabled();
           await page.getByTestId(`product-row-${productID}`).getByRole('checkbox').check();
           const review = async () => {
+            await expect(page.getByTestId('products-operations')).toHaveAccessibleName(catalogTaskCopy[locale].operations);
             await page.getByTestId('products-operations').click();
             await page.getByTestId('products-copy-entry').click();
             await expect(page.getByRole('heading', { name: copy.title, exact: true })).toBeVisible();

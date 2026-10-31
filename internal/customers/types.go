@@ -337,7 +337,7 @@ func strict(raw []byte, out any) error {
 }
 
 var customerKeys = []string{"customer_id", "first_seen_at", "last_activity_at", "display_name", "phone_last3", "orders_count",
-	"paid_orders_count", "captured_minor", "refunded_minor", "currency", "claims_count", "platforms", "consents", "active", "imported", "tags"}
+	"paid_orders_count", "captured_minor", "refunded_minor", "currency", "claims_count", "platforms", "consents", "consent_state", "active", "imported", "tags"}
 var detailKeys = append(append([]string{}, customerKeys...), "order_ids", "claims", "consent_history", "privacy_actions",
 	"tags_revision", "notes")
 
@@ -350,13 +350,31 @@ func nonNegative(values ...int64) bool {
 	return true
 }
 
+func validStateValue(v string) bool {
+	return v == "never" || v == "granted" || v == "withdrawn"
+}
+
+func validConsentState(s ConsentState, consents Consents) bool {
+	if !validStateValue(s.MarketingMessages) || !validStateValue(s.AdsPersonalization) {
+		return false
+	}
+	if (s.MarketingMessages == "granted") != consents.MarketingMessages {
+		return false
+	}
+	if (s.AdsPersonalization == "granted") != consents.AdsPersonalization {
+		return false
+	}
+	return true
+}
+
 // validCustomer re-checks the database projection (drift is a failure, not data).
 func validCustomer(c Customer) bool {
 	_, e1 := canonicalTime(c.FirstSeenAt)
 	_, e2 := canonicalTime(c.LastActivityAt)
 	if !command.ValidID(c.CustomerID) || e1 != nil || e2 != nil ||
 		!nonNegative(c.OrdersCount, c.PaidOrdersCount, c.CapturedMinor, c.RefundedMinor, c.ClaimsCount) ||
-		c.PaidOrdersCount > c.OrdersCount || c.RefundedMinor > c.CapturedMinor || c.Platforms == nil || !validTags(c.Tags) {
+		c.PaidOrdersCount > c.OrdersCount || c.RefundedMinor > c.CapturedMinor || c.Platforms == nil || !validTags(c.Tags) ||
+		!validConsentState(c.ConsentState, c.Consents) {
 		return false
 	}
 	if c.PhoneLast3 != nil && !phoneLast3.MatchString(*c.PhoneLast3) {
@@ -459,7 +477,9 @@ func decodeDetail(raw json.RawMessage) (detailWire, error) {
 	if CurrentConsents(d.ConsentHistory) != d.Consents {
 		return detailWire{}, ErrUnavailable
 	}
-	d.ConsentState = consentState(d.ConsentHistory)
+	if consentState(d.ConsentHistory) != d.ConsentState {
+		return detailWire{}, ErrUnavailable
+	}
 	return d, nil
 }
 
