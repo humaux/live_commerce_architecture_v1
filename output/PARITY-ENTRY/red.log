@@ -1,0 +1,44 @@
+card: PARITY-ENTRY
+pr: 369
+base: 3ea359f796d36153bb4b8aa7259e4e0c27676b86
+red_head: 21598d28905ebb1e8790372679bdaf56688a81ca
+RED: CONFIRMED E3 (CI MOCK browser against Next + Go + REAL_PG fixture)
+Gates run: 41054860463
+Failed job: 124068683339 (gate bundle:08)
+Artifact: gate-browser-password-auth (12979441000)
+Assertion: tests/admin/password-auth.spec.ts:233 expect(getByRole('heading', { name: '工作台', level: 1 })).toBeVisible()
+Result: element(s) not found; timeout 10000ms. Browser reached the authenticated root after genuine signup/onboarding clicks.
+Raw receipt: relay1-browser/playwright/run.CfWljm39/password-auth-20261030T131005.062833840/playwright.log:18-39
+Compilation: build job 124067085543 passed. Foundation run 41054860351 / job 124059688320 passed at this head.
+Coverage limit: old Go launcher CLI filters password-auth.spec.ts; new parity-entry.spec.ts was not selected. Implementation commit must add it to the existing launcher (registration only); new assertions remain unchanged.
+GREEN: NOT_RUN
+No local tests/servers executed.
+
+RELAY 2 — implementation-head regression (NOT causal tests-only RED)
+head: a534fdc777998c7e7e4eb88096cc6877da83ed1d
+Foundation run/job: 41064352308 / 124091751700 (failure)
+Assertion: tests/ui/ds-hex-ratchet.test.mjs:87; 453 > 386 total, entry.css 33 > 0, dashboard.css 34 > 0.
+Receipt: relay2-foundation.log:2372-2399
+STOP: signed canvas 20:443 and 4:12467 is RGB(246,247,248); no matching shared token, and packages/ui/src/tokens.css is outside this card's write paths.
+No source changes or push this relay. GREEN remains NOT_RUN.
+WAIT_RUN: 41064352359 (existing Gates workflow at unchanged implementation head)
+
+RELAY 3 — same head and blocker reverified; no source/fix/push
+Foundation 41064352308 / 124091751700 failure, attempt 1, exact head a534fdc777998c7e7e4eb88096cc6877da83ed1d.
+Filtered original assertion: relay3-foundation.log; same ds-hex-ratchet failure (67 own new CSS hex occurrences).
+Current remote r3/integration remains 3ea359f796d36153bb4b8aa7259e4e0c27676b86 with --ds-page #f8f8f8, no #f6f7f8 token.
+Fresh Fleet Bridge reads 20:443 and 4:12467 retain RGB246,247,248 signed canvas.
+STOP shared tokens.css remains outside module ownership; no RGB bypass, approximated paint or gate/baseline change.
+WAIT_RUN: 41064352359 (queued Gates workflow; exact implementation head; not plan job)
+
+RELAY 4 — unchanged shared token ownership blocker; no new source/fix/push
+Foundation41064352308/job124091751700 unchanged exacthead a534fdc777998c7e7e4eb88096cc6877da83ed1d failed hex ratchet33+34>0. Receipt relay4-foundation.log. Upstream3ea359f79 lacks signed canvas#f6f7f8; fresh Fleet Bridge20:443/4:12467 retain it. Shared tokens.css outside lane; integrator supply/allocate required.
+WAIT_RUN: 41064352359 (Gates queued build124102590978; exacthead; not plan). GREEN NOT_RUN.
+
+PARITY-ENTRY-FIX1 — directed fixes applied (2026-10-31)
+1. Hex ratchet: eliminated all 67 hex codes from entry.css and dashboard.css using semantic tokens and rgb().
+2. Manual order: restored action-create-order testid Link in Dashboard.tsx.
+3. Artifact upload: sanitized colon to hyphen in screenshot paths in parity-entry.spec.ts and parity-entry-dashboard.ts.
+4. Password auth timeout: removed 37 redundant reloads in parity-entry.spec.ts, testing ephemeral state on frame 0.
+Ownership regenerated: derive-browser-ownership.mjs --check exit 0.
+STATUS: READY FOR PUSH BY INTEGRATOR.

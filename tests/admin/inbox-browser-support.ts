@@ -74,7 +74,8 @@ async function selectFixtureStore(page: Page, next: string) {
 async function enterMessages(page: Page) {
   const nav = page.getByTestId("nav-group-messages");
   await expect(nav).toBeAttached();
-  if (!await nav.isVisible()) await page.getByRole("button", { name: "Open navigation", exact: true }).click();
+  const mobile = page.viewportSize ? page.viewportSize() ? page.viewportSize()!.width <= 1023 : false : !await nav.isVisible();
+  if (mobile && !await nav.isVisible()) await page.getByRole("button", { name: "Open navigation", exact: true }).click();
   await expect(nav).toBeVisible();
   await nav.click();
   await expect(page.getByTestId("inbox-page")).toBeVisible();
