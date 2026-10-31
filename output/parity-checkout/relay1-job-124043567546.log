@@ -1,0 +1,15 @@
+2026-10-30T11:43:31.8798893Z SHA256 digest of downloaded artifact is 7197f118f98a8e85b1f8018bb2b8114b64382257c37c783a31f612f0083021c5
+2026-10-30T11:43:33.1932164Z prebuilt: gocache restored from 76ca71d9865d69fa148c13b95f867311f48c0a68
+2026-10-30T11:44:09.1111273Z prebuilt: storefront restored from 76ca71d9865d69fa148c13b95f867311f48c0a68
+2026-10-30T11:44:09.3940329Z prebuilt: admin restored from 76ca71d9865d69fa148c13b95f867311f48c0a68
+2026-10-30T11:44:13.2012592Z === RUN   TestBrowserHomeCod
+2026-10-30T11:53:34.5111186Z     browser_home_cod_test.go:154: the buyer script ended before "placed": exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.iUdTt9iY/home-cod/20261030T114413.201195216
+2026-10-30T11:53:34.5382186Z --- FAIL: TestBrowserHomeCod (561.33s)
+2026-10-30T11:53:34.7816248Z ##[error]Process completed with exit code 1.
+2026-10-30T11:53:34.8382939Z matrix-receipts: {"mode":"--browser-home-cod","run_id":"41049530544","run_attempt":"1","sha":"76ca71d9865d69fa148c13b95f867311f48c0a68","status":"FAIL","test_count":3,"spec_count":2}
+2026-10-30T11:53:35.7305052Z SHA256 digest of uploaded artifact zip is 9c709b752403004d70efbe279885fcc8ab213c69cb66209c7a2bed6fcd146af5
+2026-10-30T11:53:36.3766027Z Artifact receipt-gate-browser-home-cod.zip successfully finalized. Artifact ID 12974971199
+2026-10-30T11:53:36.3767620Z Artifact receipt-gate-browser-home-cod has been successfully uploaded! Final size is 309 bytes. Artifact ID is 12974971199
+2026-10-30T11:53:36.4015601Z --- FAIL: TestBrowserHomeCod (561.33s)
+2026-10-30T11:53:36.5886272Z ##[error]The path for one of the files in artifact is not valid: /playwright/run.iUdTt9iY/home-cod/20261030T114413.201195216/parity/1429:23435.png. Contains the following character:  Colon :
+Invalid characters include:  Double quote ", Colon :, Less than <, Greater than >, Vertical bar |, Asterisk *, Question mark ?, Carriage return \r, Line feed \n

@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgconn"
+	"livecommerce/internal/platform"
 )
 
 const header = "顧客編號,姓名,手機,電子郵件,同意行銷,備註\n"
@@ -207,6 +208,19 @@ func TestAbortAndMapPGNeverCarryContent(t *testing.T) {
 	}
 	if e := mapPG(&pgconn.PgError{Code: "PT403"}); e == nil || strings.Contains(e.Error(), "PT") {
 		t.Fatalf("PT403: %v", e)
+	}
+}
+
+func TestMapPGExportReauthRequired(t *testing.T) {
+	for _, message := range []string{"reauth_required", "", "forbidden", "owner_role_disabled", "synthetic private driver text"} {
+		err := mapPG(fmt.Errorf("wrapped: %w", &pgconn.PgError{Code: "PT403", Message: message}))
+		want := platform.ErrForbidden
+		if message == "reauth_required" {
+			want = platform.ErrReauthRequired
+		}
+		if err != want {
+			t.Errorf("PT403 message %q: got %v, want %v", message, err, want)
+		}
 	}
 }
 

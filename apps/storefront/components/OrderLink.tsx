@@ -1,3 +1,7 @@
+// Purpose: Single-use buyer link exchange and signed generic refusal.
+// Depends on: order-link-contract, order-link-copy and state/StorefrontState.
+// Used by: localized order-link route.
+// Invariants: tokens stay in memory, never logged/stored; recovery never creates an order.
 "use client";
 
 // Manual-order buyer link page (/{locale}/order-link, contracts/storefront-v2.md section G3): read `#o=<order>&t=<token>` from the fragment, remove it
@@ -9,6 +13,7 @@
 // Depends on: lib/order-link-contract.ts (fragment grammar, result validator), lib/order-link-copy.ts.
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import { StorefrontState } from "./state/StorefrontState";
 import { orderLinkCopy } from "../lib/order-link-copy";
 import { orderLinkFragment, validLinkResult } from "../lib/order-link-contract";
 
@@ -77,10 +82,8 @@ export default function OrderLink({ locale }: { locale: Locale }) {
       <h1>{copy.title}</h1>
       {view === "opening" && <p role="status">{copy.opening}</p>}
       {view === "refused" && (
-        <div role="alert" data-testid="order-link-refused">
-          <p>{copy.refused}</p>
-          <p className="order-note">{copy.refusedHelp}</p>
-          <p><a className="tap-link" href={`/${locale}/orders/lookup`}>{copy.lookup}</a></p>
+        <div data-testid="order-link-refused">
+          <StorefrontState locale={locale} variant="expired" />
         </div>
       )}
       {view === "unavailable" && (

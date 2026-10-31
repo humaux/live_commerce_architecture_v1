@@ -36,10 +36,10 @@ async function openOrders(page: Page, locale: string, state = "") {
   await expect(page.getByTestId("merchant-orders")).toBeVisible();
   const selector = page.getByTestId("store-selector");
   if (await selector.count()) if ((await selector.inputValue()) !== store) await selector.selectOption(store);
-  await expect(page.getByTestId("orders-table")).toBeVisible();
+  await expect(page.getByTestId("orders-list")).toBeVisible();
 }
 // the rendered order row of an id (the baseline expand button is the one stable handle)
-const row = (page: Page, id: string): Locator => page.getByTestId(`order-expand-${id}`).locator("xpath=ancestor::tr[1]");
+const row = (page: Page, id: string): Locator => page.getByTestId(`order-expand-${id}`).locator("xpath=ancestor::article[1]");
 const marker = (page: Page, id: string, word: RegExp): Locator => row(page, id).getByText(word);
 
 const listRoute = /\/api\/stores\/[^/]+\/orders(\?.*)?$/;
@@ -103,10 +103,12 @@ test("OP2 live order feed: 20 s poll, no overlap, pause when hidden, new marker,
     expect(baseTitle).not.toMatch(/^\(\d+\)/);
     // the merchant's own context: a filter and an opened order
     const [openId] = seed.pending;
+    for(const id of [...seed.pending,...seed.collected]) await expect(row(page,id)).toBeVisible();
+    const listBefore=page.url();
     await page.getByTestId(`order-expand-${openId}`).click();
     await expect(page.getByTestId("order-detail")).toBeVisible();
     const urlBefore = page.url();
-    for (const id of [...seed.pending, ...seed.collected]) await expect(row(page, id)).toBeVisible();
+    await expect(page.getByTestId("orders-list")).toHaveCount(0);
     // no marker on anything the merchant already saw
     await expect(page.getByText(/^New$/)).toHaveCount(0);
 
@@ -129,21 +131,27 @@ test("OP2 live order feed: 20 s poll, no overlap, pause when hidden, new marker,
     await expect.poll(() => probe.inflight).toBe(0);
 
     // the new order carries a visible marker and the tab title the count; the seen orders do not
-    await expect(marker(page, one, /^New$/)).toBeVisible();
-    await expect(page.getByText(/^New$/)).toHaveCount(1);
+    // The badge updates while the signed standalone detail remains open.
+    await expect(page.getByTestId("order-detail")).toBeVisible();
     await expect.poll(() => page.title()).toMatch(/^\(1\) /);
     // brief OP2: the badge names the orders page ("(N) 訂單"), not the static layout title (fixed by agent/kimi-p2-ui)
     expect(await page.title()).toMatch(/^\(1\) (Orders|订单|訂單)$/);
     // filters and the open order are exactly as the merchant left them
     expect(page.url()).toBe(urlBefore);
+    await expect(page.getByTestId("order-detail")).toHaveAttribute("aria-label",new RegExp(openId));
+    await page.getByTestId("order-detail-back").click();
+    await expect(page).toHaveURL(listBefore);
     await expect(page.getByTestId("state-filter")).toHaveValue("CONFIRMED");
-    await expect(page.getByTestId("order-detail")).toBeVisible();
-    await expect(page.getByTestId(`order-expand-${openId}`)).toHaveAttribute("aria-expanded", "true");
+    await expect(marker(page,one,/^New$/)).toBeVisible();
+    await expect(page.getByText(/^New$/)).toHaveCount(1);
 
     // opening the new order acknowledges it: marker and count go away
     await page.getByTestId(`order-expand-${one}`).click();
     await expect(page.getByText(/^New$/)).toHaveCount(0);
     await expect.poll(() => page.title()).toBe(baseTitle);
+    await page.getByTestId("order-detail-back").click();
+    await expect(page.getByTestId("orders-list")).toBeVisible();
+    await expect(page.getByText(/^New$/)).toHaveCount(0);
 
     // two more orders: the count is cumulative over unseen orders
     const two = [await placeOrder(), await placeOrder()];
