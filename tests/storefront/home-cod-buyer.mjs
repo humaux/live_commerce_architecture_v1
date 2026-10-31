@@ -439,7 +439,7 @@ async function modeSaveFailure(ctx, locale) {
     Storage.prototype.setItem = function (k, v) { if (String(k).startsWith("commerce-checkout-mode-v2:")) throw new Error("injected storage failure"); return real.call(this, k, v); };
   });
   await setDetails(true);
-  await page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]').check(); // real click triggers the mode save
+  await page.locator('input[name="home_payment_mode"][value="cash_on_delivery"]').click(); // real click triggers the mode save; check() would fail by design: the failed save keeps the radio unchecked
   await setDetails(false);
   const alert = page.getByTestId("address-section").getByRole("alert").filter({ hasText: /\S/ });
   await expect(alert.first()).toBeVisible(); // the failure notice is visible to the buyer even with details closed
