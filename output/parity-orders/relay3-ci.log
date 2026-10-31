@@ -1,0 +1,10 @@
+PR #362 head c8962ec5d169bb065219db57496f0d3f54355fdd
+Gates run 41062490422, job 124100919876, attempt 1, FAILURE
+Tested synthetic merge 4adc7642416c76f153c76feb236dbe012646f81d, base 3ea359f796d36153bb4b8aa7259e4e0c27676b86
+Artifact 12982764604 gate-browser-visual-lint_2_4
+Raw log: gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/124100919876/logs
+Artifact lint.md: shots 85/85, missing 0, NOT_RUN 0, blocking 7, HTTP errors 1.
+R7 text-overflows-control: /en/orders, 390x844; View text 30.1px versus button width24px; hidden6.1px.
+HTTP404: /zh-CN/orders/[order]?store=<synthetic-store>; dynamic placeholder not substituted by sweep.
+Foundation run41062490424/job124085439930 SUCCESS on native head c8962ec5. Historical for next fix only.
+No GREEN claim for the fix.

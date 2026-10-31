@@ -1,0 +1,42 @@
+FEAT-AUTO-COLLECTIONS tests-only RED checkpoint
+Recorded: 2026-10-30
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/371
+Branch: unit/feat-auto-collections
+Base: r3/integration @ 3ea359f796d36153bb4b8aa7259e4e0c27676b86
+Head: 7cdb89bda0a2684cb6f0d70cd8fa4103ffe51d90
+Evidence: E1 static compilation only; causal RED PENDING, GREEN NOT_RUN.
+New test: TestCatalogCoreAutomaticCollections (5 independent subtests).
+Expected baseline assertion: automatic collection create or mode PATCH returns 422 rather than required 200.
+Expected failure is NOT yet observed; never count queued jobs as RED.
+
+GitHub raw receipts:
+gh pr checks 371 --json name,state,link,workflow
+foundation: QUEUED, workflow Foundation checks
+https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41055677331/job/124062480221
+plan: QUEUED, workflow Gates (GitHub runners)
+https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41055677410/job/124062481398
+Plan job is scheduling only and is NOT the awaited test job.
+WAIT_RUN Foundation: 41055677331
+WAIT_RUN Gates: 41055677410
+Gates actual shard job IDs: PENDING plan completion.
+gh run list confirmed both pull_request runs headSha=7cdb89bda0a2684cb6f0d70cd8fa4103ffe51d90.
+Tested synthetic merge SHA: NOT_YET_AVAILABLE.
+
+Local permitted static commands:
+gofmt -w tests/foundation/collection_rules_test.go: exit 0
+GOTOOLCHAIN=go1.27.3 go vet ./tests/foundation: exit 0
+node scripts/dev/derive-browser-ownership.mjs: exit 0, 53 modes
+node scripts/dev/derive-browser-ownership.mjs --check: exit 0
+git diff --cached --check: exit 0
+Local tests, servers, database, browser, product/GREEN acceptance, production/LIVE: NOT_RUN.
+
+Handoff: integrator relays a fresh session when the recorded runs finish. Read failed raw logs, bind run/job/head/merge SHA and record causal assertions here BEFORE implementation.
+Pending integrator allocation: R2 migration count pin; migration 0212 is allocated but no count pin was provided. Do not choose it independently.
+No auto-merge, merge, integration/main push, status posting, force push or deployment performed.
+
+RELAY 1 causal RED verified 2026-10-30:
+Gates run 41055677410 attempt 1, shard:g10 job 124069013163 FAILED.
+Head 7cdb89bda0a2684cb6f0d70cd8fa4103ffe51d90; tested merge 37938521d57438bc7cda00004a6f6e6b523afed0; base 3ea359f796d36153bb4b8aa7259e4e0c27676b86.
+E3 REAL_PG CI: all five new TestCatalogCoreAutomaticCollections subtests reached HTTP assertions and failed: POST /collections status=400 want 200; mode PATCH replay=400/400; scoped automatic create/replay=400/400. Strict body decoding rejects new rule/mode fields on the baseline. No compile/setup failure.
+Foundation run 41055677331 job 124062480221 passed its structural selection; this is not product acceptance.
+Raw job logs: red-g10.log (GitHub jobs/124069013163/logs; workflow-wide --log-failed unavailable while other shards run).

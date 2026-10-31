@@ -1,6 +1,6 @@
 // Purpose: Owns the editable order filter controls and validated apply callback, plus the link to the returns page
 //   (the server has no "has returns" order filter — returns-v1 §6; the RMA list lives at /{locale}/returns).
-// Depends on: react, @live-commerce/i18n, @/lib/orders-v2, @/lib/orders-v2-copy, @live-commerce/ui, @/lib/presentation-copy, @/lib/returns-copy
+// Depends on: ./orders/parity-copy, react, @live-commerce/i18n, @/lib/orders-v2, @/lib/orders-v2-copy, @live-commerce/ui, @/lib/presentation-copy, @/lib/returns-copy
 // Used by: apps/admin/components/MerchantOrders.tsx
 "use client";
 
@@ -11,6 +11,7 @@ import { deliveries, emptyFilters, modes, validOrderFilters, type OrderFilters, 
 import { ordersV2Copy } from "@/lib/orders-v2-copy";
 import { returnsCopy } from "@/lib/returns-copy";
 import { DateControl } from "@live-commerce/ui";
+import { parityCopy } from "./orders/parity-copy";
 import { presentationCopy } from "@/lib/presentation-copy";
 
 /** Owns the editable order filter controls and validated apply callback. */
@@ -20,6 +21,7 @@ export function OrderListFilters({ locale, filters, sessions, disabled, onApply,
   children: ReactNode;
 }) {
   const c = ordersV2Copy[locale];
+  const p = parityCopy[locale];
   const [draft, setDraft] = useState(filters);
   const [invalid, setInvalid] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -31,11 +33,11 @@ export function OrderListFilters({ locale, filters, sessions, disabled, onApply,
     onApply(next);
   }
   return <form className="orders-v2-filters" data-testid="orders-v2-filters" data-expanded={expanded} onSubmit={submit}>
-    <label className="orders-v2-search">{c.search}
-      <input type="search" data-testid="orders-search" value={draft.q} maxLength={160} onChange={e => change("q", e.target.value)} aria-describedby="orders-search-hint" />
-      <small id="orders-search-hint">{c.hint}</small>
-    </label>
-    <button type="button" className="orders-v2-filter-toggle" data-testid="orders-more-filters" aria-expanded={expanded} aria-controls="orders-state-field orders-secondary-filters" onClick={() => setExpanded(value => !value)}>{expanded ? c.lessFilters : c.moreFilters}</button>
+    <div className="signed-orders-search"><label className="orders-v2-search">
+      <input type="text" aria-label={c.search} placeholder={c.search} data-testid="orders-search" value={draft.q} maxLength={160} onChange={e => change("q", e.target.value)} />
+    </label><button className="primary" type="submit" data-testid="orders-apply" disabled={disabled}>{p.search}</button></div>
+    <div className="signed-filter-options">
+    <button type="button" className="orders-v2-filter-toggle" data-testid="orders-more-filters" aria-expanded={expanded} aria-controls="orders-state-field orders-secondary-filters" onClick={() => setExpanded(value => !value)}>{p.filters}</button>
     {children}
     <div id="orders-secondary-filters" className="orders-v2-secondary" hidden={!expanded}>
     <label>{c.payment}<select data-testid="orders-payment-filter" value={draft.payment_mode} onChange={e => change("payment_mode", e.target.value)}><option value="">{c.all}</option>{modes.map(mode => <option key={mode} value={mode}>{c.modes[mode]}</option>)}</select></label>
@@ -44,7 +46,8 @@ export function OrderListFilters({ locale, filters, sessions, disabled, onApply,
     <label>{c.from}<DateControl emptyLabel={presentationCopy[locale].date} data-testid="orders-from" type="date" lang={locale} min="2000-01-01" max="2199-12-31" value={draft.from} onChange={e => change("from", e.target.value)} /><small>{c.dateHint}</small></label>
     <label>{c.to}<DateControl emptyLabel={presentationCopy[locale].date} data-testid="orders-to" type="date" lang={locale} min="2000-01-01" max="2199-12-31" value={draft.to} onChange={e => change("to", e.target.value)} /><small>{c.dateHint}</small></label>
     </div>
-    <div className="orders-v2-filter-actions"><button type="submit" data-testid="orders-apply" disabled={disabled}>{c.apply}</button><button type="button" data-testid="orders-reset" disabled={disabled} onClick={() => { setDraft(emptyFilters); setInvalid(false); onApply(emptyFilters); }}>{c.reset}</button><a className="orders-v2-returns-link" data-testid="orders-returns-link" href={`/${locale}/returns`}>{returnsCopy[locale].listLink}</a></div>
+    <div className="orders-v2-filter-actions"><button type="button" data-testid="orders-reset" disabled={disabled} onClick={() => { setDraft(emptyFilters); setInvalid(false); onApply(emptyFilters); }}>{c.reset}</button><a className="orders-v2-returns-link" data-testid="orders-returns-link" href={`/${locale}/returns`}>{returnsCopy[locale].listLink}</a></div>
+    </div>
     {invalid && <p role="alert">{c.invalid}</p>}
   </form>;
 }

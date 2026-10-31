@@ -407,3 +407,107 @@ Status: DESIGN frozen by integrator for OC-11 (#221); implementation/CI/independ
 - R5 (revised 2026-10-29, supersedes the in-memory wording) The pending `{idempotency_key, expected_draft_version}` is kept in the tab's sessionStorage; a reload restores 「發布結果待確認」 and continues R3 resolution with the same key and body. Reload itself performs no write until R3 resends. A resolved outcome (R4) clears it.
 - R6 Route table (absolute, unchanged behaviour; listed so the drift gate resolves the design routes this continuation touches): `GET /v1/admin/stores/{store_id}/design/draft` (integration:read), `PUT /v1/admin/stores/{store_id}/design/draft` (integration:manage, CAS), `GET /v1/admin/stores/{store_id}/design/versions` (integration:read), `GET /v1/admin/stores/{store_id}/design/media` (integration:read), `POST /v1/admin/stores/{store_id}/design/media` (integration:manage, upload), `GET /v1/admin/stores/{store_id}/design/media/{image_id}` (integration:read).
 - Acceptance (each red first): Go — same key twice = one version row + equal answers; other body 409; missing key 422; concurrent same key = one row. Browser (real clicks, three locales) — forced ambiguous publish → pending → same-key resend resolves to published; stale draft → 草稿已變更; no request ever carries a second key for one publish. Oracle wording: "exactly one publish request" is replaced by "every publish request of one attempt carries the same Idempotency-Key and body, and exactly one published version row results".
+
+## AMENDMENT 2026-10-30 — FEAT-AUTO-COLLECTIONS (§A automatic membership)
+
+Supersedes: the FEATURE-GAP / UX-K2 exclusion of automatic collection rules and §A's manual-only
+membership interpretation. Earlier amendments remain unchanged. Owner ruling: 「补后端一起做」;
+production Figma `iJ9lDdFIXgTlKkt5Tvrc0X`, page `4:8829`, frames `6:19278` / `6:19486`,
+read through Fleet Bridge 2026-10-30. UI: pending PARITY-NEWFEAT.
+
+Migration: `0212_collection_rules.sql`, forward-only. Existing collections default to `manual` and
+retain all rows/images/versions. Existing FORCE RLS and role policies apply to the extended table;
+only the two new column UPDATE grants are added. No new queue, worker, copied automatic member,
+dependency or external side effect.
+
+### Endpoints and payloads
+
+Base merchant Go `/v1/admin/stores/{store_id}`, existing BFF `/api/stores/{store}`.
+Tenant and authorized store come exclusively from server authentication; body `tenant_id` and
+`store_id` are discarded, regardless of their JSON value. Foreign collection ids return 404.
+
+| Method/path (both bases) | Permission | Result (200) |
+| --- | --- | --- |
+| `POST /collections` | `catalog:write` | Create and return Collection |
+| `GET /collections` | `catalog:read` | Existing `{items:[Collection],next_cursor}` page |
+| `GET /collections/{id}` | `catalog:read` | Collection plus `{products:[CollectionProduct]}` |
+| `PATCH /collections/{id}` | `catalog:write` | Atomically save mode/rules and return Collection |
+| `PUT /collections/{id}/products` | `catalog:write` | Existing manual ordered-list replace; automatic returns 409 |
+
+Create example (other existing title/slug/description/sort/status fields remain supported):
+```json
+{"title":"本週新品","membership_mode":"automatic","sort_mode":"newest","rules":{"match":"all","conditions":[{"field":"created_at","operator":"within_days","days":7}]}}
+```
+PATCH example:
+```json
+{"expected_version":1,"membership_mode":"automatic","rules":{"match":"any","conditions":[{"field":"created_at","operator":"within_days","days":1},{"field":"created_at","operator":"within_days","days":7}]}}
+```
+Collection response extends the existing closed schema with:
+```json
+{"membership_mode":"automatic","rules":{"match":"all","conditions":[{"field":"created_at","operator":"within_days","days":7}]}}
+```
+Unchanged fields: `{id,slug,title,description,sort_mode,status,image_id,product_count,version}`.
+Legacy manual collections return `membership_mode:"manual", rules:null`. Manual lists/counts retain
+existing merchant semantics; automatic `products`/`product_count` are read-time active products
+with an active SKU in the store currency. No 500-member cap applies to automatic matches; the
+existing cap still applies to manual lists. CollectionProduct remains
+`{product_id,name,slug,status,position,cover_image_id}`; automatic positions are computed in sort order.
+
+Rules: `match` is exactly `all|any`; 1–20 conditions; each condition is exactly
+`{field:"created_at",operator:"within_days",days:integer 1..3650}`. Membership compares the actual
+product creation instant against the current SQL statement time: `now-days < created_at <= now`.
+Future timestamps do not match. Unknown keys/fields/operators, null/missing automatic rules,
+empty lists and fractional/out-of-range days are refused with 422, atomically.
+Creation defaults to manual. PATCH omissions keep saved fields; explicit null rules are invalid.
+A mode switch saves only on PATCH, increments the version once, never deletes the retained manual
+list, and keeps valid saved rules when switching to manual. Switching back may reuse those rules.
+A read or editor draft never mutates saved membership. `sort_mode` retains
+`manual|newest|price_asc|price_desc`; automatic `manual` falls back to newest (no manual rank exists).
+No additional sort option was shown in the owning frames.
+
+### Buyer consistency and visibility
+
+Existing buyer routes and JSON shapes stay in place:
+`GET /v1/buyer/catalog/v2/products?collection={slug}`, `.../products/{slug_or_id}`,
+`.../collections`, `.../collections/{slug}` and their storefront BFF consumers.
+Automatic membership is evaluated in SQL at read time in the product filter, collection counts,
+product-detail collection list and merchant preview. The same timestamp predicate is shared.
+Origin resolves a published active store; active collection, active product and an active
+store-currency SKU are required. Hidden, draft, archived, foreign and unpublished records never
+leak through list/count/detail. Public JSON does not expose rule configuration or manual snapshots.
+Existing query sorts/filters, image roles, media renditions and cursor grammar are preserved.
+No index is added: the products primary key already scopes by `(tenant_id,store_id)`, and there is
+no measured plan/scale justification for a second index for this bounded rule grammar.
+
+### Results, errors, retries, retention
+
+All writes require the existing 8–128 character `Idempotency-Key`. Scope/operation/key and canonical
+validated payload bind `ops.command_results`; successful retry returns the saved result, including
+after later version changes. Reusing a key with a different valid payload returns 409 `conflict`.
+PATCH/PUT require positive `expected_version`; stale version returns 409 `conflict`. All command,
+version, audit and rule writes share the authenticated transaction and rollback on any refusal.
+Reads require no key. No new error envelope or codes are introduced.
+
+| HTTP/code | Meaning |
+| --- | --- |
+| 200 | Saved/replayed result or read result as above |
+| 400 `invalid_json` | Malformed/trailing JSON, unknown top-level key, incompatible top-level field type/body bound |
+| 401 `unauthorized` | Missing/invalid merchant session |
+| 403 `forbidden` | Staff lacks required permission; buyer bearer/cookie or BFF credential refusal |
+| 404 `not_found` | Unknown/foreign collection or unavailable public store/product/collection |
+| 409 `conflict` | Stale version, changed keyed payload, slug/cap conflict or list replacement while automatic |
+| 422 `invalid_request` | Invalid rule/mode/field/query/version/key semantics |
+| 503 `retry_later` / `unavailable` | Existing timeout/cancellation/availability mapping; do not assume a failed save |
+| 500 `internal` | Existing unexpected server/database failure envelope; no request content in diagnostics |
+
+Rules and retained manual memberships remain until existing collection deletion; delete removes
+collection metadata/mappings/images, never products. Successful command receipts/audit retain the
+existing operations policy, with no new purge or invented legal period. Time windows remove members
+from query results without deleting anything. No message bodies, email, phone or real buyer PII.
+
+DEFERRED: frame tag and product-source rules have no catalog product schema field. Title/price/status
+conditions and absolute created-after input are not shown by these frames and are not introduced.
+Acceptance: PR's own CI runs `TestCatalogCoreAutomaticCollections` plus existing catalog, RLS,
+upgrade and public-route gates. RED head `7cdb89bd`, Gates run `41055677410`, job `124069013163`
+failed all five new subtests on missing HTTP rule/mode behavior (400 versus expected 200).
+GREEN and independent acceptance remain pending until the implementation head is tested.
