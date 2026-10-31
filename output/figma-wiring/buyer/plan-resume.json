@@ -1,0 +1,2874 @@
+[
+  {
+    "root": "4:9668",
+    "source": "25:745",
+    "sourceName": "Action / 前往結帳",
+    "destination": "1429:23435",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Replace superseded checkout destination"
+  },
+  {
+    "root": "4:9746",
+    "source": "51:1541",
+    "sourceName": "Action / 前往結帳",
+    "destination": "1429:23484",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Replace superseded checkout destination"
+  },
+  {
+    "root": "4:12347",
+    "source": "66:1964",
+    "sourceName": "Action / 前往結帳（共 2 件）",
+    "destination": "1429:23435",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Replace superseded checkout destination"
+  },
+  {
+    "root": "4:12417",
+    "source": "66:2118",
+    "sourceName": "Action / 前往結帳（共 2 件）",
+    "destination": "1429:23484",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Replace superseded checkout destination"
+  },
+  {
+    "root": "66:1748",
+    "source": "66:1807",
+    "sourceName": "Action / 前往結帳（共 2 件）",
+    "destination": "1429:23435",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Replace superseded checkout destination"
+  },
+  {
+    "root": "66:1749",
+    "source": "66:2018",
+    "sourceName": "Action / 前往結帳（共 2 件）",
+    "destination": "1429:23484",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Replace superseded checkout destination"
+  },
+  {
+    "root": "66:1752",
+    "source": "66:1886",
+    "sourceName": "Action / 前往結帳（共 2 件）",
+    "destination": "1429:23435",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Replace superseded checkout destination"
+  },
+  {
+    "root": "66:1753",
+    "source": "66:2071",
+    "sourceName": "Action / 前往結帳（共 2 件）",
+    "destination": "1429:23484",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Replace superseded checkout destination"
+  },
+  {
+    "root": "6:21771",
+    "source": "27:1219",
+    "sourceName": "Product / 輕量帆布托特包",
+    "destination": "4:12347",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Live product claim entry"
+  },
+  {
+    "root": "6:21825",
+    "source": "27:1260",
+    "sourceName": "Product / 輕量帆布托特包",
+    "destination": "4:12417",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Live product claim entry"
+  },
+  {
+    "root": "1429:13961",
+    "source": "1429:13988",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14065",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:13961",
+    "source": "1429:13992",
+    "sourceName": "Input / 選擇行政區　⌄",
+    "destination": "1429:14166",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14020",
+    "source": "1429:14036",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14122",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14020",
+    "source": "1429:14040",
+    "sourceName": "Input / 選擇行政區　⌄",
+    "destination": "1429:14237",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14065",
+    "source": "1429:14090",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:13961",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14122",
+    "source": "1429:14136",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:14020",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14166",
+    "source": "1429:14191",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:13961",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14166",
+    "source": "1429:14193",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14065",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14237",
+    "source": "1429:14251",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:14020",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14237",
+    "source": "1429:14253",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14122",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14294",
+    "source": "1429:14319",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:13961",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14294",
+    "source": "1429:14321",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14065",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14359",
+    "source": "1429:14373",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:14020",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14359",
+    "source": "1429:14375",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14122",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14411",
+    "source": "1429:14436",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:13961",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14411",
+    "source": "1429:14438",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14065",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14472",
+    "source": "1429:14486",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:14020",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14472",
+    "source": "1429:14488",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14122",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14519",
+    "source": "1429:14544",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:13961",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14519",
+    "source": "1429:14546",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14065",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14578",
+    "source": "1429:14592",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:14020",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14578",
+    "source": "1429:14594",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14122",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14624",
+    "source": "1429:14649",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:13961",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14624",
+    "source": "1429:14651",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14065",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14624",
+    "source": "1429:14665",
+    "sourceName": "Action / 更換門市",
+    "destination": "1429:14294",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14624",
+    "source": "1429:14669",
+    "sourceName": "Action / 確認取貨門市",
+    "destination": "1429:14849",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Confirm selected store"
+  },
+  {
+    "root": "1429:14688",
+    "source": "1429:14702",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:14020",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14688",
+    "source": "1429:14704",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14122",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14688",
+    "source": "1429:14716",
+    "sourceName": "Action / 更換門市",
+    "destination": "1429:14359",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14688",
+    "source": "1429:14719",
+    "sourceName": "Action / 確認取貨門市",
+    "destination": "1429:14914",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Confirm selected store"
+  },
+  {
+    "root": "1429:14738",
+    "source": "1429:14763",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:13961",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14738",
+    "source": "1429:14765",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14065",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14738",
+    "source": "1429:14777",
+    "sourceName": "Action / 更換門市",
+    "destination": "1429:14294",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14738",
+    "source": "1429:14781",
+    "sourceName": "Action / 確認取貨門市",
+    "destination": "1429:14965",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Confirm selected store"
+  },
+  {
+    "root": "1429:14800",
+    "source": "1429:14814",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:14020",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14800",
+    "source": "1429:14816",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14122",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14800",
+    "source": "1429:14827",
+    "sourceName": "Action / 更換門市",
+    "destination": "1429:14359",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:14800",
+    "source": "1429:14830",
+    "sourceName": "Action / 確認取貨門市",
+    "destination": "1429:15028",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Confirm selected store"
+  },
+  {
+    "root": "1429:15078",
+    "source": "1429:15103",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:13961",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15078",
+    "source": "1429:15105",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14065",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15152",
+    "source": "1429:15166",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:14020",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15152",
+    "source": "1429:15168",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14122",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15212",
+    "source": "1429:15237",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:13961",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15212",
+    "source": "1429:15239",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14065",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15280",
+    "source": "1429:15294",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:14020",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15280",
+    "source": "1429:15296",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14122",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15335",
+    "source": "1429:15360",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:13961",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15335",
+    "source": "1429:15362",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14065",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15335",
+    "source": "1429:15376",
+    "sourceName": "Action / 更換門市",
+    "destination": "1429:14294",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15401",
+    "source": "1429:15415",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:14020",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15401",
+    "source": "1429:15417",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14122",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15401",
+    "source": "1429:15429",
+    "sourceName": "Action / 更換門市",
+    "destination": "1429:14359",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15453",
+    "source": "1429:15478",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:13961",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15453",
+    "source": "1429:15480",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14065",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15453",
+    "source": "1429:15492",
+    "sourceName": "Action / 更換門市",
+    "destination": "1429:14294",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15517",
+    "source": "1429:15531",
+    "sourceName": "Action / 依地區",
+    "destination": "1429:14020",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15517",
+    "source": "1429:15533",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14122",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15517",
+    "source": "1429:15544",
+    "sourceName": "Action / 更換門市",
+    "destination": "1429:14359",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15568",
+    "source": "1429:15589",
+    "sourceName": "Action / 更換門市",
+    "destination": "1429:14294",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15568",
+    "source": "1429:15816",
+    "sourceName": "Action / 確認下單",
+    "destination": "1429:24505",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Return selected CVS to online checkout"
+  },
+  {
+    "root": "1429:15634",
+    "source": "1429:15646",
+    "sourceName": "Action / 更換門市",
+    "destination": "1429:14359",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15634",
+    "source": "1429:15666",
+    "sourceName": "Sticky checkout action",
+    "destination": "1429:24554",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Return selected CVS to online checkout"
+  },
+  {
+    "root": "1429:15686",
+    "source": "1429:15707",
+    "sourceName": "Action / 更換門市",
+    "destination": "1429:14294",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15686",
+    "source": "1429:15843",
+    "sourceName": "Action / 確認下單",
+    "destination": "1429:24505",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Return selected CVS to online checkout"
+  },
+  {
+    "root": "1429:15752",
+    "source": "1429:15764",
+    "sourceName": "Action / 更換門市",
+    "destination": "1429:14359",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Picker tab/selection"
+  },
+  {
+    "root": "1429:15752",
+    "source": "1429:15784",
+    "sourceName": "Sticky checkout action",
+    "destination": "1429:24554",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Return selected CVS to online checkout"
+  },
+  {
+    "root": "1429:23781",
+    "source": "I1429:23786;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:13961",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Open CVS picker outcome branch"
+  },
+  {
+    "root": "1429:23832",
+    "source": "I1429:23837;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:14020",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Open CVS picker outcome branch"
+  },
+  {
+    "root": "782:3904",
+    "source": "789:3962",
+    "sourceName": "Action / 門市取貨",
+    "destination": "1429:13961",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Open CVS picker outcome branch"
+  },
+  {
+    "root": "782:4087",
+    "source": "789:4133",
+    "sourceName": "Action / 門市取貨",
+    "destination": "1429:14020",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Open CVS picker outcome branch"
+  },
+  {
+    "root": "782:3904",
+    "source": "789:3969",
+    "sourceName": "Input / 收件人",
+    "destination": "15:310",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:4087",
+    "source": "789:4140",
+    "sourceName": "Input / 收件人",
+    "destination": "15:371",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:3904",
+    "source": "789:3962",
+    "sourceName": "Action / 門市取貨",
+    "destination": "25:943",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:4087",
+    "source": "789:4133",
+    "sourceName": "Action / 門市取貨",
+    "destination": "25:995",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:9192",
+    "source": "27:715",
+    "sourceName": "Field / 搜尋商品",
+    "destination": "26:676",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "26:708",
+    "source": "26:729",
+    "sourceName": "Action / 查詢訂單",
+    "destination": "26:746",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:9296",
+    "source": "27:789",
+    "sourceName": "Field / 搜尋商品",
+    "destination": "26:968",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "26:995",
+    "source": "26:1011",
+    "sourceName": "Action / 查詢訂單",
+    "destination": "26:1028",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "5:15460",
+    "source": "38:1201",
+    "sourceName": "Action / 下載我的資料",
+    "destination": "37:1140",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "5:15540",
+    "source": "38:1342",
+    "sourceName": "Action / 下載我的資料",
+    "destination": "37:1173",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "26:708",
+    "source": "26:729",
+    "sourceName": "Action / 查詢訂單",
+    "destination": "63:1475",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "26:995",
+    "source": "26:1011",
+    "sourceName": "Action / 查詢訂單",
+    "destination": "63:1476",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "26:708",
+    "source": "26:729",
+    "sourceName": "Action / 查詢訂單",
+    "destination": "63:1477",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        51
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "26:995",
+    "source": "26:1011",
+    "sourceName": "Action / 查詢訂單",
+    "destination": "63:1478",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        51
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:12347",
+    "source": "66:1964",
+    "sourceName": "Action / 前往結帳（共 2 件）",
+    "destination": "66:1746",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:12417",
+    "source": "66:2118",
+    "sourceName": "Action / 前往結帳（共 2 件）",
+    "destination": "66:1747",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:12347",
+    "source": "66:1964",
+    "sourceName": "Action / 前往結帳（共 2 件）",
+    "destination": "66:1748",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:12417",
+    "source": "66:2118",
+    "sourceName": "Action / 前往結帳（共 2 件）",
+    "destination": "66:1749",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:12347",
+    "source": "66:1964",
+    "sourceName": "Action / 前往結帳（共 2 件）",
+    "destination": "66:1750",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        51
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:12417",
+    "source": "66:2118",
+    "sourceName": "Action / 前往結帳（共 2 件）",
+    "destination": "66:1751",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        51
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:12347",
+    "source": "66:1964",
+    "sourceName": "Action / 前往結帳（共 2 件）",
+    "destination": "66:1752",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        52
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:12417",
+    "source": "66:2118",
+    "sourceName": "Action / 前往結帳（共 2 件）",
+    "destination": "66:1753",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        52
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:12347",
+    "source": "66:1964",
+    "sourceName": "Action / 前往結帳（共 2 件）",
+    "destination": "66:1754",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        53
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:12417",
+    "source": "66:2118",
+    "sourceName": "Action / 前往結帳（共 2 件）",
+    "destination": "66:1755",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        53
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:9668",
+    "source": "25:745",
+    "sourceName": "Action / 前往結帳",
+    "destination": "102:2267",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:9746",
+    "source": "51:1541",
+    "sourceName": "Action / 前往結帳",
+    "destination": "102:2324",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:9668",
+    "source": "25:745",
+    "sourceName": "Action / 前往結帳",
+    "destination": "104:2313",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:9746",
+    "source": "51:1541",
+    "sourceName": "Action / 前往結帳",
+    "destination": "104:2371",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:9668",
+    "source": "25:745",
+    "sourceName": "Action / 前往結帳",
+    "destination": "104:2657",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        51
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:9746",
+    "source": "51:1541",
+    "sourceName": "Action / 前往結帳",
+    "destination": "104:2715",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        51
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:9668",
+    "source": "25:745",
+    "sourceName": "Action / 前往結帳",
+    "destination": "104:3176",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        52
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:9746",
+    "source": "51:1541",
+    "sourceName": "Action / 前往結帳",
+    "destination": "104:3234",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        52
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:9668",
+    "source": "25:745",
+    "sourceName": "Action / 前往結帳",
+    "destination": "104:3520",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        53
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:9746",
+    "source": "51:1541",
+    "sourceName": "Action / 前往結帳",
+    "destination": "104:3578",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        53
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:9668",
+    "source": "25:745",
+    "sourceName": "Action / 前往結帳",
+    "destination": "104:3862",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        54
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:9746",
+    "source": "51:1541",
+    "sourceName": "Action / 前往結帳",
+    "destination": "104:3920",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        54
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:3904",
+    "source": "789:3962",
+    "sourceName": "Action / 門市取貨",
+    "destination": "1198:14815",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        51
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:4087",
+    "source": "789:4133",
+    "sourceName": "Action / 門市取貨",
+    "destination": "1198:15153",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        51
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:3904",
+    "source": "789:3962",
+    "sourceName": "Action / 門市取貨",
+    "destination": "1222:14056",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        52
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:4087",
+    "source": "789:4133",
+    "sourceName": "Action / 門市取貨",
+    "destination": "1222:14106",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        52
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:3904",
+    "source": "789:3962",
+    "sourceName": "Action / 門市取貨",
+    "destination": "1222:14148",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        53
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:4087",
+    "source": "789:4133",
+    "sourceName": "Action / 門市取貨",
+    "destination": "1222:14197",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        53
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:3904",
+    "source": "789:3962",
+    "sourceName": "Action / 門市取貨",
+    "destination": "1222:14238",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        54
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:4087",
+    "source": "789:4133",
+    "sourceName": "Action / 門市取貨",
+    "destination": "1222:14287",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        54
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:3904",
+    "source": "789:3962",
+    "sourceName": "Action / 門市取貨",
+    "destination": "1222:14965",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        55
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:4087",
+    "source": "789:4133",
+    "sourceName": "Action / 門市取貨",
+    "destination": "1222:15012",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        55
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:3904",
+    "source": "789:3962",
+    "sourceName": "Action / 門市取貨",
+    "destination": "1222:15051",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        56
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:4087",
+    "source": "789:4133",
+    "sourceName": "Action / 門市取貨",
+    "destination": "1222:15290",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        56
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:9963",
+    "source": "25:840",
+    "sourceName": "Action / 前往安全付款頁",
+    "destination": "1222:21795",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:10049",
+    "source": "25:898",
+    "sourceName": "Action / 前往安全付款頁",
+    "destination": "1222:22313",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:3904",
+    "source": "789:3995",
+    "sourceName": "Action / 確認下單",
+    "destination": "1222:26991",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:3904",
+    "source": "789:3995",
+    "sourceName": "Action / 確認下單",
+    "destination": "1222:27044",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:3904",
+    "source": "789:3995",
+    "sourceName": "Action / 確認下單",
+    "destination": "1222:27097",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        51
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:4087",
+    "source": "789:4168",
+    "sourceName": "Action / 確認下單",
+    "destination": "1222:27195",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:4087",
+    "source": "789:4168",
+    "sourceName": "Action / 確認下單",
+    "destination": "1222:27240",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:4087",
+    "source": "789:4168",
+    "sourceName": "Action / 確認下單",
+    "destination": "1222:27285",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        51
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:3904",
+    "source": "789:3962",
+    "sourceName": "Action / 門市取貨",
+    "destination": "1225:20147",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        57
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:4087",
+    "source": "789:4133",
+    "sourceName": "Action / 門市取貨",
+    "destination": "1225:20196",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        57
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:3904",
+    "source": "789:3995",
+    "sourceName": "Action / 確認下單",
+    "destination": "1241:15225",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        52
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:3904",
+    "source": "789:3995",
+    "sourceName": "Action / 確認下單",
+    "destination": "1241:15291",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        53
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:4087",
+    "source": "789:4168",
+    "sourceName": "Action / 確認下單",
+    "destination": "1241:15370",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        52
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "782:4087",
+    "source": "789:4168",
+    "sourceName": "Action / 確認下單",
+    "destination": "1241:15428",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        53
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "6:19772",
+    "source": "792:3973",
+    "sourceName": "Action / 所有商品",
+    "destination": "1253:17090",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "6:19859",
+    "source": "792:3993",
+    "sourceName": "Action / 所有商品",
+    "destination": "1253:17114",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:9192",
+    "source": "27:723",
+    "sourceName": "Action / 探索日常選物",
+    "destination": "1253:17135",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:9296",
+    "source": "27:797",
+    "sourceName": "Action / 探索日常選物",
+    "destination": "1253:17159",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "26:708",
+    "source": "26:729",
+    "sourceName": "Action / 查詢訂單",
+    "destination": "1253:17225",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        52
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "26:995",
+    "source": "26:1011",
+    "sourceName": "Action / 查詢訂單",
+    "destination": "1253:17256",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        52
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:13961",
+    "source": "1429:13992",
+    "sourceName": "Input / 選擇行政區　⌄",
+    "destination": "1429:14411",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:14020",
+    "source": "1429:14040",
+    "sourceName": "Input / 選擇行政區　⌄",
+    "destination": "1429:14472",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:14065",
+    "source": "1429:14092",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14519",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:14122",
+    "source": "1429:14138",
+    "sourceName": "Action / 搜尋",
+    "destination": "1429:14578",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:14166",
+    "source": "1429:14183",
+    "sourceName": "Action / 7-ELEVEN",
+    "destination": "1429:14624",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:14237",
+    "source": "1429:14243",
+    "sourceName": "Action / 7-ELEVEN",
+    "destination": "1429:14688",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:14624",
+    "source": "1429:14669",
+    "sourceName": "Action / 確認取貨門市",
+    "destination": "1429:15078",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:14688",
+    "source": "1429:14719",
+    "sourceName": "Action / 確認取貨門市",
+    "destination": "1429:15152",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:14738",
+    "source": "1429:14781",
+    "sourceName": "Action / 確認取貨門市",
+    "destination": "1429:15212",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:14800",
+    "source": "1429:14830",
+    "sourceName": "Action / 確認取貨門市",
+    "destination": "1429:15280",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:14624",
+    "source": "1429:14669",
+    "sourceName": "Action / 確認取貨門市",
+    "destination": "1429:15335",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:14688",
+    "source": "1429:14719",
+    "sourceName": "Action / 確認取貨門市",
+    "destination": "1429:15401",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:14738",
+    "source": "1429:14781",
+    "sourceName": "Action / 確認取貨門市",
+    "destination": "1429:15453",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:14800",
+    "source": "1429:14830",
+    "sourceName": "Action / 確認取貨門市",
+    "destination": "1429:15517",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:14624",
+    "source": "1429:14669",
+    "sourceName": "Action / 確認取貨門市",
+    "destination": "1429:15568",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        51
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:14688",
+    "source": "1429:14719",
+    "sourceName": "Action / 確認取貨門市",
+    "destination": "1429:15634",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        51
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:14738",
+    "source": "1429:14781",
+    "sourceName": "Action / 確認取貨門市",
+    "destination": "1429:15686",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        51
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:14800",
+    "source": "1429:14830",
+    "sourceName": "Action / 確認取貨門市",
+    "destination": "1429:15752",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        51
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23435",
+    "source": "I1429:23440;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:23533",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23484",
+    "source": "I1429:23489;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:23577",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23435",
+    "source": "I1429:23440;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:23701",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23484",
+    "source": "I1429:23489;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:23741",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23781",
+    "source": "I1429:23786;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:23883",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23832",
+    "source": "I1429:23837;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:23929",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23781",
+    "source": "I1429:23786;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:24059",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        51
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23832",
+    "source": "I1429:23837;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:24101",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        51
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:24143",
+    "source": "I1429:24148;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:24245",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:24194",
+    "source": "I1429:24199;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:24291",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:24143",
+    "source": "I1429:24148;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:24421",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:24194",
+    "source": "I1429:24199;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:24463",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23781",
+    "source": "I1429:23786;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:24603",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        52
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23832",
+    "source": "I1429:23837;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:24654",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        52
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23781",
+    "source": "I1429:23786;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:24705",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        53
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23832",
+    "source": "I1429:23837;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:24756",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        53
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:24505",
+    "source": "I1429:24510;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:25101",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:24554",
+    "source": "I1429:24559;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:25145",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        49
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:24505",
+    "source": "I1429:24510;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:25269",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:24554",
+    "source": "I1429:24559;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:25309",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23781",
+    "source": "I1429:23786;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:25349",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        54
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23832",
+    "source": "I1429:23837;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:25395",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        54
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23781",
+    "source": "I1429:23786;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:25525",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        55
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23832",
+    "source": "I1429:23837;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:25567",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        55
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23781",
+    "source": "I1429:23786;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:25609",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        56
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23832",
+    "source": "I1429:23837;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:25655",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        56
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23781",
+    "source": "I1429:23786;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:25785",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        57
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:23832",
+    "source": "I1429:23837;1429:20657",
+    "sourceName": "SubmitAction",
+    "destination": "1429:25827",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        57
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:9192",
+    "source": "27:723",
+    "sourceName": "Action / 探索日常選物",
+    "destination": "1430:68473",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "4:9296",
+    "source": "27:797",
+    "sourceName": "Action / 探索日常選物",
+    "destination": "1430:68559",
+    "trigger": {
+      "type": "ON_KEY_DOWN",
+      "device": "KEYBOARD",
+      "keyCodes": [
+        50
+      ]
+    },
+    "replaceClick": false,
+    "reason": "Alternate outcome / variant from producing step; keyboard branch"
+  },
+  {
+    "root": "1429:14166",
+    "source": "1429:14204",
+    "sourceName": "Store option / 121275 / whole-row target",
+    "destination": "1429:14624",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Select actual region result row"
+  },
+  {
+    "root": "1429:14237",
+    "source": "1429:14262",
+    "sourceName": "Store option / 121275 / whole-row target",
+    "destination": "1429:14688",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Select actual region result row"
+  },
+  {
+    "root": "1429:14849",
+    "source": "1429:14850",
+    "sourceName": "Header",
+    "destination": "1429:15568",
+    "trigger": {
+      "type": "AFTER_TIMEOUT",
+      "timeout": 1.2
+    },
+    "replaceClick": false,
+    "reason": "Prototype submission/confirmation resolves to server-observed order/summary"
+  },
+  {
+    "root": "1429:14914",
+    "source": "1429:14915",
+    "sourceName": "Sticky brand and filters",
+    "destination": "1429:15634",
+    "trigger": {
+      "type": "AFTER_TIMEOUT",
+      "timeout": 1.2
+    },
+    "replaceClick": false,
+    "reason": "Prototype submission/confirmation resolves to server-observed order/summary"
+  },
+  {
+    "root": "1429:14965",
+    "source": "1429:14966",
+    "sourceName": "Header",
+    "destination": "1429:15686",
+    "trigger": {
+      "type": "AFTER_TIMEOUT",
+      "timeout": 1.2
+    },
+    "replaceClick": false,
+    "reason": "Prototype submission/confirmation resolves to server-observed order/summary"
+  },
+  {
+    "root": "1429:15028",
+    "source": "1429:15029",
+    "sourceName": "Sticky brand and filters",
+    "destination": "1429:15752",
+    "trigger": {
+      "type": "AFTER_TIMEOUT",
+      "timeout": 1.2
+    },
+    "replaceClick": false,
+    "reason": "Prototype submission/confirmation resolves to server-observed order/summary"
+  },
+  {
+    "root": "1429:23621",
+    "source": "1429:23622",
+    "sourceName": "Header",
+    "destination": "4:9963",
+    "trigger": {
+      "type": "AFTER_TIMEOUT",
+      "timeout": 1.2
+    },
+    "replaceClick": false,
+    "reason": "Prototype submission/confirmation resolves to server-observed order/summary"
+  },
+  {
+    "root": "1429:23661",
+    "source": "1429:23662",
+    "sourceName": "Header",
+    "destination": "4:10049",
+    "trigger": {
+      "type": "AFTER_TIMEOUT",
+      "timeout": 1.2
+    },
+    "replaceClick": false,
+    "reason": "Prototype submission/confirmation resolves to server-observed order/summary"
+  },
+  {
+    "root": "1429:23975",
+    "source": "1429:23976",
+    "sourceName": "Header",
+    "destination": "1198:14815",
+    "trigger": {
+      "type": "AFTER_TIMEOUT",
+      "timeout": 1.2
+    },
+    "replaceClick": false,
+    "reason": "Prototype submission/confirmation resolves to server-observed order/summary"
+  },
+  {
+    "root": "1429:24017",
+    "source": "1429:24018",
+    "sourceName": "Header",
+    "destination": "1198:15153",
+    "trigger": {
+      "type": "AFTER_TIMEOUT",
+      "timeout": 1.2
+    },
+    "replaceClick": false,
+    "reason": "Prototype submission/confirmation resolves to server-observed order/summary"
+  },
+  {
+    "root": "1429:24337",
+    "source": "1429:24338",
+    "sourceName": "Header",
+    "destination": "1222:21795",
+    "trigger": {
+      "type": "AFTER_TIMEOUT",
+      "timeout": 1.2
+    },
+    "replaceClick": false,
+    "reason": "Prototype submission/confirmation resolves to server-observed order/summary"
+  },
+  {
+    "root": "1429:24379",
+    "source": "1429:24380",
+    "sourceName": "Header",
+    "destination": "1222:22313",
+    "trigger": {
+      "type": "AFTER_TIMEOUT",
+      "timeout": 1.2
+    },
+    "replaceClick": false,
+    "reason": "Prototype submission/confirmation resolves to server-observed order/summary"
+  },
+  {
+    "root": "1429:25189",
+    "source": "1429:25190",
+    "sourceName": "Header",
+    "destination": "25:943",
+    "trigger": {
+      "type": "AFTER_TIMEOUT",
+      "timeout": 1.2
+    },
+    "replaceClick": false,
+    "reason": "Prototype submission/confirmation resolves to server-observed order/summary"
+  },
+  {
+    "root": "1429:25229",
+    "source": "1429:25230",
+    "sourceName": "Header",
+    "destination": "25:995",
+    "trigger": {
+      "type": "AFTER_TIMEOUT",
+      "timeout": 1.2
+    },
+    "replaceClick": false,
+    "reason": "Prototype submission/confirmation resolves to server-observed order/summary"
+  },
+  {
+    "root": "1429:25441",
+    "source": "1429:25442",
+    "sourceName": "Header",
+    "destination": "1198:14815",
+    "trigger": {
+      "type": "AFTER_TIMEOUT",
+      "timeout": 1.2
+    },
+    "replaceClick": false,
+    "reason": "Prototype submission/confirmation resolves to server-observed order/summary"
+  },
+  {
+    "root": "1429:25483",
+    "source": "1429:25484",
+    "sourceName": "Header",
+    "destination": "1198:15153",
+    "trigger": {
+      "type": "AFTER_TIMEOUT",
+      "timeout": 1.2
+    },
+    "replaceClick": false,
+    "reason": "Prototype submission/confirmation resolves to server-observed order/summary"
+  },
+  {
+    "root": "1429:25701",
+    "source": "1429:25702",
+    "sourceName": "Header",
+    "destination": "1198:14815",
+    "trigger": {
+      "type": "AFTER_TIMEOUT",
+      "timeout": 1.2
+    },
+    "replaceClick": false,
+    "reason": "Prototype submission/confirmation resolves to server-observed order/summary"
+  },
+  {
+    "root": "1429:25743",
+    "source": "1429:25744",
+    "sourceName": "Header",
+    "destination": "1198:15153",
+    "trigger": {
+      "type": "AFTER_TIMEOUT",
+      "timeout": 1.2
+    },
+    "replaceClick": false,
+    "reason": "Prototype submission/confirmation resolves to server-observed order/summary"
+  },
+  {
+    "root": "782:3904",
+    "source": "789:3978",
+    "sourceName": "Action / 更換或修改門市",
+    "destination": "1429:13961",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Open signed CVS picker"
+  },
+  {
+    "root": "782:4087",
+    "source": "789:4149",
+    "sourceName": "Action / 更換或修改門市",
+    "destination": "1429:14020",
+    "trigger": {
+      "type": "ON_CLICK"
+    },
+    "replaceClick": true,
+    "reason": "Open signed CVS picker"
+  }
+]
