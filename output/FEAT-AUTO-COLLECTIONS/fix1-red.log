@@ -1,0 +1,24 @@
+gate (shard:g10)	Gate	2026-10-30T12:49:49.5748716Z === RUN   TestCatalogCoreAutomaticCollections
+gate (shard:g10)	Gate	2026-10-30T12:49:49.5755263Z === RUN   TestCatalogCoreAutomaticCollections/all_any_read_time_sort_and_no_materialization
+gate (shard:g10)	Gate	2026-10-30T12:49:50.0233575Z     collection_rules_test.go:53: POST /collections: status=400 want 200 body={"code":"invalid_json","message":"Malformed JSON body.","request_id":"ebab5a26139466d6d61384a709a6e571","retryable":false,"details":{}}
+gate (shard:g10)	Gate	2026-10-30T12:49:50.0354263Z === RUN   TestCatalogCoreAutomaticCollections/buyer_visibility_count_detail_and_unpublished_origin
+gate (shard:g10)	Gate	2026-10-30T12:49:50.4706270Z     collection_rules_test.go:83: POST /collections: status=400 want 200 body={"code":"invalid_json","message":"Malformed JSON body.","request_id":"35c440c8937e3f5e1c42bffca250715d","retryable":false,"details":{}}
+gate (shard:g10)	Gate	2026-10-30T12:49:50.4787539Z === RUN   TestCatalogCoreAutomaticCollections/mode_switch_preserves_manual_list_and_versions
+gate (shard:g10)	Gate	2026-10-30T12:49:50.9220246Z     collection_rules_test.go:158: mode PATCH replay = 400/400, identical=false; first={"code":"invalid_json","message":"Malformed JSON body.","request_id":"6bb11059e02521e78abe6e1bda9019c5","retryable":false,"details":{}}
+gate (shard:g10)	Gate	2026-10-30T12:49:50.9320431Z === RUN   TestCatalogCoreAutomaticCollections/create_retry_scope_and_staff_permissions
+gate (shard:g10)	Gate	2026-10-30T12:49:51.3157925Z     collection_rules_test.go:183: scoped automatic create/replay = 400/400, identical=false; first={"code":"invalid_json","message":"Malformed JSON body.","request_id":"f3206f19fb4770053a51e56c574a5d5f","retryable":false,"details":{}}
+gate (shard:g10)	Gate	2026-10-30T12:49:51.3214205Z === RUN   TestCatalogCoreAutomaticCollections/validation_is_atomic_and_unknown_rules_are_refused
+gate (shard:g10)	Gate	2026-10-30T12:49:51.6968578Z     collection_rules_test.go:221: POST /collections: status=400 want 200 body={"code":"invalid_json","message":"Malformed JSON body.","request_id":"21650e5024018daa93fa7464ae94d64a","retryable":false,"details":{}}
+gate (shard:g10)	Gate	2026-10-30T12:49:51.7063754Z --- FAIL: TestCatalogCoreAutomaticCollections (2.13s)
+gate (shard:g10)	Gate	2026-10-30T12:49:51.7065485Z     --- FAIL: TestCatalogCoreAutomaticCollections/all_any_read_time_sort_and_no_materialization (0.46s)
+gate (shard:g10)	Gate	2026-10-30T12:49:51.7067871Z     --- FAIL: TestCatalogCoreAutomaticCollections/buyer_visibility_count_detail_and_unpublished_origin (0.44s)
+gate (shard:g10)	Gate	2026-10-30T12:49:51.7070490Z     --- FAIL: TestCatalogCoreAutomaticCollections/mode_switch_preserves_manual_list_and_versions (0.45s)
+gate (shard:g10)	Gate	2026-10-30T12:49:51.7072984Z     --- FAIL: TestCatalogCoreAutomaticCollections/create_retry_scope_and_staff_permissions (0.39s)
+gate (shard:g10)	Gate	2026-10-30T12:49:51.7074775Z     --- FAIL: TestCatalogCoreAutomaticCollections/validation_is_atomic_and_unknown_rules_are_refused (0.38s)
+gate (shard:g10)	Gate	2026-10-30T13:06:00.9602332Z ##[error]Process completed with exit code 1.
+receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-30T13:19:22.4328310Z FAIL: shard:g10: status FAIL
+receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-30T13:19:22.4333172Z   receipt shard:g10: FAIL test_count=239 run=41055677410/1 sha=37938521d57438bc7cda00004a6f6e6b523afed0
+receipts	Every planned mode has one fresh PASS receipt with tests	2026-10-30T13:19:22.4335034Z matrix-receipts: RED (1 problem(s))
+required	Run echo "plan=$PLAN build=$BUILD (expected $BUILD_EXPECTED) gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED) receipts=$RECEIPTS"	2026-10-30T13:21:25.5208423Z ##[endgroup]
+required	Run echo "plan=$PLAN build=$BUILD (expected $BUILD_EXPECTED) gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED) receipts=$RECEIPTS"	2026-10-30T13:21:25.5434354Z plan=success build=skipped (expected false) gate=failure aggregate=skipped (expected false) deploy=skipped (expected false) receipts=failure
+required	Run echo "plan=$PLAN build=$BUILD (expected $BUILD_EXPECTED) gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED) receipts=$RECEIPTS"	2026-10-30T13:21:25.5468694Z ##[error]Process completed with exit code 1.

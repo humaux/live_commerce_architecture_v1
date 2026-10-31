@@ -61,6 +61,8 @@ const MAX_UPLOAD = 2.5 * 1024 * 1024; // CM3: BFF body cap; Go re-checks 2 MiB f
 // catalog-core (storefront-v2 A, unit catalog-core): product list/detail + collections -> Go internal/httpapi/collections.go.
 // Exactly these resources: GET catalog-products (q,status,cursor,limit), GET products/{id}, collections CRUD, ordered
 // membership (PUT), one collection image (multipart upload, bytes preview, delete).
+// FEAT-AUTO-COLLECTIONS: existing POST/PATCH collection routes also forward membership_mode/rules unchanged.
+// Go validates the closed rule grammar and versions; session-selected store/CSRF/key checks below stay authoritative.
 const catalogProducts = "catalog-products";
 const collectionsRoot = "collections";
 const collectionItem = `collections/${uuid}`;
