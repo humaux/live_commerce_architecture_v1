@@ -1381,6 +1381,14 @@ function AdvancedSettings({
                                   (item) => item.code === event.target.value,
                                 );
                                 if (selected) {
+                                  if (
+                                    draft.serviceCode === selected.code &&
+                                    policy &&
+                                    hasBaseline(draft.policyObservation, serviceTarget)
+                                  ) {
+                                    saveDraft(hydrateService(draft, selected));
+                                    return;
+                                  }
                                   const next = {
                                     ...draft,
                                     serviceCode: selected.code,
@@ -1389,6 +1397,7 @@ function AdvancedSettings({
                                   try {
                                     setPolicy(null);
                                     saveDraft(hydrateService(next, selected));
+                                    void loadPolicy(next.marketID, next.country, selected.code);
                                   } catch {
                                     storageError();
                                   }
