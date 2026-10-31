@@ -183,7 +183,7 @@ export default function OrderFlow({
     if (!quote || !option || !paymentChoices.includes(paymentMode)) return;
     // Remember automatic choices too: reload must compare the payable the buyer actually reviewed.
     try { sessionStorage.setItem(`commerce-checkout-mode-v2:${context}:${quote.id}`, paymentMode); }
-    catch { setOption(null); setNotice("failed"); }
+    catch { setOption(null); setConfirmed(null); setNotice("failed"); }
   }, [context, quote, option, paymentMode]);
 
   useEffect(() => {
@@ -228,9 +228,10 @@ export default function OrderFlow({
         const modes = offeredPaymentModes(found, currentQuote.amount.total_minor);
         const selected = modes.includes(savedMode as PaymentMode) ? savedMode
           : modes.includes(paymentMode) ? paymentMode : modes[0];
-        // Always refresh a mismatched server COD due; fall back to currentQuote on
-        // card/online review only when GET quotes/{id} returned 200 with stale COD due
-        // (e.g. a pinned card re-quote), never when the refresh HTTP request itself fails.
+        // A COD-selected review, or an option refresh, rethrows every refresh failure. A card/online
+        // review keeps currentQuote only when the refresh fails without an HTTP status (e.g. a pinned
+        // card re-quote). The COD due is hidden for non-COD modes (codFooter returns null), so a stale
+        // due is never shown or submitted.
         let latest = currentQuote;
         try {
           latest = await refreshCodQuote(context, currentQuote, found);
@@ -548,7 +549,7 @@ export default function OrderFlow({
           {!cvsOption && option && <CheckoutPaymentChoices locale={locale} quote={quote} option={option} modes={paymentChoices}
             selected={paymentMode} detailsOpen={detailsOpen} disabled={busy || blocked || expired || !headLoaded} money={money} onChange={(mode) => {
               try { sessionStorage.setItem(`commerce-checkout-mode-v2:${context}:${quote.id}`, mode); }
-              catch { setOption(null); setNotice("failed"); return; }
+              catch { setOption(null); setConfirmed(null); setNotice("failed"); return; }
               setPaymentMode(mode);
               setConfirmed(null);
               setTransferError(null);
