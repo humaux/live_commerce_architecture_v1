@@ -1,0 +1,65 @@
+{
+  "states": [
+    {
+      "state": "signed-0",
+      "blocks": 10,
+      "chars": 78
+    },
+    {
+      "state": "signed-1",
+      "blocks": 17,
+      "chars": 126
+    },
+    {
+      "state": "signed-2",
+      "blocks": 11,
+      "chars": 86
+    },
+    {
+      "state": "signed-3",
+      "blocks": 10,
+      "chars": 77
+    },
+    {
+      "state": "signed-4",
+      "blocks": 11,
+      "chars": 79
+    },
+    {
+      "state": "search-empty",
+      "blocks": 10,
+      "chars": 78
+    },
+    {
+      "state": "no-result",
+      "blocks": 11,
+      "chars": 86
+    },
+    {
+      "state": "exact-unselected",
+      "blocks": 11,
+      "chars": 95
+    },
+    {
+      "state": "fuzzy-list",
+      "blocks": 17,
+      "chars": 126
+    },
+    {
+      "state": "region-initial",
+      "blocks": 11,
+      "chars": 67
+    },
+    {
+      "state": "region-list",
+      "blocks": 15,
+      "chars": 127
+    }
+  ],
+  "median": {
+    "state": "no-result",
+    "blocks": 11,
+    "chars": 86
+  },
+  "maxBlocks": 17
+}

@@ -1,3 +1,7 @@
+// Purpose: Server-owned entry/dashboard route and validated signed dashboard task selection.
+// Depends on: authenticated workspace/store loaders and Entry/Dashboard presentation.
+// Used by: Next localized root route.
+// Invariants: server selects accessible stores; view never supplies tenant, scope, money or backend path.
 // GET /[locale]/ (server). Signed in: the merchant dashboard (components/Dashboard.tsx, BFF /api/stores/{store}/tools/dashboard -> Go
 // GET /v1/admin/stores/{id}/dashboard; contract storefront-v2 G1). The stock ledger moved to /[locale]/inventory (nav "Inventory").
 // Signed out state renders PasswordAuth when COMMERCE_PASSWORD_LOGIN_ENABLED=1, else the OIDC entry; the sign-in state still comes from
@@ -25,12 +29,13 @@ export default async function Page({
   // Only the sign-in state is needed here: no warehouse, search or cursor (those belong to /inventory).
   const initial = await workspaceData("", "", "all", "", true);
   if (initial.storeID || initial.fixture) {
-    // The dashboard's whole query grammar is `store`; any other key (for example a stale ledger link) is ignored, never a 404.
+    // Store selection uses the existing grammar; a closed view list selects presentation only. Unknown keys remain ignored.
     const page = await loadPage(params, Promise.resolve(one("store") ? { store: one("store") } : {}), ["store"]);
     const fixtureStore = initial.fixture ? { id: initial.storeID, name: initial.storeName, currency: "" } : null;
     return (
       <Dashboard
         locale={locale}
+        view={(["help", "attention", "navigation", "delivery", "first-product", "capabilities"] as const).find(view => view === one("view")) ?? "overview"}
         stores={page.stores.length ? page.stores : fixtureStore ? [fixtureStore] : []}
         store={page.store ?? fixtureStore}
         initialError={fixtureStore ? null : page.initialError}

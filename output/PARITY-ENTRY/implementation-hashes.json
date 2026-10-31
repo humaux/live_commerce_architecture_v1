@@ -1,0 +1,11 @@
+{
+  "apps/admin/app/[locale]/page.tsx": "a23835f33ed41c53d3c0330e2fd41605ea557219ff24bac539092c5358b3a4fa",
+  "apps/admin/components/Entry.tsx": "1eebb6fb9eeed8c15fda99416f02eb69596a0a36fafacc895c566d4fdfa1afbc",
+  "apps/admin/components/PasswordAuth.tsx": "2f019356053b064db72f435a2c879b034bf6cc9787eda80f9ce117587e0e08d0",
+  "apps/admin/components/Dashboard.tsx": "61e387b07df766f9632183ec5bd1a493bf5705d674c4a357cbc1d1623bd63471",
+  "apps/admin/components/dashboard/DashboardTasks.tsx": "3f8638000e2f3c607f366010b58ee47d31bc42f501f92c2a8baefa9fcc20146a",
+  "apps/admin/components/auth/entry.css": "55000dcb7febbd23252a2061d5f62cd2e414f8979a9464d8c0bb6fb472c973e3",
+  "apps/admin/components/dashboard/dashboard.css": "fcc1d3fe220e9cc6d0e3dc37fd5a9b93d774b8442a226ea2249f7facc030c443",
+  "packages/i18n/src/entry-parity.ts": "590363738d03b894424aa2495884d702205345649c29842a920dd0514410b3ac",
+  "packages/i18n/src/index.ts": "d22aae785e2e641392f8405c8e93baa13094f103f308e6d26a268ac23faec7a4"
+}

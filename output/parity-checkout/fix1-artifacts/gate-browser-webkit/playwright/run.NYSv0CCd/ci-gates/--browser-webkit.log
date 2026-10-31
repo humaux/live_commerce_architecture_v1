@@ -1,0 +1,15 @@
+prebuilt: storefront restored from b10a8cdda646783a5d30f7c856baa49d9767e975
+prebuilt: admin restored from b10a8cdda646783a5d30f7c856baa49d9767e975
+check-gallery-bundle: OK expect=absent files=73 markers=0 dir=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/admin/.next/static
+## matrix-receipts browser-run begin
+buyer: pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=28s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.NYSv0CCd/webkit/b10a8cdda646-buyer.jsonl
+order: pass=0 fail=1 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=1 verdict=1 duration=112s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.NYSv0CCd/webkit/b10a8cdda646-order.jsonl
+FAIL: order (go test exit=1, parse verdict=1)
+payment: pass=2 fail=0 skip=0 leaf_pass=1 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=45s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.NYSv0CCd/webkit/b10a8cdda646-payment.jsonl
+merchant-buyer: pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=18s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.NYSv0CCd/webkit/b10a8cdda646-merchant-buyer.jsonl
+cvs: pass=0 fail=2 skip=0 leaf_pass=0 leaf_fail=1 leaf_skip=0 exit=1 verdict=1 duration=78s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.NYSv0CCd/webkit/b10a8cdda646-cvs.jsonl
+FAIL: cvs (go test exit=1, parse verdict=1)
+password-auth: pass=1 fail=0 skip=0 leaf_pass=0 leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=99s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.NYSv0CCd/webkit/b10a8cdda646-password-auth.jsonl
+claim-checkout: pass=0 fail=2 skip=0 leaf_pass=0 leaf_fail=1 leaf_skip=0 exit=1 verdict=1 duration=53s log=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.NYSv0CCd/webkit/b10a8cdda646-claim-checkout.jsonl
+FAIL: claim-checkout (go test exit=1, parse verdict=1)
+FAIL: --browser-webkit (see logs in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.NYSv0CCd/webkit)

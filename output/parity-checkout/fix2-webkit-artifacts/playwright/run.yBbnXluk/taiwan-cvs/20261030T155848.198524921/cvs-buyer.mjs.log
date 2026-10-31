@@ -1,0 +1,30 @@
+browser engine: webkit
+PASS store 1 map round trip zh-TW/desktop: same tab, __Host- cookie kept, store card, consent line, no iframe
+PASS store 1 map round trip en/mobile: same tab, __Host- cookie kept, store card, consent line, no iframe
+PASS store 1 map round trip zh-CN/desktop: same tab, __Host- cookie kept, store card, consent line, no iframe
+PASS store 1 map round trip zh-TW/mobile: same tab, __Host- cookie kept, store card, consent line, no iframe
+PASS store 2: the map return lands on the originating store's host with its own __Host- cookie and shows the store card
+PASS OK mart and Hi-Life are disabled with 即將開放 until verified
+PAGEERROR /buyer3.example/api/buyer/session due to access control checks.
+HTTP 422 POST /api/buyer/cvs-stores {"code":"store_not_found"}
+HTTP 429 POST /api/buyer/cvs-stores {"code":"too_many_stores_entered"}
+PAGEERROR /buyer3.example/api/buyer/session due to access control checks.
+PAGEERROR /buyer3.example/api/buyer/session due to access control checks.
+HTTP 422 POST /api/buyer/cvs-stores {"code":"store_not_found"}
+HTTP 429 POST /api/buyer/cvs-stores {"code":"too_many_stores_entered"}
+PAGEERROR /buyer3.example/api/buyer/session due to access control checks.
+PAGEERROR /buyer3.example/api/buyer/session due to access control checks.
+HTTP 422 POST /api/buyer/cvs-stores {"code":"store_not_found"}
+HTTP 429 POST /api/buyer/cvs-stores {"code":"too_many_stores_entered"}
+PAGEERROR /buyer3.example/api/buyer/session due to access control checks.
+HTTP 422 POST /api/buyer/cvs-stores {"code":"store_not_found","message":"Request refused.","request_id":"323bb8de2021fa7c8d3847ec70655d73","retryable":false,"details":{}}
+PAGEERROR /buyer3.example/api/buyer/session due to access control checks.
+PASS buyer_entered zh-TW/desktop: official search link (new tab, noopener), 422-style field errors, never labelled verified
+HTTP 422 POST /api/buyer/cvs-stores {"code":"store_not_found","message":"Request refused.","request_id":"bda31025b0f76bb0e6ca67b91c71fadc","retryable":false,"details":{}}
+PAGEERROR /buyer3.example/api/buyer/session due to access control checks.
+PASS buyer_entered en/mobile: official search link (new tab, noopener), 422-style field errors, never labelled verified
+HTTP 422 POST /api/buyer/cvs-stores {"code":"store_not_found","message":"Request refused.","request_id":"b09bbf7f22d575d2cac60807f18260bd","retryable":false,"details":{}}
+PAGEERROR /buyer3.example/api/buyer/session due to access control checks.
+PASS buyer_entered zh-CN/desktop: official search link (new tab, noopener), 422-style field errors, never labelled verified
+PASS no iframe was ever attached to any page (F4)
+PASS B20 Device=1 for phones, 0 for desktops in every map form
