@@ -1,3 +1,6 @@
+// Purpose: render the signed buyer contact page (form + ?sent=true confirmation) for the PARITY-BUYER-BROWSE Figma frames.
+// Depends on: @live-commerce/i18n isLocale, PageHead, shop-copy, Next metadata/navigation/Link.
+// Used by: /{locale}/pages/contact (storefront route; not linked from the legal footer).
 // GET /{locale}/pages/contact[?sent=true]: a signed contact form and a simple sent-confirmation state.
 // This is a parity page for the buyer Figma frames; it does not persist messages (no backend endpoint) and is not linked from
 // the legal footer. The form is static and submits to the same route with ?sent=true for the confirmation state.
