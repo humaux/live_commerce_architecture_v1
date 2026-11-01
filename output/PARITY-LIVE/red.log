@@ -109,3 +109,15 @@ base41105181453=queued; no identical-base exemption
 static=node --check helper exit0; ownership generate exit0; ownership --check exit0
 local_tests_servers=NOT_RUN; replacement GREEN=PENDING; Humaux store/canvas/coord=NOT_RUN tools unavailable
 next_same_assertion=BLOCKED; no third directed fix
+
+RULING_20261101: integrator authorized isolated parity scene set + parity-only test-level sharding after escalation.
+pre_ruling_head=1030a7e1a248c121aaadc310e89f24036043d93e
+RED_Gates=41258492409 job=124707559191 conclusion=failure; legacy_job=124707559131 conclusion=success
+RED_assertion=existing workspace no-MOCK regex; original error contexts in artifact13065345268 show eight legacy LC-U1 MOCK lane titles
+RED_outer=TestBrowserLiveConsoleParityRealChain timed out at780.135s; timeout itself is not assertion evidence
+original_tests_only_RED=898e71a829d7f4bce261eebc95ec5028693f8901 Gates41050616128/job124051353169; prior recovered new-heading assertion failures retained above
+integration_first=fde11c1310fce20b576fc98023bd3003c66c205b merge4ae9439c081ebfb5b570e834cb90c288bdeb839c; generated ownership conflict regenerated
+implementation=parity-only schema-checked session list + describe parallel; existing161 cases/assertions/budgets/global_workers unchanged
+static=packet_structure exit0; ownership_generator exit0; git_diff_check exit0; tsc unavailable
+GREEN=PENDING own replacement PR CI; see RULING-FIX.md and post-push PR comment
+local_runtime_tests_servers=NOT_RUN; Humaux_store_canvas_coord=NOT_RUN tools unavailable; no watcher/process

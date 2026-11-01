@@ -15,6 +15,7 @@ import type { ConsoleSnapshot } from "../../apps/admin/src/features/live/console
 import type { StreamComment } from "../../apps/admin/src/features/live/comment-model";
 import type { BuyerData } from "../../apps/admin/lib/inbox-types";
 import type { Offer } from "../../apps/admin/lib/claims-model";
+import type { StudioPage } from "../../apps/admin/lib/studio-model";
 
 const required = (name: string): string => {
   const value = process.env[name];
@@ -877,6 +878,12 @@ async function parityFixture(page: Page, locale: ParityLocale, state = "selected
     const base = `/api/stores/${store}/live-sessions/${comments.session}`;
     // The real BFF always answers private reads with `cache-control: private, no-store`; studio-client.json() rejects anything else.
     const json = (value: unknown) => intercepted.fulfill({ status: 200, contentType: "application/json", headers: { "cache-control": "private, no-store" }, body: JSON.stringify(value) });
+    // SETUP: this parity-only scene set matches the detail below; legacy LC-U1 scenes stay in their own fixture.
+    if (path === `/api/stores/${store}/live-sessions` && request.method() === "GET") return json({
+      items: [{ session_id: comments.session, program_id: parityIDs.sku, title: c.session, scheduled_at: null,
+        aspect_ratio: "9:16", state: "LIVE", version: 1, created_at: at, updated_at: at }],
+      next_cursor: "",
+    } satisfies StudioPage);
     if (path === `${base}/console`) return json(snapshot());
     if (path === `${base}/claims` && request.method() === "GET") return json({ window: window(), offers: [offer()], stats: { generation: 1, accepted: 1, rejected: Object.fromEntries(["NO_MATCH", "UNKNOWN_KEYWORD", "OFFER_INACTIVE", "INVALID_QUANTITY", "QUANTITY_REQUIRED", "QUANTITY_OVER_MAX", "BUNDLE_LIMIT"].map(key => [key, 0])) } });
     if (path === `${base}/comments` && request.method() === "GET") return json({ epoch: 1, reset: false, scan_exhausted: false, items: rows(), next: { epoch: 1, seq: 2 }, older_cursor: null, stream: snapshot().stream });
@@ -921,6 +928,8 @@ async function parityShot(page: Page, id: string) {
 // The legacy test block is intentionally untouched. Each current signed state is selected by an actual click.
 // Exact IDs let the independent reviewer compare the real route's artifact to the v3 DELIVERY export.
 test.describe("PARITY-LIVE current Figma route parity (MOCK)", () => {
+  // Test-level sharding is confined to this isolated block; global workers and legacy ordering stay unchanged.
+  test.describe.configure({ mode: "parallel" });
   test.afterEach(async ({}, info) => {
     await info.attach("click-ledger-outcome", { body: JSON.stringify({ page: "/[locale]/studio/console", test: info.title, expected: "signed copy, controls, buyer context and reply fencing", actual: info.status, result: info.status === "passed" ? "PASS in MOCK browser only" : "FAIL or NOT_RUN; inspect assertion failure", persistence: "explicit reload checks only; no buyer text stored" }), contentType: "application/json" });
   });
