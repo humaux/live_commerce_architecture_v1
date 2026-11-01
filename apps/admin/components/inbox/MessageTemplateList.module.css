@@ -1,11 +1,11 @@
 /* Purpose: signed list/form content 5:15002/15135 and 673:2847/2916. Depends on exact DS tokens, not global overrides.
-   Local links: data-figma-node on each page. Signed note fill maps to integrator-owned --ds-template-note; token diff NOT_RUN. */
+   Local links: data-figma-node on each page. Signed note fill maps to admin exact --ui-primary-soft; token diff NOT_RUN. */
 .page {
   background: var(--ds-sig-page);
   color: var(--ds-sig-label);
   padding: var(--ds-space-6);
   font-size: var(--ds-text-md);
-  line-height: var(--ds-leading);
+  line-height: var(--ds-leading-button);
   min-height: calc(100dvh - var(--ui-shell-topbar));
   box-sizing: border-box;
   margin: calc(-1 * var(--ds-space-6));
@@ -18,6 +18,7 @@
   margin: 0 0 var(--ds-space-4);
 }
 .page h2 {
+  line-height: 26px;
   font-size: var(--ds-text-xl);
   font-weight: 500;
   margin: 0 0 var(--ds-space-4);
@@ -26,7 +27,7 @@
   margin: 0 0 var(--ds-space-4);
 }
 .page .note {
-  background: var(--ds-template-note);
+  background: var(--ui-primary-soft);
   border-radius: var(--ds-space-3);
   padding: var(--ds-space-4);
   margin: var(--ds-space-4) 0;
@@ -135,6 +136,7 @@
   border-color: var(--ds-sig-line);
 }
 .fields .hint {
+  line-height: 18px;
   font-size: var(--ds-text-xs);
   color: var(--ds-crumb-text);
   margin: var(--ds-space-2) 0 var(--ds-space-6);
@@ -193,6 +195,7 @@
   }
   .page h1.mobile,
   .page h2.mobile {
+    line-height: 23px;
     font-size: var(--ds-text-lg);
     margin-bottom: var(--ds-space-6);
   }
@@ -209,6 +212,7 @@
     padding: var(--ds-space-4);
   }
   .cards h3 {
+    line-height: 26px;
     font-size: var(--ds-text-xl);
     font-weight: 500;
     margin: 0 0 var(--ds-space-2);
@@ -220,6 +224,7 @@
     margin: 0;
   }
   .meta {
+    line-height: 18px;
     font-size: var(--ds-text-xs);
     color: var(--ds-crumb-text);
   }

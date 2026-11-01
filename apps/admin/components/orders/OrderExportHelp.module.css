@@ -3,7 +3,7 @@
   background: var(--ds-sig-page);
   color: var(--ds-sig-label);
   font-size: var(--ds-text-md);
-  line-height: var(--ds-leading);
+  line-height: var(--ds-leading-button);
   padding: var(--ds-space-8);
   min-height: calc(100dvh - var(--ui-shell-topbar));
   box-sizing: border-box;
@@ -16,6 +16,7 @@
   line-height: 38px;
 }
 .page h2 {
+  line-height: 26px;
   font-size: var(--ds-text-xl);
   font-weight: 500;
   margin: 0 0 var(--ds-space-6);
