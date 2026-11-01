@@ -121,3 +121,16 @@ implementation=parity-only schema-checked session list + describe parallel; exis
 static=packet_structure exit0; ownership_generator exit0; git_diff_check exit0; tsc unavailable
 GREEN=PENDING own replacement PR CI; see RULING-FIX.md and post-push PR comment
 local_runtime_tests_servers=NOT_RUN; Humaux_store_canvas_coord=NOT_RUN tools unavailable; no watcher/process
+
+CONSOLE-FIX 2026-11-01 — tests-only RED stage
+base_head=ef5e0316b8683486e366e15b6cadbea38e0f3c70
+integration=fde11c1310fce20b576fc98023bd3003c66c205b merge=Already_up_to_date
+prior_failure Gates=41273678426 console_job=124752200545 hidden_offer_switch_after_refresh
+prior_failure parity_job=124752200529 upload_rejected_colon_1429:39502.png
+prior_failure returns_job=124752200718 TestBrowserReturnsUI; classified_c_out_of_card; exact_auth_root_UNKNOWN
+new_assertions=all6_locale_viewports_primary_stock_switch_visible_before_helpers_and_after_reload_saved23_off
+new_RED=PENDING_own_CI; compile_or_infrastructure_failure_does_not_qualify
+local_static=check_packet_EXIT0_PASS_PACKET_STRUCTURE_ONLY; ownership_generate_EXIT0; ownership_check_EXIT0; diff_check_EXIT0
+local_runtime=NOT_RUN_prohibited; product_implementation=NOT_RUN_until_assertion_RED
+report=output/PARITY-LIVE/CONSOLE-FIX.md
+wakeup=integrator_fresh_session_on_registered_run_conclusion; poll_limit_about10min

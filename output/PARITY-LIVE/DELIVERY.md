@@ -1,5 +1,39 @@
 # PARITY-LIVE — implementation handoff
 
+## CONSOLE-FIX current stage — 2026-11-01
+
+Author E0; tests-only RED stage, no product change or completion claim. Current card report: CONSOLE-FIX.md; original historical sections below do not establish current-head GREEN. Primary lifecycle/stock/offer controls must be visible before Advanced and after a refresh/reload. All six existing zh-TW/zh-CN/en desktop/mobile real-click cases gain regression assertions; existing clicks, receipts, CAS, uncertain-write fences and helper calls remain.
+
+### CONSOLE-FIX required facts and click ledger
+
+|Required fact/control|Desktop|Mobile live task / summary / review|Current evidence|
+|---|---|---|---|
+|Lifecycle action and allowed state|Visible without disclosure|Same rule outside collapsed detail|New visibility assertions; CI NOT_RUN|
+|Stock input, save, CAS warning/confirm, saved23|Visible product actions|Live tab retains same actions and values; buyer summary untouched|Existing real fill/save/confirm plus new reload assertions; CI NOT_RUN|
+|Offer on/off and persisted off state|Visible product switch|Same live tab; buyer/reply context unchanged|Existing real switch clicks plus new reload assertion; CI NOT_RUN|
+|Buyer/name/comment, product, target2/cap5, stock18/0, sold20, unpaid registration|Existing signed facts unchanged|Existing required-facts table and all161 cases preserved|No new design/facts or acceptance claim|
+|Recipient phone, destination, totals/payment timing|No such fields in this console|N/A; do not invent checkout fields|Existing authority unchanged|
+
+### CONSOLE-FIX BOURDIEU
+
+Q1 primary actions must be discoverable without prior console experience; Q2 experienced sellers retain direct actions. Q3/Q4 no class/device proxies. Q5 mobile live task retains the same action/state facts; Q6 aesthetics UNKNOWN until owner. No redesign.
+
+### CONSOLE-FIX PROJECT UNDERSTANDING
+
+Architecture §§0/1/2/26/27 preserves evidence boundaries, Go/PG authority and scoped worktree ownership. Common parity/card forbids collapsing primary actions. Existing live-console-v1 capability/CAS/message fences are unchanged; no API or new business rule.
+
+### CONSOLE-FIX MOBBIN → EAGLE
+
+No new design/reference introduced; inherited approved v3 structure and the existing module evidence below apply. No new Eagle/Mobbin import or reference claim. New reference collection NOT_RUN, outside this correction.
+
+### CONSOLE-FIX FIGMA OFFICIAL GUIDANCE
+
+Inherited output/ux-audit-ref/FIGMA-GUIDE.md guidance and existing applied auto-layout/components/variables/prototyping evidence below remain unchanged. Fleet Bridge only read current v3 desktop1429:39502/mobile1429:39607; no design/prototype writes, so no new Figma copy-lint result claimed.
+
+### CONSOLE-FIX three-language copy
+
+No visible string added or changed. Existing zh-TW | zh-CN | en table below remains the complete copy authority; new main-screen assertions run in all three locales. Runtime clicks, mobile density and screenshots remain CI NOT_RUN until the recorded run executes.
+
 Status: FIX1 relay 1, second shared-helper directed repair prepared. Current replacement CI and independent acceptance PENDING; historical receipts below are bound to their recorded heads.
 Task: dispatched by Claude integrator; branch unit/parity-live; worktree parity-live; base df35b338b5cfde5de34bb590e2ba118efc17e4a4. Role: UI implementer. Runtime model/effort metadata is not exposed; no sub-agent or recursive delegation.
 Authority: owner card 2026-10-30; repository AGENTS.md; 架构.md §§0/1/2/26/27; contracts/live-console-v1.md §§2.5/3.3/4.2/4.4/6/7.1–7.2; existing closed console, claims and comment DTOs.

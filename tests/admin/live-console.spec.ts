@@ -296,6 +296,12 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await page.goto(route(locale, scene));
     await expect(page.getByTestId("live-workspace")).toBeVisible();
     await expect(page.getByTestId("live-console")).toBeVisible();
+    // CONSOLE-FIX: choosing the mobile task is allowed; opening Advanced must never be
+    // required to discover primary seller actions. Keep the existing helper calls below.
+    await livePanel(page, "live");
+    await expect(page.getByTestId("live-primary-action")).toBeVisible();
+    await expect(page.getByTestId("live-console").getByRole("switch")).toBeVisible();
+    await expect(page.getByTestId("live-console").locator('input[data-testid^="live-stock-"]')).toBeVisible();
     await phase(page, "draft");
     await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
     const stats = page.getByTestId("live-console").locator(".live-status-bar, .live-revenue-stats");
@@ -431,6 +437,15 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await page.getByTestId(`live-offer-toggle-${offer}`).click();
     await expect.poll(async () => (await facts(request)).scenes[scene]!.Active).toBe(false);
     await page.getByTestId("live-console-refresh").click();
+    // The full reload guarantees a fresh subtree with native disclosure defaults.
+    // Its saved stock and offer state must remain visible before the disclosure helper.
+    await page.reload();
+    await livePanel(page, "live");
+    await expect(page.getByTestId(`live-stock-${offer}`)).toBeVisible();
+    await expect(page.getByTestId(`live-stock-${offer}`)).toHaveValue("23");
+    await expect(page.getByTestId(`live-offer-toggle-${offer}`)).toBeVisible();
+    await expect(page.getByTestId(`live-offer-toggle-${offer}`)).not.toBeChecked();
+    await expect(page.getByTestId("live-primary-action")).toBeVisible();
     await showLiveTools(page);
 
     // I06: lose ACK after a committed MOCK effect. Polling is read-only; explicit retry must reuse the key.
