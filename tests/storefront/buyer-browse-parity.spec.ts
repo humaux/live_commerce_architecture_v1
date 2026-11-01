@@ -76,6 +76,7 @@ const copy = {
     priceMin: "最低",
     priceMax: "最高",
     apply: "套用",
+    clear: "清除篩選",
     addToCart: "加入購物車",
     buyNow: "立即購買",
     productRemoved: "商品已下架或不存在",
@@ -99,6 +100,7 @@ const copy = {
     priceMin: "最低",
     priceMax: "最高",
     apply: "应用",
+    clear: "清除筛选",
     addToCart: "加入购物车",
     buyNow: "立即购买",
     productRemoved: "商品已下架或不存在",
@@ -122,6 +124,7 @@ const copy = {
     priceMin: "Min",
     priceMax: "Max",
     apply: "Apply",
+    clear: "Clear filters",
     addToCart: "Add to cart",
     buyNow: "Buy now",
     productRemoved: "Product unavailable or removed",
@@ -624,6 +627,100 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
                   return "cancel unchanged; keyboard focus returned; q/min/max/preview retained (credential omitted)";
                 });
               }
+              const collectionRoute = `/${locale}/collections/${collection.slug}`;
+              const newestFirst = facts.products.filter((x: any) => x.status === "active" && x.collection === collection.key).at(-1).title;
+              const manualFirst = facts.products.find((x: any) => x.key === "dripper").title;
+              assert.notEqual(newestFirst, manualFirst, "fixture must distinguish newest from collection manual order");
+              const checkClearedCollection = async (sort: string | null) => {
+                assert.equal(new URL(page.url()).pathname, collectionRoute);
+                assert.equal(urlParams().get("sort"), sort);
+                assert.equal(urlParams().has("min"), false);
+                assert.equal(urlParams().has("max"), false);
+                assert(urlParams().get("preview") === facts.preview_token, "preview credential must survive Clear");
+                const titles = await page.getByTestId("product-card").locator(".sf-card__title").allTextContents();
+                assert.equal(titles.length, collection.active_products);
+                assert.equal(titles[0], sort === "newest" ? newestFirst : manualFirst);
+                await page.reload();
+                await settle();
+                assert.equal(urlParams().get("sort"), sort);
+                assert.equal(urlParams().has("min"), false);
+                assert.equal(urlParams().has("max"), false);
+                assert(urlParams().get("preview") === facts.preview_token, "preview credential must survive reload");
+                assert.deepEqual(await page.getByTestId("product-card").locator(".sf-card__title").allTextContents(), titles);
+              };
+              const openFilteredCollection = async (sort: boolean, min: string, max: string) => {
+                if (!sort) {
+                  await page.goto(`${origin}${collectionRoute}?${new URLSearchParams({ preview: facts.preview_token, min, max })}`);
+                  await settle();
+                  assert.equal(urlParams().get("sort"), null);
+                  await expect(controls().getByRole("link", { name: c.clear, exact: true })).toBeVisible({ timeout: T });
+                  return;
+                }
+                await page.goto(`${origin}${collectionRoute}?${new URLSearchParams({ preview: facts.preview_token })}`);
+                await settle();
+                await openPicker();
+                await option("newest").click({ timeout: T });
+                await page.waitForURL((url) => url.pathname === collectionRoute && url.searchParams.get("sort") === "newest", { timeout: T });
+                await settle();
+                await controls().locator("summary").click({ timeout: T });
+                await controls().getByLabel(c.priceMin, { exact: true }).fill(min);
+                await controls().getByLabel(c.priceMax, { exact: true }).fill(max);
+                await controls().getByRole("button", { name: c.apply, exact: true }).click({ timeout: T });
+                await page.waitForURL((url) => url.searchParams.get("min") === min && url.searchParams.get("max") === max, { timeout: T });
+                await settle();
+                assert.equal(urlParams().get("sort"), "newest");
+                assert(urlParams().get("preview") === facts.preview_token, "preview credential must survive filter apply");
+              };
+              await step(frame, collectionRoute, "mobile collection newest nonempty clear", "click newest + fill price + apply + click Clear + reload", "Clear removes price bounds, keeps explicit newest and preview, and restores newest-first cards", async () => {
+                await openFilteredCollection(true, "15", "20");
+                await expect(page.getByTestId("product-card").first()).toBeVisible({ timeout: T });
+                await controls().getByRole("link", { name: c.clear, exact: true }).click({ timeout: T });
+                await settle();
+                await checkClearedCollection("newest");
+                return "explicit newest, preview and newest-first card retained after clear and reload";
+              });
+              await step(frame, collectionRoute, "mobile collection newest empty clear", "click newest + fill nonmatching price + apply + click empty-state Clear + reload", "Empty-state Clear removes price bounds, keeps explicit newest and preview, and restores newest-first cards", async () => {
+                await openFilteredCollection(true, "99999", "100000");
+                await expect(page.getByTestId("list-empty")).toBeVisible({ timeout: T });
+                await expect(page.getByTestId("product-card")).toHaveCount(0);
+                await page.getByTestId("list-empty").getByRole("link", { name: c.clear, exact: true }).click({ timeout: T });
+                await settle();
+                await checkClearedCollection("newest");
+                return "empty-state clear retained explicit newest and preview after reload";
+              });
+              await step(frame, collectionRoute, "mobile collection absent sort clear", "open filtered collection without sort + click Clear + reload", "Clear leaves absent sort absent and restores the collection's manual first card", async () => {
+                await openFilteredCollection(false, "15", "20");
+                await controls().getByRole("link", { name: c.clear, exact: true }).click({ timeout: T });
+                await settle();
+                await checkClearedCollection(null);
+                return "absent sort stayed absent; manual first card and preview retained after reload";
+              });
+              await step(frame, searchRoute, "mobile search query clear", "open filtered search + click Clear + reload", "Clear keeps search q, explicit newest and preview while removing price bounds", async () => {
+                const q = "Everyday";
+                const params = new URLSearchParams({ q, sort: "newest", min: "15", max: "20", preview: facts.preview_token });
+                await page.goto(`${origin}${searchRoute}?${params}`);
+                await settle();
+                await expect(page.getByTestId("product-card").first()).toBeVisible({ timeout: T });
+                await controls().getByRole("link", { name: c.clear, exact: true }).click({ timeout: T });
+                await settle();
+                const check = async () => {
+                  assert.equal(new URL(page.url()).pathname, searchRoute);
+                  assert.equal(urlParams().get("q"), q);
+                  assert.equal(urlParams().get("sort"), "newest");
+                  assert.equal(urlParams().has("min"), false);
+                  assert.equal(urlParams().has("max"), false);
+                  assert(urlParams().get("preview") === facts.preview_token, "preview credential must survive search Clear");
+                  const titles = await page.getByTestId("product-card").locator(".sf-card__title").allTextContents();
+                  assert.equal(titles.length, 24);
+                  assert.equal(titles[0], "Everyday Item 24");
+                  return titles;
+                };
+                const titles = await check();
+                await page.reload();
+                await settle();
+                assert.deepEqual(await check(), titles);
+                return "search q, explicit newest and preview retained after clear and reload";
+              });
               await step(frame, cartRoute, "mobile sort cart unchanged", "return to cart + reload", "existing cart line and quantity unchanged; sorting issued no writes", async () => {
                 assert.deepEqual(writes, [], "sorting must issue no write request");
                 await page.goto(`${origin}${cartRoute}`);
@@ -662,7 +759,7 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
     const locales = new Set(rows.filter((row) => row.status === "PASS").map((row) => row.locale));
     const failedRows = rows.filter((row) => row.status === "FAIL");
     if (frame.frameId === "782:4249") {
-      const required = ["mobile sort contents", "mobile sort cart unchanged", ...["products", "collection", "search"].flatMap((scope) => [
+      const required = ["mobile sort contents", "mobile sort cart unchanged", "mobile collection newest nonempty clear", "mobile collection newest empty clear", "mobile collection absent sort clear", "mobile search query clear", ...["products", "collection", "search"].flatMap((scope) => [
         ...["newest", "price_asc", "price_desc", "title"].map((sort) => `mobile sort ${scope} ${sort}`),
         `mobile sort ${scope} cancel and keyboard`,
       ])];
