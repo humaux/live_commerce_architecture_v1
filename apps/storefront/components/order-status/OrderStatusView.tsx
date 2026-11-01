@@ -24,6 +24,7 @@ import { settledCommercialState, type TransferState } from "../../lib/bank-trans
 import { readOrderPayment } from "../../lib/order-payment";
 import { cartPath } from "../../lib/routes";
 import type { Order } from "../../lib/purchase";
+import type { OrderPayment as OrderPaymentView } from "../../lib/payment-contract";
 import { orderStatusCopy } from "./copy";
 import { addressLines, shortOrderNumber } from "./format";
 import OrderTerminalView from "./OrderTerminalView";
@@ -62,6 +63,8 @@ export default function OrderStatusView({
   const [paymentRefresh, setPaymentRefresh] = useState(0);
   const [transferState, setTransferState] = useState<TransferState | null>(null);
   // A cancelled card order that never started a payment is the finished 已取消訂單 view; one that has a closed payment keeps the 付款已關閉 frame.
+  // A shipped card order reads the payment view too: a refund never changes commercial/fulfillment state (RD6), so only the payment read can say refunded.
+  const [shippedPay, setShippedPay] = useState<OrderPaymentView | null | "pending">("pending");
   const [probe, setProbe] = useState<"pending" | "unpaid" | "paid-or-started">("pending");
   const paymentSignalRef = useRef<(() => Promise<void>) | null>(null);
   const shownState = settledCommercialState(order.commercial_state, transferState);
@@ -70,6 +73,17 @@ export default function OrderStatusView({
     if (stale) refresh();
   }, [stale]);
   const cancelledCard = isCard && order.commercial_state === "CANCELLED";
+  const shippedCard = isCard && order.commercial_state === "CONFIRMED" && order.fulfillment_state === "MERCHANT_SHIPPED";
+  useEffect(() => {
+    if (!shippedCard) return;
+    let live = true;
+    readOrderPayment(context, order.order_id)
+      .then((view) => live && setShippedPay(view))
+      .catch(() => live && setShippedPay(null));
+    return () => {
+      live = false;
+    };
+  }, [shippedCard, context, order.order_id]);
   useEffect(() => {
     if (!cancelledCard) return;
     let live = true;
@@ -86,8 +100,8 @@ export default function OrderStatusView({
   const total = money(amount.total_minor, quote.currency);
   const short = shortOrderNumber(order.order_id);
 
-  if (isCard && order.commercial_state === "CONFIRMED" && order.fulfillment_state === "MERCHANT_SHIPPED")
-    return <OrderTerminalView order={order} locale={locale} money={money} kind="completed" />;
+  if (shippedCard && shippedPay === "pending") return <p role="status">{pay.loading}</p>;
+  if (shippedCard) return <OrderTerminalView order={order} locale={locale} money={money} kind="completed" payment={shippedPay === "pending" ? null : shippedPay} />;
   if (cancelledCard && probe === "pending") return <p role="status">{pay.loading}</p>;
   if (cancelledCard && probe === "unpaid") return <OrderTerminalView order={order} locale={locale} money={money} kind="cancelled" />;
 
