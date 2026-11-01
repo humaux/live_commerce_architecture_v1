@@ -1,0 +1,65 @@
+/* Purpose: Figma 51:1380 full-viewport task and 4:9532 option-entry chrome.
+ * Depends on: shared DS/signed tokens and ProductBuy's existing sf-* controls.
+ * Used by: ProductBuy and MobileProductOptions; all overrides are task-scoped.
+ * Invariants: 64px header and 84px dock, one scrolling body, no translucent sheet. */
+.task {
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  background: var(--ds-sig-page);
+  color: var(--ds-ink);
+  overflow: hidden;
+}
+.task[open] { display: grid; grid-template-rows: 64px minmax(0, 1fr) 84px; }
+.task::backdrop { background: var(--ds-sig-page); }
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-2);
+  padding-inline: var(--ds-space-2);
+  border-block-end: 1px solid var(--ds-sig-line);
+  background: var(--ds-surface);
+}
+.header button { width: var(--ui-target); height: var(--ui-target); padding: 0; color: inherit; border-color: var(--ds-sig-line); border-radius: var(--ds-radius-control); }
+.header h2 { margin: 0; font-size: var(--ds-text-xl); line-height: var(--ds-leading); font-weight: 600; }
+.content { min-height: 0; overflow-y: auto; padding: var(--ds-space-4); overscroll-behavior: contain; }
+.summary { display: flex; align-items: center; gap: var(--ds-space-4); margin-block-end: var(--ds-space-4); }
+.summary img { flex: none; width: 88px; height: 88px; object-fit: cover; border-radius: var(--ds-space-3); background: var(--sf-paper); }
+.summary > div { min-width: 0; }
+.summary h3, .summary p { margin: 0; overflow-wrap: anywhere; font-size: var(--ds-space-5); line-height: var(--ds-leading); }
+.summary p { margin-block-start: var(--ds-space-2); font-weight: 600; font-variant-numeric: tabular-nums; }
+.content :global(.sf-opt) { margin-block-end: var(--ds-space-4); }
+.content :global(.sf-opt legend) { margin-block-end: var(--ds-space-4); font-size: var(--ds-text-lg); color: var(--ds-sig-label); }
+.content :global(.sf-opt legend span) { display: none; }
+.content :global(.sf-opt__chips) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ds-space-3); }
+.content :global(.sf-chip) { min-height: var(--ui-target); border: 1px solid var(--ds-sig-line); border-radius: var(--ds-radius-control); font-size: var(--ds-text-md); color: var(--ds-ink); padding: var(--ds-space-2); overflow-wrap: anywhere; }
+.content :global(.sf-chip.is-on) { background: var(--ds-ink); color: var(--ds-surface); border-color: var(--ds-ink); box-shadow: none; }
+.content :global(.sf-qty) { display: grid; justify-content: start; gap: var(--ds-space-4); margin-block-start: var(--ds-space-4); }
+.content :global(.sf-qty > label) { font-size: var(--ds-text-lg); color: var(--ds-sig-label); }
+.content :global(.sf-stepper) { border: 0; background: transparent; gap: var(--ds-space-4); }
+.content :global(.sf-stepper button) { width: var(--ui-target); height: var(--ui-target); border: 1px solid var(--ds-sig-line); background: var(--ds-surface); border-radius: var(--ds-radius-control); color: var(--ds-ink); }
+.content :global(.sf-stepper input) { width: var(--ui-target); color: var(--ds-ink); font-size: var(--ds-text-xl); }
+.limit { margin: var(--ds-space-4) 0; color: var(--ds-sig-muted); font-size: var(--ds-text-xs); }
+.pickup { margin: 0; padding: var(--ds-space-3); background: var(--ds-sig-go-soft); color: var(--ds-sig-go-text); border-radius: var(--ds-radius-lg); font-size: var(--ds-text-xs); }
+.dock { padding: var(--ds-space-4); border-block-start: 1px solid var(--ds-sig-line); background: var(--ds-surface); }
+.dock :global(.sf-btn) { min-height: var(--ui-target); height: auto; border-radius: var(--ds-radius-control); font-size: var(--ds-text-md); }
+.taskEntry { display: none; }
+.entryDock { display: none; }
+@media (max-width: 899px) {
+  .taskEntry { display: block; }
+  .taskEntry button { position: relative; width: 100%; min-height: 88px; padding: var(--ds-space-4); padding-inline-end: var(--ds-space-12); display: grid; gap: var(--ds-space-2); text-align: start; border: 1px solid var(--ds-sig-line); border-radius: var(--ds-space-3); background: var(--ds-surface); color: var(--ds-ink); }
+  .taskEntry strong { font-size: var(--ds-text-lg); }
+  .taskEntry span { font-size: var(--ds-text-xs); color: var(--ds-sig-muted); }
+  .taskEntry i { position: absolute; inset-inline-end: var(--ds-space-4); inset-block-start: var(--ds-space-6); font-size: var(--ds-space-6); font-style: normal; }
+  .entryDock { display: flex; height: 84px; padding: var(--ds-space-4); box-shadow: none; animation: none; background: var(--ds-surface); border-color: var(--ds-sig-line); }
+  .entryDock > strong { flex: 1; min-width: 0; font-size: var(--ds-space-5); overflow-wrap: anywhere; }
+  .entryDock > div { flex: 1; }
+  .entryDock :global(.sf-btn) { width: 100%; min-width: 0; }
+}
