@@ -263,7 +263,7 @@ if (process.env.LC_SWEEP_NAVIGATION_CANARY === "1") {
     const browser = await chromium.launch({ headless: true });
     t.after(() => browser.close());
     const cases = [];
-    for (const kind of ["noop", "preventDefault", "same-url"]) {
+    for (const kind of ["noop", "preventDefault", "missing-origin", "invalid-origin", "same-url"]) {
       const context = await browser.newContext();
       try {
         await context.addInitScript(INIT_SCRIPT);
@@ -272,7 +272,7 @@ if (process.env.LC_SWEEP_NAVIGATION_CANARY === "1") {
         await context.route("**/*", async (route) => {
           if (!route.request().isNavigationRequest()) return route.fulfill({ status: 204, body: "" });
           documents++;
-          const type = kind === "noop" ? "button" : "submit";
+          const type = ["same-url", "preventDefault"].includes(kind) ? "submit" : "button";
           const script = kind === "preventDefault" ? '<script>document.querySelector("form").addEventListener("submit", e => e.preventDefault())</script>' : "";
           await route.fulfill({ contentType: "text/html", body: `<!doctype html><title>Navigation canary</title><main><form method="get"><input type="hidden" name="q" value="Sweep"><button type="${type}">Search</button></form></main>${script}` });
         });
@@ -281,11 +281,23 @@ if (process.env.LC_SWEEP_NAVIGATION_CANARY === "1") {
         await page.goto(url, { waitUntil: "load" });
         await settle(page, mon, { ready: true });
         const before = await page.evaluate(() => ({ url: location.href, documentTimeOrigin: performance.timeOrigin }));
+        // Fault injection at the read boundary, without changing the page or click:
+        // missing/non-finite document evidence must never earn a navigation PASS.
+        if (["missing-origin", "invalid-origin"].includes(kind)) {
+          const evaluate = page.evaluate.bind(page);
+          page.evaluate = async (fn, arg) => {
+            const value = await evaluate(fn, arg);
+            if (String(fn).includes("__sweepHelpers.state")) {
+              value.documentTimeOrigin = kind === "missing-origin" ? undefined : Number.NaN;
+            }
+            return value;
+          };
+        }
         const desc = (await listControls(page, "main", "main"))[0];
         assert.equal(desc?.name, "Search");
         const row = await sweepControl({ page, mon, rootSelector: "main", unit: { route: "/canary", viewport: "desktop", locale: "en" } }, desc, 1);
         const after = await page.evaluate(() => ({ url: location.href, documentTimeOrigin: performance.timeOrigin }));
-        cases.push({ kind, documents, before, after, result: row.result, failure: row.failure, actual: row.actual });
+        cases.push({ kind, documents, before, after, result: row.result, failure: row.failure, actual: row.actual, documentNavigation: row.documentNavigation });
       } finally {
         await context.close();
       }
