@@ -30,6 +30,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -38,6 +39,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -739,4 +741,176 @@ func (c *ciEnv) resultsCSV(batch string) string {
 		c.t.Fatalf("results.csv: %d %s", st, raw)
 	}
 	return string(raw)
+}
+
+// §4.1/6.1 uses real HTTP + PG. The frozen legacy row-key allowlist is
+// independent of the producer DTO; decoding through a future DTO would hide drift.
+func TestCustomerImportRowErrorsCapability(t *testing.T) {
+	c := ciSetup(t)
+	f := c.f
+	snapshot := func() []int {
+		out := []int{}
+		for _, query := range []string{
+			`SELECT count(*) FROM buyer.owners WHERE tenant_id=$1 AND store_id=$2`,
+			`SELECT count(*) FROM customers.import_profiles WHERE tenant_id=$1 AND store_id=$2`,
+			`SELECT count(*) FROM migrationimport.external_ids WHERE tenant_id=$1 AND store_id=$2`,
+			`SELECT count(*) FROM migrationimport.batches WHERE tenant_id=$1 AND store_id=$2`,
+			`SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='customers.imported'`,
+		} {
+			out = append(out, c.n(query, f.tenantA, c.store))
+		}
+		return out
+	}
+	legacyRows := func(t *testing.T, pv map[string]any) {
+		t.Helper()
+		top := map[string]bool{"file_sha256": true, "headers": true, "mapping": true, "rows_total": true, "new_rows": true, "update_rows": true, "apply_rows": true, "failed_rows": true, "erased_rows": true, "consent_ignored_rows": true, "rows": true}
+		if len(pv) != len(top) {
+			t.Errorf("legacy preview keys=%d want=%d", len(pv), len(top))
+		}
+		for key := range pv {
+			if !top[key] {
+				t.Errorf("legacy preview has new key %q", key)
+			}
+		}
+		allowed := map[string]bool{"row": true, "external_id": true, "outcome": true, "code": true, "consent_ignored": true}
+		for _, raw := range pv["rows"].([]any) {
+			for key := range raw.(map[string]any) {
+				if !allowed[key] {
+					t.Errorf("legacy row has new key %q", key)
+				}
+			}
+		}
+	}
+	file := "customer_id,name,phone,email\n,Synthetic Name,,\nFIELD-NAME,,,\n,,0900000099,\ninvalid@example.test,,,\n,,,\nFIELD-VALID,Synthetic Valid,,\n"
+	t.Run("200 and fresh stale 409 preserve legacy and first-defect fields without writes", func(t *testing.T) {
+		before := snapshot()
+		var legacy map[string]any
+		for _, stale := range []bool{false, true} {
+			for _, marked := range []bool{false, true} {
+				t.Run(fmt.Sprintf("stale=%t/marked=%t", stale, marked), func(t *testing.T) {
+					query := ""
+					if marked {
+						query = "?row_errors=field-v1"
+					}
+					status, pv := c.preview(c.adminTok, file, query)
+					wantStatus := 200
+					if stale {
+						extra := ""
+						if marked {
+							extra = "&row_errors=field-v1"
+						}
+						status, pv = c.commit(c.adminTok, file, 2, extra)
+						wantStatus = 409
+					}
+					if status != wantStatus {
+						t.Fatalf("stale=%v marked=%v status=%d want=%d body=%v", stale, marked, status, wantStatus, pv)
+					}
+					if pv["rows_total"] != float64(5) || pv["failed_rows"] != float64(4) || pv["apply_rows"] != float64(1) {
+						t.Fatalf("counts drift: %v", pv)
+					}
+					sum := sha256.Sum256([]byte(file))
+					if pv["file_sha256"] != hex.EncodeToString(sum[:]) {
+						t.Fatal("capability changed file hash")
+					}
+					rows := pv["rows"].([]any)
+					for i, raw := range rows {
+						row := raw.(map[string]any)
+						if i < 4 && row["external_id"] != "" {
+							t.Errorf("failed row %d exposed source ID", i)
+						}
+						field, present := row["error_field"]
+						wantField := []string{"external_id", "name", "external_id", "", ""}[i]
+						if marked && wantField != "" {
+							if field != wantField || row["code"] != "required" || row["outcome"] != "failed" {
+								t.Errorf("row %d field=%v code=%v outcome=%v", i, field, row["code"], row["outcome"])
+							}
+						} else if present {
+							t.Errorf("unexpected row %d error_field=%v", i, field)
+						}
+						if i == 3 && row["code"] != "invalid_external_id" {
+							t.Error("invalid ID must precede missing name")
+						}
+						delete(row, "error_field") // mutate only this decoded response, never producer input
+					}
+					legacyRows(t, pv)
+					if legacy == nil {
+						legacy = pv
+					} else if !reflect.DeepEqual(legacy, pv) {
+						t.Error("capability/stale changed preview beyond metadata")
+					}
+					if !reflect.DeepEqual(before, snapshot()) {
+						t.Fatal("preview/stale wrote owners/profiles/IDs/batches/audit")
+					}
+				})
+			}
+		}
+	})
+	t.Run("same bytes mapping and N replay across capabilities exactly once both directions", func(t *testing.T) {
+		for _, markedFirst := range []bool{false, true} {
+			t.Run(fmt.Sprintf("marked-first=%t", markedFirst), func(t *testing.T) {
+				body := fmt.Sprintf("ref,who\nFIELD-REPLAY-%t,Synthetic Replay\n", markedFirst)
+				mapping := "&mapping=" + url.QueryEscape(`{"external_id":"ref","name":"who"}`)
+				first, second := mapping, mapping+"&row_errors=field-v1"
+				if markedFirst {
+					first, second = second, first
+				}
+				before := snapshot()
+				status, result := c.commit(c.adminTok, body, 1, first)
+				batch, _ := result["batch_id"].(string)
+				if status != 200 || !command.ValidID(batch) || result["replayed"] != false || result["created"] != float64(1) || result["updated"] != float64(0) || result["failed"] != float64(0) {
+					t.Fatalf("first marked=%v: %d %v", markedFirst, status, result)
+				}
+				if len(result) != 5 {
+					t.Fatalf("receipt shape changed: %v", result)
+				}
+				after := snapshot()
+				for i := range before {
+					if after[i] != before[i]+1 {
+						t.Fatalf("effect %d: before=%v after=%v", i, before, after)
+					}
+				}
+				csvBefore := c.resultsCSV(batch)
+				if !strings.HasPrefix(csvBefore, "\xEF\xBB\xBFrow,external_id,outcome,code\n") || strings.Contains(csvBefore, "error_field") {
+					t.Fatal("CSV shape changed")
+				}
+				status, replay := c.commit(c.adminTok, body, 1, second)
+				if status != 200 || replay["batch_id"] != batch || replay["replayed"] != true {
+					t.Fatalf("cross-capability replay: %d %v", status, replay)
+				}
+				delete(result, "replayed")
+				delete(replay, "replayed")
+				if !reflect.DeepEqual(result, replay) || !reflect.DeepEqual(after, snapshot()) || c.resultsCSV(batch) != csvBefore {
+					t.Fatal("replay changed counts, persistence, audit or CSV")
+				}
+				for _, changed := range []struct {
+					count int
+					query string
+				}{
+					{0, second},
+					{1, "&mapping=" + url.QueryEscape(`{"external_id":"who","name":"ref"}`) + "&row_errors=field-v1"},
+				} {
+					status, conflict := c.commit(c.adminTok, body, changed.count, changed.query)
+					if status != 409 || conflict["code"] != "idempotency_conflict" {
+						t.Fatalf("changed mapping/N: %d %v", status, conflict)
+					}
+				}
+				var stored []map[string]json.RawMessage
+				var raw []byte
+				if err := f.owner.QueryRow(context.Background(), `SELECT results FROM migrationimport.batches WHERE id=$1`, batch).Scan(&raw); err != nil {
+					t.Fatal(err)
+				}
+				if err := json.Unmarshal(raw, &stored); err != nil {
+					t.Fatal(err)
+				}
+				for _, row := range stored {
+					if _, present := row["error_field"]; present {
+						t.Fatal("metadata entered retained batch results")
+					}
+				}
+				if !reflect.DeepEqual(after, snapshot()) {
+					t.Fatal("conflict wrote an effect")
+				}
+			})
+		}
+	})
 }

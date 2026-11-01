@@ -99,6 +99,76 @@ func TestCustomerImportRoutesTransportRules(t *testing.T) {
 	}
 }
 
+// Run the whole router, so accepting a capability reaches the existing auth
+// boundary (401) while malformed/unsupported queries stop before any DB work.
+func TestCustomerImportRowErrorsCapabilityTransport(t *testing.T) {
+	h := NewHandler(nil)
+	base := "/v1/admin/stores/" + custStore + "/imports"
+	for _, endpoint := range []string{"/customers/preview", "/customers/commit?expected_apply_rows=1"} {
+		sep := "?"
+		if strings.Contains(endpoint, "?") {
+			sep = "&"
+		}
+		for _, tc := range []struct {
+			query  string
+			status int
+		}{
+			{"row_errors=field-v1", 401},
+			{"row%5Ferrors=field-v1", 401},
+			{"row_errors=%66ield-v1", 401},
+			{"row_errors=", 422},
+			{"row_errors=unknown", 422},
+			{"row_errors=FIELD-V1", 422},
+			{"row_errors=%20field-v1", 422},
+			{"row_errors=field-v1%20", 422},
+			{"Row_errors=field-v1", 422},
+			{"row_errors%5B%5D=field-v1", 422},
+			{"row_errors=field-v1,other", 422},
+			{"row_errors=field-v1&row_errors=field-v1", 422},
+			{"row_errors=field-v1&row%5Ferrors=field-v1", 422},
+			{"row_errors=field-v1&row_errors=other", 422},
+			{"row_errors=%ZZ", 422},
+			{"row_errors=field-v1&x=1", 422},
+			{"row_errors=" + strings.Repeat("a", 4097), 422},
+		} {
+			t.Run(endpoint+"/"+tc.query, func(t *testing.T) {
+				r := httptest.NewRequest("POST", base+endpoint+sep+tc.query, strings.NewReader("customer_id,name\nFIELD-1,Synthetic\n"))
+				r.Header.Set("Content-Type", "text/csv")
+				w := httptest.NewRecorder()
+				h.ServeHTTP(w, r)
+				var envelope httperror.Envelope
+				wantCode := "invalid_request"
+				if tc.status == 401 {
+					wantCode = "unauthorized"
+				}
+				if err := json.Unmarshal(w.Body.Bytes(), &envelope); err != nil || w.Code != tc.status || envelope.Code != wantCode {
+					t.Fatalf("status=%d code=%q want=%d/%s err=%v", w.Code, envelope.Code, tc.status, wantCode, err)
+				}
+				if w.Header().Get("Cache-Control") != "private, no-store" {
+					t.Fatal("private cache policy changed")
+				}
+			})
+		}
+	}
+	for _, endpoint := range []string{"/orders/preview?", "/orders/commit?expected_apply_rows=1&", "/" + custID + "/results.csv?"} {
+		t.Run("unsupported"+endpoint, func(t *testing.T) {
+			method := "POST"
+			if strings.Contains(endpoint, "results.csv") {
+				method = "GET"
+			}
+			r := httptest.NewRequest(method, base+endpoint+"row_errors=field-v1", strings.NewReader("order_id,name\nFIELD-1,Synthetic\n"))
+			r.Header.Set("Authorization", custBearer)
+			r.Header.Set("Content-Type", "text/csv")
+			w := httptest.NewRecorder()
+			h.ServeHTTP(w, r)
+			var envelope httperror.Envelope
+			if err := json.Unmarshal(w.Body.Bytes(), &envelope); err != nil || w.Code != 422 || envelope.Code != "invalid_request" {
+				t.Fatalf("unsupported capability: %d %s", w.Code, w.Body.String())
+			}
+		})
+	}
+}
+
 // Every coded refusal of the importer must be in httperror's message table, or respondError rewrites it to "internal".
 func TestCustomerImportErrorCodesAreInTheTable(t *testing.T) {
 	for _, tc := range []struct {
