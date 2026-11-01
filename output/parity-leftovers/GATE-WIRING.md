@@ -67,3 +67,10 @@ The parser preflight and authenticated raw GET preflight are newly authored and 
 Root found that the initial MOCK amount 1250 represented fractional TWD despite the frozen whole-dollar rule (`contracts/storefront-v2.md` section F; `apps/admin/lib/catalog-v2-model.ts:272`). All summary/item/totals/SKU amounts now consistently use 1200 minor units (12 TWD); quantity remains one. No assertion, product code or money contract changed. The parser-only preflight did not encode this domain rule; valid parser shape alone is not domain acceptance. Original twelve cases remain unchanged.
 
 FIX1 static commands: `gofmt -w tests/foundation/browser_parity_leftovers_test.go`, extracted generated JS `node --check --input-type=module`, and `git diff --check` exit 0. After invite agent released the global ownership lock, acquired it, ran `node scripts/dev/derive-browser-ownership.mjs` and `node scripts/dev/derive-browser-ownership.mjs --check` (both exit 0, 55 modes), then released it. Only the current Go source hash changed in the generated artifact; modes/inputs remain unchanged. Go/PG/browser tests remain NOT_RUN; no push.
+
+
+## Registry guard alignment after Foundation RED
+
+Foundation [41296883416, job 124819492325](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41296883416/job/124819492325) failed `tests/admin/live-settings-model.test.ts:143`: the old exact selector required only `TestBrowserLiveSettingsUIRealChain`, while the existing runner selects that test and `TestBrowserParityLeftovers` in one anchored alternation. Root authorized extending the guard to the exact current two-test selector, with positive checks for both names and negative checks for similar unrelated names. The single registry entry, admin build, PG fixture, race, 780-second timeout, original test selection and all other assertions remain required. Runner, fixture, original twelve specs and product are unchanged.
+
+This is a guard-only candidate. GitHub GREEN, twelve browser cases, fixture preflight, independent acceptance, SANDBOX and LIVE are NOT_RUN. Existing order and media DTO limitations remain BLOCKED.
