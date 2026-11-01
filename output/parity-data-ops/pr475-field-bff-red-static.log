@@ -1,0 +1,32 @@
+task_id: 53ea9f21-sub-import-field-bff-red
+parent_task_id: 53ea9f21-3f3b-4626-87ab-42dc853507b9
+base_commit: 97bcb774efa3712b86047ffef3a675725794d6fe
+branch: codex/pr475-inventory-repair
+role: tests-only independent contract counterexample author
+model/reasoning: UNKNOWN (parent dispatch metadata is authority)
+runtime/product acceptance: NOT_RUN; E1 static syntax only
+authority: contracts/migration-import-v1.md 4.1/6.1; human freeze692f69f4-2b7d-41c0-9849-b280342a491d
+wiring: scripts/dev/test-local.sh:1558 --browser-migration-import; lc_prepare line1568 explicitly selects all three changed tests
+harness: tests/admin/import-client.test.mjs existing real-loader, route POST/GET -> real auth/request/importProxy -> simulated fetch network edge
+coverage: marked200 and stale409; legacy exact old safe shapes; encoded marker; strict query enum/duplicate/encodedduplicate/empty/malformed; orders/results refusal; strict enum/cross-field privacy; unchanged bytes/mapping/N; old-server422/lostACK one dispatch no fallback; receipt exact shape; safe reader and legacy projection input purity
+existing oracles/fixtures: retained; all test changes additive; no product/Go/contract/runner/dependency edits
+limits: no observed runtime RED/GREEN yet; root owns GitHub CI and independent acceptance. Fresh409 is supplied at network seam; real Go/PG stale rollback/replay remain existing separate gates. No new client opt-in parameter invented. Marked projector input purity is not proven by serialized route seam; safe-reader/legacy-projector purity covered.
+process cleanup: no background process/browser/PG/container/fixture/port started; five old untracked inventory-diagnosis4556 evidence files preserved
+
+command: node --check tests/admin/import-client.test.mjs
+exit_code: 0
+
+command: node --experimental-strip-types --check tests/admin/import-wire-header.test.ts
+exit_code: 0
+
+command: node --experimental-strip-types --check tests/admin/import-wire-model.test.ts
+exit_code: 0
+
+command: git diff --check
+exit_code: 0
+
+sha256 tests/admin/import-wire-header.test.ts b2f662f42d07c1ac755d91bbbd966385788cfefaceaed7757164455a6c982694
+sha256 tests/admin/import-wire-model.test.ts 775ba536939456219bf434ebcf18f7764b07cd621cec3b717d762710ee771401
+sha256 tests/admin/import-client.test.mjs ba61788308ad98ab62e40079eaae473c4c83ebfb511861db4938c574a60d9920
+
+NOT_RUN: node --test; browser; Go/PG; build; GitHub CI; mutation witness; independent review; push/merge/deploy
