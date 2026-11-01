@@ -26,7 +26,7 @@
     "tests/admin/catalog-document-driver.ts": "da77d282f47c6b63104c917e7cf7bd97166091bd21d511b74699983180913f8e",
     "tests/admin/catalog-receipt.test.ts": "972625dffcda9c32dee20554bad573dc842bfdc82887b84f7899579dd8e1c1b4",
     "tests/admin/catalog-v2-model.test.ts": "a358e29e75ddf33ddf20297a33f54fd5e127a0a8e28713e3c0a46ffeb60ca69f",
-    "tests/admin/catalog-v2-simplified.acceptance.ts": "b52e43aa53d37384d39fa59a1cfeb1e175060e94962086bc0c575e872a406565",
+    "tests/admin/catalog-v2-simplified.acceptance.ts": "115da90b957ed2b9a31b980e2baa074e22d69494b114bb767870f50c75fc400a",
     "tests/admin/checkout-offline.spec.ts": "1597b0501e6f65d1a70fd103bf2df5ad299e3afcaf28a93f8973523d5df1435a",
     "tests/admin/claim-source.test.ts": "cde93c642213d3ec5efeb7548e2954673e540a7e03ed7b66908fd8c2ba8b0706",
     "tests/admin/claims-backend-parity.test.ts": "93784882a486c2be5a1cf945437dd818c5a93d290aac7d2140e5ee55dffb0335",
@@ -155,6 +155,7 @@
     "tests/admin/parity-entry.spec.ts": "6b11d4a2c5796aab411121d42509c69cf991505d7665bef5eaa64cfcaffab2b3",
     "tests/admin/parity-live-sessions.ts": "0e6b0e68ae44c283af2db4efef29fbfc573a16cba0c1972f39daee7e049cb0f0",
     "tests/admin/parity-money-support.ts": "b6fbedd1dfb167be5821ef89e025a10ed09401113c7864a8779b10581fd7dad7",
+    "tests/admin/parity-order-ops.spec.ts": "c2798ff760eb3fc5af1828da20359a3656efab5eec131fdb441352ff36836548",
     "tests/admin/parity-shell-browser.mjs": "397492363afff6832aa910d2e27a17e7f7bde8e51aba85a44c57f3b76adf4deb",
     "tests/admin/password-auth.spec.ts": "6f564f2b66f2b2ed666bac36b1f24a3d26cdabb00a4c59e4ac1e74b8c9dbd33d",
     "tests/admin/password-bff.test.ts": "a0aef82247f79280f4f950dee28cff5116c98be35e1d09898ddfee6d623922a4",
@@ -189,7 +190,7 @@
     "tests/admin/reports.spec.ts": "e7dc43497dd6f337f65a43fc8bd0767fbd8b0e3b7eddfecda75761877128b710",
     "tests/admin/returns-model.test.ts": "0252872342060b71f556ac0bd1ab432fa59027f30cf99ed6035181e0e8cf5529",
     "tests/admin/returns-request.test.ts": "7716794c6a76666e182797bec5c7c8b38816101ac36de445cd3f4c8127613c80",
-    "tests/admin/returns-ui.spec.ts": "56a4f906c616b4d8fe50ca565a4afa534027b0894af3e5beff900fa63a2352c3",
+    "tests/admin/returns-ui.spec.ts": "14bd880a95d1fa9898fefd158f9a66d96cbae1b1d97016a110585d6d3135d67f",
     "tests/admin/safe-json-cancel.test.ts": "ab24bd8a7156d66a0f738ec12cc24c6a742c947fd8bbe08f534a07f42c60e8ee",
     "tests/admin/settings-real.spec.ts": "d05b768551dd1fd42850cbeb33adb4a6663473e47ea623ced3a5c51095904116",
     "tests/admin/settings-v2.spec.ts": "72c510af3b3925278193df0018869f6152c41b8401c02ad4fffcec2ce74e36fb",
@@ -197,7 +198,7 @@
     "tests/admin/shell-architecture.test.mjs": "f324d97d97de3c8883a35523519c1f9b7ecc6a6a90c936e8e93114b3f2ce592b",
     "tests/admin/shell-browser.mjs": "ce5ebc5fa693f9f6ec56e5e85c9644a412f81192d7a27b2c3a19141e2444a056",
     "tests/admin/shell-fixture.mjs": "e039df237b3c9d131a6b291ecc0cd5170082be223ebe83f9411092d02d3bcb43",
-    "tests/admin/shell-registry.test.ts": "7743ea45769bf2ed6aa86734f9100c9e3bf9928b064a5921bb23fcfce99533a4",
+    "tests/admin/shell-registry.test.ts": "fec3278cd03012e9d128da287a624ea136c7f42c7eb153bc64c08aab37f13438",
     "tests/admin/shell-render.test.ts": "1693d0620dc122c556450bf69be177d8fdeb5116e26ecfefeccee6b065fc60dd",
     "tests/admin/shell-runner.mjs": "0f2bb2e12159f71dd343ac7f1cfbf35e633abf1429e146b02789887f26ae4e2a",
     "tests/admin/shipping-center.spec.ts": "4f230831f1e0eef257c6c4099cdb1383702b92daeb91295a07f20de0499b19a4",
@@ -213,7 +214,7 @@
     "tests/admin/taiwan-cvs.spec.ts": "589cc5eed65fb8b8830ca15e6007606ce06a1f81e9bee7a0c66234316b2c697d",
     "tests/admin/team-bff.test.ts": "85ae24dc3ff4c27fac4cc5418acfdf584f08a4ab5cf7afd8c30d09f2d9e36533",
     "tests/admin/team-model.test.ts": "d11c2e907da6ed6079e83394dbe28c88d5552d353650b290d488ce1eff51a5d0",
-    "tests/admin/timezone-ui.test.mjs": "5564b216ae95058186b81fe5392d4c68adec8f5c1442fc2074ff09a5bff88307",
+    "tests/admin/timezone-ui.test.mjs": "aa44dbe91d137cd5c0a6e0b511296ededc16b25381b36a2a31465dfd1561d66d",
     "tests/admin/tracking-backfill-model.test.ts": "52e77d405a56fc257b385065aeb3393bf75fcb44ad1015ebbbfc4653840c5b6b",
     "tests/admin/tracking-backfill.spec.ts": "d0f944c8100c1f502d2e297ef90729348eeee553dcba4fdf26b2432dc0925934",
     "tests/admin/transfer-model.test.ts": "e7eed6e57f36d2d29078aff608021f78542cc03563428d09bb07e41b11a291f0",
@@ -292,7 +293,7 @@
     "tests/foundation/browser_product_media_v2_test.go": "a27c65c69a356443f027696fd27ae75665f35c213de6b54b9e6157fd7e865b1d",
     "tests/foundation/browser_promotions_test.go": "02d1c51144f009243bc08b2c33c3ccac54adb669b5dff3564236af2fbe64a68a",
     "tests/foundation/browser_refund_fulfilment_test.go": "4e8445b9531a98914c82b362a4652a468c4d57969866eb3ac943f0dac28de866",
-    "tests/foundation/browser_returns_ui_test.go": "5714f112135c244f4d733af6527b99662ff8a19286b570c9a5ca1bd0559d4fee",
+    "tests/foundation/browser_returns_ui_test.go": "f8f02b0691b70d6bf90d74d0be7cd43c8ebd3aabce2317ec7bf0070c37c72baa",
     "tests/foundation/browser_staff_team_test.go": "77741041966846fa4427ca2d4fb8412ee7716bb4a195f73d0836cca3d7e5b32c",
     "tests/foundation/browser_store_design_test.go": "7cf742278df2b033f1af287f7193173d59fc65ca1a75435c126c2f9eebec0b8f",
     "tests/foundation/browser_store_domains_test.go": "13ebb75fb6440d6089a6a554a02b94c0779a9b9e6896140ef594055ff3406d53",
@@ -740,7 +741,7 @@
     "tests/storefront/cvs-picker.mjs": "aa06a6ed3c066176c46eb96f3b53e2bd1d4ceff364641683d1fc12dd7c187342",
     "tests/storefront/home-cod-buyer.mjs": "6e1922d58aa75e6ce2c5f8c57279852e513421e58ddc1103bc4574fd8bb3dbd8",
     "tests/storefront/legal-pages.mjs": "75096e2148250a804a3ed4a35d29eae48aa017dec6978c569deb2a03d9341cbf",
-    "tests/storefront/manual-order-link-gate.mjs": "5e58a7e8414a47e511b88f079f3bad20ca269b03b4e3e793f146cb0157ca04f3",
+    "tests/storefront/manual-order-link-gate.mjs": "e0ad778e0e0b73ad52021ba33e60e5892f7eed6210db2f36802e3337d79da4cc",
     "tests/storefront/media-sizes-perf.mjs": "cda916ddd4385236dffca710f0d22169f91ceaab2e0390dc7d56a809e5d77ac6",
     "tests/storefront/merchant-buyer-gate.mjs": "a217ad228d06445a43f00291b9a68fbcdda835e058bc27e0cc5028dabf54daa0",
     "tests/storefront/merchant-product.mjs": "d9d43b036a6be9e7ab938d5e56ce8e28be2e21301a537c381ff3121d5f8e93b5",
@@ -2969,11 +2970,13 @@
     },
     "--browser-returns-ui": {
       "specs": [
+        "tests/admin/parity-order-ops.spec.ts",
         "tests/admin/returns-model.test.ts",
         "tests/admin/returns-request.test.ts",
         "tests/admin/returns-ui.spec.ts"
       ],
       "inputs": [
+        "tests/admin/parity-order-ops.spec.ts",
         "tests/admin/returns-model.test.ts",
         "tests/admin/returns-request.test.ts",
         "tests/admin/returns-ui.spec.ts"
@@ -2995,6 +2998,7 @@
         "tests/admin/returns-model.test.ts:server/import apps/admin",
         "tests/admin/returns-request.test.ts:import apps/admin/lib/orders-request.ts",
         "tests/admin/returns-request.test.ts:server/import apps/admin",
+        "tests/foundation/browser_returns_ui_test.go -> tests/admin/parity-order-ops.spec.ts",
         "tests/foundation/browser_returns_ui_test.go -> tests/admin/returns-ui.spec.ts"
       ]
     },
