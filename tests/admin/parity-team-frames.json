@@ -1,0 +1,2200 @@
+{
+  "source": "output/parity-team/FRAME-COPY.md @ PR #472",
+  "source_sha256": "fd1ff3d7c2f1eceb2a6aec157886925fd5bf31e2ea307a0e79f70bc97fee55c0",
+  "locale_source": "ux-team/DELIVERY.md Three-language copy",
+  "locale_source_sha256": "6a7c24e81a263a0e04b1731701ec691f5b865f94ad68874aa0b726a0b7490b75",
+  "locales": {
+    "Ari · ari@example.test": {
+      "zh-TW": "Ari · ari@example.test",
+      "zh-CN": "Ari · ari@example.test",
+      "en": "Ari · ari@example.test"
+    },
+    "DaWan Live": {
+      "zh-TW": "DaWan Live",
+      "zh-CN": "DaWan Live",
+      "en": "DaWan Live"
+    },
+    "mei@example.test": {
+      "zh-TW": "mei@example.test",
+      "zh-CN": "mei@example.test",
+      "en": "mei@example.test"
+    },
+    "owner@example.test": {
+      "zh-TW": "owner@example.test",
+      "zh-CN": "owner@example.test",
+      "en": "owner@example.test"
+    },
+    "使用收到邀請的信箱。": {
+      "zh-TW": "使用收到邀請的信箱。",
+      "zh-CN": "请使用收到邀请的邮箱。",
+      "en": "Use the email address that received the invitation."
+    },
+    "傳送驗證碼": {
+      "zh-TW": "傳送驗證碼",
+      "zh-CN": "发送验证码",
+      "en": "Send code"
+    },
+    "僅供檢視": {
+      "zh-TW": "僅供檢視",
+      "zh-CN": "只读成员",
+      "en": "Viewer"
+    },
+    "僅供檢視 · 加入 10/12": {
+      "zh-TW": "僅供檢視 · 加入 10/12",
+      "zh-CN": "只读成员 · 加入于 10/12",
+      "en": "Viewer · Joined 10/12"
+    },
+    "僅供檢視 · 查看資料，不能變更": {
+      "zh-TW": "僅供檢視 · 查看資料，不能變更",
+      "zh-CN": "只读成员 · 查看资料，不能修改",
+      "en": "Viewer · View data without making changes"
+    },
+    "先查看待接受邀請，稍後再試。": {
+      "zh-TW": "先查看待接受邀請，稍後再試。",
+      "zh-CN": "请先查看待接受邀请，稍后再试。",
+      "en": "Review pending invitations and try later."
+    },
+    "出貨人員": {
+      "zh-TW": "出貨人員",
+      "zh-CN": "发货人员",
+      "en": "Fulfilment"
+    },
+    "出貨人員 · 加入 10/12": {
+      "zh-TW": "出貨人員 · 加入 10/12",
+      "zh-CN": "发货人员 · 加入于 10/12",
+      "en": "Fulfilment · Joined 10/12"
+    },
+    "出貨人員 · 處理出貨、匯出訂單及庫存": {
+      "zh-TW": "出貨人員 · 處理出貨、匯出訂單及庫存",
+      "zh-CN": "发货人员 · 处理发货、导出订单和库存",
+      "en": "Fulfilment · Ship, export orders and manage stock"
+    },
+    "加入團隊": {
+      "zh-TW": "加入團隊",
+      "zh-CN": "加入团队",
+      "en": "Join team"
+    },
+    "取消": {
+      "zh-TW": "取消",
+      "zh-CN": "取消",
+      "en": "Cancel"
+    },
+    "只有店主可以管理員工": {
+      "zh-TW": "只有店主可以管理員工",
+      "zh-CN": "只有店主可以管理员工",
+      "en": "Only the store owner can manage staff"
+    },
+    "員工": {
+      "zh-TW": "員工",
+      "zh-CN": "员工",
+      "en": "Staff"
+    },
+    "員工名單": {
+      "zh-TW": "員工名單",
+      "zh-CN": "员工名单",
+      "en": "Members"
+    },
+    "員工已移除": {
+      "zh-TW": "員工已移除",
+      "zh-CN": "员工已移除",
+      "en": "Staff member removed"
+    },
+    "商品與庫存": {
+      "zh-TW": "商品與庫存",
+      "zh-CN": "商品与库存",
+      "en": "Products & stock"
+    },
+    "回到員工": {
+      "zh-TW": "回到員工",
+      "zh-CN": "返回员工页",
+      "en": "Back to staff"
+    },
+    "密碼": {
+      "zh-TW": "密碼",
+      "zh-CN": "密码",
+      "en": "Password"
+    },
+    "尚未開啟電子郵件登入，無法寄送邀請。": {
+      "zh-TW": "尚未開啟電子郵件登入，無法寄送邀請。",
+      "zh-CN": "尚未启用邮箱登录，无法发送邀请。",
+      "en": "Email sign-in is off, so invitations cannot be sent."
+    },
+    "已加入團隊": {
+      "zh-TW": "已加入團隊",
+      "zh-CN": "已加入团队",
+      "en": "You joined the team"
+    },
+    "已取得管理員權限，可以進入店舖。": {
+      "zh-TW": "已取得管理員權限，可以進入店舖。",
+      "zh-CN": "已获得管理员权限，可以进入店铺。",
+      "en": "Admin access is ready. You can open the store."
+    },
+    "已是這間店的員工": {
+      "zh-TW": "已是這間店的員工",
+      "zh-CN": "已是这家店的员工",
+      "en": "Already a member of this store"
+    },
+    "已送出": {
+      "zh-TW": "已送出",
+      "zh-CN": "已发送",
+      "en": "Sent"
+    },
+    "店主": {
+      "zh-TW": "店主",
+      "zh-CN": "店主",
+      "en": "Owner"
+    },
+    "店主 · 加入 10/01 · 不可移除或降級": {
+      "zh-TW": "店主 · 加入 10/01 · 不可移除或降級",
+      "zh-CN": "店主 · 加入于 10/01 · 不能移除或降级",
+      "en": "Owner · Joined 10/01 · Protected"
+    },
+    "店主 · 加入 10/12": {
+      "zh-TW": "店主 · 加入 10/12",
+      "zh-CN": "店主 · 加入于 10/12",
+      "en": "Owner · Joined 10/12"
+    },
+    "店主 · 未提供電子郵件": {
+      "zh-TW": "店主 · 未提供電子郵件",
+      "zh-CN": "店主 · 未提供电子邮箱",
+      "en": "Owner · No email available"
+    },
+    "店主 · 管理全部功能、訂閱帳單與員工": {
+      "zh-TW": "店主 · 管理全部功能、訂閱帳單與員工",
+      "zh-CN": "店主 · 管理全部功能、订阅账单和员工",
+      "en": "Owner · Manage all features, subscription billing and staff"
+    },
+    "店主不可移除或降級": {
+      "zh-TW": "店主不可移除或降級",
+      "zh-CN": "不能移除店主或降低店主权限",
+      "en": "Owners cannot be removed or demoted"
+    },
+    "店舖權限已移除。": {
+      "zh-TW": "店舖權限已移除。",
+      "zh-CN": "店铺权限已移除。",
+      "en": "Store access has been removed."
+    },
+    "建立帳號": {
+      "zh-TW": "建立帳號",
+      "zh-CN": "注册账号",
+      "en": "Create account"
+    },
+    "待接受邀請": {
+      "zh-TW": "待接受邀請",
+      "zh-CN": "待接受邀请",
+      "en": "Pending invitations"
+    },
+    "接受邀請": {
+      "zh-TW": "接受邀請",
+      "zh-CN": "接受邀请",
+      "en": "Accept invitation"
+    },
+    "撤回": {
+      "zh-TW": "撤回",
+      "zh-CN": "撤回",
+      "en": "Withdraw"
+    },
+    "撤回後，這封邀請連結將無法使用。": {
+      "zh-TW": "撤回後，這封邀請連結將無法使用。",
+      "zh-CN": "撤回后，该邀请链接将无法使用。",
+      "en": "This invitation link will no longer work."
+    },
+    "撤回邀請": {
+      "zh-TW": "撤回邀請",
+      "zh-CN": "撤回邀请",
+      "en": "Withdraw invitation"
+    },
+    "收款與報表": {
+      "zh-TW": "收款與報表",
+      "zh-CN": "收款与报表",
+      "en": "Payments & reports"
+    },
+    "暫時無法讀取員工": {
+      "zh-TW": "暫時無法讀取員工",
+      "zh-CN": "暂时无法读取员工",
+      "en": "Cannot load staff now"
+    },
+    "暫時無法邀請員工": {
+      "zh-TW": "暫時無法邀請員工",
+      "zh-CN": "暂时无法邀请员工",
+      "en": "Staff invitations unavailable"
+    },
+    "查看信箱驗證碼": {
+      "zh-TW": "查看信箱驗證碼",
+      "zh-CN": "查看邮箱验证码",
+      "en": "Check your email code"
+    },
+    "查看最新名單": {
+      "zh-TW": "查看最新名單",
+      "zh-CN": "查看最新名单",
+      "en": "View latest list"
+    },
+    "檢查連線後再讀取": {
+      "zh-TW": "檢查連線後再讀取",
+      "zh-CN": "检查网络后重新读取",
+      "en": "Check connection and reload"
+    },
+    "登入": {
+      "zh-TW": "登入",
+      "zh-CN": "登录",
+      "en": "Sign in"
+    },
+    "目前不能授予店主角色": {
+      "zh-TW": "目前不能授予店主角色",
+      "zh-CN": "暂时不能授予店主角色",
+      "en": "Cannot grant owner role now"
+    },
+    "目前只有你一位員工": {
+      "zh-TW": "目前只有你一位員工",
+      "zh-CN": "目前只有你一位员工",
+      "en": "You are the only team member"
+    },
+    "目前已是管理員，無須變更。": {
+      "zh-TW": "目前已是管理員，無須變更。",
+      "zh-CN": "目前已是管理员，无需更改。",
+      "en": "Already an Admin. No change is needed."
+    },
+    "目前沒有待接受的邀請": {
+      "zh-TW": "目前沒有待接受的邀請",
+      "zh-CN": "目前没有待接受的邀请",
+      "en": "No pending invitations"
+    },
+    "目前無法加入團隊": {
+      "zh-TW": "目前無法加入團隊",
+      "zh-CN": "目前无法加入团队",
+      "en": "Cannot join the team now"
+    },
+    "目前無法新增邀請": {
+      "zh-TW": "目前無法新增邀請",
+      "zh-CN": "暂时无法新增邀请",
+      "en": "Cannot add invitations now"
+    },
+    "目前角色：僅供檢視": {
+      "zh-TW": "目前角色：僅供檢視",
+      "zh-CN": "当前角色：只读成员",
+      "en": "Your role: Viewer"
+    },
+    "直播": {
+      "zh-TW": "直播",
+      "zh-CN": "直播",
+      "en": "Live"
+    },
+    "直播人員": {
+      "zh-TW": "直播人員",
+      "zh-CN": "直播人员",
+      "en": "Live operator"
+    },
+    "直播人員 · 加入 10/12": {
+      "zh-TW": "直播人員 · 加入 10/12",
+      "zh-CN": "直播人员 · 加入于 10/12",
+      "en": "Live operator · Joined 10/12"
+    },
+    "直播人員 · 管理直播，查看商品、訂單與庫存": {
+      "zh-TW": "直播人員 · 管理直播，查看商品、訂單與庫存",
+      "zh-CN": "直播人员 · 管理直播，查看商品、订单和库存",
+      "en": "Live operator · Manage live; view products, orders and stock"
+    },
+    "確認中": {
+      "zh-TW": "確認中",
+      "zh-CN": "确认中",
+      "en": "Checking"
+    },
+    "確認撤回": {
+      "zh-TW": "確認撤回",
+      "zh-CN": "确认撤回",
+      "en": "Confirm withdrawal"
+    },
+    "確認移除": {
+      "zh-TW": "確認移除",
+      "zh-CN": "确认移除",
+      "en": "Confirm removal"
+    },
+    "確認變更": {
+      "zh-TW": "確認變更",
+      "zh-CN": "确认更改",
+      "en": "Confirm change"
+    },
+    "示範店": {
+      "zh-TW": "示範店",
+      "zh-CN": "演示店铺",
+      "en": "Demo store"
+    },
+    "移除": {
+      "zh-TW": "移除",
+      "zh-CN": "移除",
+      "en": "Remove"
+    },
+    "移除員工": {
+      "zh-TW": "移除員工",
+      "zh-CN": "移除员工",
+      "en": "Remove staff"
+    },
+    "移除後，對方將無法使用這間店舖。": {
+      "zh-TW": "移除後，對方將無法使用這間店舖。",
+      "zh-CN": "移除后，对方将无法访问这家店铺。",
+      "en": "They will lose access to this store."
+    },
+    "移除結果尚未確認，請查看名單，勿再次送出。": {
+      "zh-TW": "移除結果尚未確認，請查看名單，勿再次送出。",
+      "zh-CN": "移除结果尚未确认，请查看名单，不要再次提交。",
+      "en": "Removal is unconfirmed. Check the list; do not submit again."
+    },
+    "移除結果尚未確認，請稍後再查看。": {
+      "zh-TW": "移除結果尚未確認，請稍後再查看。",
+      "zh-CN": "移除结果尚未确认，请稍后再查看。",
+      "en": "Removal is unconfirmed. Check again later."
+    },
+    "管理員": {
+      "zh-TW": "管理員",
+      "zh-CN": "管理员",
+      "en": "Admin"
+    },
+    "管理員 · 加入 10/12": {
+      "zh-TW": "管理員 · 加入 10/12",
+      "zh-CN": "管理员 · 加入于 10/12",
+      "en": "Admin · Joined 10/12"
+    },
+    "管理員 · 管理業務，不含訂閱帳單與員工": {
+      "zh-TW": "管理員 · 管理業務，不含訂閱帳單與員工",
+      "zh-CN": "管理员 · 管理业务，不含订阅账单和员工",
+      "en": "Admin · Manage business, excluding subscription billing and staff"
+    },
+    "管理員改為僅供檢視，將無法變更資料。": {
+      "zh-TW": "管理員改為僅供檢視，將無法變更資料。",
+      "zh-CN": "管理员改为只读成员后，将无法修改资料。",
+      "en": "Admin will become Viewer and lose editing access."
+    },
+    "管理員改為出貨人員。": {
+      "zh-TW": "管理員改為出貨人員。",
+      "zh-CN": "管理员改为发货人员。",
+      "en": "Change Admin to Fulfilment."
+    },
+    "管理員改為店主。": {
+      "zh-TW": "管理員改為店主。",
+      "zh-CN": "管理员改为店主。",
+      "en": "Change Admin to Owner."
+    },
+    "管理員改為直播人員。": {
+      "zh-TW": "管理員改為直播人員。",
+      "zh-CN": "管理员改为直播人员。",
+      "en": "Change Admin to Live operator."
+    },
+    "管理員邀請尚未確認，請查看名單，勿再次送出。": {
+      "zh-TW": "管理員邀請尚未確認，請查看名單，勿再次送出。",
+      "zh-CN": "管理员邀请尚未确认，请查看名单，不要再次提交。",
+      "en": "The Admin invitation is unconfirmed. Check the list; do not submit again."
+    },
+    "管理員邀請尚未確認，請稍後再查看。": {
+      "zh-TW": "管理員邀請尚未確認，請稍後再查看。",
+      "zh-CN": "管理员邀请尚未确认，请稍后再查看。",
+      "en": "The Admin invitation is unconfirmed. Check again later."
+    },
+    "管理員邀請撤回尚未確認，請查看名單，勿再次送出。": {
+      "zh-TW": "管理員邀請撤回尚未確認，請查看名單，勿再次送出。",
+      "zh-CN": "撤回管理员邀请尚未确认，请查看名单，不要再次提交。",
+      "en": "Withdrawal of the Admin invitation is unconfirmed. Check the list; do not submit again."
+    },
+    "管理員邀請撤回尚未確認，請稍後再查看。": {
+      "zh-TW": "管理員邀請撤回尚未確認，請稍後再查看。",
+      "zh-CN": "撤回管理员邀请尚未确认，请稍后再查看。",
+      "en": "Withdrawal of the Admin invitation is unconfirmed. Check again later."
+    },
+    "網路商店": {
+      "zh-TW": "網路商店",
+      "zh-CN": "网店",
+      "en": "Online store"
+    },
+    "總覽": {
+      "zh-TW": "總覽",
+      "zh-CN": "总览",
+      "en": "Overview"
+    },
+    "繁體中文": {
+      "zh-TW": "繁體中文",
+      "zh-CN": "简体中文",
+      "en": "English"
+    },
+    "繼續": {
+      "zh-TW": "繼續",
+      "zh-CN": "继续",
+      "en": "Continue"
+    },
+    "至少 12 個字元，勿重複使用其他密碼。": {
+      "zh-TW": "至少 12 個字元，勿重複使用其他密碼。",
+      "zh-CN": "至少 12 个字符，不要使用其他账号的密码。",
+      "en": "At least 12 characters. Use a unique password."
+    },
+    "行銷優惠": {
+      "zh-TW": "行銷優惠",
+      "zh-CN": "营销优惠",
+      "en": "Promotions"
+    },
+    "角色不需變更": {
+      "zh-TW": "角色不需變更",
+      "zh-CN": "无需更改角色",
+      "en": "No role change needed"
+    },
+    "角色已變更": {
+      "zh-TW": "角色已變更",
+      "zh-CN": "角色已更改",
+      "en": "Role changed"
+    },
+    "角色未變更": {
+      "zh-TW": "角色未變更",
+      "zh-CN": "角色未更改",
+      "en": "Role unchanged"
+    },
+    "訂單與出貨": {
+      "zh-TW": "訂單與出貨",
+      "zh-CN": "订单与发货",
+      "en": "Orders & shipping"
+    },
+    "訊息中心": {
+      "zh-TW": "訊息中心",
+      "zh-CN": "消息中心",
+      "en": "Inbox"
+    },
+    "設定": {
+      "zh-TW": "設定",
+      "zh-CN": "设置",
+      "en": "Settings"
+    },
+    "設定 / 員工": {
+      "zh-TW": "設定 / 員工",
+      "zh-CN": "设置 / 员工",
+      "en": "Settings / Staff"
+    },
+    "設定與員工": {
+      "zh-TW": "設定與員工",
+      "zh-CN": "设置与员工",
+      "en": "Settings & staff"
+    },
+    "請使用受邀信箱登入，或請店主重新邀請。": {
+      "zh-TW": "請使用受邀信箱登入，或請店主重新邀請。",
+      "zh-CN": "请使用受邀邮箱登录，或请店主重新邀请。",
+      "en": "Sign in with the invited email, or ask the owner for a new invitation."
+    },
+    "請保留至少一位店主": {
+      "zh-TW": "請保留至少一位店主",
+      "zh-CN": "请保留至少一位店主",
+      "en": "Keep at least one owner"
+    },
+    "請先確認身分": {
+      "zh-TW": "請先確認身分",
+      "zh-CN": "请先验证身份",
+      "en": "Confirm your identity"
+    },
+    "請勿再次接受邀請，請店主確認名單。": {
+      "zh-TW": "請勿再次接受邀請，請店主確認名單。",
+      "zh-CN": "请不要再次接受邀请，请店主确认名单。",
+      "en": "Do not accept again. Ask the owner to check the list."
+    },
+    "請回到名單查看目前角色。": {
+      "zh-TW": "請回到名單查看目前角色。",
+      "zh-CN": "请返回名单查看当前角色。",
+      "en": "Return to the list to check their current role."
+    },
+    "請從店舖清單進入。": {
+      "zh-TW": "請從店舖清單進入。",
+      "zh-CN": "请从店铺列表进入。",
+      "en": "Open the store from your store list."
+    },
+    "請改選其他角色。": {
+      "zh-TW": "請改選其他角色。",
+      "zh-CN": "请选择其他角色。",
+      "en": "Choose another role."
+    },
+    "請檢查電子郵件": {
+      "zh-TW": "請檢查電子郵件",
+      "zh-CN": "请检查电子邮箱",
+      "en": "Check the email address"
+    },
+    "請輸入完整有效的電子郵件。": {
+      "zh-TW": "請輸入完整有效的電子郵件。",
+      "zh-CN": "请输入完整有效的邮箱地址。",
+      "en": "Enter a complete, valid email address."
+    },
+    "變更為僅供檢視尚未確認，請查看名單，勿再次送出。": {
+      "zh-TW": "變更為僅供檢視尚未確認，請查看名單，勿再次送出。",
+      "zh-CN": "改为只读成员尚未确认，请查看名单，不要再次提交。",
+      "en": "The change to Viewer is unconfirmed. Check the list; do not submit again."
+    },
+    "變更為僅供檢視尚未確認，請稍後再查看。": {
+      "zh-TW": "變更為僅供檢視尚未確認，請稍後再查看。",
+      "zh-CN": "改为只读成员尚未确认，请稍后再查看。",
+      "en": "The change to Viewer is unconfirmed. Check again later."
+    },
+    "變更角色": {
+      "zh-TW": "變更角色",
+      "zh-CN": "更改角色",
+      "en": "Change role"
+    },
+    "輸入 6 位數字": {
+      "zh-TW": "輸入 6 位數字",
+      "zh-CN": "输入 6 位数字",
+      "en": "Enter 6 digits"
+    },
+    "輸入密碼": {
+      "zh-TW": "輸入密碼",
+      "zh-CN": "输入密码",
+      "en": "Enter password"
+    },
+    "返回": {
+      "zh-TW": "返回",
+      "zh-CN": "返回",
+      "en": "Back"
+    },
+    "送出 10/30 14:00 · 11/02 14:00 到期": {
+      "zh-TW": "送出 10/30 14:00 · 11/02 14:00 到期",
+      "zh-CN": "发送于 10/30 14:00 · 11/02 14:00 到期",
+      "en": "Sent 10/30 14:00 · Expires 11/02 14:00"
+    },
+    "送出邀請": {
+      "zh-TW": "送出邀請",
+      "zh-CN": "发送邀请",
+      "en": "Send invitation"
+    },
+    "這位員工已在名單中": {
+      "zh-TW": "這位員工已在名單中",
+      "zh-CN": "该员工已在名单中",
+      "en": "This person is already a member"
+    },
+    "進入店舖": {
+      "zh-TW": "進入店舖",
+      "zh-CN": "进入店铺",
+      "en": "Open store"
+    },
+    "邀請 72 小時內有效": {
+      "zh-TW": "邀請 72 小時內有效",
+      "zh-CN": "邀请 72 小时内有效",
+      "en": "Invitation valid for 72 hours"
+    },
+    "邀請員工": {
+      "zh-TW": "邀請員工",
+      "zh-CN": "邀请员工",
+      "en": "Invite staff"
+    },
+    "邀請已撤回": {
+      "zh-TW": "邀請已撤回",
+      "zh-CN": "邀请已撤回",
+      "en": "Invitation withdrawn"
+    },
+    "邀請已送出": {
+      "zh-TW": "邀請已送出",
+      "zh-CN": "邀请已发送",
+      "en": "Invitation sent"
+    },
+    "邀請無法使用": {
+      "zh-TW": "邀請無法使用",
+      "zh-CN": "邀请无法使用",
+      "en": "Invitation unavailable"
+    },
+    "邀請連結已失效。": {
+      "zh-TW": "邀請連結已失效。",
+      "zh-CN": "邀请链接已失效。",
+      "en": "The invitation link is no longer valid."
+    },
+    "邀請郵件未送出": {
+      "zh-TW": "邀請郵件未送出",
+      "zh-CN": "邀请邮件未发送",
+      "en": "Invitation email was not sent"
+    },
+    "郵件服務暫時無法使用，現在無法邀請。": {
+      "zh-TW": "郵件服務暫時無法使用，現在無法邀請。",
+      "zh-CN": "邮件服务暂不可用，现在无法邀请。",
+      "en": "Email is unavailable. Invitations are disabled for now."
+    },
+    "重新登入": {
+      "zh-TW": "重新登入",
+      "zh-CN": "重新登录",
+      "en": "Sign in again"
+    },
+    "重新登入後，先查看最新名單。": {
+      "zh-TW": "重新登入後，先查看最新名單。",
+      "zh-CN": "重新登录后，先查看最新名单。",
+      "en": "After signing in again, check the latest list first."
+    },
+    "重新登入後，再回來檢查名單。": {
+      "zh-TW": "重新登入後，再回來檢查名單。",
+      "zh-CN": "重新登录后，再回来检查名单。",
+      "en": "Sign in again, then review the list."
+    },
+    "電子郵件": {
+      "zh-TW": "電子郵件",
+      "zh-CN": "电子邮箱",
+      "en": "Email"
+    },
+    "電子郵件登入尚未開啟，請聯絡店主。": {
+      "zh-TW": "電子郵件登入尚未開啟，請聯絡店主。",
+      "zh-CN": "邮箱登录尚未启用，请联系店主。",
+      "en": "Email sign-in is off. Contact the store owner."
+    },
+    "顧客": {
+      "zh-TW": "顧客",
+      "zh-CN": "客户",
+      "en": "Customers"
+    },
+    "驗證並繼續": {
+      "zh-TW": "驗證並繼續",
+      "zh-CN": "验证并继续",
+      "en": "Verify & continue"
+    },
+    "驗證碼": {
+      "zh-TW": "驗證碼",
+      "zh-CN": "验证码",
+      "en": "Verification code"
+    },
+    "驗證碼 10 分鐘內有效。": {
+      "zh-TW": "驗證碼 10 分鐘內有效。",
+      "zh-CN": "验证码 10 分钟内有效。",
+      "en": "Code valid for 10 minutes."
+    }
+  },
+  "frames": [
+    {
+      "state": "nav",
+      "ids": {
+        "desktop": "1466:74190",
+        "mobile": "1468:74244"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-nav.png",
+        "mobile": "shots/Mobile-nav.png"
+      },
+      "text": [
+        "設定與員工",
+        "總覽",
+        "直播",
+        "訂單與出貨",
+        "商品與庫存",
+        "訊息中心",
+        "顧客",
+        "行銷優惠",
+        "網路商店",
+        "收款與報表",
+        "設定",
+        "員工"
+      ]
+    },
+    {
+      "state": "list",
+      "ids": {
+        "desktop": "1468:74273",
+        "mobile": "1468:74324"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-list.png",
+        "mobile": "shots/Mobile-list.png"
+      },
+      "text": [
+        "員工",
+        "員工名單",
+        "待接受邀請",
+        "owner@example.test",
+        "店主 · 加入 10/01 · 不可移除或降級",
+        "Ari · ari@example.test",
+        "管理員 · 加入 10/12",
+        "變更角色",
+        "移除",
+        "邀請員工"
+      ]
+    },
+    {
+      "state": "pending",
+      "ids": {
+        "desktop": "1468:74492",
+        "mobile": "1468:74538"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-pending.png",
+        "mobile": "shots/Mobile-pending.png"
+      },
+      "text": [
+        "員工",
+        "員工名單",
+        "待接受邀請",
+        "mei@example.test",
+        "管理員",
+        "送出 10/30 14:00 · 11/02 14:00 到期",
+        "撤回",
+        "邀請員工"
+      ]
+    },
+    {
+      "state": "empty",
+      "ids": {
+        "desktop": "1468:74559",
+        "mobile": "1468:74603"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-empty.png",
+        "mobile": "shots/Mobile-empty.png"
+      },
+      "text": [
+        "員工",
+        "目前只有你一位員工",
+        "邀請員工"
+      ]
+    },
+    {
+      "state": "invite-owner",
+      "ids": {
+        "desktop": "1468:74622",
+        "mobile": "1468:74694"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-invite-owner.png",
+        "mobile": "shots/Mobile-invite-owner.png"
+      },
+      "text": [
+        "邀請員工",
+        "電子郵件",
+        "mei@example.test",
+        "店主 · 管理全部功能、訂閱帳單與員工",
+        "管理員 · 管理業務，不含訂閱帳單與員工",
+        "直播人員 · 管理直播，查看商品、訂單與庫存",
+        "出貨人員 · 處理出貨、匯出訂單及庫存",
+        "僅供檢視 · 查看資料，不能變更",
+        "取消",
+        "送出邀請"
+      ]
+    },
+    {
+      "state": "invite-admin",
+      "ids": {
+        "desktop": "1468:74741",
+        "mobile": "1468:74813"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-invite-admin.png",
+        "mobile": "shots/Mobile-invite-admin.png"
+      },
+      "text": [
+        "邀請員工",
+        "電子郵件",
+        "mei@example.test",
+        "店主 · 管理全部功能、訂閱帳單與員工",
+        "管理員 · 管理業務，不含訂閱帳單與員工",
+        "直播人員 · 管理直播，查看商品、訂單與庫存",
+        "出貨人員 · 處理出貨、匯出訂單及庫存",
+        "僅供檢視 · 查看資料，不能變更",
+        "取消",
+        "送出邀請"
+      ]
+    },
+    {
+      "state": "invite-live",
+      "ids": {
+        "desktop": "1468:74860",
+        "mobile": "1468:74932"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-invite-live.png",
+        "mobile": "shots/Mobile-invite-live.png"
+      },
+      "text": [
+        "邀請員工",
+        "電子郵件",
+        "mei@example.test",
+        "店主 · 管理全部功能、訂閱帳單與員工",
+        "管理員 · 管理業務，不含訂閱帳單與員工",
+        "直播人員 · 管理直播，查看商品、訂單與庫存",
+        "出貨人員 · 處理出貨、匯出訂單及庫存",
+        "僅供檢視 · 查看資料，不能變更",
+        "取消",
+        "送出邀請"
+      ]
+    },
+    {
+      "state": "invite-fulfilment",
+      "ids": {
+        "desktop": "1468:74979",
+        "mobile": "1468:75051"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-invite-fulfilment.png",
+        "mobile": "shots/Mobile-invite-fulfilment.png"
+      },
+      "text": [
+        "邀請員工",
+        "電子郵件",
+        "mei@example.test",
+        "店主 · 管理全部功能、訂閱帳單與員工",
+        "管理員 · 管理業務，不含訂閱帳單與員工",
+        "直播人員 · 管理直播，查看商品、訂單與庫存",
+        "出貨人員 · 處理出貨、匯出訂單及庫存",
+        "僅供檢視 · 查看資料，不能變更",
+        "取消",
+        "送出邀請"
+      ]
+    },
+    {
+      "state": "invite-viewer",
+      "ids": {
+        "desktop": "1468:75098",
+        "mobile": "1468:75170"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-invite-viewer.png",
+        "mobile": "shots/Mobile-invite-viewer.png"
+      },
+      "text": [
+        "邀請員工",
+        "電子郵件",
+        "mei@example.test",
+        "店主 · 管理全部功能、訂閱帳單與員工",
+        "管理員 · 管理業務，不含訂閱帳單與員工",
+        "直播人員 · 管理直播，查看商品、訂單與庫存",
+        "出貨人員 · 處理出貨、匯出訂單及庫存",
+        "僅供檢視 · 查看資料，不能變更",
+        "取消",
+        "送出邀請"
+      ]
+    },
+    {
+      "state": "invite-sent",
+      "ids": {
+        "desktop": "1468:75217",
+        "mobile": "1468:75260"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-invite-sent.png",
+        "mobile": "shots/Mobile-invite-sent.png"
+      },
+      "text": [
+        "邀請已送出",
+        "mei@example.test",
+        "管理員",
+        "送出 10/30 14:00 · 11/02 14:00 到期",
+        "已送出",
+        "邀請 72 小時內有效",
+        "回到員工"
+      ]
+    },
+    {
+      "state": "invalid-email",
+      "ids": {
+        "desktop": "1468:75278",
+        "mobile": "1468:75326"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-invalid-email.png",
+        "mobile": "shots/Mobile-invalid-email.png"
+      },
+      "text": [
+        "請檢查電子郵件",
+        "請輸入完整有效的電子郵件。",
+        "返回"
+      ]
+    },
+    {
+      "state": "already-member",
+      "ids": {
+        "desktop": "1468:75349",
+        "mobile": "1468:75393"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-already-member.png",
+        "mobile": "shots/Mobile-already-member.png"
+      },
+      "text": [
+        "這位員工已在名單中",
+        "請回到名單查看目前角色。",
+        "返回"
+      ]
+    },
+    {
+      "state": "invite-limit",
+      "ids": {
+        "desktop": "1468:75412",
+        "mobile": "1468:75456"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-invite-limit.png",
+        "mobile": "shots/Mobile-invite-limit.png"
+      },
+      "text": [
+        "目前無法新增邀請",
+        "先查看待接受邀請，稍後再試。",
+        "返回"
+      ]
+    },
+    {
+      "state": "owner-disabled",
+      "ids": {
+        "desktop": "1468:75475",
+        "mobile": "1468:75519"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-owner-disabled.png",
+        "mobile": "shots/Mobile-owner-disabled.png"
+      },
+      "text": [
+        "目前不能授予店主角色",
+        "請改選其他角色。",
+        "返回"
+      ]
+    },
+    {
+      "state": "reauth",
+      "ids": {
+        "desktop": "1468:75538",
+        "mobile": "1468:75582"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-reauth.png",
+        "mobile": "shots/Mobile-reauth.png"
+      },
+      "text": [
+        "請先確認身分",
+        "重新登入後，再回來檢查名單。",
+        "重新登入"
+      ]
+    },
+    {
+      "state": "mail-failed",
+      "ids": {
+        "desktop": "1468:75601",
+        "mobile": "1468:75647"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-mail-failed.png",
+        "mobile": "shots/Mobile-mail-failed.png"
+      },
+      "text": [
+        "邀請郵件未送出",
+        "mei@example.test",
+        "郵件服務暫時無法使用，現在無法邀請。",
+        "邀請員工",
+        "回到員工"
+      ]
+    },
+    {
+      "state": "password-off",
+      "ids": {
+        "desktop": "1468:75668",
+        "mobile": "1468:75712"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-password-off.png",
+        "mobile": "shots/Mobile-password-off.png"
+      },
+      "text": [
+        "暫時無法邀請員工",
+        "尚未開啟電子郵件登入，無法寄送邀請。",
+        "邀請員工"
+      ]
+    },
+    {
+      "state": "non-owner",
+      "ids": {
+        "desktop": "1468:75731",
+        "mobile": "1468:75774"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-non-owner.png",
+        "mobile": "shots/Mobile-non-owner.png"
+      },
+      "text": [
+        "員工",
+        "只有店主可以管理員工",
+        "目前角色：僅供檢視"
+      ]
+    },
+    {
+      "state": "role-edit",
+      "ids": {
+        "desktop": "1468:75792",
+        "mobile": "1468:75861"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-role-edit.png",
+        "mobile": "shots/Mobile-role-edit.png"
+      },
+      "text": [
+        "變更角色",
+        "Ari · ari@example.test",
+        "店主 · 管理全部功能、訂閱帳單與員工",
+        "管理員 · 管理業務，不含訂閱帳單與員工",
+        "直播人員 · 管理直播，查看商品、訂單與庫存",
+        "出貨人員 · 處理出貨、匯出訂單及庫存",
+        "僅供檢視 · 查看資料，不能變更",
+        "取消",
+        "繼續"
+      ]
+    },
+    {
+      "state": "role-confirm",
+      "ids": {
+        "desktop": "1468:75905",
+        "mobile": "1468:75945"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-role-confirm.png",
+        "mobile": "shots/Mobile-role-confirm.png"
+      },
+      "text": [
+        "變更角色",
+        "Ari · ari@example.test",
+        "管理員改為僅供檢視，將無法變更資料。",
+        "取消",
+        "確認變更"
+      ]
+    },
+    {
+      "state": "role-done",
+      "ids": {
+        "desktop": "1468:75960",
+        "mobile": "1468:76004"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-role-done.png",
+        "mobile": "shots/Mobile-role-done.png"
+      },
+      "text": [
+        "角色已變更",
+        "Ari · ari@example.test",
+        "僅供檢視",
+        "回到員工"
+      ]
+    },
+    {
+      "state": "list-updated",
+      "ids": {
+        "desktop": "1468:76023",
+        "mobile": "1468:76074"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-list-updated.png",
+        "mobile": "shots/Mobile-list-updated.png"
+      },
+      "text": [
+        "員工",
+        "員工名單",
+        "待接受邀請",
+        "owner@example.test",
+        "店主 · 加入 10/01 · 不可移除或降級",
+        "Ari · ari@example.test",
+        "僅供檢視 · 加入 10/12",
+        "變更角色",
+        "移除",
+        "邀請員工"
+      ]
+    },
+    {
+      "state": "remove-confirm",
+      "ids": {
+        "desktop": "1468:76100",
+        "mobile": "1468:76140"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-remove-confirm.png",
+        "mobile": "shots/Mobile-remove-confirm.png"
+      },
+      "text": [
+        "移除員工",
+        "Ari · ari@example.test",
+        "移除後，對方將無法使用這間店舖。",
+        "取消",
+        "確認移除"
+      ]
+    },
+    {
+      "state": "remove-done",
+      "ids": {
+        "desktop": "1468:76155",
+        "mobile": "1468:76199"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-remove-done.png",
+        "mobile": "shots/Mobile-remove-done.png"
+      },
+      "text": [
+        "員工已移除",
+        "Ari · ari@example.test",
+        "店舖權限已移除。",
+        "回到員工"
+      ]
+    },
+    {
+      "state": "revoke-confirm",
+      "ids": {
+        "desktop": "1468:76218",
+        "mobile": "1468:76259"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-revoke-confirm.png",
+        "mobile": "shots/Mobile-revoke-confirm.png"
+      },
+      "text": [
+        "撤回邀請",
+        "mei@example.test",
+        "撤回後，這封邀請連結將無法使用。",
+        "管理員",
+        "取消",
+        "確認撤回"
+      ]
+    },
+    {
+      "state": "revoke-done",
+      "ids": {
+        "desktop": "1468:76275",
+        "mobile": "1468:76319"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-revoke-done.png",
+        "mobile": "shots/Mobile-revoke-done.png"
+      },
+      "text": [
+        "邀請已撤回",
+        "mei@example.test",
+        "邀請連結已失效。",
+        "回到員工"
+      ]
+    },
+    {
+      "state": "pending-empty",
+      "ids": {
+        "desktop": "1468:76338",
+        "mobile": "1468:76384"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-pending-empty.png",
+        "mobile": "shots/Mobile-pending-empty.png"
+      },
+      "text": [
+        "待接受邀請",
+        "目前沒有待接受的邀請",
+        "邀請員工",
+        "回到員工"
+      ]
+    },
+    {
+      "state": "invite-checking",
+      "ids": {
+        "desktop": "1468:76405",
+        "mobile": "1468:76453"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-invite-checking.png",
+        "mobile": "shots/Mobile-invite-checking.png"
+      },
+      "text": [
+        "確認中",
+        "mei@example.test",
+        "管理員邀請尚未確認，請查看名單，勿再次送出。",
+        "查看最新名單"
+      ]
+    },
+    {
+      "state": "role-checking",
+      "ids": {
+        "desktop": "1468:76476",
+        "mobile": "1468:76524"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-role-checking.png",
+        "mobile": "shots/Mobile-role-checking.png"
+      },
+      "text": [
+        "確認中",
+        "Ari · ari@example.test",
+        "變更為僅供檢視尚未確認，請查看名單，勿再次送出。",
+        "查看最新名單"
+      ]
+    },
+    {
+      "state": "remove-checking",
+      "ids": {
+        "desktop": "1468:76547",
+        "mobile": "1468:76595"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-remove-checking.png",
+        "mobile": "shots/Mobile-remove-checking.png"
+      },
+      "text": [
+        "確認中",
+        "Ari · ari@example.test",
+        "移除結果尚未確認，請查看名單，勿再次送出。",
+        "查看最新名單"
+      ]
+    },
+    {
+      "state": "revoke-checking",
+      "ids": {
+        "desktop": "1468:76618",
+        "mobile": "1468:76666"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-revoke-checking.png",
+        "mobile": "shots/Mobile-revoke-checking.png"
+      },
+      "text": [
+        "確認中",
+        "mei@example.test",
+        "管理員邀請撤回尚未確認，請查看名單，勿再次送出。",
+        "查看最新名單"
+      ]
+    },
+    {
+      "state": "checking-unresolved",
+      "ids": {
+        "desktop": "1468:76689",
+        "mobile": "1468:76734"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-checking-unresolved.png",
+        "mobile": "shots/Mobile-checking-unresolved.png"
+      },
+      "text": [
+        "確認中",
+        "mei@example.test",
+        "管理員邀請尚未確認，請稍後再查看。"
+      ]
+    },
+    {
+      "state": "load-error",
+      "ids": {
+        "desktop": "1468:76754",
+        "mobile": "1468:76798"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-load-error.png",
+        "mobile": "shots/Mobile-load-error.png"
+      },
+      "text": [
+        "暫時無法讀取員工",
+        "檢查連線後再讀取",
+        "查看最新名單"
+      ]
+    },
+    {
+      "state": "last-owner",
+      "ids": {
+        "desktop": "1468:76817",
+        "mobile": "1468:76861"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-last-owner.png",
+        "mobile": "shots/Mobile-last-owner.png"
+      },
+      "text": [
+        "請保留至少一位店主",
+        "店主不可移除或降級",
+        "回到員工"
+      ]
+    },
+    {
+      "state": "link",
+      "ids": {
+        "desktop": "1468:76880",
+        "mobile": "1468:76892"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-link.png",
+        "mobile": "shots/Mobile-link.png"
+      },
+      "text": [
+        "加入團隊",
+        "使用收到邀請的信箱。",
+        "登入",
+        "建立帳號"
+      ]
+    },
+    {
+      "state": "signin",
+      "ids": {
+        "desktop": "1468:76904",
+        "mobile": "1468:76925"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-signin.png",
+        "mobile": "shots/Mobile-signin.png"
+      },
+      "text": [
+        "登入",
+        "使用收到邀請的信箱。",
+        "電子郵件",
+        "mei@example.test",
+        "密碼",
+        "輸入密碼",
+        "傳送驗證碼",
+        "建立帳號"
+      ]
+    },
+    {
+      "state": "signup",
+      "ids": {
+        "desktop": "1468:76946",
+        "mobile": "1468:76968"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-signup.png",
+        "mobile": "shots/Mobile-signup.png"
+      },
+      "text": [
+        "建立帳號",
+        "使用收到邀請的信箱。",
+        "電子郵件",
+        "mei@example.test",
+        "密碼",
+        "輸入密碼",
+        "至少 12 個字元，勿重複使用其他密碼。",
+        "傳送驗證碼",
+        "登入"
+      ]
+    },
+    {
+      "state": "verify-signin",
+      "ids": {
+        "desktop": "1468:76990",
+        "mobile": "1468:77006"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-verify-signin.png",
+        "mobile": "shots/Mobile-verify-signin.png"
+      },
+      "text": [
+        "查看信箱驗證碼",
+        "mei@example.test",
+        "驗證碼",
+        "輸入 6 位數字",
+        "驗證碼 10 分鐘內有效。",
+        "驗證並繼續"
+      ]
+    },
+    {
+      "state": "verify-signup",
+      "ids": {
+        "desktop": "1468:77022",
+        "mobile": "1468:77038"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-verify-signup.png",
+        "mobile": "shots/Mobile-verify-signup.png"
+      },
+      "text": [
+        "查看信箱驗證碼",
+        "mei@example.test",
+        "驗證碼",
+        "輸入 6 位數字",
+        "驗證碼 10 分鐘內有效。",
+        "驗證並繼續"
+      ]
+    },
+    {
+      "state": "accept",
+      "ids": {
+        "desktop": "1468:77054",
+        "mobile": "1468:77066"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-accept.png",
+        "mobile": "shots/Mobile-accept.png"
+      },
+      "text": [
+        "加入團隊",
+        "使用收到邀請的信箱。",
+        "接受邀請",
+        "重新登入"
+      ]
+    },
+    {
+      "state": "accept-checking",
+      "ids": {
+        "desktop": "1468:77078",
+        "mobile": "1468:77097"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-accept-checking.png",
+        "mobile": "shots/Mobile-accept-checking.png"
+      },
+      "text": [
+        "確認中",
+        "請勿再次接受邀請，請店主確認名單。"
+      ]
+    },
+    {
+      "state": "joined",
+      "ids": {
+        "desktop": "1468:77116",
+        "mobile": "1468:77134"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-joined.png",
+        "mobile": "shots/Mobile-joined.png"
+      },
+      "text": [
+        "已加入團隊",
+        "已取得管理員權限，可以進入店舖。",
+        "進入店舖"
+      ]
+    },
+    {
+      "state": "expired",
+      "ids": {
+        "desktop": "1468:77152",
+        "mobile": "1468:77170"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-expired.png",
+        "mobile": "shots/Mobile-expired.png"
+      },
+      "text": [
+        "邀請無法使用",
+        "請使用受邀信箱登入，或請店主重新邀請。",
+        "重新登入"
+      ]
+    },
+    {
+      "state": "revoked",
+      "ids": {
+        "desktop": "1468:77188",
+        "mobile": "1468:77206"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-revoked.png",
+        "mobile": "shots/Mobile-revoked.png"
+      },
+      "text": [
+        "邀請無法使用",
+        "請使用受邀信箱登入，或請店主重新邀請。",
+        "重新登入"
+      ]
+    },
+    {
+      "state": "used",
+      "ids": {
+        "desktop": "1468:77224",
+        "mobile": "1468:77242"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-used.png",
+        "mobile": "shots/Mobile-used.png"
+      },
+      "text": [
+        "邀請無法使用",
+        "請使用受邀信箱登入，或請店主重新邀請。",
+        "重新登入"
+      ]
+    },
+    {
+      "state": "wrong-account",
+      "ids": {
+        "desktop": "1468:77260",
+        "mobile": "1468:77278"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-wrong-account.png",
+        "mobile": "shots/Mobile-wrong-account.png"
+      },
+      "text": [
+        "邀請無法使用",
+        "請使用受邀信箱登入，或請店主重新邀請。",
+        "重新登入"
+      ]
+    },
+    {
+      "state": "invitee-member",
+      "ids": {
+        "desktop": "1468:77296",
+        "mobile": "1468:77314"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-invitee-member.png",
+        "mobile": "shots/Mobile-invitee-member.png"
+      },
+      "text": [
+        "已是這間店的員工",
+        "請從店舖清單進入。",
+        "進入店舖"
+      ]
+    },
+    {
+      "state": "invitee-off",
+      "ids": {
+        "desktop": "1468:77332",
+        "mobile": "1468:77350"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-invitee-off.png",
+        "mobile": "shots/Mobile-invitee-off.png"
+      },
+      "text": [
+        "目前無法加入團隊",
+        "電子郵件登入尚未開啟，請聯絡店主。",
+        "接受邀請"
+      ]
+    },
+    {
+      "state": "invite-sent-owner",
+      "ids": {
+        "desktop": "1468:77368",
+        "mobile": "1468:77411"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-invite-sent-owner.png",
+        "mobile": "shots/Mobile-invite-sent-owner.png"
+      },
+      "text": [
+        "邀請已送出",
+        "mei@example.test",
+        "店主",
+        "送出 10/30 14:00 · 11/02 14:00 到期",
+        "已送出",
+        "邀請 72 小時內有效",
+        "回到員工"
+      ]
+    },
+    {
+      "state": "pending-owner",
+      "ids": {
+        "desktop": "1468:77429",
+        "mobile": "1468:77475"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-pending-owner.png",
+        "mobile": "shots/Mobile-pending-owner.png"
+      },
+      "text": [
+        "員工",
+        "員工名單",
+        "待接受邀請",
+        "mei@example.test",
+        "店主",
+        "送出 10/30 14:00 · 11/02 14:00 到期",
+        "撤回",
+        "邀請員工"
+      ]
+    },
+    {
+      "state": "invite-sent-live",
+      "ids": {
+        "desktop": "1468:77496",
+        "mobile": "1468:77539"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-invite-sent-live.png",
+        "mobile": "shots/Mobile-invite-sent-live.png"
+      },
+      "text": [
+        "邀請已送出",
+        "mei@example.test",
+        "直播人員",
+        "送出 10/30 14:00 · 11/02 14:00 到期",
+        "已送出",
+        "邀請 72 小時內有效",
+        "回到員工"
+      ]
+    },
+    {
+      "state": "pending-live",
+      "ids": {
+        "desktop": "1468:77557",
+        "mobile": "1468:77603"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-pending-live.png",
+        "mobile": "shots/Mobile-pending-live.png"
+      },
+      "text": [
+        "員工",
+        "員工名單",
+        "待接受邀請",
+        "mei@example.test",
+        "直播人員",
+        "送出 10/30 14:00 · 11/02 14:00 到期",
+        "撤回",
+        "邀請員工"
+      ]
+    },
+    {
+      "state": "invite-sent-fulfilment",
+      "ids": {
+        "desktop": "1468:77624",
+        "mobile": "1468:77667"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-invite-sent-fulfilment.png",
+        "mobile": "shots/Mobile-invite-sent-fulfilment.png"
+      },
+      "text": [
+        "邀請已送出",
+        "mei@example.test",
+        "出貨人員",
+        "送出 10/30 14:00 · 11/02 14:00 到期",
+        "已送出",
+        "邀請 72 小時內有效",
+        "回到員工"
+      ]
+    },
+    {
+      "state": "pending-fulfilment",
+      "ids": {
+        "desktop": "1468:77685",
+        "mobile": "1468:77731"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-pending-fulfilment.png",
+        "mobile": "shots/Mobile-pending-fulfilment.png"
+      },
+      "text": [
+        "員工",
+        "員工名單",
+        "待接受邀請",
+        "mei@example.test",
+        "出貨人員",
+        "送出 10/30 14:00 · 11/02 14:00 到期",
+        "撤回",
+        "邀請員工"
+      ]
+    },
+    {
+      "state": "invite-sent-viewer",
+      "ids": {
+        "desktop": "1468:77752",
+        "mobile": "1468:77795"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-invite-sent-viewer.png",
+        "mobile": "shots/Mobile-invite-sent-viewer.png"
+      },
+      "text": [
+        "邀請已送出",
+        "mei@example.test",
+        "僅供檢視",
+        "送出 10/30 14:00 · 11/02 14:00 到期",
+        "已送出",
+        "邀請 72 小時內有效",
+        "回到員工"
+      ]
+    },
+    {
+      "state": "pending-viewer",
+      "ids": {
+        "desktop": "1468:77813",
+        "mobile": "1468:77859"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-pending-viewer.png",
+        "mobile": "shots/Mobile-pending-viewer.png"
+      },
+      "text": [
+        "員工",
+        "員工名單",
+        "待接受邀請",
+        "mei@example.test",
+        "僅供檢視",
+        "送出 10/30 14:00 · 11/02 14:00 到期",
+        "撤回",
+        "邀請員工"
+      ]
+    },
+    {
+      "state": "role-edit-owner",
+      "ids": {
+        "desktop": "1468:77880",
+        "mobile": "1468:77949"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-role-edit-owner.png",
+        "mobile": "shots/Mobile-role-edit-owner.png"
+      },
+      "text": [
+        "變更角色",
+        "Ari · ari@example.test",
+        "店主 · 管理全部功能、訂閱帳單與員工",
+        "管理員 · 管理業務，不含訂閱帳單與員工",
+        "直播人員 · 管理直播，查看商品、訂單與庫存",
+        "出貨人員 · 處理出貨、匯出訂單及庫存",
+        "僅供檢視 · 查看資料，不能變更",
+        "取消",
+        "繼續"
+      ]
+    },
+    {
+      "state": "role-confirm-owner",
+      "ids": {
+        "desktop": "1468:77993",
+        "mobile": "1468:78033"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-role-confirm-owner.png",
+        "mobile": "shots/Mobile-role-confirm-owner.png"
+      },
+      "text": [
+        "變更角色",
+        "Ari · ari@example.test",
+        "管理員改為店主。",
+        "取消",
+        "確認變更"
+      ]
+    },
+    {
+      "state": "role-done-owner",
+      "ids": {
+        "desktop": "1468:78048",
+        "mobile": "1468:78092"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-role-done-owner.png",
+        "mobile": "shots/Mobile-role-done-owner.png"
+      },
+      "text": [
+        "角色已變更",
+        "Ari · ari@example.test",
+        "店主",
+        "回到員工"
+      ]
+    },
+    {
+      "state": "list-updated-owner",
+      "ids": {
+        "desktop": "1468:78111",
+        "mobile": "1468:78158"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-list-updated-owner.png",
+        "mobile": "shots/Mobile-list-updated-owner.png"
+      },
+      "text": [
+        "員工",
+        "員工名單",
+        "待接受邀請",
+        "owner@example.test",
+        "店主 · 加入 10/01 · 不可移除或降級",
+        "Ari · ari@example.test",
+        "店主 · 加入 10/12",
+        "店主不可移除或降級",
+        "邀請員工"
+      ]
+    },
+    {
+      "state": "role-edit-admin",
+      "ids": {
+        "desktop": "1468:78180",
+        "mobile": "1468:78249"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-role-edit-admin.png",
+        "mobile": "shots/Mobile-role-edit-admin.png"
+      },
+      "text": [
+        "變更角色",
+        "Ari · ari@example.test",
+        "目前已是管理員，無須變更。",
+        "店主 · 管理全部功能、訂閱帳單與員工",
+        "管理員 · 管理業務，不含訂閱帳單與員工",
+        "直播人員 · 管理直播，查看商品、訂單與庫存",
+        "出貨人員 · 處理出貨、匯出訂單及庫存",
+        "僅供檢視 · 查看資料，不能變更",
+        "取消",
+        "繼續"
+      ]
+    },
+    {
+      "state": "role-confirm-admin",
+      "ids": {
+        "desktop": "1468:78293",
+        "mobile": "1468:78333"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-role-confirm-admin.png",
+        "mobile": "shots/Mobile-role-confirm-admin.png"
+      },
+      "text": [
+        "角色不需變更",
+        "Ari · ari@example.test",
+        "目前已是管理員，無須變更。",
+        "回到員工"
+      ]
+    },
+    {
+      "state": "role-done-admin",
+      "ids": {
+        "desktop": "1468:78348",
+        "mobile": "1468:78392"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-role-done-admin.png",
+        "mobile": "shots/Mobile-role-done-admin.png"
+      },
+      "text": [
+        "角色未變更",
+        "Ari · ari@example.test",
+        "管理員",
+        "回到員工"
+      ]
+    },
+    {
+      "state": "list-updated-admin",
+      "ids": {
+        "desktop": "1468:78411",
+        "mobile": "1468:78462"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-list-updated-admin.png",
+        "mobile": "shots/Mobile-list-updated-admin.png"
+      },
+      "text": [
+        "員工",
+        "員工名單",
+        "待接受邀請",
+        "owner@example.test",
+        "店主 · 加入 10/01 · 不可移除或降級",
+        "Ari · ari@example.test",
+        "管理員 · 加入 10/12",
+        "變更角色",
+        "移除",
+        "邀請員工"
+      ]
+    },
+    {
+      "state": "role-edit-live",
+      "ids": {
+        "desktop": "1468:78488",
+        "mobile": "1468:78557"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-role-edit-live.png",
+        "mobile": "shots/Mobile-role-edit-live.png"
+      },
+      "text": [
+        "變更角色",
+        "Ari · ari@example.test",
+        "店主 · 管理全部功能、訂閱帳單與員工",
+        "管理員 · 管理業務，不含訂閱帳單與員工",
+        "直播人員 · 管理直播，查看商品、訂單與庫存",
+        "出貨人員 · 處理出貨、匯出訂單及庫存",
+        "僅供檢視 · 查看資料，不能變更",
+        "取消",
+        "繼續"
+      ]
+    },
+    {
+      "state": "role-confirm-live",
+      "ids": {
+        "desktop": "1468:78601",
+        "mobile": "1468:78641"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-role-confirm-live.png",
+        "mobile": "shots/Mobile-role-confirm-live.png"
+      },
+      "text": [
+        "變更角色",
+        "Ari · ari@example.test",
+        "管理員改為直播人員。",
+        "取消",
+        "確認變更"
+      ]
+    },
+    {
+      "state": "role-done-live",
+      "ids": {
+        "desktop": "1468:78656",
+        "mobile": "1468:78700"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-role-done-live.png",
+        "mobile": "shots/Mobile-role-done-live.png"
+      },
+      "text": [
+        "角色已變更",
+        "Ari · ari@example.test",
+        "直播人員",
+        "回到員工"
+      ]
+    },
+    {
+      "state": "list-updated-live",
+      "ids": {
+        "desktop": "1468:78719",
+        "mobile": "1468:78770"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-list-updated-live.png",
+        "mobile": "shots/Mobile-list-updated-live.png"
+      },
+      "text": [
+        "員工",
+        "員工名單",
+        "待接受邀請",
+        "owner@example.test",
+        "店主 · 加入 10/01 · 不可移除或降級",
+        "Ari · ari@example.test",
+        "直播人員 · 加入 10/12",
+        "變更角色",
+        "移除",
+        "邀請員工"
+      ]
+    },
+    {
+      "state": "role-edit-fulfilment",
+      "ids": {
+        "desktop": "1468:78796",
+        "mobile": "1468:78865"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-role-edit-fulfilment.png",
+        "mobile": "shots/Mobile-role-edit-fulfilment.png"
+      },
+      "text": [
+        "變更角色",
+        "Ari · ari@example.test",
+        "店主 · 管理全部功能、訂閱帳單與員工",
+        "管理員 · 管理業務，不含訂閱帳單與員工",
+        "直播人員 · 管理直播，查看商品、訂單與庫存",
+        "出貨人員 · 處理出貨、匯出訂單及庫存",
+        "僅供檢視 · 查看資料，不能變更",
+        "取消",
+        "繼續"
+      ]
+    },
+    {
+      "state": "role-confirm-fulfilment",
+      "ids": {
+        "desktop": "1468:78909",
+        "mobile": "1468:78949"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-role-confirm-fulfilment.png",
+        "mobile": "shots/Mobile-role-confirm-fulfilment.png"
+      },
+      "text": [
+        "變更角色",
+        "Ari · ari@example.test",
+        "管理員改為出貨人員。",
+        "取消",
+        "確認變更"
+      ]
+    },
+    {
+      "state": "role-done-fulfilment",
+      "ids": {
+        "desktop": "1468:78964",
+        "mobile": "1468:79008"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-role-done-fulfilment.png",
+        "mobile": "shots/Mobile-role-done-fulfilment.png"
+      },
+      "text": [
+        "角色已變更",
+        "Ari · ari@example.test",
+        "出貨人員",
+        "回到員工"
+      ]
+    },
+    {
+      "state": "list-updated-fulfilment",
+      "ids": {
+        "desktop": "1468:79027",
+        "mobile": "1468:79078"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-list-updated-fulfilment.png",
+        "mobile": "shots/Mobile-list-updated-fulfilment.png"
+      },
+      "text": [
+        "員工",
+        "員工名單",
+        "待接受邀請",
+        "owner@example.test",
+        "店主 · 加入 10/01 · 不可移除或降級",
+        "Ari · ari@example.test",
+        "出貨人員 · 加入 10/12",
+        "變更角色",
+        "移除",
+        "邀請員工"
+      ]
+    },
+    {
+      "state": "revoke-confirm-owner",
+      "ids": {
+        "desktop": "1468:79104",
+        "mobile": "1468:79145"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-revoke-confirm-owner.png",
+        "mobile": "shots/Mobile-revoke-confirm-owner.png"
+      },
+      "text": [
+        "撤回邀請",
+        "mei@example.test",
+        "撤回後，這封邀請連結將無法使用。",
+        "店主",
+        "取消",
+        "確認撤回"
+      ]
+    },
+    {
+      "state": "revoke-confirm-live",
+      "ids": {
+        "desktop": "1468:79161",
+        "mobile": "1468:79202"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-revoke-confirm-live.png",
+        "mobile": "shots/Mobile-revoke-confirm-live.png"
+      },
+      "text": [
+        "撤回邀請",
+        "mei@example.test",
+        "撤回後，這封邀請連結將無法使用。",
+        "直播人員",
+        "取消",
+        "確認撤回"
+      ]
+    },
+    {
+      "state": "revoke-confirm-fulfilment",
+      "ids": {
+        "desktop": "1468:79218",
+        "mobile": "1468:79259"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-revoke-confirm-fulfilment.png",
+        "mobile": "shots/Mobile-revoke-confirm-fulfilment.png"
+      },
+      "text": [
+        "撤回邀請",
+        "mei@example.test",
+        "撤回後，這封邀請連結將無法使用。",
+        "出貨人員",
+        "取消",
+        "確認撤回"
+      ]
+    },
+    {
+      "state": "revoke-confirm-viewer",
+      "ids": {
+        "desktop": "1468:79275",
+        "mobile": "1468:79316"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-revoke-confirm-viewer.png",
+        "mobile": "shots/Mobile-revoke-confirm-viewer.png"
+      },
+      "text": [
+        "撤回邀請",
+        "mei@example.test",
+        "撤回後，這封邀請連結將無法使用。",
+        "僅供檢視",
+        "取消",
+        "確認撤回"
+      ]
+    },
+    {
+      "state": "role-unresolved",
+      "ids": {
+        "desktop": "1468:80786",
+        "mobile": "1468:80831"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-role-unresolved.png",
+        "mobile": "shots/Mobile-role-unresolved.png"
+      },
+      "text": [
+        "確認中",
+        "Ari · ari@example.test",
+        "變更為僅供檢視尚未確認，請稍後再查看。"
+      ]
+    },
+    {
+      "state": "remove-unresolved",
+      "ids": {
+        "desktop": "1468:80851",
+        "mobile": "1468:80896"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-remove-unresolved.png",
+        "mobile": "shots/Mobile-remove-unresolved.png"
+      },
+      "text": [
+        "確認中",
+        "Ari · ari@example.test",
+        "移除結果尚未確認，請稍後再查看。"
+      ]
+    },
+    {
+      "state": "revoke-unresolved",
+      "ids": {
+        "desktop": "1468:80916",
+        "mobile": "1468:80961"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-revoke-unresolved.png",
+        "mobile": "shots/Mobile-revoke-unresolved.png"
+      },
+      "text": [
+        "確認中",
+        "mei@example.test",
+        "管理員邀請撤回尚未確認，請稍後再查看。"
+      ]
+    },
+    {
+      "state": "list-owner-no-email",
+      "ids": {
+        "desktop": "1468:86250",
+        "mobile": "1468:86301"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-list-owner-no-email.png",
+        "mobile": "shots/Mobile-list-owner-no-email.png"
+      },
+      "text": [
+        "員工",
+        "員工名單",
+        "待接受邀請",
+        "店主 · 未提供電子郵件",
+        "店主 · 加入 10/01 · 不可移除或降級",
+        "Ari · ari@example.test",
+        "管理員 · 加入 10/12",
+        "變更角色",
+        "移除",
+        "邀請員工"
+      ]
+    },
+    {
+      "state": "reauth-signin",
+      "ids": {
+        "desktop": "1468:96313",
+        "mobile": "1468:96358"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-reauth-signin.png",
+        "mobile": "shots/Mobile-reauth-signin.png"
+      },
+      "text": [
+        "登入",
+        "重新登入後，先查看最新名單。",
+        "電子郵件",
+        "owner@example.test",
+        "密碼",
+        "輸入密碼",
+        "傳送驗證碼"
+      ]
+    },
+    {
+      "state": "reauth-verify",
+      "ids": {
+        "desktop": "1468:96378",
+        "mobile": "1468:96420"
+      },
+      "exports": {
+        "desktop": "shots/Desktop-reauth-verify.png",
+        "mobile": "shots/Mobile-reauth-verify.png"
+      },
+      "text": [
+        "查看信箱驗證碼",
+        "owner@example.test",
+        "驗證碼",
+        "輸入 6 位數字",
+        "驗證碼 10 分鐘內有效。",
+        "驗證並繼續"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+PARITY-TEAM ROUND 1 — RED NOT_RUN (2026-11-01)
+Base integration SHA: 4b8c04c7213025c173e260db6f9c81cb5b818c61
+Branch: unit/parity-team
+PR: NOT_OPENED — integrator opens after guard, per ROUND 1 instruction.
+Gates run/job: NOT_STARTED
+Foundation run/job: NOT_STARTED
+WAIT_RUN: NOT_STARTED (no pull_request event yet)
+Expected RED: real-route signed visible heading/member-tab/role-control assertions; not compile or unrelated gate failure.
+New cases: 164 signed frames + 4 zh-CN/en main-list cases + signed-source integrity.
+Design blocker: role-confirm-admin (1468:78293/1468:78333) and role-done-admin (1468:78348/1468:78392) have no approved real path from the disabled unchanged-role editor. No skip/exemption/forced click added.
+Local test/server execution: NOT_RUN, forbidden by card.
+Static checks: node --check x2, browser-ownership derive + --check, git diff --check, check_packet.py exited 0 (E1 only).
+GREEN: NOT_RUN — product implementation forbidden in this round.
+CI follow-up: after guard/PR, integrator records actual Gates/Foundation run + browser-admin-parity job IDs, then re-dispatches this lane. No claimed RED failure before raw receipts.
