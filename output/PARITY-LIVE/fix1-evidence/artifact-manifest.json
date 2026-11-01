@@ -1,0 +1,191 @@
+{
+  "run": 41065893191,
+  "merge_sha": "4ab11bbbb9a1149f1861be4256ce03952dcee10d",
+  "artifacts": {
+    "gate-browser-live-settings": 12985931500,
+    "gate-browser-live-console": 12986652259,
+    "gate-browser-ui-gallery": 12986235964
+  },
+  "files": [
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/ci-gates/--browser-live-settings.log",
+      "sha256": "db6b17bbea2c1c3b57a4a5402b2f3ca026908d3ab52a801484ec626b0a19d137"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-0e9f70141aef6876257e.json",
+      "sha256": "79983f1b158d2ce51f8bb208c78458d16c5974e655082013ff52756b55a2e910"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-26833dde50dfa41c9c1d.json",
+      "sha256": "035ce1a556097d070d409175373287fa45b55151e89389292951ae1c6ab4b62f"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-2bcbc818559511cf08d7.json",
+      "sha256": "035ce1a556097d070d409175373287fa45b55151e89389292951ae1c6ab4b62f"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-30fdaefa096249deca7e.json",
+      "sha256": "a616192c5d6eaaef1dc7c2d1ccbc5416af2085a59cdb36d28ae116a2f66d3974"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-53833e85d97f7f7b3f32.json",
+      "sha256": "2bf0b6bd6d3ac925d23313c4fa3ebc563d3e01f5f85e3bf18e2f74d848530a5c"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-5e41410600f360fc3c9e.json",
+      "sha256": "fb7748c7901a129db4b79f770a189a25b025a905c2285d4d1b770a5e9d8f32bb"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-5f333939a51de95bbf14.json",
+      "sha256": "a3cefaffa944390e75469931911e541da913c5ebd9af8760c3abf1fb06cb38f0"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-8927b2d9c6d195df624b.json",
+      "sha256": "73d8bf7b8aefd72a3ec0246aebcf01f14311f41a6e3c8b7c46877b422c7c01dc"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-9bb0f3355a0fba72faf6.json",
+      "sha256": "fbb3f19e5e7e6308f626cd38878b1bd70fdb11aff9d8c0abdbde231d5ad4dd21"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-a51967fc94c660b2cd52.json",
+      "sha256": "05507c4f4e81036de8001bcde17cabffcab95dfc87ca7a45abb597bb65cc5e7b"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-a73559725de640e92199.json",
+      "sha256": "035ce1a556097d070d409175373287fa45b55151e89389292951ae1c6ab4b62f"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-b01536bd95164c1e8def.json",
+      "sha256": "209df9e2c4ab93ba2de5437f98b7a32e0e4510111f3f7398a8d6c676f4ae0f96"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-b718a163b1d1750f50c2.json",
+      "sha256": "a6aaca7c1883e27ce6202514f42acd336b9811b302150704b06bd66c9a737b0f"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-bd9bb5dae7cadb1c53e9.json",
+      "sha256": "66fa7504246c0ac164326b74498fe481a251b59d953a4e48f84a07e266610711"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-c0816670e00920ce6bd7.json",
+      "sha256": "035ce1a556097d070d409175373287fa45b55151e89389292951ae1c6ab4b62f"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-e4dc7bada60f97f2d2c4.json",
+      "sha256": "035ce1a556097d070d409175373287fa45b55151e89389292951ae1c6ab4b62f"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-eacf9f0d2ea34a5f5b15.json",
+      "sha256": "f8c7d56ee48bad58ce83eb313c112ace34c414d82755b62d9a341cac205c4edf"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-f2d46312747ef5ac937c.json",
+      "sha256": "35aae2e8c92081dd78053d1917f507dc5af4bda43edba10f837de03ec77238d9"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-f524823d87af7f169448.json",
+      "sha256": "04d47dee3903aef011e50cf6f35cd2e190d7aea47f7bd05fa3343b1944a78ac7"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-f835b293e56d0852f54b.json",
+      "sha256": "cdfb3ce782bb67834085e73e26e76649c248b83e574c3639165d12283da248da"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-fb16805729d30d98df09.json",
+      "sha256": "a96c55dfbce3388d2edd53bad83152764b2678933e37feede90c6a29f4b5559a"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-fc8f4f9f76569bb163a0.json",
+      "sha256": "035ce1a556097d070d409175373287fa45b55151e89389292951ae1c6ab4b62f"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-native.json",
+      "sha256": "0c7077f62ce12dc4d07a1c5cf56364d698e5429de2fcb109c2df341f57efef9f"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/playwright.log",
+      "sha256": "b8a39f27ea9e24b1d58270f4eef8e2cf8390332ae6dc1479a069d0277ea2d413"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/results/live-settings-five-sold-ou-9dce4-and-masked-badges-zh-CN-390-live-settings/error-context.md",
+      "sha256": "54a5bb274f8305feac3eae5415dcf30de39cfb402384d89f428405be384741a9"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/results/live-settings-five-sold-ou-a0416-nd-masked-badges-zh-TW-1440-live-settings/error-context.md",
+      "sha256": "574c3b67c6adc1f6647b396d82bf0def88d7d6e787ad70f54c61ac07d001eb78"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/results/live-settings-five-sold-ou-a8318-and-masked-badges-zh-TW-390-live-settings/error-context.md",
+      "sha256": "b79ac37030f12c118e61dfd1dc6d76f8e774ce64641f30de24a104ce1ef63904"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/results/live-settings-five-sold-ou-b4970-s-and-masked-badges-en-1440-live-settings/error-context.md",
+      "sha256": "29fd976ae6d64973b41b9ab1523570ee74a6465640600762033d35d8314b9041"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/results/live-settings-five-sold-ou-c2f44-nd-masked-badges-zh-CN-1440-live-settings/error-context.md",
+      "sha256": "a32dac5e33d7c90631785a1c00bc4d182f25289c94f166f93a87f97eb82a88de"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/results/live-settings-five-sold-ou-ca572-ks-and-masked-badges-en-390-live-settings/error-context.md",
+      "sha256": "4c1e0b53195b182941f314e70161f5af5949fe5630864fbb698643d0380dbe94"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/results/live-settings-manual-remin-338de-riction-real-clicks-en-1440-live-settings/error-context.md",
+      "sha256": "42e619b5d0f6c59eb0e213ddb1f22ac31d7f9339bc4c95fe5db343fbd82242f5"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/results/live-settings-manual-remin-8c891-tion-real-clicks-zh-CN-1440-live-settings/error-context.md",
+      "sha256": "c358c2906d2f734aa508270a27fab7cd95fc3eb318c52fb908de40ec9f606dab"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/results/live-settings-manual-remin-b4e9b-ction-real-clicks-zh-CN-390-live-settings/error-context.md",
+      "sha256": "baa83da164888449dfc28dd6453d4dd81c2551248f3bea5509d3bb0f383e4eb1"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/results/live-settings-manual-remin-dbb52-ction-real-clicks-zh-TW-390-live-settings/error-context.md",
+      "sha256": "2a5de58c5521c12b06f8b2970e59f9b2fa7abd469ce83fc3305950a1f2d217ef"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/results/live-settings-manual-remin-e89fc-tion-real-clicks-zh-TW-1440-live-settings/error-context.md",
+      "sha256": "d80cc197f7868b38c8cd7a429f0b45fd921d7d81c39f59586b65af10f6a2dbfd"
+    },
+    {
+      "path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/results/live-settings-manual-remin-fff34-triction-real-clicks-en-390-live-settings/error-context.md",
+      "sha256": "addaac7cc39576cf1b98dc024a9b009b805a81e88932c9b75524d4c5978249c2"
+    },
+    {
+      "path": "gate-browser-live-console/playwright/run.XVuydJiH/ci-gates/--browser-live-console.log",
+      "sha256": "e12418426725e8e5af1dc2d83cbcc006c5b947f95346e758869717041f207fa3"
+    },
+    {
+      "path": "gate-browser-live-console/playwright/run.XVuydJiH/live-console-3292982055/playwright.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "gate-browser-live-console/playwright/run.XVuydJiH/live-console-3292982055/results/live-console-LC-U1-MOCK-contract-real-clicks-en-1586/error-context.md",
+      "sha256": "2097a9723b0f64575149e378cad15452e656c0d00aee7c403d9a8fd131115fe9"
+    },
+    {
+      "path": "gate-browser-live-console/playwright/run.XVuydJiH/live-console-3292982055/results/live-console-LC-U1-MOCK-contract-real-clicks-en-390/error-context.md",
+      "sha256": "efe10e97d96790dc27677ded6bb8a9c142d8241167222d8214bc81edb757370a"
+    },
+    {
+      "path": "gate-browser-live-console/playwright/run.XVuydJiH/live-console-3292982055/results/live-console-LC-U1-MOCK-contract-real-clicks-zh-CN-1586/error-context.md",
+      "sha256": "281ab602f2d40f394112c015f2eb4f47082d1654de1a9671cdeb1d7484e8bdcc"
+    },
+    {
+      "path": "gate-browser-live-console/playwright/run.XVuydJiH/live-console-3292982055/results/live-console-LC-U1-MOCK-contract-real-clicks-zh-TW-1586/error-context.md",
+      "sha256": "a694d84a5c85385c647c4c8414da48283e35279a195b2ffe00fe87ef3c1e1ab5"
+    },
+    {
+      "path": "gate-browser-live-console/playwright/run.XVuydJiH/live-console-3292982055/results/live-console-LC-U1-MOCK-contract-real-clicks-zh-TW-390/error-context.md",
+      "sha256": "1a28ee2026d02d553552ed81506c3892a3ffaa4c5fe5332d125d02dffb2a7e37"
+    },
+    {
+      "path": "gate-browser-ui-gallery/playwright/run.XRmeZ9BQ/ci-gates/--browser-ui-gallery.log",
+      "sha256": "50d0742530b480777b3c5ce1392484b31fc68674bdc00dc132f57368b6cc72c9"
+    }
+  ]
+}
