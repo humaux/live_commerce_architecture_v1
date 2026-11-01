@@ -83,6 +83,13 @@ const copy = {
     cartTitle: "購物車",
     cartEmptyHint: "選好商品後，可在購物車確認數量。",
     browseProducts: "瀏覽商品",
+    chooseSpec: "選擇規格",
+    specBack: "返回商品",
+    quantity: "數量",
+    decrease: "減少數量",
+    increase: "增加數量",
+    specLimit: "每次購買數量依商品庫存限制。",
+    specPickup: "門市取貨：結帳時選擇超商品牌，填寫門市號碼（店名、地址可不填）。",
   },
   "zh-CN": {
     termsHeading: "购物条款",
@@ -107,6 +114,13 @@ const copy = {
     cartTitle: "购物车",
     cartEmptyHint: "选好商品后，可在购物车确认数量。",
     browseProducts: "浏览商品",
+    chooseSpec: "选择规格",
+    specBack: "返回商品",
+    quantity: "数量",
+    decrease: "减少数量",
+    increase: "增加数量",
+    specLimit: "每次购买数量依商品库存限制。",
+    specPickup: "门店取货：结账时选择便利店品牌，填写门店号码（店名、地址可不填）。",
   },
   en: {
     termsHeading: "Terms & Conditions",
@@ -131,6 +145,13 @@ const copy = {
     cartTitle: "Shopping cart",
     cartEmptyHint: "You can check quantities in your cart after choosing products.",
     browseProducts: "Browse products",
+    chooseSpec: "Choose options",
+    specBack: "Back to product",
+    quantity: "Quantity",
+    decrease: "Decrease quantity",
+    increase: "Increase quantity",
+    specLimit: "Purchase quantity is limited by product stock.",
+    specPickup: "For convenience-store pickup, choose a chain at checkout and enter the store number (name and address are optional).",
   },
 };
 
@@ -158,7 +179,7 @@ export const PARITY_FRAMES: FrameSpec[] = [
   { frameId: "6:19859", name: "Buyer Mobile · 所有商品 · SHOPLINE", bucket: "U:b-product", route: "/[locale]/products", viewport: "390x844", screenshotFile: "parity/6-19859.png", deliveryPng: "verified-catalog-mobile-top.png", plan: "assert" },
   { frameId: "26:676", name: "Buyer Desktop · 沒有符合的商品 · SHOPLINE", bucket: "U:b-product", route: "/[locale]/search?q=no_match_xyz", viewport: "1440x900", screenshotFile: "parity/26-676.png", deliveryPng: "after-26-676.png", plan: "assert" },
   { frameId: "26:968", name: "Buyer Mobile · 沒有符合的商品 · SHOPLINE", bucket: "U:b-product", route: "/[locale]/search?q=no_match_xyz", viewport: "390x844", screenshotFile: "parity/26-968.png", deliveryPng: "after-26-968.png", plan: "assert" },
-  { frameId: "51:1380", name: "DESIGN · Buyer Mobile · 規格選擇 · bottom-sheet composition", bucket: "U:b-product", route: "/[locale]/products/caramel-tote", viewport: "390x844", screenshotFile: "parity/51-1380.png", deliveryPng: "after-51-1380.png", plan: "NOT_COVERED", reason: "product page has no spec bottom-sheet / details-and-shipping block matching this frame" },
+  { frameId: "51:1380", name: "DESIGN · Buyer Mobile · 規格選擇 · bottom-sheet composition", bucket: "U:b-product", route: "/[locale]/products/caramel-tote", viewport: "390x844", screenshotFile: "parity/51-1380.png", deliveryPng: "after-51-1380.png", plan: "assert" },
   { frameId: "51:1381", name: "DESIGN · Buyer Mobile · 商品說明與配送", bucket: "U:b-product", route: "/[locale]/products/caramel-tote", viewport: "390x844", screenshotFile: "parity/51-1381.png", deliveryPng: "after-51-1381.png", plan: "NOT_COVERED", reason: "product page has no spec bottom-sheet / details-and-shipping block matching this frame" },
   { frameId: "66:1752", name: "Buyer Desktop · 部分商品可購買", bucket: "U:b-product", route: "/[locale]/products/caramel-tote", viewport: "1440x900", screenshotFile: "parity/66-1752.png", deliveryPng: "after-66-1752.png", plan: "NOT_COVERED", reason: "no partially-purchasable product state exists in the sandbox fixtures or the product UI" },
   { frameId: "66:1753", name: "Buyer Mobile · 部分商品可購買", bucket: "U:b-product", route: "/[locale]/products/caramel-tote", viewport: "390x844", screenshotFile: "parity/66-1753.png", deliveryPng: "after-66-1753.png", plan: "NOT_COVERED", reason: "no partially-purchasable product state exists in the sandbox fixtures or the product UI" },
@@ -220,6 +241,7 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
   const ledger: LedgerEntry[] = [];
   const failures: string[] = [];
   const asserted = new Map<string, Set<string>>();
+  const notRun: { frame: string; locale: string; subcase: string; reason: string }[] = [];
 
   for (const [locale, c] of Object.entries(copy)) {
     for (const width of [1440, 390]) {
@@ -750,6 +772,220 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
           }
         }
 
+        // ===== 51:1380: current live 4:9532 task/dock entries -> full mobile option composition ======================================
+        // Source: ci-evidence-1238/c7-live-1853/{base,options}-context.txt, original PNGs viewed; human decision 46d89ab2.
+        // Keep this after every existing sort/Clear/cart assertion: its single successful add must not change their baseline.
+        if (isMobile) {
+          const frame = "51:1380";
+          const params = new URLSearchParams();
+          if (facts.preview_token) params.set("preview", facts.preview_token);
+          const productURL = `${origin}${productRoute}${params.size ? `?${params}` : ""}`;
+          const beforeCart = await context.request.get(`${origin}/api/buyer/cart`);
+          assert(beforeCart.ok(), "existing cart must be readable before options browsing");
+          const baseline = await beforeCart.json() as { version: number; items: { sku_id: string; quantity: number }[] };
+          // GETs only: read the existing real-PG product/cart, never prepare the tested action through an API write.
+          const detailResponse = await context.request.get(`${origin}/api/shop/product/${candle.slug}`);
+          assert(detailResponse.ok(), "existing real-PG product detail must be readable");
+          const detail = await detailResponse.json() as {
+            id: string; title: string; images: { id: string }[];
+            options: { name: string; values: string[] }[];
+            variants: { sku_id: string; price_minor: number; option_values: string[]; image_id: string | null; stock: string }[];
+          };
+          const price = (minor: number) => {
+            const currency = facts.currency;
+            const digits = new Intl.NumberFormat(locale, { style: "currency", currency }).resolvedOptions().maximumFractionDigits ?? 2;
+            const display = new Intl.NumberFormat(locale, { style: "currency", currency, minimumFractionDigits: minor % 10 ** digits === 0 ? 0 : digits });
+            return display.formatToParts(minor / 10 ** digits).map((part) => currency === "TWD" && part.type === "currency" ? "NT$" : part.value).join("");
+          };
+          const task = () => page.getByTestId("product-options-task");
+          const entry = (surface: "task" | "dock") => page.getByTestId(`product-options-${surface}-entry`).getByRole("button", { name: c.chooseSpec, exact: true });
+          const back = () => task().getByRole("button", { name: c.specBack, exact: true });
+          const quantity = () => task().getByTestId("qty-input");
+          const writes: { method: string; pathname: string; request: import("@playwright/test").Request }[] = [];
+          const observeWrite = (request: import("@playwright/test").Request) => {
+            const url = new URL(request.url());
+            if (url.origin === new URL(origin).origin && !["GET", "HEAD", "OPTIONS"].includes(request.method())) {
+              // Request objects stay in memory for CAS verification; no headers, bodies, credentials or full URLs enter artifacts.
+              writes.push({ method: request.method(), pathname: url.pathname, request });
+            }
+          };
+          const unchanged = async () => {
+            assert.equal(writes.length, 0, "selection/return must issue zero writes");
+            const response = await context.request.get(`${origin}/api/buyer/cart`);
+            assert(response.ok(), "cart readback failed");
+            assert.deepEqual(await response.json(), baseline, "selection/return changed the server cart");
+          };
+          const open = async (surface: "task" | "dock") => {
+            await entry(surface).click({ timeout: T });
+            await expect(task().getByRole("heading", { name: c.chooseSpec, exact: true })).toBeVisible({ timeout: T });
+            assert.equal(new URL(page.url()).pathname, productRoute);
+            for (const [key, value] of params) assert(urlParams().get(key) === value, `${key} must survive option navigation`);
+          };
+          page.on("request", observeWrite);
+          let reachable = false;
+          try {
+            await page.goto(productURL);
+            for (const surface of ["task", "dock"] as const) {
+              await step(frame, productRoute, `spec ${surface} entry`, "click selection entry + click back", "source-defined entry opens the option task; back returns to the same product and focus, with zero cart writes", async () => {
+                await open(surface);
+                await expect(back()).toBeVisible();
+                await back().click({ timeout: T });
+                await expect(task()).toHaveCount(0);
+                await expect(entry(surface)).toBeFocused({ timeout: T });
+                await unchanged();
+                reachable = true;
+                return "real entry/back clicks returned focus and preserved server cart";
+              });
+              // A failed entry is the causal RED. Do not fabricate dependent PASS rows or reset product state through DOM.
+              if (await task().count()) await page.keyboard.press("Escape");
+            }
+            if (reachable) {
+              await step(frame, productRoute, "spec composition", "click task entry + inspect", "390x844 full task with 64px header, 84px fixed dock, server title/price/image, option axes, quantity and one add action", async () => {
+                await open("task");
+                const header = await task().getByTestId("product-options-header").boundingBox();
+                const dock = await task().getByTestId("product-options-dock").boundingBox();
+                const body = await task().boundingBox();
+                assert(header && dock && body, "mobile task regions must be visible");
+                assert(Math.abs(body.x) <= 1 && Math.abs(body.width - 390) <= 1 && Math.abs(body.y) <= 1 && Math.abs(body.height - 844) <= 1, "task must fill the viewport");
+                assert(Math.abs(header.y) <= 1 && Math.abs(header.height - 64) <= 1, "header must occupy y=0..64");
+                assert(Math.abs(dock.y - 760) <= 1 && Math.abs(dock.height - 84) <= 1, "dock must occupy y=760..844");
+                const summary = task().getByTestId("product-options-summary");
+                await expect(summary).toContainText(detail.title);
+                const sku = await task().getByTestId("product-buy").getAttribute("data-sku");
+                const selected = detail.variants.find((v) => v.sku_id === sku);
+                assert(selected, "selection must resolve to a server SKU");
+                await expect(summary).toContainText(price(selected.price_minor));
+                for (const axis of detail.options) await expect(task().getByRole("group", { name: new RegExp(axis.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")) })).toBeVisible();
+                await expect(task().getByText(c.specLimit, { exact: true })).toBeVisible();
+                await expect(task().getByText(c.specPickup, { exact: true })).toBeVisible();
+                await expect(task().getByText(c.quantity, { exact: true })).toBeVisible();
+                await expect(quantity()).toHaveValue("1");
+                await expect(task().getByTestId("buy-now")).toHaveCount(0);
+                await expect(task().getByTestId("add-to-cart")).toHaveCount(1);
+                await expect(task().getByTestId("add-to-cart")).toHaveText(`${c.addToCart} · ${price(selected.price_minor)}`);
+                const imageID = selected.image_id ?? detail.images[0]?.id;
+                if (imageID) await expect(summary.locator("img")).toHaveAttribute("src", new RegExp(`/media/p/${detail.id}/${imageID}(?:\\?|$)`));
+                else notRun.push({ frame, locale, subcase: "summary image", reason: "existing real product has no server image" });
+                await unchanged();
+              });
+              await shot(frame, productRoute);
+              let chosen: (typeof detail.variants)[number] | undefined;
+              let draftQty = "1";
+              const initial = await task().getByTestId("product-buy").getAttribute("data-sku");
+              const alternative = detail.variants.find((v) => v.stock !== "out" && v.sku_id !== initial);
+              if (!alternative) notRun.push({ frame, locale, subcase: "alternative option SKU price image", reason: "existing real product has no second available SKU; option-switch evidence remains missing" });
+              else await step(frame, productRoute, "spec option SKU price image", "click real option radios", "each available option keeps chosen SKU, displayed price, summary image and active controls consistent", async () => {
+                for (let axis = 0; axis < alternative.option_values.length; axis++) {
+                  // Label click is a real user action; value is taken from the server, not a screenshot fixture.
+                  const value = alternative.option_values[axis];
+                  const radio = task().getByRole("radio", { name: value, exact: true });
+                  const label = radio.locator("..");
+                  const box = await label.boundingBox();
+                  assert(box && box.width >= 44 && box.height >= 44, "option touch target must be at least 44px");
+                  await label.click({ timeout: T });
+                  await expect(radio).toBeChecked();
+                }
+                chosen = alternative;
+                await expect(task().getByTestId("product-buy")).toHaveAttribute("data-sku", chosen.sku_id);
+                await expect(task().getByTestId("variant-price")).toHaveText(price(chosen.price_minor));
+                await expect(task().getByTestId("add-to-cart")).toHaveText(`${c.addToCart} · ${price(chosen.price_minor)}`);
+                const imageID = chosen.image_id ?? detail.images[0]?.id;
+                if (imageID) await expect(task().getByTestId("product-options-summary").locator("img")).toHaveAttribute("src", new RegExp(`/media/p/${detail.id}/${imageID}(?:\\?|$)`));
+                await unchanged();
+              });
+              await step(frame, productRoute, "spec quantity bounds", "click minus/plus + fill quantity + blur", "quantity stays within existing 1..99 bounds; all changes issue zero writes", async () => {
+                const minus = task().getByRole("button", { name: c.decrease, exact: true });
+                const plus = task().getByRole("button", { name: c.increase, exact: true });
+                await expect(minus).toBeDisabled();
+                await plus.click({ timeout: T });
+                await expect(quantity()).toHaveValue("2");
+                await minus.click({ timeout: T });
+                await expect(quantity()).toHaveValue("1");
+                await quantity().fill("99");
+                await quantity().press("Tab");
+                await expect(plus).toBeDisabled();
+                await quantity().fill("0");
+                await quantity().press("Tab");
+                await expect(quantity()).toHaveValue("1");
+                await plus.click({ timeout: T });
+                draftQty = "2";
+                await expect(quantity()).toHaveValue(draftQty);
+                await unchanged();
+              });
+              await step(frame, productRoute, "spec return draft", "click back + reopen; Escape + reopen", "both return methods restore entry focus, preserve chosen SKU/quantity/preview and leave cart unchanged", async () => {
+                assert(chosen, "option selection must pass before draft preservation");
+                for (const method of ["back", "Escape"] as const) {
+                  if (method === "back") await back().click({ timeout: T });
+                  else await page.keyboard.press("Escape");
+                  await expect(task()).toHaveCount(0);
+                  await expect(entry("task")).toBeFocused({ timeout: T });
+                  await open("task");
+                  await expect(task().getByTestId("product-buy")).toHaveAttribute("data-sku", chosen.sku_id);
+                  await expect(quantity()).toHaveValue(draftQty);
+                  await unchanged();
+                }
+              });
+              await step(frame, productRoute, "spec entry return cart unchanged", "read server cart after all local choices", "all option/quantity/return operations issued zero writes and preserved the exact existing server cart", unchanged);
+              notRun.push({ frame, locale, subcase: "cart failure/UNKNOWN recovery", reason: "no existing real-PG controlled failure injector in this parity context; existing journal/state gates remain required" });
+              const out = detail.variants.find((v) => v.stock === "out");
+              if (!out) notRun.push({ frame, locale, subcase: "sold-out option", reason: "existing selected product has no sold-out variant; an in-stock SKU is not sold-out evidence" });
+              else {
+                const value = out.option_values.find((v, i) => !detail.variants.some((candidate) => candidate.stock !== "out" && candidate.option_values[i] === v));
+                if (!value) {
+                  notRun.push({ frame, locale, subcase: "sold-out option", reason: "out SKU has no independently unavailable axis value; combination not reachable through this UI" });
+                } else await step(frame, productRoute, "spec sold-out option", "inspect unavailable real option", "out-of-stock alternative stays disabled", async () => {
+                  await expect(task().getByRole("radio", { name: value, exact: true })).toBeDisabled();
+                });
+              }
+              await step(frame, productRoute, "spec one add CAS and refreshed cart", "click add once + server readback + reload", "one existing CAS cart write adds the selected SKU/quantity, then locale cart opens and refresh persists it", async () => {
+                assert(chosen, "option selection must pass before add");
+                assert.equal(writes.length, 0, "no write may precede the add click");
+                const add = task().getByTestId("add-to-cart");
+                // Hold, then continue the real PUT unchanged so busy/disabled is observable without synthetic domain responses.
+                let release = () => {};
+                const held = new Promise<void>((resolve) => { release = resolve; });
+                const holdWrite = async (route: import("@playwright/test").Route) => {
+                  if (route.request().method() === "PUT") await held;
+                  await route.continue();
+                };
+                await page.route("**/api/buyer/cart", holdWrite);
+                try {
+                  await add.click({ timeout: T });
+                  await expect(add).toBeDisabled({ timeout: T });
+                } finally {
+                  release();
+                  await page.unroute("**/api/buyer/cart", holdWrite);
+                }
+                await page.waitForURL((url) => url.pathname === cartRoute, { timeout: T });
+                const cartWrites = writes.filter((w) => w.pathname === "/api/buyer/cart");
+                assert.equal(cartWrites.length, 1, "one click must produce exactly one cart write");
+                assert.equal(cartWrites[0].method, "PUT");
+                const payload = cartWrites[0].request.postDataJSON();
+                assert.equal(payload.expected_version, baseline.version, "existing CAS version must be used");
+                const response = await cartWrites[0].request.response();
+                assert(response?.ok(), "the add must have an authoritative successful response");
+                const expectedQty = (baseline.items.find((i) => i.sku_id === chosen!.sku_id)?.quantity ?? 0) + Number(draftQty);
+                const readback = await context.request.get(`${origin}/api/buyer/cart`);
+                assert(readback.ok());
+                const stored = await readback.json();
+                assert.equal(stored.items.find((i: { sku_id: string }) => i.sku_id === chosen!.sku_id)?.quantity, expectedQty);
+                for (const item of baseline.items.filter((i) => i.sku_id !== chosen!.sku_id)) assert(stored.items.some((i: { sku_id: string; quantity: number }) => i.sku_id === item.sku_id && i.quantity === item.quantity), "unrelated cart line must be preserved");
+                const line = page.getByTestId("cart-page").locator(`[data-testid="cart-line"][data-sku="${chosen.sku_id}"]`);
+                await expect(line.getByTestId("cart-line-qty")).toHaveText(String(expectedQty), { timeout: T });
+                await expect(page.getByTestId("cart-drawer")).not.toBeVisible();
+                await page.reload();
+                await expect(line.getByTestId("cart-line-qty")).toHaveText(String(expectedQty), { timeout: T });
+                assert.equal(writes.length, 1, "refresh must not replay the add or create another side effect");
+                return "single successful CAS add; chosen SKU/quantity persisted after locale cart refresh";
+              });
+            } else {
+              notRun.push({ frame, locale, subcase: "dependent options composition/selection/add", reason: "source-defined option entries did not reach task; see causal entry FAIL rows" });
+            }
+          } finally {
+            page.off("request", observeWrite);
+          }
+        }
+
         // ===== Removed / unknown product ===============================================================================================
         const removedFrame = f("1253:17090", "1253:17114");
         const removedRoute = `/${locale}/products/non-existent-product-sku`;
@@ -770,6 +1006,12 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
     const rows = ledger.filter((row) => row.frame === frame.frameId);
     const locales = new Set(rows.filter((row) => row.status === "PASS").map((row) => row.locale));
     const failedRows = rows.filter((row) => row.status === "FAIL");
+    if (frame.frameId === "51:1380") {
+      const required = ["spec task entry", "spec dock entry", "spec composition", "spec option SKU price image", "spec quantity bounds", "spec return draft", "spec entry return cart unchanged", "spec one add CAS and refreshed cart"];
+      const complete = Object.keys(copy).every((locale) => required.every((control) => rows.some((row) => row.locale === locale && row.viewport === "390x844" && row.control === control && row.status === "PASS")));
+      const screenshot = rows.some((row) => row.locale === "zh-TW" && row.control === "parity-screenshot" && row.status === "PASS");
+      if (!complete || !screenshot) return { ...frame, status: "NOT_COVERED", reason: failedRows.length ? `assertion failed: ${failedRows[0].error}` : "complete mobile option plan and actual parity screenshot not executed in all three locales" };
+    }
     if (frame.frameId === "782:4249") {
       const required = ["mobile sort contents", "mobile sort cart unchanged", "mobile collection newest nonempty clear", "mobile collection newest empty clear", "mobile collection absent sort clear", "mobile search query clear", ...["products", "collection", "search"].flatMap((scope) => [
         ...["newest", "price_asc", "price_desc", "title"].map((sort) => `mobile sort ${scope} ${sort}`),
@@ -783,6 +1025,7 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
   });
   await writeFile(path.join(evidence, "parity-manifest.json"), JSON.stringify(manifest, null, 2));
   await writeFile(path.join(evidence, "parity-buyer-browse-click-ledger.json"), JSON.stringify(ledger, null, 2));
+  await writeFile(path.join(evidence, "parity-buyer-browse-not-run.json"), JSON.stringify(notRun, null, 2));
 
   const count = (status: ManifestEntry["status"]) => manifest.filter((entry) => entry.status === status).length;
   const summary = `COVERED ${count("COVERED")} · NOT_COVERED ${count("NOT_COVERED")} · DEFERRED ${count("DEFERRED")} · BLOCKED ${count("BLOCKED")} of ${manifest.length} frames; ${ledger.filter((row) => row.status === "PASS").length}/${ledger.length} ledger operations passed`;
