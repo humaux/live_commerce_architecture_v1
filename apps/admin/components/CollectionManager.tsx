@@ -91,32 +91,36 @@ export function CollectionManager({
             ? c.unavailable
             : "";
   const quick = useWrite(store?.id ?? "", list.boundary, code => errorText(catalogCopy[locale], code), c.uncertain);
+  // Keep the original creator mounted until its command resolves, even when its scope no longer permits retry.
+  const quickBlocked = quick.busy || quick.message?.kind === "uncertain";
+  const selectCollection = (id: string) => { if (!quickBlocked) setSelected(id); };
   const create = () => {
+    if (quickBlocked) return;
     if (!store || !name.trim()) { quickInput.current?.focus(); return; }
     void quick.run(command("POST", "collections", { title: name.trim(), description: "", sort_mode: membershipMode === "manual" ? "manual" : "newest", status: "active", membership_mode: membershipMode, ...(membershipMode === "automatic" ? { rules: { match: "all", conditions: [{ field: "created_at", operator: "within_days", days: 7 }] } } : {}) }), parseCreated,
       created => { setName(""); void list.refresh(); setSelected(created.id); }, c.saved);
   };
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="collections">
     <div className="data-ops collections-page" data-testid="collections-page">
-      <header><div><h1>{d.collections}</h1><p className="ops-note">{d.collectionsHelp}</p></div><div className="ops-actions"><button data-testid="collection-manage-new" onClick={() => setSelected(NEW)}>{d.manageManual}</button><button className="primary" data-testid="collection-new" disabled={quick.busy || !store} type="submit" form="collections-quick-create" onClick={event => { if (selected) { event.preventDefault(); setSelected(""); } }}>{d.newCollection}</button></div></header>
+      <header><div><h1>{d.collections}</h1><p className="ops-note">{d.collectionsHelp}</p></div><div className="ops-actions"><button data-testid="collection-manage-new" disabled={quickBlocked} onClick={() => selectCollection(NEW)}>{d.manageManual}</button><button className="primary" data-testid="collection-new" disabled={quickBlocked || !store} type="submit" form="collections-quick-create" onClick={event => { if (quickBlocked || selected) { event.preventDefault(); selectCollection(""); } }}>{d.newCollection}</button></div></header>
       {(list.status === "loading" || list.status === "hidden") && <p role="status">{c.loading}</p>}
       {failure && <div role="status"><p>{failure}</p><button onClick={list.reload}>{c.retry}</button></div>}
       {list.status === "ready" && list.data && store && <div className="ops-columns">
         <section className="ops-card"><div className="ops-collection-heading"><span>{d.collection}</span><span>{d.type}</span><span>{d.rules}</span><span>{d.productCount}</span><span>{d.status}</span></div>
           {!list.data.items.length && <p>{c.empty}</p>}
           <ul className="collections-list ops-collection-list" data-testid="collections-list">{list.data.items.map(item => <li key={item.id}>
-            <button data-testid={`collection-item-${item.id}`} onClick={() => setSelected(item.id)} aria-current={selected === item.id ? "true" : undefined}>
+            <button data-testid={`collection-item-${item.id}`} disabled={quickBlocked} onClick={() => selectCollection(item.id)} aria-current={selected === item.id ? "true" : undefined}>
               <strong><span>{item.title}</span><span className="sr-only"> /{item.slug}</span></strong><span>{item.membership_mode === "automatic" ? d.automatic : d.manual}</span><span>{item.membership_mode === "automatic" && item.ruleDays.length ? dataOpsText(d.createdDays, { n: Math.max(...item.ruleDays) }) : "—"}</span><span>{item.product_count}</span><span>{item.status === "active" ? c.visible : c.hidden}</span>
             </button>
           </li>)}</ul><p className="ops-note">{d.deleteCollectionHelp}</p>
         </section>
         {selected ? <CollectionEditor key={selected} locale={locale} store={store} id={selected} boundary={list.boundary} onChanged={() => void list.refresh()} onCreated={id => { void list.refresh(); setSelected(id); }} onDeleted={() => { void list.refresh(); setSelected(""); }} /> : <aside>
           <section className="ops-card"><h2>{d.createCollection}</h2><form id="collections-quick-create" className="ops-form-grid" onSubmit={event => { event.preventDefault(); create(); }}>
-            <label>{d.name}<input ref={quickInput} value={name} maxLength={limits.collectionTitle} onChange={event => setName(event.target.value)} required /></label>
-            <fieldset className="ops-radio"><legend>{d.type}</legend><label><input type="radio" name="collection-kind" value="manual" checked={membershipMode === "manual"} onChange={() => setMembershipMode("manual")} />{d.manual}</label><label><input type="radio" name="collection-kind" value="automatic" checked={membershipMode === "automatic"} onChange={() => setMembershipMode("automatic")} />{d.automatic}</label></fieldset>
+            <label>{d.name}<input ref={quickInput} value={name} maxLength={limits.collectionTitle} disabled={quickBlocked} onChange={event => { if (!quickBlocked) setName(event.target.value); }} required /></label>
+            <fieldset className="ops-radio" disabled={quickBlocked}><legend>{d.type}</legend><label><input type="radio" name="collection-kind" value="manual" checked={membershipMode === "manual"} onChange={() => { if (!quickBlocked) setMembershipMode("manual"); }} />{d.manual}</label><label><input type="radio" name="collection-kind" value="automatic" checked={membershipMode === "automatic"} onChange={() => { if (!quickBlocked) setMembershipMode("automatic"); }} />{d.automatic}</label></fieldset>
             {membershipMode === "automatic" && <p className="ops-note">{dataOpsText(d.createdDays, { n: 7 })}</p>}<p className="ops-note">{d.collectionSavedHelp}</p>
             {quick.message && <p role={quick.message.kind === "success" ? "status" : "alert"}>{quick.message.text}</p>}
-            {quick.message?.kind === "uncertain" && <button type="button" onClick={() => void quick.retry()}>{catalogCopy[locale].edit.retry}</button>}
+            {(quick.message?.kind === "uncertain" || (quick.busy && quick.canRetry)) && <button type="button" disabled={quick.busy || !quick.canRetry} onClick={() => { if (!quick.busy && quick.canRetry) void quick.retry(); }}>{catalogCopy[locale].edit.retry}</button>}
           </form></section><section className="ops-card"><h2>{d.rules}</h2><p>{d.manualHelp}</p><p className="ops-note">{d.deleteCollectionHelp}</p></section>
         </aside>}
       </div>}
