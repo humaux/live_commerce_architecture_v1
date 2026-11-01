@@ -403,8 +403,10 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
         await capture(sortAscFrame);
         await recordStep(sortAscFrame, `/${locale}/products?sort=price_asc`, "sort-asc-check", "signed price_asc option active", async () => {
           if (isMobile) {
-            // Mobile signed frame renders the sort sheet with the active option visible.
-            await expect(page.locator(`a[data-sort="price_asc"]`)).toBeVisible({ timeout: 2000 });
+            // Mobile signed frame renders the sort sheet dialog with the active option visible.
+            // Scope to the visible dialog so any hidden streaming placeholder is not matched.
+            const sheet = page.getByRole("dialog", { name: c.sortSelect });
+            await expect(sheet.locator(`a[data-sort="price_asc"][aria-current="true"]`)).toBeVisible({ timeout: 2000 });
           } else {
             // Desktop signed frame renders the native sort select with the active value.
             await expect(page.locator('select[name="sort"]')).toHaveValue("price_asc", { timeout: 2000 });
@@ -417,7 +419,8 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
         await capture(sortDescFrame);
         await recordStep(sortDescFrame, `/${locale}/products?sort=price_desc`, "sort-desc-check", "signed price_desc option active", async () => {
           if (isMobile) {
-            await expect(page.locator(`a[data-sort="price_desc"]`)).toBeVisible({ timeout: 2000 });
+            const sheet = page.getByRole("dialog", { name: c.sortSelect });
+            await expect(sheet.locator(`a[data-sort="price_desc"][aria-current="true"]`)).toBeVisible({ timeout: 2000 });
           } else {
             await expect(page.locator('select[name="sort"]')).toHaveValue("price_desc", { timeout: 2000 });
           }
@@ -429,7 +432,8 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
         await capture(sortTitleFrame);
         await recordStep(sortTitleFrame, `/${locale}/products?sort=title`, "sort-title-check", "signed title sort active", async () => {
           if (isMobile) {
-            await expect(page.locator(`a[data-sort="title"]`)).toBeVisible({ timeout: 2000 });
+            const sheet = page.getByRole("dialog", { name: c.sortSelect });
+            await expect(sheet.locator(`a[data-sort="title"][aria-current="true"]`)).toBeVisible({ timeout: 2000 });
           } else {
             await expect(page.locator('select[name="sort"]')).toHaveValue("title", { timeout: 2000 });
           }
