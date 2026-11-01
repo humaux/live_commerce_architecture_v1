@@ -71,7 +71,8 @@ test.describe("PARITY-DATA-OPS C6 customer import", () => {
       });
       await click(page, "預覽可套用資料", "safe dry run with new/update/failure counts", async () => {
         await heading(page, "確認前，再核對一次");
-        for (const text of ["每筆處理方式", "不匯入電子郵件", "保留店內原有電子郵件", "行銷同意維持未知；不自動合併買家。"])
+        await expect(page.getByRole("heading", { name: "每筆處理方式", level: 2, exact: true })).toBeVisible();
+        for (const text of ["不匯入電子郵件", "保留店內原有電子郵件", "行銷同意維持未知；不自動合併買家。"])
           await expect(page.getByText(text, { exact: true })).toBeVisible();
         await expect(page.getByText("新增 1 · 更新 1 · 不匯入 1", { exact: true })).toBeVisible();
         for (const privateValue of [prefix, nameA, nameB, "Synthetic invalid"])

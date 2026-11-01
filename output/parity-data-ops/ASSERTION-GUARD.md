@@ -57,3 +57,12 @@ Packet/ownership checks preceded the final comment-only header correction; final
 ## Remaining gates
 
 Root must regenerate ownership and run the frozen GitHub Foundation tests (including all old and new mutation witnesses), plus native catalog-media browser coverage across en/zh-TW and desktop/mobile. Confirm actual SKU navigation, disclosure behavior, disabled archived stock control, exact price, status, real cover and overflow. Cross-family independent review remains required after CI green. No product, fixture, dependency, lockfile, baseline SHA, budget or CI configuration changes are included. Production/SANDBOX/LIVE acceptance remains NOT_RUN.
+
+
+## Root integration: direct consumers of the signed inventory/import UI
+
+Root independently reviewed commit003ba740 and its six bounded AST mappings, original fact order, complete SKU readback and12 mutation negatives. BaselineSHA, eleven adapters, readiness/env/spawn comparisons and original startup mutation tests remain. Actual AST/runtime evaluation is pending locked-dependency GitHub CI; no local tests ran.
+
+Two additional current-head failures from d39917c4 were addressed in the same integration batch: product-editor.acceptance.ts508 tried to inspect a collapsed disclosure after selecting a SKU, so the test now performs the real summary click before all existing visibility/price/no-edit-controls/link/geometry assertions; parity-customer-import.spec.ts75 matched both h2 and summary, so its exact copy assertion now selects the h2 role and preserves every other count/privacy/email/consent assertion. Authority: Ledger.tsx444 and ImportWizard.tsx225/227 current DOM, and Gates41292495090 artifacts13078276821/13078137241. No product data, fixture, timeout, threshold or assertion was removed or relaxed.
+
+Known remaining failures (no claim of repair): import-wizard global timeout and checkout-offline proof-response/DST-fold hypothesis; classify the next exact-head evidence, do not blindly retry. Root retained both filechooser evidence from the prior475 branch and the independently approved484 document-time-origin canaries while resolving their merge conflict.

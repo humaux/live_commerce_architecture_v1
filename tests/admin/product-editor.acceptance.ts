@@ -504,6 +504,7 @@ export function registerProductEditorAcceptance() {
         await page.setViewportSize({ width, height });
         await page.goto(url("en", "inventory"));
         await page.locator("button.product-name").first().click();
+        await page.getByTestId("inventory-product-details").locator("summary").click();
         const inspector = page.locator(".inspector");
         await expect(inspector).toBeVisible();
         await expect(inspector.getByTestId("tray-price")).toBeVisible();
