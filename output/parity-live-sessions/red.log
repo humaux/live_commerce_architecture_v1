@@ -65,3 +65,13 @@ authorization=CONSOLE_card_tests_only_privacy_safe_diagnostic_fallback;all_asser
 implementation=NOT_RUN_root_cause_UNKNOWN;no_LiveConsole_or_shared_hook_edits
 diagnostic_run=PENDING_PUSH;head_and_WAIT_RUN_follow_in_PR_comment_without_evidence_only_push
 wake_owner=integrator;relay_after_diagnostic_Gates_Foundation_completion
+
+phase=CONSOLE_DIAGNOSTICS_POST_PUSH_LOCAL_HANDOFF
+head=3433eeea14387b05b56e78b89686bf9ea5d0f5b1
+gates_run=41278031103 gates_status=in_progress console_job=PENDING_ALLOCATION
+foundation_run=41278031111 foundation_job=124764095697 foundation_status=in_progress
+WAIT_RUN=41278031103,41278031111
+new_RED_GREEN=PENDING;no_product_fix;no_assertion_changes;no_evidence_only_push
+STATUS=DONE_diagnostics_pushed;wake_owner=integrator
+
+Relay 2026-11-01: head3433eeea1 Gates41278031103 Console124764728535 FAIL at first Save spec455 zh-CN-390: expected17 got12, before observer476; not a new-assertion RED. Artifact13073236725. Five observed +3/v4 requests including en-390 returned200. Foundation41278031111/job124764095697 SUCCESS only. Product root cause UNKNOWN; no implementation push or GREEN.

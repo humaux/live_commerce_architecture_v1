@@ -449,11 +449,16 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await page.getByTestId(`live-offer-toggle-${offer}`).click();
     await expect.poll(async () => (await facts(request)).scenes[scene]!.Active).toBe(true);
 
+    const finishInitialStockDiagnostics = await observeStockDispatch(page, offer, `${name}-initial`);
+    try {
     await page.getByTestId(`live-stock-${offer}`).fill("17");
     await page.getByTestId(`live-stock-save-${offer}`).click();
     await expect.poll(async () => (await facts(request)).scenes[scene]!.Stock).toBe(17);
     const stockReceipt = (await facts(request)).receipts.at(-1)!;
     expect(stockReceipt.input).toMatchObject({ delta: 5, expected_version: 1, reason: "live_console_edit" });
+    } finally {
+      await finishInitialStockDiagnostics();
+    }
     await page.reload();
     await expect(page.getByTestId(`live-stock-${offer}`)).toHaveValue("17");
 

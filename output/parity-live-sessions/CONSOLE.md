@@ -85,4 +85,73 @@ NOT_RUN: local tests/servers (prohibited), tsc (no local executable/workspace de
 the queued run finishes, product repair, independent review, provider SANDBOX/LIVE and production acceptance;
 Humaux store/canvas/code-index (tools unavailable). Author self-assessment is E0; static evidence is E1 only.
 
-STATUS: READY diagnostics-only commit; push/run handoff follows in the PR comment.
+## Post-push handoff (local evidence update; no evidence-only commit)
+
+Diagnostic head: `3433eeea14387b05b56e78b89686bf9ea5d0f5b1`, pushed once to the existing #365 branch.
+Spec SHA-256: `1ee3d7c70f9c6e70d7608dd14f4317b4f1aacb750c3633ca1bb70b6d6472c84c`.
+Gates run `41278031103`: in progress, Console test job not yet allocated at readback.
+Foundation run `41278031111`, job `124764095697`: in progress. Both run headSha values match this head.
+New diagnostic RED/GREEN conclusions remain PENDING; the old failed assertion is unchanged.
+WAIT_RUN: `41278031103`, `41278031111`. Wake/relay owner: integrator, on workflow completion.
+The committed report points to the PR comment; this post-push evidence update remains local to avoid another CI fleet.
+
+STATUS: DONE diagnostics pushed; root cause UNKNOWN, product fix and CI acceptance pending.
+
+## Relay readback — 2026-11-01, diagnostic head 3433eeea1
+
+Authority: current dispatched CONSOLE relay; GitHub current PR head and raw run/job/artifact,
+not the old output snapshot. Humaux tools are available in this session; earlier unavailability
+statements above describe the previous session. Read current development rules memory
+7bdb220b-0798-4b1d-aff5-16ee94cae75f and code repo map. Rejected sample coverage 3/9.
+This delegated lane does not claim a separate task or delegate again.
+
+Read-only CI commands: `gh pr checks 365`; `gh run view 41278031103 --job 124764728535 --log-failed`
+(filtered); `gh run download 41278031103 -n gate-browser-live-console`; artifact ID 13073236725.
+All read commands exited 0 except `gh pr checks`, whose failure is expected for failing required checks.
+No local tests or servers; no rerun, status publication, or PR merge/automerge.
+
+| Current-head evidence | Result |
+| --- | --- |
+| Gates 41278031103 / Console 124764728535 | FAIL: workspace 26 passed / 1 failed; labels passed. |
+| Exact failure | zh-CN-390, spec :455: first stock Save expects 17, receives 12. |
+| Previously reported en-390 +3/v4 | Request observed, status 200; native submit reaches React; pending/busy become true after dispatch. |
+| Other instrumented cases | en-1586, zh-TW-1586/390, zh-CN-1586 all send +3/v4, status 200. |
+| Failed zh-CN-390 diagnostic | Not produced: first save :453-455 precedes observer installation :476. |
+| Foundation 41278031111 / 124764095697 | SUCCESS for 3433eeea1. |
+| receipts 124773758786 / required 124774147562 | Derived failures; whole PR is not GREEN. |
+
+Kept only allowlisted stock event/network JSON, failure source context and summary under
+`console-evidence-41278031103/`; full downloaded artifact was removed. en-390 stock diagnostics
+SHA-256: 839870a361d14f60a00abfab30bd568ba853c8d88df73152cda37a4f83ff58e6.
+The observer is evidence, not a new assertion: this failure is NOT a RED on a newly added assertion.
+Original C4 causal RED remains 41052979614 / 124055728603; no new implementation GREEN exists.
+
+Own-file impact was rechecked: SessionTasks/SessionProducts/claim-fields/StudioClaims do not mount
+on Console; prompt select changes local state; CSS module classes do not match Console;
+LiveWorkspace differs only in its Sessions anchor destination/header, not Console mounting;
+shared hook is identical to integration. No own-file command-dedupe change swallows dispatch.
+These findings do not prove the latest Save event's cause or rule out a base lifecycle race.
+
+The remaining root cause is UNKNOWN. The next missing evidence is at first Save :453-455,
+before existing diagnostics. Candidate investigation sites are LiveConsole.tsx :29 (refresh),
+:129-147 (OfferRow draft/submit), and use-live-workspace.ts :22/:125-131 (read clearing/command guards).
+No exact defective line is proved. LiveConsole is explicitly reserved to #355, so no speculative
+product edit is made. The explicitly authorized diagnostic fallback is extended to first Save using
+the existing observer in a try/finally before reload. All original assertions/actions/timeouts remain
+verbatim and in order. This emits `<locale>-<width>-initial-stock-dispatch.json` even on the current failure.
+No imports, helpers, product source, fixture, gate or thresholds change.
+
+Required integration merge completed locally: integration 4b8c04c72, local merge 3d94f84bc.
+One batched tests-only diagnostic push follows, with no evidence-only follow-up push.
+`node --check tests/admin/live-console.spec.ts`, ownership generation then `--check`, dependency-map
+generation, and `git diff --check` all exit 0. Only ownership source hash changes; dependency map unchanged.
+Preexisting RULING-FIX.md, DIAG.md and other lane changes remain untouched.
+Evidence level E3 for the recorded automated MOCK CI observations only; author judgment E0;
+no completed repair, whole-PR GREEN or E4 is asserted. Shared memory/canvas updated under scoped lock.
+
+NOT_RUN: local tests/servers (prohibited), implementation fix, new CI conclusion, independent review,
+provider SANDBOX/LIVE, production acceptance. New push head/run IDs follow in PR comment.
+Integrator owns CI completion notification and fresh-session relay; no local background work.
+Scope: Console spec + generated ownership + CONSOLE.md/red.log; no additional source path.
+
+STATUS: DONE diagnostics extended to first Save; root cause UNKNOWN, product repair/CI acceptance pending.
