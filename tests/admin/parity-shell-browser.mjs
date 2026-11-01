@@ -1,5 +1,5 @@
 // Purpose: Produce real-route admin parity sheets and assert owner-chosen shell A with real shell-control journeys.
-// Depends on: Playwright Chromium, node:test, shell-fixture MOCK transport and the packaged admin via next-startup.
+// Depends on: Playwright Chromium, node:test, shell-fixture MOCK transport, parity-team and the packaged admin via next-startup.
 // Used by: scripts/dev/test-local.sh --browser-admin-parity; artifacts are inputs to independent visual review.
 // Invariants: no gallery, pixel baseline, DOM mutation, forced click, provider traffic or business-flow acceptance.
 import assert from "node:assert/strict";
@@ -12,6 +12,7 @@ import { chromium, expect } from "@playwright/test";
 import { fixture, storeID, otherID } from "./shell-fixture.mjs";
 import { browserEvidenceDirectory } from "../browser-evidence.mjs";
 import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
+import { registerTeamParity } from "./parity-team.mjs";
 
 // matrix-receipts counts this node suite as the mode's browser execution only with this mark (BROWSER_SPEC_MARK).
 console.log("## matrix-receipts browser-spec");
@@ -37,6 +38,8 @@ const output = browserEvidenceDirectory("admin-parity");
 const ledger = [], captures = [];
 const sha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
 let f, browser, child, log, base;
+
+registerTeamParity({ session, origin: () => base, store: storeID, output, sha });
 
 before(async () => {
   await mkdir(`${output}/parity`, { recursive: true });
