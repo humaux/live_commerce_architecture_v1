@@ -1,32 +1,33 @@
 /* Purpose: signed order task groups, isolated picker and public CVS lookup layout.
  * Depends on: inherited admin surface/color tokens. Used by: ManualOrder, ReturnsList, CvsLookup.
  * Invariants: narrow screens keep all facts and controls; keyboard focus remains visible. */
-.ops-cvs { max-width: 640px; width: 100%; margin: 32px auto; padding: 16px; color: var(--text, #142942); }
+.ops-cvs { max-width: 640px; width: 100%; margin: 32px auto; padding: 16px; color: var(--ds-ink); }
 .ops-cvs h1 { font-size: 24px; margin-bottom: 28px; }
-.ops-cvs button, .ops-task button { min-height: 44px; border: 1px solid var(--border, #dde5ee); border-radius: 5px; padding: 10px 16px; background: var(--surface, #fff); color: inherit; cursor: pointer; }
-.ops-cvs button:focus-visible, .ops-task button:focus-visible { outline: 2px solid var(--focus, #1264ba); outline-offset: 3px; }
-.ops-cvs button.primary, .ops-task button.primary { background: #142942; color: #fff; }
+.ops-cvs button, .ops-task button { min-height: 44px; border: 1px solid var(--ds-border); border-radius: 5px; padding: 10px 16px; background: var(--ds-surface); color: inherit; cursor: pointer; }
+.ops-cvs button:focus-visible, .ops-task button:focus-visible { outline: 2px solid var(--ds-focus); outline-offset: 3px; }
+.ops-cvs button.primary, .ops-task button.primary { background: var(--ds-ink); color: var(--ds-on-primary); }
 .ops-actions { display: flex; gap: 12px; margin: 16px 0; }
 .ops-actions > * { flex: 1; }
-.ops-cvs button[aria-pressed="true"] { border-color: #247965; background: #e9f5f0; }
+.ops-cvs button[aria-pressed="true"] { border-color: var(--ds-success-text); background: var(--ds-success-bg); }
+.ops-cvs button:disabled { cursor: default; }
 .ops-query { display: grid; gap: 8px; margin: 20px 0; }
-.ops-query textarea { min-height: 88px; width: 100%; padding: 12px; resize: vertical; border: 1px solid #dde5ee; border-radius: 5px; font: inherit; }
+.ops-query textarea { min-height: 88px; width: 100%; padding: 12px; resize: vertical; border: 1px solid var(--ds-border); border-radius: 5px; font: inherit; }
 .ops-candidates { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
 .ops-candidates button { display: grid; gap: 10px; text-align: left; width: 100%; }
-.ops-store-card { border: 1px solid #dde5ee; border-radius: 8px; padding: 20px; overflow-wrap: anywhere; }
+.ops-store-card { border: 1px solid var(--ds-border); border-radius: 8px; padding: 20px; overflow-wrap: anywhere; }
 .ops-store-card p { margin: 12px 0 0; }
 .ops-code { font-size: 32px; font-variant-numeric: tabular-nums; }
-.ops-source { font-size: 12px; color: #64758a; margin-top: 20px; }
+.ops-source { font-size: 12px; color: var(--ds-text-2); margin-top: 20px; }
 .ops-wide { width: 100%; margin-top: 16px; }
-.ops-picker { width: min(100% - 32px, 1040px); max-height: calc(100dvh - 32px); padding: 24px; border: 1px solid #dde5ee; border-radius: 8px; overflow: auto; color: #142942; }
-.ops-picker::backdrop { background: #14294266; }
+.ops-picker { width: min(100% - 32px, 1040px); max-height: calc(100dvh - 32px); padding: 24px; border: 1px solid var(--ds-border); border-radius: 8px; overflow: auto; color: var(--ds-ink); }
+.ops-picker::backdrop { background: color-mix(in srgb, var(--ds-ink) 40%, transparent); }
 .ops-picker h2 { margin-bottom: 12px; }
 .ops-picker .mt-results { max-height: none; }
-.ops-review { border: 1px solid #dde5ee; border-radius: 8px; padding: 24px; }
+.ops-review { border: 1px solid var(--ds-border); border-radius: 8px; padding: 24px; }
 .ops-review dl { display: grid; gap: 16px; }
 .ops-review dd { margin: 4px 0 0; overflow-wrap: anywhere; }
 .ops-task .mt-form { max-width: 1120px; }
-.ops-task .mt-card { border-color: #dde5ee; border-radius: 8px; padding: 24px; }
+.ops-task .mt-card { border-color: var(--ds-border); border-radius: 8px; padding: 24px; }
 .ops-task details { margin-top: 12px; }
 .ops-task legend { font-weight: 600; margin-bottom: 12px; }
 @media (max-width: 600px) {

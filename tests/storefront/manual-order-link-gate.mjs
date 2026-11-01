@@ -137,8 +137,14 @@ try {
   await merchant.getByTestId("mo-city").fill("Taipei");
   await merchant.getByTestId("mo-line1").fill("1 Browser Road");
   await merchant.getByTestId("mo-mode-bank_transfer").check();
+  let placementWrites = 0;
+  merchant.on("request", request => {
+    if (request.method() === "POST" && new URL(request.url()).pathname === `/api/stores/${process.env.LC_LINK_STORE}/tools/orders/manual`) placementWrites++;
+  });
   const placed = merchant.waitForResponse(r => r.request().method() === "POST" && new URL(r.url()).pathname === `/api/stores/${process.env.LC_LINK_STORE}/tools/orders/manual`);
   await merchant.getByRole("button", {name: "Review order", exact: true}).click();
+  await expect(merchant.getByRole("region", {name: "Review order", exact: true})).toBeVisible();
+  assert.equal(placementWrites, 0, "Review only opens the summary; placement requires the second real click");
   const [reply] = await Promise.all([placed, merchant.getByTestId("manual-order-submit").click()]);
   assert.equal(reply.status(), 201);
   const body = await reply.json();
@@ -279,7 +285,10 @@ try {
   await expect(merchant.getByTestId("mo-cod-note")).toContainText("NT$50"); // the collection fee the carrier adds at the door
   await expect(merchant.getByTestId("mo-cod-note")).toContainText("NT$20,000"); // and the per-order cap, both whole NT$
   const codPlaced = merchant.waitForResponse(r => r.request().method() === "POST" && new URL(r.url()).pathname === `/api/stores/${process.env.LC_LINK_STORE}/tools/orders/manual`);
+  const codWritesBeforeReview = placementWrites;
   await merchant.getByRole("button", {name: "Review order", exact: true}).click();
+  await expect(merchant.getByRole("region", {name: "Review order", exact: true})).toBeVisible();
+  assert.equal(placementWrites, codWritesBeforeReview, "Review only opens the summary; placement requires the second real click");
   const [codReply] = await Promise.all([codPlaced, merchant.getByTestId("manual-order-submit").click()]);
   assert.equal(codReply.status(), 201);
   const codBody = await codReply.json();

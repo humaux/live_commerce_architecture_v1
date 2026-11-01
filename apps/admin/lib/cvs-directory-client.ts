@@ -28,6 +28,13 @@ export async function loadCvsDirectory(brand: CvsBrand, signal: AbortSignal): Pr
   const data: unknown = await response.json();
   if (!validDirectory(data)) throw new Error("invalid_directory");
   signal.throwIfAborted();
-  directories.set(brand, data);
-  return data;
+  // Signed store cards use normal-width text and the directory's formal county spelling.
+  // Preserve codes/names and the immutable snapshot; every lookup/copy/draft uses this same address.
+  const stores = data.map((row) => {
+    const address = row.address.normalize("NFKC"), county = row.county.normalize("NFKC");
+    const alias = county.replace(/^臺/, "台");
+    return { ...row, address: address.startsWith(alias) ? county + address.slice(alias.length) : address };
+  });
+  directories.set(brand, stores);
+  return stores;
 }

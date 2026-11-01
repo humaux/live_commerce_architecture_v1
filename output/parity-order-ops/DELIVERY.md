@@ -221,3 +221,49 @@ No local process/container/port/fixture was created. Downloaded failure artifact
 |資料：綠界門市清單 · 更新|数据：绿界门店清单 · 更新|Source: ECPay store directory · Updated|
 |超商品牌|便利店品牌|Store brand|
 |其他門市資料|其他门店信息|Other store details|
+
+## FIX2 directed regression repair — current CI pending
+
+Full failed-job/test/evidence/class table and native SHA-256 manifest: [FIX2.md](FIX2.md).
+Fresh Fleet Bridge reads of 1431:70774 and1431:71469 confirm the existing exact address
+assertions. The shared admin reader now uses NFKC plus its directory county spelling;
+source snapshots and fixtures are unchanged. Current brand choices are disabled;
+alternative brands remain clickable. Review uses the existing two-step submit handler
+and cannot submit from the first click. New CSS uses existing DS tokens.
+
+|Required fact|Desktop/mobile lookup, draft and review|Verification status|
+|---|---|---|
+|Brand, canonical code/name, complete address|Same formatted directory object supplies lookup/copy/return-to-draft; review retains it; 3 locales ×2 viewports exact assertions preserved|CI PENDING|
+|Recipient, phone, items/quantity and payment timing|Existing review facts preserved; bank and COD gate additionally assert summary visible and no placement POST from Review|CI PENDING|
+|Payment, durable order and buyer link|Existing server status/total/deadline/link/exchange/replay assertions remain verbatim and in order|CI PENDING|
+|Missing-code warning, explicit candidate choice and leading zero|Unchanged assertions, including022305→explicit024967 and complete69號B1 address|CI PENDING|
+
+### BOURDIEU
+Existing Q1–Q6 decisions above remain the screen authority; this repair adds no preference
+or screen concept. Experience means recent task experience. Q6 remains UNKNOWN until owner.
+
+### PROJECT UNDERSTANDING
+架构 §§0/1/2/26/27 require evidence labels, Go/PG authority and scoped ownership;
+storefront-v2 G3 requires server amounts and idempotent placement; returns-v1 keeps
+refund and stock/RMA actions separate. The product fixes change presentation and click
+handling only; no new command, contract or client amount is introduced.
+
+### MOBBIN → EAGLE
+No new pattern/reference or design was introduced. Existing module reference/principle
+handoff above remains unchanged; no new Mobbin query or Eagle write is required.
+
+### FIGMA OFFICIAL GUIDANCE
+The existing FIGMA-GUIDE.md token/component guidance is applied by replacing new literals
+with DS tokens and retaining the same shared lookup component. Read-only current frame
+metadata verifies visible text. No Figma frame/copy/prototype changes; copy-lint has no
+new/changed design roots to check. Existing zh-TW/zh-CN/en copy table remains complete;
+no new seller string was added.
+
+### Evidence / limits
+Syntax and deterministic-generation receipts are E1. Original Actions failure receipts are
+E3 FAILURE; new CI GREEN and independent E4 review are PENDING, author assessment E0.
+No local tests or server. Full tsc NOT_RUN (no local compiler/workspace dependencies).
+Humaux search/store/canvas/coord NOT_RUN (tools unavailable). No production/SANDBOX/LIVE
+acceptance claimed. Same blocker after this batch → BLOCKED; no third approach.
+
+FIX2 static commands: six node --check commands, bash -n and depmap generation exit0; Go dependency map unchanged. Browser-ownership generation/check exit0. Evidence-retention is rerun on committed HEAD before push, with the exact receipt in the PR comment.

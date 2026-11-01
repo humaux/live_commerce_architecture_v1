@@ -280,9 +280,10 @@ export function ManualOrder({
             {failure && <p className="mt-warn" role="alert" data-testid="manual-order-error">{failure}{uncertain ? ` ${c.retrySame}` : ""}</p>}
             {problem && <p className="mt-note" data-testid="manual-order-hint">{c.problems[problem]}</p>}
             <div className="mt-actions">
-              {reviewing ? <button type="submit" className="primary" data-testid="manual-order-submit" disabled={!!problem || mapOnly || busy || !boundary}>
-                {busy ? c.submitting : uncertain ? c.retryButton : c.submit}
-              </button> : <button type="button" className="primary" disabled={!!problem || mapOnly || busy || !boundary} onClick={() => setReviewing(true)}>{signed.review}</button>}
+              {/* Both steps submit through the guarded handler: changing a clicked button's type can place before review. */}
+              <button type="submit" className="primary" data-testid={reviewing ? "manual-order-submit" : undefined} disabled={!!problem || mapOnly || busy || !boundary}>
+                {reviewing ? busy ? c.submitting : uncertain ? c.retryButton : c.submit : signed.review}
+              </button>
               <Link href={`/${locale}/orders${storeQuery}`}>{c.back}</Link>
             </div>
           </form>

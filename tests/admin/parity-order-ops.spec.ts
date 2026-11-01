@@ -204,6 +204,8 @@ test.describe("PARITY-ORDER-OPS signed frames (BROWSER MOCK)", () => {
       await context.grantPermissions(["clipboard-read", "clipboard-write"]);
       await page.goto(`${origin}/${locale}/orders/cvs-match?store=${store}`);
       await expect(page.getByRole("heading", { name: c.lookup, exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: "7-ELEVEN", exact: true })).toBeDisabled();
+      await expect(page.getByRole("button", { name: c.family, exact: true })).toBeEnabled();
       const query = () => page.getByRole("textbox", { name: c.query, exact: true });
       const choose = (code: string) => page.getByRole("button", { name: new RegExp(code) });
       const shot = async (desktop: string, phone: string) => { if (locale === "zh-TW") await screenshot(page, mobile ? phone : desktop); };
@@ -240,6 +242,8 @@ test.describe("PARITY-ORDER-OPS signed frames (BROWSER MOCK)", () => {
       await shot("1431:71427", "1431:71507");
       await page.getByRole("button", { name: c.change, exact: true }).click();
       await page.getByRole("button", { name: c.family, exact: true }).click();
+      await expect(page.getByRole("button", { name: c.family, exact: true })).toBeDisabled();
+      await expect(page.getByRole("button", { name: "7-ELEVEN", exact: true })).toBeEnabled();
       await query().fill("全家门市代号 F022305\n门市名称 全家泰山新輔醫店\n门市地址 新北市泰山區貴子路69號B1");
       await expect(page.getByText(c.missing, { exact: true })).toBeVisible();
       await expect(choose("024967")).toBeVisible();

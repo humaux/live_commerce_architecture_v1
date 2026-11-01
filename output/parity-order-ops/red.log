@@ -144,3 +144,7 @@ relay1_merge=c5544b14b7dae44d43bc1d7f12341709ec284326
 relay1_fix=register orders:read nav:false route, localized titles, additive permission/title assertions
 relay1_local=static only; tests servers browsers builds containers NOT_RUN
 relay1_GREEN=PENDING; exact new run ids will be posted in PR comment
+
+FIX2 directed batch RED authority: run 41111264414 attempt1; head b203046a7d6d4edbf0fcb5025bed628af40cb0ab; tested merge 3e20036a3cbb6c264fa97d04539c6f72230eccb5.
+Jobs 124259888171/124259888281/124259888520 = selected-brand no-effect; 124259889138 = 16 new CSS hex literals; 124259888066 = premature manual placement + 18 exact-address parity failures; 124259888133 = 2 CVS headers; nested product-ledger FAIL is expected negative control (parent PASS).
+Cascade aggregate124287916770/receipts124287916825/required124288056495. Native pointers + SHA256 in FIX2.md; raw downloads are not committed.

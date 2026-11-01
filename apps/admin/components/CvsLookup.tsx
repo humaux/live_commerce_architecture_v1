@@ -1,6 +1,6 @@
 // Purpose: explicit public-directory CVS selection shared by the merchant tool and manual-order draft.
 // Depends on: react, i18n orderOpsCopy, format/cvs-match, admin cvs-directory-client, order-ops.css.
-// Used by: orders/cvs-match route and ManualOrder; never calls a carrier or writes buyer data.
+// Used by: orders/cvs-match route and ManualOrder (/api/stores/{store}/tools/orders/manual); lookup uses public /cvs/ assets only.
 // Invariants: codes stay strings; only an explicit click chooses canonical facts; no paste persistence or auto-substitution.
 "use client";
 import { useEffect, useMemo, useState } from 'react';
@@ -43,8 +43,8 @@ export function CvsLookup({ locale, brand: fixedBrand, onChoose, onCancel }: {
     <h1>{onChoose ? c.pickup : c.lookup}</h1>
     {!selected && <>
       {!fixedBrand && <div className="ops-actions" role="group" aria-label={c.brand}>
-        <button type="button" aria-pressed={brand === 'UNIMART'} onClick={() => { setBrand('UNIMART'); setQuery(''); }}>7-ELEVEN</button>
-        <button type="button" aria-pressed={brand === 'FAMI'} onClick={() => { setBrand('FAMI'); setQuery(''); }}>{c.family}</button>
+        <button type="button" aria-pressed={brand === 'UNIMART'} disabled={brand === 'UNIMART'} onClick={() => { setBrand('UNIMART'); setQuery(''); }}>7-ELEVEN</button>
+        <button type="button" aria-pressed={brand === 'FAMI'} disabled={brand === 'FAMI'} onClick={() => { setBrand('FAMI'); setQuery(''); }}>{c.family}</button>
       </div>}
       <label className="ops-query">{c.query}<textarea aria-label={c.query} value={query} maxLength={2000} onChange={(e) => setQuery(e.target.value)} /></label>
       {loading ? <p role="status">{c.loading}</p> : failed ? <div role="status"><p>{c.unavailable}</p><button type="button" onClick={() => setReload((n) => n + 1)}>{c.retry}</button></div> : <>
