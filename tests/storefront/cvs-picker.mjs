@@ -377,7 +377,12 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
     });
     await page.getByTestId("cvs-open-picker").click();
     for (const [brand, code] of [["FAMI", "024793"], ["HILIFE", "2656"], ["OKMART", "000005"], ["UNIMART", "231196"]]) {
+      // The brand switch recomputes the quote over POST /api/buyer/quotes and then commits the new
+      // delivery kind (aria-pressed). A real user waits for that processing to finish before typing
+      // the next code; without it the earlier quote commit can still replace this picker instance.
+      const quoteWrite = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST");
       await page.getByTestId(`cvs-brand-${brand}`).click();
+      await quoteWrite;
       await expect(page.getByTestId(`cvs-brand-${brand}`)).toHaveAttribute("aria-pressed", "true");
       if (brand === "OKMART") {
         await picker.getByRole("button", { name: locale === "en" ? "Retry" : locale === "zh-CN" ? "重试" : "重試", exact: true }).click();

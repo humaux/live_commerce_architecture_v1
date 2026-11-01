@@ -1,5 +1,5 @@
 // Purpose: Supported locales, shared seller messages and validated locale-aware URL helpers.
-// Depends on: state-recovery, people, catalog, editor, shipping, signed inbox, money and entry-parity copy (./money.ts); no runtime, network or storage dependency.
+// Depends on: state-recovery, people, catalog, editor, shipping, signed inbox, money, entry-parity and growth copy (./money.ts); no runtime, network or storage dependency.
 // Used by: admin/storefront routes, shared UI callers and locale tests.
 // Invariants: only supported locales and validated local paths can enter generated URLs.
 export const locales = ['zh-CN', 'zh-TW', 'en'] as const;
@@ -11,6 +11,7 @@ export { editorCopy } from './editor.ts';
 export { domainsParityCopy, type DomainsParityCopy } from './domains-parity.ts';
 export type Locale = (typeof locales)[number];
 export { inboxMessages, type InboxMessages } from './inbox.ts';
+export { growthCopy } from './growth.ts';
 
 // Signed ux-settings polish/simplify copy. Values and currency are supplied by the server.
 export const settingsV2Copy = {
