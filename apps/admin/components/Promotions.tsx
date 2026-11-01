@@ -1,5 +1,6 @@
 // Purpose: Owns merchant promotion creation, editing and pause/resume controls.
-// Depends on: react, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/orders-model, @/lib/customers-client, @/lib/promotions-client, @/lib/promotions-model, @/lib/promotions-copy, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, @/lib/presentation-copy, ./orders.css, ./order-actions.css, ./customers.css, ./promotions.css
+// Depends on: react, next/navigation, @/lib/ads-client, @/lib/ads-copy, @/lib/ads-model, ./AdsDraft, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/orders-model, @/lib/customers-client, @/lib/promotions-client, @/lib/promotions-model, @/lib/promotions-copy, ./WorkspaceFrame, @live-commerce/ui, @/lib/presentation-copy, ./orders.css, ./order-actions.css, ./customers.css, ./promotions.css, ./ads/parity.css
+// Invariants: segment data is unavailable; fallback never invents memberships or consent; "ads off" is shown only when the server's ads settings say so (pending/failed reads show loading/error).
 // Used by: apps/admin/app/[locale]/promotions/page.tsx
 "use client";
 
@@ -10,53 +11,98 @@
 // Idempotency-Key per distinct body, reused only for a byte-identical retry after an unknown outcome. A change never touches orders already
 // placed; an in-flight buyer quote of an edited code is refused at checkout (promo_changed) and re-quoted.
 import { useRef, useState, type FormEvent } from "react";
-import type { Locale } from "@live-commerce/i18n";
+import { useRouter } from "next/navigation";
+import { growthCopy, type Locale } from "@live-commerce/i18n";
 import type { Store } from "@/lib/model";
 import { currencySign, money } from "@/lib/client";
 import { wholeOnly } from "@/lib/orders-model";
-import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
+import { ReadError, useGuardedRead, type ReadCode } from "@/lib/customers-client";
 import { createPromotion, readPromotions, updatePromotion, type PromoWrite } from "@/lib/promotions-client";
 import {
   createBody, emptyForm, formFrom, instantToTaipei, toggleBody, updateBody, type Promotion, type PromoForm, type PromoKind,
 } from "@/lib/promotions-model";
+import { AdsReadError, readDrafts, readSettings } from "@/lib/ads-client";
+import { adsCopy } from "@/lib/ads-copy";
+import { formatMinor } from "@/lib/ads-model";
+import { Badge } from "./AdsDraft";
 import { promotionsCopy, type PromotionsCopy } from "@/lib/promotions-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
-import { AdminPageHeader } from "./AdminPageHeader";
 import { DateControl, TableFrame } from "@live-commerce/ui";
 import { presentationCopy } from "@/lib/presentation-copy";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
 import "./promotions.css";
+import "./ads/parity.css";
 
 const errorText = (c: PromotionsCopy, code: string) => c.errors[code] ?? c.errors.default;
 
 /** Owns merchant promotion creation, editing and pause/resume controls. User actions submit promotion writes through promotions-client. */
 export function Promotions({
-  locale, stores, store, initialError, renderKey,
+  locale, stores, store, initialError, renderKey, codes,
 }: {
-  locale: Locale; stores: Store[]; store: Store | null; initialError: ReadCode | null; renderKey: string;
+  locale: Locale; stores: Store[]; store: Store | null; initialError: ReadCode | null; renderKey: string; codes: boolean;
 }) {
-  const c = promotionsCopy[locale];
-  const read = useGuardedRead(`${renderKey}|${locale}|${store?.id ?? ""}`, store ? (signal) => readPromotions(store.id, signal) : null, initialError);
+  const c = promotionsCopy[locale], g = growthCopy[locale], a = adsCopy[locale];
+  const router = useRouter();
+  // The selected view lives in the URL (?view=codes) so a reload or deep link lands on it.
+  const go = (view: boolean) => router.push(`/${locale}/promotions${store || view ? "?" : ""}${[store && `store=${store.id}`, view && "view=codes"].filter(Boolean).join("&")}`);
+  const scope = `${renderKey}|${locale}|${store?.id ?? ""}`;
+  const read = useGuardedRead(scope, store ? (signal) => readPromotions(store.id, signal) : null, initialError);
+  // Ads state comes from the same authenticated reads the Ads screens use; "off" is only what the server says, never a default.
+  const ads = useGuardedRead(`${scope}|ads`, store && !codes ? async (signal) => {
+    try {
+      return { settings: await readSettings(store.id, signal), drafts: await readDrafts(store.id, signal) };
+    } catch (error) {
+      // The ads routes are unmounted until the platform enables ads (internal/httpapi/ads.go registerAdsRoutes): that 404 is the server saying "off".
+      if (error instanceof AdsReadError && error.code === "not-found") return { settings: null, drafts: [] };
+      if (error instanceof AdsReadError && (error.code === "signed-out" || error.code === "forbidden")) throw new ReadError(error.code);
+      throw error;
+    }
+  } : null, initialError);
+  const shown = codes ? read : ads;
   const failure =
-    read.status === "signed-out" ? c.signedOut
-    : read.status === "forbidden" ? c.forbidden
-    : read.status === "not-found" ? (store ? c.notFound : c.noStore)
-    : read.status === "unavailable" ? c.unavailable
+    shown.status === "signed-out" ? c.signedOut
+    : shown.status === "forbidden" ? c.forbidden
+    : shown.status === "not-found" ? (store ? c.notFound : c.noStore)
+    : shown.status === "unavailable" ? c.unavailable
     : "";
+  const off = ads.data !== null && ads.data !== undefined && (ads.data.settings === null || ads.data.settings.max_active_budget_minor === 0);
+  const drafts = ads.data?.drafts ?? [];
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="promotions">
-      <div className="orders-page customers-page" data-testid="promotions-page">
-        <AdminPageHeader locale={locale} description={c.subtitle} />
-        {(read.status === "loading" || read.status === "hidden") && <p className="orders-message" role="status">{c.loading}</p>}
+      <div className="growth-task orders-page customers-page" data-testid="promotions-page">
+        <h1>{codes ? c.title : g.drafts}</h1>
+        {!codes && ads.status === "ready" && ads.data && <>
+          <p className="growth-intro">{g.listIntro}</p>
+          {off && <div className="growth-note" role="status"><h2>{g.accountEnvironment}</h2><p>{g.off}</p></div>}
+          {!off && drafts.length > 0 && (
+            <div className="growth-card growth-table-wrap">
+              <table className="growth-table" data-testid="promotions-ad-drafts">
+                <thead><tr><th>{a.colTemplate}</th><th>{a.colBudget}</th><th>{a.colStatus}</th></tr></thead>
+                <tbody>{drafts.map((d) => (
+                  <tr key={d.id} data-testid={`ads-draft-${d.id}`}>
+                    <td>{a.templates[d.template]} · {d.id.slice(0, 4)}…{d.id.slice(-4)}</td>
+                    <td>{formatMinor(locale, d.currency, d.lifetime_budget_minor)}</td>
+                    <td><Badge c={a} status={d.status} /></td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          )}
+          {(off || drafts.length === 0) && <section className="growth-card"><h2>{g.noDrafts}</h2><p>{g.emptyHint}</p></section>}
+          <aside className="growth-note"><h2>{g.resultsHint}</h2><p>{g.resultsNote}</p></aside>
+        </>}
+        {!codes && <div className="growth-actions"><button type="button" onClick={ads.reload}>{g.refresh}</button><button type="button" data-testid="promotions-codes" onClick={() => go(true)}>{g.codes}</button></div>}
+        {codes && <button type="button" onClick={() => go(false)}>{g.list}</button>}
+        {(shown.status === "loading" || shown.status === "hidden") && <p className="orders-message" role="status">{c.loading}</p>}
         {failure && (
           <div className="orders-message" role="status">
             <p>{failure}</p>
-            <button type="button" onClick={read.reload}>{c.retry}</button>
+            <button type="button" onClick={shown.reload}>{c.retry}</button>
           </div>
         )}
-        {read.status === "ready" && read.data && store && (
+        {codes && read.status === "ready" && read.data && store && (
           <Sections rows={read.data} store={store} boundary={read.boundary} refresh={read.refresh} locale={locale} c={c} />
         )}
       </div>

@@ -2,10 +2,11 @@
 // Depends on: production Next/BFF/Go/isolated PG started by browser_operations_ads_test.go; Playwright.
 // Used by: --browser-operations-ads; server responses are never intercepted.
 // Invariants: control POSTs only prepare synthetic fixtures; assertions use visible UI and reload; no force/evaluate writes.
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { growthCopy } from "../../packages/i18n/src/growth.ts";
 
 function required(name: string) { const v = process.env[name]; if (!v) throw new Error(`${name} required`); return v; }
 const origin = required("LC_BROWSER_PUBLIC_ORIGIN"), adsOrigin = required("LC_BROWSER_ADS_ORIGIN");
@@ -23,11 +24,14 @@ async function control(resource: string) {
   const r = await fetch(`${required("LC_BROWSER_CONTROL")}/${resource}`, { method: "POST", headers: { "X-Gate-Key": required("LC_BROWSER_CONTROL_KEY") } });
   expect(r.status, `fixture ${resource}`).toBe(204);
 }
-async function clicked(page: Page, id: string, expected: string, verify: () => Promise<void>) {
+async function clickedLocator(page: Page, id: string, locator: Locator, expected: string, verify: () => Promise<void>) {
   const row = { page: page.url(), control: id, action: "click", expected, actual: "", result: "FAIL" };
   rows.push(row);
-  try { await page.getByTestId(id).click(); await verify(); row.actual = expected; row.result = "PASS"; }
+  try { await locator.click(); await verify(); row.actual = expected; row.result = "PASS"; }
   catch (error) { row.actual = error instanceof Error ? error.message : String(error); throw error; }
+}
+async function clicked(page: Page, id: string, expected: string, verify: () => Promise<void>) {
+  return clickedLocator(page, id, page.getByTestId(id), expected, verify);
 }
 test.afterEach(async () => { await writeFile(path.join(evidence, "click-ledger.json"), JSON.stringify(rows, null, 2)); });
 async function login(page: Page, target = origin) {
@@ -173,9 +177,22 @@ test("fresh server CAS and daily query cap refuse stale confirmations", async ({
   await page.reload(); await detailLoaded(page, ops.limit); await expect(page.getByTestId("operation-query-reason")).toContainText("daily query limit"); await expect(page.getByTestId("operation-query")).toHaveCount(0);
 });
 
-async function ads(page: Page, locale = "en") {
+// The signed C3 frame keeps the ad draft list on /ads and moved the ad account connection to its own
+// screen: reach it with the real "View ad account connection" button, never by a URL or an API call.
+async function openAssets(page: Page, locale = "en") {
+  await clickedLocator(page, "ads-assets", page.getByRole("button", { name: growthCopy[locale as keyof typeof growthCopy].assets, exact: true }), "ad account connection screen opens", async () => {
+    await expect(page.getByTestId("ads-connection")).toBeVisible();
+  });
+}
+async function adsList(page: Page, locale = "en") {
   await page.goto(`${adsOrigin}/${locale}/ads?store=${adsStore}`);
   await expect(page.getByTestId("merchant-ads")).toBeVisible();
+  // The dock only renders with the loaded settings, so the signed list screen is ready for a real click.
+  await expect(page.getByTestId("ads-new-draft")).toBeVisible();
+}
+async function ads(page: Page, locale = "en") {
+  await adsList(page, locale);
+  await openAssets(page, locale);
   await expect(page.getByTestId("ads-connections")).toContainText(account);
 }
 async function unbind(page: Page, expected: string, verify: () => Promise<void>) {
@@ -212,7 +229,7 @@ test("ad unbind refuses counting/in-flight operations, then preserves history af
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(feedURL);
   });
   await unbind(page, "binding_in_use explains pause first", async () => { await expect(page.getByTestId("ads-unbind-error")).toContainText(/pause/i); });
-  await page.reload(); await expect(page.getByTestId("ads-unbind")).toBeVisible();
+  await page.reload(); await openAssets(page); await expect(page.getByTestId("ads-unbind")).toBeVisible();
   await control("ads/inflight");
   await unbind(page, "operations_in_flight lists the concrete operation", async () => {
     await expect(page.getByTestId("ads-unbind-in-flight")).toContainText(adOperation);
@@ -234,14 +251,17 @@ test("ad unbind refuses counting/in-flight operations, then preserves history af
   await ads(page);
   await control("ads/clear");
   await unbind(page, "local account detached", async () => { await expect(page.getByTestId("ads-connections")).toContainText("Disabled"); await expect(page.getByTestId("ads-unbind")).toHaveCount(0); });
-  await page.reload(); await expect(page.getByTestId("ads-connections")).toContainText(account);
+  await page.reload();
+  // The signed frame shows the draft table on the ad list screen and the connection on its own screen.
+  await expect(page.getByTestId(`ads-draft-${draft}`)).toBeVisible();
+  await openAssets(page);
+  await expect(page.getByTestId("ads-connections")).toContainText(account);
   await expect(page.getByTestId("ads-connections")).toContainText("Disabled");
   await expect(page.getByTestId("ads-unbind")).toHaveCount(0);
-  await expect(page.getByTestId(`ads-draft-${draft}`)).toBeVisible();
-  await control("ads/unpublish"); await page.reload();
+  await control("ads/unpublish"); await page.reload(); await openAssets(page);
   await expect(page.getByTestId("ads-feed-empty")).toContainText(/publish/i);
   await expect(page.getByTestId("ads-feed-copy")).toHaveCount(0);
-  await control("ads/publish"); await page.reload(); await expect(page.getByTestId("ads-feed-url")).toHaveValue(feedURL);
+  await control("ads/publish"); await page.reload(); await openAssets(page); await expect(page.getByTestId("ads-feed-url")).toHaveValue(feedURL);
 });
 
 
@@ -256,8 +276,11 @@ for (const locale of ["zh-TW", "en", "zh-CN"]) for (const width of [1586, 390]) 
     await toolbarAligned(page);
     await open(page, "protective"); await expect(page.getByTestId("operation-drawer")).toHaveRole("dialog");
     await shot(page, "ledger", locale, width === 390 ? "mobile" : "desktop"); await close(page);
-    await login(page, adsOrigin); await ads(page, locale);
-    await expect(page.getByTestId("ads-feed-copy")).toHaveAccessibleName(/.+/);
+    await login(page, adsOrigin); await adsList(page, locale);
     await shot(page, "ads", locale, width === 390 ? "mobile" : "desktop");
+    // The signed frame measures the connection screen too: the old single page held both.
+    await openAssets(page, locale);
+    await expect(page.getByTestId("ads-feed-copy")).toHaveAccessibleName(/.+/);
+    await shot(page, "ads-assets", locale, width === 390 ? "mobile" : "desktop");
   });
 }

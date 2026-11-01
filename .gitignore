@@ -38,6 +38,12 @@ output/**/*.gz
 output/**/*.zip
 output/**/*.webm
 output/visual-review/
+# Figma reference captures are re-fetchable from the file key + node id (ADR-20261031 decision 3): only the
+# node-id/version/sha256 manifest is committed, never the bulk PNG or Fleet Bridge context dumps.
+output/**/figma/
+output/**/relay3-figma/
+# Raw CI failure copies (compressed logs, red screenshots) stay in GitHub Actions and in the ignored local path.
+output/**/relay2-failures/
 # Agent-tool isolated worktrees (Claude Code workflows); never repository content.
 .claude/worktrees/
 output/ui-click-sweep/platform-runner.pass
