@@ -6,7 +6,7 @@ CREATE ROLE commerce_store_contact_writer NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREA
 GRANT USAGE ON SCHEMA storefront,control,buyer,identity,notify TO commerce_store_contact_writer;
 GRANT SELECT(tenant_id,store_id,origin) ON control.storefront_domains TO commerce_store_contact_writer;
 CREATE POLICY contact_origin_scope ON control.storefront_domains FOR SELECT TO commerce_store_contact_writer USING(true);
-COMMENT ON POLICY contact_origin_scope ON control.storefront_domains IS '0211: private definer maps the exact verified origin to tenant/store; store UUID alone is not globally unique.';
+COMMENT ON POLICY contact_origin_scope ON control.storefront_domains IS '0218: private definer maps the exact verified origin to tenant/store; store UUID alone is not globally unique.';
 GRANT EXECUTE ON FUNCTION buyer.resolve_published_store(text),identity.resolve_access(bytea,uuid,text) TO commerce_store_contact_writer;
 
 CREATE TABLE storefront.store_contact_messages (
@@ -75,7 +75,7 @@ GRANT INSERT(tenant_id,store_id,order_id,kind) ON notify.outbox TO commerce_stor
 CREATE POLICY contact_enqueue ON notify.outbox FOR INSERT TO commerce_store_contact_writer
  WITH CHECK(kind='store_contact' AND tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
  AND store_id=nullif(current_setting('app.store_id',true),'')::uuid);
-COMMENT ON POLICY contact_enqueue ON notify.outbox IS '0211: only the contact notification kind, atomically with encrypted contact persistence.';
+COMMENT ON POLICY contact_enqueue ON notify.outbox IS '0218: only the contact notification kind, atomically with encrypted contact persistence.';
 
 -- A NULL p_id is the locked replay lookup; both calls run in ONE issuer transaction. The store advisory lock
 -- serializes distinct keys too, so the independent store and IP budgets cannot be oversubscribed by concurrency.
@@ -177,8 +177,8 @@ END $$;
 ALTER FUNCTION storefront.handle_store_contact(bytea,uuid,uuid,bigint) OWNER TO commerce_store_contact_writer;
 REVOKE ALL ON FUNCTION storefront.handle_store_contact(bytea,uuid,uuid,bigint) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION storefront.handle_store_contact(bytea,uuid,uuid,bigint) TO commerce_runtime;
-COMMENT ON TABLE storefront.store_contact_messages IS '0211: AES-GCM PII envelope; 180-day application retention, bounded cleanup on admissions and every notify worker claim (including dormant stores). Not a legal retention assertion. No ordinary runtime table access.';
-COMMENT ON TABLE storefront.store_contact_throttle IS '0211: five per hashed IP and 100 per store in fixed 600-second windows; replay precedes throttle. Expired windows removed on admission.';
+COMMENT ON TABLE storefront.store_contact_messages IS '0218: AES-GCM PII envelope; 180-day application retention, bounded cleanup on admissions and every notify worker claim (including dormant stores). Not a legal retention assertion. No ordinary runtime table access.';
+COMMENT ON TABLE storefront.store_contact_throttle IS '0218: five per hashed IP and 100 per store in fixed 600-second windows; replay precedes throttle. Expired windows removed on admission.';
 
 -- Add only the new kind to the existing claim loop; retain 0098 fairness, 0107 COD snapshots,
 -- 0143 suspension, shared caps, claim/record/UNKNOWN, staleness and retry semantics verbatim.
