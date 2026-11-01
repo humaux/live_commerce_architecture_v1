@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 import { runInNewContext } from "node:vm";
-import { settle, restore, monitor } from "./click-sweep-lib.mjs";
+import { INIT_SCRIPT, listControls, monitor, sweepControl, settle, restore } from "./click-sweep-lib.mjs";
 import { classKey, isCartLineRemoval, isDestructive, isIrreversible, isSignOut, matchKnown, renderMarkdown, CANCEL_RE, protocolHrefOK } from "./click-sweep-lib.mjs";
 
 test("native file picker is an observed effect on existing and newly opened pages", () => {
@@ -273,3 +273,67 @@ test("J1 refuses a failed cover upload rather than continuing to activate", asyn
     /200/,
   );
 });
+
+// Registered only by the existing browser gate: the ordinary Node suite stays browser-free.
+// All pages are synthetic loopback responses; the production helper performs the real clicks.
+if (process.env.LC_SWEEP_NAVIGATION_CANARY === "1") {
+  test("navigation canary: same-URL document replacement is an effect; inert clicks are not", { timeout: 45000 }, async (t) => {
+    const { chromium } = await import("@playwright/test");
+    const browser = await chromium.launch({ headless: true });
+    t.after(() => browser.close());
+    const cases = [];
+    for (const kind of ["noop", "preventDefault", "missing-origin", "invalid-origin", "same-url"]) {
+      const context = await browser.newContext();
+      try {
+        await context.addInitScript(INIT_SCRIPT);
+        let documents = 0;
+        const url = `http://127.0.0.1/sweep-navigation/${kind}?q=Sweep`;
+        await context.route("**/*", async (route) => {
+          if (!route.request().isNavigationRequest()) return route.fulfill({ status: 204, body: "" });
+          documents++;
+          const type = ["same-url", "preventDefault"].includes(kind) ? "submit" : "button";
+          const script = kind === "preventDefault" ? '<script>document.querySelector("form").addEventListener("submit", e => e.preventDefault())</script>' : "";
+          await route.fulfill({ contentType: "text/html", body: `<!doctype html><title>Navigation canary</title><main><form method="get"><input type="hidden" name="q" value="Sweep"><button type="${type}">Search</button></form></main>${script}` });
+        });
+        const page = await context.newPage();
+        const mon = monitor(context, { allowedHosts: new Set(["127.0.0.1"]) });
+        await page.goto(url, { waitUntil: "load" });
+        await settle(page, mon, { ready: true });
+        const before = await page.evaluate(() => ({ url: location.href, documentTimeOrigin: performance.timeOrigin }));
+        // Fault injection at the read boundary, without changing the page or click:
+        // missing/non-finite document evidence must never earn a navigation PASS.
+        if (["missing-origin", "invalid-origin"].includes(kind)) {
+          const evaluate = page.evaluate.bind(page);
+          page.evaluate = async (fn, arg) => {
+            const value = await evaluate(fn, arg);
+            if (String(fn).includes("__sweepHelpers.state")) {
+              value.documentTimeOrigin = kind === "missing-origin" ? undefined : Number.NaN;
+            }
+            return value;
+          };
+        }
+        const desc = (await listControls(page, "main", "main"))[0];
+        assert.equal(desc?.name, "Search");
+        const row = await sweepControl({ page, mon, rootSelector: "main", unit: { route: "/canary", viewport: "desktop", locale: "en" } }, desc, 1);
+        const after = await page.evaluate(() => ({ url: location.href, documentTimeOrigin: performance.timeOrigin }));
+        cases.push({ kind, documents, before, after, result: row.result, failure: row.failure, actual: row.actual, documentNavigation: row.documentNavigation });
+      } finally {
+        await context.close();
+      }
+    }
+    // Keep raw causal observations in the existing browser log even when the assertion is RED.
+    console.log("SWEEP_NAVIGATION_CANARY " + JSON.stringify(cases));
+    for (const c of cases.filter(c => c.kind !== "same-url")) {
+      assert.equal(c.documents, 1, `${c.kind}: no extra document request`);
+      assert.equal(c.after.documentTimeOrigin, c.before.documentTimeOrigin, `${c.kind}: same document`);
+      assert.equal(c.result, "fail", `${c.kind}: must still fail`);
+      assert.equal(c.failure, "no-effect", `${c.kind}: must still be no-effect`);
+    }
+    const navigated = cases.find(c => c.kind === "same-url");
+    assert.equal(navigated.documents, 2, "native GET really requested a second document");
+    assert.equal(navigated.after.url, navigated.before.url, "native GET retained the exact URL");
+    assert.notEqual(navigated.after.documentTimeOrigin, navigated.before.documentTimeOrigin, "browser replaced the document");
+    assert.equal(navigated.result, "pass", `real same-URL navigation was missed: ${navigated.actual}`);
+    assert.match(navigated.actual, /reload|navigat|document/i, "must observe navigation itself, not incidental DOM churn");
+  });
+}
