@@ -132,8 +132,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0212 (FEAT-AUTO-COLLECTIONS saved rules) adds one to base a3dc78e4d; integrator ruling 2026-10-31: 139 -> 140.
 	// 0214 (FIX-EXPORT-REAUTH) adds one to base 71e403e8f (after 0212): 140 -> 141.
 	// 0215 (PARITY-CATALOG-PEOPLE consent_state list projection) adds one: 141 -> 142.
-	if len(r2) != 142 {
-		t.Fatalf("R2 migration set = %d files %v, want 142", len(r2), r2)
+	// 0219 (FEAT-LIVE-REPLAY official video persistence/publication; renumbered from 0213 by the integrator 2026-11-01) adds one to base 0215: 142 -> 143.
+	if len(r2) != 143 {
+		t.Fatalf("R2 migration set = %d files %v, want 143", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
