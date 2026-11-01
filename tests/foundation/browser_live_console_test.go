@@ -622,7 +622,7 @@ func runBrowserLiveConsole(t *testing.T, labels bool, titleFlag string) {
 	cmd := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", spec, "--reporter=list", "--output="+filepath.Join(evidence, "results"))
 	if !labels {
 		cmd.Args = append(cmd.Args, titleFlag, consoleParityTitle)
-		// The signed block is ~110 serial real-click tests (workers: 1), more than one 700s budget; the mode
+		// The signed block is ~110 serial real-click tests (workers: 1), more than one 700s budget (3 shards still overran, ~19s/test); the mode
 		// runs it as N go test invocations, each with its own fixture and budget (tests are independent).
 		if shard := os.Getenv("LC_CONSOLE_PARITY_SHARD"); titleFlag == "--grep" && shard != "" {
 			cmd.Args = append(cmd.Args, "--shard", shard)
