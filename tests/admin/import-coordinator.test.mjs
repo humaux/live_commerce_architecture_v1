@@ -6,6 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { runInNewContext } from "node:vm";
 import ts from "typescript-api";
+import { dataOpsCopy, dataOpsText } from "../../packages/i18n/src/data-ops.ts";
 import { importCopy } from "../../apps/admin/lib/import-copy.ts";
 import { importViewCopy } from "../../apps/admin/lib/import-view-copy.ts";
 import { importFields, requiredImportFields } from "../../apps/admin/lib/import-model.ts";
@@ -34,7 +35,7 @@ function harness(commit, headerReader = async () => ["ref", "label"], locale = "
   };
   const module = { exports: {} }, jsx = (type, props) => ({ type, props });
   runInNewContext(compiled, { module, exports: module.exports, ...hooks, AbortController, File, Set, Object, Error,
-    importCopy, importViewCopy, importFields, requiredImportFields, pageHidden: () => false,
+    dataOpsCopy, dataOpsText, importCopy, importViewCopy, importFields, requiredImportFields, pageHidden: () => false,
     document: { visibilityState: "visible" },
     ImportColumnMapping: "mapping", ImportPreviewCounts: "counts", ImportVerdictTable: "verdicts",
     readImportHeader: headerReader,
@@ -49,10 +50,10 @@ function harness(commit, headerReader = async () => ["ref", "label"], locale = "
   const control = id => { const node = nodes().find(node => node.props?.["data-testid"] === id); assert.ok(node, id); return node; };
   async function click(id) { control(id).props.onClick(); await tick(); render(); }
   async function ready() {
-    render(); await click("import-type-customers");
+    render();
     const file = new File(["\uFEFFref,label\r\nsynthetic-id,DO_NOT_SHOW_CELL\r\n"], "synthetic.csv", { type: "text/csv" });
     control("import-file").props.onChange({ target: { files: [file] } }); await tick(); render();
-    await click("import-preview"); await click("import-confirm-next"); return file;
+    await click("import-preview"); return file;
   }
   function unmount() { for (const slot of slots) slot?.cleanup?.(); }
   return { render, control, nodes, has: id => nodes().some(node => node.props?.["data-testid"] === id), click, ready, calls, auth, unmount, unconfirmed: () => unconfirmed };
@@ -61,11 +62,11 @@ function harness(commit, headerReader = async () => ["ref", "label"], locale = "
 test("oversize file uses the actual header guard and specific size guidance in all locales without dispatch", async () => {
   for (const locale of ["en", "zh-TW", "zh-CN"]) {
     const h = harness(() => { throw Error("must not dispatch"); }, readImportHeader, locale);
-    h.render(); await h.click("import-type-customers");
+    h.render();
     h.control("import-file").props.onChange({ target: { files: [new File([new Uint8Array((2 << 20) + 1)], "too-large.csv")] } });
     await tick(); h.render();
     assert.equal(h.nodes().find(n => n.props?.role === "alert")?.props.children, importCopy[locale].fileTooLarge, "MIUI-SIZE-GUIDANCE");
-    assert.equal(h.calls.length, 0); assert.equal(h.has("import-preview"), false); assert.equal(h.has("import-retry-same"), false);
+    assert.equal(h.calls.length, 0); assert.equal(h.control("import-preview").props.disabled, true); assert.equal(h.has("import-retry-same"), false);
   }
 });
 
@@ -119,7 +120,7 @@ test("a replayed mismatched receipt ends UNKNOWN without offering another retry 
   assert.equal(h.control("import-terminal-mismatch").props.children, importViewCopy.en.receiptMismatch);
   assert.equal(h.has("import-retry-same"), false, "P2-REPLAY-MISMATCH-TERMINAL: no endless same-receipt retry");
   assert.equal(h.control("import-restart").props.disabled, false);
-  assert.equal(h.control("import-type-orders").props.disabled, true);
+  assert.equal(h.has("import-type-orders"), false);
   assert.equal(h.calls.length, 3);
   assert.equal(h.calls[2].file, file); assert.equal(h.calls[2].mapping, h.calls[1].mapping);
   assert.equal(h.calls[2].expectedApplyRows, 1);

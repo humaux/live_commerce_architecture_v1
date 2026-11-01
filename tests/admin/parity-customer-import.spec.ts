@@ -31,7 +31,7 @@ test.describe("PARITY-DATA-OPS C6 customer import", () => {
         // FRAME-COPY contains no signed translation table for this module. Do not invent translations.
         // Exact zh-CN/en copy parity is explicitly DEFERRED in the handoff; main screens still run in all three locales.
         await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-        await expect(page.getByRole("combobox")).toHaveCount(4);
+        await expect(page.getByTestId("import-wizard").getByRole("combobox")).toHaveCount(4);
       }
       // The historical archive remains a separate flow; it must not be a competing type selector in customer import.
       await expect(page.getByTestId("import-type-orders")).toHaveCount(0);

@@ -22,7 +22,7 @@
     "tests/admin/card-payments-request.test.ts": "8558573d1e07ad00642197ad56be4ea565c4fb14c9ac50dab70ffe04badce0bf",
     "tests/admin/card-payments-wire.test.ts": "09e24bdcc3d1f0a5d44e9d4e56a8e89ea63f5d95991782b008727482556c72be",
     "tests/admin/card-payments.spec.ts": "544652d4c129dfc4eb3ba695d230a2302071acebc2616709ff8421f28f2f58d9",
-    "tests/admin/catalog-core.spec.ts": "4375610923f49aa997b7c6e5911c8c1233a7344780f3289e9f0c08716b8c9c97",
+    "tests/admin/catalog-core.spec.ts": "962f1b46b833fbd181099c91ba0c320f39fbc17525806272a8a29ac5384ef450",
     "tests/admin/catalog-document-driver.ts": "da77d282f47c6b63104c917e7cf7bd97166091bd21d511b74699983180913f8e",
     "tests/admin/catalog-receipt.test.ts": "972625dffcda9c32dee20554bad573dc842bfdc82887b84f7899579dd8e1c1b4",
     "tests/admin/catalog-v2-model.test.ts": "a358e29e75ddf33ddf20297a33f54fd5e127a0a8e28713e3c0a46ffeb60ca69f",
@@ -71,7 +71,7 @@
     "tests/admin/guarded-read-logout.test.mjs": "5a70f3f46ad3340fd693bae276b660b2aa0edf4157431e81e481e05479369ef9",
     "tests/admin/home-cod.spec.ts": "cd7e13636c1860a3cf20f5a713270e12c1c582ddffe3f3089daa5f54881ce53f",
     "tests/admin/import-client.test.mjs": "4428bbfeca2ab7276a007ed5341df4ad56260e7ac75eea394229a17ce47060f2",
-    "tests/admin/import-coordinator.test.mjs": "ea4f3195d5ee1cda7e7fd9f407966c477fc42b883289261445c85b807ee75022",
+    "tests/admin/import-coordinator.test.mjs": "c6b87befb3d0a535ab2ede1f808c21a884962a1de072ab2f69b29b4225c358ec",
     "tests/admin/import-history-bff.test.mjs": "a9410e5984c9d66ec6383cdcd7996c83a67e9a0e5d4a029b02e6aeab650a55e5",
     "tests/admin/import-history-client.test.mjs": "490106b956176cafe64f9b1c4daf61cea72f1c53a56bf85b8c57b7b3d836be84",
     "tests/admin/import-history-model.test.ts": "adbf29ecbba29887450fc39b80b89edb5ad7e60112cc5ade267d538dfddad250",
@@ -83,7 +83,7 @@
     "tests/admin/import-wire-header.test.ts": "113c81af046f27252bc6c1fba4b1d25ad4c8905b13d8c355b3460fe32270640f",
     "tests/admin/import-wire-model.test.ts": "afdfb1d9b33e7f758d5c5af627ed39a22f03eb59c16ed3f14e602626827a2ba0",
     "tests/admin/import-wire-real-loader.mjs": "145439face274a8271a7f5c4759f345642f5eb073cb2e863c4a864df228cfd94",
-    "tests/admin/import-wizard.spec.ts": "4564d819c1879949573839dca3bcab193a14f2d178cadca4a043be98559c3435",
+    "tests/admin/import-wizard.spec.ts": "ad88b91c50e5d8c3ba5189afeeb8bd2849a0b0d2f497e4ef73362077e993e9a4",
     "tests/admin/inbox-bff.test.ts": "6d8738aa7a6ea5d74643a3758e970dc889c31d82e29ab0f4fe5426cfa525fb1c",
     "tests/admin/inbox-browser-session.test.ts": "92fec02bd1a39d326d31acd93b21235e1a9d8b5da10d847500c3e47db5a1d2d0",
     "tests/admin/inbox-browser-source.test.ts": "5dcb0a125b8b56eba1797208f76f6be8c274aed7dd1635756dfe74a69b97155b",
@@ -111,7 +111,7 @@
     "tests/admin/inbox-window.test.ts": "c99a6a0abf01263434288211c040763fc37f0f5e3d4167bdcd05f85705f26156",
     "tests/admin/input-delivery.spec.ts": "7e27d34fe5736e3d1ee9dcf56ec32df36f387cac4914d4eaa7f593d667a11f39",
     "tests/admin/invite-next.test.ts": "641a704b4833fa8c85cc257061cb37ea4417853ffaf5e9f068de9001ee359a57",
-    "tests/admin/ledger.spec.ts": "030274df6481a8f9783f45de7e54ac965a56cf4721edca269c8359f7d58a15ca",
+    "tests/admin/ledger.spec.ts": "b6dd23479560825345d2b33e296061442f877db5efe1760720d28f610e9dbf78",
     "tests/admin/live-console-bff.test.ts": "5f9c72f8ec665d0a33b199a192fb1cba1d10a0b77d6fe2e177bf902078d56263",
     "tests/admin/live-console-model.test.ts": "9c070a0bf6db86d83fe6e2c7473b30b902aead66c31ad7ce24ce7edb1369d998",
     "tests/admin/live-console-render.test.ts": "a7cf30db2debc99d4187e54e690f880d46a149c4091a95bd90aef7b266a352f1",
@@ -151,7 +151,7 @@
     "tests/admin/parcels-model.test.ts": "4af0a4b7881802004e29343b7361076ae333fcc50a89b2b8fd527254685148ff",
     "tests/admin/parcels-request.test.ts": "2e6b5ce176f30a273a9eeb9aee7fef931676c8bcee2569842b361ed1bcf8957f",
     "tests/admin/parcels-scope.test.ts": "01a84682b27f95d14665813cbb8c0b1189bbdd8cb2f3d26fa5939fdec71a0257",
-    "tests/admin/parity-customer-import.spec.ts": "54554e3dac86792217ee5af515a248449f656549db492d91e62b5f49b47ebf7d",
+    "tests/admin/parity-customer-import.spec.ts": "9305985efa68641380cc7add43d7e1fd0f085f49525924538f0d608b0c5d9966",
     "tests/admin/parity-data-ops-support.ts": "d6fa97eb8040fc1efd61c688165d5307534829e3cd4cd840e858d596e17d7999",
     "tests/admin/parity-data-ops.spec.ts": "da9744c2bb31eb8b6853feb73cc71e91bf5be1eec9b6ddae21f53240993bb374",
     "tests/admin/parity-entry-dashboard.ts": "f099136e2273212106002fc8a6d1cf4f366d32b925f79f0cbd901384b9b1075d",
@@ -733,7 +733,7 @@
     "tests/storefront/browser-gate.mjs": "a90c0697ce659eb77a572f2517617f447930903f9274e808a9e33be21a744ddb",
     "tests/storefront/buyer-after-parity.mjs": "60186d7dad909f9b61ad9d6401a01f290fc302b794100682c7306d73191c48ff",
     "tests/storefront/buyer-comms-gate.mjs": "5cca8c34aba74ccc04e2531be4d30f79798b3ebcfe5f47f9d28b87043cadd28a",
-    "tests/storefront/catalog-media-gate.mjs": "2a88ccf112a2e945b07e9fbc4a9b78f4934111b4c7cd1317bfe0bb0031eabbca",
+    "tests/storefront/catalog-media-gate.mjs": "51fbdbfef1151f4b9e650a63d4ee4a0b3bd1d4515da224e7fedb4c4fbce659ae",
     "tests/storefront/checkout-v2.mjs": "84b37bc46423bdeac8ffa6a369dacaf06148c950e3335e1d85b0a5f421f7addb",
     "tests/storefront/claim-checkout.mjs": "5679a86a4e6d043664d60fbf32e165141b310c02fa99daa27ea04f6198259f1e",
     "tests/storefront/cod-footer.spec.ts": "a6fc969d7189f98edd2c1fb90deb9175aafe5150524046de79a0b69f34fc761b",
@@ -746,7 +746,7 @@
     "tests/storefront/manual-order-link-gate.mjs": "e0ad778e0e0b73ad52021ba33e60e5892f7eed6210db2f36802e3337d79da4cc",
     "tests/storefront/media-sizes-perf.mjs": "cda916ddd4385236dffca710f0d22169f91ceaab2e0390dc7d56a809e5d77ac6",
     "tests/storefront/merchant-buyer-gate.mjs": "a217ad228d06445a43f00291b9a68fbcdda835e058bc27e0cc5028dabf54daa0",
-    "tests/storefront/merchant-product.mjs": "d9d43b036a6be9e7ab938d5e56ce8e28be2e21301a537c381ff3121d5f8e93b5",
+    "tests/storefront/merchant-product.mjs": "328340b34c342822c262d70d3033f8730c25a228827413bc4f751d6722fd96a5",
     "tests/storefront/offline-buyer.mjs": "3b73b2d8339323af0d3508175c0e9f385934d3afa651425fcf7134bc332b5129",
     "tests/storefront/offline-error.spec.ts": "bf531d759ba26fbb7731aa556a7de6c40a8e1686585e40a8250d62f1abe1969b",
     "tests/storefront/order-gate.mjs": "2de390c4c61a964e07a66d0ff804f3a2b0253158267a19804dae4b9c7817c82e",
@@ -1368,7 +1368,9 @@
       "apps": [
         "admin"
       ],
-      "unresolved": [],
+      "unresolved": [
+        "tests/admin/ledger.spec.ts: unresolved import ../../packages/i18n/src/data-ops"
+      ],
       "foundationInputs": [],
       "foundationUnresolvedInputs": [],
       "evidence": [
@@ -3162,7 +3164,9 @@
       "apps": [
         "admin"
       ],
-      "unresolved": [],
+      "unresolved": [
+        "tests/admin/import-wizard.spec.ts: unresolved import ../../packages/i18n/src/data-ops"
+      ],
       "foundationInputs": [
         "tests/admin/import-client.test.mjs",
         "tests/admin/import-coordinator.test.mjs",
@@ -3174,7 +3178,9 @@
         "tests/admin/import-wire-model.test.ts",
         "tests/admin/import-wire-real-loader.mjs"
       ],
-      "foundationUnresolvedInputs": [],
+      "foundationUnresolvedInputs": [
+        "tests/admin/import-coordinator.test.mjs"
+      ],
       "evidence": [
         "harness:tests/foundation/browser_migration_import_ui_test.go",
         "registry:--browser-migration-import -> tests/admin/import-client.test.mjs",
@@ -3186,6 +3192,7 @@
         "registry:--browser-migration-import -> tests/admin/import-wire-model.test.ts",
         "registry:--browser-migration-import -> tests/admin/import-wizard.spec.ts",
         "scripts/dev/test-local.sh:--browser-migration-import:lc_build=admin",
+        "scripts/dev/test-node.sh:foundation covers computed Node loader tests/admin/import-coordinator.test.mjs",
         "tests/admin/import-client.test.mjs:import apps/admin/app/api/stores/[store]/imports/[param]/[action]/route.ts",
         "tests/admin/import-client.test.mjs:import apps/admin/lib/auth.ts",
         "tests/admin/import-client.test.mjs:import apps/admin/lib/import-client.ts",

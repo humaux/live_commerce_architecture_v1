@@ -38,10 +38,13 @@ export async function createProductInEditor(merchant, { adminOrigin, store, loca
 // The stock ledger row of a SKU code (search, then select it) so the tray and the purchase entry are about that product.
 export async function selectLedgerRow(merchant, { adminOrigin, locale = "en", code, searchLabel = "Search product name or SKU", searchButton = "Search" }) {
   await merchant.goto(`${adminOrigin}/${locale}/inventory`);
-  await merchant.getByRole("textbox", { name: searchLabel }).fill(code);
+  const c = { en: ["Search SKU", "SKU or product name", "Product"], "zh-TW": ["搜尋貨號", "貨號或商品名稱", "商品"], "zh-CN": ["搜索货号", "货号或商品名称", "商品"] }[locale];
+  await merchant.getByRole("button", { name: c[0], exact: true }).click();
+  await merchant.getByRole("textbox", { name: c[1], exact: true }).fill(code);
   await merchant.getByRole("button", { name: searchButton, exact: true }).click();
   const row = merchant.locator("tbody tr").filter({ hasText: code });
   await expect(row).toHaveCount(1);
   await row.locator("button.product-name").click();
+  await merchant.getByTestId("inventory-product-details").locator("summary").click();
   return row;
 }

@@ -7,6 +7,7 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { shellCopy } from "../../apps/admin/src/shell-copy";
+import { dataOpsCopy } from "../../packages/i18n/src/data-ops";
 import { importCopy } from "../../apps/admin/lib/import-copy";
 import { importViewCopy } from "../../apps/admin/lib/import-view-copy";
 import { customersCopy } from "../../apps/admin/lib/customers-copy";
@@ -63,18 +64,41 @@ function customers(prefix: string, partial = false): FileCase {
 function orders(prefix: string, customerPrefix: string): FileCase {
   return { prefix, buffer: Buffer.from(`oid,cid,when,state,money,item,qty,place\n${prefix}-H1,${customerPrefix}-A,2026-03-05 14:30:00,paid,"1,280",Tea,2,台北市\n${prefix}-H1,${customerPrefix}-A,2026-03-05 14:30:00,paid,"1,280",Socks,1,台北市\n${prefix}-H2,${customerPrefix}-D,2026-04-01 09:00:00,paid,300,Sticker,3,MIUI-CITY-DROP-${prefix}\n${prefix}-H3,MIUI-MISSING,2026-04-02,paid,400,Cup,1,臺中市\n`), mapping: { order_id: "oid", customer_id: "cid", ordered_at: "when", status: "state", total: "money", item_name: "item", item_qty: "qty", city: "place" }, markers: [`${prefix}-H1`, `${prefix}-H2`, `${customerPrefix}-A`, `${customerPrefix}-D`, "MIUI-CITY-DROP", "Tea", "Socks", "Sticker"] };
 }
+// Signed mapping is the customer entry. The existing historical archive is available only after a customer receipt.
+async function review(page: Page) {
+  const next = page.getByTestId("import-confirm-next");
+  if (await next.count()) await next.click();
+  await expect(page.getByTestId("import-confirm")).toBeVisible();
+}
+async function restart(page: Page) {
+  const button = page.getByTestId("import-restart");
+  if (await button.count()) await button.click();
+  else await page.getByTestId("import-back").click();
+}
 async function upload(page: Page, file: FileCase, kind: "customers" | "orders" = "customers") {
-  await step(page, `${kind} type`, "type selection exposes genuine file input", async () => { await page.getByTestId(`import-type-${kind}`).click(); await expect(page.getByTestId("import-file")).toBeVisible(); });
+  if (kind === "orders") {
+    const details = page.locator("details").filter({ has: page.getByTestId("import-type-orders") });
+    if (await details.count()) await details.locator("summary").click();
+    await page.getByTestId("import-type-orders").click();
+  } else {
+    if (await page.getByTestId("import-type-customers").count()) await page.getByTestId("import-type-customers").click();
+    else if (await page.getByTestId("import-restart").count()) await restart(page);
+  }
   await step(page, "CSV file picker", "unknown source headers become header-only mapping options", async () => {
     await page.getByTestId("import-file").setInputFiles({ name: `${file.prefix}.csv`, mimeType: "text/csv", buffer: file.buffer });
     await expect(page.getByTestId(`import-map-${kind === "customers" ? "external_id" : "order_id"}`)).toBeVisible();
   }, "setInputFiles");
+  const advanced = page.getByTestId("import-advanced");
+  if (await advanced.count()) await advanced.locator("summary").click();
   for (const [field, header] of Object.entries(file.mapping)) await step(page, `map ${field}`, "requested header choice is visible", async () => { await page.getByTestId(`import-map-${field}`).selectOption(header); await expect(page.getByTestId(`import-map-${field}`)).toHaveValue(header); }, "selectOption");
 }
+
 async function preview(page: Page, file: FileCase, expected: { new: number; update: number; failed: number }, locale: Locale = "en") {
   const c = importCopy[locale], before = await state();
   await step(page, "Preview", "MIUI-RED-PREVIEW-DATA: actual server preview renders independent counts", async () => {
     await page.getByTestId("import-preview").click(); await expect(page.getByTestId("import-rows"), "MIUI-RED-PREVIEW-DATA").toBeVisible();
+    const disclosure = page.locator("details").filter({ has: page.getByTestId("import-erased-count") });
+    if (await disclosure.count()) await disclosure.locator("summary").click();
     const counts = wizard(page).locator("dl.import-counts").first();
     for (const [label, n] of [[c.newRows, expected.new], [c.updateRows, expected.update], [c.failedRows, expected.failed]] as const) await expect(counts.locator("div").filter({ has: page.getByText(label, { exact: true }) }).locator("dd")).toHaveText(String(n));
   });
@@ -84,10 +108,12 @@ async function preview(page: Page, file: FileCase, expected: { new: number; upda
 }
 async function confirm(page: Page, counts: { created: number; updated: number; failed: number }, locale: Locale = "en") {
   const c = importCopy[locale];
-  await step(page, "Review confirmation", "confirmation is a separate deliberate step before mutation", async () => { await page.getByTestId("import-confirm-next").click(); await expect(page.getByTestId("import-confirm")).toBeVisible(); });
+  await step(page, "Review confirmation", "confirmation is a separate deliberate step before mutation", async () => { await review(page); await expect(page.getByTestId("import-confirm")).toBeVisible(); });
   await step(page, "Confirm import", "MIUI-RED-COMMIT-RECEIPT: actual committed receipt appears", async () => {
     await page.getByTestId("import-confirm").click(); await expect(page.getByTestId("import-receipt"), "MIUI-RED-COMMIT-RECEIPT").toBeVisible();
-    const receipt = page.getByTestId("import-receipt").locator(":scope > dl").first();
+    const panel = page.getByTestId("import-receipt");
+    if (await panel.locator("details").count()) await panel.locator("details > summary").click();
+    const receipt = panel.locator("dl").first();
     for (const [label, n] of [[c.created, counts.created], [c.updated, counts.updated], [c.failed, counts.failed]] as const) await expect(receipt.locator("div").filter({ has: page.getByText(label, { exact: true }) }).locator("dd")).toHaveText(String(n));
   });
 }
@@ -121,11 +147,16 @@ async function privacy(page: Page, markers: string[], messages: string[], origin
 }
 async function failureCSV(page: Page, server: boolean) {
   let text = "";
+  const locale = new URL(page.url()).pathname.split("/")[1] as Locale;
+  const reasons = page.getByRole("button", { name: dataOpsCopy(locale).viewReasons, exact: true });
+  const openErrors = !(await page.getByTestId("import-download-failed").count()) && await reasons.count() > 0;
+  if (openErrors) await reasons.click();
   await step(page, "Download failed rows", "native click downloads safe metadata CSV", async () => {
     const event = page.waitForEvent("download"); await page.getByTestId("import-download-failed").click(); const download = await event;
     expect(download.suggestedFilename()).toBe(server ? "customer-import-results.csv" : "import-failed-rows.csv"); const location = await download.path(); expect(location).not.toBeNull(); text = await readFile(location!, "utf8");
     expect(text.charCodeAt(0)).toBe(0xfeff); expect(text.includes("MIUI-NAME-"), "failure CSV leaked cells").toBe(false); expect(text.includes("@invalid.test"), "failure CSV leaked email").toBe(false);
   });
+  if (openErrors) await page.getByRole("button", { name: dataOpsCopy(locale).backPreview, exact: true }).click();
   return text.replace(/^\ufeff/, "").trim().split(/\r?\n/).map((line) => line.split(","));
 }
 async function bootstrap(page: Page, prefix: string) { const file = customers(prefix); await upload(page, file); await preview(page, file, { new: 1, update: 0, failed: 0 }); await confirm(page, { created: 1, updated: 0, failed: 0 }); return file; }
@@ -133,7 +164,7 @@ async function bootstrap(page: Page, prefix: string) { const file = customers(pr
 test("MIUI calibration-sensitive genuine preview/commit", async ({ browser }) => {
   const { page, context } = await signed(browser, "en", 1440), file = customers("CALIBRATION");
   try {
-    await expect(page.getByTestId("import-type-orders")).toBeDisabled(); await upload(page, file);
+    await expect(page.getByTestId("import-type-orders")).toHaveCount(0); await upload(page, file);
     if (process.env.LC_MIUI_CALIBRATION === "truncate-preview") await ctl("fault", "truncate-preview");
     await preview(page, file, { new: 1, update: 0, failed: 0 });
     if (process.env.LC_MIUI_CALIBRATION === "drop-customer-commit") await ctl("fault", "drop-customers");
@@ -145,7 +176,7 @@ for (const locale of ["en", "zh-TW"] as const) for (const width of [1440, 390]) 
   test(`MIUI two-file flow, mapping/back/replay/CSV/storage ${locale}/${width}`, async ({ browser }) => {
     const { page, context, consoleMessages } = await signed(browser, locale, width), c = importCopy[locale], file = customers(`FLOW-${locale}-${width}`, true), order = orders(`ORDER-${locale}-${width}`, file.prefix);
     try {
-      await expect(wizard(page)).toContainText(c.consentNotice); await expect(wizard(page)).toContainText(c.historyNotice); await expect(page.getByTestId("import-type-orders")).toBeDisabled();
+      await expect(wizard(page)).toContainText(dataOpsCopy(locale).consentHelp); await expect(page.getByTestId("import-type-orders")).toHaveCount(0);
       await upload(page, file);
       await step(page, "Guess mapping", "guess does not silently import unknown columns", async () => { await page.getByTestId("import-guess").click(); await expect(page.getByTestId("import-preview")).toBeDisabled(); });
       for (const [field, header] of Object.entries(file.mapping)) await page.getByTestId(`import-map-${field}`).selectOption(header);
@@ -155,7 +186,8 @@ for (const locale of ["en", "zh-TW"] as const) for (const width of [1440, 390]) 
       await privacy(page, file.markers, consoleMessages, file.buffer);
       await step(page, "Preview Back", "back to mapping discards previous confirmation; explicit new preview required", async () => { await page.getByTestId("import-back").click(); await expect(page.getByTestId("import-map-phone")).toBeVisible(); await expect(page.getByTestId("import-confirm-next")).toHaveCount(0); });
       await preview(page, file, { new: 2, update: 0, failed: 2 }, locale);
-      await step(page, "Confirm Back", "confirmation can be cancelled before any write", async () => { await page.getByTestId("import-confirm-next").click(); await page.getByTestId("import-back").click(); await expect(page.getByTestId("import-confirm-next")).toBeVisible(); });
+      await step(page, "Confirm Back", "confirmation can be cancelled before any write", async () => { await review(page); await page.getByTestId("import-back").click(); await expect(page.getByTestId("import-map-phone")).toBeVisible(); });
+      await preview(page, file, { new: 2, update: 0, failed: 2 }, locale);
       const before = await state(); await confirm(page, { created: 2, updated: 0, failed: 2 }, locale); const committed = await state();
       for (const key of ["owners", "profiles", "external"]) expect(committed.counts[key] - before.counts[key]).toBe(2);
       for (const key of ["batches", "receipts", "audits"]) expect(committed.counts[key] - before.counts[key]).toBe(1);
@@ -165,7 +197,7 @@ for (const locale of ["en", "zh-TW"] as const) for (const width of [1440, 390]) 
       expect(csv.slice(1).map((row) => row[2]).sort()).toEqual(["invalid_phone", "required"]);
       await privacy(page, file.markers, consoleMessages, file.buffer);
       await step(page, "Restart/replay", "same original bytes/settings/count replay without additional rows", async () => {
-        await page.getByTestId("import-restart").click(); await upload(page, file); await preview(page, file, { new: 0, update: 2, failed: 2 }, locale);
+        await restart(page); await upload(page, file); await preview(page, file, { new: 0, update: 2, failed: 2 }, locale);
         await confirm(page, { created: 2, updated: 0, failed: 2 }, locale); await expect(page.getByTestId("import-replayed")).toHaveText(c.replayed);
         const after = await state(); for (const key of ["profiles", "owners", "batches", "receipts", "audits"]) expect(after.counts[key]).toBe(committed.counts[key]);
       });
@@ -181,7 +213,7 @@ for (const locale of ["en", "zh-TW"] as const) for (const width of [1440, 390]) 
         await expect(history.locator("tbody tr")).toHaveCount(1); await expect(history).toContainText("1,280"); await expect(history).toContainText("臺北市"); await expect(history).toContainText("Tea×2、Socks×1");
         await page.reload(); await expect(page.getByTestId("customer-historical-orders").locator("tbody tr")).toHaveCount(1);
       });
-      await page.goto(`${origin}/${locale}/customers/import?store=${store}`); await expect(page.getByTestId("import-type-orders")).toBeDisabled();
+      await page.goto(`${origin}/${locale}/customers/import?store=${store}`); await expect(page.getByTestId("import-type-orders")).toHaveCount(0);
       await privacy(page, [...file.markers, ...order.markers], consoleMessages);
     } finally { await context.close(); }
   });
@@ -191,11 +223,11 @@ test("MIUI all-invalid local CSV, duplicate mapping, Unicode/size/line limits an
   const { page, context } = await signed(browser, "en", 1440), c = importCopy.en;
   try {
     const invalid: FileCase = { prefix: "ALL-INVALID", buffer: Buffer.from("ref,who,tel\nBAD-A,MIUI-NAME-BAD,0212345678\nBAD-B,,\n"), mapping: { external_id: "ref", name: "who", phone: "tel" }, markers: [] };
-    await upload(page, invalid); await preview(page, invalid, { new: 0, update: 0, failed: 2 }); await expect(page.getByTestId("import-confirm-next")).toBeDisabled();
+    await upload(page, invalid); await preview(page, invalid, { new: 0, update: 0, failed: 2 }); await expect(page.getByTestId("import-confirm")).toBeDisabled();
     const local = await failureCSV(page, false); expect(local[0]).toEqual(["row", "outcome", "code"]);
     expect(local.slice(1).every((row) => row.length === 3 && row[1] === "failed")).toBe(true);
     expect(local.slice(1).map((row) => row[2]).sort()).toEqual(["invalid_phone", "required"]);
-    await page.getByTestId("import-restart").click(); await page.getByTestId("import-type-customers").click();
+    await restart(page);
     for (const [name, buffer, expected] of [
       ["big5.csv", Buffer.from([0xb4, 0xfa, 0xb8, 0xd5, 0x2c, 0x6e, 0x61, 0x6d, 0x65, 0x0a]), c.errors.encoding_not_utf8],
       ["oversize.csv", Buffer.alloc((2 << 20) + 1, 65), c.fileTooLarge],
@@ -231,7 +263,7 @@ test("MIUI real erasure decreases apply count: direct fresh409/no partial mutati
   const { page, context } = await signed(browser, "en", 1440), c = importCopy.en;
   const file: FileCase = { prefix: "STALE", buffer: Buffer.from("ref,who\nMIUI-STALE-A,MIUI-NAME-STALE-A\nMIUI-STALE-B,MIUI-NAME-STALE-B-CHANGED\n"), mapping: { external_id: "ref", name: "who" }, markers: [] };
   try {
-    await upload(page, file); await preview(page, file, { new: 1, update: 1, failed: 0 }); await page.getByTestId("import-confirm-next").click();
+    await upload(page, file); await preview(page, file, { new: 1, update: 1, failed: 0 }); await review(page);
     await ctl("erase-stale"); const erased = await state();
     await step(page, "stale Confirm", "actual409 presents fresh one-applicable preview and rolls back new customer", async () => {
       await page.getByTestId("import-confirm").click(); await expect(wizard(page)).toContainText(c.staleNotice); await expect(page.getByTestId("import-erased-count").locator("dd")).toHaveText("1"); await expect(page.getByTestId("import-receipt")).toHaveCount(0);
@@ -247,7 +279,7 @@ test("MIUI changed requested mapping on identical committed bytes is refused", a
     await upload(page, file); await preview(page, file, { new: 1, update: 0, failed: 0 }); await confirm(page, { created: 1, updated: 0, failed: 0 }); const before = await state();
     await upload(page, file); await page.getByTestId("import-map-consent").selectOption(""); await preview(page, { ...file, mapping: { ...file.mapping, consent: "" } }, { new: 0, update: 1, failed: 0 });
     await step(page, "conflicting Confirm", "coded409 advises changing file, no second batch/profile mutation or UNKNOWN", async () => {
-      await page.getByTestId("import-confirm-next").click(); await page.getByTestId("import-confirm").click();
+      await review(page); await page.getByTestId("import-confirm").click();
       await expect(wizard(page).getByRole("alert")).toHaveText(c.idempotencyConflict); await expect(page.getByTestId("import-retry-same")).toHaveCount(0);
       const after = await state(); expect(after.requests.at(-1)?.Status).toBe(409);
       for (const key of ["batches", "profiles", "receipts", "audits"]) expect(after.counts[key]).toBe(before.counts[key]);
@@ -260,9 +292,9 @@ test("MIUI order stale erasure returns zero-apply fresh preview and local failur
   try {
     await bootstrap(page, "ORDER-STALE");
     const file: FileCase = { prefix: "ORDER-STALE-FILE", buffer: Buffer.from("order_id,customer_id,ordered_at,status,total\nMIUI-ORDER-STALE-H,ORDER-STALE-A,2026-04-01,paid,100\n"), mapping: { order_id: "order_id", customer_id: "customer_id", ordered_at: "ordered_at", status: "status", total: "total" }, markers: [] };
-    await upload(page, file, "orders"); await preview(page, file, { new: 1, update: 0, failed: 0 }); await page.getByTestId("import-confirm-next").click(); await ctl("erase-stale", "orders"); const erased = await state();
+    await upload(page, file, "orders"); await preview(page, file, { new: 1, update: 0, failed: 0 }); await review(page); await ctl("erase-stale", "orders"); const erased = await state();
     await step(page, "stale order Confirm", "real409 reduces apply to zero without storing archive or batch", async () => {
-      await page.getByTestId("import-confirm").click(); await expect(wizard(page)).toContainText(c.staleNotice); await expect(page.getByTestId("import-erased-count").locator("dd")).toHaveText("1"); await expect(page.getByTestId("import-confirm-next")).toBeDisabled();
+      await page.getByTestId("import-confirm").click(); await expect(wizard(page)).toContainText(c.staleNotice); await expect(page.getByTestId("import-erased-count").locator("dd")).toHaveText("1"); await expect(page.getByTestId("import-confirm")).toBeDisabled();
       const after = await state(); for (const key of ["history", "profiles", "batches", "receipts", "audits"]) expect(after.counts[key]).toBe(erased.counts[key]); expect(after.requests.at(-1)?.Status).toBe(409);
     });
     const rows = await failureCSV(page, false); expect(rows[1][2]).toBe("erased");
@@ -288,9 +320,9 @@ test("MIUI UNKNOWN both kinds explicitly replay immutable bytes/map/count, no au
   try {
     for (const kind of ["customers", "orders"] as const) {
       const current = kind === "customers" ? file : { prefix: "UNKNOWN-O", buffer: Buffer.from("oid,cid,when,state,money\nUNKNOWN-H,UNKNOWN-A,2026-04-01,paid,100\n"), mapping: { order_id: "oid", customer_id: "cid", ordered_at: "when", status: "state", total: "money" }, markers: [] };
-      await upload(page, current, kind); await preview(page, current, { new: 1, update: 0, failed: 0 }); await page.getByTestId("import-confirm-next").click(); await ctl("fault", `drop-${kind}`); const before = await state();
+      await upload(page, current, kind); await preview(page, current, { new: 1, update: 0, failed: 0 }); await review(page); await ctl("fault", `drop-${kind}`); const before = await state();
       await step(page, `${kind} UNKNOWN Retry`, "UNKNOWN locks old intent; explicit same-buffer retry replays exactly once", async () => {
-        await page.getByTestId("import-confirm").click(); await expect(wizard(page)).toContainText(c.unknownCommit); await expect(page.getByTestId("import-retry-same")).toBeVisible(); await expect(page.getByTestId("import-restart")).toBeDisabled();
+        await page.getByTestId("import-confirm").click(); await expect(wizard(page)).toContainText(kind === "customers" ? dataOpsCopy("en").pendingHelp : c.unknownCommit); await expect(page.getByTestId("import-retry-same")).toBeVisible(); await expect(page.getByTestId("import-restart")).toBeDisabled();
         const committed = await state(); expect(committed.counts.batches - before.counts.batches).toBe(1); await page.waitForTimeout(500); expect((await state()).requests.length).toBe(committed.requests.length);
         await page.getByTestId("import-retry-same").click(); await expect(page.getByTestId("import-replayed")).toHaveText(c.replayed);
         const after = await state(); for (const key of ["batches", "profiles", "history", "receipts", "audits"]) expect(after.counts[key]).toBe(committed.counts[key]);
@@ -345,7 +377,7 @@ test("MIUI imported-only erasure removes history and tombstone blocks same sourc
     const erased = await state(); expect(erased.owners["ERASE-A"]).toBeUndefined(); expect(erased.counts.history).toBe(before.counts.history - 1); expect(erased.counts.profiles).toBe(before.counts.profiles - 1);
     await page.goto(`${origin}/en/customers/import?store=${store}`);
     const changed = { ...file, buffer: Buffer.from(file.buffer.toString("utf8").replace("MIUI-NAME-ERASE-A", "MIUI-NAME-ERASE-CHANGED")) };
-    await upload(page, changed); await preview(page, changed, { new: 0, update: 0, failed: 1 }); await expect(page.getByTestId("import-erased-count").locator("dd")).toHaveText("1"); await expect(page.getByTestId("import-confirm-next")).toBeDisabled();
+    await upload(page, changed); await preview(page, changed, { new: 0, update: 0, failed: 1 }); await expect(page.getByTestId("import-erased-count").locator("dd")).toHaveText("1"); await expect(page.getByTestId("import-confirm")).toBeDisabled();
     const csv = await failureCSV(page, false); expect(csv[1][2]).toBe("erased"); expect((await state()).owners["ERASE-A"]).toBeUndefined(); await expect(wizard(page)).toContainText(c.onlyRowsHint);
   } finally { await context.close(); }
 });
@@ -364,8 +396,8 @@ test("MIUI pagehide drops raw file, UNKNOWN revoked session cannot submit under 
   const { page, context, consoleMessages } = await signed(browser, "en", 1440), file = customers("AUTH-FENCE"), c = importCopy.en;
   try {
     await upload(page, file); await preview(page, file, { new: 1, update: 0, failed: 0 });
-    await step(page, "navigate away/Back", "pagehide drops in-memory CSV; fresh file choice required", async () => { await page.goto(`${origin}/en/customers?store=${store}`); await page.goBack(); await expect(page.getByTestId("import-confirm-next")).toHaveCount(0); await expect(page.getByTestId("import-type-orders")).toBeDisabled(); });
-    await upload(page, file); await preview(page, file, { new: 1, update: 0, failed: 0 }); await page.getByTestId("import-confirm-next").click(); await ctl("fault", "drop-customers"); await page.getByTestId("import-confirm").click(); await expect(wizard(page)).toContainText(c.unknownCommit);
+    await step(page, "navigate away/Back", "pagehide drops in-memory CSV; fresh file choice required", async () => { await page.goto(`${origin}/en/customers?store=${store}`); await page.goBack(); await expect(page.getByTestId("import-confirm-next")).toHaveCount(0); await expect(page.getByTestId("import-type-orders")).toHaveCount(0); });
+    await upload(page, file); await preview(page, file, { new: 1, update: 0, failed: 0 }); await review(page); await ctl("fault", "drop-customers"); await page.getByTestId("import-confirm").click(); await expect(wizard(page)).toContainText(dataOpsCopy("en").pendingHelp);
     const pending = await state(); await ctl("revoke");
     await step(page, "Retry after revocation", "signed-out clears raw payload and preserves honest unconfirmed message", async () => {
       await page.getByTestId("import-retry-same").click(); await expect(wizard(page)).toContainText(importViewCopy.en.sessionUnknown); await expect(page.getByTestId("import-retry-same")).toHaveCount(0);

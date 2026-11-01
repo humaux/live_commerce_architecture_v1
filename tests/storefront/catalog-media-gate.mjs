@@ -158,16 +158,17 @@ async function scenario(index, run) {
   // ---- the Ledger reads the results back ----------------------------------------------------------------------------------------
   await merchant.goto(`${adminOrigin}/${run.locale}/inventory`);
   await expect(row(fx.sku1.code).locator("button.product-name")).toHaveText(newName);
-  await expect(row(fx.sku1.code)).toContainText(major(fx.sku1.price_new));
-  // The status column is hidden by the baseline CSS at 390px, so the row state is asserted attached (not visible); the tray, which is visible
-  // on both viewports, shows the archived SKU's stock adjustment disabled.
-  // the row state lives in the status column; the mobile badge (.status.mobile-status) is a second copy, so scope to .status-col
-  await expect(row(fx.sku2.code).locator(".status-col .status.archived")).toBeAttached();
-  await expect(row(fx.sku1.code).locator(".status-col .status.active")).toBeAttached();
+  // Signed inventory keeps price/status/cover in its product disclosure; assert the same server facts there.
+  await row(fx.sku1.code).locator("button.product-name").click();
+  await merchant.getByTestId("inventory-product-details").locator("summary").click();
+  await expect(merchant.getByTestId("tray-price")).toContainText(major(fx.sku1.price_new));
+  await expect(merchant.locator("section.inspector .status.active")).toBeVisible();
+  await expect(merchant.locator("section.inspector [data-photo=real]")).toBeVisible();
+  await merchant.locator(".close-details").click();
   await row(fx.sku2.code).locator("button.product-name").click();
-  await expect(merchant.locator("section.inspector").getByRole("spinbutton")).toBeDisabled();
-  if (run.vp === "desktop") await expect(row(fx.sku2.code).locator(".status-col .status.archived")).toBeVisible();
-  await expect(row(fx.sku1.code).locator("[data-photo=real]")).toBeVisible(); // the Ledger shows the real cover
+  await merchant.getByTestId("inventory-product-details").locator("summary").click();
+  await expect(merchant.getByRole("spinbutton")).toBeDisabled();
+  await expect(merchant.locator("section.inspector .status.archived")).toBeVisible();
   assert.equal(await merchant.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${label} admin horizontal overflow`);
   await shot(merchant, "admin-ledger", run);
   pass(`${label} Ledger: rename, SKU price and SKU archive applied; real cover thumbnail shown`);

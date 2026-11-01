@@ -165,7 +165,7 @@ for (const v of process.env.PRODUCT_EDITOR_ACCEPTANCE === "1" ? [] : variants) {
       // ---- a new collection with an image, the (still draft) product added ----
       await page.goto(url("/collections"));
       await expect(page.getByTestId("collections-page")).toBeVisible();
-      await page.getByTestId("collection-new").click();
+      await page.getByTestId("collection-manage-new").click();
       await expect(page.getByTestId("collection-editor")).toBeVisible();
       await page.getByTestId("collection-title").fill(`${uniq} Summer Edit`);
       await page.getByTestId("collection-description").fill("Fresh for summer");
