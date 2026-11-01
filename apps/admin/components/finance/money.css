@@ -1,0 +1,67 @@
+/* Purpose: Signed finance/billing compositions inside the shared admin shell.
+ * Depends on: admin design tokens and native controls; Used by: PARITY-MONEY components.
+ * Invariants: scoped .money-page/.money-cod selectors; no shell or other-card styling. */
+.money-page { --money-border:var(--ui-border); max-width:1200px; width:100%; margin:0 auto; padding:28px 32px 92px; color:var(--ui-text); }
+.money-page h1 { margin:0 0 18px; font-size:26px; line-height:1.35; }
+.money-page h2 { margin:0 0 18px; font-size:18px; line-height:1.5; }
+.money-page h3 { font-size:16px; margin:0 0 12px; }
+.money-page p { line-height:1.65; }
+.money-muted, .money-note { color:var(--ui-muted); font-size:13px; }
+.money-note { margin:12px 0 0; }
+.money-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; align-items:start; }
+.money-card { background:var(--ui-surface); border:1px solid var(--money-border); border-radius:12px; padding:24px; min-width:0; }
+.money-card + .money-card { margin-top:16px; }
+.money-grid > .money-card + .money-card { margin-top:0; }
+.money-card dl { margin:0; }
+.money-card dl > div, .money-kv { display:flex; justify-content:space-between; align-items:baseline; gap:20px; padding:9px 0; }
+.money-card dt { color:var(--ui-muted); }
+.money-card dd { margin:0; text-align:right; font-variant-numeric:tabular-nums; overflow-wrap:anywhere; }
+.money-page button, .money-page .money-button, .money-cod button { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:10px 20px; border:1px solid var(--money-border); border-radius:6px; background:var(--ui-surface); color:inherit; text-decoration:none; font-size:14px; cursor:pointer; }
+.money-page button.primary, .money-page .money-button.primary, .money-cod button.primary { background:var(--ui-primary); border-color:transparent; color:var(--ui-surface); }
+.money-page button:disabled { opacity:.5; cursor:not-allowed; }
+.money-page :is(button,a,input,select):focus-visible, .money-cod :is(button,input,select):focus-visible { outline:3px solid var(--ui-primary); outline-offset:3px; }
+.money-actions { display:flex; flex-wrap:wrap; gap:12px; margin:16px 0; }
+.money-actions > * { min-width:180px; }
+.money-range { display:flex; gap:12px; margin:16px 0; }
+.money-range button { min-width:280px; }
+.money-footer { display:flex; gap:12px; position:sticky; bottom:0; padding:14px 16px; background:var(--ui-surface); border:1px solid var(--money-border); margin:24px -16px -64px; z-index:2; }
+.money-footer > * { min-width:220px; }
+.money-editor { max-width:720px; }
+.money-editor label { display:grid; gap:8px; margin:20px 0; }
+.money-editor input, .money-editor select, .money-cod input:not([type=checkbox]), .money-cod select { min-height:44px; width:100%; padding:10px 12px; border:1px solid var(--money-border); border-radius:6px; background:var(--ui-surface); color:inherit; font:inherit; }
+.money-page table { width:100%; border-collapse:collapse; font-size:14px; }
+.money-page th, .money-page td { padding:14px 12px; text-align:left; border-bottom:1px solid var(--money-border); vertical-align:top; }
+.money-page th { color:var(--ui-muted); font-weight:500; }
+.money-page .table-frame { max-width:100%; }
+.money-span { grid-column:1/-1; }
+.money-flow { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:24px 0; }
+.money-flow > div { padding:20px; border:1px solid var(--money-border); border-radius:8px; }
+.money-flow p { margin:8px 0 0; color:var(--ui-muted); }
+.money-cod { max-width:760px; padding:24px; background:var(--ui-surface); border:1px solid var(--ui-border); border-radius:12px; }
+.money-cod .settings-fields { gap:18px; }
+@media (max-width:700px) {
+ .money-page { padding:20px 16px 90px; }
+ .money-page h1 { font-size:22px; margin-bottom:16px; }
+ .money-grid { grid-template-columns:1fr; gap:12px; }
+ .money-card { padding:18px 16px; border-radius:10px; }
+ .money-card h2 { font-size:16px; margin-bottom:12px; }
+ .money-card dl > div { gap:12px; padding:7px 0; font-size:14px; }
+ .money-range { flex-direction:column; }
+ .money-range button { min-width:0; width:100%; }
+ .money-actions > * { min-width:0; flex:1; }
+ .money-footer { margin:20px -16px -70px; padding:12px 16px; }
+ .money-footer > * { min-width:0; flex:1; }
+ .money-flow { grid-template-columns:1fr; }
+ .money-cod { padding:16px; }
+ .money-page .money-statement-table thead { display:none; }
+ .money-page .money-statement-table tr { display:grid; grid-template-columns:1fr 1fr; padding:14px 0; border-bottom:1px solid var(--money-border); }
+ .money-page .money-statement-table td { padding:6px; border:0; }
+ .money-page .money-statement-table td:last-child { grid-column:1/-1; }
+}
+
+@media (max-width:700px) {
+ .money-subscription dl > div { display:block; margin:8px 0; }
+ .money-subscription dd { text-align:left; margin-top:4px; }
+}
+
+.money-group { margin-top:var(--ui-space-4); }

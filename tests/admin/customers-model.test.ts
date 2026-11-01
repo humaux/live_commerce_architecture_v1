@@ -120,8 +120,10 @@ const row = (over: Record<string, unknown> = {}) => ({
   refunded_minor: 50000, net_minor: 150000, ...over,
 });
 test("finance summary: net = captured - refunded (I05), totals carry an empty day, sandbox flag", () => {
-  const ok = { from: "2026-09-01", to: "2026-09-30", timezone: "Asia/Taipei", rows: [row()], totals: [row({ day: "" })] };
+  const ok = { from: "2026-09-01", to: "2026-09-30", timezone: "Asia/Taipei", generated_at: "2026-10-30T12:00:00Z", rows: [row()], totals: [row({ day: "" })] };
   const parsed = parseFinanceSummary(ok);
+  assert.equal(parsed.generated_at, ok.generated_at);
+  for (const value of [null, "", "2026-10-30", "not-a-date"]) assert.throws(() => parseFinanceSummary({...ok, generated_at:value}));
   assert.equal(parsed.totals[0].net_minor, 150000);
   assert.equal(isSandbox(parsed.rows[0]), true);
   assert.equal(isSandbox({ ...parsed.rows[0], environment: "LIVE" }), false);
@@ -132,6 +134,15 @@ test("finance summary: net = captured - refunded (I05), totals carry an empty da
   assert.throws(() => parseFinanceSummary({ ...ok, totals: [row()] }));
   assert.throws(() => parseFinanceSummary({ ...ok, rows: [row({ currency: "NT$" })] }));
   assert.throws(() => parseFinanceSummary({ ...ok, extra: 1 }));
+});
+
+test("finance summary without generated_at parses (admin may ship before the Go backend); a present bad value still fails", () => {
+  const old = { from: "2026-09-01", to: "2026-09-30", timezone: "Asia/Taipei", rows: [row()], totals: [row({ day: "" })] };
+  const parsed = parseFinanceSummary(old);
+  assert.equal(parsed.generated_at, undefined);
+  assert.equal(parsed.totals[0].net_minor, 150000);
+  assert.throws(() => parseFinanceSummary({ ...old, generated_at: "not-a-date" }));
+  assert.throws(() => parseFinanceSummary({ ...old, extra: 1 }));
 });
 
 test("financeDay is the UTC+8 day", () => {

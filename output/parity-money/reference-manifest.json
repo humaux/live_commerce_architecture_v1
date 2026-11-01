@@ -1,0 +1,343 @@
+{
+  "captured_at": "2026-10-30T13:26:12.135225+00:00",
+  "base_sha": "3ea359f796d36153bb4b8aa7259e4e0c27676b86",
+  "mode": "DESIGN/read-only references, not product acceptance",
+  "frames": [
+    {
+      "id": "4:12097",
+      "name": "Admin Desktop · 財務總覽 · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-4-12097-1793362466635-0.png",
+      "delivery_png": "reference/4-12097.png",
+      "sha256": "3f50b00625377bdb2dd0a56bf2d8bda0d8dcb04d4fe8ef12181f5984c63c7b56"
+    },
+    {
+      "id": "4:12246",
+      "name": "Admin Mobile · 財務總覽 · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-4-12246-1793362466745-0.png",
+      "delivery_png": "reference/4-12246.png",
+      "sha256": "c8c1319ad841b4da605443944b5044cef3ee708177b03c744125f511b6893431"
+    },
+    {
+      "id": "6:18572",
+      "name": "Admin Desktop · 結算單明細 · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-6-18572-1793362466918-0.png",
+      "delivery_png": "reference/6-18572.png",
+      "sha256": "5e8c9f43428f82ef4e5f39e817971e0e41c89edec817b307cf1b0c8727430c53"
+    },
+    {
+      "id": "6:18737",
+      "name": "Admin Mobile · 結算單明細 · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-6-18737-1793362467036-0.png",
+      "delivery_png": "reference/6-18737.png",
+      "sha256": "d0501ed3403f20515f7d50bf669a07004a8c0511af098e8d7dd58ca8c94e3d39"
+    },
+    {
+      "id": "6:18814",
+      "name": "Admin Desktop · 收款與結算口徑 · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-6-18814-1793362467232-0.png",
+      "delivery_png": "reference/6-18814.png",
+      "sha256": "78cc83bd0f1014eeca7dbcbd0f74c509645bf650ef959dcacf5c760a565c1077"
+    },
+    {
+      "id": "6:18963",
+      "name": "Admin Mobile · 收款與結算口徑 · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-6-18963-1793362467354-0.png",
+      "delivery_png": "reference/6-18963.png",
+      "sha256": "558e1d09923a5910c9a69d707d86aadda5002869a405c3832f7525c2045882b3"
+    },
+    {
+      "id": "6:20884",
+      "name": "Admin Desktop · 收款設定 · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-6-20884-1793362467530-0.png",
+      "delivery_png": "reference/6-20884.png",
+      "sha256": "643fab614c6d70095b19349c84ccb2c85ee0b96ae369cc9b3c89134872fa73b4"
+    },
+    {
+      "id": "6:20993",
+      "name": "Admin Mobile · 收款設定 · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-6-20993-1793362467638-0.png",
+      "delivery_png": "reference/6-20993.png",
+      "sha256": "e62b4cedff6468d6f5b8b00406444e18c75a265931e1f155f09b8c89ed75274b"
+    },
+    {
+      "id": "1151:9432",
+      "name": "Admin Desktop · 報表日期範圍 · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-1151-9432-1793362461330-0.png",
+      "delivery_png": "reference/1151-9432.png",
+      "sha256": "1b5faa940e0884357b10a97e5af66cc64157c2fc2b0de498d183826d5a152e74"
+    },
+    {
+      "id": "1151:9433",
+      "name": "Admin Mobile · 報表日期範圍 · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-1151-9433-1793362461433-0.png",
+      "delivery_png": "reference/1151-9433.png",
+      "sha256": "5a5fc11964ea1071bdf1de6d4fefa8623bb93031c2d97ffdff767281047fd79a"
+    },
+    {
+      "id": "1151:9434",
+      "name": "Admin Desktop · 報表讀取回饋 · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-1151-9434-1793362461572-0.png",
+      "delivery_png": "reference/1151-9434.png",
+      "sha256": "6ba96f73c65524dc57540c5c56210ef0b28a445ba91b62df6decab3328d6c261"
+    },
+    {
+      "id": "1151:9435",
+      "name": "Admin Mobile · 報表讀取回饋 · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-1151-9435-1793362461666-0.png",
+      "delivery_png": "reference/1151-9435.png",
+      "sha256": "a3c6b4fd42d7a0b19401991ac98fed1b4de66b2726a919d459247cb0a67907f8"
+    },
+    {
+      "id": "1173:10738",
+      "name": "Admin Desktop · 財務每日明細 · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-1173-10738-1793362461828-0.png",
+      "delivery_png": "reference/1173-10738.png",
+      "sha256": "ccfc223bd0d6f966433e6385bc01a756916c000af01395acc25b366d7b86b96c"
+    },
+    {
+      "id": "1173:10739",
+      "name": "Admin Mobile · 財務每日明細 · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-1173-10739-1793362461933-0.png",
+      "delivery_png": "reference/1173-10739.png",
+      "sha256": "c3ca938289fc9a9e50fcdd3b00d4218ea2d31144bc6278b84c0079556d623205"
+    },
+    {
+      "id": "1173:10740",
+      "name": "Admin Desktop · 結算單列表 · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-1173-10740-1793362462100-0.png",
+      "delivery_png": "reference/1173-10740.png",
+      "sha256": "0945825ed95285f51ede16f56fa2ddcb421859ae3cdc6ddf8c833aa1de379fed"
+    },
+    {
+      "id": "1173:10741",
+      "name": "Admin Mobile · 結算單列表 · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-1173-10741-1793362462218-0.png",
+      "delivery_png": "reference/1173-10741.png",
+      "sha256": "1ee52ffd730661cea50bd638a894bdf44ed3179370ddf65fc183e2696c33eafa"
+    },
+    {
+      "id": "1173:10742",
+      "name": "Admin Desktop · 財務日期 · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-1173-10742-1793362462369-0.png",
+      "delivery_png": "reference/1173-10742.png",
+      "sha256": "1448394a1ce7d70560be131de4645ea1aab0e4e945dcb8ad87bbe6b293780d93"
+    },
+    {
+      "id": "1173:10743",
+      "name": "Admin Mobile · 財務日期 · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-1173-10743-1793362462721-0.png",
+      "delivery_png": "reference/1173-10743.png",
+      "sha256": "6b8050c7124605f7287c573a5d15454e31d62eb52fee20a1e2197bdb04d20aa0"
+    },
+    {
+      "id": "1173:10744",
+      "name": "Admin Desktop · 財務CSV · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-1173-10744-1793362462888-0.png",
+      "delivery_png": "reference/1173-10744.png",
+      "sha256": "5200558f2f85634315902ef50f10fb59c2b16faebfbcca2097cd3d938ee8cd91"
+    },
+    {
+      "id": "1173:10745",
+      "name": "Admin Mobile · 財務CSV · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-1173-10745-1793362463003-0.png",
+      "delivery_png": "reference/1173-10745.png",
+      "sha256": "60fc297a6cd2482ca76a6ca61e283aba54eaac9810327d5cb26a79472077e9b4"
+    },
+    {
+      "id": "1173:10746",
+      "name": "Admin Desktop · 財務讀取狀態 · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-1173-10746-1793362463163-0.png",
+      "delivery_png": "reference/1173-10746.png",
+      "sha256": "625c187f69be23e1bb47f86f53f6e089892ea4d1adfec9098e8e79c8af20787d"
+    },
+    {
+      "id": "1173:10747",
+      "name": "Admin Mobile · 財務讀取狀態 · DaWan Live",
+      "png": "output/parity-money/current-figma/get_screenshot-1173-10747-1793362463289-0.png",
+      "delivery_png": "reference/1173-10747.png",
+      "sha256": "c67f639512980da31fb19debea8cdbcdebf0f5df1b092de92986623dd9584b23"
+    },
+    {
+      "id": "1248:8745",
+      "name": "Admin Desktop · 結算單 · 撥付退回 · DESIGN",
+      "png": "output/parity-money/current-figma/get_screenshot-1248-8745-1793362465312-0.png",
+      "delivery_png": "reference/1248-8745.png",
+      "sha256": "e10095b79323778073ca6eaf8f1d136214f3b15205003bd0770c45f0e2c10258"
+    },
+    {
+      "id": "1248:8823",
+      "name": "Admin Mobile · 結算單 · 撥付退回 · DESIGN",
+      "png": "output/parity-money/current-figma/get_screenshot-1248-8823-1793362465423-0.png",
+      "delivery_png": "reference/1248-8823.png",
+      "sha256": "220eb38069987938ae65bc5a129499268cd4406b6e718de5401cdc8253408c25"
+    },
+    {
+      "id": "1248:8879",
+      "name": "Admin Desktop · 結算單 · 退回款帶回 · DESIGN",
+      "png": "output/parity-money/current-figma/get_screenshot-1248-8879-1793362465586-0.png",
+      "delivery_png": "reference/1248-8879.png",
+      "sha256": "592e836ed2d2d37efea1f662a1864c36c547e63c459b7cfefb50342fa9ab9728"
+    },
+    {
+      "id": "1248:8960",
+      "name": "Admin Mobile · 結算單 · 退回款帶回 · DESIGN",
+      "png": "output/parity-money/current-figma/get_screenshot-1248-8960-1793362465695-0.png",
+      "delivery_png": "reference/1248-8960.png",
+      "sha256": "9961c8dfd9cf5037bb98920cab4534df806b511576de12aadac1cd27b670e60a"
+    },
+    {
+      "id": "21:677",
+      "name": "Admin Desktop · 方案與帳單 · 正常 · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-21-677-1793362465999-0.png",
+      "delivery_png": "reference/21-677.png",
+      "sha256": "aa1948aed006e42e295231d4e43dc7b85fd948ea6baa3f7eff6ae42f54d3222d"
+    },
+    {
+      "id": "21:1020",
+      "name": "Admin Mobile · 方案與帳單 · 正常 · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-21-1020-1793362465815-0.png",
+      "delivery_png": "reference/21-1020.png",
+      "sha256": "59291b925564279e7ed5cc6d1b14342424ecf9e3cf86c2fe280041ce7ee26630"
+    },
+    {
+      "id": "30:1909",
+      "name": "Admin Desktop · 訂閱需要處理 · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-30-1909-1793362466142-0.png",
+      "delivery_png": "reference/30-1909.png",
+      "sha256": "787d17bc0e49d57a04db4b83e369451875531b984de712899c8249d56c4d60ca"
+    },
+    {
+      "id": "30:1960",
+      "name": "Admin Mobile · 訂閱需要處理 · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-30-1960-1793362466234-0.png",
+      "delivery_png": "reference/30-1960.png",
+      "sha256": "2c70a67b4c99bda2870f29d92d88e78ea848e14befe2daf67cd436518af0e5f1"
+    },
+    {
+      "id": "750:3455",
+      "name": "Admin Desktop · 外部帳單管理說明 · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-750-3455-1793362467799-0.png",
+      "delivery_png": "reference/750-3455.png",
+      "sha256": "c27b4f427243c27042f0213aa1f8cb65019efd80bd7577f88e25c851ead515f9"
+    },
+    {
+      "id": "750:3597",
+      "name": "Admin Mobile · 外部帳單管理說明 · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-750-3597-1793362467904-0.png",
+      "delivery_png": "reference/750-3597.png",
+      "sha256": "4f817b4ffbe2c245e9d8ad8a03914e857c6ad846e40732f21db0c59947bb40b9"
+    },
+    {
+      "id": "1220:10379",
+      "name": "Admin Desktop · 方案與帳單 · 未訂閱 · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-1220-10379-1793362463514-0.png",
+      "delivery_png": "reference/1220-10379.png",
+      "sha256": "bba0d3c64a70e4f35673c3c153f8325ed8b4be4dacff7458bba0e29f7307c656"
+    },
+    {
+      "id": "1220:10444",
+      "name": "Admin Mobile · 方案與帳單 · 未訂閱 · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-1220-10444-1793362463640-0.png",
+      "delivery_png": "reference/1220-10444.png",
+      "sha256": "18377bf37cfaaf52bc44c2e9ec6a958479208ac55e8ac825a10f5bbff8094d56"
+    },
+    {
+      "id": "1220:10490",
+      "name": "Admin Desktop · 方案與帳單 · 週期末取消 · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-1220-10490-1793362463838-0.png",
+      "delivery_png": "reference/1220-10490.png",
+      "sha256": "f1a51f677948f706f71f8af2f9cc108c87f3be5acf7bb855c600bd3fd3f9f081"
+    },
+    {
+      "id": "1220:10555",
+      "name": "Admin Mobile · 方案與帳單 · 週期末取消 · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-1220-10555-1793362463948-0.png",
+      "delivery_png": "reference/1220-10555.png",
+      "sha256": "68cf54f6456f6936fb2bd6459645fb56ced2d9eed2e7edc897d8610e72b01c9c"
+    },
+    {
+      "id": "1220:10601",
+      "name": "Admin Desktop · 方案與帳單 · 付款逾期 · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-1220-10601-1793362464117-0.png",
+      "delivery_png": "reference/1220-10601.png",
+      "sha256": "1bebb71876e0bef027b2803a279a7f44f3b2773d107e17ed9dd93ec9ca43a763"
+    },
+    {
+      "id": "1220:10666",
+      "name": "Admin Mobile · 方案與帳單 · 付款逾期 · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-1220-10666-1793362464226-0.png",
+      "delivery_png": "reference/1220-10666.png",
+      "sha256": "927d97315cd068b6387cf816289ced67a82c8ce3c0732edc71190f1b130e3c2a"
+    },
+    {
+      "id": "1220:10712",
+      "name": "Admin Desktop · 方案與帳單 · 已受限 · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-1220-10712-1793362464407-0.png",
+      "delivery_png": "reference/1220-10712.png",
+      "sha256": "ae2e43ec5888c390928c8744c0beab6a69b7f9c063b2afb317f7977f232044f6"
+    },
+    {
+      "id": "1220:10777",
+      "name": "Admin Mobile · 方案與帳單 · 已受限 · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-1220-10777-1793362464516-0.png",
+      "delivery_png": "reference/1220-10777.png",
+      "sha256": "e6dec153c768c4236aeb6972a4f9264a4c8d21e94a87638df867a1f130bc5cba"
+    },
+    {
+      "id": "1227:14766",
+      "name": "Admin Desktop · 方案與帳單 · 已收款返回（更新中） · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-1227-14766-1793362464713-0.png",
+      "delivery_png": "reference/1227-14766.png",
+      "sha256": "d5d59796681893ab4de7d707afbc4a2f6c3d491fe2967965626b72b157faf266"
+    },
+    {
+      "id": "1227:14848",
+      "name": "Admin Desktop · 方案與帳單 · 已取消結帳 · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-1227-14848-1793362464902-0.png",
+      "delivery_png": "reference/1227-14848.png",
+      "sha256": "8cdc3c1d01a625434936e80c1d055037917b6ccc6089f61387d34f4f1e480ac9"
+    },
+    {
+      "id": "1227:14956",
+      "name": "Admin Mobile · 方案與帳單 · 已收款返回（更新中） · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-1227-14956-1793362465009-0.png",
+      "delivery_png": "reference/1227-14956.png",
+      "sha256": "6f42cbb55ba54fc115051e3c77eb929756b07466da2c5de9d8897af85b7bf19d"
+    },
+    {
+      "id": "1227:15015",
+      "name": "Admin Mobile · 方案與帳單 · 已取消結帳 · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-1227-15015-1793362465116-0.png",
+      "delivery_png": "reference/1227-15015.png",
+      "sha256": "e2393ad0f611291f2c1bf23223d8de2a923db13783260976d42a938ff08eff01"
+    },
+    {
+      "id": "94:2153",
+      "name": "Admin Desktop · 貨到付款設定 · SHOPLINE",
+      "png": "output/parity-money/current-figma/get_screenshot-94-2153-1793362468050-0.png",
+      "delivery_png": "reference/94-2153.png",
+      "sha256": "bdcfcde1adbc7c1d079b430e87eec663bdfd19a129ae087b32acf3e0fb5b5abf"
+    },
+    {
+      "id": "94:2223",
+      "name": "Admin Mobile · 貨到付款設定 · task layout",
+      "png": "output/parity-money/current-figma/get_screenshot-94-2223-1793362468167-0.png",
+      "delivery_png": "reference/94-2223.png",
+      "sha256": "337fd536779c51a4ad82bd9edc02e11b6f0d03d3ea5d9986828ed95d9f6ac8b4"
+    },
+    {
+      "id": "339:2831",
+      "name": "Admin Desktop · 貨到付款儲存檢查 · 原型示意",
+      "png": "output/parity-money/current-figma/get_screenshot-339-2831-1793362466380-0.png",
+      "delivery_png": "reference/339-2831.png",
+      "sha256": "a630b9a0c4251a78335dff1e82c3cf74bc2e6e365234f8ae989af984d620ab54"
+    },
+    {
+      "id": "339:2845",
+      "name": "Admin Mobile · 貨到付款儲存檢查 · 原型示意",
+      "png": "output/parity-money/current-figma/get_screenshot-339-2845-1793362466477-0.png",
+      "delivery_png": "reference/339-2845.png",
+      "sha256": "a129931176a976ce9244532de8b838fe5dbef03bd69e0546637ea2b9ada3d2dc"
+    }
+  ]
+}
