@@ -21,9 +21,9 @@
   --accent: #247965;
   --on-accent: #ffffff;
   --accent-text: #1c6554;
-  --action: #1a2b4a;
-  --on-action: #ffffff;
-  --action-text: #1a2b4a;
+  --action: var(--accent);
+  --on-action: var(--on-accent);
+  --action-text: var(--accent-text);
 }
 @media (min-width: 720px) {
   :root { --sf-gutter: 24px; }
@@ -114,7 +114,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .sf-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 22px; border-radius: var(--sf-radius); border: 1.5px solid transparent; font-size: 16px; font-weight: 700; text-decoration: none; cursor: pointer; line-height: 1.2; transition: background-color .15s, border-color .15s, color .15s; }
 .sf-btn--block { width: 100%; }
 .sf-btn--primary { background: var(--action); color: var(--on-action); border-color: var(--action); }
-.sf-btn--primary:hover:not(:disabled) { background: color-mix(in srgb, var(--action) 88%, #fff); }
+.sf-btn--primary:hover:not(:disabled) { background: color-mix(in srgb, var(--action) 88%, #000); }
 .sf-btn--outline { background: #fff; color: var(--action-text); border-color: var(--action-text); }
 .sf-btn--outline:hover:not(:disabled) { background: color-mix(in srgb, var(--action) 8%, #fff); }
 .sf-btn--ghost { background: #fff; color: var(--sf-ink); border-color: #cfcbc2; }
