@@ -23,7 +23,7 @@ import https from "node:https";
 import net from "node:net";
 import { spawn, execFileSync } from "node:child_process";
 import { once } from "node:events";
-import { readFile, writeFile, mkdtemp, rm } from "node:fs/promises";
+import { readFile, writeFile, mkdtemp, rm, mkdir, appendFile } from "node:fs/promises";
 import { createWriteStream } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -134,8 +134,11 @@ async function scenario(index, run) {
   const merchant = await context.newPage();
   merchant.on("pageerror", error => uiErrors.push(`${label} merchant ${error.name}: ${error.message}`));
   await signIn(merchant);
+  if (index === 0) { await growthMarketingParity(merchant, { origin: adminOrigin, evidence }); await growthEnabledAndDeepLink(merchant, { origin: adminOrigin }); }
   await merchant.goto(`${adminOrigin}/${run.locale}/promotions`);
   await expect(merchant.getByTestId("promotions-page")).toBeVisible();
+  // C3: the marketing fallback links to the existing code-management task.
+  await merchant.getByTestId("promotions-codes").click();
   await expect(merchant.getByTestId("promotion-form")).toBeVisible();
   // stop-bleed D02: NT$ amounts are whole dollars; a decimal is refused in the form with its own sentence and nothing is written
   let writes = 0;
@@ -307,6 +310,7 @@ async function scenario(index, run) {
   await noOverflow(merchant, `${label} finance`);
   await shot(merchant, "admin-finance", run);
   await merchant.goto(`${adminOrigin}/${run.locale}/promotions`);
+  await merchant.getByTestId("promotions-codes").click();
   await expect(merchant.getByTestId("promotion-row").filter({ hasText: cell.code }).getByTestId("promotion-used")).toHaveText("1");
   await expect(merchant.getByTestId("promotion-row").filter({ hasText: cell.big_code }).getByTestId("promotion-used")).toHaveText("0");
   pass(`${label} merchant: finance shows the confirmed transfer amount ${money(total * (index + 1))} (discounted orders only); the code's usage is 1, the refused code's 0`);
@@ -360,4 +364,78 @@ try {
   for (const child of children) if (running(child)) await once(child, "exit");
   for (const log of logs) log.end();
   await rm(certDir, { recursive: true, force: true });
+}
+
+// C3 fallback runs through scenario() in this registered promotions gate.
+/** No segment DTO exists in promotions: the card requires the signed feature-off fallback. */
+async function growthMarketingParity(page, { origin, evidence }) {
+  const directory = path.join(evidence, "parity");
+  await mkdir(directory, { recursive: true });
+  for (const [locale, heading, disabled, legacy] of [
+    ["zh-TW", "廣告草稿", "平台啟用前，此商店的廣告功能為關閉狀態。", "優惠碼"],
+    ["zh-CN", "广告草稿", "平台启用前，此店铺的广告功能为关闭状态。", "优惠码"],
+    ["en", "Ad drafts", "Ads are off for this store until the platform enables them.", "Discount codes"],
+  ]) {
+    for (const viewport of [{ width: 1440, height: 900, frame: "1194:7740" }, { width: 390, height: 844, frame: "1194:7796" }]) {
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await page.goto(`${origin}/${locale}/promotions`);
+      await expect(page.getByRole("heading", { level: 1, name: heading, exact: true })).toBeVisible();
+      await expect(page.getByText(disabled, { exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { level: 1, name: legacy, exact: true })).toHaveCount(0);
+      await expect(page.getByText("42", { exact: true })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: /新建分群|新增分群|New segment/ })).toHaveCount(0);
+      const retry = { "zh-TW": "重新讀取", "zh-CN": "重新读取", en: "Refresh" }[locale];
+      await page.getByRole("button", { name: retry, exact: true }).click();
+      await expect(page.getByText(disabled, { exact: true })).toBeVisible();
+      await page.reload();
+      await expect(page.getByText(disabled, { exact: true })).toBeVisible();
+      if (locale === "zh-TW") {
+        const filename = `${viewport.frame.replace(":", "-")}.png`;
+        expect(filename).toMatch(/^\d+-\d+\.png$/);
+        await page.screenshot({ path: path.join(directory, filename), animations: "disabled" });
+        await appendFile(path.join(directory, "frames.jsonl"), JSON.stringify({ frame: viewport.frame, route: page.url(), screenshot: `parity/${filename}` }) + "\n");
+      }
+      await appendFile(path.join(evidence, "growth-click-ledger.jsonl"), JSON.stringify({ route: page.url(), control: retry, operation: "click + reload", expected: disabled, actual: "visible", result: "PASS" }) + "\n");
+    }
+  }
+}
+
+/** RVFIX-366 P1-1/P2-1: /promotions shows the ads state the SERVER reports (never a default), and ?view=codes survives reload. */
+async function growthEnabledAndDeepLink(page, { origin }) {
+  const id = "00000000-0000-4000-8000-0000000000d1", binding = "00000000-0000-4000-8000-0000000000b1";
+  const at = new Date(Date.now() + 3600e3).toISOString(), later = new Date(Date.now() + 86400e3).toISOString();
+  // Fixture preparation (not a click substitute): the ads-enabled store's two authenticated reads the Ads screens use; no write path is faked.
+  const json = body => route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
+  await page.route("**/api/stores/*/ads/settings", json({
+    environment: "SANDBOX", allowance_currency: "TWD", max_active_budget_minor: 500000, sandbox_ad_account: null,
+    recent_refusals: [], capi: { enabled: false, dataset_binding_id: null, test_event_code: null }, connections: [], identities: [],
+  }));
+  await page.route("**/api/stores/*/ads/drafts", json({ items: [{
+    id, revision: 1, publish_attempt: 0, status: "DRAFT", approved_revision: null, ended_at: null, created_at: at,
+    ad_binding_id: binding, identity_binding_id: binding, template: "BOOST_POST", source_ref: "post-1", currency: "TWD",
+    lifetime_budget_minor: 100000, starts_at: at, ends_at: later, countries: ["TW"], age_min: 18, age_max: 65, remote: {}, ops: [], ads_manager_url: null,
+  }] }));
+  await page.setViewportSize({ width: 1440, height: 900 });
+  for (const [locale, off, none] of [
+    ["en", "Ads are off for this store until the platform enables them.", "No saved ad drafts yet"],
+    ["zh-TW", "平台啟用前，此商店的廣告功能為關閉狀態。", "還沒有已儲存的廣告草稿"],
+  ]) {
+    await page.goto(`${origin}/${locale}/promotions`);
+    await expect(page.getByTestId(`ads-draft-${id}`)).toBeVisible();
+    await expect(page.getByText(off, { exact: true })).toHaveCount(0);
+    await expect(page.getByText(none, { exact: true })).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByTestId(`ads-draft-${id}`)).toBeVisible();
+    await expect(page.getByText(off, { exact: true })).toHaveCount(0);
+  }
+  await page.unroute("**/api/stores/*/ads/settings");
+  await page.unroute("**/api/stores/*/ads/drafts");
+  for (const [locale, legacy] of [["zh-TW", "優惠碼"], ["en", "Discount codes"]]) {
+    await page.goto(`${origin}/${locale}/promotions?view=codes`);
+    await expect(page.getByRole("heading", { level: 1, name: legacy, exact: true })).toBeVisible();
+    await expect(page.getByTestId("promotion-form")).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1, name: legacy, exact: true })).toBeVisible();
+    await expect(page.getByTestId("promotion-form")).toBeVisible();
+  }
 }
