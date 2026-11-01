@@ -33,7 +33,7 @@ GET-only MOCK projections cover the exact order/product IDs used by the spec, cu
 | `bash -n scripts/dev/test-local.sh` | 0 | shell syntax valid |
 | `git diff --check` | 0 | no whitespace errors |
 | `python3 scripts/check_packet.py` | 0 | `PASS_PACKET_STRUCTURE_ONLY`, `delivery_baseline_checked=false`; generated `experiments/results/packet-check.json` restored to checkpoint bytes afterward |
-| `shasum -a 256 tests/admin/parity-leftovers.spec.ts tests/foundation/browser_parity_leftovers_test.go` | 0 | original spec hash above; new Go source `f9b477fc6c447a665e2712fddd3434a1602e1d160134048453bbd94d4301b0c9` |
+| `shasum -a 256 tests/admin/parity-leftovers.spec.ts tests/foundation/browser_parity_leftovers_test.go` | 0 | original spec hash above; new Go source `f61196c0893c68ac98670e4f5e73368a7adf8142e6e160d1559e59e332750842` |
 
 No local tests, browsers, servers or containers were started. No production implementation, assertions, thresholds, dependency locks, contracts or CI definitions changed. No dependency-map regeneration is needed: the new file is a browser-tagged test only and the current depmap reads non-test package imports.
 
@@ -61,3 +61,9 @@ Expected run-owned artifacts: `${LC_BROWSER_EVIDENCE_ROOT:-output/playwright}/pa
 | 新增自訂訊息範本 (2) | GET metadata available; route/form is real product code. No publish/send fixture action is implemented; original visible-copy assertions await CI. |
 
 The parser preflight and authenticated raw GET preflight are newly authored and await their first GitHub execution. The original 780-second combined budget is unchanged; budget sufficiency is UNKNOWN until observed. Parent owns independent review, push to existing PR473, CI monitoring and any narrowly authorized fixture repair (maximum two directed attempts). No product implementation is authorized by this handoff.
+
+## Directed FIX1 after root independent review
+
+Root found that the initial MOCK amount 1250 represented fractional TWD despite the frozen whole-dollar rule (`contracts/storefront-v2.md` section F; `apps/admin/lib/catalog-v2-model.ts:272`). All summary/item/totals/SKU amounts now consistently use 1200 minor units (12 TWD); quantity remains one. No assertion, product code or money contract changed. The parser-only preflight did not encode this domain rule; valid parser shape alone is not domain acceptance. Original twelve cases remain unchanged.
+
+FIX1 static commands: `gofmt -w tests/foundation/browser_parity_leftovers_test.go`, extracted generated JS `node --check --input-type=module`, and `git diff --check` exit 0. After invite agent released the global ownership lock, acquired it, ran `node scripts/dev/derive-browser-ownership.mjs` and `node scripts/dev/derive-browser-ownership.mjs --check` (both exit 0, 55 modes), then released it. Only the current Go source hash changed in the generated artifact; modes/inputs remain unchanged. Go/PG/browser tests remain NOT_RUN; no push.

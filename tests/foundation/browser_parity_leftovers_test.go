@@ -133,7 +133,7 @@ console.log('PASS: current product/media/order/template DTO parsers; MOCK projec
 // bplProjections prepares valid current DTOs. A current order requires a complete frozen destination;
 // the missing-recipient pre-order screen has no equivalent DTO here and must fail visibly in product assertions.
 func bplProjections() map[string]any {
-	summary := map[string]any{"order_id": bplOrder, "created_at": "2026-10-25T00:00:00Z", "updated_at": "2026-10-25T00:00:00Z", "currency": "TWD", "total_minor": 1250, "commercial_state": "DRAFT", "fulfillment_state": "MANUAL_UNASSIGNED", "payment_state": "NOT_STARTED", "test_mode": true, "work_state": "NONE", "refunded_minor": 0, "refund_pending_minor": 0, "source": "storefront", "pickup_source": nil, "payment_mode": "card", "collection_state": nil, "cod_surcharge_minor": nil, "cod_collect_minor": nil}
+	summary := map[string]any{"order_id": bplOrder, "created_at": "2026-10-25T00:00:00Z", "updated_at": "2026-10-25T00:00:00Z", "currency": "TWD", "total_minor": 1200, "commercial_state": "DRAFT", "fulfillment_state": "MANUAL_UNASSIGNED", "payment_state": "NOT_STARTED", "test_mode": true, "work_state": "NONE", "refunded_minor": 0, "refund_pending_minor": 0, "source": "storefront", "pickup_source": nil, "payment_mode": "card", "collection_state": nil, "cod_surcharge_minor": nil, "cod_collect_minor": nil}
 	detail := map[string]any{}
 	row := map[string]any{}
 	for k, v := range summary {
@@ -143,8 +143,8 @@ func bplProjections() map[string]any {
 	detail["shipment"] = nil
 	detail["country"] = "TW"
 	detail["service_code"] = "home"
-	detail["items"] = []any{map[string]any{"sku_id": bplSKU, "code": "MOCK-LEFTOVER", "name": "Synthetic item", "quantity": 1, "unit_price_minor": 1250, "amount": map[string]any{"subtotal_minor": 1250, "discount_minor": 0, "tax_minor": 0, "total_minor": 1250}}}
-	detail["totals"] = map[string]any{"subtotal_minor": 1250, "discount_minor": 0, "shipping_minor": 0, "shipping_tax_minor": 0, "tax_minor": 0, "total_minor": 1250}
+	detail["items"] = []any{map[string]any{"sku_id": bplSKU, "code": "MOCK-LEFTOVER", "name": "Synthetic item", "quantity": 1, "unit_price_minor": 1200, "amount": map[string]any{"subtotal_minor": 1200, "discount_minor": 0, "tax_minor": 0, "total_minor": 1200}}}
+	detail["totals"] = map[string]any{"subtotal_minor": 1200, "discount_minor": 0, "shipping_minor": 0, "shipping_tax_minor": 0, "tax_minor": 0, "total_minor": 1200}
 	detail["destination"] = map[string]any{"kind": "home", "country": "TW", "recipient_name": "Synthetic Buyer", "phone": "+886900000001", "home_address": map[string]any{"region": "", "city": "Synthetic city", "postal_code": "", "line1": "Synthetic address", "line2": ""}, "pickup": nil}
 	row["order_number"] = "LC-" + strings.ToUpper(strings.ReplaceAll(bplOrder, "-", ""))
 	row["recipient_masked"] = "S***"
@@ -152,7 +152,7 @@ func bplProjections() map[string]any {
 	row["live_sessions"] = []any{}
 	row["item_summary"] = map[string]any{"items": []any{map[string]any{"product_name": "Synthetic item", "variant_label": nil, "quantity": 1}}, "total_item_count": 1}
 	counts := map[string]int{"all": 1, "unpaid": 1, "transfer_review": 0, "ready_to_ship": 0, "ready_to_consign": 0, "shipped": 0, "completed": 0, "cancelled": 0}
-	sku := map[string]any{"id": bplSKU, "code": "MOCK-LEFTOVER", "title": "Standard", "price_minor": 1250, "compare_at_minor": nil, "option_values": []string{}, "version": 1, "currency": "TWD", "available": 10, "inventory_tracked": true, "max_per_order": nil, "keyword": "", "on_hand": 10, "committed": 0, "weight_grams": 100, "length_mm": 10, "width_mm": 10, "height_mm": 10, "origin_country": "TW", "customs_name": "Synthetic item", "hs_candidate": ""}
+	sku := map[string]any{"id": bplSKU, "code": "MOCK-LEFTOVER", "title": "Standard", "price_minor": 1200, "compare_at_minor": nil, "option_values": []string{}, "version": 1, "currency": "TWD", "available": 10, "inventory_tracked": true, "max_per_order": nil, "keyword": "", "on_hand": 10, "committed": 0, "weight_grams": 100, "length_mm": 10, "width_mm": 10, "height_mm": 10, "origin_country": "TW", "customs_name": "Synthetic item", "hs_candidate": ""}
 	product := map[string]any{"id": bplProduct, "slug": "mock-leftover", "name": "Synthetic item", "description": "MOCK catalog read", "status": "draft", "version": 1, "seo_title": "", "seo_description": "", "options": []any{}, "skus": []any{sku}, "collection_ids": []any{}, "warehouse_id": nil}
 	templates := []any{}
 	for i, name := range []string{"關鍵字協助", "結帳說明", "物流查詢", "人工回覆說明", "退款說明", "直播預告"} {
