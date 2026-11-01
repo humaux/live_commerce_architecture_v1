@@ -30,6 +30,7 @@ async function importReply(request:Request,store:string,param:string,action:stri
   const route=importRoute(request.method,param,action);
   if(!authConfig||!canonicalUUID.test(store)||!route)return localError(404,"not_found");
   if(!validImportRequest(request,route))return localError(422,"invalid_request");
+  const fieldErrors=route.action!=="results.csv" && route.kind==="customers" && new URL(request.url).searchParams.get("row_errors")==="field-v1";
   const token=sessionToken(request);if(!token){const denied=localError(401,"unauthorized");clearAuthCookies(denied.headers);return denied;}
   const origin=request.headers.has("origin")?requireOrigin(request):request.method==="GET"&&request.headers.get("sec-fetch-site")==="same-origin";
   if(!origin||!requireCSRF(request))return localError(403,"forbidden");
@@ -63,9 +64,9 @@ async function importReply(request:Request,store:string,param:string,action:stri
     if(upstream.headers.get("content-type")?.split(";",1)[0]!=="application/json")throw Error("invalid_response");
     const value:unknown=JSON.parse(new TextDecoder("utf-8",{fatal:true}).decode(bytes));
     if(route.action!=="results.csv"&&(upstream.status===200||upstream.status===409)){
-      if(upstream.status===409&&value&&typeof value==="object"&&"file_sha256"in value)return Response.json(projectImportPreview(value,route.kind),{status:409,headers});
+      if(upstream.status===409&&value&&typeof value==="object"&&"file_sha256"in value)return Response.json(projectImportPreview(value,route.kind,fieldErrors),{status:409,headers});
       if(upstream.status===200){
-        if(route.action==="preview")return Response.json(projectImportPreview(value,route.kind),{headers});
+        if(route.action==="preview")return Response.json(projectImportPreview(value,route.kind,fieldErrors),{headers});
         const receipt=parseImportReceipt(value);
         // Fresh mismatches remain UNKNOWN. A validated replay is authoritative stored evidence;
         // the client surfaces it as terminal instead of sending the identical commit a third time.
