@@ -153,3 +153,31 @@ test("BH locale history activation settles focus and arms the real read before i
   assert.deepEqual(p.clicks,["toggle-order-history"],"one real pointer action must open history after locale navigation");
   assert.ok(p.events.indexOf("read-armed")<p.events.indexOf("click"),"the history response observer precedes the triggering action");
 });
+
+// MODEL_ONLY: execute the failing BO05 reload/recovery call site and the actual
+// shared helper under the same wrong-target focus-scroll mutation as BO03/BH.
+// GitHub's real WebKit BO05 assertions, including exactly two original-key POSTs,
+// remain the acceptance gate; this model does not establish browser behaviour.
+test("BO05 locator-storage recovery settles reload and focus before its single real click",async()=>{
+  const begin=source.indexOf('await fault.reload();await expect(fault.getByTestId("recover-purchase")).toBeVisible();');
+  const end=source.indexOf("await created(fault,q5);",begin);
+  assert.ok(begin>=0&&end>begin,"the failed BO05 locator-storage recovery call site must remain covered");
+  const helpers=readFileSync(new URL("../../../tests/storefront/shop-helpers.mjs",import.meta.url),"utf8");
+  const helperStart=helpers.indexOf("export async function recoverPurchase(");
+  assert.ok(helperStart>=0,"recovery pointer setup must use the shared helper");
+  const p=orderControlRace("recover-purchase"),main={};
+  const fault={
+    ...p.page,
+    async reload(){p.events.push("reload");},
+    locator(selector){assert.equal(selector,".purchase-main");return main;},
+  };
+  const expect=value=>value===main?{not:{async toHaveAttribute(name,value){
+    assert.equal(name,"aria-busy");assert.equal(value,"true");p.events.push("idle-checked");
+  }}}:{...p.check(value),async toBeVisible(){}};
+  const run=runInNewContext(`(async()=>{${helpers.slice(helperStart).replace(/^export /gm,"")}\n${source.slice(begin,end)}})`,{fault,expect});
+  await run();
+  assert.deepEqual(p.clicks,["recover-purchase"],"the recovery pointer must reach the status control, not the sticky bar");
+  assert.deepEqual(p.events,["reload","idle-checked","focus-settled","click"]);
+  const callers=[source,readFileSync(new URL("../../../tests/storefront/checkout-v2.mjs",import.meta.url),"utf8")];
+  for(const caller of callers)assert.doesNotMatch(caller,/getByTestId\("recover-purchase"\)\.click\(/,"every recovery path must use the same pointer setup");
+});
