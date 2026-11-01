@@ -1,13 +1,13 @@
 // Purpose: Settlements page — read-only platform card-payment settlement statements and line detail.
-// Depends on: react, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/card-payments-client, @/lib/customers-client, @/lib/card-payments-settlements-model, @/lib/card-payments-settlements-copy, @/lib/orders-model, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, ./orders.css, ./customers.css
+// Depends on: react, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/card-payments-client, @/lib/customers-client, @/lib/card-payments-settlements-model, @/lib/card-payments-settlements-copy, @/lib/orders-model, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, ./orders.css, ./customers.css, ./finance/money.css
 // Used by: apps/admin/app/[locale]/settings/settlements/page.tsx
 "use client";
 
 // (/{locale}/settings/settlements, billing:manage): weekly statements of platform-collected card payments
 // (W4-S2 ledger): captured/refunded/disputes, Stripe + platform fees, carried-in, net payable, payout state
 // with the platform's bank-transfer reference; the detail lists every line. Store currency only; no Stripe ids.
-import { useState } from "react";
-import type { Locale } from "@live-commerce/i18n";
+import { useEffect, useState } from "react";
+import { moneyCopy, type Locale } from "@live-commerce/i18n";
 import { Badge, TableFrame } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { readSettlementDetail, readSettlements } from "@/lib/card-payments-client";
@@ -16,9 +16,9 @@ import { payoutState, signedAmountText, statementCells, type PayoutState, type S
 import { cardPaymentsSettlementsCopy, type CardPaymentsSettlementsCopy } from "@/lib/card-payments-settlements-copy.ts";
 import { displayTime } from "@/lib/orders-model";
 import { WorkspaceFrame } from "./WorkspaceFrame";
-import { AdminPageHeader } from "./AdminPageHeader";
 import "./orders.css";
 import "./customers.css";
+import "./finance/money.css";
 
 const payoutTone = { returned: "warning", paid: "success", pending: "warning", none: "neutral" } as const;
 const payoutText = (c: CardPaymentsSettlementsCopy, state: PayoutState) =>
@@ -49,8 +49,17 @@ export function Settlements({
   initialError: ReadCode | null;
   renderKey: string;
 }) {
-  const c = cardPaymentsSettlementsCopy[locale];
+  const c = cardPaymentsSettlementsCopy[locale], p = moneyCopy[locale];
   const [selected, setSelected] = useState<string | null>(null);
+  useEffect(() => {
+    const restore = () => { const id = new URL(window.location.href).searchParams.get("statement"); setSelected(id && /^[0-9a-f-]{36}$/.test(id) ? id : null); };
+    restore(); window.addEventListener("popstate",restore); return () => window.removeEventListener("popstate",restore);
+  }, []);
+  function open(id: string | null) {
+    setSelected(id); const url = new URL(window.location.href);
+    if (id) url.searchParams.set("statement",id); else url.searchParams.delete("statement");
+    window.history.replaceState(window.history.state,"",url);
+  }
   const list = useGuardedRead(
     `${renderKey}|${locale}|${store?.id ?? ""}`,
     store ? (signal) => readSettlements(store.id, signal) : null,
@@ -69,8 +78,8 @@ export function Settlements({
     : "";
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.title} active="settlements">
-      <div className="orders-page customers-page" data-testid="settlements-page">
-        <AdminPageHeader locale={locale} description={c.subtitle} />
+      <div className="money-page" data-testid="settlements-page">
+        <h1>{selected ? detail.data?.payout_returned ? p.returned : (detail.data?.returned_in_minor ?? 0) > 0 ? p.carriedReturn : p.statement : p.statements}</h1>
         {(list.status === "loading" || list.status === "hidden") && (
           <p className="orders-message" role="status">{c.loading}</p>
         )}
@@ -81,11 +90,11 @@ export function Settlements({
           </div>
         )}
         {list.status === "ready" && list.data && store && !selected && (
-          <List statements={list.data} onOpen={setSelected} locale={locale} c={c} />
+          <List statements={list.data} onOpen={open} locale={locale} c={c} />
         )}
         {selected && (
-          <button type="button" data-testid="settlement-back" onClick={() => setSelected(null)}>
-            {c.back}
+          <button type="button" data-testid="settlement-back" onClick={() => open(null)}>
+            {p.backStatements}
           </button>
         )}
         {selected && (detail.status === "loading" || detail.status === "hidden") && (
@@ -125,43 +134,10 @@ function List({
     );
   return (
     <>
-      <TableFrame label={c.tableLabel} scrollHint={c.scrollHint}>
-        <table>
-          <thead>
-            <tr>
-              <th>{c.period}</th>
-              <th>{c.captured}</th>
-              <th>{c.refunded}</th>
-              <th>{c.disputes}</th>
-              <th>{c.stripeFee}</th>
-              <th>{c.platformFee}</th>
-              <th>{c.carriedIn}</th>
-              <th>{c.returnedIn}</th>
-              <th>{c.netPayable}</th>
-              <th>{c.status}</th>
-              <th>{c.detail}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {statements.map((s) => (
-              <tr key={s.statement_id} data-testid={`settlement-row-${s.statement_id}`}>
-                {/* period, then seven signed contributions including returned funds, then the server's net; see statementCells */}
-                {statementCells(locale, s).map((text, index) => (
-                  <td key={index} data-testid={index === 0 ? `settlement-period-${s.statement_id}` : undefined}>{text}</td>
-                ))}
-                <td>
-                  <PayoutStatus statement={s} c={c} testId={`settlement-status-${s.statement_id}`} />
-                </td>
-                <td>
-                  <button type="button" data-testid={`settlement-open-${s.statement_id}`} onClick={() => onOpen(s.statement_id)}>
-                    {c.detail}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </TableFrame>
+      <section className="money-card"><h2>{moneyCopy[locale].cardBasis}</h2><p>{moneyCopy[locale].settlementNote}</p></section>
+      <section className="money-card"><TableFrame label={c.tableLabel} scrollHint={c.scrollHint}>
+        <table className="money-statement-table"><thead><tr><th>{moneyCopy[locale].statement} / {moneyCopy[locale].currency}</th><th>{moneyCopy[locale].settlementPeriod}</th><th>{c.status}</th><th>{c.netPayable}</th><th>{moneyCopy[locale].openStatement}</th></tr></thead><tbody>{statements.map(s => <tr key={s.statement_id} data-testid={`settlement-row-${s.statement_id}`}><td>{s.currency}</td><td data-testid={`settlement-period-${s.statement_id}`}>{statementCells(locale,s)[0]}</td><td><PayoutStatus statement={s} c={c} testId={`settlement-status-${s.statement_id}`} /></td><td>{statementCells(locale,s)[8]}</td><td><button type="button" data-testid={`settlement-open-${s.statement_id}`} onClick={() => onOpen(s.statement_id)}>{moneyCopy[locale].openStatement}</button></td></tr>)}</tbody></table>
+      </TableFrame></section>
       <Legend c={c} />
     </>
   );
@@ -179,14 +155,16 @@ function Legend({ c }: { c: CardPaymentsSettlementsCopy }) {
 
 function Detail({ statement: s, locale, c }: { statement: SettlementStatement; locale: Locale; c: CardPaymentsSettlementsCopy }) {
   const cells = statementCells(locale, s);
+  const p = moneyCopy[locale];
   // The same seven signed contributions and the server's net as the list row, including carried return money exactly once.
   const rows = [
-    ["captured", c.captured], ["refunded", c.refunded], ["dispute", c.disputes], ["stripe-fee", c.stripeFee],
-    ["platform-fee", c.platformFee], ["carried-in", c.carriedIn], ["returned-in", c.returnedIn], ["net", c.netPayable],
+    ["captured", p.captured], ["refunded", p.refunded], ["dispute", c.disputes], ["stripe-fee", c.stripeFee],
+    ["platform-fee", p.platformFee], ["carried-in", c.carriedIn], ["returned-in", p.returnContribution], ["net", c.netPayable],
   ] as const;
   return (
     <section data-testid="settlement-detail">
-      <h2>{c.detail}</h2>
+      {s.payout_returned && <div className="money-card"><h2>{p.returnedStatus}</h2><p>{s.payout_ref} · {s.payout_minor === null ? "—" : signedAmountText(locale,s.currency,s.payout_minor)}</p></div>}
+      <section className="money-card"><p>{s.currency}</p><h2>{p.composition}</h2>
       <dl>
         <div>
           <dt>{c.period}</dt>
@@ -195,7 +173,7 @@ function Detail({ statement: s, locale, c }: { statement: SettlementStatement; l
         {rows.map(([key, label], index) => (
           <div key={key}>
             <dt>{label}</dt>
-            <dd data-testid={`settlement-detail-${key}`}>{cells[index + 1]}</dd>
+            <dd data-testid={`settlement-detail-${key}`}><span data-testid={key === "returned-in" ? "settlement-detail-returned_in" : key === "carried-in" ? "settlement-detail-carried_in" : undefined}>{cells[index + 1]}</span></dd>
           </div>
         ))}
         <div>
@@ -204,6 +182,9 @@ function Detail({ statement: s, locale, c }: { statement: SettlementStatement; l
             <PayoutStatus statement={s} c={c} testId="settlement-detail-status" />
           </dd>
         </div>
+        <div><dt>{p.closedAt}</dt><dd>{displayTime(locale,s.closed_at)}</dd></div>
+        {s.payout_minor !== null && <div><dt>{p.payoutAmount}</dt><dd>{signedAmountText(locale,s.currency,s.payout_minor)}</dd></div>}
+        {s.payout_returned && <div><dt>{p.returnedAmount}</dt><dd>{s.payout_minor === null ? "—" : signedAmountText(locale,s.currency,s.payout_minor)}</dd></div>}
         {s.payout_ref && (
           <div>
             <dt>{c.payoutRef}</dt>
@@ -223,7 +204,8 @@ function Detail({ statement: s, locale, c }: { statement: SettlementStatement; l
           </div>
         )}
       </dl>
-      <h3>{c.lines}</h3>
+      <p className="money-note">{p.settlementNote}</p></section>
+      <section className="money-card"><h3>{c.lines}</h3>
       <TableFrame label={c.linesLabel} scrollHint={c.scrollHint}>
         <table>
           <thead>
@@ -248,6 +230,7 @@ function Detail({ statement: s, locale, c }: { statement: SettlementStatement; l
           </tbody>
         </table>
       </TableFrame>
+      </section>
       <Legend c={c} />
     </section>
   );

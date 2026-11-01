@@ -16,7 +16,14 @@ import {
   type StorefrontState,
 } from "./storefront-model";
 
-export type { StorefrontDomain, StorefrontState } from "./storefront-model";
+export type {
+  DomainRequestResult,
+  MerchantDomainState,
+  StorefrontDomain,
+  StorefrontDomainRow,
+  StorefrontDomains,
+  StorefrontState,
+} from "./storefront-model";
 export type WriteResult = { ok: true } | { ok: false; code: string; uncertain: boolean };
 
 // Go GET storefront (integration:read). 403 = this member may not see the card.

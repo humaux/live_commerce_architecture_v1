@@ -55,6 +55,7 @@ import {
 } from "../lib/cvs-contract";
 import {
   checkoutInput,
+  codQuoteMatches,
   refreshCodQuote,
   offeredPaymentModes,
   currentDestination,
@@ -98,6 +99,7 @@ export default function OrderFlow({
   onFeeChanged,
   onQuoteRefresh,
   onReviewState,
+  detailsOpen = false,
   cvsResume,
   onCvsBrand,
   cvsKinds,
@@ -120,7 +122,8 @@ export default function OrderFlow({
   reconfirmRequired?: boolean;
   onFeeChanged?: () => void;
   onQuoteRefresh?: (quote: Quote) => void;
-  onReviewState?: (state: { quoteID: string; ready: boolean; timing: string; quoteReady?: boolean }) => void;
+  detailsOpen?: boolean;
+  onReviewState?: (state: { quoteID: string; ready: boolean; timing: string; quoteReady?: boolean; submitting?: boolean; needsConfirm?: boolean }) => void;
   cvsResume?: CvsDraft;
   onCvsBrand?: (kind: CvsKind, draft: CvsDraft) => void;
   cvsKinds?: CvsKind[];
@@ -149,6 +152,7 @@ export default function OrderFlow({
   const [codError, setCodError] = useState<string | null>(null);
   const [optionRefresh, setOptionRefresh] = useState(0);
   // storefront-v2 §C: optional buyer email, and the one bank-transfer refusal (bank_transfer_unavailable) shown next to the create button.
+  const [submitting, setSubmitting] = useState(false);
   const [email, setEmail] = useState("");
   const [emailInvalid, setEmailInvalid] = useState(false);
   const [transferError, setTransferError] = useState<TransferErrorCode | null>(null);
@@ -157,26 +161,29 @@ export default function OrderFlow({
   const cod = codCopy[locale];
   const pickup = useRef<PickupHandle | null>(null);
   const cvsOption = option && isCvsKind(option.delivery_kind) ? (option as Option & { delivery_kind: CvsKind }) : null;
-  const paymentChoices = option && quote ? offeredPaymentModes(option, quote.amount.total_minor) : [];
+  const paymentChoices = option && quote ? offeredPaymentModes(option, quote.amount.total_minor)
+    .filter((mode) => mode !== "cash_on_delivery" || codQuoteMatches(quote, option)) : [];
   const codFee = paymentMode === "cash_on_delivery" && option && paymentChoices.includes("cash_on_delivery") ? option.cod_surcharge_minor ?? 0 : null;
   const checkout = checkoutCopy[locale];
   const timing = paymentMode === "cash_on_delivery" ? checkout.cod : paymentMode === "pay_at_pickup" ? checkout.pickup : checkout.online;
   const canSubmit = !busy && !blocked && !expired && !!confirmed && !!option && paymentChoices.includes(paymentMode) && !reconfirmRequired && (codFee === null || quote?.cod_due_minor !== undefined);
   const quoteReady = !!option && paymentChoices.includes(paymentMode) && (codFee === null || quote?.cod_due_minor !== undefined);
+  // The fixed and form actions share the visible reason while an address still needs confirmation.
+  const needsConfirm = !confirmed && !blocked && !expired;
   useEffect(() => {
-    if (quote) onReviewState?.({ quoteID: quote.id, ready: canSubmit, timing, quoteReady });
+    if (quote) onReviewState?.({ quoteID: quote.id, ready: canSubmit, timing, quoteReady, submitting, needsConfirm });
     return () => { if (quote) onReviewState?.({ quoteID: quote.id, ready: false, timing }); };
-  }, [quote?.id, canSubmit, timing, quoteReady, onReviewState]);
+  }, [quote?.id, canSubmit, timing, quoteReady, submitting, needsConfirm, onReviewState]);
   useEffect(() => {
     onCodFee?.(codFee);
     return () => onCodFee?.(null);
   }, [codFee, onCodFee]);
 
   useEffect(() => {
-    if (!quote || !option || !offeredPaymentModes(option, quote.amount.total_minor).includes(paymentMode)) return;
+    if (!quote || !option || !paymentChoices.includes(paymentMode)) return;
     // Remember automatic choices too: reload must compare the payable the buyer actually reviewed.
     try { sessionStorage.setItem(`commerce-checkout-mode-v2:${context}:${quote.id}`, paymentMode); }
-    catch { setOption(null); setNotice("failed"); }
+    catch { setOption(null); setConfirmed(null); setNotice("failed"); }
   }, [context, quote, option, paymentMode]);
 
   useEffect(() => {
@@ -217,12 +224,25 @@ export default function OrderFlow({
           optionRefresh ? readPurchase(`quotes/${quote.id}`, context, validQuote) : Promise.resolve(quote),
           checkoutOption(context, quote),
         ]);
-        const latest = await refreshCodQuote(context, currentQuote, found);
+        const savedMode = sessionStorage.getItem(`commerce-checkout-mode-v2:${context}:${quote.id}`);
+        const modes = offeredPaymentModes(found, currentQuote.amount.total_minor);
+        const selected = modes.includes(savedMode as PaymentMode) ? savedMode
+          : modes.includes(paymentMode) ? paymentMode : modes[0];
+        // A COD-selected review, or an option refresh, rethrows every refresh failure. A card/online review keeps
+        // currentQuote only when the refresh fails without an HTTP status (e.g. a pinned card re-quote); the COD
+        // due is hidden for non-COD modes (codFooter returns null), so a stale due is never shown or submitted.
+        let latest = currentQuote;
+        try {
+          latest = await refreshCodQuote(context, currentQuote, found);
+        } catch (reason) {
+          if (optionRefresh || selected === "cash_on_delivery" || (reason instanceof BuyerClientError && reason.status !== undefined))
+            throw reason;
+        }
         if (version !== live.current) return;
         if (optionRefresh || latest !== quote) onQuoteRefresh?.(latest);
         // OP1: card may not be offered (no payment service); keep the buyer's mode only if this row still offers it, else pre-select its first.
-        const offered = offeredPaymentModes(found, latest.amount.total_minor);
-        const savedMode = sessionStorage.getItem(`commerce-checkout-mode-v2:${context}:${quote.id}`);
+        const offered = offeredPaymentModes(found, latest.amount.total_minor)
+          .filter((mode) => mode !== "cash_on_delivery" || codQuoteMatches(latest, found));
         if (offered?.length) setPaymentMode((current) => offered.includes(savedMode as PaymentMode) ? savedMode as PaymentMode : offered.includes(current) ? current : offered[0]);
         setOption(found);
         // Options can arrive after the buyer edits or confirms a recovered
@@ -350,9 +370,6 @@ export default function OrderFlow({
     }
   }
 
-  // The create button stays disabled until the address and total are confirmed; say so next to it (and to assistive tech) while that is the reason.
-  const needsConfirm = !confirmed && !blocked && !expired;
-
   return (
     <section
       className="address-section"
@@ -360,18 +377,10 @@ export default function OrderFlow({
       data-testid="address-section"
       aria-labelledby="address-title"
     >
+      <div hidden={!!confirmed && !detailsOpen}>
       <h2 id="address-title">{cvsOption ? cvsCopy[locale].title : copy.address}</h2>
       <p>{quote ? copy.explain : copy.recoverWithoutQuote}</p>
-      <p className="address-total">
-        {quote && (
-          <>
-            {purchaseCopy[locale].orderTotal}:{" "}
-            <strong>{money(quote.amount.total_minor, quote.currency)}</strong>{" "}
-            ·{" "}
-          </>
-        )}
-        {copy.country}: {country}
-      </p>
+      <p className="address-total">{copy.country}: {country}</p>
       {/* Keep the loading line's space: collapsing it can move a Safari pointer target between down/up. */}
       <p
         role={notice ? (notice === "failed" || notice === "invalid" ? "alert" : "status") : undefined}
@@ -533,18 +542,20 @@ export default function OrderFlow({
         </div>
       )}
       {codError && <p role="alert" data-testid="cod-checkout-error">{codError}</p>}
-      {quote && <CheckoutReview locale={locale} quote={quote} destination={confirmed} fee={codFee} timing={timing}
+      </div>
+      {quote && <CheckoutReview locale={locale} quote={quote} destination={confirmed} fee={codFee} timing={timing} detailsOpen={detailsOpen}
         method={paymentMode === "bank_transfer" ? bank.payBank : paymentMode === "cash_on_delivery" ? cod.orderTitle : paymentMode === "pay_at_pickup" ? cvsCopy[locale].createPickup : bank.payCard}>
           {!cvsOption && option && <CheckoutPaymentChoices locale={locale} quote={quote} option={option} modes={paymentChoices}
-            selected={paymentMode} disabled={busy || blocked || expired || !headLoaded} money={money} onChange={(mode) => {
+            selected={paymentMode} detailsOpen={detailsOpen} disabled={busy || blocked || expired || !headLoaded} money={money} onChange={(mode) => {
               try { sessionStorage.setItem(`commerce-checkout-mode-v2:${context}:${quote.id}`, mode); }
-              catch { setOption(null); setNotice("failed"); return; }
+              catch { setOption(null); setConfirmed(null); setNotice("failed"); return; }
               setPaymentMode(mode);
               setConfirmed(null);
               setTransferError(null);
               setCodError(null);
             }} />}
       </CheckoutReview>}
+      <div hidden={!!confirmed && !detailsOpen}>
       {/* Why the button below is disabled, in words (never colour alone): the address must be confirmed first. */}
       {needsConfirm && (
         <p id="create-order-hint" className="order-note" data-testid="create-order-hint">
@@ -561,11 +572,13 @@ export default function OrderFlow({
             const typed = email.trim();
             if (typed !== "" && !validBuyerEmail(typed)) {
               setEmailInvalid(true);
+              setConfirmed(null);
               return;
             }
             setTransferError(null);
             setPromoError(null);
             setCodError(null);
+            setSubmitting(true);
             try {
               const result = await writeCheckout(
                 context,
@@ -613,6 +626,8 @@ export default function OrderFlow({
                 return;
               }
               throw reason;
+            } finally {
+              if (version === live.current) setSubmitting(false);
             }
           });
       }}>
@@ -641,6 +656,7 @@ export default function OrderFlow({
               ? cvsCopy[locale].payAtPickupNote
               : copy.unavailable}
       </p>
+      </div>
     </section>
   );
 }

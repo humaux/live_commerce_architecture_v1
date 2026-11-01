@@ -42,7 +42,7 @@ node --test --experimental-strip-types tests/admin/platform-site.test.ts
 node --test --experimental-strip-types tests/admin/attribution.test.ts tests/admin/attribution-audience.test.ts tests/admin/attribution-format.test.ts
 # W4-U1 platform card payments + settlements: parsers (0137/0150 signs), BFF grammar, copy parity, display state machine (apps/storefront/tests/payment-collector.test.mjs runs in the first glob)
 node --test --experimental-strip-types tests/admin/card-payments-model.test.ts tests/admin/card-payments-request.test.ts tests/admin/card-payments-copy.test.ts tests/admin/card-payments-wire.test.ts
-node --test --experimental-strip-types tests/admin/product-document.test.ts tests/admin/product-patch.test.ts tests/admin/product-media-model.test.ts tests/admin/backend-parity.test.ts
+node --test --experimental-strip-types tests/admin/catalog-v2-model.test.ts tests/admin/product-document.test.ts tests/admin/product-patch.test.ts tests/admin/product-media-model.test.ts tests/admin/backend-parity.test.ts
 node --test --experimental-transform-types tests/admin/catalog-receipt.test.ts
 node --test --experimental-transform-types tests/admin/live-workspace.test.ts tests/admin/live-console-model.test.ts tests/admin/live-console-bff.test.ts
 node --test --experimental-strip-types tests/admin/comment-stream.test.ts tests/admin/comment-stream-hooks.test.ts
@@ -101,4 +101,4 @@ node scripts/dev/check-hex-ratchet.mjs
 node --test --experimental-strip-types tests/admin/live-settings-bff.test.ts tests/admin/live-settings-model.test.ts
 node --test --experimental-transform-types tests/admin/live-settings-hooks.test.ts
 # Browser-run artifact isolation and regression write-root counterexamples.
-node --test tests/admin/browser-evidence.test.mjs tests/ci/browser-evidence-paths.test.mjs
+node --test tests/admin/browser-evidence.test.mjs tests/ci/browser-evidence-paths.test.mjs tests/ci/evidence-retention.test.mjs

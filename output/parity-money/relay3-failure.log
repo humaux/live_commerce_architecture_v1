@@ -1,0 +1,65 @@
+PARITY-MONEY relay 3 · original CI failure, not causal tests-only RED
+head_sha=6c6f2bbb97923c35ba91f860b7fe484d962db628
+execution_merge_sha=11dc175338ff29d44b92a81ce51c2ba8b02030fb
+Gates_run=41066301715
+Gates_job=124114310661 (bundle:09, failure)
+failing_member=--browser-ops-polish
+artifact=gate-browser-ops-polish (12987356489)
+Foundation_run=41066301920
+Foundation_job=124098481868 (success at this head only)
+transport=gh run view --log-failed unavailable while overall run pending; gh api completed-job logs + gh run download used
+root_cause=Finance submit only navigated; Next App Router preserved view=dates after applied range props changed; same-range navigation also preserves it
+repair_attempt=1 for date-editor lifecycle (formatter blocker was separately repaired in relay 2)
+repair=open overview on valid submit before navigating; preserve all guards, route query and server money facts
+regression=all original OP3 assertions unchanged; customers-billing real clicks assert changed/same range returns to overview before refresh, plus persisted URL after refresh in three locales and both widths
+acceptance=repair E1 only; own acceptance E0; GREEN and independent E4 pending
+
+Original CI Playwright receipt follows:
+
+Running 8 tests using 1 worker
+
+  ✓  1 tests/admin/ops-polish.spec.ts:81:1 › OP2 live order feed: 20 s poll, no overlap, pause when hidden, new marker, (N) title, filters kept (19.5s)
+  ✓  2 tests/admin/ops-polish.spec.ts:195:3 › OP2 new marker and title count in zh-TW (4.0s)
+  ✓  3 tests/admin/ops-polish.spec.ts:195:3 › OP2 new marker and title count in zh-CN (4.0s)
+  ✓  4 tests/admin/ops-polish.spec.ts:252:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in en (1.0s)
+  ✓  5 tests/admin/ops-polish.spec.ts:252:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in zh-CN (968ms)
+  ✓  6 tests/admin/ops-polish.spec.ts:252:3 › OP4 Studio subtitle is neutral and the dead nav entries are gone in zh-TW (1.0s)
+  ✓  7 tests/admin/ops-polish.spec.ts:266:1 › OP4 the same nav on the orders page (1.7s)
+  ✘  8 tests/admin/ops-polish.spec.ts:275:1 › OP3 finance page shows a separate pay-at-pickup column in every locale; CSV link carries it (3.0m)
+
+
+  1) tests/admin/ops-polish.spec.ts:275:1 › OP3 finance page shows a separate pay-at-pickup column in every locale; CSV link carries it 
+
+    Test timeout of 180000ms exceeded.
+
+    Error: locator.click: Test timeout of 180000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Daily details', exact: true })
+
+
+      285 |     await page.getByTestId("finance-to").fill(today);
+      286 |     await page.getByTestId("finance-show").click();
+    > 287 |     await page.getByRole("button",{name:moneyDesign[locale].daily,exact:true}).click();
+          |                                                                                ^
+      288 |     const table = page.getByTestId("finance-table");
+      289 |     await expect(table).toBeVisible();
+      290 |     const other = page.getByTestId(`finance-other-${today}-TWD`);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/ops-polish.spec.ts:287:80
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.qgwr8ODx/ops-polish-admin/20261030T145046.249852682/results/ops-polish-OP3-finance-pag-2bc2a--locale-CSV-link-carries-it/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.qgwr8ODx/ops-polish-admin/20261030T145046.249852682/results/ops-polish-OP3-finance-pag-2bc2a--locale-CSV-link-carries-it/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/run.qgwr8ODx/ops-polish-admin/20261030T145046.249852682/results/ops-polish-OP3-finance-pag-2bc2a--locale-CSV-link-carries-it/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/run.qgwr8ODx/ops-polish-admin/20261030T145046.249852682/results/ops-polish-OP3-finance-pag-2bc2a--locale-CSV-link-carries-it/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests/admin/ops-polish.spec.ts:275:1 › OP3 finance page shows a separate pay-at-pickup column in every locale; CSV link carries it 
+  7 passed (3.6m)

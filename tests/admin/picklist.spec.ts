@@ -106,9 +106,10 @@ test(
             `${base}/${locale}/orders?store=${storeID}&session_id=${sessionID}`,
           );
           const toolbar = page.getByTestId("pick-toolbar");
+          await page.locator(".signed-orders-tools > summary").click();
           await expect(toolbar).toBeVisible();
           const rowCheck = page
-            .getByRole("checkbox", { name: new RegExp(`^${c.select}:`) })
+            .locator('[data-testid^="order-row-"] input[type="checkbox"]')
             .first();
           await rowCheck.check();
           await expect(page.getByTestId("pick-count")).toHaveText("1");
@@ -294,6 +295,7 @@ test(
       });
       fixture.state.count = 510;
       await page.goto(`${base}/en/orders?store=${storeID}`);
+      await page.locator(".signed-orders-tools > summary").click();
       for (let n = 1; n <= 50; n++) {
         await page.getByRole("checkbox", { name: c.page, exact: true }).check();
         await expect(page.getByTestId("pick-count")).toHaveText(String(n * 10));
@@ -326,6 +328,7 @@ test(
       await page.getByRole("button", { name: c.confirm, exact: true }).click();
       await expect(page.getByText(c.unknown, { exact: true })).toBeVisible();
       await page.reload();
+      await page.locator(".signed-orders-tools > summary").click();
       await expect(page.getByText(c.unknown, { exact: true })).toBeVisible();
       assert.equal(fixture.state.batches.length, count + 1);
       await expect(
@@ -370,6 +373,7 @@ test(
       fixture.state.canExport = false;
       fixture.state.canShip = false;
       await page.reload();
+      await page.locator(".signed-orders-tools > summary").click();
       await expect(page.getByTestId("pick-toolbar")).toBeVisible();
       await expect(
         page

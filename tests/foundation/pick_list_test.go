@@ -396,6 +396,9 @@ func TestCarrierExport(t *testing.T) {
 	if detailed != 4 {
 		t.Fatalf("carrier_export audit with details=%d, want 4", detailed)
 	}
+	t.Run("FIX-EXPORT-REAUTH carrier CSV", func(t *testing.T) {
+		checkCarrierExportReauth(t, e, base)
+	})
 }
 
 // TestCVSBatch covers PL06: 3 CVS orders queue exactly 3 existing River jobs, a same-key replay adds

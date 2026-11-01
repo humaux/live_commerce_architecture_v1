@@ -1,0 +1,28 @@
+{
+  "extends": "../../../apps/admin/tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "paths": {
+      "@/*": [
+        "./*"
+      ],
+      "@live-commerce/i18n": [
+        "../../packages/i18n/src/index.ts"
+      ],
+      "@live-commerce/ui": [
+        "../../packages/ui/src/index.ts"
+      ],
+      "@live-commerce/markdown-lite": [
+        "../../packages/markdown-lite/src/index.ts"
+      ]
+    }
+  },
+  "include": [
+    "../../../apps/admin/components/ProductList.tsx",
+    "../../../apps/admin/components/CustomerDetail.tsx",
+    "../../../apps/admin/components/Customers.tsx"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

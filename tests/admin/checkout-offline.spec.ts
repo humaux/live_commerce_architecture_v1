@@ -1,3 +1,7 @@
+// Purpose: Preserve the existing contract acceptance while following signed PARITY-MONEY navigation.
+// Depends on: original fixture and public contract imports below; independent finance design copy.
+// Used by: the registered Node/browser gate for this module.
+// Invariants: money, permissions, uncertainty and persistence assertions are preserved.
 // COB merchant half (contracts/storefront-v2.md §C; unit checkout-offline; R4 independent browser gate). BFF routes exercised through the UI:
 //   GET|PUT /api/stores/{store}/bank-transfer-settings, GET .../orders/{id}/bank-transfer, POST .../orders/{id}/bank-transfer/{confirm,reject,refund-offline},
 //   GET|PUT policy + delivery service (free-shipping threshold), GET finance/summary -> Go /v1/admin/stores/{store}/...
@@ -8,6 +12,7 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { settingsCopy } from "../../apps/admin/lib/settings-copy";
+import { moneyDesign } from "./parity-money-support";
 import { transferCopy } from "../../apps/admin/lib/transfer-copy";
 
 const required = (name: string) => {
@@ -44,6 +49,13 @@ async function shot(page: Page, name: string, locale: string, viewport: "desktop
   manifest.push({ File: path.basename(file), Sha256: createHash("sha256").update(await readFile(file)).digest("hex"), Locale: locale, Viewport: viewport });
   await writeFile(manifestPath, JSON.stringify(manifest, null, 2));
 }
+async function revealSavedFacts(page: Page) {
+  const url=new URL(page.url());
+  if(!/\/orders\/[0-9a-f-]{36}$/.test(url.pathname)&&!url.searchParams.has("order"))return;
+  const facts=page.getByTestId("order-more-details");
+  await expect(facts).toBeVisible();
+  if(await facts.getAttribute("open")===null)await facts.locator("summary").first().click();
+}
 async function signedLogin(page: Page) {
   await page.goto(new URL("/en/", origin).toString());
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
@@ -68,7 +80,9 @@ async function openOrders(page: Page, locale: string) {
   if (await selector.count()) {
     if ((await selector.inputValue()) !== store) await selector.selectOption(store);
   }
-  await expect(page.getByTestId("orders-table")).toBeVisible();
+  await expect(page.getByTestId("orders-list")).toBeVisible();
+  const more=page.getByTestId("orders-more-filters");
+  if(await more.getAttribute("aria-expanded")==="false") await more.click();
 }
 async function expand(page: Page, id: string): Promise<Locator> {
   for (let pageNo = 0; pageNo < 5; pageNo++) {
@@ -77,11 +91,13 @@ async function expand(page: Page, id: string): Promise<Locator> {
       if ((await button.getAttribute("aria-expanded")) !== "true") await button.click();
       const detail = page.getByTestId("order-detail");
       await expect(detail).toHaveAttribute("aria-label", new RegExp(id));
-      return detail;
+      const facts=page.getByTestId("order-more-details");
+      if(await facts.getAttribute("open")===null) await facts.locator("summary").first().click();
+      return detail.getByTestId("order-facts");
     }
     await expect(page.getByTestId("orders-next")).toBeEnabled();
     await page.getByTestId("orders-next").click();
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await expect(page.getByTestId("orders-list")).toBeVisible();
   }
   throw new Error("order was absent from the real cursor pages");
 }
@@ -115,7 +131,8 @@ test("settings: the merchant sets bank details, the window and the free-shipping
   await expect(card.getByTestId("transfer-settings-problem")).toHaveCount(0);
   // step 3: the delivery policy's free-shipping threshold, then the service re-save that pins the new policy version
   await page.getByRole("button", { name: c.next, exact: true }).click();
-  await page.getByRole("combobox", { name: c.market, exact: true }).selectOption(market);
+  await expect(page.getByRole("region", { name: c.steps[2] })).toBeVisible();
+  void market;
   // the saved policy must hydrate (its version is the CAS token of the save) before any field is edited
   const policyRead = page.waitForResponse((r) => r.url().includes("/policy") && r.request().method() === "GET");
   await page.getByLabel(c.serviceCode, { exact: true }).fill(service);
@@ -136,7 +153,7 @@ test("settings: the merchant sets bank details, the window and the free-shipping
   await page.getByTestId("settings-service-form").getByRole("button", { name: c.saveService, exact: true }).click();
   await expect(page.getByText(c.serviceSaved)).toBeVisible();
   // read back from the server after a reload: the card carries the saved values
-  await page.reload();
+  await page.reload(); await revealSavedFacts(page);
   await page.getByRole("button", { name: "編輯設定", exact: true }).click();
   await page.getByRole("button", { name: new RegExp(c.steps[1]) }).click(); // the draft keeps the wizard on step 3: back to step 2
   const again = page.getByTestId("transfer-settings-card");
@@ -233,8 +250,9 @@ test("final: finance shows the four confirmations in its own column, the expired
   await shot(page, "expired", "en", "mobile");
   await page.goto(new URL(`/en/finance?store=${store}`, origin).toString());
   await expect(page.getByTestId("finance-page")).toBeVisible();
+  await page.getByRole("button",{name:moneyDesign.en.daily,exact:true}).click();
   const cells = page.getByTestId("finance-transfer-confirmed");
-  await expect(cells.filter({ hasText: "(4)" }).first()).toBeVisible(); // 4 confirmed transfers, never inside the captured/net columns
+  await expect(cells.filter({ hasText: "/ 4" }).first()).toBeVisible(); // 4 confirmed transfers, never inside the captured/net columns
   await shot(page, "finance", "en", "mobile");
   const c = settingsCopy.en;
   await page.goto(new URL(`/en/settings?store=${store}`, origin).toString());
