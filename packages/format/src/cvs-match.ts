@@ -1,6 +1,6 @@
 // Purpose: rank public stores for one selected CVS brand without choosing or changing input.
 // Depends on: Unicode normalization only; callers supply the frozen per-brand directory.
-// Used by: storefront CvsStorePicker and CVS real-case/unit acceptance.
+// Used by: storefront CvsStorePicker, admin CvsLookup and CVS real-case/unit acceptance.
 // Invariants: codes remain strings; pasted non-store lines never influence results; no I/O.
 export type CvsBrand = "UNIMART" | "UNIMARTFREEZE" | "FAMI" | "HILIFE" | "OKMART";
 export type CvsStore = { code: string; name: string; address: string; county: string; district: string };

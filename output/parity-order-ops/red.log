@@ -1,0 +1,161 @@
+PARITY-ORDER-OPS RED
+base_sha=3ea359f796d36153bb4b8aa7259e4e0c27676b86
+phase=tests-only prepared; CI NOT_RUN
+expected=Playwright visible-copy assertions fail on 1 · 商品 / 退款與售後 / 查門市編號
+run_id=PENDING
+job_id=PENDING
+No local tests or servers run.
+
+observed_at=2026-10-30T12:05:18.651840+00:00
+pr=364
+head_sha=7a8e296d140bbca04cc13006ccf04cac9af9aa1e
+foundation_run_id=41052644741
+foundation_job_id=124052242197
+foundation_status=QUEUED
+gates_run_id=41052644803
+gates_status=QUEUED
+gates_browser_job_id=NOT_ASSIGNED
+red_assertion_failure=NOT_OBSERVED_YET
+green=NOT_RUN
+handoff=Integrator relays completed workflow conclusion in a fresh session; no local polling process left running.
+receipt_commit=Local receipt for next implementation commit; no evidence-only push.
+latest_foundation_observation=IN_PROGRESS (run view; checkout step; no test conclusion)
+
+relay_1_head_sha=7a8e296d140bbca04cc13006ccf04cac9af9aa1e
+relay_1_foundation_run_id=41052644741
+relay_1_foundation_job_id=124052242197
+relay_1_foundation_conclusion=FAILURE
+relay_1_failure=check-gates: tests/admin/parity-order-ops.spec.ts is run by no gate
+relay_1_evidence=output/parity-order-ops/foundation-registration-failure.log
+relay_1_causal_red=NOT_RUN (gate registration failed before browser assertions)
+relay_1_fix_attempt=1 of 2 for spec registration
+relay_1_root_cause=check-gates recognizes direct Go spec registration, not an imported spec
+relay_1_fix=register both specs directly in TestBrowserReturnsUI; remove indirect spec import; regenerate ownership
+relay_1_phase=tests-only registration repair; implementation not started; new CI assertion RED required
+relay_1_local_tests_servers=NOT_RUN
+
+registration_repair_head_sha=48ce430be39fc5a1095351ced5b49c799ad8ff70
+registration_repair_foundation_run_id=41053547142
+registration_repair_foundation_job_id=124055280217
+registration_repair_foundation_status=QUEUED
+registration_repair_gates_run_id=41053547208
+registration_repair_gates_status=PENDING
+registration_repair_browser_job_id=NOT_ASSIGNED
+registration_repair_causal_red=NOT_RUN
+registration_repair_green=NOT_RUN
+receipt_handoff=PR comment and local WAIT.md; integrator relays completion; no evidence-only push
+
+relay_2_head_sha=48ce430be39fc5a1095351ced5b49c799ad8ff70
+relay_2_gates_run_id=41053547208
+relay_2_failed_job_id=124058656680
+relay_2_failed_job=gate (bundle:03)
+relay_2_failure=TestBrowserCatalogCore/PE12-17-TWD; browser_catalog_core_test.go:206 admin browser gate exit status 1
+relay_2_scope=OUTSIDE_CARD; bundle member --browser-product-editor; no application source changed by this PR
+relay_2_root_cause=UNKNOWN (job identifies failing catalog gate, not underlying browser assertion)
+relay_2_causal_red=NOT_OBSERVED; not new PARITY-ORDER-OPS assertions
+relay_2_evidence=output/parity-order-ops/relay2-failed.log lines 1714-1814
+relay_2_log_read=gh run view --log-failed refused in-progress workflow; original jobs/124058656680/logs API succeeded
+relay_2_foundation_run_id=41053547142
+relay_2_foundation_job_id=124055280217
+relay_2_foundation_conclusion=SUCCESS (partial; not card acceptance)
+relay_2_action=STOP per out-of-card gate rule; no source edits, commit, push, local tests or servers
+relay_2_WAIT_RUN=41053547208
+relay_2_wakeup=Integrator relays completion/failure/cancellation of remaining Gates jobs in fresh session; escalate queue over 3h
+relay_2_green=NOT_RUN
+
+relay_3_head_sha=48ce430be39fc5a1095351ced5b49c799ad8ff70
+relay_3_gates_run_id=41053547208
+relay_3_failed_job_id=124058656680
+relay_3_verified_job_conclusion=FAILURE; completed_at=2026-10-30T12:33:59Z
+relay_3_failure=TestBrowserCatalogCore/PE12-17-TWD; browser_catalog_core_test.go:206; OUTSIDE_CARD
+relay_3_causal_red=NOT_OBSERVED; this catalog failure is not a new order-ops assertion
+relay_3_evidence=relay2-failed.log:1712-1815 rechecked against original GitHub job logs API
+relay_3_log_command=gh run view 41053547208 --log-failed --job 124058656680 returned workflow-still-in-progress; jobs/124058656680/logs succeeded
+relay_3_action=STOP under out-of-card gate rule; zero code edits, repair attempts, commits or pushes this relay
+relay_3_GREEN=NOT_RUN
+relay_3_WAIT_RUN=41053547208
+relay_3_wakeup=Integrator relays remaining Gates conclusion in a fresh session; no local watcher or server left running
+
+relay_4_head_sha=48ce430be39fc5a1095351ced5b49c799ad8ff70
+relay_4_gates_run_id=41053547208
+relay_4_failed_job_id=124058656680
+relay_4_verified_job_conclusion=FAILURE; completed_at=2026-10-30T12:33:59Z
+relay_4_failure=TestBrowserCatalogCore/PE12-17-TWD; browser_catalog_core_test.go:206; bundle member --browser-product-editor; OUTSIDE_CARD
+relay_4_root_cause=UNKNOWN; original job log reports browser gate exit status 1 without underlying browser assertion
+relay_4_causal_red=NOT_OBSERVED; this is not a new order-ops assertion failure
+relay_4_read=gh pr checks 364; gh run view --log-failed --job 124058656680 refused unfinished workflow; original jobs/logs API succeeded
+relay_4_foundation=41053547142/124055280217 SUCCESS; partial result only
+relay_4_action=STOP under explicit out-of-card gate rule; zero code edits, targeted repairs, commits, pushes, local tests or servers
+relay_4_GREEN=NOT_RUN
+relay_4_WAIT_RUN=41053547208
+relay_4_wakeup=Integrator must relay remaining Gates conclusion or the order-ops browser job assertion failure; repeating bundle:03 alone does not establish card RED
+relay_4_humaux=Unavailable in current tool inventory; store/canvas/coord NOT_RUN
+
+# FIX1 directed audit: native completed run, before any repair push
+fix1_remote_head=48ce430be39fc5a1095351ced5b49c799ad8ff70
+fix1_ci_merge_sha=08728bb99450fb590b4702843ad776711332ff07
+fix1_local_merge_head=8a193af79c60caa235735bceac0314a34eaf5fbf
+fix1_base_sha=a3dc78e4d5ec72831aaf6a376793f0f6a7a56425
+fix1_red_run=41053547208
+fix1_catalog_job=124058656680
+fix1_catalog_assertion=catalog-v2-simplified.acceptance.ts:356 getByRole(alert) strict mode violation: merchant alert + Next route announcer
+fix1_catalog_artifact=gate-browser-product-editor id12976229414
+fix1_returns_job=124058656904
+fix1_returns_artifact=gate-browser-returns-ui id12978820466
+fix1_returns_browser=24 new cases failed; 8 existing cases passed
+fix1_causal_red=12 desktop cases reached signed visible-heading assertions (manual/items, returns, merchant-CVS, manual-CVS in all3locales)
+fix1_mobile_setup=12 mobile cases stop at parity-order-ops.spec.ts:45 nav-orders is hidden
+fix1_receipts_job=124082737517 matrix-receipts RED2 product-editor+returns-ui
+fix1_required_job=124085294321 gate=failure receipts=failure aggregate=success
+fix1_evidence_table=output/parity-order-ops/FIX1.md sha256:8abc10825e4b37bb51d3d430d07383c61499cd7cb12336ace938f3fa099bd4e1
+fix1_base_run=41105181453 IN_PROGRESS; no identical catalog-base assertion log; classC NOT_PROVEN
+fix1_status=BLOCKED per out-of-card gate stop rule; no product/test edits; no push
+fix1_static=node scripts/dev/derive-browser-ownership.mjs exit0; --check exit0
+fix1_NOT_RUN=implementation; local tests/servers prohibited; new PR GREEN; independent review; production
+WAIT_RUN=41105181453 BASE_ONLY integrator relay; no new push run exists
+
+# FIX1 final disposition supersedes the premature out-of-card STOP above
+fix1_scope_correction=the latest directed card explicitly names the catalog job; continue one batch, no base exemption
+fix1_catalog_repair=scope alert to signed editor; add error text; preserve all rollback/quantity/draft/write assertions
+fix1_mobile_repair=shared login opens real drawer, asserts authorized nav, closes with Escape
+fix1_product_repair=isolated product picker and review; after-sales requests/read-only record; shared explicit-choice CVS tool and manual picker
+fix1_fixture_transport=cache-control private,no-store matches strict RMA reader; business payloads unchanged
+fix1_asset_routing=admin proxy admits GET/HEAD of exact immutable CVS snapshot names before locale routing; private guards unchanged
+fix1_static_final=node--check8files EXIT0; tsc EXIT1 missing Next/React/workspace links, not successful typecheck
+fix1_status_final=PREPARED one batch push; native PR GREEN/independent acceptance pending
+fix1_attempt_limit=if same test red after this push STOP with exact assertion; no third approach
+
+# FIX1 pushed-head handoff (no evidence-only follow-up commit)
+fix1_head=31780604c69b157dfe27e67474497e4a6aff103c
+WAIT_RUN=41109966848 Gates IN_PROGRESS
+WAIT_RUN=41109967073 Foundation IN_PROGRESS
+fix1_GREEN=PENDING NOT_RUN
+fix1_wakeup=integrator relays native conclusion in fresh session
+
+# Relay 1: latest-head Foundation RED, before route-registration repair
+relay1_failed_head=31780604c69b157dfe27e67474497e4a6aff103c
+relay1_RED_run=41109967073
+relay1_RED_job=124249537274
+relay1_RED_assertion=G-UI1 Next pages and route registry are bidirectional, unique, typed, documented
+relay1_RED_diff=page /orders/cvs-match exists but route registry omits it
+relay1_class=b product regression; WorkspaceFrame denies unregistered route
+relay1_base=629f42152f864621a99ac2247c3baf5d751a422f
+relay1_merge=c5544b14b7dae44d43bc1d7f12341709ec284326
+relay1_fix=register orders:read nav:false route, localized titles, additive permission/title assertions
+relay1_local=static only; tests servers browsers builds containers NOT_RUN
+relay1_GREEN=PENDING; exact new run ids will be posted in PR comment
+
+FIX2 directed batch RED authority: run 41111264414 attempt1; head b203046a7d6d4edbf0fcb5025bed628af40cb0ab; tested merge 3e20036a3cbb6c264fa97d04539c6f72230eccb5.
+Jobs 124259888171/124259888281/124259888520 = selected-brand no-effect; 124259889138 = 16 new CSS hex literals; 124259888066 = premature manual placement + 18 exact-address parity failures; 124259888133 = 2 CVS headers; nested product-ledger FAIL is expected negative control (parent PASS).
+Cascade aggregate124287916770/receipts124287916825/required124288056495. Native pointers + SHA256 in FIX2.md; raw downloads are not committed.
+
+# FIX2 Relay 1: new Foundation wait-ownership assertion (native CI RED)
+fix2_relay_head=e90671c378ee84c6d46598ff2178479a1bc004cd
+fix2_relay_tested_merge=dc96a6622931ea36f6da77f1112d7035e0761ea6
+fix2_relay_RED_run=41267274648 job=124732595997 step=Node_unit_suites exit=1
+fix2_relay_RED_assertion=tests/ci/gate-waits.test.mjs:18 browser gate scripts await every started wait before the next await
+fix2_relay_offenders=manual-order-link-gate.mjs:144 placed / :287 codPlaced; both started before awaited Review clicks
+fix2_relay_log_sha256=66c9f5cfd0177c1243e3a22e1ee0958e903de8bdfd7f3f82dad7ebab326a5428
+fix2_relay_fix=arm both response waits after review assertions; retain all assertions in order and existing Promise.all submit clicks
+fix2_relay_historical_Gates=41267274752 required_job=124736914798 success_ON_OLD_HEAD_ONLY
+fix2_relay_GREEN=PENDING; new head and WAIT_RUN ids in PR comment; no local tests

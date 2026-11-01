@@ -124,11 +124,11 @@ try {
   pass("signed MOCK IdP sign-in lands on the dashboard");
   await merchant.getByTestId("action-create-order").click();
   await expect(merchant.getByTestId("manual-order-page")).toBeVisible();
+  await merchant.getByTestId("mo-open-picker").click();
   await merchant.getByTestId("mo-search").fill(process.env.LC_LINK_PRODUCT_NAME);
   await merchant.getByTestId("mo-search-button").click();
-  const result = merchant.locator(".mt-results li").first();
-  await result.getByRole("button", {name: "Add", exact: true}).first().click(); // expands the variants
-  await merchant.locator(".mt-variants li").first().getByRole("button", {name: "Add", exact: true}).click();
+  await merchant.locator("dialog[open] .mt-variants").getByRole("button", {name: /^Select /}).first().click();
+  await merchant.getByTestId("mo-apply-picker").click();
   await expect(merchant.getByTestId("mo-lines").locator("li")).toHaveCount(1);
   await merchant.getByTestId("mo-name").fill("Browser Buyer");
   await merchant.getByTestId("mo-phone").fill("0912345678");
@@ -137,6 +137,14 @@ try {
   await merchant.getByTestId("mo-city").fill("Taipei");
   await merchant.getByTestId("mo-line1").fill("1 Browser Road");
   await merchant.getByTestId("mo-mode-bank_transfer").check();
+  let placementWrites = 0;
+  merchant.on("request", request => {
+    if (request.method() === "POST" && new URL(request.url()).pathname === `/api/stores/${process.env.LC_LINK_STORE}/tools/orders/manual`) placementWrites++;
+  });
+  await merchant.getByRole("button", {name: "Review order", exact: true}).click();
+  await expect(merchant.getByRole("region", {name: "Review order", exact: true})).toBeVisible();
+  assert.equal(placementWrites, 0, "Review only opens the summary; placement requires the second real click");
+  // Arm the placement wait only after review assertions; pair it with the submitting click.
   const placed = merchant.waitForResponse(r => r.request().method() === "POST" && new URL(r.url()).pathname === `/api/stores/${process.env.LC_LINK_STORE}/tools/orders/manual`);
   const [reply] = await Promise.all([placed, merchant.getByTestId("manual-order-submit").click()]);
   assert.equal(reply.status(), 201);
@@ -261,10 +269,11 @@ try {
   // refuse that one unknown mode and show "creating orders is not turned on" instead of the whole form.
   await merchant.getByTestId("manual-order-another").click();
   await expect(merchant.getByTestId("manual-order-form")).toBeVisible();
+  await merchant.getByTestId("mo-open-picker").click();
   await merchant.getByTestId("mo-search").fill(process.env.LC_LINK_PRODUCT_NAME);
   await merchant.getByTestId("mo-search-button").click();
-  await merchant.locator(".mt-results li").first().getByRole("button", {name: "Add", exact: true}).first().click();
-  await merchant.locator(".mt-variants li").first().getByRole("button", {name: "Add", exact: true}).click();
+  await merchant.locator("dialog[open] .mt-variants").getByRole("button", {name: /^Select /}).first().click();
+  await merchant.getByTestId("mo-apply-picker").click();
   await merchant.getByTestId("mo-lines").getByRole("spinbutton").fill("2"); // 2 x 12.50 = 25.00: a COD total must be whole dollars
   await merchant.getByTestId("mo-name").fill("Browser COD Buyer");
   await merchant.getByTestId("mo-phone").fill("0912345678");
@@ -276,6 +285,10 @@ try {
   await merchant.getByTestId("mo-mode-cash_on_delivery").check();
   await expect(merchant.getByTestId("mo-cod-note")).toContainText("NT$50"); // the collection fee the carrier adds at the door
   await expect(merchant.getByTestId("mo-cod-note")).toContainText("NT$20,000"); // and the per-order cap, both whole NT$
+  const codWritesBeforeReview = placementWrites;
+  await merchant.getByRole("button", {name: "Review order", exact: true}).click();
+  await expect(merchant.getByRole("region", {name: "Review order", exact: true})).toBeVisible();
+  assert.equal(placementWrites, codWritesBeforeReview, "Review only opens the summary; placement requires the second real click");
   const codPlaced = merchant.waitForResponse(r => r.request().method() === "POST" && new URL(r.url()).pathname === `/api/stores/${process.env.LC_LINK_STORE}/tools/orders/manual`);
   const [codReply] = await Promise.all([codPlaced, merchant.getByTestId("manual-order-submit").click()]);
   assert.equal(codReply.status(), 201);
