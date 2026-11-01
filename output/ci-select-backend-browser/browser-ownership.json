@@ -357,7 +357,7 @@
     "tests/foundation/claims_worker_console_process_test.go": "725add6e92e80922a525ddb680a3b33842ac4afd2e0a88aacecd47bc6d8f45f6",
     "tests/foundation/click_sweep_budget_test.go": "58ee3a0b0ace26fabaa69c7ded3c0a218e4206d4fdebea86940fb965e0d216e7",
     "tests/foundation/collection_rules_test.go": "744f22e1c23f26fadcf1194a0eba116f95de918504419bd9da629ef61c62581e",
-    "tests/foundation/customer_import_test.go": "f5f4f64c592e59852d8e615d218ba8eaf43d071d7ab3c94693ef50558e480fb1",
+    "tests/foundation/customer_import_test.go": "de16e6558a8d2e9efa5bb68593354d04f7e2a40a7312426e1f6b72394bea1a3d",
     "tests/foundation/customer_tags_test.go": "45f027593566ac3df623fc0d72bc08e918665f15cb9e6ca931078c61d43be73a",
     "tests/foundation/customers_billing_buyer_concurrency_test.go": "c175f473b5262a20bac3f3b3c1b3c79b510375bda54cc136a3175cd9274fd840",
     "tests/foundation/customers_billing_consent_test.go": "0d04f9a691cd9a055f7531f40841b70e3a385ad580477fba73c8bd997d0af874",
