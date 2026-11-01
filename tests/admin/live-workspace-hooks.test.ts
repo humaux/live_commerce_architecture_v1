@@ -247,10 +247,14 @@ test("UNKNOWN journal restores the exact key/method/path/body and explicit retry
 test("window UNKNOWN durably fences other commands and reload retries its exact descriptor until receipt", async (t) => {
   const f = fixture(); t.after(f.stop);
   const input = { method: "POST", path: path.replace("/lifecycle", "/claims/window"), body: JSON.stringify({ expected_version: 0, state: "CLOSED", match_mode: "KEYWORD_QTY_CONTAINS" }) };
-  f.setExecute(async () => { throw new f.studio.StudioError("uncertain"); });
+  let persistedAtDispatch: string | undefined;
+  f.setExecute(async () => { persistedAtDispatch = f.saved.get(`live-workspace-command:${scope}`); throw new f.studio.StudioError("uncertain"); });
   let h = f.mount(() => f.hooks.useLiveCommand(scope, "session-one", () => {})); await flush();
   await h.view.run(input); await flush();
   const stored = f.saved.get(`live-workspace-command:${scope}`)!;
+  assert.equal(persistedAtDispatch, stored);
+  assert.equal(JSON.parse(stored).key, f.calls[0].key);
+  assert.equal(JSON.parse(stored).body, input.body);
   assert.equal(JSON.parse(stored).mayHaveCommitted, true); assert.equal(h.view.blocked, true);
   await h.view.run(request); assert.equal(f.calls.length, 1);
   f.stop(); h = f.mount(() => f.hooks.useLiveCommand(scope, "session-one", () => {})); await flush();
@@ -258,7 +262,9 @@ test("window UNKNOWN durably fences other commands and reload retries its exact 
   let finish!: (value: unknown) => void;
   f.setExecute(() => new Promise(resolve => { finish = resolve; }));
   const pending = h.view.retry(); await flush();
-  assert.equal(f.calls.length, 2); assert.deepEqual(f.calls[1], f.calls[0]);
+  assert.equal(f.calls.length, 2);
+  for (const field of ["method", "path", "body", "key", "boundary"]) assert.equal(f.calls[1][field], f.calls[0][field], `replay preserves ${field}`);
+  assert.equal(f.calls[1].mayHaveCommitted, true);
   assert.equal(f.calls[1].body, input.body); assert.equal(f.saved.get(`live-workspace-command:${scope}`), stored);
   finish({ state: "CLOSED" }); await pending; await flush();
   assert.equal(f.saved.size, 0); assert.equal(h.view.blocked, false);

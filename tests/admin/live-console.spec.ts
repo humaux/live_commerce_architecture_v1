@@ -1025,7 +1025,7 @@ test.describe("PARITY-LIVE current Figma route parity (MOCK)", () => {
     await page.route(`**${path}**`, intercepted => new URL(intercepted.request().url()).pathname === path && intercepted.request().method() === "GET"
       ? intercepted.fulfill({ status: 403, contentType: "application/json", headers: { "cache-control": "private, no-store" }, body: JSON.stringify({ code: "forbidden" }) })
       : intercepted.fallback());
-    const denied = page.waitForResponse(response => new URL(response.url()).pathname === path && response.status() === 403);
+    const denied = page.waitForResponse(response => new URL(response.url()).pathname === path && response.status() === 403, { timeout: 15000 });
     await page.getByTestId("comment-refresh").click(); await denied;
     await expect(page.getByTestId("comment-refresh")).toBeDisabled();
     await expect.poll(async () => (await parityPrivateTextCounts(page)).map(counts => counts.names + counts.bodies)).toEqual([0, 0, 0]);
