@@ -32,9 +32,6 @@ import { productMediaCopy } from "@/lib/product-media-copy";
 import { ProductDocumentVariants } from "./ProductDocumentVariants";
 import { ProductReadiness } from "./ProductReadiness";
 import { useProductEditorLayout } from "./useProductEditorLayout";
-function initialDraft(detail: ProductDetail | null): ProductDraft {
-  return detail ? draftFromDetail(detail) : emptyDraft();
-}
 /** Edits one catalog document; save/image writes remain delegated to the existing catalog command clients. */
 export function ProductDocumentForm({
   locale,
@@ -54,7 +51,7 @@ export function ProductDocumentForm({
   const c = productEditorCopy[locale],
     sign = currencySign(store.currency),
     write = useProductDocument(store.id, store.currency, boundary, c, detail, productMediaCopy[locale].axisChanged);
-  const [draft, setDraft] = useState<ProductDraft>(() => initialDraft(detail)),
+  const [draft, setDraft] = useState<ProductDraft>(() => detail ? draftFromDetail(detail) : emptyDraft()),
     [photos, setPhotos] = useState<DraftPhoto[]>([]),
     [collections, setCollections] = useState<Collection[]>([]),
     [warehouses, setWarehouses] = useState<{ id: string; name: string }[]>([]);
@@ -69,7 +66,7 @@ export function ProductDocumentForm({
     [mediaBusy, setMediaBusy] = useState(false),
     [mediaKnown, setMediaKnown] = useState(false);
   const [readinessOpen, setReadinessOpen] = useState(false);
-  const initial = useRef(JSON.stringify(initialDraft(detail))),
+  const initial = useRef(JSON.stringify(draft)),
     urlPhotos = useRef<DraftPhoto[]>([]),
     rowArchive = useRef<DraftRow[]>([]);
   // Media state never freezes the other fields or the section nav: an unreadable image list or an upload only
