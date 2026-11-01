@@ -278,7 +278,7 @@ function assertLocatorIdentity({ identity, locale, actions: operated, reads, met
       if ((same && direct[pendingOutcome.method]?.includes(event.matcher)) || effect) pendingOutcome = undefined;
     }
     assert.ok(!pendingOutcome && events.some((event) => event.type === "observed"), "missing outcome assertion before the observed return");
-    const grammar = { fill: ["fill"], "fill cancel": ["fill"], check: ["check"], select: ["selectOption"], "select select": ["selectOption", "selectOption"], "fill Enter": ["fill", "press"], Escape: ["press"],
+    const grammar = { fill: ["fill"], "fill step amount": ["fill"], "fill cancel": ["fill"], check: ["check"], select: ["selectOption"], "select after all scope": ["selectOption"], "select select": ["selectOption", "selectOption"], "fill Enter": ["fill", "press"], Escape: ["press"],
       "check uncheck": ["check", "uncheck"], "uncheck check": ["uncheck", "check"], uncheck: ["uncheck"], accept: ["accept"] };
     let expectedMethods = grammar[declaration.action];
     if (declaration.action.includes("click")) expectedMethods = ["click"];
@@ -519,7 +519,7 @@ test("shared table has only complete meaningful unique declarations", () => {
           else assert.ok(typeof segment[1] === "string" && segment[1].length > 0);
         }
         assert.ok(effect.matchers.length > 0 && effect.matchers.every((matcher) =>
-          ["toHaveCount", "toContainText", "toBeEnabled", "toBeVisible", "toHaveAttribute"].includes(matcher)));
+          ["toHaveCount", "toContainText", "toBeEnabled", "toBeVisible", "toHaveAttribute", "toHaveValue"].includes(matcher)));
         if (effect.attribute !== undefined) {
           assert.ok(effect.matchers.every((matcher) => matcher === "toHaveAttribute"));
           assert.equal(typeof effect.attribute, "string");
@@ -587,4 +587,21 @@ test("in-flight action cannot masquerade as complete or admit a concurrent dupli
   await running;
   assert.equal(ledger.length, cases.length);
   recorder.assertComplete();
+});
+
+// PR473: real-source mutations preserve exact button outcomes and create/edit separation.
+for (const [name, before, after] of [
+  ["create code has no click", 'await page.getByTestId("bulk-field-code").click();', ''],
+  ["edit code has no disabled observation", 'await expect(page.getByTestId("bulk-field-code")).toBeDisabled();', ''],
+  ["edit disabled observation names a different control", 'await expect(page.getByTestId("bulk-field-code")).toBeDisabled();', 'await expect(page.getByTestId("bulk-field-price")).toBeDisabled();'],
+  ["field click has no canonical pressed assertion", 'await expect(page.getByTestId("bulk-field-code")).toHaveAttribute("aria-pressed", "true");', ''],
+  ["step outcome has wrong value", 'await expect(page.getByTestId("bulk-value")).toHaveValue("20");', 'await expect(page.getByTestId("bulk-value")).toHaveValue("21");'],
+  ["fake PASS cannot replace create code action", 'await page.getByTestId("bulk-field-code").click();', 'ledger.push({ actual: "PASS", observed: "code selected" });'],
+]) test(`PR473 ${name} is RED`, () => {
+  // The edit disabled mutation targets the callback, not an unrelated earlier disabled read.
+  const start = name.startsWith("edit ") ? spec.indexOf('control: "bulk-field-code", action: "verify existing SKU code disabled"') : 0;
+  assert.ok(start >= 0);
+  const tail = spec.slice(start), changed = tail.replace(before, after);
+  assert.notEqual(changed, tail, "mutation must change the real source");
+  assert.ok(uncoveredActions(spec.slice(0, start) + changed).length, name);
 });

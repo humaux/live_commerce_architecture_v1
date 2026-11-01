@@ -15,16 +15,25 @@ test('actual rendered bulk controls have matching real actions in the canonical 
 test('removing the Apply declaration is RED even when table and ledger agree', () => {
   assert.ok(bulkControlIssues(source, cases.filter(c => c.control !== 'bulk-apply')).some(x => x.includes('bulk-apply')));
 });
+test('edit disabled code cannot replace the enabled create-code click', () => {
+  const changed = cases.filter(c => !(c.page === 'mobile matrix bulk code set' && c.control === 'bulk-field-code' && c.action === 'click'));
+  assert.ok(changed.length < cases.length);
+  assert.ok(changed.some(c => c.control === 'bulk-field-code' && c.action === 'verify existing SKU code disabled'));
+  assert.ok(bulkControlIssues(source, changed).some(x => x.includes('bulk-field-code')));
+});
 test('a new rendered control without a case is RED', () => {
   const added = source.replace('</div>', '<button data-testid="bulk-new">New</button></div>');
   assert.ok(bulkControlIssues(added, cases).some(x => x.includes('bulk-new')));
 });
-test('Escape alone is not a select action', () => {
-  const changed = cases.map(c => c.control === 'bulk-field' ? { ...c, action: 'Escape' } : c);
-  assert.ok(bulkControlIssues(source, changed).some(x => x.includes('bulk-field')));
+test('Escape alone is not a button click action', () => {
+  const changed = cases.map(c => c.control === 'bulk-field-price' ? { ...c, action: 'Escape' } : c);
+  assert.notDeepEqual(changed, cases);
+  assert.ok(bulkControlIssues(source, changed).some(x => x.includes('bulk-field-price')));
 });
 test('changing the production identity is RED', () => {
-  assert.ok(bulkControlIssues(source.replace('data-testid="bulk-field"', 'data-testid="bulk-other"'), cases).some(x => x.includes('bulk-other')));
+  const changed = source.replace('data-testid="bulk-field-price"', 'data-testid="bulk-other"');
+  assert.notEqual(changed, source);
+  assert.ok(bulkControlIssues(changed, cases).some(x => x.includes('bulk-other')));
 });
 
 function loadTS(path, require = () => { throw new Error('Unexpected dependency'); }) {
@@ -47,24 +56,73 @@ function visit(node) {
   ts.forEachChild(node, visit);
 }
 visit(jsx);
-test('real recorder admits the actual rendered bulk inventory in all three locales', () => {
-  for (const locale of ['zh-TW', 'zh-CN', 'en'])
-    createProductEditorMatrixLedger([], locale).assertRenderedControls('mobile matrix bulk', rendered);
+const inventoryStates = [
+  ['create-price', 'mobile matrix bulk code set', ['bulk-target']],
+  ['create-code', 'mobile matrix bulk code set', ['bulk-target', 'bulk-step-down', 'bulk-step-up', 'bulk-operation-add', 'bulk-operation-subtract']],
+  ['edit-price', 'mobile matrix bulk', []],
+  ['edit-keyword', 'mobile matrix bulk', ['bulk-step-down', 'bulk-step-up', 'bulk-operation-add', 'bulk-operation-subtract']],
+  ['edit-quantity', 'mobile matrix bulk', ['bulk-back', 'bulk-field-price', 'bulk-field-code', 'bulk-field-keyword', 'bulk-step-down', 'bulk-step-up']],
+  ['edit-compare', 'mobile matrix bulk compare set', ['bulk-back', 'bulk-field-price', 'bulk-field-code', 'bulk-field-keyword', 'bulk-target', 'bulk-step-down', 'bulk-step-up', 'bulk-operation-add', 'bulk-operation-subtract']],
+];
+const inventory = (state, excluded) => rendered.filter(c => !excluded.includes(c.control))
+  .map(c => ({ ...c, disabled: state.startsWith('edit-') && c.control === 'bulk-field-code' }));
+test('anonymous or duplicate actionable production JSX cannot hide behind case coverage', () => {
+  const anonymous = source.replace('data-testid="bulk-field-price"', '');
+  const duplicate = source.replace('data-testid="bulk-field-price"', 'data-testid="bulk-field-code"');
+  assert.notEqual(anonymous, source);
+  assert.notEqual(duplicate, source);
+  assert.ok(bulkControlIssues(anonymous, cases).some(x => x.includes('Unidentified actionable')));
+  assert.ok(bulkControlIssues(duplicate, cases).some(x => x.includes('Duplicate actionable')));
 });
-test('real recorder refuses an undeclared or anonymous production control and duplicates', () => {
-  const recorder = createProductEditorMatrixLedger([], 'en');
-  for (const extra of [{ control: 'bulk-new', tag: 'button' }, { control: null, tag: 'button' }, rendered[0]])
-    assert.throws(() => recorder.assertRenderedControls('mobile matrix bulk', [...rendered, extra]), /Missing rendered|Unidentified or duplicate/);
-  assert.throws(() => recorder.assertRenderedControls('mobile matrix bulk', []), /No rendered/);
+test('real recorder admits each finite actual rendered inventory in all three locales', () => {
+  for (const locale of ['zh-TW', 'zh-CN', 'en'])
+    for (const [state, page, excluded] of inventoryStates)
+      createProductEditorMatrixLedger([], locale).assertRenderedControls(page, inventory(state, excluded), state);
+});
+test('real recorder refuses unknown, anonymous, duplicate, missing and wrong-page inventory', () => {
+  for (const [state, page, excluded] of inventoryStates) {
+    const controls = inventory(state, excluded);
+    const recorder = createProductEditorMatrixLedger([], 'en');
+    for (const extra of [{ control: 'bulk-new', tag: 'button', disabled: false }, { control: null, tag: 'button', disabled: false }, controls[0]])
+      assert.throws(() => recorder.assertRenderedControls(page, [...controls, extra], state), /Missing rendered|Unidentified or duplicate/);
+    assert.throws(() => recorder.assertRenderedControls(page, [], state), /No rendered/);
+    assert.throws(() => recorder.assertRenderedControls(page, controls.slice(1), state), /Incomplete bulk inventory/);
+    assert.throws(() => recorder.assertRenderedControls('wrong page', controls, state), /state\/page/);
+  }
+});
+test('edit code cannot be enabled or create code declared disabled', () => {
+  for (const [state, page, excluded] of inventoryStates.filter(([state]) => state.includes('price'))) {
+    const controls = inventory(state, excluded).map(c => c.control === 'bulk-field-code' ? { ...c, disabled: !c.disabled } : c);
+    assert.throws(() => createProductEditorMatrixLedger([], 'en').assertRenderedControls(page, controls, state), /Wrong bulk disabled state/);
+  }
 });
 
 const spec = readFileSync('tests/admin/product-editor.acceptance.ts', 'utf8');
-test('actual DOM inventory is bound to the real imported recorder method', () => {
+test('actual DOM inventories are bound to the real imported recorder method once per finite state', () => {
   assert.deepEqual(bulkInventoryBindingIssues(spec), []);
 });
-test('a swapped method or no-op shadow cannot donate a DOM inventory assertion', () => {
-  assert.ok(bulkInventoryBindingIssues(spec.replace('assertRenderedControls: matrixRendered', 'assertComplete: matrixRendered')).length);
-  assert.ok(bulkInventoryBindingIssues(spec.replace('matrixRendered("mobile matrix bulk", renderedBulkControls);', 'const matrixRendered = () => {}; matrixRendered("mobile matrix bulk", renderedBulkControls);')).length);
+const inventoryCall = 'matrixRendered("mobile matrix bulk", renderedBulkControls, "edit-price");';
+for (const [name, before, after] of [
+  ['swapped method', 'assertRenderedControls: matrixRendered', 'assertComplete: matrixRendered'],
+  ['shadow method', inventoryCall, `const matrixRendered = () => {}; ${inventoryCall}`],
+  ['missing state', inventoryCall, ''],
+  ['duplicate state', inventoryCall, `${inventoryCall} ${inventoryCall}`],
+  ['wrong page', inventoryCall, 'matrixRendered("mobile matrix bulk code set", renderedBulkControls, "edit-price");'],
+  ['wrong state', inventoryCall, 'matrixRendered("mobile matrix bulk", renderedBulkControls, "create-price");'],
+  ['missing disabled sample', 'disabled: (node as HTMLInputElement).disabled', 'disabled: false'],
+]) test(`bulk inventory ${name} is RED`, () => {
+  const changed = spec.replace(before, after);
+  assert.notEqual(changed, spec, 'mutation must change actual source');
+  assert.ok(bulkInventoryBindingIssues(changed).length);
+});
+
+for (const [state, page] of inventoryStates) test(`missing required inventory ${state} is RED`, () => {
+  // Use the actual captured call; a stale source anchor must fail the mutation itself.
+  const actual = spec.split('\n').find(line => line.includes(`matrixRendered("${page}",`) && line.includes(`"${state}");`));
+  assert.ok(actual, `real ${state} inventory call must exist`);
+  const changed = spec.replace(actual, '');
+  assert.notEqual(changed, spec);
+  assert.ok(bulkInventoryBindingIssues(changed).length);
 });
 
 const variants = readFileSync('apps/admin/components/ProductDocumentVariants.tsx', 'utf8');
