@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registryHash": "543cf4d1708c7bd5ef26da171b048a8f42954e07b9069758759aec73e7c4a8a8",
+  "registryHash": "17dec789fdfe67dabf8c8521c11f6c0cbd7ec2d406a53cd1c28d384dd41c52b2",
   "sources": {
     "tests/admin/ads-model.test.ts": "a89483826fba28e2e86fcc1196475cefe1851cec367e66cfdc7bb69def18f309",
     "tests/admin/ads-request.test.ts": "190103fd72ab76050512616cef988d13d7e3725659883f142710555f36686de5",
@@ -119,7 +119,7 @@
     "tests/admin/live-console.spec.ts": "6d9541ef1062d974e3036108572675b90fda57b0d3df4740e501ae769fb1ddf1",
     "tests/admin/live-settings-bff.test.ts": "1386b69cdd713cb8ad1c4ed20db139a3db4e7383257e7d575013695978515a98",
     "tests/admin/live-settings-hooks.test.ts": "46cc13b98bdca7ee3e59bc1d3feea6abfba26512f05fdacafbfdbc0b4433cbfe",
-    "tests/admin/live-settings-model.test.ts": "34ed269a867bd76bd746b8d7515c8c8f2bb45dfafc3a757417a825f85ac3591d",
+    "tests/admin/live-settings-model.test.ts": "469e73dfc8180d3966838428b76acb69d9af9743dfdd046d2801481fc7f176bb",
     "tests/admin/live-settings.spec.ts": "73003210ee8eb5a9800e61716b15cc5402ec9187b2b8d0ff939741382688305f",
     "tests/admin/live-workspace-hooks.test.ts": "f4f6fd3453549ffa4400b63413357b702df83295051cb680525c67b7511caf72",
     "tests/admin/live-workspace.test.ts": "3b4fb838e4280f8b28eb4e8712a6a386168a92cca75e4ffbe2a33371a7b2d8be",
@@ -154,6 +154,7 @@
     "tests/admin/parcels-scope.test.ts": "01a84682b27f95d14665813cbb8c0b1189bbdd8cb2f3d26fa5939fdec71a0257",
     "tests/admin/parity-entry-dashboard.ts": "f099136e2273212106002fc8a6d1cf4f366d32b925f79f0cbd901384b9b1075d",
     "tests/admin/parity-entry.spec.ts": "6b11d4a2c5796aab411121d42509c69cf991505d7665bef5eaa64cfcaffab2b3",
+    "tests/admin/parity-leftovers.spec.ts": "3c3c2ab1d1232634a2bf11b7fe2058fb0e1feef12193e3ef71fe1c60fbccd4a8",
     "tests/admin/parity-money-support.ts": "b6fbedd1dfb167be5821ef89e025a10ed09401113c7864a8779b10581fd7dad7",
     "tests/admin/parity-order-ops.spec.ts": "c2798ff760eb3fc5af1828da20359a3656efab5eec131fdb441352ff36836548",
     "tests/admin/parity-shell-browser.mjs": "397492363afff6832aa910d2e27a17e7f7bde8e51aba85a44c57f3b76adf4deb",
@@ -169,18 +170,18 @@
     "tests/admin/platform-messaging-copy.fixture.mjs": "65b22f7eee960ffd6c608c75bc61b019a11e6879655286b64109e2e0a568cc54",
     "tests/admin/platform-runner.mjs": "e02e605c0a3bfbab1ae47d8b155a371c9efc5b011c1feb36fc323a96e3ade7e3",
     "tests/admin/platform-site.test.ts": "b62a03636786d85f95acd879d1d178d4ad159f4178bc4ec504ebc4ec10619418",
-    "tests/admin/product-document.test.ts": "343ebb592ef433e829f643e71780ad5811fa52d916c1c1535cf79143fe31c560",
+    "tests/admin/product-document.test.ts": "ccf9c067cd98ecd0fe1b71802b377ccb9f9ba2244e25a421c82a38569574a67f",
     "tests/admin/product-editor-layout.acceptance.ts": "2e91382e776fc9973f0dd919a67e4c3600c3dc9eb602aa2c0b4c45898c20dca4",
-    "tests/admin/product-editor-matrix-ledger.ts": "c2dc541bfc0962097fe00349efe4c95b860345ee0deae0ece0f94f7d66d5d5ee",
-    "tests/admin/product-editor.acceptance.ts": "aea2fa2ae3ce42cca68e67bc6f9649422566dcb147d8fe45d3f98f9aa0923d9c",
+    "tests/admin/product-editor-matrix-ledger.ts": "4b0e0f211b17b926bde79997d77da578a1077db14d3fbdf4431f652ffe68bb08",
+    "tests/admin/product-editor.acceptance.ts": "ebd5cf82828d851137f2a82a4b9d4c29c7b1ed98d4156fe435113d54a55954ce",
     "tests/admin/product-feedback.acceptance.ts": "8308b62cf46606b7ef432e4b47dd3390b98ff5e635b46b539fbc88e7e9360d56",
     "tests/admin/product-list-layout.acceptance.ts": "1e61e4737d297fb95c094df3d422ef0572a5ed022964816782aee377a52302f9",
     "tests/admin/product-media-model.test.ts": "9d2e7abba16faf56ca6081a01ee1f2b429adc45ee5240f167ab8f5db6c492d59",
     "tests/admin/product-media-ui-model.test.ts": "1eab6a9d65097f63b55ccb37c0b85ad20a63bc0dd1528d52dc7b08ece3275cce",
     "tests/admin/product-media-v2.spec.ts": "02242f41bda1dab4c29b0a4d9c9305ee586392e5e11870b93320ca31a6067c23",
     "tests/admin/product-patch.test.ts": "fcd507b0f872a6634ab2aa5cce5cdb17b1dcfc5f17dcfeb4068e1f6da753f325",
-    "tests/admin/product-review.acceptance.ts": "58306896e1db9e7f4bcbae258f4b93b2b461008002be2f6e123e389292f9361d",
-    "tests/admin/product-visual.acceptance.ts": "3fdc7f5aea9a06feb6d40ab217183598c2e3b31338b3d88051de0b50e74acd85",
+    "tests/admin/product-review.acceptance.ts": "aaa903e05afb21f4379bf6fb7a0fe84ea00d154ac13836af07201a9d9a2a6d54",
+    "tests/admin/product-visual.acceptance.ts": "99563f8fae6bc182cdf3e19452a16d8ce76ae90a8efa6f20e9ba5b60b076875c",
     "tests/admin/production.spec.ts": "f48164f44126b50c6e72e469383fd6ae63477baa5c1af3bef97600bde00f0a8e",
     "tests/admin/promotions-model.test.ts": "05d0d25fa925037cc8e2f0e3a1b739c91248151f4fe8ba05d39dc444ccd8186d",
     "tests/admin/refund-bff.test.ts": "d153c85c3d2a1bade8b0a7266e26c513b51595c81e371716a8eec704a432c68f",
@@ -287,6 +288,7 @@
     "tests/foundation/browser_operations_ads_test.go": "1d25eb9632f10dbef68a6b155046da4d4c2438f3a020819539df7303b14ca7d1",
     "tests/foundation/browser_ops_polish_test.go": "1bd05c73623b63c399f63dd801e8c3c5af2a16c53cf23816cc30074c9b386692",
     "tests/foundation/browser_order_chain_test.go": "008b21e7e0972486567b7bc10f1160a673f89b174b2f641dc874aa11d6980a29",
+    "tests/foundation/browser_parity_leftovers_test.go": "c76e903c62561e2578880b17b50f153f4eefb7a3d0ff40fb983a026bb97d987d",
     "tests/foundation/browser_password_auth_test.go": "3a986cf4a303e715cf73547e726f1e850d70124b5c2f11e29a1951d6c593e09d",
     "tests/foundation/browser_pool_capacity_test.go": "4d17106dc62339b8b380692ce440b5b414184f7f0bdda2dd70e81c2855d15814",
     "tests/foundation/browser_product_media_v2_fixture_test.go": "44ae8540fa92d78e66d48e4f694cbe469f64773d2d53aab7d1097ffddea76454",
@@ -338,7 +340,7 @@
     "tests/foundation/catalog_inventory_test.go": "6d8f0a7ca718d2f251cd7060dabe8da46503d7b96e7df007baf9123a84bbaeca",
     "tests/foundation/catalog_ledger_test.go": "3e4277f395ab74dcf6ba4c79edc7f3a61e01da336ef7817137cc6a55b460060e",
     "tests/foundation/catalog_matrix_evidence_test.go": "908c3bba7cccfbef1fea8df997eb8e11808f0997ca8a30177591dcfe6df58129",
-    "tests/foundation/catalog_matrix_ledger_test.go": "ac1d63c81f2b0c569be6827af763003e28de5c6f17363946a4bd5e2bef6c0162",
+    "tests/foundation/catalog_matrix_ledger_test.go": "12f49b59442fb40a3225fc3f787dd6dec3323fef08df30b21935a28014d71e70",
     "tests/foundation/catalog_media_test.go": "fcb1e39a0dc94361ad5b3c7de68a68480e3a4590136ec34eda8ebc05d3cd9e3e",
     "tests/foundation/catalog_v2_smoke_test.go": "18f76f2f3685a4497861d94098e231fa71e2e624b024441809aaa4e7cefee237",
     "tests/foundation/checkout_offline_fix_test.go": "def6083578fa47a2d5efbf0f45bf1ef94b364a0ab15d62892989c731e8190fa9",
@@ -715,8 +717,8 @@
     "tests/foundation/taiwan_cvs_selection_test.go": "d1625818e269b90de4411f253f0bf6235b5c9860c9c54b0cb12afc9f5f31d2a2",
     "tests/foundation/taiwan_cvs_shipment_test.go": "ee288ee965b2df18de895cd61374461679cc9efa9dd9f3402992976d6cf25892",
     "tests/foundation/taiwan_cvs_status_test.go": "5fbc5a8d2291d623e40bf33acfa012d2b15e9c3099436c0284722fec68b8b4a5",
-    "tests/foundation/testdata/product_editor_matrix_cases.json": "f37a95679f335c847b03f22bc2068e6072023e0d5f9382622e8f02e0014c3796",
-    "tests/foundation/testdata/product_editor_mobile_matrix_ledger.json": "cc635d133b1636dce798d43b75fcff3aca80e407915965be9f192a1c5559005a",
+    "tests/foundation/testdata/product_editor_matrix_cases.json": "49a263cc8cc57cfd489c23e43fc3a53668db5cbcd25cd049d0edcc45f9cccb4d",
+    "tests/foundation/testdata/product_editor_mobile_matrix_ledger.json": "268b2bdb355d9a6e150863ecc78268a7ecc463904de77a7ad1834ac476117e5f",
     "tests/foundation/tracking_import_test.go": "d4836c7895af1e366902aab40ac64ee9b1a04bf8bebb775ad0bfe87a44a72ad3",
     "tests/foundation/w4_u1_seed_test.go": "085b034004d9e302218c40a64e728015235cf9a8adda6cdd36fb6f3b292cac2c",
     "tests/foundation/worker_authority_helpers_test.go": "3b8942030a66a18c163ec93cae96aacce42259fe87d1b339427f331867456322",
@@ -784,7 +786,7 @@
     "tests/ui/visual-lint-lib.test.mjs": "5e28a7b30ab357bb6bf266c3426d6fbd1122811fc7a156a077b213095086edd0",
     "tests/ui/visual-scroll-capture.mjs": "538525d5cb94cdc26e91954c0589a48372b5d4ce771721dcbbeb76e6b81a0229",
     "tests/ui/visual-scroll-capture.test.mjs": "1cf6d1a8bcb8481c65d19cd69e7bc1e25701067d4041e86f29b9a0a8cc8a58a5",
-    "scripts/dev/test-local.sh": "543cf4d1708c7bd5ef26da171b048a8f42954e07b9069758759aec73e7c4a8a8",
+    "scripts/dev/test-local.sh": "17dec789fdfe67dabf8c8521c11f6c0cbd7ec2d406a53cd1c28d384dd41c52b2",
     "playwright.config.ts": "ad5ff56ccc1c4302c7a9daad01eb9e40c3ba02383e1b8692c9a7cf42f6c47c04",
     "apps/admin/package.json": "8ff4057bb534e821455b9cb47b93429a0d66040faad1d9c25edeabd4864dbbb4",
     "apps/storefront/package.json": "e25eed3dcbc88ef821828200325f2cb7f92934447e1978998efdd4fa58eb8987",
@@ -3269,7 +3271,8 @@
       "specs": [
         "tests/admin/live-settings-bff.test.ts",
         "tests/admin/live-settings-model.test.ts",
-        "tests/admin/live-settings.spec.ts"
+        "tests/admin/live-settings.spec.ts",
+        "tests/admin/parity-leftovers.spec.ts"
       ],
       "inputs": [
         "tests/admin/fixtures/live-console-controls.ts",
@@ -3277,7 +3280,8 @@
         "tests/admin/inbox-private-evidence.ts",
         "tests/admin/live-settings-bff.test.ts",
         "tests/admin/live-settings-model.test.ts",
-        "tests/admin/live-settings.spec.ts"
+        "tests/admin/live-settings.spec.ts",
+        "tests/admin/parity-leftovers.spec.ts"
       ],
       "apps": [
         "admin"
@@ -3293,9 +3297,11 @@
       "evidence": [
         "harness:tests/foundation/browser_live_settings_fixture_test.go",
         "harness:tests/foundation/browser_live_settings_test.go",
+        "harness:tests/foundation/browser_parity_leftovers_test.go",
         "registry:--browser-live-settings -> tests/admin/live-settings-bff.test.ts",
         "registry:--browser-live-settings -> tests/admin/live-settings-model.test.ts",
         "registry:--browser-live-settings -> tests/admin/live-settings.spec.ts",
+        "registry:--browser-live-settings -> tests/admin/parity-leftovers.spec.ts",
         "scripts/dev/test-local.sh:--browser-live-settings:lc_build=admin",
         "scripts/dev/test-node.sh:foundation covers computed Node loader tests/admin/live-settings-bff.test.ts",
         "tests/admin/live-settings-bff.test.ts:import apps/admin/proxy.ts",
@@ -3305,7 +3311,9 @@
         "tests/admin/live-settings-model.test.ts:server/import apps/admin",
         "tests/foundation/browser_live_settings_test.go -> tests/admin/live-settings.spec.ts",
         "tests/foundation/browser_live_settings_test.go:server/import apps/admin",
-        "tests/foundation/browser_live_settings_test.go:suite=live-settings -> tests/admin/live-settings.spec.ts"
+        "tests/foundation/browser_live_settings_test.go:suite=live-settings -> tests/admin/live-settings.spec.ts",
+        "tests/foundation/browser_parity_leftovers_test.go -> tests/admin/parity-leftovers.spec.ts",
+        "tests/foundation/browser_parity_leftovers_test.go:server/import apps/admin"
       ]
     },
     "--browser-admin-parity": {

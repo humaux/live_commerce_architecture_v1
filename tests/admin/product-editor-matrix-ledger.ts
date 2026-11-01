@@ -50,16 +50,31 @@ export function createProductEditorMatrixLedger(ledger: unknown[], locale: keyof
   const pending = new Set<string>();
   return {
     /** Compare the current production DOM with declarations; table-only completeness is insufficient. */
-    assertRenderedControls(page: string, controls: { control: string | null; tag: string }[]) {
+    assertRenderedControls(page: string, controls: { control: string | null; tag: string; disabled: boolean }[], state: string) {
+      const states: Record<string, { page: string; controls: string[]; disabled?: string }> = {
+        "create-price": { page: "mobile matrix bulk code set", controls: ["bulk-back", "bulk-field-price", "bulk-field-code", "bulk-field-keyword", "bulk-scope-all", "bulk-scope-empty", "bulk-value", "bulk-step-down", "bulk-step-up", "bulk-operation-set", "bulk-operation-add", "bulk-operation-subtract", "bulk-cancel", "bulk-apply"] },
+        "create-code": { page: "mobile matrix bulk code set", controls: ["bulk-back", "bulk-field-price", "bulk-field-code", "bulk-field-keyword", "bulk-scope-all", "bulk-scope-empty", "bulk-value", "bulk-operation-set", "bulk-cancel", "bulk-apply"] },
+        "edit-price": { page: "mobile matrix bulk", disabled: "bulk-field-code", controls: ["bulk-back", "bulk-field-price", "bulk-field-code", "bulk-field-keyword", "bulk-scope-all", "bulk-scope-empty", "bulk-target", "bulk-value", "bulk-step-down", "bulk-step-up", "bulk-operation-set", "bulk-operation-add", "bulk-operation-subtract", "bulk-cancel", "bulk-apply"] },
+        "edit-keyword": { page: "mobile matrix bulk", disabled: "bulk-field-code", controls: ["bulk-back", "bulk-field-price", "bulk-field-code", "bulk-field-keyword", "bulk-scope-all", "bulk-scope-empty", "bulk-target", "bulk-value", "bulk-operation-set", "bulk-cancel", "bulk-apply"] },
+        "edit-quantity": { page: "mobile matrix bulk", controls: ["bulk-scope-all", "bulk-scope-empty", "bulk-target", "bulk-value", "bulk-operation-set", "bulk-operation-add", "bulk-operation-subtract", "bulk-cancel", "bulk-apply"] },
+        "edit-compare": { page: "mobile matrix bulk compare set", controls: ["bulk-scope-all", "bulk-scope-empty", "bulk-value", "bulk-operation-set", "bulk-cancel", "bulk-apply"] },
+      };
+      const expected = states[state];
+      if (!expected || expected.page !== page) throw new Error("Wrong bulk inventory state/page");
       if (!controls.length) throw new Error("No rendered bulk controls");
       const rendered = new Set<string>();
-      for (const { control, tag } of controls) {
+      for (const { control, tag, disabled } of controls) {
         const verb = ({ select: "select", input: "fill", button: "click" } as Record<string, string>)[tag];
         if (!control || !verb || rendered.has(control)) throw new Error("Unidentified or duplicate rendered bulk control");
         rendered.add(control);
-        if (![...declared.values()].some(entry => entry.page === page && entry.control === control && entry.action.includes(verb)))
-          throw new Error(`Missing rendered ${tag} action ${control}`);
+        if (disabled !== (control === expected.disabled)) throw new Error(`Wrong bulk disabled state ${state}/${control}`);
+        const declaredAction = [...declared.values()].some(entry => entry.page === page && entry.control === control &&
+          (disabled ? entry.action === "verify existing SKU code disabled" : entry.action.includes(verb)));
+        // The create field action proves enabled code; the edit declaration only proves disabled code.
+        if (!declaredAction) throw new Error(`Missing rendered ${tag} action ${control}`);
       }
+      if (rendered.size !== expected.controls.length || expected.controls.some(control => !rendered.has(control)))
+        throw new Error(`Incomplete bulk inventory ${state}`);
     },
     /** Runs a real UI action plus DOM assertions, then records PASS for its declared canonical expectation. */
     async step(identity: Identity, perform: () => Promise<Observation>) {

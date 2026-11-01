@@ -4,6 +4,9 @@
 // Shell-only copy; business status language stays inside its domain.
 const en = {
   overview: "Overview",
+  ordersExportHelp: "Order export guide",
+  messageTemplates: "Message templates",
+  messageTemplateNew: "Add custom template",
   live: "Live",
   orders: "Orders & shipping",
   catalog: "Products & inventory",
@@ -73,6 +76,9 @@ export type ShellCopy = typeof en;
 export type ShellLabel = keyof ShellCopy;
 const zhCN: ShellCopy = {
   overview: "总览",
+  ordersExportHelp: "订单导出说明",
+  messageTemplates: "消息模板",
+  messageTemplateNew: "新增自定义模板",
   live: "直播",
   orders: "订单与发货",
   catalog: "商品与库存",
@@ -140,6 +146,9 @@ const zhCN: ShellCopy = {
 };
 const zhTW: ShellCopy = {
   overview: "總覽",
+  ordersExportHelp: "訂單匯出說明",
+  messageTemplates: "消息範本",
+  messageTemplateNew: "新增自訂範本",
   live: "直播",
   orders: "訂單與出貨",
   catalog: "商品與庫存",

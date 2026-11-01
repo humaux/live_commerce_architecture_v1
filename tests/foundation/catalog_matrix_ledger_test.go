@@ -195,9 +195,13 @@ func validateProductEditorMatrixLedgerFor(data []byte, required map[productEdito
 // TestProductEditorMatrixLedger checks independently recorded real-click identities,
 // then corrupts fixture copies without a browser, database write or source mutation.
 func TestProductEditorMatrixLedger(t *testing.T) {
-	// Independent identity/expected/status projection of the canonical real run
-	// in output/matrix-ledger-enforce/browser/product-editor-click-ledger.json;
-	// never synthesize this successful fixture from the declaration or predicate.
+	// Independent eight-field projection of the real browser ledger from run
+	// 41340328022, job 124949630523, artifact 13097835821; execution checkout
+	// bdda1e74c5f138eeea03ff5d8891d46a78539cb9 (PR head ad346d1d).
+	// Raw product-editor-click-ledger.json SHA-256:
+	// bcc601bb657c7e8c5987d79dab49c0ae72c22838ee006498a80dedf8bed8c310.
+	// Keep every row whose page starts with mobile matrix or mobile axis remove;
+	// never synthesize expected/PASS from the declaration or filter by status.
 	data, err := os.ReadFile("testdata/product_editor_mobile_matrix_ledger.json")
 	if err != nil {
 		t.Fatal(err)
@@ -241,6 +245,25 @@ func TestProductEditorMatrixLedger(t *testing.T) {
 				}
 			}
 			t.Fatal("fixture lacks axis removal")
+			return rows
+		}},
+		{"stale-bulk-field-select-identity", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
+			for i, row := range rows {
+				if row.Page == "mobile matrix bulk code set" && row.Control == "bulk-field-code" && row.Action == "click" {
+					rows[i].Control, rows[i].Action = "bulk-field", "select"
+					return rows
+				}
+			}
+			t.Fatal("fixture lacks current bulk field click")
+			return rows
+		}},
+		{"missing-bulk-scope-action", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {
+			for i, row := range rows {
+				if row.Page == "mobile matrix bulk code set" && row.Control == "bulk-scope-empty" && row.Action == "click" {
+					return append(rows[:i], rows[i+1:]...)
+				}
+			}
+			t.Fatal("fixture lacks current bulk scope click")
 			return rows
 		}},
 		{"failed-row", func(rows []productEditorMatrixLedgerRow) []productEditorMatrixLedgerRow {

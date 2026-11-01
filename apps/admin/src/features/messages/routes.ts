@@ -15,4 +15,6 @@ export const messagesRoutes = [
     nav: true,
     spec: "tests/admin/inbox-ui.spec.ts",
   },
+  {id:"message-templates",path:"/messages/templates",group:"messages",labelKey:"messageTemplates",icon:"chat",permission:"inbox:reply",template:"list",nav:false,spec:"tests/admin/parity-leftovers.spec.ts"},
+  {id:"message-template-new",path:"/messages/templates/new",group:"messages",labelKey:"messageTemplateNew",icon:"chat",permission:"live:manage",template:"form",nav:false,spec:"tests/admin/parity-leftovers.spec.ts"},
 ] satisfies RouteEntry[];
