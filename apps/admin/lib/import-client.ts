@@ -11,7 +11,7 @@ export { importFields, requiredImportFields } from "./import-model";
 /** Definite preview/stale/receipt or a coded refusal; only post-dispatch commits may be uncertain. */
 export type ImportAnswer = {kind:"preview"|"stale";value:ImportPreview}|{kind:"receipt";value:ImportReceipt}|{kind:"terminal";code:"receipt_mismatch";value:ImportReceipt}|{kind:"error";code:string;uncertain:boolean};
 /** Frozen original file and mapping parameters; caller owns sticky UNKNOWN intent. */
-export type ImportSend = {store:string;kind:ImportKind;action:"preview"|"commit";file:Blob;mapping:ImportMapping;expectedApplyRows?:number;boundary:string;signal:AbortSignal};
+export type ImportSend = {store:string;kind:ImportKind;action:"preview"|"commit";file:Blob;mapping:ImportMapping;expectedApplyRows?:number;rowErrors?:"field-v1";boundary:string;signal:AbortSignal};
 const privateResponse = (r:Response) => r.headers.get("cache-control") === "private, no-store";
 const fileCodes = ["encoding_not_utf8","too_many_rows","required","invalid_request","nothing_to_apply","idempotency_conflict","retry_later","unauthorized","forbidden","not_found"];
 function refusalCode(response:Response,value:unknown):string|null {
@@ -32,11 +32,12 @@ const error = (code:string,uncertain=false):ImportAnswer => ({kind:"error",code,
 
 /** Send original immutable Blob once; neither errors nor session changes resend the request. */
 export async function sendImport(input:ImportSend):Promise<ImportAnswer> {
-  const {store,kind,action,file,mapping,expectedApplyRows,boundary,signal}=input;
-  if (!canonicalUUID.test(store) || !["customers","orders"].includes(kind) || !["preview","commit"].includes(action) || !file.size || file.size>maxImportBytes || !validImportMapping(mapping,kind) ||
+  const {store,kind,action,file,mapping,expectedApplyRows,rowErrors,boundary,signal}=input;
+  if ((rowErrors!==undefined && (rowErrors!=="field-v1" || kind!=="customers")) || !canonicalUUID.test(store) || !["customers","orders"].includes(kind) || !["preview","commit"].includes(action) || !file.size || file.size>maxImportBytes || !validImportMapping(mapping,kind) ||
     (action==="commit" && (!Number.isSafeInteger(expectedApplyRows) || expectedApplyRows!<0 || expectedApplyRows!>maxImportRows))) return error("invalid_request");
   const query=new URLSearchParams({mapping:JSON.stringify(mapping)});
   if(action==="commit")query.set("expected_apply_rows",String(expectedApplyRows));
+  if(rowErrors!==undefined)query.set("row_errors",rowErrors);
   if(new TextEncoder().encode(query.toString()).length>4096)return error("invalid_request");
   const csrf=csrfCookie();
   const concealed=()=>signal.aborted||document.visibilityState==="hidden";

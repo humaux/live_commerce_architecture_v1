@@ -23,7 +23,7 @@ import "./import-wizard.css";
 const pageHidden = () => document.visibilityState === "hidden";
 
 type Stage = "select" | "upload" | "mapping" | "preview" | "confirm" | "result" | "errors";
-type Attempt = { kind: ImportKind; file: File; mapping: ImportMapping; expected: number; unknown: boolean };
+type Attempt = { kind: ImportKind; file: File; mapping: ImportMapping; expected: number; readonly rowErrors?: "field-v1"; unknown: boolean };
 
 /** Mount no file-bearing form until its current CSRF/session fence is established; hiding/leaving unmounts it. */
 export function ImportWizard({ locale, store, initialError, renderKey }: {
@@ -120,12 +120,14 @@ function ImportForm({ locale, store, boundary, onSignedOut, onUnconfirmed }: {
     if (action === "commit" && !replay && (!preview || preview.apply_rows === 0)) return;
     const p: Attempt = replay && pending.current ? pending.current : {
       kind, file, mapping: Object.freeze({ ...mapping }), expected: preview?.apply_rows ?? 0, unknown: false,
+      ...(kind === "customers" ? { rowErrors: "field-v1" as const } : {}),
     };
     if (action === "commit") pending.current = p;
     const controller = new AbortController(); active.current = controller; inflight.current = true;
     setBusy(true); setError(""); setNotice("");
     try {
       const result = await sendImport({ store, kind: p.kind, action, file: p.file, mapping: p.mapping,
+        ...(p.rowErrors ? { rowErrors: p.rowErrors } : {}),
         ...(action === "commit" ? { expectedApplyRows: p.expected } : {}), boundary, signal: controller.signal });
       if (!mounted.current || controller.signal.aborted || pageHidden()) return;
       if (result.kind === "error") {
@@ -227,10 +229,15 @@ function ImportForm({ locale, store, boundary, onSignedOut, onUnconfirmed }: {
         <div className="ops-footer"><button type="button" disabled={locked} onClick={() => { setPreview(null); setNotice(""); setStage("mapping"); }}>{d.backMapping}</button><button type="button" className="primary" data-testid="import-confirm" disabled={locked || preview.apply_rows === 0} onClick={() => void execute("commit")}>{notice ? d.confirm : dataOpsText(d.confirmImport, { n: preview.apply_rows })}</button></div>
       </>}
       {!unknown && stage === "errors" && preview && <>
-        <section className="ops-card">{preview.rows.filter(row => row.outcome === "failed").map(row => <section className="ops-row" key={row.row}>
-          <h2>{dataOpsText(d.willSkip, { n: row.row, reason: c.errors[row.code ?? ""] ?? c.errors.invalid_request })}</h2>
-          {row.code === "required" && <p>{c.requiredMapping}</p>}
-        </section>)}<p className="ops-note">{d.errorPrivacy}</p><button type="button" data-testid="import-download-failed" disabled={locked || rowFailures === 0} onClick={() => void download()}>{c.failedDownload}</button></section>
+        <section className="ops-card">{preview.rows.filter(row => row.outcome === "failed").map(row => {
+          const column = preview.mapping.external_id;
+          const source = row.code === "required" && row.error_field === "external_id" && !!column && preview.headers.includes(column);
+          return <section className="ops-row" key={row.row}>
+            <h2>{row.code === "required" ? dataOpsText(source ? d.sourceError : d.requiredError, { n: row.row })
+              : dataOpsText(d.willSkip, { n: row.row, reason: c.errors[row.code ?? ""] ?? c.errors.invalid_request })}</h2>
+            {row.code === "required" && <p>{source ? dataOpsText(d.sourceRepair, { column }) : d.requiredRepair}</p>}
+          </section>;
+        })}<p className="ops-note">{d.errorPrivacy}</p><button type="button" data-testid="import-download-failed" disabled={locked || rowFailures === 0} onClick={() => void download()}>{c.failedDownload}</button></section>
         <div className="ops-footer"><button type="button" onClick={() => setStage("preview")}>{d.backPreview}</button><button type="button" onClick={() => fileInput.current?.click()}>{d.correctedFile}</button></div>{filePicker}
       </>}
       {!unknown && stage === "result" && receipt && <>
