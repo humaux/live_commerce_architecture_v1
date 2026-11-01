@@ -163,6 +163,39 @@ test("refresh keeps unavailable semantics but forbidden and session changes stay
   }
 });
 
+for (const [code, status] of [["not-found", 404], ["unavailable", 503]] as const) test(`explicit retained refresh ${status} ${code} conceals only a terminal snapshot`, async (t) => {
+  const f = fixture(); t.after(f.stop);
+  const original = { title: "PRIVATE" }; let reads = 0, rejectRead!: (error: unknown) => void;
+  const h = f.mount(() => f.hooks.useLiveRead(scope, true, async () => {
+    if (++reads === 1) return original;
+    return new Promise((_, reject) => { rejectRead = reject; });
+  }));
+  await flush(); assert.equal(h.view.data, original); assert.equal(h.view.boundary, "session-one");
+  h.view.refresh(); await flush();
+  assert.equal(reads, 2); assert.equal(h.view.data, original); assert.equal(h.view.boundary, "session-one");
+  rejectRead(new f.studio.StudioError(code, "", 0, status)); await flush();
+  assert.equal(h.view.error, code);
+  assert.equal(h.view.data, code === "not-found" ? null : original, `${status} snapshot policy`);
+  assert.equal(h.view.boundary, code === "not-found" ? "" : "session-one", `${status} write boundary policy`);
+});
+
+test("an older retained refresh completion cannot revive a snapshot concealed by 404", async (t) => {
+  const f = fixture(); t.after(f.stop);
+  let reads = 0, finishOld!: (value: unknown) => void, rejectCurrent!: (error: unknown) => void;
+  const h = f.mount(() => f.hooks.useLiveRead(scope, true, async () => {
+    if (++reads === 1) return { title: "PRIVATE" };
+    if (reads === 2) return new Promise(resolve => { finishOld = resolve; });
+    return new Promise((_, reject) => { rejectCurrent = reject; });
+  }));
+  await flush(); assert.equal(h.view.data.title, "PRIVATE"); assert.equal(h.view.boundary, "session-one");
+  h.view.refresh(); await flush(); assert.equal(reads, 2); assert.equal(h.view.data.title, "PRIVATE");
+  h.view.refresh(); await flush(); assert.equal(reads, 3); assert.equal(h.view.data.title, "PRIVATE");
+  rejectCurrent(new f.studio.StudioError("not-found", "", 0, 404)); await flush();
+  assert.equal(h.view.error, "not-found"); assert.equal(h.view.data, null); assert.equal(h.view.boundary, "");
+  finishOld({ title: "STALE PRIVATE" }); await flush();
+  assert.equal(h.view.error, "not-found"); assert.equal(h.view.data, null); assert.equal(h.view.boundary, "");
+});
+
 test("hide or logout during a retained refresh conceals and rejects late success", async () => {
   for (const action of ["hide", "logout"] as const) {
     const f = fixture(); let reads = 0, finish!: (value: unknown) => void;

@@ -189,3 +189,42 @@ Authorized minimal change: after the second awaited sessionBoundary equality che
 Static commands actually executed: `node --check apps/admin/src/features/live/use-live-workspace.ts` exit0; `git diff --exit-code dacc2e02df4c8c5f0c543dab5ead072fcb8e6a86 -- tests/admin/live-workspace-hooks.test.ts` exit0 plus direct git-show byte comparison; ownership generator56 modes exit0 and --check exit0 under acquired=true lock; `git diff --check` exit0. Generator creates no artifact diff because tests are unchanged. Hook SHA256: `af2e87801e65d65beaa9ac18fee03eb53c596e420e3e061ed203a2603b36c59d`.
 
 Author E0/static E1 only. Current guard GREEN, independent acceptance, SANDBOX/LIVE and deployment NOT_RUN. No local test/browser/server, test modification, CI dispatch, push, PR, merge, deploy or recursive delegation. Parent owns fresh CI and original browser disabled/zero-POST/reload acceptance.
+
+## 2026-11-01 PR355 two P1 tests-only RED candidate
+
+- task_id: `53ea9f21-sub-live-recovery-tests`; parent: `53ea9f21-3f3b-4626-87ab-42dc853507b9`.
+- role: `ui_worker`; dispatched model/reasoning: `gpt-6.1-sol/high`; independent provider telemetry: UNKNOWN.
+- base_commit: `7be07b0e1d181492a6a7dfc9fa7ca4489d5af8a1`; branch: `codex/pr355-review-fixes`; isolated worktree: `.worktrees/codex-pr355-review-fixes`.
+- Changed paths: `tests/admin/live-console.spec.ts`, `tests/admin/live-workspace-hooks.test.ts`, this existing report. Product source, routes, schema, runners, timeouts, gates and lockfiles unchanged. Derived browser ownership is reserved for root.
+- Authority: parent tests-only card; human-source Humaux `b5e62d45-0d23-40f6-a669-e6c111b2f1a1` and `6fe7b934-e093-46a6-aba9-af5bc43b1a42`; source at base above; frozen `contracts/live-console-v1.md` and `contracts/invariants.json` I01/I02/I06/I11/I14. T09 depends on T05/T07/T08; no interface or DAG change.
+
+P1-1 candidate: opt-in lost-ACK in the existing parity fixture captures immutable method/path/body/idempotency-key, commits a synthetic keyed window receipt once and aborts its first response. Actual pause click must reach UNKNOWN, retain its command fence across another A1 read and normal reload, avoid automatic resends across the reload's next A1 read, and expose the existing explicit retry control. Recovery must send the identical command/key and retain the journal while the replay ACK is deliberately held; only the released successful receipt can clear it and enable resume. Baseline source has only the `1` legacy fence and cannot expose that recovery control. Fixture receipt/effect counts are MOCK and do not establish Go/PG exactly-once. No force click, DOM injection or storage clearing.
+
+Legacy negative: a labelled setup seeds the pre-journal `1` marker; reload and real refresh must retain UNKNOWN/disabled pause, preserve that exact marker, expose no unsafe retry and emit zero window POSTs. This is fixture preparation, not UI action evidence.
+
+P1-2 candidate: successful PRIVATE snapshot plus `session-one` boundary, actual hook `refresh()`, controlled deferred second read (snapshot may stay pending), then real `StudioError(code, "", 0, status)` constructor. 404 must clear data and boundary; 503 control must retain both. A separate overlapping refresh case finishes the older read after current 404 to ensure no PRIVATE/boundary revival. The prior three post-read boundary cases are byte-identical and all original assertion lines in both files are preserved.
+
+Click ledger (actual result NOT_RUN locally):
+
+| Page/control | Operation | Expected | Actual/evidence |
+| --- | --- | --- | --- |
+| `/en/studio/console` pause | Real click | One committed synthetic window POST, lost ACK, visible uncertainty, resume disabled | NOT_RUN; `claim-window lost ACK reload requires explicit replay of the original command` |
+| Same page reload | Normal browser reload; accept beforeunload if present | Original fence, no automatic replay after another poll | NOT_RUN; same test |
+| Same page `live-command-retry` | Real click | Exact original command/key twice, one effect; journal survives held ACK then clears | NOT_RUN; same test |
+| Same page legacy marker + refresh | Fixture seed, normal reload, real refresh click | UNKNOWN stays locked, marker retained, zero window POSTs | NOT_RUN; `legacy claim-window bool stays UNKNOWN without deletion or a fresh-key retry` |
+
+Actual commands and exits (static only, E1):
+
+- `git rev-parse HEAD` -> base above, exit 0; `git status --short` -> initially clean, exit 0.
+- `node --check tests/admin/live-console.spec.ts` -> exit 0.
+- `node --check tests/admin/live-workspace-hooks.test.ts` -> exit 0.
+- `git diff --check` -> exit 0.
+- Inline Python static diff audit via `git show <base>:<path>` -> exit 0: all existing assertion lines retained; three post-read boundary case block byte-identical. This audits source preservation and does not execute tests.
+- Read-only `rg`/bounded `sed`/`cat`/repo-map -> exit 0 final targeted reads. Exploratory lookup `dependency-map.json` was absent (inside a subsequent successful compound read); actual generated map is `docs/engineering/dependency-map.md`. No conclusion relied on the guessed path.
+
+File SHA256 evidence:
+
+- `tests/admin/live-console.spec.ts`: `79351a7a39ec30f54ba8cfe5e0c067cf62d66662a4a7e72b88f7960ae31b5b10`.
+- `tests/admin/live-workspace-hooks.test.ts`: `782d9a84c057b35543d1fbef1d3f5695782481cabf489c892339543b0b17b14a`.
+
+Unresolved / NOT_RUN: all runtime tests, actual CI RED, same-test GREEN, typechecking, browser/BFF/Go/PG/provider acceptance, independent review, SANDBOX/LIVE, deploy. No local server/test process/container/port started. No push/CI dispatch/merge/deploy. The Astra supporting closed grammar/transport cases in `live-console-bff.test.ts` are outside this card's allowed paths and remain for the authorized implementation card; they must accompany product wiring before acceptance. This delivers tests-only candidates at E1; neither P1 is claimed fixed.

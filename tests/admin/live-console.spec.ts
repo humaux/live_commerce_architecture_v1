@@ -858,13 +858,17 @@ const parityIDs = {
 };
 
 /** MOCK only: fixtures model upstream observations; clicks never change DOM or bypass the real route. */
-async function parityFixture(page: Page, locale: ParityLocale, state = "selected", buyer = "A", context = "", dispatchFromClick = false) {
+async function parityFixture(page: Page, locale: ParityLocale, state = "selected", buyer = "A", context = "", dispatchFromClick = false, loseWindowAck = false) {
   const c = parityCopy[locale], at = "2026-10-30T00:00:00Z";
   let receipt = dispatchFromClick ? "" : state === "pending" ? "UNKNOWN" : state === "sent" ? "SUCCEEDED" : state === "blocked" ? "BLOCKED_POLICY" : "";
   let publicReplies = !dispatchFromClick && state === "publicSent" ? 1 : 0;
   let replyPosts = 0, paused = state === "paused" || context === "paused", off = state === "off" || context === "off";
   const sold = state === "sold" || context === "sold";
-  const window = () => ({ session_id: comments.session, state: paused ? "CLOSED" : "OPEN", generation: 1, version: 1, match_mode: "KEYWORD_QTY_ONLY", opened_at: at, closed_at: paused ? at : null });
+  const windowRequests: Readonly<{ method: string; path: string; body: string; key: string }>[] = [];
+  const windowReceipts = new Map<string, ReturnType<typeof window>>();
+  let windowEffects = 0, consoleReads = 0, releaseWindowReceipt!: () => void;
+  const windowAck = loseWindowAck ? new Promise<void>(resolve => { releaseWindowReceipt = resolve; }) : Promise.resolve();
+  const window = () => ({ session_id: comments.session, state: paused ? "CLOSED" : "OPEN", generation: 1, version: 1 + windowEffects, match_mode: "KEYWORD_QTY_ONLY", opened_at: at, closed_at: paused ? at : null });
   const offer = (): Offer => ({ offer_id: parityIDs.offer, session_id: comments.session, keyword: "101", sku_id: parityIDs.sku, sku_code: "SKU-1042", product_name: c.product, max_quantity_per_claim: 5, active: !off, version: 1, activated_at: at, updated_at: at, sku_price_minor: 10000, currency: "TWD", live_price_minor: null });
   const snapshot = (): ConsoleSnapshot => ({
     session: { id: comments.session, title: c.session, lifecycle: "live", version: 1, started_at: at, ended_at: null },
@@ -899,7 +903,7 @@ async function parityFixture(page: Page, locale: ParityLocale, state = "selected
         aspect_ratio: "9:16", state: "LIVE", version: 1, created_at: at, updated_at: at }],
       next_cursor: "",
     } satisfies StudioPage);
-    if (path === `${base}/console`) return json(snapshot());
+    if (path === `${base}/console`) { consoleReads++; return json(snapshot()); }
     if (path === `${base}/claims` && request.method() === "GET") return json({ window: window(), offers: [offer()], stats: { generation: 1, accepted: 1, rejected: Object.fromEntries(["NO_MATCH", "UNKNOWN_KEYWORD", "OFFER_INACTIVE", "INVALID_QUANTITY", "QUANTITY_REQUIRED", "QUANTITY_OVER_MAX", "BUNDLE_LIMIT"].map(key => [key, 0])) } });
     if (path === `${base}/comments` && request.method() === "GET") return json({ epoch: 1, reset: false, scan_exhausted: false, items: rows(), next: { epoch: 1, seq: 2 }, older_cursor: null, stream: snapshot().stream });
     if (path === `/api/stores/${store}/inbox/buyer-panel`) {
@@ -916,6 +920,18 @@ async function parityFixture(page: Page, locale: ParityLocale, state = "selected
       return json({ send_state: sendState, operation_id: parityIDs.operation, outbound_id: parityIDs.outbound });
     }
     if (path === `${base}/claims/window` && request.method() === "POST") {
+      windowRequests.push(Object.freeze({ method: request.method(), path, body: request.postData() ?? "", key: request.headers()["idempotency-key"] ?? "" }));
+      if (loseWindowAck) {
+        // MOCK lost ACK: a synthetic receipt commits before transport fails. Only this opt-in case waits on replay.
+        const captured = windowRequests.at(-1)!;
+        if (!windowReceipts.has(captured.key)) {
+          paused = request.postDataJSON().state === "CLOSED"; windowEffects++;
+          windowReceipts.set(captured.key, window());
+        }
+        if (windowRequests.length === 1) return intercepted.abort("failed");
+        await windowAck;
+        return json(windowReceipts.get(captured.key));
+      }
       paused = request.postDataJSON().state === "CLOSED";
       return json(window());
     }
@@ -925,7 +941,7 @@ async function parityFixture(page: Page, locale: ParityLocale, state = "selected
     }
     return intercepted.continue();
   });
-  return { posts: () => replyPosts };
+  return { posts: () => replyPosts, windowRequests, windowEffects: () => windowEffects, consoleReads: () => consoleReads, releaseWindowReceipt: () => releaseWindowReceipt?.() };
 }
 
 async function paritySelect(page: Page, locale: ParityLocale, buyer = "A") {
@@ -948,6 +964,63 @@ test.describe("PARITY-LIVE current Figma route parity (MOCK)", () => {
   test.afterEach(async ({}, info) => {
     await info.attach("click-ledger-outcome", { body: JSON.stringify({ page: "/[locale]/studio/console", test: info.title, expected: "signed copy, controls, buyer context and reply fencing", actual: info.status, result: info.status === "passed" ? "PASS in MOCK browser only" : "FAIL or NOT_RUN; inspect assertion failure", persistence: "explicit reload checks only; no buyer text stored" }), contentType: "application/json" });
   });
+  test("claim-window lost ACK reload requires explicit replay of the original command", async ({ page }) => {
+    const locale = "en", c = parityCopy[locale], copy = workspaceCopy[locale];
+    const mock = await parityFixture(page, locale, "selected", "A", "", false, true);
+    const receiptKeys = [`live-workspace-command:${store}:${comments.session}`, `live-console-window:${store}:${comments.session}`];
+    // READ ONLY: inspect command fences, never auth cookies or buyer data, without altering browser state.
+    const journal = () => page.evaluate(keys => keys.map(key => sessionStorage.getItem(key)), receiptKeys);
+    try {
+      await login(page); await page.goto(route(locale, comments.session));
+      await expect(page.getByRole("heading", { name: c.session, exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: c.pause, exact: true })).toBeEnabled();
+      await page.getByRole("button", { name: c.pause, exact: true }).click();
+      await expect.poll(() => mock.windowRequests.length).toBe(1);
+      const first = mock.windowRequests[0]!;
+      expect(first.method).toBe("POST"); expect(first.path).toBe(`/api/stores/${store}/live-sessions/${comments.session}/claims/window`);
+      expect(first.key).not.toBe(""); expect(JSON.parse(first.body)).toEqual({ expected_version: 1, state: "CLOSED", match_mode: "KEYWORD_QTY_ONLY" });
+      await expect(page.getByTestId("live-console")).toContainText(copy.uncertain);
+      await expect(page.getByRole("button", { name: c.resume, exact: true })).toBeDisabled();
+      const pendingJournal = await journal(); expect(pendingJournal.some(Boolean)).toBe(true);
+      // Observe another real A1 read: polling must not turn UNKNOWN into an automatic second POST or clear its fence.
+      const before = mock.consoleReads(); await expect.poll(mock.consoleReads, { timeout: 8000 }).toBeGreaterThan(before);
+      expect(mock.windowRequests).toHaveLength(1); expect(await journal()).toEqual(pendingJournal);
+      page.on("dialog", dialog => dialog.accept());
+      await page.reload();
+      await expect(page.getByRole("button", { name: c.resume, exact: true })).toBeDisabled();
+      await expect(page.getByTestId("live-console")).toContainText(copy.uncertain);
+      const reloadedReads = mock.consoleReads(); await expect.poll(mock.consoleReads, { timeout: 8000 }).toBeGreaterThan(reloadedReads);
+      expect(mock.windowRequests).toHaveLength(1); expect(await journal()).toEqual(pendingJournal);
+      // Baseline 7be has only the legacy bool fence: this actual recovery control is missing, so this must be RED.
+      await expect(page.getByTestId("live-command-retry")).toBeVisible();
+      await page.getByTestId("live-command-retry").click();
+      await expect.poll(() => mock.windowRequests.length).toBe(2);
+      expect(mock.windowRequests[1]).toEqual(first); expect(mock.windowEffects()).toBe(1);
+      expect(await journal()).toEqual(pendingJournal); // Dispatch alone cannot clear an unconfirmed receipt.
+      mock.releaseWindowReceipt();
+      await expect(page.getByRole("button", { name: c.resume, exact: true })).toBeEnabled();
+      await expect.poll(journal).toEqual([null, null]); expect(mock.windowRequests).toHaveLength(2); expect(mock.windowEffects()).toBe(1);
+    } finally { mock.releaseWindowReceipt(); }
+  });
+
+  test("legacy claim-window bool stays UNKNOWN without deletion or a fresh-key retry", async ({ page }) => {
+    const locale = "en", c = parityCopy[locale], mock = await parityFixture(page, locale);
+    await login(page); await page.goto(route(locale, comments.session));
+    await expect(page.getByRole("button", { name: c.pause, exact: true })).toBeEnabled();
+    const legacyKey = `live-console-window:${store}:${comments.session}`;
+    // FIXTURE SETUP: simulate an already persisted pre-journal marker; no DOM/auth mutation or storage clearing.
+    await page.evaluate(key => sessionStorage.setItem(key, "1"), legacyKey);
+    await page.reload();
+    await expect(page.getByRole("button", { name: c.pause, exact: true })).toBeDisabled();
+    await expect(page.getByTestId("live-console")).toContainText(workspaceCopy[locale].uncertain);
+    await expect(page.getByTestId("live-command-retry")).toHaveCount(0);
+    await page.getByTestId("live-console-refresh").click();
+    const before = mock.consoleReads(); await expect.poll(mock.consoleReads, { timeout: 8000 }).toBeGreaterThan(before);
+    expect(mock.windowRequests).toHaveLength(0);
+    expect(await page.evaluate(key => sessionStorage.getItem(key), legacyKey)).toBe("1");
+    await expect(page.getByRole("button", { name: c.pause, exact: true })).toBeDisabled();
+  });
+
   for (const [id, key] of parityFrames) test(`frame ${id} ${key}`, async ({ page }, info) => {
     const [device, state, tab, channel, buyer, filter, context] = key.split("|");
     const locale = "zh-TW", c = parityCopy[locale];
