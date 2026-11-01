@@ -1,3 +1,7 @@
+// Purpose: Strictly decode customer and finance responses at the browser boundary.
+// Depends on: ./orders-model.ts; frozen customer/finance DTO contracts.
+// Used by: customers-client, billing/settlement parsers and admin contract tests.
+// Invariants: unknown keys and invalid money/permission projections fail closed.
 // Admin customers/finance model: strict parsers for the frozen Go DTOs (BFF `/api/stores/{store}/customers*`,
 // `finance/summary` -> Go `internal/customers` + `internal/reporting`, contract customers-billing-v1 §5, customers-core
 // FROZEN block). Unknown key, wrong type or broken invariant = invalid response (thrown "unavailable"); the server
@@ -74,7 +78,7 @@ export type FinanceRow = {
   cod_collected_count: number;
   cod_collected_minor: number;
 };
-export type FinanceSummary = { from: string; to: string; timezone: string; rows: FinanceRow[]; totals: FinanceRow[] };
+export type FinanceSummary = { generated_at?: string; from: string; to: string; timezone: string; rows: FinanceRow[]; totals: FinanceRow[] };
 export type ErasureSummary = {
   consents_withdrawn: number;
   sessions_revoked: number;
@@ -261,13 +265,16 @@ function parseFinanceRow(value: unknown, total: boolean): FinanceRow {
   return v as FinanceRow;
 }
 export function parseFinanceSummary(value: unknown): FinanceSummary {
-  const v = object(value, ["from", "to", "timezone", "rows", "totals"]);
-  if (typeof v.from !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v.from) ||
+  // generated_at is optional so a deploy that lands before the server field cannot break the finance page.
+  const hasStamp = !!value && typeof value === "object" && "generated_at" in value;
+  const v = object(value, [...(hasStamp ? ["generated_at"] : []), "from", "to", "timezone", "rows", "totals"]);
+  if ((v.generated_at !== undefined && !isInstant(v.generated_at)) || typeof v.from !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v.from) ||
     typeof v.to !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v.to) ||
     typeof v.timezone !== "string" || !short(v.timezone, 64) || v.timezone === "" ||
     !Array.isArray(v.rows) || v.rows.length > 2000 || !Array.isArray(v.totals) || v.totals.length > 20)
     throw new Error("unavailable");
   return {
+    ...(v.generated_at === undefined ? {} : { generated_at: v.generated_at as string }),
     from: v.from,
     to: v.to,
     timezone: v.timezone,

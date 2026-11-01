@@ -50,7 +50,7 @@ const row = (extra: Record<string, unknown> = {}) => ({
   day: "2026-09-30", currency: "TWD", environment: "LIVE", captured_count: 1, captured_minor: 2500, refunded_minor: 500, net_minor: 2000, ...extra,
 });
 const total = (extra: Record<string, unknown> = {}) => ({ ...row(extra), day: "" });
-const doc = (rows: unknown[], totals: unknown[]) => ({ from: "2026-09-01", to: "2026-09-30", timezone: "Asia/Taipei", rows, totals });
+const doc = (rows: unknown[], totals: unknown[]) => ({ from: "2026-09-01", to: "2026-09-30", timezone: "Asia/Taipei", generated_at: "2026-10-30T12:00:00Z", rows, totals });
 
 test("finance rows with the two pay-at-pickup keys parse and stay separate from captured and net", () => {
   const parsed = parseFinanceSummary(doc([row({ pickup_collected_count: 2, pickup_collected_minor: 5000 })], [total({ pickup_collected_count: 2, pickup_collected_minor: 5000 })]));

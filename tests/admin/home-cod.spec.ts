@@ -1,3 +1,7 @@
+// Purpose: Real-click merchant COD settings, fulfilment and finance acceptance.
+// Depends on: @playwright/test, node fs/path/crypto, cod/settings copy, ./parity-money-support.
+// Used by: tests/foundation/browser_home_cod_test.go; --browser-home-cod.
+// Invariants: synthetic MOCK fixtures only; real clicks and server readback; no live carrier or money action.
 // home-cod R5 merchant half (migration 0107; docs/delivery/units/home-cod.md). BFF routes exercised through the UI:
 //   GET|PUT /api/stores/{store}/cash-on-delivery-settings -> Go /v1/admin/stores/{store}/cash-on-delivery-settings (integration:read/manage),
 //   PUT .../orders/{id}/shipment, POST .../orders/{id}/collection -> Go /v1/admin/stores/{store}/orders/{id}/shipment|collection (fulfillment:write),
@@ -11,6 +15,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { settingsCopy } from "../../apps/admin/lib/settings-copy";
 import { codCopy } from "../../apps/admin/lib/cod-copy";
+import { moneyClick, moneyDesign, moneyLocales, moneyShot, moneyWidths } from "./parity-money-support";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -90,6 +95,65 @@ async function expand(page: Page, id: string): Promise<Locator> {
     await expect(page.getByTestId("orders-list")).toBeVisible();
   }
   throw new Error("order was absent from the real cursor pages");
+}
+
+for (const locale of moneyLocales) for (const width of moneyWidths) {
+  test(`PARITY-MONEY COD settings and save-review frames (${locale}, ${width})`, async ({ browser }) => {
+    test.skip(phase !== "settings");
+    const c = moneyDesign[locale], sc = settingsCopy[locale];
+    const { context, page } = await merchant(browser, false);
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+    try {
+      const target = `/${locale}/settings?store=${store}`;
+      await page.goto(target);
+      // Signed settings overview (#354): the wizard is entered through its Edit settings button.
+      await page.getByRole("button", { name: locale === "en" ? "Edit settings" : locale === "zh-CN" ? "编辑设置" : "編輯設定", exact: true }).click();
+      await page.getByRole("button", { name: sc.next, exact: true }).click();
+      const card = page.getByTestId("cod-settings-card");
+      await expect(card.getByRole("heading", { name: c.cod, exact: true }), "PARITY-MONEY 94:2153/94:2223: signed COD title").toBeVisible();
+      await expect(card.getByRole("heading", { name: c.oldCod, exact: true })).toHaveCount(0);
+      const original = {
+        enabled: await card.getByRole("checkbox", { name: c.codEnabled, exact: true }).isChecked(),
+        cap: await card.getByLabel(c.cap, { exact: true }).inputValue(),
+        fee: await card.getByLabel(c.surcharge, { exact: true }).inputValue(),
+        carrier: await card.getByRole("combobox", { name: c.carrier, exact: true }).inputValue(),
+      };
+      await moneyClick(page, evidence, "COD controls", "each required setting is editable with native user actions", async () => {
+        await card.getByRole("checkbox", { name: c.codEnabled, exact: true }).setChecked(true);
+        await card.getByLabel(c.cap, { exact: true }).fill("19000");
+        await card.getByLabel(c.surcharge, { exact: true }).fill("40");
+        await card.getByRole("combobox", { name: c.carrier, exact: true }).selectOption("hsinchu");
+      });
+      await moneyShot(page, evidence, "cod", locale, width);
+      await moneyClick(page, evidence, c.save, "successful server save shows all four settings in review", async () => {
+        await card.getByRole("button", { name: c.save, exact: true }).click();
+        await expect(page.getByRole("heading", { name: c.codReview, exact: true })).toBeVisible();
+        const review = page.getByTestId("cod-settings-review");
+        for (const label of [c.codEnabled, c.cap, c.surcharge, c.carrier]) await expect(review.getByText(label, { exact: true })).toBeVisible();
+        await expect(review).toContainText(locale === "en" ? "Enabled" : locale === "zh-CN" ? "已启用" : "已啟用");
+        await expect(review).toContainText("19,000");
+        await expect(review).toContainText("40");
+        await expect(review).toContainText(locale === "en" ? "Hsinchu" : "新竹");
+        await moneyShot(page, evidence, "codReview", locale, width);
+        await page.getByRole("button", { name: c.backCod, exact: true }).click();
+      });
+      await page.reload();
+      // After a reload the signed overview is shown again: re-enter the wizard through Edit settings, then step 2.
+      await page.getByRole("button", { name: locale === "en" ? "Edit settings" : locale === "zh-CN" ? "编辑设置" : "編輯設定", exact: true }).click();
+      await page.getByRole("button", { name: new RegExp(sc.steps[1]) }).click();
+      await expect(card.getByRole("checkbox", { name: c.codEnabled, exact: true })).toBeChecked();
+      await expect(card.getByLabel(c.cap, { exact: true })).toHaveValue("19000");
+      await expect(card.getByLabel(c.surcharge, { exact: true })).toHaveValue("40");
+      await expect(card.getByRole("combobox", { name: c.carrier, exact: true })).toHaveValue("hsinchu");
+      // Restore via real UI so the original home-COD chain starts with its original unconfigured state.
+      await card.getByRole("checkbox", { name: c.codEnabled, exact: true }).setChecked(original.enabled);
+      await card.getByLabel(c.cap, { exact: true }).fill(original.cap);
+      await card.getByLabel(c.surcharge, { exact: true }).fill(original.fee);
+      await card.getByRole("combobox", { name: c.carrier, exact: true }).selectOption(original.carrier);
+      await card.getByRole("button", { name: c.save, exact: true }).click();
+      await expect(page.getByRole("heading", { name: c.codReview, exact: true })).toBeVisible();
+    } finally { await context.close(); }
+  });
 }
 
 test("settings: the merchant enables cash on delivery with a cap, surcharge and carrier (zh-TW desktop), values read back", async ({ browser }) => {
@@ -196,9 +260,10 @@ test("finance: the collected cash appears in the COD column, never in captured/n
   const { context, page } = await merchant(browser, false);
   await page.goto(new URL(`/en/finance?store=${store}&from=${today}&to=${today}`, origin).toString());
   await expect(page.getByTestId("finance-page")).toBeVisible();
+  await page.getByRole("button", {name: moneyDesign.en.daily, exact:true}).click();
   await expect(page.getByTestId("finance-table")).toBeVisible();
   const cells = page.getByTestId("finance-cod-collected");
-  await expect(cells.filter({ hasText: "(1)" }).first()).toBeVisible(); // one collected order, order total + surcharge
+  await expect(cells.filter({ hasText: "/ 1" }).first()).toBeVisible(); // one collected order, order total + surcharge
   await shot(page, "finance", "en", "desktop");
   await context.close();
 });

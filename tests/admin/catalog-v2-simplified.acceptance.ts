@@ -467,7 +467,8 @@ export function registerCatalogSimplifiedAcceptance() {
         f.detail.skus[0].committed = 7;
         await action(ledger, page, c.confirm, 'click/server 409', 'all edits refused; draft and quantity 6 remain editable', async () => {
           await page.getByRole('button', { name: c.confirm, exact: true }).click();
-          await expect(page.getByRole('alert')).toBeVisible();
+          // scoped to the editor: Next's route announcer is also role=alert once a client route has changed (strict-mode flake)
+          await expect(page.getByTestId('catalog-task-editor').getByRole('alert')).toBeVisible();
           expect(f.detail.name).toBe(c.names[0]); expect(f.detail.skus[0].on_hand).toBe(8); expect(f.detail.version).toBe(1);
           await page.getByRole('button', { name: c.continueEdit, exact: true }).click();
           await expect(page.getByTestId('product-name')).toHaveValue(`${c.names[0]} unsaved`);
