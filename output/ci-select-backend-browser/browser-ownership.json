@@ -84,7 +84,7 @@
     "tests/admin/import-wire-header.test.ts": "b2f662f42d07c1ac755d91bbbd966385788cfefaceaed7757164455a6c982694",
     "tests/admin/import-wire-model.test.ts": "775ba536939456219bf434ebcf18f7764b07cd621cec3b717d762710ee771401",
     "tests/admin/import-wire-real-loader.mjs": "145439face274a8271a7f5c4759f345642f5eb073cb2e863c4a864df228cfd94",
-    "tests/admin/import-wizard.spec.ts": "ad88b91c50e5d8c3ba5189afeeb8bd2849a0b0d2f497e4ef73362077e993e9a4",
+    "tests/admin/import-wizard.spec.ts": "64b831f45dd18c3627c593cf1ccfbeb4280da1f1dc9ebc62a9c2fb4660fd5a45",
     "tests/admin/inbox-bff.test.ts": "6d8738aa7a6ea5d74643a3758e970dc889c31d82e29ab0f4fe5426cfa525fb1c",
     "tests/admin/inbox-browser-session.test.ts": "92fec02bd1a39d326d31acd93b21235e1a9d8b5da10d847500c3e47db5a1d2d0",
     "tests/admin/inbox-browser-source.test.ts": "5dcb0a125b8b56eba1797208f76f6be8c274aed7dd1635756dfe74a69b97155b",
