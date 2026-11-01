@@ -780,8 +780,16 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
           const params = new URLSearchParams();
           if (facts.preview_token) params.set("preview", facts.preview_token);
           const productURL = `${origin}${productRoute}${params.size ? `?${params}` : ""}`;
-          const beforeCart = await context.request.get(`${origin}/api/buyer/cart`);
-          assert(beforeCart.ok(), "existing cart must be readable before options browsing");
+          const sessionResponse = await context.request.get(`${origin}/api/buyer/session`);
+          assert(sessionResponse.ok(), `existing buyer session read failed (HTTP ${sessionResponse.status()})`);
+          const session = await sessionResponse.json() as { state?: unknown; context?: unknown };
+          assert(session.state === "active", "options browsing requires the existing active buyer session");
+          const buyerContext = session.context;
+          assert(typeof buyerContext === "string" && buyerContext.length > 0, "existing active buyer context is required");
+          // Reuse the existing private-read contract; never create a session or expose its context in evidence.
+          const readCart = () => context.request.get(`${origin}/api/buyer/cart`, { headers: { "X-Buyer-Context": buyerContext } });
+          const beforeCart = await readCart();
+          assert(beforeCart.ok(), `existing cart must be readable before options browsing (HTTP ${beforeCart.status()})`);
           const baseline = await beforeCart.json() as { version: number; items: { sku_id: string; quantity: number }[] };
           // GETs only: read the existing real-PG product/cart, never prepare the tested action through an API write.
           const detailResponse = await context.request.get(`${origin}/api/shop/product/${candle.slug}`);
@@ -811,7 +819,7 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
           };
           const unchanged = async () => {
             assert.equal(writes.length, 0, "selection/return must issue zero writes");
-            const response = await context.request.get(`${origin}/api/buyer/cart`);
+            const response = await readCart();
             assert(response.ok(), "cart readback failed");
             assert.deepEqual(await response.json(), baseline, "selection/return changed the server cart");
           };
@@ -965,7 +973,7 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
                 const response = await cartWrites[0].request.response();
                 assert(response?.ok(), "the add must have an authoritative successful response");
                 const expectedQty = (baseline.items.find((i) => i.sku_id === chosen!.sku_id)?.quantity ?? 0) + Number(draftQty);
-                const readback = await context.request.get(`${origin}/api/buyer/cart`);
+                const readback = await readCart();
                 assert(readback.ok());
                 const stored = await readback.json();
                 assert.equal(stored.items.find((i: { sku_id: string }) => i.sku_id === chosen!.sku_id)?.quantity, expectedQty);
