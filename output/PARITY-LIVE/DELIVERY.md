@@ -220,7 +220,7 @@ The table covers both console copy owners, including error, permission, advanced
 |庫存說明|库存说明|Stock details|
 |等待買家回覆|等待买家回复|Waiting for the buyer to reply|
 |正在確認，請稍候|正在确认，请稍候|Confirming, please wait|
-|送出回覆|发送回复|Send reply|
+|送出公開回覆|发送回复|Send reply|
 |已登記（還沒付款）|已登记（尚未付款）|Registered (not paid yet)|
 |原留言|原评论|Original comment|
 |剩餘|剩余|Remaining|

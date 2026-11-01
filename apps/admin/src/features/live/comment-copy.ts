@@ -245,7 +245,7 @@ const tw: Copy = {
   stockDetails: "庫存說明",
   wait: "等待買家回覆",
   waitPending: "正在確認，請稍候",
-  publicSend: "送出回覆",
+  publicSend: "送出公開回覆",
   registered: "已登記（還沒付款）",
   original: "原留言",
   stock: "剩餘",

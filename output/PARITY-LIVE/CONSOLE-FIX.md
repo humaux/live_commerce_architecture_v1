@@ -97,4 +97,37 @@ Humaux/coord/code-index tools are absent in this session; shared search/store/ca
 
 Acceptance: own repair-head Foundation/Gates all green, all8 shards and161 cases (152 signed frames plus9 controls/interaction cases), safe screenshot upload and independent visual/click acceptance. Existing CI RED at shard2 is the comparator for this lifecycle repair. Author root-cause verdict E0; static E1. NOT_RUN: repair-head CI GREEN, remaining parity cases/full screenshot and density review, E4, all local tests/servers, SANDBOX/LIVE/deployment, Humaux shared writes. New run IDs are registered in a PR comment after the single implementation push; integrator fresh-session relay is wakeup, job timeout/conclusion bounds remote waiting. No local watcher/process/port/container started.
 
-STATUS: WAIT_GREEN — fixture lifecycle repair prepared; own CI pending, no completion claim.
+## RELAY 3 registered implementation push (local receipt; no additional commit)
+
+Head42d318e28c1ec909f6e46450b75822a233907a2e pushed to unit/parity-live; PR355 targets r3/integration. WAIT_RUN Gates41287198479 in_progress (browser jobs not yet created) and Foundation41287198492/job124790794893 in_progress at readback; both headSha values verified. No plan job substituted for test evidence. PR body lists the parity-runner scope extension and retains152 safe-name frame mappings. Integrator fresh-session relay is wakeup after workflow conclusion; no further polling/local process. No shared-memory write or completion claim.
+
+STATUS: WAIT_GREEN — 42d318e28c1ec909f6e46450b75822a233907a2e; WAIT_RUN Gates41287198479 / Foundation41287198492. AuthorE0 / staticE1; full CI acceptance pending.
+
+
+## RELAY 4 — signed public-reply label; targeted repair 1 on this blocker
+
+📜 Authority: current RELAY4 card and PR355 current-head CI, AGENTS.md / 架构.md §§0/1/2/26/27, MAIN read-only diagnosis and parity-common.md, contracts/live-console-v1.md §7.2. Current v3 UX-LIVE handoff and FIGMA-INVENTORY identify the frame family. Reports under output are leads only; the diagnosis below uses raw CI and current source/frame readback.
+
+📋 Assignment: integrator-dispatched CONSOLE-FIX, existing unit/parity-live worktree only, no separate claim or delegation. Humaux/coord/code tools absent: search/store/canvas/lock/index NOT_RUN; no local/platform memory substitute. 🧩 ponytail and impeccable harden/craft-floor read; optional runtime skill scripts omitted under the owner's static-only local restriction.
+
+↩️ Rollback point42d318e28c1ec909f6e46450b75822a233907a2e. Fetched and merged origin/r3/integration c52b65283a5ac738d0c527a464d0cccc9523b1f4 first, merge31478e230a5d318f30f57796dafbf72434b8a933. Incoming contracts/migration/pins/other modules belong to integration, not authored changes. Prior RULING-FIX.md edits and all untracked evidence remain excluded. No other worktree/branch touched.
+
+E3 failure observations at42d318e28: Foundation41287198492/job124790794893 SUCCESS; Gates41287198479 original Console124791707826 and bundle:07/job124791707701 SUCCESS. Parity124791708132 FAILURE; receipts124797025364 and required124797255864 fail downstream. First shard21 passed; second shard17 passed/3 failed; six later shards NOT_RUN. The fresh-PG fixture fix now reaches browser assertions in shard2; no repeated role error observed. Artifact13076252624 uploaded3739351 bytes /38 safe-name frame PNGs; ZIP SHA2563655184e529d25ae1782ee633378e9c29f4fe02c551dfa4e2ef35ff978f55dc9. Shard2 playwright.log SHA2565eae1e73d8d461d99a2a8858a0c8d67b011a0ebd3f622e5ecbbbcf5d678bdb2c.
+
+All3 failures are publicSent frames1429:42205/42310/42362: real locator.click waits for exact button name「送出公開回覆」until the unchanged110000ms test timeout. apps/admin/src/features/live/comment-copy.ts instead supplies「送出回覆」. CommentReply uses c.publicSend directly. This is a product copy mismatch in #355's own locale module; do not alter the test oracle. Original tests-only visibility assertion RED remains f483929e / Gates41277939407 / Console124764486910. This later exact-name click failure is a regression comparator, not a newly pushed tests-only assertion RED.
+
+Fleet Bridge figma_status returned one connected document; get_metadata depth8 read desktop1429:42507 and mobile1429:42886 separately (134490/61148 bytes; each <200KB). Visible descendants I1429:42605;1429:30527;4:12713 and I1429:42916;1429:30527;4:12713 both read「送出公開回覆」. Readback SHA256 desktop9e146e507819d48a7784a946b0204b657591ff029e20830fdd4e2a853ca98b6e; mobilec0fb06b003b78e7a75249a2f2fe94f7ea753d3fb14b29ea9c2ff5eaf23d2ade5. No Figma write or restart. Full raw metadata/archive retained locally, excluded from commits per evidence retention.
+
+Repair: one zh-TW publicSend value aligned to that signed copy; DELIVERY three-language row aligned. zh-CN/en entries already exist and remain「发送回复」/「Send reply」; main-screen three-language browser cases remain required. No new locale key/import/component/handler/permission change, no harness allowlist change. Existing Bourdieu Q1–Q6, project rules, Mobbin→Eagle, Figma official guidance, required-facts/mobile-summary parity and three-language sections remain in DELIVERY. No redesign, new fact/control, or new visual/click acceptance claim. Every browser assertion, helper call, timeout, threshold, fixture and exemption stays unchanged; gate-adapter assertions unchanged.
+
+bundle:07 remains class(c): current integration and HEAD share returns-ui.spec.ts blob7b7826dc726075f2237ad20385257ff7c398ee25 and browser_returns_ui_test.go blob e644991fde5feb6872834fbeeaf6c2e914f62276. No authored returns/order/auth path or identified causal reach; current own-head bundle passes. No claim that this PR repaired that earlier session-swap defect or that a base-only reproduction was run.
+
+Static E1: node scripts/dev/derive-browser-ownership.mjs then --check exit0 (56 modes, generated file byte-identical after merge); python3 scripts/check_packet.py exit0 (structure only; exact pre-run packet-check output bytes restored); git diff --check exit0. No import/dependency change, so depmap is unchanged. No tsc executable available. No local tests/servers/browser/PG/container/install started. Author fix verdict E0 until own-head CI.
+
+Scope extension for integrator review: apps/admin/src/features/live/comment-copy.ts, same Console module already present in PR; only1 value. Task evidence CONSOLE-FIX.md/DELIVERY.md/red.log updated. Generated browser ownership has no new diff. Inherited merge changes are not authored scope. No forbidden baseline/dispatcher/contract/OpenAPI/migration/pin/lockfile edit.
+
+Acceptance: own repair-head Foundation/Gates GREEN, all8 shards/161 cases and safe uploads, then independent frame/click/density review. First targeted attempt for this copy blocker; prior repairs addressed distinct accessible-name and PG lifecycle defects. New run IDs go in a PR comment after one implementation push; stop polling under10min. Integrator fresh-session relay is the wakeup route, existing CI timeouts/conclusions bound waiting. No evidence-only commit after GREEN.
+
+NOT_RUN: repair-head CI GREEN/full161; independent E4 / visual/density and complete actual click ledger; local runtime tests/servers/tsc; provider SANDBOX/LIVE/deployment; Humaux shared reads/writes/index. No completion claim.
+
+STATUS: WAIT_PUSH — RELAY4 signed-copy repair prepared; authorE0/staticE1, CI acceptance pending.

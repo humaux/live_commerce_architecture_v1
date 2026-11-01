@@ -281,3 +281,18 @@ repair=reuse existing fresh_pg before shards2-8; assertions/timeouts/thresholds 
 foundation=41285438042/job124785656569 SUCCESS console=124786480696 SUCCESS bundle07=124786481003 SUCCESS
 receipts=124789810057 FAILURE required=124789866407 FAILURE downstream
 GREEN=PENDING; shards2-8 browser assertions NOT_RUN at comparator
+
+CONSOLE-FIX RELAY4 exact-copy regression (existing tests; no assertion changes)
+head=42d318e28c1ec909f6e46450b75822a233907a2e
+Gates=41287198479 parity_job=124791708132 FAILURE; receipts124797025364 required124797255864 downstream FAILURE
+Foundation=41287198492/job124790794893 SUCCESS; console=124791707826 SUCCESS; bundle07=124791707701 SUCCESS
+artifact=13076252624 size3739351 zip_sha256=3655184e529d25ae1782ee633378e9c29f4fe02c551dfa4e2ef35ff978f55dc9
+shard1=21 passed; shard2=17 passed3 failed; shards3-8 NOT_RUN; 38 safe-name parity PNGs uploaded
+failed_frames=1429:42205,1429:42310,1429:42362; locator.click waits for exact name 送出公開回覆 until existing110000ms timeout
+shard2_playwright_log_sha256=5eae1e73d8d461d99a2a8858a0c8d67b011a0ebd3f622e5ecbbbcf5d678bdb2c
+root_static=zh-TW comment-copy publicSend is 送出回覆, disagreeing with signed frames and unchanged test oracle
+signed_desktop=1429:42507 visible text I1429:42605;1429:30527;4:12713 is 送出公開回覆
+signed_mobile=1429:42886 visible text I1429:42916;1429:30527;4:12713 is 送出公開回覆
+repair=only zh-TW publicSend plus DELIVERY translation row; first targeted attempt on this copy blocker
+original_tests_only_assertion_RED=41277939407/job124764486910 at f483929e1aec118f79ed9783a4ffbbdd8570c382
+GREEN=PENDING; current failure is a real-click exact-name timeout, not a new tests-only assertion RED
