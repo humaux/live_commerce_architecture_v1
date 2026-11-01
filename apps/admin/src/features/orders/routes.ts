@@ -79,4 +79,5 @@ export const ordersRoutes = [
     nav: false,
     spec: "tests/admin/taiwan-cvs.spec.ts",
   },
+  {id:"orders-export-help",path:"/orders/export",group:"orders",labelKey:"ordersExportHelp",icon:"orders",permission:"orders:read",template:"workspace",nav:false,spec:"tests/admin/parity-leftovers.spec.ts"},
 ] satisfies RouteEntry[];

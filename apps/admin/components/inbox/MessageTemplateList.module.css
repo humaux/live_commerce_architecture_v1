@@ -1,0 +1,256 @@
+/* Purpose: signed list/form content 5:15002/15135 and 673:2847/2916. Depends on exact DS tokens, not global overrides.
+   Local links: data-figma-node on each page. Signed note fill maps to integrator-owned --ds-template-note; token diff NOT_RUN. */
+.page {
+  background: var(--ds-sig-page);
+  color: var(--ds-sig-label);
+  padding: var(--ds-space-6);
+  font-size: var(--ds-text-md);
+  line-height: var(--ds-leading);
+  min-height: calc(100dvh - var(--ui-shell-topbar));
+  box-sizing: border-box;
+  margin: calc(-1 * var(--ds-space-6));
+  overflow-wrap: anywhere;
+}
+.page h1 {
+  font-size: var(--ds-text-3xl);
+  font-weight: 500;
+  line-height: 38px;
+  margin: 0 0 var(--ds-space-4);
+}
+.page h2 {
+  font-size: var(--ds-text-xl);
+  font-weight: 500;
+  margin: 0 0 var(--ds-space-4);
+}
+.page p {
+  margin: 0 0 var(--ds-space-4);
+}
+.page .note {
+  background: var(--ds-template-note);
+  border-radius: var(--ds-space-3);
+  padding: var(--ds-space-4);
+  margin: var(--ds-space-4) 0;
+  white-space: pre-wrap;
+}
+.page button {
+  font: inherit;
+  min-height: var(--ds-target);
+  border-radius: var(--ds-radius-control);
+  padding: var(--ds-space-2) var(--ds-space-6);
+  cursor: pointer;
+}
+.page button:focus-visible,
+.page input:focus-visible,
+.page textarea:focus-visible {
+  outline: var(--ds-focus-width) solid var(--ds-focus);
+  outline-offset: var(--ds-focus-offset);
+}
+.page button:disabled {
+  cursor: not-allowed;
+  background: var(--ds-disabled-bg);
+  color: var(--ds-disabled-text);
+  border: 1px solid var(--ds-disabled-border);
+}
+.primary {
+  background: var(--ds-ink);
+  color: var(--ds-on-primary);
+  border: 1px solid var(--ds-ink);
+}
+.secondary {
+  background: var(--ds-surface);
+  color: var(--ds-ink);
+  border: 1px solid var(--ds-button-border);
+}
+.addDock {
+  margin: var(--ds-space-4) 0;
+}
+.table {
+  border-collapse: collapse;
+  width: 100%;
+  background: var(--ds-surface);
+  text-align: start;
+}
+.table th,
+.table td {
+  padding: var(--ds-space-4) var(--ds-space-6);
+  font-weight: 400;
+  text-align: start;
+}
+.table th {
+  font-weight: 500;
+}
+.muted {
+  color: var(--ds-nav-text);
+}
+.mobile,
+.cards {
+  display: none;
+}
+.back {
+  border: 0;
+  background: transparent;
+  color: var(--ds-sig-label);
+  padding-inline: 0 !important;
+  margin-bottom: var(--ds-space-4);
+}
+.formPage {
+  padding-bottom: calc(
+    var(--ds-space-12) + var(--ds-target) + var(--ds-space-8)
+  );
+}
+.formGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 720fr) minmax(0, 408fr);
+  gap: var(--ds-space-6);
+  align-items: start;
+}
+.fields,
+.preview {
+  background: var(--ds-surface);
+  border-radius: var(--ds-space-3);
+  padding: var(--ds-space-6);
+  min-width: 0;
+}
+.fields > label:not(.choice) {
+  display: block;
+  font-weight: 500;
+  margin-bottom: var(--ds-space-2);
+}
+.fields > input,
+.fields > textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  font: inherit;
+  color: var(--ds-sig-label);
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-border-input);
+  border-radius: var(--ds-radius-md);
+  padding: var(--ds-space-3);
+  min-height: var(--ds-target);
+}
+.fields > textarea {
+  min-height: 100px;
+  resize: vertical;
+  border-color: var(--ds-sig-line);
+}
+.fields .hint {
+  font-size: var(--ds-text-xs);
+  color: var(--ds-crumb-text);
+  margin: var(--ds-space-2) 0 var(--ds-space-6);
+}
+.fields fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.fields legend {
+  font-weight: 500;
+  padding: 0;
+}
+.choice {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+  min-height: var(--ds-target);
+  margin: var(--ds-space-2) 0;
+}
+.choice input {
+  appearance: auto;
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  accent-color: var(--ds-button-text-kind);
+}
+.rules {
+  white-space: pre-line;
+}
+.formDock {
+  position: fixed;
+  inset-block-end: 0;
+  inset-inline-start: var(--ui-rail-width);
+  inset-inline-end: 0;
+  display: flex;
+  gap: var(--ds-space-3);
+  justify-content: flex-end;
+  background: var(--ds-surface);
+  padding: var(--ds-space-3) var(--ds-space-6);
+  z-index: var(--ds-z-sticky);
+  border-top: 1px solid var(--ds-button-border);
+}
+@media (max-width: 900px) {
+  .page {
+    margin: calc(-1 * var(--ds-space-4));
+    padding: var(--ds-space-6) var(--ds-space-4)
+      calc(var(--ds-target) + var(--ds-space-12));
+  }
+  .desktop,
+  .table {
+    display: none;
+  }
+  .mobile {
+    display: block !important;
+  }
+  .page h1.mobile,
+  .page h2.mobile {
+    font-size: var(--ds-text-lg);
+    margin-bottom: var(--ds-space-6);
+  }
+  .cards {
+    display: grid;
+    gap: var(--ds-space-3);
+    list-style: none;
+    margin: var(--ds-space-4) 0 0;
+    padding: 0;
+  }
+  .cards li {
+    background: var(--ds-surface);
+    border-radius: var(--ds-space-3);
+    padding: var(--ds-space-4);
+  }
+  .cards h3 {
+    font-size: var(--ds-text-xl);
+    font-weight: 500;
+    margin: 0 0 var(--ds-space-2);
+  }
+  .cards p {
+    margin-bottom: var(--ds-space-2);
+  }
+  .cards p:last-child {
+    margin: 0;
+  }
+  .meta {
+    font-size: var(--ds-text-xs);
+    color: var(--ds-crumb-text);
+  }
+  .addDock,
+  .formDock {
+    position: fixed;
+    inset-block-end: 0;
+    inset-inline: 0;
+    background: var(--ds-surface);
+    padding: var(--ds-space-3) var(--ds-space-4)
+      max(var(--ds-space-3), env(safe-area-inset-bottom));
+    margin: 0;
+    z-index: var(--ds-z-sticky);
+  }
+  .addDock button {
+    width: 100%;
+  }
+  .formGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .formDock .primary {
+    flex: 1;
+  }
+  .fields,
+  .preview {
+    padding: var(--ds-space-6);
+  }
+  .formPage {
+    padding-bottom: calc(var(--ds-target) + var(--ds-space-12));
+  }
+  .formPage h1 {
+    font-size: var(--ds-text-3xl);
+  }
+}
