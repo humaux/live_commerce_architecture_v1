@@ -393,9 +393,11 @@ if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") for (const mode of ["manual",
         if (await input.isEnabled()) await input.fill(title);
         const save = editor.getByTestId("collection-save");
         if (await save.isEnabled()) {
-          const saved = page.waitForResponse(response => new URL(response.url()).pathname === endpoint && response.request().method() === "POST");
-          await save.click();
-          expect((await saved).status()).toBe(200);
+          const [saved] = await Promise.all([
+            page.waitForResponse(response => new URL(response.url()).pathname === endpoint && response.request().method() === "POST"),
+            save.click(),
+          ]);
+          expect(saved.status()).toBe(200);
         }
       }
       // Soft assertions preserve the duplicate readback and original-retry evidence in the same failed run.

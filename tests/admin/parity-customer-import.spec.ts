@@ -49,9 +49,11 @@ test.describe("PARITY-DATA-OPS C6 customer import", () => {
           if (request.method() === "POST" && new URL(request.url()).pathname === `/api/stores/${store}/imports/customers/commit`) requests.push(request.postData() ?? "");
         });
         const choose = async (button: string, name: string, buffer: Buffer) => action(page, button, "click + native filechooser", "file selection completes without reloading", async () => {
-          const chooser = page.waitForEvent("filechooser");
-          await page.getByRole("button", { name: button, exact: true }).click();
-          await (await chooser).setFiles({ name, mimeType: "text/csv", buffer });
+          const [chooser] = await Promise.all([
+            page.waitForEvent("filechooser"),
+            page.getByRole("button", { name: button, exact: true }).click(),
+          ]);
+          await chooser.setFiles({ name, mimeType: "text/csv", buffer });
         });
         await choose("更換檔案", "repair-source.csv", Buffer.from(`source_id,name\n${prefix},${privateName}\n,Synthetic excluded\n`));
         await page.getByTestId("import-map-external_id").selectOption("source_id");
