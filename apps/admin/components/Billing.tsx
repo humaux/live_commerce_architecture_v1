@@ -1,5 +1,5 @@
 // Purpose: Owns the merchant subscription status and hosted billing entry controls.
-// Depends on: react, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/billing-client, @/lib/customers-client, @/lib/billing-model, @/lib/orders-model, @/lib/billing-copy, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, @/lib/presentation-copy, ./orders.css, ./order-actions.css, ./customers.css
+// Depends on: react, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/billing-client, @/lib/customers-client, @/lib/billing-model, @/lib/orders-model, @/lib/billing-copy, ./WorkspaceFrame, ./AdminPageHeader, @live-commerce/ui, @/lib/presentation-copy, ./orders.css, ./order-actions.css, ./customers.css, ./finance/money.css
 // Used by: apps/admin/app/[locale]/billing/page.tsx
 "use client";
 
@@ -11,7 +11,7 @@
 // Coming back with `?checkout=done` shows "updating…" and re-GETs once; the server (webhook) stays the authority on
 // standing, so nothing here marks a subscription active.
 import { useEffect, useRef, useState } from "react";
-import type { Locale } from "@live-commerce/i18n";
+import { moneyCopy, type Locale } from "@live-commerce/i18n";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import { readBilling, openPortal, startCheckout } from "@/lib/billing-client";
@@ -20,12 +20,11 @@ import { hasLiveSubscription, type BillingStatus } from "@/lib/billing-model";
 import { displayTime } from "@/lib/orders-model";
 import { billingCopy, type BillingCopy } from "@/lib/billing-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
-import { AdminPageHeader } from "./AdminPageHeader";
-import { Badge, TableFrame } from "@live-commerce/ui";
-import { presentationCopy } from "@/lib/presentation-copy";
+import { Badge } from "@live-commerce/ui";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
+import "./finance/money.css";
 
 type Phase = "idle" | "updating" | "slow";
 const errorText = (c: BillingCopy, code: string) => c.errors[code] ?? c.errors.default;
@@ -46,7 +45,8 @@ export function Billing({
   initialError: ReadCode | null;
   renderKey: string;
 }) {
-  const c = billingCopy[locale];
+  const c = billingCopy[locale], p = moneyCopy[locale];
+  const [portal, setPortal] = useState(false);
   const read = useGuardedRead(
     `${renderKey}|${locale}|${store?.id ?? ""}`,
     store ? (signal) => readBilling(store.id, signal) : null,
@@ -79,10 +79,11 @@ export function Billing({
     : "";
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="billing">
-      <div className="orders-page customers-page" data-testid="billing-page">
-        <AdminPageHeader locale={locale} description={c.subtitle} />
-        {checkout === "cancel" && <p className="orders-message" role="status" data-testid="billing-cancelled">{c.checkoutCancel}</p>}
-        {phase === "updating" && <p className="orders-message" role="status" data-testid="billing-updating">{c.checkoutDone}</p>}
+      <div className="money-page" data-testid="billing-page">
+        <h1>{portal ? p.manage : failure ? p.billingRefusal : p.billing}</h1>
+        {!portal && !failure && <p className="money-muted">{p.subscriptionIntro}</p>}
+        {checkout === "cancel" && <p className="orders-message" role="status" data-testid="billing-cancelled">{p.cancelled}</p>}
+        {phase === "updating" && <p className="orders-message" role="status" data-testid="billing-updating">{p.updating}</p>}
         {phase === "slow" && <p className="orders-message" role="status">{c.checkoutDoneSlow}</p>}
         {(read.status === "loading" || read.status === "hidden") && <p className="orders-message" role="status">{c.loading}</p>}
         {failure && (
@@ -92,7 +93,7 @@ export function Billing({
           </div>
         )}
         {read.status === "ready" && read.data && store && (
-          <Sections status={read.data} store={store.id} boundary={read.boundary} refresh={read.refresh} locale={locale} c={c} />
+          <Sections status={read.data} store={store.id} boundary={read.boundary} refresh={read.refresh} locale={locale} c={c} portal={portal} setPortal={setPortal} />
         )}
       </div>
     </WorkspaceFrame>
@@ -106,6 +107,8 @@ function Sections({
   refresh,
   locale,
   c,
+  portal,
+  setPortal,
 }: {
   status: BillingStatus;
   store: string;
@@ -113,7 +116,10 @@ function Sections({
   refresh: () => Promise<boolean>;
   locale: Locale;
   c: BillingCopy;
+  portal: boolean;
+  setPortal: (value: boolean) => void;
 }) {
+  const p = moneyCopy[locale];
   const [busy, setBusy] = useState("");
   const [problem, setProblem] = useState("");
   const live = hasLiveSubscription(status);
@@ -134,98 +140,31 @@ function Sections({
     // The server may know better than this page (e.g. subscription_exists after a second tab): re-read.
     if (result.code === "subscription_exists" || result.code === "no_billing_customer") void refresh();
   }
-  return (
-    <>
-      <p className="orders-hint" data-testid="billing-test-note">{c.testNote}</p>
-      {status.stale && <p className="orders-bad" role="status" data-testid="billing-stale">{c.stale}</p>}
-      <section className="customers-section" aria-label={c.standingTitle}>
-        <h2>{c.standingTitle}</h2>
-        <p>
-          <Badge
-            tone={status.standing === "GOOD" ? "success" : status.standing === "UNBILLED" ? "neutral" : "warning"}
-            data-testid="billing-standing" data-standing={status.standing}
-          >
-            {c.standing[status.standing]}
-          </Badge>
-        </p>
-        <p>{c.standingText[status.standing]}</p>
-        {status.payment_pending && <p className="orders-hint" role="status" data-testid="billing-pending">{c.paymentPending}</p>}
-        {status.subscriptions.length > 0 && (<>
-        <h2>{c.subscriptionsTitle}</h2>
-          <TableFrame label={c.subscriptionsTitle} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
-            <table className="orders-actions-table" data-testid="billing-subscriptions">
-              <thead><tr><th>{c.plan}</th><th>{c.status}</th><th>{c.period}</th></tr></thead>
-              <tbody>
-                {status.subscriptions.map((item) => {
-                  const plan = status.plans.find((candidate) => candidate.price_id === item.price_id);
-                  return (
-                    <tr key={`${item.price_id}-${item.retrieved_at}`}>
-                      <td>{plan?.name ?? item.price_id}</td>
-                      <td>
-                        <Badge tone={item.status === "active" || item.status === "trialing" ? "success" : item.status === "canceled" || item.status === "incomplete_expired" ? "neutral" : "warning"}>
-                          {c.subStatus[item.status]}
-                        </Badge>
-                        {item.cancel_at_period_end && <small>{c.endsAtPeriodEnd}</small>}
-                      </td>
-                      <td>{time(item.current_period_start)} → {time(item.current_period_end)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </TableFrame>
-        </>)}
-        {status.customer_pinned && (
-          <>
-            <div className="customers-actions">
-              <button type="button" data-testid="billing-portal" disabled={busy !== ""}
-                onClick={() => void redirect("portal", () => openPortal(store, boundary))}>
-                {busy === "portal" ? c.portalOpening : c.portal}
-              </button>
-            </div>
-            <p className="orders-hint">{c.portalHint}</p>
-          </>
-        )}
+  if (portal) return <section className="money-card money-editor"><p>{p.portalIntro}</p><div className="money-actions"><button onClick={() => setPortal(false)}>{p.backBilling}</button><button className="primary" data-testid="billing-portal" disabled={busy !== ""} onClick={() => void redirect("portal", () => openPortal(store, boundary))}>{busy === "portal" ? c.portalOpening : p.manage}</button></div>{problem && <p role="alert" data-testid="billing-problem">{problem}</p>}</section>;
+  const standing = status.standing === "GOOD" ? p.good : status.standing === "UNBILLED" ? p.unbilled : status.standing === "GRACE" ? p.overdue : p.restricted;
+  return <>
+    {status.stale && <p role="status" data-testid="billing-stale">{c.stale}</p>}
+    {status.subscriptions.some(item => item.cancel_at_period_end) && <p className="money-card">{p.cancellationHint}</p>}
+    <div className="money-grid">
+      <div className="money-stack">
+      <section className="money-card"><h2>{p.standing}</h2><p><Badge tone={status.standing === "GOOD" ? "success" : status.standing === "UNBILLED" ? "neutral" : "warning"} data-testid="billing-standing" data-standing={status.standing}>{standing}</Badge></p><p>{c.standingText[status.standing]}</p>
+        {status.payment_pending && <p role="status" data-testid="billing-pending">{c.paymentPending}</p>}
       </section>
-
-      <section className="customers-section" aria-label={c.plansTitle}>
-        <h2>{c.plansTitle}</h2>
-        {live && <p className="orders-hint">{c.plansHave}</p>}
-        {status.plans.length === 0 ? (
-          <p className="orders-empty">{c.plansNone}</p>
-        ) : (
-          <ul className="billing-plans" data-testid="billing-plans">
-            {status.plans.map((plan) => (
-              <li key={plan.price_id} data-testid={`plan-${plan.price_id}`}>
-                <span>
-                  <strong>{plan.name}</strong>
-                  {money(locale, plan.currency, plan.amount_minor)} / {c.per[plan.interval] ?? plan.interval}
-                </span>
-                <button type="button" className="primary" data-testid={`plan-choose-${plan.price_id}`} disabled={busy !== "" || live}
-                  onClick={() => void redirect("checkout", () => startCheckout(store, plan.price_id, boundary))}>
-                  {busy === "checkout" ? c.choosing : c.choose}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {problem && <p className="orders-bad" role="alert" data-testid="billing-problem">{problem}</p>}
+      <section className="money-card money-subscription"><h2>{p.subscription}</h2>
+        {status.subscriptions.length > 0 ? <div data-testid="billing-subscriptions">{status.subscriptions.map(item => {
+          const plan = status.plans.find(candidate => candidate.price_id === item.price_id);
+          return <dl key={`${item.price_id}-${item.retrieved_at}`}><div><dt>{p.plan}</dt><dd>{plan?.name ?? "—"}{plan && <span> · {money(locale,plan.currency,plan.amount_minor)} / {c.per[plan.interval] ?? plan.interval}</span>}</dd></div><div><dt>{p.status}</dt><dd>{c.subStatus[item.status]}</dd></div><div><dt>{p.period}</dt><dd>{time(item.current_period_start)} – {time(item.current_period_end)}</dd></div>{item.cancel_at_period_end && <div><dt>{p.cancellation}</dt><dd>{time(item.current_period_end)}</dd></div>}</dl>;
+        })}</div> : <p>{c.plansNone}</p>}
+        {!live && <ul className="billing-plans" data-testid="billing-plans">{status.plans.map(plan => <li key={plan.price_id} data-testid={`plan-${plan.price_id}`}><span><strong>{plan.name}</strong>{money(locale,plan.currency,plan.amount_minor)} / {c.per[plan.interval] ?? plan.interval}</span><button className="primary" data-testid={`plan-choose-${plan.price_id}`} disabled={busy !== ""} onClick={() => void redirect("checkout", () => startCheckout(store,plan.price_id,boundary))}>{busy === "checkout" ? c.choosing : c.choose}</button></li>)}</ul>}
+        {live && <p className="money-note">{c.plansHave}</p>}
+        {problem && <p role="alert" data-testid="billing-problem">{problem}</p>}
       </section>
-
-      <section className="customers-section" aria-label={c.usageTitle}>
-        <h2>{c.usageTitle}</h2>
-        <TableFrame label={c.usageTitle} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
-          <table className="orders-actions-table orders-kv-table" data-testid="billing-usage">
-            <tbody>
-              <tr><th scope="row">{c.usagePeriod}</th><td>{status.usage.period_start.slice(0, 10)} → {status.usage.period_end.slice(0, 10)}</td></tr>
-              <tr><th scope="row">{c.paidOrders}</th><td>{status.usage.paid_orders}</td></tr>
-              <tr><th scope="row">{c.claimWindows}</th><td>{status.usage.claim_windows_opened}</td></tr>
-              <tr><th scope="row">{c.privateReplies}</th><td>{status.usage.private_replies_sent}</td></tr>
-              <tr><th scope="row">{c.members}</th><td>{status.usage.members}</td></tr>
-            </tbody>
-          </table>
-        </TableFrame>
-      </section>
-    </>
-  );
+      </div>
+      <div className="money-stack">
+      <section className="money-card"><h2>{p.payment}</h2><p>{p.paymentIntro}</p>{status.customer_pinned ? <><button type="button" className="primary" data-testid="billing-portal-open" onClick={() => setPortal(true)}>{p.manage}</button><p className="money-note">{p.portalIntro}</p></> : <p>{p.noCustomer}</p>}</section>
+      <section className="money-card"><h2>{p.usage}</h2><dl data-testid="billing-usage">{[[c.usagePeriod,`${status.usage.period_start.slice(0,10)} – ${status.usage.period_end.slice(0,10)}`],[c.paidOrders,status.usage.paid_orders],[c.claimWindows,status.usage.claim_windows_opened],[c.privateReplies,status.usage.private_replies_sent],[c.members,status.usage.members]].map(([label,value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl></section>
+      </div>
+    </div>
+    <p className="money-muted" data-testid="billing-test-note">{c.testNote}</p>
+  </>;
 }

@@ -1,15 +1,15 @@
 "use client";
 
 // Purpose: signed buyer CVS discovery sheet with explicit store choice and confirmation.
-// Depends on: cvs-directory-client, shared pure matcher, i18n and native dialog.
+// Depends on: cvs-directory-client, shared pure matcher, i18n, cvs/Picker.module.css and native dialog.
 // Used by: CvsPickup; parent alone validates/persists the selection through the buyer BFF.
 // Confirmation: CvsPickup.ensure posts /api/buyer/cvs-stores -> Go /v1/buyer/cvs-stores.
-// Invariants: no search API, no automatic selection, no raw paste persistence, canonical display.
+// Invariants: no search API, no automatic selection, review before persistence, canonical display.
 import { useEffect, useRef, useState } from "react";
 import { cvsPickerCopy, type Locale } from "@live-commerce/i18n";
 import { matchCvsStores, normalizeCvsText, type CvsBrand, type CvsStore } from "../../../packages/format/src/cvs-match";
-import { loadCvsDirectory } from "../lib/cvs-directory-client";
-import styles from "./CvsStorePicker.module.css";
+import { cvsDirectorySource, loadCvsDirectory } from "../lib/cvs-directory-client";
+import styles from "./cvs/Picker.module.css";
 
 const brands: CvsBrand[] = ["UNIMART", "FAMI", "HILIFE", "OKMART"];
 
@@ -38,7 +38,9 @@ export default function CvsStorePicker({ open, brand, locale, onClose, onBrand, 
 }) {
   const copy = cvsPickerCopy[locale];
   const dialog = useRef<HTMLDialogElement>(null);
-  const [path, setPath] = useState<"region" | "search">("region");
+  const heading = useRef<HTMLHeadingElement>(null);
+  const [path, setPath] = useState<"region" | "search">("search");
+  const [review, setReview] = useState(false);
   const [query, setQuery] = useState("");
   const [county, setCounty] = useState("");
   const [district, setDistrict] = useState("");
@@ -54,15 +56,18 @@ export default function CvsStorePicker({ open, brand, locale, onClose, onBrand, 
   useEffect(() => {
     const node = dialog.current;
     if (!node) return;
-    if (!open) { node.close(); setSelected(null); return; }
+    if (!open) { node.close(); setSelected(null); setReview(false); setPath("search"); return; }
     if (!node.open) node.showModal();
     const overflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = overflow; };
   }, [open]);
   useEffect(() => {
-    setSelected(null); setCounty(""); setDistrict(""); setRejected(new Set()); setLimit(40);
+    setSelected(null); setReview(false); setPath("search"); setCounty(""); setDistrict(""); setRejected(new Set()); setLimit(40);
   }, [brand]);
+  useEffect(() => {
+    if (open && selected) heading.current?.focus();
+  }, [open, selected, review]);
   useEffect(() => {
     if (!open) return;
     const controller = new AbortController();
@@ -85,27 +90,27 @@ export default function CvsStorePicker({ open, brand, locale, onClose, onBrand, 
   const candidates = (path === "search" ? matched.candidates : county && district
     ? rows.filter((row) => row.county === county && row.district === district) : []).filter((row) => !rejected.has(row.code));
   const ready = path === "search" ? query.trim() !== "" : county !== "" && district !== "";
-  const changed = () => { setSelected(null); setLimit(40); onEdit(); };
+  const changed = () => { setSelected(null); setReview(false); setLimit(40); onEdit(); };
   const canConfirm = !!selected && !saving && !loading && !coolingDown;
+  const source = cvsDirectorySource(brand);
+  const noResults = ready && !loading && !failed && !candidates.length;
   return (
     <dialog ref={dialog} className={styles.picker} data-testid="cvs-picker" aria-labelledby="cvs-picker-title"
       onCancel={(event) => { event.preventDefault(); if (!saving) onClose(); }} onClose={onClose}>
       <div className={styles.layout}>
         <header className={styles.header}>
-          <div className={styles.title}><h2 id="cvs-picker-title">{copy.title}</h2>
+          <div className={styles.title}><h2 ref={heading} tabIndex={-1} id="cvs-picker-title">{review ? copy.review : copy.title}</h2>
             <button type="button" data-testid="cvs-picker-close" aria-label={copy.close} disabled={saving} onClick={onClose}>
-              <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20"><path d="m4 4 12 12M16 4 4 16" fill="none" stroke="currentColor" strokeWidth="2" /></svg>
+              {copy.close}
             </button>
           </div>
-          <div className={styles.tabs}>
-            <button type="button" data-testid="cvs-picker-region-tab" aria-pressed={path === "region"} disabled={saving} onClick={() => { setPath("region"); changed(); }}>{copy.region}</button>
-            <button type="button" data-testid="cvs-picker-search-tab" aria-pressed={path === "search"} disabled={saving} onClick={() => { setPath("search"); changed(); }}>{copy.search}</button>
-          </div>
+          {!selected && <>
           <div className={styles.brands}>
             {brands.map((key) => <button type="button" key={key} data-testid={`cvs-brand-${key}`} aria-pressed={key === brand || (key === "UNIMART" && brand === "UNIMARTFREEZE")} disabled={saving || !availableBrands.includes(key)}
               onClick={() => { changed(); onBrand(key); }}>{copy.chains[key]}</button>)}
           </div>
-          {path === "search" ? <textarea data-testid="cvs-picker-query" aria-label={copy.query} placeholder={copy.query} value={query} rows={2} maxLength={2000} disabled={saving} autoComplete="off"
+          {path === "search" ? <>
+            <textarea data-testid="cvs-picker-query" aria-label={copy.query} placeholder={copy.query} value={query} rows={query.includes("\n") ? 4 : 1} maxLength={2000} disabled={saving} autoComplete="off"
             onChange={(event) => { setQuery(event.target.value); changed(); }}
             onPaste={(event) => {
               const text = event.clipboardData.getData("text");
@@ -114,42 +119,59 @@ export default function CvsStorePicker({ open, brand, locale, onClose, onBrand, 
                 return storeField ? [line.slice(storeField.index)] : [];
               });
               if (lines.length || /[\r\n]/.test(text)) { event.preventDefault(); setQuery(lines.join("\n").slice(0, 2000)); changed(); }
-            }} /> : <div className={styles.region}>
+            }} />
+            {noResults && <p className={styles.hint}>{matched.codeMiss || matched.brandMismatch ? copy.mismatch : copy.hint}</p>}
+            <button type="button" data-testid="cvs-picker-browse" disabled={saving} onClick={() => { setPath("region"); changed(); }}>{copy.browse}</button>
+          </> : <>
+            <button type="button" data-testid="cvs-picker-back" disabled={saving} onClick={() => { setPath("search"); changed(); }}>{copy.back}</button>
+            <div className={styles.region}>
             <select data-testid="cvs-picker-county" aria-label={copy.county} value={county} disabled={saving || loading} onChange={(event) => { setCounty(event.target.value); setDistrict(""); changed(); }}>
               <option value="">{copy.county}</option>{counties.map((value) => <option key={value} value={value}>{value === "其他" ? copy.other : value}</option>)}
             </select>
             <select data-testid="cvs-picker-district" aria-label={copy.district} value={district} disabled={saving || !county || loading} onChange={(event) => { setDistrict(event.target.value); changed(); }}>
               <option value="">{copy.district}</option>{districts.map((value) => <option key={value} value={value}>{value === "其他" ? copy.other : value}</option>)}
             </select>
-          </div>}
+            </div>
+          </>}
+          </>}
         </header>
-        <div className={styles.results} aria-live="polite" aria-busy={loading || saving}>
+        {selected ? <section className={styles.selection} data-testid="cvs-picker-chosen" aria-live="polite">
+          <div className={styles.card}>
+            <strong>{copy.chains[brand]} · {selected.name}</strong>
+            <strong className={styles.code} data-testid="cvs-picker-chosen-code">{selected.code}</strong>
+            <span>{selected.address}</span>
+          </div>
+          <button type="button" data-testid="cvs-picker-change" disabled={saving} onClick={changed}>{copy.change}</button>
+        </section> : <div className={styles.results} aria-live="polite" aria-busy={loading || saving}>
           {loading ? <p role="status">{copy.loading}</p> : failed ? <div role="alert"><p>{copy.failed}</p><button type="button" onClick={() => setReload((value) => value + 1)}>{copy.retry}</button></div> : <>
             {path === "search" && matched.codeMiss && <p data-testid="cvs-picker-code-miss">{copy.missing}{matched.codeMiss}</p>}
-            {path === "search" && matched.brandMismatch && <p>{copy.mismatch}</p>}
+            {path === "search" && matched.brandMismatch && !noResults && <p>{copy.mismatch}</p>}
             {ready && !candidates.length && <p data-testid="cvs-picker-empty">{copy.empty}</p>}
-            {candidates.slice(0, limit).map((row) => <button type="button" key={row.code} data-testid={`cvs-candidate-${row.code}`} className={styles.row} aria-pressed={selected?.code === row.code} disabled={saving}
+            {!ready && <p>{copy.helper}</p>}
+            {candidates.slice(0, limit).map((row, index) => <button type="button" key={row.code} data-testid={`cvs-candidate-${row.code}`} className={styles.row} aria-pressed={false} disabled={saving}
               onClick={() => setSelected(row)}>
-              <span className={styles.radio} aria-hidden="true" />
-              <span className={styles.facts}><strong className={path === "search" && matched.code === row.code ? styles.match : undefined}>{`${row.name} · ${row.code}`}</strong><span><MatchedText text={row.address} query={path === "search" ? query : ""} /></span></span>
+              <span className={styles.facts}><strong>{`${row.name} · ${row.code}${path === "search" && index === 0 ? ` · ${copy.best}` : ""}`}</strong><span><MatchedText text={row.address} query={path === "search" ? query : ""} /></span></span>
             </button>)}
             {candidates.length > limit && <button type="button" disabled={saving} onClick={() => setLimit((value) => value + 40)}>{copy.more}</button>}
           </>}
-        </div>
+        </div>}
         <footer className={styles.footer}>
           {error && <p role="alert">{error}</p>}
-          <small data-testid="cvs-picker-source">{copy.source}</small>
-          <button type="button" className="primary" data-testid="cvs-picker-confirm" disabled={!canConfirm}
-            title={!selected ? copy.choose : undefined}
+          {selected && <>
+          {review && <button type="button" className={styles.secondary} data-testid="cvs-picker-back" disabled={saving} onClick={() => setReview(false)}>{copy.back}</button>}
+          <button type="button" className={styles.primary} data-testid="cvs-picker-confirm" disabled={!canConfirm}
             onClick={() => {
               if (!selected || !canConfirm) return;
+              if (!review) { setReview(true); return; }
               const choice = selected;
               setSaving(true);
               void onConfirm(choice).then((result) => {
                 if (result === "saved") onClose();
-                else if (result === "rejected") { setSelected(null); setRejected((current) => new Set([...current, choice.code])); }
+                else if (result === "rejected") { setSelected(null); setReview(false); setRejected((current) => new Set([...current, choice.code])); }
               }).finally(() => setSaving(false));
             }}>{saving ? copy.confirming : copy.confirm}</button>
+          </>}
+          {rows.length > 0 && !loading && !failed && <small data-testid="cvs-picker-source">{copy.source.replace("{date}", source.date)}</small>}
         </footer>
       </div>
     </dialog>

@@ -109,7 +109,10 @@ async function answerDialog(page: Page) {
 }
 async function openSettings(page: Page, locale: Loc) {
   await page.goto(`/${locale}/settings?store=${store}`);
-  const advanced = page.getByRole("button", { name: /^(Advanced|進階|进阶)$/, exact: true });
+  await enterSettings(page);
+}
+async function enterSettings(page: Page) {
+  const advanced = page.getByRole("button", { name: /^(Edit settings|編輯設定|编辑设置|View settings|檢視設定|查看设置)$/, exact: true });
   await expect(advanced.or(page.getByTestId("metaconnect-card"))).toBeVisible();
   if (await advanced.isVisible()) await advanced.click();
   await expect(page.getByTestId("metaconnect-card")).toBeVisible();
@@ -155,7 +158,7 @@ test.describe("meta-connect independent browser gate", () => {
     await expect(page.locator("#claims-source-platform")).toHaveCount(0); // nothing to choose
     await shot(page, "studio-no-page", "zh-TW", "desktop");
     await link.click();
-    await page.getByRole("button", { name: "進階", exact: true }).click();
+    await page.getByRole("button", { name: "編輯設定", exact: true }).click();
     await expect(page.getByTestId("metaconnect-card")).toBeVisible();
     await expect(page.getByTestId("metaconnect-none")).toHaveText(c.notConnected);
     await expect(page.getByTestId("metaconnect-connect")).toBeVisible();
@@ -213,7 +216,7 @@ test.describe("meta-connect independent browser gate", () => {
 
       // Reload: the same card from the server, not from page state.
       await page.reload();
-      await openSettings(page, locale);
+      await enterSettings(page);
       await openDetail(page, locale, pageA.id);
       await expect(page.getByTestId("metaconnect-page")).toContainText(pageA.name);
       await expect(page.getByTestId("metaconnect-ig")).toHaveText(`@${pageA.igUser}`);

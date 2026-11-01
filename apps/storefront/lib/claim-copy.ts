@@ -10,6 +10,12 @@ import type { Locale } from "@live-commerce/i18n";
 
 const en = {
   store: "Storefront", language: "Language", demonstration: "Synthetic data · test environment",
+  // Signed frames 4:12347 / 4:12417 (confirm), 66:1746 / 66:1747 (link gone), 66:1754 / 66:1755 (result not confirmed).
+  confirmTitle: "Confirm your live claim", fromComments: "Added from your comment", noPay: "A claim link is not a payment; the price and available quantity are checked again at checkout.",
+  mergedNote: (cartQty: number, total: number) => `Your cart already has ${cartQty} other item(s); ${total} item(s) will be checked out together.`,
+  subtotal: "Subtotal", viewProduct: "View products", checkoutAll: (n: number) => `Go to checkout (${n} items)`,
+  goneTitle: "This claim link has expired", goneBody: "The link has expired or was replaced. Message the seller for a new one.", goneNote: "This link cannot be used now. Items already in your cart are kept.", viewCart: "View cart",
+  unknownTitle: "Claim result not confirmed", unknownBadge: "Result not confirmed", unknownBody: "We could not confirm the result. Reload your claim first, then try again.", unknownNote: "Check the current claim status first to avoid sending it twice.", reread: "Reload claim",
   title: "Your claimed items", loading: "Opening your claim…",
   intro: "These items were recorded from your live comments. The SKU and quantity are already chosen. Continue to checkout.",
   price: "Current price, final at checkout", stock: "Claims do not reserve stock. Stock is confirmed at checkout.",
@@ -40,6 +46,11 @@ export const claimCopy: Record<Locale, ClaimCopy> = {
   en,
   "zh-CN": {
     store: "店铺前台", language: "语言", demonstration: "合成数据 · 测试环境",
+  confirmTitle: "确认直播认领", fromComments: "已从留言带入商品", noPay: "认领链接不代表已付款；价格与可售数量会在结账时再次确认。",
+  mergedNote: (cartQty: number, total: number) => `购物车原有其他商品 ${cartQty} 件，共 ${total} 件一起结账。`,
+  subtotal: "商品小计", viewProduct: "查看商品", checkoutAll: (n: number) => `前往结账（共 ${n} 件）`,
+  goneTitle: "认领链接失效", goneBody: "链接已失效或已更换，请私信商家重新获取", goneNote: "此链接目前无法使用。购物车内已有的商品不会因此清空。", viewCart: "查看购物车",
+  unknownTitle: "认领结果待确认", unknownBadge: "无法确认结果", unknownBody: "无法确认结果。请先重新读取登记，再试一次。", unknownNote: "先确认目前登记状态，避免重复提交。", reread: "重新读取登记",
     title: "你登记的商品", loading: "正在打开登记…",
     intro: "这些商品来自你在直播中的评论。商品和数量已选好，可直接结账。",
     price: "当前价格，以结账时为准", stock: "登记不会保留库存，结账时才确认库存。",
@@ -66,6 +77,11 @@ export const claimCopy: Record<Locale, ClaimCopy> = {
   },
   "zh-TW": {
     store: "商店前台", language: "語言", demonstration: "合成資料 · 測試環境",
+  confirmTitle: "確認直播認領", fromComments: "已從留言帶入商品", noPay: "認領連結不代表已付款；價格與可售數量會在結帳時再次確認。",
+  mergedNote: (cartQty: number, total: number) => `購物車原有其他商品 ${cartQty} 件，共 ${total} 件一起結帳。`,
+  subtotal: "商品小計", viewProduct: "查看商品", checkoutAll: (n: number) => `前往結帳（共 ${n} 件）`,
+  goneTitle: "認領連結失效", goneBody: "連結已失效或已更換，請私訊商家重新取得", goneNote: "此連結目前無法使用。購物車內已有的商品不會因此清空。", viewCart: "查看購物車",
+  unknownTitle: "認領結果待確認", unknownBadge: "無法確認結果", unknownBody: "無法確認結果。請先重新讀取登記，再試一次。", unknownNote: "先確認目前登記狀態，避免重複送出。", reread: "重新讀取登記",
     title: "你登記的商品", loading: "正在開啟登記…",
     intro: "這些商品來自你在直播中的留言。商品與數量已選好，可直接結帳。",
     price: "目前價格，以結帳時為準", stock: "登記不會保留庫存，結帳時才確認庫存。",

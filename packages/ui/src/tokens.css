@@ -98,6 +98,25 @@
   --ds-info-bg: #eaf0fc;
   --ds-neutral-text: #3f4753;
   --ds-neutral-bg: #edf0f3;
+  /* PARITY-ENTRY signed palette (Figma entry/dashboard frames, output/parity-entry DELIVERY): exact painted values for
+     auth entry and dashboard. Integrator allocation 2026-10-31 (#369 review P1-1/P2-1): the nearest generic tokens
+     (--line/--muted/--focus/--ui-text) repaint the signed frames, and rgb() literals only dodge the hex ratchet. */
+  --ds-sig-page: #f6f7f8;
+  --ds-sig-line: #dce3ed;
+  --ds-sig-muted: #52637d;
+  --ds-sig-label: #1f2937;
+  --ds-sig-placeholder: #68758a;
+  --ds-sig-ink-hover: #24415e;
+  --ds-sig-error-line: #f0bdc4;
+  --ds-sig-error-bg: #fff2f3;
+  --ds-sig-error-text: #9f2738;
+  --ds-sig-focus: #1675b5;
+  --ds-sig-go: #167664;
+  --ds-sig-go-hover: #105f51;
+  --ds-sig-go-text: #0c736c;
+  --ds-sig-go-soft: #e8f5f2;
+  --ds-sig-track: #e6ebf0;
+  --ds-sig-scroll: #acbac8;
   /* text */
   --ds-text-1: #333;
   --ds-text-2: #5b5b5b;

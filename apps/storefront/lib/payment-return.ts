@@ -1,3 +1,5 @@
+// Purpose: neutral /payment/return page (never a payment result); copy follows signed frames 1207:16447 / 1207:16465 (en + the frame's two Chinese strings).
+// Depends on: node:crypto. Used by: app/payment/return/route.ts. Invariants: no Request is read; CSP style hash tracks the inline style.
 import { createHash } from "node:crypto";
 
 // Fixed central return is NOT a webhook. Deliberately accept no Request argument:
@@ -11,7 +13,7 @@ STORY: Close this provider-return tab and refresh the original order for its act
 FIRST VIEWPORT: One heading and three short language sections in a single column; no payment claim or fabricated store link.
 FORM: Local extension of approved B, seed baaadec1, not a replacement world.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
---><main data-testid="payment-return"><h1>Return to your store</h1><section lang="en"><h2>Check your order</h2><p>This page does not confirm payment. Return to your original store tab and select “Refresh order” to check the result. You may close this tab. If you lost the store tab, reopen your store; this page cannot identify it for you.</p></section><section lang="zh-CN"><h2>返回商店查询订单</h2><p>此页面不代表付款成功。请回到原来的商店标签页，点击“刷新订单”查询结果。你可以关闭本页。若原标签页已关闭，请自行重新打开商店；此页面无法判断你所属的商店。</p></section><section lang="zh-TW"><h2>返回商店查詢訂單</h2><p>此頁面不代表付款成功。請回到原本的商店分頁，點選「重新整理訂單」查詢結果。你可以關閉本頁。若原分頁已關閉，請自行重新開啟商店；此頁面無法判斷你所屬的商店。</p></section></main></body></html>`;
+--><main data-testid="payment-return"><h1>Return to your store</h1><section lang="en"><h2>Check your order</h2><p>This page does not confirm payment. Return to your original store tab and select “Refresh order” to check the result. You may close this tab. If you lost the store tab, reopen your store; this page cannot identify it for you.</p></section><section lang="zh-CN"><h2>返回商店查詢訂單</h2><p>此頁面不代表付款成功。請回到原來的商店標籤頁，點擊“刷新訂單”查詢結果。你可以關閉本頁。若原標籤頁已關閉，請自行重新打開商店；此頁面無法判斷你所屬的商店。</p></section><section lang="zh-TW"><h2>返回商店查詢訂單</h2><p>此頁面不代表付款成功。請回到原本的商店分頁，點選「重新整理訂單」查詢結果。你可以關閉本頁。若原分頁已關閉，請自行重新開啟商店；此頁面無法判斷你所屬的商店。</p></section></main></body></html>`;
 const styleHash = createHash("sha256").update(style).digest("base64");
 
 export function paymentReturn(): Response {

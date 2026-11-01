@@ -1,0 +1,72 @@
+SOURCE fix2-failed-job.log sha256=24a54b26d90daca2c3e2ca202ed9a774bd086739c5d69e0386a7d402f5284519
+1984: gate (bundle:06)	UNKNOWN STEP	2026-10-30T16:00:05.1868904Z === RUN   TestBrowserHomeCod
+1992: gate (bundle:06)	UNKNOWN STEP	2026-10-30T16:04:08.4147577Z --- FAIL: TestBrowserHomeCod (243.23s)
+1997: gate (bundle:06)	UNKNOWN STEP	2026-10-30T16:04:08.6631052Z bundle member --browser-home-cod: failure
+1998: gate (bundle:06)	UNKNOWN STEP	2026-10-30T16:04:08.7020291Z matrix-receipts: {"mode":"--browser-home-cod","run_id":"41082084811","run_attempt":"1","sha":"b6c2c424948228ee2c45d6c4fe737bb8023beb7d","status":"FAIL","test_count":3,"spec_count":2}
+1999: gate (bundle:06)	UNKNOWN STEP	2026-10-30T16:04:08.7096868Z bundle member --browser-home-cod: receipt receipt-browser-home-cod.json is not PASS
+2146: gate (bundle:06)	UNKNOWN STEP	2026-10-30T16:04:54.1717732Z --- FAIL: TestBrowserHomeCod (243.23s)
+SOURCE fix2-bundle02.log sha256=8039700f4e01f04930be4ab2ef705695ea46572c500f42f07e776daaa892000e
+1658: gate (bundle:02)	UNKNOWN STEP	2026-10-30T16:27:52.9352210Z === RUN   TestBrowserBuyerOrderUI
+1662: gate (bundle:02)	UNKNOWN STEP	2026-10-30T16:29:10.1042180Z --- FAIL: TestBrowserBuyerOrderUI (77.17s)
+1667: gate (bundle:02)	UNKNOWN STEP	2026-10-30T16:29:10.3717099Z bundle member --browser-order: failure
+1668: gate (bundle:02)	UNKNOWN STEP	2026-10-30T16:29:10.4191353Z matrix-receipts: {"mode":"--browser-order","run_id":"41082084811","run_attempt":"1","sha":"b6c2c424948228ee2c45d6c4fe737bb8023beb7d","status":"FAIL","test_count":32,"spec_count":31}
+1669: gate (bundle:02)	UNKNOWN STEP	2026-10-30T16:29:10.4274203Z bundle member --browser-order: receipt receipt-browser-order.json is not PASS
+1951: gate (bundle:02)	UNKNOWN STEP	2026-10-30T16:30:11.7934130Z --- FAIL: TestBrowserBuyerOrderUI (77.17s)
+SOURCE fix2-webkit.log sha256=9c77c562623ac6e5a0b8ffe3b618f643edbf925ca81ee8c7a9f6553e4a1c8ba9
+2179: gate (--browser-webkit)	UNKNOWN STEP	2026-10-30T16:03:58.9801713Z matrix-receipts: {"mode":"--browser-webkit","run_id":"41082084811","run_attempt":"1","sha":"b6c2c424948228ee2c45d6c4fe737bb8023beb7d","status":"FAIL","test_count":109,"spec_count":102}
+SOURCE fix2-receipts.log sha256=4da7f747e5938000c4e91f11f3bc3f77a085e8654e479a2e87ae2a1d09992f20
+654: receipts	UNKNOWN STEP	2026-10-30T16:51:31.5179611Z FAIL: --browser-home-cod: status FAIL
+655: receipts	UNKNOWN STEP	2026-10-30T16:51:31.5180100Z FAIL: --browser-order: status FAIL
+656: receipts	UNKNOWN STEP	2026-10-30T16:51:31.5180561Z FAIL: --browser-webkit: status FAIL
+SOURCE fix2-required.log sha256=335f6fd26e652110165eeff5b5fdc3532d7b96a71b4b08d555f2316f3bbf2a3f
+46: required	UNKNOWN STEP	2026-10-30T16:53:06.6028785Z   GATE: failure
+50: required	UNKNOWN STEP	2026-10-30T16:53:06.6032227Z   RECEIPTS: failure
+53: required	UNKNOWN STEP	2026-10-30T16:53:06.6259978Z plan=success build=success (expected true) gate=failure aggregate=success (expected true) deploy=skipped (expected false) receipts=failure
+54: required	UNKNOWN STEP	2026-10-30T16:53:06.6286514Z ##[error]Process completed with exit code 1.
+SOURCE fix2-artifacts/playwright/run.kQZGgKGK/home-cod/20261030T160005.186853690/parity-checkout-click-ledger.json sha256=9a1e5c8a2ac971fb4d2d4d8d26d3c5519c27986e959451f1d1c74803a2dc833e
+{"page": "/zh-TW/checkout", "control": "zh-TW/1440/card re-quote", "action": "real click/fill/select/keyboard or read-only assertion", "expected": "changed server total blocks submit until a separate Confirm new total click, including after reload", "actual": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('input[name=\"recipient_name\"]')\n    - locator resolved to <input required=\"\" type=\"text\" maxlength=\"120\" autocomplete=\"name\" name=\"recipient_name\" value=\"Synthetic Gate Recipient\"/>\n    - fill(\"Synthetic Gate Recipient\")\n  - attempting fill action\n    2 × waiting for element to be visible, enabled and editable\n      - element is not visible\n    - retrying fill action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and editable\n      - element is not enabled\n    - retrying fill action\n      - waiting 100ms\n    60 × waiting for element to be visible, enabled and editable\n       - element is not enabled\n     - retrying fill action\n       - waiting 500ms\n", "status": "FAIL"}
+{"page": "/zh-TW/checkout", "control": "zh-TW/390/card re-quote", "action": "real click/fill/select/keyboard or read-only assertion", "expected": "changed server total blocks submit until a separate Confirm new total click, including after reload", "actual": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('input[name=\"recipient_name\"]')\n    - locator resolved to <input required=\"\" type=\"text\" maxlength=\"120\" autocomplete=\"name\" name=\"recipient_name\" value=\"Synthetic Gate Recipient\"/>\n    - fill(\"Synthetic Gate Recipient\")\n  - attempting fill action\n    2 × waiting for element to be visible, enabled and editable\n      - element is not visible\n    - retrying fill action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and editable\n      - element is not enabled\n    - retrying fill action\n      - waiting 100ms\n    60 × waiting for element to be visible, enabled and editable\n       - element is not enabled\n     - retrying fill action\n       - waiting 500ms\n", "status": "FAIL"}
+{"page": "/zh-CN/checkout", "control": "zh-CN/1440/card re-quote", "action": "real click/fill/select/keyboard or read-only assertion", "expected": "changed server total blocks submit until a separate Confirm new total click, including after reload", "actual": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('input[name=\"recipient_name\"]')\n    - locator resolved to <input required=\"\" type=\"text\" maxlength=\"120\" autocomplete=\"name\" name=\"recipient_name\" value=\"Synthetic Gate Recipient\"/>\n    - fill(\"Synthetic Gate Recipient\")\n  - attempting fill action\n    2 × waiting for element to be visible, enabled and editable\n      - element is not visible\n    - retrying fill action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and editable\n      - element is not enabled\n    - retrying fill action\n      - waiting 100ms\n    60 × waiting for element to be visible, enabled and editable\n       - element is not enabled\n     - retrying fill action\n       - waiting 500ms\n", "status": "FAIL"}
+{"page": "/zh-CN/checkout", "control": "zh-CN/390/card re-quote", "action": "real click/fill/select/keyboard or read-only assertion", "expected": "changed server total blocks submit until a separate Confirm new total click, including after reload", "actual": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('input[name=\"recipient_name\"]')\n    - locator resolved to <input required=\"\" type=\"text\" maxlength=\"120\" autocomplete=\"name\" name=\"recipient_name\" value=\"Synthetic Gate Recipient\"/>\n    - fill(\"Synthetic Gate Recipient\")\n  - attempting fill action\n    2 × waiting for element to be visible, enabled and editable\n      - element is not visible\n    - retrying fill action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and editable\n      - element is not enabled\n    - retrying fill action\n      - waiting 100ms\n    60 × waiting for element to be visible, enabled and editable\n       - element is not enabled\n     - retrying fill action\n       - waiting 500ms\n", "status": "FAIL"}
+{"page": "/en/checkout", "control": "en/1440/card re-quote", "action": "real click/fill/select/keyboard or read-only assertion", "expected": "changed server total blocks submit until a separate Confirm new total click, including after reload", "actual": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('input[name=\"recipient_name\"]')\n    - locator resolved to <input required=\"\" type=\"text\" maxlength=\"120\" autocomplete=\"name\" name=\"recipient_name\" value=\"Synthetic Gate Recipient\"/>\n    - fill(\"Synthetic Gate Recipient\")\n  - attempting fill action\n    2 × waiting for element to be visible, enabled and editable\n      - element is not visible\n    - retrying fill action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and editable\n      - element is not enabled\n    - retrying fill action\n      - waiting 100ms\n    60 × waiting for element to be visible, enabled and editable\n       - element is not enabled\n     - retrying fill action\n       - waiting 500ms\n", "status": "FAIL"}
+{"page": "/en/checkout", "control": "en/390/card re-quote", "action": "real click/fill/select/keyboard or read-only assertion", "expected": "changed server total blocks submit until a separate Confirm new total click, including after reload", "actual": "locator.fill: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('input[name=\"recipient_name\"]')\n    - locator resolved to <input required=\"\" type=\"text\" maxlength=\"120\" autocomplete=\"name\" name=\"recipient_name\" value=\"Synthetic Gate Recipient\"/>\n    - fill(\"Synthetic Gate Recipient\")\n  - attempting fill action\n    2 × waiting for element to be visible, enabled and editable\n      - element is not visible\n    - retrying fill action\n    - waiting 20ms\n    - waiting for element to be visible, enabled and editable\n    - element is not visible\n  2 × retrying fill action\n      - waiting 100ms\n      - waiting for element to be visible, enabled and editable\n      - element is not enabled\n  59 × retrying fill action\n       - waiting 500ms\n       - waiting for element to be visible, enabled and editable\n       - element is not enabled\n  - retrying fill action\n    - waiting 500ms\n", "status": "FAIL"}
+SOURCE fix2-order-artifacts/playwright/buyer-order-1532841022/browser.log sha256=0fadb3c0a911dc6c1169ec399abce6fa07f39eb2de11956ff2b84d48a9693745
+36: locator.click: Timeout 30000ms exceeded.
+37: Call log:
+38:   - waiting for getByTestId('toggle-order-history')
+39:     - locator resolved to <button data-testid="toggle-order-history">Your orders</button>
+40:   - attempting click action
+41:     2 × waiting for element to be visible, enabled and stable
+42:       - element is not visible
+43:     - retrying click action
+44:     - waiting 20ms
+45:     2 × waiting for element to be visible, enabled and stable
+46:       - element is not visible
+47:     - retrying click action
+48:       - waiting 100ms
+49:     58 × waiting for element to be visible, enabled and stable
+50:        - element is not visible
+51:      - retrying click action
+52:        - waiting 500ms
+53:
+54:     at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/order-gate.mjs:830:53 {
+SOURCE fix2-webkit-artifacts/playwright/buyer-order-2250117649/browser.log sha256=19368414e363514d8201347fbff0d559eb51615933f3122db9575d675bc7dd24
+36: locator.click: Timeout 30000ms exceeded.
+37: Call log:
+38:   - waiting for getByTestId('toggle-order-history')
+39:     - locator resolved to <button data-testid="toggle-order-history">Your orders</button>
+40:   - attempting click action
+41:     2 × waiting for element to be visible, enabled and stable
+42:       - element is not visible
+43:     - retrying click action
+44:     - waiting 20ms
+45:     2 × waiting for element to be visible, enabled and stable
+46:       - element is not visible
+47:     - retrying click action
+48:       - waiting 100ms
+49:     56 × waiting for element to be visible, enabled and stable
+50:        - element is not visible
+51:      - retrying click action
+52:        - waiting 500ms
+53:
+54:     at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/order-gate.mjs:830:53 {

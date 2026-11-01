@@ -1,0 +1,11 @@
+/* Purpose: Signed recovery panel width and spacing on real buyer routes.
+ * Depends on: shared --ds-* tokens and States styles.
+ * Used by: StorefrontState.
+ * Invariants: 620px desktop maximum, fluid mobile width, no fixed text height. */
+.sf-state { width: 100%; max-width: 620px; margin: 40px auto; box-sizing: border-box; font-family: var(--ds-font); }
+@media (max-width: 600px) { .sf-state { margin: 24px auto; } }
+
+/* Keep the original-order recovery visible before long delivery details, without remounting
+   the payment controller or hiding the server's original order facts and legal disclosures. */
+.order-section:has(> .order-payment section[data-variant="unknown"]) { display: flex; flex-direction: column; }
+.order-section:has(> .order-payment section[data-variant="unknown"]) > .order-payment { order: -1; }

@@ -1,11 +1,11 @@
-// Purpose: Shared admin empty, error and loading display built from the DS state and action primitives.
+// Purpose: Shared admin empty, read failure and loading display built from signed StatePanel/InlineError.
 // Depends on: React props, @live-commerce/i18n locale type and @live-commerce/ui/ds; no transport, ACL or routing authority.
 // Used by: localized admin route boundaries, Customers and MerchantOrders; global-error uses it outside the locale layout.
 // Invariants: errors never render upstream internals; loading is announced once; empty states do not invent write actions.
 "use client";
 
 import type { Locale } from "@live-commerce/i18n";
-import { ButtonLink, EmptyState, ErrorState } from "@live-commerce/ui/ds";
+import { InlineError, StatePanel } from "@live-commerce/ui/ds";
 import "./admin-state-block.css";
 
 export const adminStateCopy: Record<Locale, {
@@ -57,48 +57,30 @@ export type AdminStateBlockProps = StateProps & {
   variant: "empty" | "loading" | "error";
   onRetry?: () => void;
   retryLabel?: string;
+  failed?: boolean;
 };
-
-function StateAction({ actionHref, actionLabel }: Pick<StateProps, "actionHref" | "actionLabel">) {
-  if (!actionHref || !actionLabel) return null;
-  return <ButtonLink href={actionHref} variant="secondary">{actionLabel}</ButtonLink>;
-}
 
 /** Display only: callers retain their existing read, retry and navigation behavior. */
 export function AdminStateBlock(props: AdminStateBlockProps) {
-  const { title, description, actionHref, actionLabel } = props;
+  const { title, description, actionHref, actionLabel, failed } = props;
   if (props.variant === "loading") {
-    return (
-      <div className="admin-state-loading" role="status" aria-live="polite">
+    return <div className="admin-state-loading">
+      <StatePanel variant="loading" title={title} body={description} status={
         <div className="admin-state-skeleton" aria-hidden="true">
-          <span className="admin-state-skeleton-mark" />
           <span className="admin-state-skeleton-line admin-state-skeleton-line-title" />
           <span className="admin-state-skeleton-line" />
         </div>
-        <h3 className="admin-state-loading-title">{title}</h3>
-        {description && <p className="admin-state-loading-description">{description}</p>}
-      </div>
-    );
+      } />
+    </div>;
   }
-  return (
-    <div className="admin-state-block">
-      {props.variant === "empty" ? (
-        <EmptyState
-          mode="full"
-          title={title}
-          description={description}
-          action={<StateAction actionHref={actionHref} actionLabel={actionLabel} />}
-        />
-      ) : (
-        <ErrorState
-          mode="full"
-          title={title}
-          detail={description}
-          onRetry={props.onRetry}
-          retryLabel={props.retryLabel}
-          actions={<StateAction actionHref={actionHref} actionLabel={actionLabel} />}
-        />
-      )}
-    </div>
-  );
+  const action = props.variant === "error" && props.onRetry && props.retryLabel
+    ? { label: props.retryLabel, onClick: props.onRetry }
+    : actionHref && actionLabel ? { label: actionLabel, href: actionHref } : undefined;
+  return <div className="admin-state-block" data-kind={props.variant}>
+    <StatePanel variant={props.variant === "error" ? "offline" : "empty"} title={title}
+      body={description} action={action}
+      status={props.variant === "error" && failed ? <InlineError message={title} /> : undefined} />
+    {props.variant === "error" && props.onRetry && actionHref && actionLabel &&
+      <a className="admin-state-home" href={actionHref}>{actionLabel}</a>}
+  </div>;
 }

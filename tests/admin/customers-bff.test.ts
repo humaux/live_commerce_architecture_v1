@@ -1,3 +1,7 @@
+// Purpose: Preserve the existing contract acceptance while following signed PARITY-MONEY navigation.
+// Depends on: original fixture and public contract imports below; independent finance design copy.
+// Used by: the registered Node/browser gate for this module.
+// Invariants: money, permissions, uncertainty and persistence assertions are preserved.
 // CB09 Node half (contracts/customers-billing-v1.md §5, customers-core.md D5/D6/D8/D12/D13 + FROZEN DTOs,
 // billing-core.md FROZEN DTOs/B3): the admin BFF fence and decoders must admit exactly the eleven §5 resources,
 // enforce the Idempotency-Key rule (required on the three customer POSTs, forbidden everywhere else), refuse
@@ -257,7 +261,7 @@ test("decoders refuse: unknown key, missing key, wrong type, impossible values, 
 
 test("finance and erasure summaries decode; anything else is refused", () => {
   const row = { day: "2026-09-27", currency: "TWD", environment: "SANDBOX", captured_count: 2, captured_minor: 5000, refunded_minor: 500, net_minor: 4500 };
-  const ok = { from: "2026-09-01", to: "2026-09-30", timezone: "Asia/Taipei", rows: [row], totals: [{ ...row, day: "" }] };
+  const ok = { from: "2026-09-01", to: "2026-09-30", timezone: "Asia/Taipei", generated_at: "2026-10-30T12:00:00Z", rows: [row], totals: [{ ...row, day: "" }] };
   assert.equal(parseFinanceSummary(ok).rows.length, 1);
   assert.equal(parseFinanceSummary({ ...ok, rows: [], totals: [] }).rows.length, 0);
   assert.doesNotThrow(() => parseFinanceSummary({ ...ok, rows: [{ ...row, net_minor: -500, refunded_minor: 500, captured_minor: 0, captured_count: 0 }] }));

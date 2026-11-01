@@ -1,6 +1,6 @@
 // Purpose: Drive full catalog document controls through the merchant's explicit Advanced entry.
 // Depends on: @playwright/test, product-editor-copy.
-// Used by: catalog-core, product-editor/review/visual/media browser acceptance.
+// Used by: catalog-core, product-editor/review/visual/media and settings-v2 browser acceptance.
 // Invariants: view selection uses real clicks; existing assertions and writes remain unchanged.
 // CC12's assertions translated to the one-document UI; all mutations remain real clicks.
 import { expect, type Page } from "@playwright/test";
@@ -191,9 +191,11 @@ export async function openAdvancedProductEditor(page: Page) {
     await expect(page.getByTestId('product-form')).toBeVisible();
   }
 }
-/** Select the product before using the relocated batch Copy action; never create a row shortcut. */
+/** Select a source, then follow the signed K2 Product tasks → Copy product → confirmation entry. */
 export async function selectProductForCopy(page: Page, id: string) {
   await page.getByTestId(`product-row-${id}`).getByRole('checkbox').check();
-  await page.getByTestId('product-batch').locator('summary').click();
+  await page.getByTestId('products-operations').click();
+  await page.getByTestId('products-copy-entry').click();
+  await expect(page.getByTestId('product-copy-review')).toBeVisible();
   await expect(page.getByTestId('products-copy-selected')).toBeEnabled();
 }

@@ -52,20 +52,34 @@ async function signedLogin(page: Page) {
     await page.getByTestId("nav-orders").click();
     await expect(page).toHaveURL(new RegExp(`/en/orders\\?store=${store}$`));
   }
-  await expect(page.getByTestId("orders-table")).toBeVisible();
+  await expect(page.getByTestId("orders-list")).toBeVisible();
   const toggle = page.getByTestId("orders-more-filters");
   if ((await toggle.getAttribute("aria-expanded")) === "false") await toggle.click();
   await page.getByTestId("state-filter").selectOption("all");
-  await expect(page.getByTestId("orders-table")).toBeVisible();
+  await expect(page.getByTestId("orders-list")).toBeVisible();
+  await openTools(page);
 }
 
+async function openTools(page: Page) {
+  const tools=page.locator("details.signed-orders-tools");
+  if(await tools.getAttribute("open")===null) await tools.locator(":scope > summary").click();
+}
+async function orderList(page: Page) {
+  if (page.url().match(/\/orders\/[0-9a-f-]{36}/) || (await page.getByTestId("order-detail").count()) || (await page.getByTestId("order-detail-back").count())) {
+    await page.getByTestId("order-detail-back").click();
+  }
+  await expect(page.getByTestId("orders-list")).toBeVisible();
+  await openTools(page);
+}
 async function expand(page: Page, id: string) {
-  await expect(page.getByTestId("orders-table")).toBeVisible();
+  await orderList(page);
+  await expect(page.getByTestId("orders-list")).toBeVisible();
   for (let p = 0; p < 3; p++) {
     if (await page.getByTestId(`order-expand-${id}`).count()) {
       const button = page.getByTestId(`order-expand-${id}`);
       if ((await button.getAttribute("aria-expanded")) !== "true") await button.click();
       await expect(page.getByTestId("order-detail")).toHaveAttribute("aria-label", new RegExp(id));
+      await page.getByTestId("order-more-details").locator("summary").first().click();
       return;
     }
     await expect(page.getByTestId("orders-next")).toBeEnabled();
@@ -209,22 +223,25 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
       await expect(detail.locator('[data-state="MERCHANT_SHIPPED"]').first()).toBeVisible();
       await expect(detail.getByTestId("shipment-record")).toContainText(shipWaybill.tracking);
     }
+    await orderList(page);
   });
 
   await test.step("reload keeps the shipments; the SHIPPED group is history, so no OPEN panel is rebuilt", async () => {
     await page.reload();
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await orderList(page);
     await expect(page.locator('section[data-testid^="parcel-group-"]')).toHaveCount(0);
     // Persisted values of EACH member after the reload (record, link, history note, prefilled correction form).
     for (const id of [pm1, pm2]) await expectPersistedWaybill(page, id, shipWaybill);
+    await orderList(page);
   });
 
   await test.step("merge the dissolve pair; after a RELOAD the OPEN panel reappears and dissolves with the confirm pair", async () => {
+    await orderList(page);
     await page.getByTestId("parcel-suggestions-toggle").click();
     await suggestionCard(page, pd1).locator('button[data-testid^="parcel-merge-"]').click();
     await expect(groupPanel(page, pd1)).toBeVisible();
     await page.reload();
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await orderList(page);
     const panel = groupPanel(page, pd1); // rebuilt from GET parcel-groups: no session knowledge involved
     await expect(panel).toBeVisible();
     await expect(panel.locator('[data-testid^="parcel-state-"]')).toHaveText("Open");
@@ -282,7 +299,7 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
     await expect(page.getByTestId("order-detail").getByTestId("shipment-parcel-block")).toHaveText(hint);
     await expect(page.getByTestId("order-detail").getByTestId("shipment-form")).toHaveCount(0);
     await page.reload();
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await orderList(page);
     const panel = groupPanel(page, pd1);
     await expect(panel).toBeVisible();
     await expand(page, pd1);
@@ -293,8 +310,9 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
     await panel.locator('[data-testid^="parcel-ship-submit-"]').click();
     await expect(panel.locator('[data-testid^="parcel-notice-"]')).toContainText("group is shipped");
     await page.reload();
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await orderList(page);
     for (const id of [pd1, pd2]) await expectPersistedWaybill(page, id, knownWaybill);
+    await orderList(page);
   });
 
   await test.step("a failed suggestions read shows its error and Retry; the real retry recovers the banner and the card", async () => {
@@ -302,7 +320,7 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
     const reads = countReads(page, url);
     await failNextRead(page, url); // [FAULT INJECTION] one 503 on the load below
     await page.reload();
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await orderList(page);
     await expect(page.getByTestId("parcel-merge-problem")).toHaveText("Merge suggestions could not be loaded. Retry, or reload the page.");
     await expect(page.getByTestId("parcel-reload-retry")).toHaveText("Retry loading");
     await expect(page.getByTestId("parcel-suggestion")).toHaveCount(0);
@@ -319,12 +337,14 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
   await test.step("a stale second tab: the single-order submit gets the server in_parcel_group copy", async () => {
     // Tab A shows the stale-pair order with the single-order form; tab B merges that pair; A (never told) then submits.
     await page.reload();
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await orderList(page);
     await expand(page, ps1);
     const detail = page.getByTestId("order-detail");
     await expect(detail.getByTestId("shipment-form")).toBeVisible();
     const tabB = await page.context().newPage();
     await tabB.goto(new URL(`/en/orders?store=${store}`, origin).toString());
+    await expect(tabB.getByTestId("orders-list")).toBeVisible();
+    await openTools(tabB);
     await expect(tabB.getByTestId("parcel-merge")).toBeVisible();
     await tabB.getByTestId("parcel-suggestions-toggle").click();
     await suggestionCard(tabB, ps1).locator('button[data-testid^="parcel-merge-"]').click();
@@ -372,6 +392,7 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
     await expect(page.getByTestId(`parcel-badge-${ps1}`)).toBeVisible();
     await expect(detail.getByTestId("shipment-parcel-block")).toHaveText("This order is in a parcel group; fill in the waybill on the group.");
     await expect(detail.getByTestId("shipment-form")).toHaveCount(0);
+    await orderList(page);
   });
 
   await test.step("a failed OPEN-groups read shows its error and Retry; the real retry rebuilds the panel and the row badge", async () => {
@@ -380,7 +401,7 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
     const reads = countReads(page, url);
     await failNextRead(page, url); // [FAULT INJECTION] one 503 on the load below
     await page.reload();
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await orderList(page);
     await expect(page.getByTestId("parcel-merge-problem")).toHaveText("Open parcel groups could not be loaded. Retry, or reload the page.");
     await expect(page.getByTestId("parcel-reload-retry")).toHaveText("Retry loading");
     await expect(groupPanel(page, ps1)).toHaveCount(0); // never silently pretend there is no OPEN group: the error says otherwise
@@ -412,7 +433,7 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
   for (const read of ["suggestions", "groups"] as const) {
     for (const [status, copy] of [
       [401, "Sign in to view orders."],
-      [403, "This account does not have permission to read orders."],
+      [403, "This link cannot be opened, or your account cannot use this feature. Return to an available feature."],
       [404, "This order is unavailable in the selected store."],
     ] as const) {
       await test.step(`${read} ${status} clears orders/detail/bulk/groups before stale read completions`, async () => {
@@ -424,11 +445,11 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
         // Keep the recoverable failure until detail/bulk readiness: expanding detail can naturally restart parcel reads.
         await page.route(suggestionsURL, (route) => route.fulfill({ status: 503, contentType: "application/json", headers: { "cache-control": "private, no-store" }, body: '{"code":"unavailable"}' }));
         await page.reload();
-        await expect(page.getByTestId("orders-table")).toBeVisible();
+        await orderList(page);
         await expect(groupPanel(page, ps1)).toBeVisible();
+        await page.getByTestId(`order-row-${ps1}`).getByRole("checkbox").check();
         await expand(page, ps1);
         await expect(page.getByTestId("order-detail")).toBeVisible();
-        await page.getByTestId(`order-row-${ps1}`).getByRole("checkbox").check();
         await expect(page.getByTestId("pick-count")).not.toHaveText("0");
         await expect(page.getByTestId("parcel-reload-retry")).toBeVisible();
         await page.unroute(suggestionsURL);
@@ -460,7 +481,15 @@ test("W3-07B parcel merge: suggest -> merge -> group waybill -> members shipped 
         });
         const expectPurged = async () => {
           await expect(page.getByTestId("merchant-orders")).toContainText(copy);
-          await expect(page.getByTestId("orders-table")).toHaveCount(0);
+          if (status === 403) {
+            // The signed permission panel replaces the legacy sentence; purge coverage below is unchanged.
+            const denial = page.getByTestId("merchant-orders").locator('section[data-variant="forbidden"]');
+            await expect(denial.getByRole("heading", { name: "This page cannot be opened", exact: true })).toBeVisible();
+            await expect(denial).toContainText(copy);
+            await expect(denial).toContainText("Ask the store owner if you need access to this feature.");
+            await expect(denial.getByRole("link", { name: "Back to workspace", exact: true })).toHaveAttribute("href", "/en");
+          }
+          await expect(page.getByTestId("orders-list")).toHaveCount(0);
           await expect(page.getByTestId("order-detail")).toHaveCount(0);
           await expect(page.getByTestId("pick-toolbar")).toHaveCount(0);
           await expect(page.locator('section[data-testid^="parcel-group-"]')).toHaveCount(0);

@@ -223,7 +223,7 @@ export function registerProductReviewAcceptance() {
       await page.reload();
       await expect(page.getByText(recovery, { exact: true })).toBeVisible();
       if (action !== "copy") await expect(page.getByText(recovery, { exact: true })).toBeInViewport();
-      await expect(trigger()).toBeDisabled();
+      await expect(action === "copy" ? page.getByTestId("products-copy-entry") : trigger()).toBeDisabled();
       expect(
         await page.evaluate((key) => sessionStorage.getItem(key), fenceKey),
       ).toBe(originalKey);

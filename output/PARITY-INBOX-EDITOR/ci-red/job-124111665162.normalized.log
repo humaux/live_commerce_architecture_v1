@@ -1,0 +1,705 @@
+receipts	UNKNOWN STEP	﻿2026-10-30T14:15:17.7903417Z Current runner version: '2.338.0'
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7932376Z ##[group]Runner Image Provisioner
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7933470Z Hosted Compute Agent
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7934275Z Version: 20261021.618
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7934980Z Commit: 21505ad2541d5be6135ed84fc33697146cf75b8e
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7935767Z Build Date: 2026-10-21T00:45:21Z
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7936497Z Worker ID: {d4acf923-a73a-4630-bbc3-126c92d55e54}
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7937368Z Region: westcentralus
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7938053Z Cloud: Azure
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7938662Z ##[endgroup]
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7940135Z ##[group]Operating System
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7940817Z Ubuntu
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7941504Z 24.04.5
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7942067Z LTS
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7942623Z ##[endgroup]
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7943289Z ##[group]Runner Image
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7944303Z Image: ubuntu-24.04
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7945004Z Version: 20261025.353.1
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7946427Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20261025.353/images/ubuntu/Ubuntu2404-Readme.md
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7948155Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20261025.353
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7949199Z ##[endgroup]
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7950518Z ##[group]GITHUB_TOKEN Permissions
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7952598Z Contents: read
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7953337Z Metadata: read
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7954226Z ##[endgroup]
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7956523Z Secret source: Actions
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7957625Z Cache mode: write
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.7958413Z Prepare workflow directory
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.8310529Z Prepare all required actions
+receipts	UNKNOWN STEP	2026-10-30T14:15:17.8359734Z Getting action download info
+receipts	UNKNOWN STEP	2026-10-30T14:15:18.1396663Z Download action repository 'actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09' (SHA:fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09)
+receipts	UNKNOWN STEP	2026-10-30T14:15:18.2493997Z Download action repository 'actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444' (SHA:a0853c24544627f65ddf259abe73b1d18a591444)
+receipts	UNKNOWN STEP	2026-10-30T14:15:18.3510702Z Download action repository 'actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131' (SHA:37930b1c2abaa49bbe596cd826c3c89aef350131)
+receipts	UNKNOWN STEP	2026-10-30T14:15:18.9910071Z Complete job name: receipts
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.0769787Z ##[group]Run actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.0770933Z with:
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.0771392Z   persist-credentials: false
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.0771982Z   repository: humaux/live_commerce_architecture_v1
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.0776460Z   token: ***
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.0776933Z   ssh-strict: true
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.0777390Z   ssh-user: git
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.0777832Z   clean: true
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.0778291Z   sparse-checkout-cone-mode: true
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.0778821Z   fetch-depth: 1
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.0779415Z   fetch-tags: false
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.0779987Z   show-progress: true
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.0780437Z   lfs: false
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.0780847Z   submodules: false
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.0781294Z   set-safe-directory: true
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.0781836Z   allow-unsafe-pr-checkout: false
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.0782699Z ##[endgroup]
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.2919203Z Syncing repository: humaux/live_commerce_architecture_v1
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.2921891Z ##[group]Getting Git version info
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.2923351Z Working directory is '/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1'
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.2925518Z [command]/usr/bin/git version
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.2996954Z git version 2.56.0
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3026163Z ##[endgroup]
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3042795Z Temporarily overriding HOME='/home/runner/work/_temp/6c495a17-a0fe-4428-b89d-544878670d2c' before making global git config changes
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3045269Z Adding repository directory to the temporary git global config as a safe directory
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3057255Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3104020Z Deleting the contents of '/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1'
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3111762Z ##[group]Initializing the repository
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3113273Z [command]/usr/bin/git init /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3207190Z hint: Using 'master' as the name for the initial branch. This default branch name
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3209017Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3210242Z hint: to use in all of your new repositories, which will suppress this warning,
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3211247Z hint: call:
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3211815Z hint:
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3212606Z hint: 	git config --global init.defaultBranch <name>
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3214017Z hint:
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3214830Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3216227Z hint: 'development'. The just-created branch can be renamed via this command:
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3217725Z hint:
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3218740Z hint: 	git branch -m <name>
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3219775Z hint:
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3221191Z hint: Disable this message with "git config set advice.defaultBranchName false"
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3223460Z Initialized empty Git repository in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/.git/
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3237438Z [command]/usr/bin/git remote add origin https://github.com/humaux/live_commerce_architecture_v1
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3284544Z ##[endgroup]
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3285714Z ##[group]Disabling automatic garbage collection
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3290767Z [command]/usr/bin/git config --local gc.auto 0
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3326132Z ##[endgroup]
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3327238Z ##[group]Setting up auth
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3334778Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3373450Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3744545Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.3794296Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.4059918Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.4108709Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.4372365Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.4459236Z ##[endgroup]
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.4470243Z ##[group]Fetching the repository
+receipts	UNKNOWN STEP	2026-10-30T14:15:19.4471656Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +6754bd337cb9f6943104367e7ef8040593bb4b7c:refs/remotes/pull/361/merge
+receipts	UNKNOWN STEP	2026-10-30T14:15:28.2616182Z From https://github.com/humaux/live_commerce_architecture_v1
+receipts	UNKNOWN STEP	2026-10-30T14:15:28.2618354Z  * [new ref]         6754bd337cb9f6943104367e7ef8040593bb4b7c -> pull/361/merge
+receipts	UNKNOWN STEP	2026-10-30T14:15:28.2622596Z ##[endgroup]
+receipts	UNKNOWN STEP	2026-10-30T14:15:28.2624038Z ##[group]Determining the checkout info
+receipts	UNKNOWN STEP	2026-10-30T14:15:28.2625278Z ##[endgroup]
+receipts	UNKNOWN STEP	2026-10-30T14:15:28.2627335Z [command]/usr/bin/git sparse-checkout disable
+receipts	UNKNOWN STEP	2026-10-30T14:15:28.2687800Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+receipts	UNKNOWN STEP	2026-10-30T14:15:28.2729289Z ##[group]Checking out the ref
+receipts	UNKNOWN STEP	2026-10-30T14:15:28.2734032Z [command]/usr/bin/git checkout --progress --force refs/remotes/pull/361/merge
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.2936942Z Updating files:  41% (5681/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.3073549Z Updating files:  42% (5736/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.3332040Z Updating files:  43% (5873/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.3405931Z Updating files:  44% (6010/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.3529886Z Updating files:  45% (6146/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.3687035Z Updating files:  46% (6283/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.3824916Z Updating files:  47% (6419/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.3902642Z Updating files:  48% (6556/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.3975971Z Updating files:  49% (6692/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.4065434Z Updating files:  50% (6829/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.4142800Z Updating files:  51% (6966/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.4213319Z Updating files:  52% (7102/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.4314756Z Updating files:  53% (7239/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.4389144Z Updating files:  54% (7375/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.4532037Z Updating files:  55% (7512/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.4991153Z Updating files:  56% (7648/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.5446827Z Updating files:  57% (7785/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.5704644Z Updating files:  58% (7922/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.5834465Z Updating files:  59% (8058/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.6093488Z Updating files:  60% (8195/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.6561963Z Updating files:  61% (8331/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.7070097Z Updating files:  62% (8468/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.7251372Z Updating files:  63% (8604/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.7353865Z Updating files:  64% (8741/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.7424510Z Updating files:  65% (8878/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.7824528Z Updating files:  66% (9014/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.8053129Z Updating files:  67% (9151/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.8368210Z Updating files:  68% (9287/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.8507992Z Updating files:  69% (9424/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.8681723Z Updating files:  70% (9560/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.8810933Z Updating files:  71% (9697/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.9092409Z Updating files:  72% (9834/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.9331455Z Updating files:  73% (9970/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.9507880Z Updating files:  74% (10107/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:29.9717790Z Updating files:  75% (10243/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.0156936Z Updating files:  76% (10380/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.0396709Z Updating files:  77% (10516/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.0505193Z Updating files:  78% (10653/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.0689429Z Updating files:  79% (10790/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.0874749Z Updating files:  80% (10926/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.0944979Z Updating files:  81% (11063/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.1067006Z Updating files:  82% (11199/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.1157618Z Updating files:  83% (11336/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.1291084Z Updating files:  84% (11472/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.1469211Z Updating files:  85% (11609/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.1639678Z Updating files:  86% (11746/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.1756332Z Updating files:  87% (11882/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.1819471Z Updating files:  88% (12019/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.1900616Z Updating files:  89% (12155/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.1982626Z Updating files:  90% (12292/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.2126069Z Updating files:  91% (12428/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.2280859Z Updating files:  92% (12565/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.2490267Z Updating files:  93% (12702/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.2615789Z Updating files:  94% (12838/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.2750644Z Updating files:  95% (12975/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.2894128Z Updating files:  96% (13111/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.2917652Z Updating files:  96% (13227/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3088339Z Updating files:  97% (13248/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3252720Z Updating files:  98% (13384/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3397657Z Updating files:  99% (13521/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3398406Z Updating files: 100% (13657/13657)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3398810Z Updating files: 100% (13657/13657), done.
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3532179Z Note: switching to 'refs/remotes/pull/361/merge'.
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3532513Z
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3532768Z You are in 'detached HEAD' state. You can look around, make experimental
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3533428Z changes and commit them, and you can discard any commits you make in this
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3534165Z state without impacting any branches by switching back to a branch.
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3534770Z
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3534959Z If you want to create a new branch to retain commits you create, you may
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3535413Z do so (now or later) by using -c with the switch command. Example:
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3535657Z
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3535771Z   git switch -c <new-branch-name>
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3535938Z
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3536048Z Or undo this operation with:
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3536207Z
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3536293Z   git switch -
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3536423Z
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3536632Z Turn off this advice by setting config variable advice.detachedHead to false
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3536938Z
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3537274Z HEAD is now at 6754bd3 Merge deffd208590b89b7b1b794e06bc43f90b6f67ecb into 3ea359f796d36153bb4b8aa7259e4e0c27676b86
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3638441Z ##[endgroup]
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3696798Z [command]/usr/bin/git log -1 --format=%H
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3733617Z 6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3744686Z ##[group]Removing auth
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3749184Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.3793235Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.4071612Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.4110796Z http.https://github.com/.extraheader
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.4119093Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.4165512Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.4448011Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.4493238Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.4765164Z ##[endgroup]
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.5037137Z ##[group]Run actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.5037557Z with:
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.5037764Z   node-version: 24
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.5037998Z   package-manager-cache: false
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.5038263Z   always-auth: false
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.5038484Z   check-latest: false
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.5041090Z   token: ***
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.5041306Z ##[endgroup]
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.6610654Z Found in cache @ /opt/hostedtoolcache/node/24.22.1/x64
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.6615165Z (node:2562) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.6615913Z (Use `node --trace-deprecation ...` to show where the warning was created)
+receipts	UNKNOWN STEP	2026-10-30T14:15:30.6618328Z ##[group]Environment details
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.0299839Z node: v24.22.1
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.0300228Z npm: 11.19.1
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.0300542Z yarn: 1.22.22
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.0302343Z ##[endgroup]
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.0498081Z ##[group]Run actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.0498507Z with:
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.0498728Z   pattern: receipt-gate-*
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.0498967Z   path: receipts
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.0499185Z   merge-multiple: false
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.0499473Z   repository: humaux/live_commerce_architecture_v1
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.0499786Z   run-id: 41057051192
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.0500003Z ##[endgroup]
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5409461Z Found 154 artifact(s)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5410550Z Filtering artifacts by pattern 'receipt-gate-*'
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5428932Z Preparing to download the following artifacts:
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5430422Z - receipt-gate-shard_g03 (ID: 12984642227, Size: 285, Expected Digest: sha256:12f4fe41b95f4ea504c70d817a060ca73bbfc22927d400aeab6e03d7f0b73f1c)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5432962Z - receipt-gate-shard_unit (ID: 12984575797, Size: 289, Expected Digest: sha256:69c476546f9b28745a103dd717f95b3525fa3d2eb607f2a0e4ad06eb7da80942)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5435246Z - receipt-gate-browser-click-sweep_8_10 (ID: 12984465915, Size: 332, Expected Digest: sha256:656991454972514d3865caedea42d9a9b28b1276785ec4fdf6d44747e1449b77)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5437279Z - receipt-gate-shard_g09 (ID: 12984347307, Size: 286, Expected Digest: sha256:670ffd5a2beb18df3e729b220be9238335deb90e63b73322667dcc9ae41f5a76)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5439235Z - receipt-gate-browser-buyer (ID: 12983925836, Size: 301, Expected Digest: sha256:a5d59b0fc3ac922b980bb858222bdf15c66db26a95ae34ac1286867f6dd71299)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5441196Z - receipt-gate-shard_g08 (ID: 12983901856, Size: 287, Expected Digest: sha256:a8b4c78a526ad264cbfe3e7012ce4886cd51db999c347daaaf0b5abeab1c61b2)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5443319Z - receipt-gate-browser-buyer-comms (ID: 12983885812, Size: 317, Expected Digest: sha256:371e895fa565a41f3f84957dd11f8b2cedeeb13420fcfa08a2e79eeeaf323bad)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5445851Z - receipt-gate-browser-click-sweep_2_10 (ID: 12983698660, Size: 332, Expected Digest: sha256:57b3fcaccab9be91440b02d47cf31b12e41d03d4883aeac4d86192b8a35a620c)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5448068Z - receipt-gate-browser-ui-gallery (ID: 12983642240, Size: 315, Expected Digest: sha256:fb6e208e6077e4e5e93856373436e093c5d2f06942b8de733622e08c2823f5a4)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5450319Z - receipt-gate-browser-design (ID: 12983631512, Size: 304, Expected Digest: sha256:44b9f8357ab1404331948c16e5a10d0c6079b60e6dcfb6d0a1f3fe124a0a0d4b)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5452552Z - receipt-gate-browser-live-settings (ID: 12983617283, Size: 324, Expected Digest: sha256:de345c5fb4d48b89415c9950b6464de4679b981f4e54ef42f522e550088f3ea2)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5454971Z - receipt-gate-browser-studio-bff (ID: 12983550141, Size: 313, Expected Digest: sha256:7e45846294c26335f2f3eae48497f871ce39fe1d5f6b21b54463b1ddaf4b0049)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5457136Z - receipt-gate-shard_g06 (ID: 12983548368, Size: 284, Expected Digest: sha256:c552e66dac56d9fd068c8b022cd6858a8237c5150ce5f1d1674cea9ef825ec70)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5459406Z - receipt-gate-browser-click-sweep_1_10 (ID: 12983538398, Size: 332, Expected Digest: sha256:4a467c63b53e83a51814096c712a3639b927c2ebb327527d5f6c9246c8871048)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5461590Z - receipt-gate-shard_g07 (ID: 12983531783, Size: 286, Expected Digest: sha256:3eebce6bdae0574f374d6bc129e30a6529adb5e85bae87e38936cb589cf5dd0d)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5463963Z - receipt-gate-browser-input-delivery (ID: 12983530006, Size: 326, Expected Digest: sha256:0719c89c364efd003d24f14660a5e5b9f7d39552ff48b884874df86be1d1441c)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5466340Z - receipt-gate-browser-merchant-buyer (ID: 12983507621, Size: 324, Expected Digest: sha256:6e0db1ef03a8e823e671dad1725d001ec4cbf7c66869f38c80fd9213480018b1)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5468647Z - receipt-gate-browser-picklist (ID: 12983435173, Size: 309, Expected Digest: sha256:850e6efb3eb48f0f1b79bb167a9021b7eefb51b02a17ea6582f1dfaf637e43bf)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5471433Z - receipt-gate-browser-customers-billing (ID: 12983415932, Size: 333, Expected Digest: sha256:2c1e878f547eb255e57fe2ddd363cc0428a273f24be1c963c08d23220e4f98b7)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5474035Z - receipt-gate-browser-click-sweep_3_10 (ID: 12983371261, Size: 332, Expected Digest: sha256:13a271d0b499c0d6accc23f87e5f133febe6d49725179f9bc55f07f88fe6c3ae)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5476372Z - receipt-gate-browser-ops-polish (ID: 12983305287, Size: 315, Expected Digest: sha256:2ab93acfc6d5565cd1c48fc0a89bac2b078126ba74ea8a47d8d1501da40a1912)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5478524Z - receipt-gate-browser-ads-attribution (ID: 12983286797, Size: 327, Expected Digest: sha256:9ae062101d8f463446f4c46b72f416306758039542f7e21312d48f9c15520adb)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5480305Z - receipt-gate-browser-operations-ads (ID: 12983270340, Size: 324, Expected Digest: sha256:91a9499480255f09c9b269124d7543b379cb9faff42389bd73cdf2e31b485573)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5481552Z - receipt-gate-browser-webkit (ID: 12983243035, Size: 305, Expected Digest: sha256:036d2be22bc47f35a352ead1b10aec9d557cf8cef98fdef4d216201b7303650a)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5484008Z - receipt-gate-browser-visual-lint_2_4 (ID: 12983236567, Size: 329, Expected Digest: sha256:59d858606544096b779e7a28ae7aed5e334b050c0859a26d596359e4070751a7)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5486009Z - receipt-gate-browser-catalog-core (ID: 12983150088, Size: 319, Expected Digest: sha256:59a2359c3003da6db2d0b8e32f07036c17df1fec1accb5b7ac2f52af06ba6b9b)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5488110Z - receipt-gate-browser-live-console (ID: 12983132542, Size: 320, Expected Digest: sha256:bfe92bd56d4b99019918cab67b998412415894ff0575bcc91422b87cb4ce283d)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5490108Z - receipt-gate-shard_g10 (ID: 12983097993, Size: 286, Expected Digest: sha256:fe213d71a80a421a7f540049e13422741790522808ddef6c0dfe2cbc01eafa52)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5492164Z - receipt-gate-browser-product-editor (ID: 12983095073, Size: 324, Expected Digest: sha256:20791deb8ec11cca52c67cd1ad11afa6c55add20523c88bfc8bd61e1824f0f13)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5494565Z - receipt-gate-browser-admin-legacy (ID: 12983057019, Size: 321, Expected Digest: sha256:9d83714fa761c6e6db244fbd19486c66cc8b028e50240bfcfb27d5e01184c525)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5496761Z - receipt-gate-browser-click-sweep_4_10 (ID: 12983035094, Size: 332, Expected Digest: sha256:b2a9abcbe7fbec95bad5c63ace1292c5044595d6a74c0cc68e44164faa413966)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5498924Z - receipt-gate-browser-click-sweep_7_10 (ID: 12982993392, Size: 332, Expected Digest: sha256:a67b6a251f6909b9301d1bdb423f6706f9373052d036c78d986b633171b05ffc)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5501008Z - receipt-gate-browser-studio-ui (ID: 12982972261, Size: 310, Expected Digest: sha256:a2079f8598284d6aa2c948f3d543664209745d6d9e8e1f48f639dd0c11e58c3e)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5503125Z - receipt-gate-browser-store-domains (ID: 12982970268, Size: 322, Expected Digest: sha256:efa8923c5d621103b45c0ae40f1803d9fb191da8e57796b3e740559f0e8bc2b7)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5505512Z - receipt-gate-browser-product-media-v2 (ID: 12982940272, Size: 329, Expected Digest: sha256:cb6ea19185a4b2aa96368bc483b015275f8e5c0783b2b0c926cd5d6e1b1de78e)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5507674Z - receipt-gate-browser-meta-ads (ID: 12982935331, Size: 309, Expected Digest: sha256:e81a9413701fad9221ebbc0a56428c1bf281167004d313a0d7f0d622797d9764)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5509780Z - receipt-gate-browser-manual-order (ID: 12982867371, Size: 320, Expected Digest: sha256:1bddf8f7460ee9568278827de3a3f5b59e29df16bd7d6d21d076f39d1205fe47)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5511962Z - receipt-gate-browser-promotions (ID: 12982865002, Size: 314, Expected Digest: sha256:379c8f94ac11110b6ef9fdbdc6b6df49970d61e19ea52252ae0eb2a6f8e379b9)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5514253Z - receipt-gate-live-browser-input (ID: 12982846327, Size: 315, Expected Digest: sha256:b105df1a2edb549ec8405165f033c2e9bc3a1f89f58d123f55927b8f9f853c34)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5516410Z - receipt-gate-browser-live-claims (ID: 12982826314, Size: 318, Expected Digest: sha256:99d432536715a7975dfde0b34eaf4274ae6043cea2f977846c7ffadd04331bbb)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5518603Z - receipt-gate-browser-visual-lint_1_4 (ID: 12982815093, Size: 329, Expected Digest: sha256:193915fdaea3428e00ae42f04051267ddd6ce8bf7e147b826abad82fb4c40bdb)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5521114Z - receipt-gate-browser-click-sweep_6_10 (ID: 12982809769, Size: 331, Expected Digest: sha256:3344a5213afebf8f4d0d54b3295f503ccb31551a7fb3ed9d353a2942b98edf5e)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5523290Z - receipt-gate-browser-payment (ID: 12982801637, Size: 306, Expected Digest: sha256:081024495e4854f32d9b408a066ac7d21fc3023c78203872fa0063d9e8a2a005)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5525524Z - receipt-gate-browser-claim-checkout (ID: 12982799056, Size: 326, Expected Digest: sha256:dbd3b82dd1398300e09e0af4a17a670c78d4da66e1594dab8e583ff721010f3b)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5527737Z - receipt-gate-browser-click-sweep_9_10 (ID: 12982722516, Size: 332, Expected Digest: sha256:e0e03a4e6da9fced1edc2b837a04a3cfcc10eb4182563eb29f7b12f60045ef19)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5530537Z - receipt-gate-browser-identity (ID: 12982692592, Size: 308, Expected Digest: sha256:18bd6053699c99d67bf551d2e37baf9d4a8782d5ae4693681fcee81cbf535984)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5533567Z - receipt-gate-shard_g01 (ID: 12982666494, Size: 285, Expected Digest: sha256:4d6cdb0b8a77dd70adbdccf4b2e62082870f3edda11eac8cdf8ef5941f752bc9)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5535141Z - receipt-gate-browser-admin-shell (ID: 12982469580, Size: 317, Expected Digest: sha256:81a9e08d52918949d95b600ae85855795cbf70292ccf9ddf8a38c7ef960eb0f0)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5536985Z - receipt-gate-browser-merchant-orders-ui (ID: 12982414288, Size: 336, Expected Digest: sha256:abf3f62479cbea2527dbb964748230b3a16336eae6695d6349943bbcbb32d923)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5539010Z - receipt-gate-browser-returns-ui (ID: 12982269299, Size: 314, Expected Digest: sha256:3cc889317d87973aaafc25851d61d7eb387b3f533834191329ee2e322ab502fc)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5540890Z - receipt-gate-browser-merchant-orders-bff (ID: 12982201785, Size: 337, Expected Digest: sha256:0be4f5788fe5d8616b2453585041f1bdb286c85e60226c511f670822edf95ad8)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5542675Z - receipt-gate-browser-cvs (ID: 12982064421, Size: 297, Expected Digest: sha256:32fe9d1b43b9d3783d45e698456bdc06948d89e954077a75a7074b6abb62521f)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5544761Z - receipt-gate-browser-visual-lint_4_4 (ID: 12981959725, Size: 329, Expected Digest: sha256:8de1d97c783802cf93917821fde518b0fbe63af3f0c1acbe1646062fc78a1a14)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5546579Z - receipt-gate-shard_g04 (ID: 12981929572, Size: 286, Expected Digest: sha256:21fc9776fa4c0c878d6e110c462f7c9ad08324936056b6c741bfb31f6919415b)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5548556Z - receipt-gate-browser-migration-import (ID: 12981789171, Size: 330, Expected Digest: sha256:a95b7d7524eee543b92ad85511cb78cf9df29ada50dc7c2465bedb48efa0ba35)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5550629Z - receipt-gate-browser-visual-lint_3_4 (ID: 12981637825, Size: 329, Expected Digest: sha256:11d9606ad8736035fc95b3a6ed8b57b9727147f11d788b8eaa1713451114e1cc)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5552084Z - receipt-gate-browser-click-sweep_10_10 (ID: 12981634712, Size: 334, Expected Digest: sha256:6bf7cffebd4f39370adb94065288dc8b790b24be3dfb3076353379342e0a85d0)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5553929Z - receipt-gate-shard_g02 (ID: 12981629580, Size: 284, Expected Digest: sha256:1dcf9f5b6dc87b84691aa7db95f00260a6c455cd6252e3d1237fc0614ee66852)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5555743Z - receipt-gate-shard_g05 (ID: 12981613186, Size: 286, Expected Digest: sha256:360e063a3272ecb1943ecd5816d9534744afabba69e269fe92edd16bff7e940d)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5557669Z - receipt-gate-browser-click-sweep_5_10 (ID: 12981562731, Size: 332, Expected Digest: sha256:6de7cc39b103b7a8d6b087a1f32bdfb6cd38fd519c5a60181499ddeae890f0ad)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5559053Z - receipt-gate-browser-checkout-offline (ID: 12981553084, Size: 331, Expected Digest: sha256:16da97793958949f4ed34a73b0b7c506c65914eb68c209a609a4fc1cd72fd0fb)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5560701Z - receipt-gate-browser-refund-fulfilment (ID: 12981172790, Size: 334, Expected Digest: sha256:be61366e2e4847b7d70d50009a000fe5555b33c7f43e6cf8c0ab02b6f4d7cc10)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5561918Z - receipt-gate-browser-catalog-media (ID: 12981143368, Size: 323, Expected Digest: sha256:22b1677efdb08749457c0ca485cf355459912ba5388852d4c745b3c4ac1f31b9)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5563983Z - receipt-gate-browser-password-auth (ID: 12981074064, Size: 323, Expected Digest: sha256:56ac767504b2bb1a27020a77df3e9d2472c178fc94f46d4ce086991c79c60e9c)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5565553Z - receipt-gate-browser-card-payments (ID: 12981048682, Size: 321, Expected Digest: sha256:0eaf083ac4d7d816fee07225f42c2ea096158a9a64e24a6472def66a17b1ccb8)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5566814Z - receipt-gate-browser-inbox (ID: 12981038647, Size: 303, Expected Digest: sha256:efd30fe8410d573a741156426d1308bec5caf6c91af7284298ae4daf3f6d4f28)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5568269Z - receipt-gate-browser-meta-health-ui (ID: 12981033734, Size: 325, Expected Digest: sha256:7f02952e464e4c4559844715566099eebc37c1071bdaeda1ea38da07c08a6229)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5570304Z - receipt-gate-browser-tracking-backfill (ID: 12981018732, Size: 333, Expected Digest: sha256:3a77996eb2cef2ec7e68a774aaf6236db0fe1c50d82ee744ba67e2eb4330ae6a)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5571845Z - receipt-gate-browser-platform-site (ID: 12980918131, Size: 322, Expected Digest: sha256:c8f015fd756fa4487a8e5d22162c0ee07b9cdb76f60e1e26215a7f1d7906d0bd)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5573384Z - receipt-gate-browser-reports (ID: 12980749814, Size: 306, Expected Digest: sha256:8fa727600bcff296118664e28ba35667f84fecf2b97b0058bf9950a14e62e733)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5575251Z - receipt-gate-browser-meta-connect (ID: 12980679676, Size: 319, Expected Digest: sha256:3a1cd9f32ade8eb47d6bf8aa6b5905b3173b8ba0683717fe1d3bd45d1c7eddc2)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5576706Z - receipt-gate-browser-home-cod (ID: 12980598973, Size: 309, Expected Digest: sha256:5f7341edbb1057b52c8037e7351ffc22893e189ccecf73a85d715588fc775b82)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5578042Z - receipt-gate-browser-e2e (ID: 12980558199, Size: 295, Expected Digest: sha256:9381eae920940efbedf9b2d2eb89d2f59a27437ab37444c7f027d5a1489c8dcd)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5579660Z - receipt-gate-browser-storefront-publish (ID: 12980548325, Size: 336, Expected Digest: sha256:8e12780899ac781ec155f8d725856d54293999f475de628ddd7e71ab6b1a3fad)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5581263Z - receipt-gate-browser-storefront (ID: 12980539920, Size: 314, Expected Digest: sha256:dcf2518e7c8fce9c78a721ad45ec40c99e2d3568caa1c11ff32c64504b184a61)
+receipts	UNKNOWN STEP	2026-10-30T14:15:31.5583326Z - receipt-gate-browser-order (ID: 12980509810, Size: 300, Expected Digest: sha256:5ed9a0c104afb29da863d7fc1db4a23d79f80675b1215a6bb46de639bce22ff1)
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.0817858Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-6d7984b6-5eac-595a-b3e2-5562ad6b2be0/artifacts/f1e95560730eb3c3ec59585efe60ea64aeb385265f2b85f58019c36752a67b26.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.0820883Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-shard_g05
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.0877798Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-d091b3f4-8634-5841-904e-1d6083f9c03a/artifacts/e7bf3759be4f6cd71012fc62b41f1f668f9ef9acbf01470675b2ad99b0e92699.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.0880886Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-click-sweep_8_10
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.0903453Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-7e78d938-f10c-5423-ad88-5db1ef23798e/artifacts/a21d82e580d2f0ceaceba0202aabca65c77c847fefc604c292ab65039b1d8dea.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.0906587Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-shard_g07
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.0949025Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-2d09405a-da29-5ed1-9dbe-5e02e17bf81a/artifacts/5429f31eb0d79ab66819637481b986cc8e5c594e7af49e7ad4bb6dcb3291de12.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.0952467Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-customers-billing
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.0991069Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-d5d01c64-3547-529f-9f1e-66fb83bcda20/artifacts/b57ca577608c07917c59fb1b53bb18cf857d031bdfde4d4d2715b438b15d9565.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.0994308Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-buyer
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1081580Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-d05e6cb4-33cb-51cb-9a6f-06580339ed0a/artifacts/fd6de8ef1bfadf572dcd79cfc8b2b23b68eb54aec430f28c26d14aaec5f87be9.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1087666Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-shard_g09
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1119967Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-1c8d2792-50e2-5404-8810-e7b352604037/artifacts/7d5d0b330c9362835f1ed067a34c4c201d591e68afb26be6c795318629e1e918.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1124369Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-operations-ads
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1131152Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-1c8d2792-50e2-5404-8810-e7b352604037/artifacts/5daf275a1d41216202ca5a056cb5b2ca4a5372ef3d8a07a213bbe6dbc2009f1c.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1134664Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-picklist
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1141861Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-1c8d2792-50e2-5404-8810-e7b352604037/artifacts/d7524b3dca39676a1838316d72533dc3531c08a9a1ce14fa9bf9f513dfbb33cd.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1145728Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-admin-shell
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1187030Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-287f77e1-5b4f-570c-a2e2-f813e430c11a/artifacts/11e84a4c4adcf93128e2d21639df08f7fe7bb9c353e523f45143149ad9f16ab4.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1193002Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-visual-lint_4_4
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1230563Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-dd2d920a-e2f9-509e-a576-27fb183ffb48/artifacts/b746ebd8593153212912f47f4487b6f8355ce76e8f5197c0b578cebc7410f18f.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1234201Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-card-payments
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1252021Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-d5d01c64-3547-529f-9f1e-66fb83bcda20/artifacts/5a437c1d0e7549fd94b855cda0c929d7ccb63cd58bf9a2012e2213744b69f98a.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1255769Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-live-settings
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1265023Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-1c8d2792-50e2-5404-8810-e7b352604037/artifacts/28810f65a3076f86ac7d2719d78a9967fbf6bdbc2a38833b7cadd341df55888a.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1268613Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-studio-bff
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1276473Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-e4471512-8fd7-51f9-9d04-32735edd9d2a/artifacts/7cb0705a2d87cee030400d78542a816a915952ffbed2e5c77d9bc3583dd97a29.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1281559Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-shard_g04
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1289428Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-bdb2bbbd-2410-5f25-bbdd-1a7d80af0f4a/artifacts/40df7bb90dec4a067da3dfa3d752a96f2b1f5c52758e5c6570b868e0bf03f7c9.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1292951Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-live-browser-input
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1308215Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-7affc3b3-dee1-5539-b30a-9fd4232f1c43/artifacts/881c5051930cefea48829bd8a5eaa58cd3a24670c9c5c8cea575d6b6ea6fdecd.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1312429Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-meta-ads
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1319986Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-e84346b2-f8e7-5e65-a73c-d45ab92a91c8/artifacts/b4096616be91e446bf80ac5bafc0d02335b455be855b691f7a28aac5c189eb6b.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1323609Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-refund-fulfilment
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1332230Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-c479d3d4-4949-52ce-bbf2-4b9149feac40/artifacts/4c11b174866e0dafd550eaac4ccdbdca2e6836e4e004927cb80ccf0a2bfaffac.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1336149Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-ads-attribution
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1343895Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-7affc3b3-dee1-5539-b30a-9fd4232f1c43/artifacts/67cee6ce0f0cb2626886609400b2698ff87e9ff64b8c2f62ffe20a00935ec242.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1347368Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-store-domains
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1355268Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-d5d01c64-3547-529f-9f1e-66fb83bcda20/artifacts/30ec6c28633b7e46ca9cb13d77811549cbfe2ae037d619f3b7d1f8693ef42c89.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1358835Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-buyer-comms
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1366865Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-bb9ba7a7-9a9c-5e69-b8e5-dc88388c5dd7/artifacts/957589d9c539ba3b0cff05f190fd8fb3f256a43f0b630cb04f04bcb072887510.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1370677Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-shard_g01
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1379018Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-e84346b2-f8e7-5e65-a73c-d45ab92a91c8/artifacts/b04a7489cd7892894d970686163abb424b82ec69eb83a5cd046e17e09f488b5f.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1382490Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-e2e
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1390305Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-bdb2bbbd-2410-5f25-bbdd-1a7d80af0f4a/artifacts/add44498a19fda4fffccfde1bbd94618fa3454d667bff70e705040e825e6d688.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1394912Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-checkout-offline
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1402889Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-ad773c3a-ecc2-5cc9-833c-72e35237fc34/artifacts/bcaf4a6ba0e66cc0e6610a36959b8377012ca60e9b656c75f6a3c2c4515fa4f8.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1407297Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-click-sweep_3_10
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1420101Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-1c8d2792-50e2-5404-8810-e7b352604037/artifacts/2cc0962013dfa9ad6e9d6c1d37c3b72461e32b39b23d9c9d5367c47f90bedcd6.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1424070Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-merchant-orders-ui
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1431657Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-89e34af3-dbe2-5668-8c59-8537fa9ac528/artifacts/dd11f888e5cbe1655a0894740ed67589b56fec92d4f222d47747d65b03cf8582.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1435282Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-click-sweep_4_10
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1450372Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-b06a34d9-47e3-54e1-aa3f-4e850eb13f45/artifacts/3aaa9ad278624ca8cae39d74188861de176166259c0146b3364609d21e967022.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1454920Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-visual-lint_2_4
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1462522Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-bdb2bbbd-2410-5f25-bbdd-1a7d80af0f4a/artifacts/90f5ff445d97b31fdb115dfff73c4d2b43dfe7e67076d5d04d219cebe9c0b2d4.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1472715Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-meta-connect
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1491074Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-50da8784-6657-59a2-9006-68c9511a644c/artifacts/5a35feef389e13fafb6ec519f0f6d582a62edf99ebd44fe608a04e66935c9479.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1494781Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-webkit
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1532826Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-c479d3d4-4949-52ce-bbf2-4b9149feac40/artifacts/435af971aae673bea76b39488456a6e0774f092f3e2be502a3d06db3a5bbb3a2.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1536810Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-merchant-buyer
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1545789Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-c479d3d4-4949-52ce-bbf2-4b9149feac40/artifacts/fbad17672c43e297d453d99a03b8f8a5dbfb951bd77f6f6a1e247cb924d55e0c.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1549541Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-design
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1560506Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-94d2a5df-a60a-5ef2-bb4d-37aff26016a8/artifacts/d99bd79e980a65ad06ba06dfff91a8ee5481733a30708925047c3ba47442519f.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1564459Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-live-console
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1583481Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-c598ac70-9a2f-5a3e-9872-327abd881e4f/artifacts/fbabecf08d6693a8baf299e50dc8f2732e77cd60dfae91a337201551d4f722fe.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1587675Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-click-sweep_1_10
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1596602Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-35dffe57-97eb-549d-9db4-32936182b4cd/artifacts/bfa54a74bf569f8055b55da26710ad0df79d5c018db4aeea293bc755fc2c5222.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1600279Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-shard_unit
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1608832Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-02e2e731-c661-573d-bcb1-2a3d4d9755ca/artifacts/a5964d966513b0bd30469f59caa7cc7c327b985a3f51c6ceebe9a99a02c367cc.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1612710Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-click-sweep_9_10
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1623229Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-c479d3d4-4949-52ce-bbf2-4b9149feac40/artifacts/45d20d92e0e3d56c8097c35a5c14a8b1c4251bf71a669d2787fd0daf773bbe53.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1628721Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-claim-checkout
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1637898Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-e84346b2-f8e7-5e65-a73c-d45ab92a91c8/artifacts/f0c2dd904dbd324606a1dbd1cd0dae4b2cd87fe896024d8fda89efcfe7299211.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1641544Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-platform-site
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1650866Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-fbfdefc6-3c67-5d0b-be18-10047798f930/artifacts/f5160413517de0a54cefd8c787bfbbbed1d2b4ec1c09c1cc79e1e64f2fb80c85.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1656572Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-shard_g02
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1666717Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-e84346b2-f8e7-5e65-a73c-d45ab92a91c8/artifacts/7ea87b84ba722b2b77def580d09cb58acac6041d43bafa13ae306da92d9d982e.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1670352Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-promotions
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1680018Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-2d09405a-da29-5ed1-9dbe-5e02e17bf81a/artifacts/a4979b4077a49c9b0cf37752cc6fdd4f3d5ffb5d51ca32ce90a27e4bebd9c8a1.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1687023Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-returns-ui
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1697401Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-e1829fde-4804-51dd-80b9-8af601aba4a8/artifacts/3607a4c8740484d78d980945408a9d72172525019fcbd00f78dea6ab8115bd50.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1700971Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-shard_g03
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1716965Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-a5292e4b-fb10-522a-b00d-e2f4cb716367/artifacts/4808dc4faf3c415c4415c05bfa41dfcf965ffe40e2ea9b639d41836537da70c2.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1720440Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-visual-lint_3_4
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1729203Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-7affc3b3-dee1-5539-b30a-9fd4232f1c43/artifacts/0c5d3f59a2af15568696cf752e4fd1b099c47f2bca8e5bb865a2f033c8e4f857.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1734438Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-catalog-core
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1768151Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-505dea0d-5825-5b70-adba-f8f2e9177ca9/artifacts/1504d880420e2fd8eaa4aa214bc30818bfd8747942f63466eddad7aeb2203217.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1771933Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-shard_g08
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1780088Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-de546bbd-3d25-5a37-bd70-ddccd2e748ae/artifacts/eb2ffc5fd14c2b80f30c6cb71f77c04817a73489944bc9a9bc2dd24f504b6816.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1784080Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-visual-lint_1_4
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1798456Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-7affc3b3-dee1-5539-b30a-9fd4232f1c43/artifacts/79be8a08a50da1a8ac373d618ea68283d1d072983da330b38d3f13661e4fa291.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1822867Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-product-media-v2
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1831857Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-6d44ca30-2999-5785-b591-f7449423565d/artifacts/0de9bd4dde324af2926c80912b174025c8daee39a8486849d2233ad676d2ce97.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1836023Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-click-sweep_7_10
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1845832Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-7affc3b3-dee1-5539-b30a-9fd4232f1c43/artifacts/1df31e297c9c9f0c38b5d2b334291077967148a36f696e1d48b17b4d7dfe49c2.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1849676Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-product-editor
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1858328Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-a4446443-ed0a-5215-bb9d-2033c10961e9/artifacts/9196401518a48ac861a718e68f30632b142dfb1b6bde50bfb48166b92d03e09d.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1862840Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-reports
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1871130Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-f3e938c7-45b3-589b-88aa-7f8ef53c808e/artifacts/664ebb7d219b690da168cbd7ea840bb7ec98cacb0ab5f330b60d92d19fa8b318.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1875016Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-shard_g06
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1887578Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-2d09405a-da29-5ed1-9dbe-5e02e17bf81a/artifacts/3b9495e5b3066d4f6e3fffa3ee795f09da9bb308968475cbbf490ed6ce5a00c8.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1891429Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-migration-import
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1899965Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-a4446443-ed0a-5215-bb9d-2033c10961e9/artifacts/5380933b764952dbf909ce90b2aa29f1ae071101983aab6342fec0f5bb0413c3.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1904052Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-order
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1912208Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-a4446443-ed0a-5215-bb9d-2033c10961e9/artifacts/6d5da5287095184fae5d8c41007953202d6ad180fa669d65f1c80821fcc45946.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1916254Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-payment
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1924594Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-dd2d920a-e2f9-509e-a576-27fb183ffb48/artifacts/99edf5d2a87cbec35f578369ae97c6b957b2e97e8afe54e6579f28105dfcdd9d.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1928224Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-catalog-media
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1936720Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-a5bb2ace-bb62-5cf8-bc9c-1100c5c81bb8/artifacts/b4954adba3825ae2366413db3a2744e2f929ad155fa70e3a619d1bdf5de5d537.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1940570Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-click-sweep_6_10
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1949144Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-dd2d920a-e2f9-509e-a576-27fb183ffb48/artifacts/1c5965f0742d797e59f9ae4b53707aaa6c1539377acfdadfd607d5165bab90d3.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1953359Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-home-cod
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1961579Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-bdb2bbbd-2410-5f25-bbdd-1a7d80af0f4a/artifacts/d20fbf261672bba1d1ccb2473d14b0c393001ad8317c48e8ef141a992f6bf1b5.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1965873Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-live-claims
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1987206Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-14402f81-06f9-5127-9ac0-3f18d96ed968/artifacts/b235c1ed0fc412a316af5eb160e341f42cdd92c13eda86e630956d8751e5a1bb.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1990857Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-shard_g10
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.1999263Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-7d104abb-bcda-5523-8be5-3aaa06262341/artifacts/23c95235eb2fdbc542ad452a3344bfe7e78d6b74e58b92caf2f4441f8a40b861.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2002103Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-click-sweep_10_10
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2007948Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-dd2d920a-e2f9-509e-a576-27fb183ffb48/artifacts/5d0a2df83016bb1a5b7ebd083719b838cb7ba50c0c9304bc471b6ea233fe4d42.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2010246Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-meta-health-ui
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2016084Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-c479d3d4-4949-52ce-bbf2-4b9149feac40/artifacts/2daf9bd6f0c483f2dadf5ae1fd288a29f5e3269b398aa6957fc6692ed30b1944.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2018353Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-admin-legacy
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2029700Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-dd2d920a-e2f9-509e-a576-27fb183ffb48/artifacts/7713f3928b0430d7bb7922904bd657c3a10126dc7ff4587ebc2d9fcb765faf70.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2032034Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-tracking-backfill
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2040331Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-e84346b2-f8e7-5e65-a73c-d45ab92a91c8/artifacts/1f05aa41409064a66eefe584dee62ceee644d94829c65386d6370e34d7b2036e.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2042898Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-merchant-orders-bff
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2081342Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-79dd9f77-3cbf-5508-b201-ee1e1a342066/artifacts/45314f08e5830096ad3061c67425c8d011994b64a203ec45fd9b9e06577ff2f8.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2084545Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-click-sweep_2_10
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2119184Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-e84346b2-f8e7-5e65-a73c-d45ab92a91c8/artifacts/f2725a15a6ac162d74e7c547a45b08a75bd35a9e18969263539572f2fdb55c84.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2123442Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-storefront-publish
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2142196Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-a4446443-ed0a-5215-bb9d-2033c10961e9/artifacts/17ed15478f198f13a7f8f44b0863398232a16f3aecacea1579c2dfb521612c53.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2146888Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-storefront
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2155552Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-d6ea4e06-e1af-5b09-b05b-c5dfbf962e99/artifacts/b4d0ad3531c19baadef04df5b0fcbd895bd376d71dc31b2dec7e0bd8f676a13f.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2161114Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-click-sweep_5_10
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2181832Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-2d09405a-da29-5ed1-9dbe-5e02e17bf81a/artifacts/e4c7a54b5037139b040e1452e963a49a12561d818beda1297345fa861270f20e.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2186810Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-manual-order
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2198720Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-1c8d2792-50e2-5404-8810-e7b352604037/artifacts/bbf59829367eb18ffbe45430c7d13b983405431cda0f08af326aa51558665126.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2202704Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-ops-polish
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2247429Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-d5d01c64-3547-529f-9f1e-66fb83bcda20/artifacts/f420e01bba5fd829641a1d259a2879ee731eb40b5848a7575e1ca0e3cd1c362a.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2251580Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-ui-gallery
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2261206Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-bdb2bbbd-2410-5f25-bbdd-1a7d80af0f4a/artifacts/eec17c09437c12b173bf83082990c054f059fe30f3823614fabf7e276f44774b.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2265509Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-input-delivery
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2275330Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-dd2d920a-e2f9-509e-a576-27fb183ffb48/artifacts/9eb4c65f7939f8993c1377b45ef60c4941973060c4a0fb1cf679c6f6dc59d7a9.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2279600Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-inbox
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2289024Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-2d09405a-da29-5ed1-9dbe-5e02e17bf81a/artifacts/c92811a00fa618dc09a4244b9d93520953d54a3e8da4ab3ec9e8e244b59d8f6a.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2293446Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-cvs
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2350878Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-c479d3d4-4949-52ce-bbf2-4b9149feac40/artifacts/06eca71f3047444e81178422e155c34d133aef5b3a6e3ca7b107fc1993b60bf8.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2355538Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-studio-ui
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2721632Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-2d09405a-da29-5ed1-9dbe-5e02e17bf81a/artifacts/abee4aff01ee108dcd5d9540baa482e1ae0170b2b0c1e0312e300d089b255ba5.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.2740782Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-identity
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.3438192Z Redirecting to blob download url: https://productionresultssa17.blob.core.windows.net/actions-results/815604f0-7ca0-8675-9554-061991eebeda/workflow-job-run-bdb2bbbd-2410-5f25-bbdd-1a7d80af0f4a/artifacts/995536b0a7d89b8a683e6d9b3498d94e246e6919f9a1aced89c33d9dc21b6c05.zip
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.3442643Z Starting download of artifact to: /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/receipts/receipt-gate-browser-password-auth
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.3690284Z (node:2594) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.3691981Z (Use `node --trace-deprecation ...` to show where the warning was created)
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5677249Z SHA256 digest of downloaded artifact is 656991454972514d3865caedea42d9a9b28b1276785ec4fdf6d44747e1449b77
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5679382Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5683595Z SHA256 digest of downloaded artifact is 360e063a3272ecb1943ecd5816d9534744afabba69e269fe92edd16bff7e940d
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5687033Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5691311Z SHA256 digest of downloaded artifact is a5d59b0fc3ac922b980bb858222bdf15c66db26a95ae34ac1286867f6dd71299
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5694403Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5697686Z SHA256 digest of downloaded artifact is 2c1e878f547eb255e57fe2ddd363cc0428a273f24be1c963c08d23220e4f98b7
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5700594Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5702825Z SHA256 digest of downloaded artifact is 3eebce6bdae0574f374d6bc129e30a6529adb5e85bae87e38936cb589cf5dd0d
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5706108Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5708180Z SHA256 digest of downloaded artifact is 91a9499480255f09c9b269124d7543b379cb9faff42389bd73cdf2e31b485573
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5710062Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5712223Z SHA256 digest of downloaded artifact is 81a9e08d52918949d95b600ae85855795cbf70292ccf9ddf8a38c7ef960eb0f0
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5714215Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5744068Z SHA256 digest of downloaded artifact is 8de1d97c783802cf93917821fde518b0fbe63af3f0c1acbe1646062fc78a1a14
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5746179Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5748071Z SHA256 digest of downloaded artifact is 193915fdaea3428e00ae42f04051267ddd6ce8bf7e147b826abad82fb4c40bdb
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5749812Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5751671Z SHA256 digest of downloaded artifact is 670ffd5a2beb18df3e729b220be9238335deb90e63b73322667dcc9ae41f5a76
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5753328Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5755446Z SHA256 digest of downloaded artifact is 4d6cdb0b8a77dd70adbdccf4b2e62082870f3edda11eac8cdf8ef5941f752bc9
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5757167Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5759043Z SHA256 digest of downloaded artifact is 16da97793958949f4ed34a73b0b7c506c65914eb68c209a609a4fc1cd72fd0fb
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5761045Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5762962Z SHA256 digest of downloaded artifact is abf3f62479cbea2527dbb964748230b3a16336eae6695d6349943bbcbb32d923
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5770791Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5772781Z SHA256 digest of downloaded artifact is 13a271d0b499c0d6accc23f87e5f133febe6d49725179f9bc55f07f88fe6c3ae
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5774800Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5776382Z SHA256 digest of downloaded artifact is 9381eae920940efbedf9b2d2eb89d2f59a27437ab37444c7f027d5a1489c8dcd
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5777564Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5779035Z SHA256 digest of downloaded artifact is 3a1cd9f32ade8eb47d6bf8aa6b5905b3173b8ba0683717fe1d3bd45d1c7eddc2
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5781128Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5782518Z SHA256 digest of downloaded artifact is 6e0db1ef03a8e823e671dad1725d001ec4cbf7c66869f38c80fd9213480018b1
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5784105Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5786125Z SHA256 digest of downloaded artifact is 036d2be22bc47f35a352ead1b10aec9d557cf8cef98fdef4d216201b7303650a
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5787957Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5807628Z SHA256 digest of downloaded artifact is de345c5fb4d48b89415c9950b6464de4679b981f4e54ef42f522e550088f3ea2
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5809357Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5811267Z SHA256 digest of downloaded artifact is 0eaf083ac4d7d816fee07225f42c2ea096158a9a64e24a6472def66a17b1ccb8
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5812978Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5815072Z SHA256 digest of downloaded artifact is b105df1a2edb549ec8405165f033c2e9bc3a1f89f58d123f55927b8f9f853c34
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5816798Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5818648Z SHA256 digest of downloaded artifact is 850e6efb3eb48f0f1b79bb167a9021b7eefb51b02a17ea6582f1dfaf637e43bf
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5820385Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5822230Z SHA256 digest of downloaded artifact is 371e895fa565a41f3f84957dd11f8b2cedeeb13420fcfa08a2e79eeeaf323bad
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5824076Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5825945Z SHA256 digest of downloaded artifact is 7e45846294c26335f2f3eae48497f871ce39fe1d5f6b21b54463b1ddaf4b0049
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5827631Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5829508Z SHA256 digest of downloaded artifact is e81a9413701fad9221ebbc0a56428c1bf281167004d313a0d7f0d622797d9764
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5831283Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5836037Z SHA256 digest of downloaded artifact is 9ae062101d8f463446f4c46b72f416306758039542f7e21312d48f9c15520adb
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5837745Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5839520Z SHA256 digest of downloaded artifact is 21fc9776fa4c0c878d6e110c462f7c9ad08324936056b6c741bfb31f6919415b
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5840655Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5842160Z SHA256 digest of downloaded artifact is be61366e2e4847b7d70d50009a000fe5555b33c7f43e6cf8c0ab02b6f4d7cc10
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5844094Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5846019Z SHA256 digest of downloaded artifact is efa8923c5d621103b45c0ae40f1803d9fb191da8e57796b3e740559f0e8bc2b7
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5847755Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5849655Z SHA256 digest of downloaded artifact is 99d432536715a7975dfde0b34eaf4274ae6043cea2f977846c7ffadd04331bbb
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5851378Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5853661Z SHA256 digest of downloaded artifact is fe213d71a80a421a7f540049e13422741790522808ddef6c0dfe2cbc01eafa52
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5855507Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5857368Z SHA256 digest of downloaded artifact is 9d83714fa761c6e6db244fbd19486c66cc8b028e50240bfcfb27d5e01184c525
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5860054Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5862279Z SHA256 digest of downloaded artifact is 6bf7cffebd4f39370adb94065288dc8b790b24be3dfb3076353379342e0a85d0
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5864171Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5866145Z SHA256 digest of downloaded artifact is b2a9abcbe7fbec95bad5c63ace1292c5044595d6a74c0cc68e44164faa413966
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5867818Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5869564Z SHA256 digest of downloaded artifact is e0e03a4e6da9fced1edc2b837a04a3cfcc10eb4182563eb29f7b12f60045ef19
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5871298Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5872775Z SHA256 digest of downloaded artifact is 59d858606544096b779e7a28ae7aed5e334b050c0859a26d596359e4070751a7
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5874357Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5876270Z SHA256 digest of downloaded artifact is 379c8f94ac11110b6ef9fdbdc6b6df49970d61e19ea52252ae0eb2a6f8e379b9
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5877411Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5879251Z SHA256 digest of downloaded artifact is 1dcf9f5b6dc87b84691aa7db95f00260a6c455cd6252e3d1237fc0614ee66852
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5880977Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5882863Z SHA256 digest of downloaded artifact is 4a467c63b53e83a51814096c712a3639b927c2ebb327527d5f6c9246c8871048
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5884707Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5886583Z SHA256 digest of downloaded artifact is 69c476546f9b28745a103dd717f95b3525fa3d2eb607f2a0e4ad06eb7da80942
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5888144Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5889568Z SHA256 digest of downloaded artifact is 3cc889317d87973aaafc25851d61d7eb387b3f533834191329ee2e322ab502fc
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5891277Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5893157Z SHA256 digest of downloaded artifact is dbd3b82dd1398300e09e0af4a17a670c78d4da66e1594dab8e583ff721010f3b
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5895027Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5896770Z SHA256 digest of downloaded artifact is bfe92bd56d4b99019918cab67b998412415894ff0575bcc91422b87cb4ce283d
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5897961Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5899801Z SHA256 digest of downloaded artifact is 44b9f8357ab1404331948c16e5a10d0c6079b60e6dcfb6d0a1f3fe124a0a0d4b
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5900971Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5902874Z SHA256 digest of downloaded artifact is c8f015fd756fa4487a8e5d22162c0ee07b9cdb76f60e1e26215a7f1d7906d0bd
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5904708Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5950353Z SHA256 digest of downloaded artifact is 11d9606ad8736035fc95b3a6ed8b57b9727147f11d788b8eaa1713451114e1cc
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5952079Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5953541Z SHA256 digest of downloaded artifact is 20791deb8ec11cca52c67cd1ad11afa6c55add20523c88bfc8bd61e1824f0f13
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.5955524Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6061934Z SHA256 digest of downloaded artifact is 59a2359c3003da6db2d0b8e32f07036c17df1fec1accb5b7ac2f52af06ba6b9b
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6064525Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6066597Z SHA256 digest of downloaded artifact is a67b6a251f6909b9301d1bdb423f6706f9373052d036c78d986b633171b05ffc
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6068864Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6070907Z SHA256 digest of downloaded artifact is cb6ea19185a4b2aa96368bc483b015275f8e5c0783b2b0c926cd5d6e1b1de78e
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6072720Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6074911Z SHA256 digest of downloaded artifact is 12f4fe41b95f4ea504c70d817a060ca73bbfc22927d400aeab6e03d7f0b73f1c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6076518Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6078142Z SHA256 digest of downloaded artifact is a8b4c78a526ad264cbfe3e7012ce4886cd51db999c347daaaf0b5abeab1c61b2
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6080290Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6082204Z SHA256 digest of downloaded artifact is 081024495e4854f32d9b408a066ac7d21fc3023c78203872fa0063d9e8a2a005
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6084119Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6086055Z SHA256 digest of downloaded artifact is c552e66dac56d9fd068c8b022cd6858a8237c5150ce5f1d1674cea9ef825ec70
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6087690Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6089435Z SHA256 digest of downloaded artifact is 22b1677efdb08749457c0ca485cf355459912ba5388852d4c745b3c4ac1f31b9
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6091173Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6093049Z SHA256 digest of downloaded artifact is a95b7d7524eee543b92ad85511cb78cf9df29ada50dc7c2465bedb48efa0ba35
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6094945Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6096889Z SHA256 digest of downloaded artifact is 5ed9a0c104afb29da863d7fc1db4a23d79f80675b1215a6bb46de639bce22ff1
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6098692Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6100623Z SHA256 digest of downloaded artifact is 8fa727600bcff296118664e28ba35667f84fecf2b97b0058bf9950a14e62e733
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6102409Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6104649Z SHA256 digest of downloaded artifact is 5f7341edbb1057b52c8037e7351ffc22893e189ccecf73a85d715588fc775b82
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6106479Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6108457Z SHA256 digest of downloaded artifact is 3344a5213afebf8f4d0d54b3295f503ccb31551a7fb3ed9d353a2942b98edf5e
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6110253Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6127699Z SHA256 digest of downloaded artifact is 1bddf8f7460ee9568278827de3a3f5b59e29df16bd7d6d21d076f39d1205fe47
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6130372Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6132618Z SHA256 digest of downloaded artifact is 7f02952e464e4c4559844715566099eebc37c1071bdaeda1ea38da07c08a6229
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6135147Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6137031Z SHA256 digest of downloaded artifact is fb6e208e6077e4e5e93856373436e093c5d2f06942b8de733622e08c2823f5a4
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6138751Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6140651Z SHA256 digest of downloaded artifact is 6de7cc39b103b7a8d6b087a1f32bdfb6cd38fd519c5a60181499ddeae890f0ad
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6142348Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6151681Z SHA256 digest of downloaded artifact is dcf2518e7c8fce9c78a721ad45ec40c99e2d3568caa1c11ff32c64504b184a61
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6153150Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6154919Z SHA256 digest of downloaded artifact is 3a77996eb2cef2ec7e68a774aaf6236db0fe1c50d82ee744ba67e2eb4330ae6a
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6156717Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6158720Z SHA256 digest of downloaded artifact is 2ab93acfc6d5565cd1c48fc0a89bac2b078126ba74ea8a47d8d1501da40a1912
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6161244Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6164089Z SHA256 digest of downloaded artifact is 32fe9d1b43b9d3783d45e698456bdc06948d89e954077a75a7074b6abb62521f
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6179267Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6181252Z SHA256 digest of downloaded artifact is 0719c89c364efd003d24f14660a5e5b9f7d39552ff48b884874df86be1d1441c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6182868Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6184536Z SHA256 digest of downloaded artifact is 0be4f5788fe5d8616b2453585041f1bdb286c85e60226c511f670822edf95ad8
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6186259Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6187897Z SHA256 digest of downloaded artifact is 8e12780899ac781ec155f8d725856d54293999f475de628ddd7e71ab6b1a3fad
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6188965Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6190135Z SHA256 digest of downloaded artifact is efd30fe8410d573a741156426d1308bec5caf6c91af7284298ae4daf3f6d4f28
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6192081Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6193247Z SHA256 digest of downloaded artifact is 57b3fcaccab9be91440b02d47cf31b12e41d03d4883aeac4d86192b8a35a620c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6194886Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6196745Z SHA256 digest of downloaded artifact is a2079f8598284d6aa2c948f3d543664209745d6d9e8e1f48f639dd0c11e58c3e
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6198434Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6475811Z SHA256 digest of downloaded artifact is 18bd6053699c99d67bf551d2e37baf9d4a8782d5ae4693681fcee81cbf535984
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.6478651Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.7157834Z SHA256 digest of downloaded artifact is 56ac767504b2bb1a27020a77df3e9d2472c178fc94f46d4ce086991c79c60e9c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.7159035Z Artifact download completed successfully.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.7160041Z Total of 76 artifact(s) downloaded
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.7169314Z Download artifact has finished successfully
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.7422064Z ##[group]Run node scripts/dev/matrix-receipts.mjs verify receipts
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.7423206Z [36;1mnode scripts/dev/matrix-receipts.mjs verify receipts[0m
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.7453161Z shell: /usr/bin/bash -e {0}
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.7454271Z env:
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.7471818Z   PLANNED: [{"mode":"shard:unit","art":"gate-shard_unit"},{"mode":"shard:g01","art":"gate-shard_g01"},{"mode":"shard:g02","art":"gate-shard_g02"},{"mode":"shard:g03","art":"gate-shard_g03"},{"mode":"shard:g04","art":"gate-shard_g04"},{"mode":"shard:g05","art":"gate-shard_g05"},{"mode":"shard:g06","art":"gate-shard_g06"},{"mode":"shard:g07","art":"gate-shard_g07"},{"mode":"shard:g08","art":"gate-shard_g08"},{"mode":"shard:g09","art":"gate-shard_g09"},{"mode":"shard:g10","art":"gate-shard_g10"},{"mode":"--browser-inbox","art":"gate-browser-inbox"},{"mode":"--browser-meta-health-ui","art":"gate-browser-meta-health-ui"},{"mode":"--browser-tracking-backfill","art":"gate-browser-tracking-backfill"},{"mode":"--browser-platform-site","art":"gate-browser-platform-site"},{"mode":"--browser-admin-shell","art":"gate-browser-admin-shell"},{"mode":"--browser-ui-gallery","art":"gate-browser-ui-gallery"},{"mode":"--browser-click-sweep@1/10","art":"gate-browser-click-sweep_1_10"},{"mode":"--browser-click-sweep@2/10","art":"gate-browser-click-sweep_2_10"},{"mode":"--browser-click-sweep@3/10","art":"gate-browser-click-sweep_3_10"},{"mode":"--browser-click-sweep@4/10","art":"gate-browser-click-sweep_4_10"},{"mode":"--browser-click-sweep@5/10","art":"gate-browser-click-sweep_5_10"},{"mode":"--browser-click-sweep@6/10","art":"gate-browser-click-sweep_6_10"},{"mode":"--browser-click-sweep@7/10","art":"gate-browser-click-sweep_7_10"},{"mode":"--browser-click-sweep@8/10","art":"gate-browser-click-sweep_8_10"},{"mode":"--browser-click-sweep@9/10","art":"gate-browser-click-sweep_9_10"},{"mode":"--browser-click-sweep@10/10","art":"gate-browser-click-sweep_10_10"},{"mode":"--browser-visual-lint@1/4","art":"gate-browser-visual-lint_1_4"},{"mode":"--browser-visual-lint@2/4","art":"gate-browser-visual-lint_2_4"},{"mode":"--browser-visual-lint@3/4","art":"gate-browser-visual-lint_3_4"},{"mode":"--browser-visual-lint@4/4","art":"gate-browser-visual-lint_4_4"},{"mode":"--browser-identity","art":"gate-browser-identity"},{"mode":"--browser-buyer-comms","art":"gate-browser-buyer-comms"},{"mode":"--browser-checkout-offline","art":"gate-browser-checkout-offline"},{"mode":"--browser-home-cod","art":"gate-browser-home-cod"},{"mode":"--browser-promotions","art":"gate-browser-promotions"},{"mode":"--browser-password-auth","art":"gate-browser-password-auth"},{"mode":"--browser-admin-legacy","art":"gate-browser-admin-legacy"},{"mode":"--browser-buyer","art":"gate-browser-buyer"},{"mode":"--browser-merchant-buyer","art":"gate-browser-merchant-buyer"},{"mode":"--browser-manual-order","art":"gate-browser-manual-order"},{"mode":"--browser-merchant-orders-bff","art":"gate-browser-merchant-orders-bff"},{"mode":"--browser-merchant-orders-ui","art":"gate-browser-merchant-orders-ui"},{"mode":"--browser-input-delivery","art":"gate-browser-input-delivery"},{"mode":"--browser-studio-bff","art":"gate-browser-studio-bff"},{"mode":"--browser-studio-ui","art":"gate-browser-studio-ui"},{"mode":"--browser-live-console","art":"gate-browser-live-console"},{"mode":"--browser-claim-checkout","art":"gate-browser-claim-checkout"},{"mode":"--browser-live-claims","art":"gate-browser-live-claims"},{"mode":"--browser-order","art":"gate-browser-order"},{"mode":"--browser-payment","art":"gate-browser-payment"},{"mode":"--browser-refund-fulfilment","art":"gate-browser-refund-fulfilment"},{"mode":"--browser-customers-billing","art":"gate-browser-customers-billing"},{"mode":"--browser-card-payments","art":"gate-browser-card-payments"},{"mode":"--browser-meta-ads","art":"gate-browser-meta-ads"},{"mode":"--browser-ads-attribution","art":"gate-browser-ads-attribution"},{"mode":"--browser-cvs","art":"gate-browser-cvs"},{"mode":"--browser-catalog-media","art":"gate-browser-catalog-media"},{"mode":"--browser-storefront-publish","art":"gate-browser-storefront-publish"},{"mode":"--browser-store-domains","art":"gate-browser-store-domains"},{"mode":"--browser-storefront","art":"gate-browser-storefront"},{"mode":"--browser-webkit","art":"gate-browser-webkit"},{"mode":"--browser-e2e","art":"gate-browser-e2e"},{"mode":"--live-browser-input","art":"gate-live-browser-input"},{"mode":"--browser-design","art":"gate-browser-design"},{"mode":"--browser-ops-polish","art":"gate-browser-ops-polish"},{"mode":"--browser-meta-connect","art":"gate-browser-meta-connect"},{"mode":"--browser-product-editor","art":"gate-browser-product-editor"},{"mode":"--browser-catalog-core","art":"gate-browser-catalog-core"},{"mode":"--browser-returns-ui","art":"gate-browser-returns-ui"},{"mode":"--browser-picklist","art":"gate-browser-picklist"},{"mode":"--browser-operations-ads","art":"gate-browser-operations-ads"},{"mode":"--browser-product-media-v2","art":"gate-browser-product-media-v2"},{"mode":"--browser-reports","art":"gate-browser-reports"},{"mode":"--browser-migration-import","art":"gate-browser-migration-import"},{"mode":"--browser-live-settings","art":"gate-browser-live-settings"}]
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.7489889Z ##[endgroup]
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.7995819Z   receipt --browser-admin-legacy: PASS test_count=28 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.7998420Z   receipt --browser-admin-shell: PASS test_count=15 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8000827Z   receipt --browser-ads-attribution: PASS test_count=52 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8002976Z   receipt --browser-buyer: PASS test_count=14 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8005535Z   receipt --browser-buyer-comms: PASS test_count=23 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8008015Z   receipt --browser-card-payments: PASS test_count=106 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8009933Z   receipt --browser-catalog-core: PASS test_count=3 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8011570Z   receipt --browser-catalog-media: PASS test_count=22 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8012995Z   receipt --browser-checkout-offline: PASS test_count=17 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8015178Z   receipt --browser-claim-checkout: PASS test_count=20 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8016740Z   receipt --browser-click-sweep@10/10: PASS test_count=18 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8018214Z   receipt --browser-click-sweep@1/10: PASS test_count=19 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8019614Z   receipt --browser-click-sweep@2/10: PASS test_count=18 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8021293Z   receipt --browser-click-sweep@3/10: PASS test_count=18 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8022467Z FAIL: --browser-inbox: status FAIL
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8023353Z FAIL: --browser-design: status FAIL
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8025315Z   receipt --browser-click-sweep@4/10: PASS test_count=18 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8026979Z   receipt --browser-click-sweep@5/10: PASS test_count=18 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8028346Z   receipt --browser-click-sweep@6/10: PASS test_count=18 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8029724Z   receipt --browser-click-sweep@7/10: PASS test_count=18 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8031353Z   receipt --browser-click-sweep@8/10: PASS test_count=18 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8032736Z   receipt --browser-click-sweep@9/10: PASS test_count=18 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8034383Z   receipt --browser-customers-billing: PASS test_count=141 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8035890Z   receipt --browser-cvs: PASS test_count=37 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8037210Z   receipt --browser-design: FAIL test_count=103 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8038544Z   receipt --browser-e2e: PASS test_count=7 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8039866Z   receipt --browser-home-cod: PASS test_count=22 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8041195Z   receipt --browser-identity: PASS test_count=6 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8042509Z   receipt --browser-inbox: FAIL test_count=90 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8044085Z   receipt --browser-input-delivery: PASS test_count=15 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8045517Z   receipt --browser-live-claims: PASS test_count=28 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8046889Z   receipt --browser-live-console: PASS test_count=34 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8048301Z   receipt --browser-live-settings: PASS test_count=70 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8049661Z   receipt --browser-manual-order: PASS test_count=27 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8051024Z   receipt --browser-merchant-buyer: PASS test_count=9 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8052425Z   receipt --browser-merchant-orders-bff: PASS test_count=19 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8054096Z   receipt --browser-merchant-orders-ui: PASS test_count=69 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8055523Z   receipt --browser-meta-ads: PASS test_count=59 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8056873Z   receipt --browser-meta-connect: PASS test_count=32 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8058289Z   receipt --browser-meta-health-ui: PASS test_count=13 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8059679Z   receipt --browser-migration-import: PASS test_count=57 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8061068Z   receipt --browser-operations-ads: PASS test_count=12 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8062638Z   receipt --browser-ops-polish: PASS test_count=20 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8064252Z   receipt --browser-order: PASS test_count=34 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8065656Z   receipt --browser-password-auth: PASS test_count=46 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8067619Z   receipt --browser-payment: PASS test_count=17 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8069617Z   receipt --browser-picklist: PASS test_count=1 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8071012Z   receipt --browser-platform-site: PASS test_count=20 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8072387Z   receipt --browser-product-editor: PASS test_count=36 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8074234Z   receipt --browser-product-media-v2: PASS test_count=13 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8075688Z   receipt --browser-promotions: PASS test_count=33 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8077101Z   receipt --browser-refund-fulfilment: PASS test_count=24 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8078447Z   receipt --browser-reports: PASS test_count=51 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8079799Z   receipt --browser-returns-ui: PASS test_count=19 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8081171Z   receipt --browser-store-domains: PASS test_count=27 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8082525Z   receipt --browser-storefront: PASS test_count=26 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8084122Z   receipt --browser-storefront-publish: PASS test_count=58 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8085570Z   receipt --browser-studio-bff: PASS test_count=8 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8086968Z   receipt --browser-studio-ui: PASS test_count=7 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8088336Z   receipt --browser-tracking-backfill: PASS test_count=10 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8089711Z   receipt --browser-ui-gallery: PASS test_count=42 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8091082Z   receipt --browser-visual-lint@1/4: PASS test_count=20 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8092430Z   receipt --browser-visual-lint@2/4: PASS test_count=20 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8093982Z   receipt --browser-visual-lint@3/4: PASS test_count=20 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8095422Z   receipt --browser-visual-lint@4/4: PASS test_count=20 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8122326Z   receipt --browser-webkit: PASS test_count=112 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8124629Z   receipt --live-browser-input: PASS test_count=18 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8126037Z   receipt shard:g01: PASS test_count=1 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8127320Z   receipt shard:g02: PASS test_count=1 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8128577Z   receipt shard:g03: PASS test_count=1 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8129863Z   receipt shard:g04: PASS test_count=224 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8131364Z   receipt shard:g05: PASS test_count=224 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8132636Z   receipt shard:g06: PASS test_count=222 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8134126Z   receipt shard:g07: PASS test_count=224 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8135518Z   receipt shard:g08: PASS test_count=223 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8136731Z   receipt shard:g09: PASS test_count=224 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8137937Z   receipt shard:g10: PASS test_count=238 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8139201Z   receipt shard:unit: PASS test_count=1474 run=41057051192/1 sha=6754bd337cb9f6943104367e7ef8040593bb4b7c
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8140435Z matrix-receipts: RED (2 problem(s))
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8154370Z ##[error]Process completed with exit code 1.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.8324430Z Post job cleanup.
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.9244186Z [command]/usr/bin/git version
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.9292693Z git version 2.56.0
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.9333450Z Temporarily overriding HOME='/home/runner/work/_temp/cdcccf1c-8acc-40d3-9e14-5d068a83937f' before making global git config changes
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.9336113Z Adding repository directory to the temporary git global config as a safe directory
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.9341062Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.9389848Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.9432003Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.9734961Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+receipts	UNKNOWN STEP	2026-10-30T14:15:32.9771760Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+receipts	UNKNOWN STEP	2026-10-30T14:15:33.0092926Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+receipts	UNKNOWN STEP	2026-10-30T14:15:33.0149164Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+receipts	UNKNOWN STEP	2026-10-30T14:15:33.0604259Z Cleaning up orphan processes

@@ -1,5 +1,5 @@
 // Purpose: Independent W6 report real-click acceptance from reporting-v2 §§1–6, with persisted export audits in Go.
-// Depends on: Playwright, reports-copy labels only, genuine browser_w6_customers_reports_test.go stack and LC_W6UI_*.
+// Depends on: Playwright, reports-copy labels only, genuine browser_w6_customers_reports_test.go stack and LC_W6UI_*., ./parity-money-support
 // Used by: TestBrowserW6Reports / --browser-reports; no API writes or JSON mocks substitute user clicks.
 // Invariants: I01/I05/I11/I18; signed MOCK OIDC, REAL_PG synthetic corpus; provider SANDBOX/LIVE NOT_RUN.
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
@@ -7,6 +7,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { reportsCopy } from "../../apps/admin/lib/reports-copy";
 import { shellCopy } from "../../apps/admin/src/shell-copy";
+import { moneyClick, moneyDesign, moneyLocales, moneyShot, moneyWidths } from "./parity-money-support";
 
 const required = (key: string) => { const value = process.env[key]; if (!value) throw new Error(`${key} required`); return value; };
 const origin = required("LC_BROWSER_PUBLIC_ORIGIN"), evidence = required("LC_BROWSER_EVIDENCE"), store = required("LC_W6UI_STORE");
@@ -26,7 +27,7 @@ async function ctl(resource: string, mode = "") {
   const response = await fetch(`${control}/${resource}`, { method: "POST", headers: { "X-W6UI-Gate-Key": gateKey, "Content-Type": "application/json" }, body: JSON.stringify({ mode }) });
   expect(response.status, `fixture ${resource}`).toBe(204);
 }
-async function signed(browser: Browser, locale: "en" | "zh-TW", width: number, actor = "owner") {
+async function signed(browser: Browser, locale: "en" | "zh-TW" | "zh-CN", width: number, actor = "owner") {
   await ctl("actor", actor);
   const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width, height: width === 390 ? 844 : 900 } });
   const page = await context.newPage();
@@ -41,6 +42,10 @@ async function signed(browser: Browser, locale: "en" | "zh-TW", width: number, a
   return { context, page };
 }
 async function fill(page: Page, field: Locator, value: string, name: string) {
+  if (await field.count() === 0) {
+    const locale = new URL(page.url()).pathname.split("/")[1] as "en" | "zh-TW" | "zh-CN";
+    await page.getByRole("button", {name:moneyDesign[locale].chooseDates,exact:true}).click();
+  }
   await step(page, name, `input displays ${value}`, async () => { await field.fill(value); await expect(field).toHaveValue(value); }, "fill");
 }
 async function fits(page: Page) {
@@ -73,6 +78,62 @@ async function exportTab(page: Page, tab: string) {
     expect(text).not.toContain("W6-ARCHIVE-ONLY");
   });
   return csvRows(text);
+}
+
+for (const locale of moneyLocales) for (const width of moneyWidths) {
+  test(`PARITY-MONEY report date and failure frames (${locale}, ${width})`, async ({ browser }) => {
+    const c = moneyDesign[locale], { context, page } = await signed(browser, locale, width);
+    try {
+      const before = page.url();
+      await moneyClick(page, evidence, c.chooseDates, "signed date editor opens, cancelling preserves range", async () => {
+        await page.getByRole("button", { name: c.chooseDates, exact: true }).click();
+        await expect(page.getByRole("heading", { name: c.chooseDates, exact: true }), "PARITY-MONEY 1151:9432/9433: signed date range").toBeVisible();
+        await page.getByLabel(c.from, { exact: true }).fill("2026-09-02");
+        await page.getByLabel(c.to, { exact: true }).fill("2026-09-30");
+        await moneyShot(page, evidence, "reportDates", locale, width);
+        await page.getByRole("button", { name: c.cancel, exact: true }).click();
+        await expect(page).toHaveURL(before);
+      });
+      await moneyClick(page, evidence, c.apply, "applied report date persists on refresh", async () => {
+        await page.getByRole("button", { name: c.chooseDates, exact: true }).click();
+        await page.getByLabel(c.from, { exact: true }).fill("2026-09-02");
+        await page.getByLabel(c.to, { exact: true }).fill("2026-09-30");
+        await page.getByRole("button", { name: c.apply, exact: true }).click();
+        await expect(page).toHaveURL(/from=2026-09-02/);
+        await expect(page.getByTestId("reports-products-table")).toBeVisible();
+        await expect(page.getByTestId("reports-from")).toHaveCount(0);
+        await page.reload();
+        await expect(page).toHaveURL(/from=2026-09-02/);
+        // Pre-Figma always-open dates/submit have moved into the explicit date editor.
+        await expect(page.getByTestId("reports-from")).toHaveCount(0);
+        await expect(page.getByTestId("reports-show")).toHaveCount(0);
+      });
+      await moneyClick(page, evidence, c.apply, "applying unchanged dates also closes the editor and persists", async () => {
+        const applied = page.url();
+        await page.getByRole("button", { name: c.chooseDates, exact: true }).click();
+        await expect(page.getByLabel(c.from, { exact: true })).toHaveValue("2026-09-02");
+        await expect(page.getByLabel(c.to, { exact: true })).toHaveValue("2026-09-30");
+        await page.getByRole("button", { name: c.apply, exact: true }).click();
+        await expect(page.getByTestId("reports-from")).toHaveCount(0);
+        await expect(page.getByTestId("reports-products-table")).toBeVisible();
+        await expect(page).toHaveURL(applied);
+        await page.reload();
+        await expect(page.getByTestId("reports-products-table")).toBeVisible();
+        await expect(page).toHaveURL(applied);
+      });
+      // Fixture-only failed GET. The visible failure and subsequent recovery must come from the real page.
+      await page.route(`**/api/stores/${store}/reports/products?*`, route => route.fulfill({ status: 503, body: "unavailable" }));
+      await page.reload();
+      await expect(page.getByRole("heading", { name: c.reportFailure, exact: true })).toBeVisible();
+      await expect(page.getByText(c.failure, { exact: true })).toBeVisible();
+      await moneyShot(page, evidence, "reportFailure", locale, width);
+      await page.unroute(`**/api/stores/${store}/reports/products?*`);
+      await moneyClick(page, evidence, c.retry, "reload restores real report rows", async () => {
+        await page.getByRole("button", { name: c.retry, exact: true }).click();
+        await expect(page.getByTestId("reports-products-table")).toBeVisible();
+      });
+    } finally { await context.close(); }
+  });
 }
 
 test("RPUI calibration-sensitive response: genuine products read renders data", async ({ browser }) => {
@@ -222,19 +283,24 @@ for (const locale of ["en", "zh-TW"] as const) for (const width of [1440, 390]) 
       });
       await fill(page, page.getByTestId("reports-from"), "2026-10-01", c.from);
       await fill(page, page.getByTestId("reports-to"), "2026-10-31", c.to);
-      await step(page, "Edited range not applied", "Channels and Funnel retain the September data label; October inputs do not imply a new query", async () => {
-        for (const tab of ["channels", "funnel", "channels"]) {
+      await step(page, "Edited range not applied", "the signed date editor preserves applied dates until Apply; Cancel leaves September data intact", async () => {
+        await expect(page).toHaveURL(/from=2026-09-01/);
+        await expect(page.getByTestId("reports-range-pending")).toHaveText(c.rangePending);
+        await expect(page.getByTestId("reports-csv-channels")).toBeHidden();
+        await page.getByRole("button",{name:moneyDesign[locale].cancel,exact:true}).click();
+        for (const tab of ["channels","funnel","channels"]) {
           await page.getByTestId(`reports-tab-${tab}`).click();
           await expect(page.getByTestId("reports-applied-range")).toHaveText(`${c.appliedRange}: 2026-09-01 – 2026-09-30 (${c.taipeiTime})`);
-          await expect(page.getByTestId("reports-range-pending")).toHaveText(c.rangePending);
-          await expect(page.getByTestId(`reports-csv-${tab}`)).toBeDisabled();
+          await expect(page.getByTestId("reports-range-pending")).toHaveCount(0);
         }
+        await fill(page,page.getByTestId("reports-from"),"2026-10-01",c.from);
+        await fill(page,page.getByTestId("reports-to"),"2026-10-31",c.to);
       });
       await step(page, "Show report", "date change navigates and survives refresh", async () => {
         await page.getByTestId("reports-show").click(); await expect(page).toHaveURL(/from=2026-10-01/);
         await expect(page.getByTestId("reports-applied-range")).toHaveText(`${c.appliedRange}: 2026-10-01 – 2026-10-31 (${c.taipeiTime})`);
         await expect(page.getByTestId("reports-range-pending")).toHaveCount(0);
-        await page.reload(); await expect(page.getByTestId("reports-from")).toHaveValue("2026-10-01");
+        await page.reload(); await page.getByRole("button",{name:moneyDesign[locale].chooseDates,exact:true}).click(); await expect(page.getByTestId("reports-from")).toHaveValue("2026-10-01"); await page.getByRole("button",{name:moneyDesign[locale].cancel,exact:true}).click();
         // Codex review P2 (PR #3): the selected report tab survives Show and refresh instead of resetting to Products.
         await expect(page).toHaveURL(/report=channels/);
         await expect(page.getByTestId("reports-tab-channels")).toHaveAttribute("aria-selected", "true");
@@ -262,14 +328,58 @@ test("RPUI 92/93 days, reversed dates, real truncated/failed reads and empty suc
     for (const fault of ["read-503", "truncate-report"]) {
       await ctl("fault", fault);
       await step(page, `fault ${fault}`, "actual failed response shows unavailable; Retry reads genuine data", async () => {
-        await page.reload(); await expect(page.getByTestId("reports-page")).toContainText(c.unavailable);
-        await page.getByRole("button", { name: c.retry, exact: true }).click(); await expect(page.getByTestId("reports-products-table")).toBeVisible();
+        await page.reload(); await expect(page.getByRole("heading",{name:moneyDesign.en.failure,exact:true})).toBeVisible();
+        await page.getByRole("button", { name: moneyDesign.en.retry, exact: true }).click(); await expect(page.getByTestId("reports-products-table")).toBeVisible();
       });
     }
     await fill(page, page.getByTestId("reports-from"), "2025-01-01", c.from); await fill(page, page.getByTestId("reports-to"), "2025-01-02", c.to);
     await step(page, "empty range Show", "empty 200 is distinct from unavailable and forbidden", async () => { await page.getByTestId("reports-show").click(); await expect(page.getByTestId("reports-page")).toContainText(c.empty); });
   } finally { await context.close(); }
 });
+
+for (const locale of moneyLocales) for (const width of moneyWidths) {
+  test(`RPUI RVFIX-370 reader recovers from funnel refusal ${locale}/${width}`, async ({ browser }) => {
+    const { context, page } = await signed(browser, locale, width, "reader"), c = reportsCopy[locale], p = moneyDesign[locale];
+    try {
+      await expect(page.getByTestId("reports-products-table")).toBeVisible();
+      await step(page, "reader Funnel refusal", "report-specific refusal retains navigation and range entry", async () => {
+        await page.getByTestId("reports-tab-funnel").click();
+        await expect(page.getByTestId("reports-page")).toContainText(c.forbidden);
+        for (const tab of ["products", "channels", "funnel", "manual-orders"]) {
+          await expect(page.getByTestId(`reports-tab-${tab}`), "RVFIX-370: report refusal must retain report navigation").toBeVisible();
+          await expect(page.getByTestId(`reports-tab-${tab}`)).toBeEnabled();
+        }
+        await expect(page.getByRole("button", { name: p.chooseDates, exact: true })).toBeVisible();
+        await expect(page.getByTestId("reports-products-table")).toHaveCount(0);
+      });
+      await page.reload();
+      await expect(page).toHaveURL(/report=funnel/);
+      await expect(page.getByTestId("reports-page")).toContainText(c.forbidden);
+      await step(page, "refused report date editor", "range and store controls remain reachable after refresh", async () => {
+        await page.getByRole("button", { name: p.chooseDates, exact: true }).click();
+        await expect(page.getByLabel(c.store, { exact: true })).toBeVisible();
+        await expect(page.getByTestId("reports-from")).toHaveValue("2026-09-01");
+        await expect(page.getByTestId("reports-to")).toHaveValue("2026-09-30");
+        await page.getByRole("button", { name: p.cancel, exact: true }).click();
+        await expect(page.getByTestId("reports-tab-products")).toBeVisible();
+      });
+      await step(page, "reader Products recovery", "authorized rows return and persist without granting export permission", async () => {
+        await page.getByTestId("reports-tab-products").click();
+        await expect(page).toHaveURL(/report=products/);
+        await expect(page.getByTestId("reports-products-table").locator("tbody tr")).toHaveCount(5);
+        await expect(page.getByTestId("reports-products-table")).toContainText("=Alpha");
+        await expect(page.getByTestId("reports-page")).not.toContainText(c.forbidden);
+        await expect(page.getByTestId("reports-csv-products")).toBeDisabled();
+        await page.reload();
+        await expect(page).toHaveURL(/report=products/);
+        await expect(page.getByTestId("reports-products-table").locator("tbody tr")).toHaveCount(5);
+        await expect(page.getByTestId("reports-products-table")).toContainText("=Alpha");
+        await expect(page.getByTestId("reports-csv-products")).toBeDisabled();
+      });
+      await fits(page);
+    } finally { await context.close(); }
+  });
+}
 
 test("RPUI reader/no-orders signed identities: export disabled and funnel permission refusal", async ({ browser }) => {
   const c = reportsCopy.en;
