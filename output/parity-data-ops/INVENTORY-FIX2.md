@@ -1,10 +1,10 @@
 # PR475 inventory repair — E1 handoff
 
-task_id: `53ea9f21-3f3b-4626-87ab-42dc853507b9-sub-inventory-repair`  
-parent task_id: `53ea9f21-3f3b-4626-87ab-42dc853507b9`  
-base_commit: `1c2bee34d9e053c9102681edcb8cf084eec69345`  
-branch: `codex/pr475-inventory-repair`  
-worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/codex-pr475-inventory-repair`  
+task_id: `53ea9f21-3f3b-4626-87ab-42dc853507b9-sub-inventory-repair`
+parent task_id: `53ea9f21-3f3b-4626-87ab-42dc853507b9`
+base_commit: `1c2bee34d9e053c9102681edcb8cf084eec69345`
+branch: `codex/pr475-inventory-repair`
+worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/codex-pr475-inventory-repair`
 role: inventory UI implementation worker; actual runtime model and reasoning effort: **UNKNOWN** (not exposed to this worker). No recursive delegation. Parent owns claim and integration.
 
 The initial worktree was clean at the assigned base. This is one implementation round, committed locally only. Resulting commit SHA is recorded in the parent handoff and Humaux; the source hashes below bind this report without a self-referential commit hash. Current-source runtime GREEN and independent acceptance are **NOT_RUN**. This report does not claim completion.
