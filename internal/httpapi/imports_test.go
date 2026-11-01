@@ -9,12 +9,73 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
 	"livecommerce/internal/httperror"
 	"livecommerce/internal/migrationimport"
 )
+
+// §4.1/6.1: one projection serves preview 200 and fresh stale 409; neither capability may alter its domain input.
+func TestImportPreviewResponseCapabilityAndCopy(t *testing.T) {
+	preview := migrationimport.CustomerPreview{Rows: []migrationimport.PreviewRow{
+		{Row: 1, Outcome: "failed", Code: "required", ErrorField: "external_id"},
+		{Row: 2, Outcome: "failed", Code: "required", ErrorField: "name", ConsentIgnored: true},
+		{Row: 3, Outcome: "created", ErrorField: "external_id"},
+		{Row: 4, Outcome: "failed", Code: "invalid_name", ErrorField: "name"},
+		{Row: 5, Outcome: "failed", Code: "required", ErrorField: "synthetic-header"},
+		{Row: 6, Outcome: "failed", Code: "required"}, // legacy absence remains valid
+	}}
+	before, err := json.Marshal(preview)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, enabled := range []bool{false, true} {
+		got := importPreviewResponse(preview, enabled).(migrationimport.CustomerPreview)
+		wire, err := json.Marshal(got)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var raw struct {
+			Rows []map[string]json.RawMessage `json:"rows"`
+		}
+		if err := json.Unmarshal(wire, &raw); err != nil {
+			t.Fatal(err)
+		}
+		for i, row := range raw.Rows {
+			want := ""
+			if enabled && i < 2 {
+				want = []string{`"external_id"`, `"name"`}[i]
+			}
+			if string(row["error_field"]) != want {
+				t.Errorf("enabled=%v row=%d error_field=%s want=%s", enabled, i+1, row["error_field"], want)
+			}
+		}
+		if !enabled {
+			row, _ := json.Marshal(got.Rows[0])
+			if string(row) != `{"row":1,"external_id":"","outcome":"failed","code":"required"}` {
+				t.Errorf("legacy row shape changed: %s", row)
+			}
+		}
+		got.Rows[0].Code = "synthetic-mutation"
+		after, err := json.Marshal(preview)
+		if err != nil || string(after) != string(before) {
+			t.Fatalf("projection mutated input: enabled=%v err=%v", enabled, err)
+		}
+	}
+	for _, result := range []any{migrationimport.CustomerCommitResult{BatchID: "synthetic-batch"}, migrationimport.OrderPreview{}} {
+		if !reflect.DeepEqual(importPreviewResponse(result, true), result) {
+			t.Fatalf("non-customer-preview changed: %T", result)
+		}
+	}
+	for _, rows := range [][]migrationimport.PreviewRow{nil, {}} {
+		input := migrationimport.CustomerPreview{Rows: rows}
+		if !reflect.DeepEqual(importPreviewResponse(input, false), input) {
+			t.Fatal("nil/empty rows shape changed")
+		}
+	}
+}
 
 func TestCustomerImportRoutesTransportRules(t *testing.T) {
 	h := NewHandler(nil) // the whole router: route conflicts panic at registration

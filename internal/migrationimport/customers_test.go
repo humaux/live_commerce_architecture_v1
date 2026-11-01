@@ -284,3 +284,22 @@ func TestCustomerRequiredErrorFieldWire(t *testing.T) {
 		})
 	}
 }
+
+func TestCustomerPreviewFieldCrossfieldAndInputPurity(t *testing.T) {
+	for _, row := range []customerRow{
+		{n: 1, outcome: outcomeCreated, errorField: "external_id"},
+		{n: 1, outcome: outcomeFailed, code: "invalid_name", errorField: "name"},
+		{n: 1, outcome: outcomeFailed, code: "required", errorField: "synthetic-header"},
+		{n: 1, outcome: outcomeFailed, code: "required"},
+	} {
+		p := parsedCustomers{rows: []customerRow{row}}
+		preview := buildPreview("synthetic-digest", p)
+		if preview.Rows[0].ErrorField != "" {
+			t.Errorf("illegal metadata leaked for outcome=%q code=%q field=%q", row.outcome, row.code, row.errorField)
+		}
+		preview.Rows[0].Code = "synthetic-mutation"
+		if p.rows[0] != row {
+			t.Fatal("preview mutated parsed input")
+		}
+	}
+}

@@ -91,6 +91,7 @@ type customerRow struct {
 	email          string // lower-case, "" when the cell was empty
 	consentIgnored bool
 	outcome, code  string
+	errorField     string // preview-only canonical field; never sent to the database or retained batch results
 }
 
 // parsedCustomers is a parsed upload: the file's headers, the mapping actually used (field -> header as written in the file) and rows.
@@ -227,6 +228,7 @@ func normalizeCustomerRow(r *customerRow, externalID, name, phone, email string)
 	switch {
 	case externalID == "":
 		r.outcome, r.code = outcomeFailed, "required"
+		r.errorField = fieldExternalID
 		return
 	case utf8.RuneCountInString(externalID) > 64 || hasControl(externalID) || looksLikeContact(externalID):
 		r.outcome, r.code = outcomeFailed, "invalid_external_id"
@@ -236,6 +238,7 @@ func normalizeCustomerRow(r *customerRow, externalID, name, phone, email string)
 	switch {
 	case name == "":
 		r.outcome, r.code = outcomeFailed, "required"
+		r.errorField = fieldName
 		return
 	case utf8.RuneCountInString(name) > 80:
 		r.outcome, r.code = outcomeFailed, "name_too_long"
