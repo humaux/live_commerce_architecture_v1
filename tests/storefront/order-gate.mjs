@@ -17,7 +17,7 @@ import {createWriteStream} from "node:fs";
 import {tmpdir} from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
-import { reachCheckout, switchLocale, confirmCheckoutAddress, openCheckoutDetails } from "./shop-helpers.mjs";
+import { reachCheckout, switchLocale, confirmCheckoutAddress, openCheckoutDetails, prepareCheckoutRecovery } from "./shop-helpers.mjs";
 import { isWebkitCancelledFetch, launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 import { displayTime } from "../../packages/format/src/index.ts";
 
@@ -526,7 +526,7 @@ try {
   await expect(a.getByTestId("recover-purchase")).toBeVisible();hook=null;
   const destinationPending=await stored(a);assert.equal(destinationPending.kind,"destination");
   assert.deepEqual(Object.keys(destinationPending.body).sort(),["cart_version","country","expected_version","kind"]);
-  await a.getByTestId("recover-purchase").click();await confirm(a);
+  await prepareCheckoutRecovery(a);await a.getByTestId("recover-purchase").click();await confirm(a);
   const attempts=calls.slice(destinationStart).filter(x=>x.path==="/api/buyer/destination"&&x.method==="PUT");
   assert(attempts.length>=2);assert.equal(new Set(attempts.map(x=>x.key)).size,1);assert.equal(new Set(attempts.map(x=>x.body)).size,1);
   pass("BO03 committed destination lost reply retries exact key and body");
@@ -587,7 +587,7 @@ try {
   await expect(tab1.getByTestId("create-order")).toBeDisabled();
   await expect(tab2.getByTestId("create-order")).toHaveCount(0);
   await expect(tab2.getByTestId("recover-purchase")).toBeVisible();
-  await tab2.getByTestId("recover-purchase").click();
+  await prepareCheckoutRecovery(tab2);await tab2.getByTestId("recover-purchase").click();
   await expect.poll(()=>tab2.evaluate(async()=> (await navigator.locks.query()).pending.filter(x=>x.name==="commerce-purchase-write-v1").length)).toBeGreaterThan(0);
   held.release.resolve();const order3=await created(tab1,q3);assert.equal(await created(tab2,q3),order3);
   assert.equal(calls.slice(queuedStart).filter(x=>x.path==="/api/buyer/checkout"&&x.method==="POST").length,1);
@@ -613,7 +613,7 @@ try {
   await expect(lost.getByTestId("checkout-unknown")).toHaveText("Checking order status");
   await expect(lost.getByTestId("recover-purchase")).toHaveText("Check order status");
   await expect(lost.getByTestId("checkout-submit")).toBeDisabled();
-  await lost.getByTestId("recover-purchase").click();await created(lost,q4);
+  await prepareCheckoutRecovery(lost);await lost.getByTestId("recover-purchase").click();await created(lost,q4);
   const replays=calls.slice(lostStart).filter(x=>x.path==="/api/buyer/checkout"&&x.method==="POST");assert(replays.length>=2);assert.equal(new Set(replays.map(x=>x.key)).size,1);assert.equal(new Set(replays.map(x=>x.body)).size,1);
   assert.equal(await stored(lost),null);await capture(lost,"mobile-order.png");
   assert(await lost.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
@@ -624,7 +624,7 @@ try {
   await fault.evaluate(()=>window.__failOrderLocator=true);const storageStart=calls.length;
   await fault.getByTestId("create-order").click();await expect(fault.getByTestId("recover-purchase")).toBeVisible();
   const storagePending=await stored(fault);assert.equal(storagePending.kind,"checkout");assert.equal(await stored(fault,"commerce-purchase-order-v1:"),null);
-  await fault.reload();await expect(fault.getByTestId("recover-purchase")).toBeVisible();await fault.getByTestId("recover-purchase").click();await created(fault,q5);
+  await fault.reload();await expect(fault.getByTestId("recover-purchase")).toBeVisible();await prepareCheckoutRecovery(fault);await fault.getByTestId("recover-purchase").click();await created(fault,q5);
   const storageAttempts=calls.slice(storageStart).filter(x=>x.path==="/api/buyer/checkout"&&x.method==="POST");assert.equal(storageAttempts.length,2);assert.equal(storageAttempts[0].key,storageAttempts[1].key);
   pass("BO05 locator storage failure retains and reloads same checkout without duplicate hold");
 
@@ -633,10 +633,10 @@ try {
   const dropRevoked=arm("checkout",{method:"POST",drop:true,repeat:true});await revoked.getByTestId("create-order").click();assert.equal(await dropRevoked.result.promise,200);
   await expect(revoked.getByTestId("recover-purchase")).toBeVisible();hook=null;
   const unresolved=await stored(revoked),cookieBefore=(await c6.cookies(origin))[0].value,resetsBefore=sessionResets;
-  await control("unpublish","POST");await revoked.getByTestId("recover-purchase").click();await expect(revoked.getByTestId("recover-purchase")).toBeVisible();
+  await control("unpublish","POST");await prepareCheckoutRecovery(revoked);await revoked.getByTestId("recover-purchase").click();await expect(revoked.getByTestId("recover-purchase")).toBeVisible();
   assert.deepEqual(await stored(revoked),unresolved);assert.equal((await c6.cookies(origin))[0].value,cookieBefore);assert.equal(sessionResets,resetsBefore);
   await expect(revoked.getByRole("button",{name:/new guest|new session|start over/i})).toHaveCount(0);
-  await control("publish","POST");await revoked.reload();await expect(revoked.getByTestId("recover-purchase")).toBeVisible();await revoked.getByTestId("recover-purchase").click();await created(revoked,q6);
+  await control("publish","POST");await revoked.reload();await expect(revoked.getByTestId("recover-purchase")).toBeVisible();await prepareCheckoutRecovery(revoked);await revoked.getByTestId("recover-purchase").click();await created(revoked,q6);
   pass("BO05 later publication revocation preserves uncertain committed order and never resets owner");
 
   // R2: late options hydration must never overwrite a newly confirmed address.
@@ -704,7 +704,7 @@ try {
   const nextIntent=await stored(a);assert.equal(nextIntent.kind,"next-cart");
   assert.deepEqual(nextIntent.body,{expected_version:originalOrder.cart_version,items:[]});
   await a.reload();await expect(a.getByTestId("recover-purchase")).toBeVisible();assert.deepEqual(await stored(a),nextIntent);
-  await a.getByTestId("recover-purchase").click();await expect(a.getByTestId("checkout-empty")).toBeVisible(); // continuation recovered: empty cart, no stuck journal
+  await prepareCheckoutRecovery(a);await a.getByTestId("recover-purchase").click();await expect(a.getByTestId("checkout-empty")).toBeVisible(); // continuation recovered: empty cart, no stuck journal
   assert.equal(await stored(a),null);assert.equal(await stored(a,"commerce-purchase-order-v1:"),null);
   const continuationCalls=calls.slice(continuationStart).filter(x=>x.path==="/api/buyer/cart"&&x.method==="PUT");
   assert(continuationCalls.length>=2);assert.equal(new Set(continuationCalls.map(x=>x.key)).size,1);assert.equal(new Set(continuationCalls.map(x=>x.body)).size,1);
@@ -815,7 +815,7 @@ try {
   const quoteFailureStart=calls.length;await fault.getByTestId("continue-shopping").click();await expect(fault.getByTestId("recover-purchase")).toBeVisible();
   const failedNext=await stored(fault);assert.equal(failedNext.kind,"next-cart");assert(await stored(fault,"commerce-purchase-order-v1:"));
   await fault.reload();await expect(fault.getByTestId("recover-purchase")).toBeVisible();assert.deepEqual(await stored(fault),failedNext);
-  await fault.getByTestId("recover-purchase").click();await expect(fault.getByTestId("checkout-empty")).toBeVisible();
+  await prepareCheckoutRecovery(fault);await fault.getByTestId("recover-purchase").click();await expect(fault.getByTestId("checkout-empty")).toBeVisible();
   const quoteFailureCalls=calls.slice(quoteFailureStart).filter(x=>x.path==="/api/buyer/cart"&&x.method==="PUT");assert.equal(quoteFailureCalls.length,2);
   assert.equal(quoteFailureCalls[0].key,quoteFailureCalls[1].key);assert.equal(quoteFailureCalls[0].body,quoteFailureCalls[1].body);
   assert.equal(await stored(fault),null);assert.equal(await stored(fault,"commerce-purchase-order-v1:"),null);

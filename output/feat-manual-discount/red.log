@@ -204,3 +204,12 @@ ownership_generate_and_check: exit0; no tracked diff
 status: BLOCKED_SCOPE; unowned storefront/pricing/catalog/merchantorders changes still required
 fix_attempts: 0; source_edits: NONE; push: NONE; WAIT_RUN: NONE
 NOT_RUN: local tests/servers; implementation; GREEN; independent acceptance; SANDBOX/LIVE; deployment; Humaux memory/coord/canvas
+
+FIX1_DIRECTED_RECOVERY_2026_11_01
+head: fdfec87c9d760c8d70f9b13f77f7de37f85d8e3b
+tested_merge: 72b40a2485923dfd2fe40260834145e45785cafb
+RED Gates: 41277742564 job124763804297 TestBrowserBuyerOrderUI BO05 order-gate.mjs:639 -> created:153 order-section missing after unchanged 5000ms; page Checking order status
+downstream: receipts124767027462 required124767335440
+artifact: 13072148027 gate-browser-webkit sha256 afd8aa453119a39336d4c00ec3cf54fe833ee78d52939afa8309ec48e9e6c7a0
+Foundation41277742565/job124763245081: SUCCESS on old head, not new-head acceptance
+fix: shared idle/enabled/focus readiness before 8 original recovery pointer clicks; assertions/fixtures/timeouts unchanged; first directed readiness attempt; candidate not runtime-proven

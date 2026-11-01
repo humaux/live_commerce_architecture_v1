@@ -72,3 +72,14 @@ export async function openCheckoutDetails(page) {
   const toggle = page.getByTestId("checkout-details-toggle");
   if (await toggle.isVisible() && await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
 }
+
+// Recovery can appear before load() finishes restoring the quote/review. Wait for
+// that layout, then settle focus scrolling before the caller's one pointer click.
+// This does not replay a request or change the original intent, key or assertion.
+export async function prepareCheckoutRecovery(page) {
+  await expect(page.locator(".purchase-main")).not.toHaveAttribute("aria-busy", "true");
+  const button = page.getByTestId("recover-purchase");
+  await expect(button).toBeEnabled();
+  await button.focus();
+  await expect(button).toBeFocused();
+}
