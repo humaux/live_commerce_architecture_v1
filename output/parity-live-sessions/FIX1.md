@@ -1,12 +1,12 @@
 # PARITY-LIVE-SESSIONS-FIX1 · 2026-11-01
 
-Status: one directed combined fix authored; E0 author assessment. GitHub GREEN and independent E4 review PENDING. No local tests, servers, browsers, containers, PG or LIVE operations.
+Status: Relay 1 second directed fix authored (two test-helper lines plus generated ownership); E0 author assessment. GitHub GREEN and independent E4 review PENDING. No local tests, servers, browsers, containers, PG or LIVE operations.
 
 Authority: integrator FIX1 card in this session; AGENTS.md; 架构.md §§0/1/2/26/27; frozen studio-v1 and existing claims/console CAS contracts; signed frame identities in frames.json. Current source is integration `da2cc7a3fc1e6eac11de727b158412ae9aff8ba9` merged as `ee8748534`. Original implementation head: `85bad87abae9eac6c26ad62bed3e7564c340feb0`.
 
 Original tests-only RED: run **41052979614**, job **124055728603**, head `395209e39d97c7a5a84373e114879e86f549416c`: four new C4 missing preparation/products assertions, with 23 existing workspace cases passing (see red.log / original DELIVERY). Directed-fix RED below: run **41082251104**, PR head `85bad87a…`; jobs execute synthetic merge `ed928e1b0f59f474f106bcf1f712d5ef63d6dfd6` in their receipts. This follow-up card explicitly requires one combined fix push, not a new tests-only round.
 
-Base run **41266607808** at `da2cc7a3f` was still unfinished at inspection. **No class (c) claim is made without a matching base log line.** The listed failures have direct source/artifact causes. The already merged inbox helper fix is imported only through integration; this card does not edit inbox helpers.
+Base run **41266607808** at `da2cc7a3f` is now verified **success** through `gh run view` on 2026-11-01. The following original inventory was written before that run completed. **No class (c) claim is made without a matching base log line.** The listed failures have direct source/artifact causes. The already merged inbox helper fix is imported only through integration; this card does not edit inbox helpers.
 
 ## Every failing job → assertion → original evidence → class
 
@@ -85,3 +85,47 @@ NOT_RUN: current-head browser/unit/Go/REAL_PG tests; current-head GREEN; indepen
 - `tests/e2e/deal-loop.spec.ts`: `070afc2c1ab9d815c1e7e6b5e18abbe7289ad2ec64b93d4168ad05453366de5a`
 - `tests/e2e/live-tools.spec.ts`: `71b8ca6cfeb2a186eb6f78f820670c2fd7300fb2a9fbb90ea1e49e5f65adb16c`
 - `tests/admin/meta-health-ui.spec.ts`: `83ce3115934a567a6718b1b41fddf6ffbe4b5d14be275c86c68b25d9e89093a7`
+
+## Relay 1: current-head failure inventory and second directed fix
+
+Authoritative latest-head results: PR head `1d77b89cd4775db6fc9a8bc19627e04af8ae27d5`; Foundation run **41267520054**; Gates run **41267520139**, attempt 1, tested synthetic merge `5b30adce3cab5d42a650a464cb9580c54f92e724`. The older **41082251104** is RED evidence for `85bad87a`, not the latest implementation. Read `gh pr checks 365`, `gh run view --job … --log-failed`, then the three failing browser artifacts. Concurrent `gh run view` log cache reads returned `zip: not a valid zip file` for two jobs; direct GitHub jobs/logs API succeeded. This was transport/cache evidence, not a test result.
+
+First required action: fetched and merged `origin/r3/integration`; merge reported **Already up to date** at `da2cc7a3fc1e6eac11de727b158412ae9aff8ba9`. No other branch/worktree changed. A pre-existing dirty ownership hash for live-console.spec.ts was preserved and then regenerated with all source hashes.
+
+| Every current failing job | Failing test / assertion | Raw CI evidence | Class | Second directed fix |
+|---|---|---|---|---|
+| Foundation 124733309565 (41267520054) | `CI-SPEED-3: generated browser ownership is current and covers the registry` | `tests/ci/backend-coverage.test.mjs:274`; `browser ownership drift: regenerate with node scripts/dev/derive-browser-ownership.mjs`; sole failing Node test | b, generated metadata regression | Run official ownership generator after the last test edit, then `--check`; no hand edits. |
+| bundle:05 124734313790 (41267520139) | `TestBrowserE2EDealLoop` / `TestBrowserLiveTools`; deal-loop.spec.ts:141 and live-tools.spec.ts:153 fail in `openClaimTools` | Both playwright.log files: `parity-live-sessions.ts:95`, `locator('summary') resolved to 2 elements` (Advanced and This round); all four live-tools locale/viewport cells fail here | b, shared setup regression | Select `:scope > summary` in the one shared helper, retaining strict uniqueness, real click and visible `#claims-mode` assertion. The scanner failure is downstream of setup; scanner unchanged. |
+| bundle:06 124734313755 (41267520139) | `TestBrowserMetaHealthUI`; `reconnect uses the existing OAuth picker and restores the same Page` | meta-health-ui.spec.ts:148: `getByTestId('metaconnect-token')`, expected `data-state=active`, element not found; 12 other cases pass | a, settings entry intentionally replaced by signed collapsed entry | Reopen settings through the existing `enterSettings` real-click helper after reload. Keep the original banner-absence and exact active-state assertions verbatim. OAuth picker/review/result clicks and Page identity checks unchanged. |
+| bundle:07 124734313470 (41267520139) | `TestBrowserCustomersBilling`; CB11 RESTRICTED→GOOD case | customers-billing.spec.ts:597 → parity-live-sessions.ts:95: identical two-summary strict violation; 85 pass, 1 fail, 5 did not run | b, same shared setup regression | Same single helper fix; 402→200, closed/open/closed, billing-link, permission and screenshot assertions unchanged. |
+| receipts 124740395785 (41267520139) | Every planned mode has one fresh PASS receipt | `matrix-receipts: RED (3 problem(s))`, failed receipts for e2e/meta-health-ui/customers-billing | derived | No receipts changes. |
+| required 124740808293 (41267520139) | Required workflow result | gate/receipts failure dependency | derived | No workflow/status changes. |
+
+No class (c) failure is claimed. Known inbox issues are untouched; the current inbox job passed. The current aggregate **124740395685 passed**. All ten click-sweep shards, live-console **124734313604**, and Studio bundle:04 **124734313887** passed on `1d77b89c`; those historical passes do not accept this new head.
+
+This is directed attempt **2** for the shared claim setup blocker. The first attempt replaced obsolete New scene navigation; its helper introduced the nested-summary ambiguity seen above. If the same assertion is red after this push, **BLOCKED**: return its exact CI assertion and do not try a third approach. No fixture, timeout, test case, threshold, exemption, gate-adapter assertion, product code or frozen contract changed in this relay.
+
+Local static commands on these final sources: `node --check tests/admin/parity-live-sessions.ts` (0), `node --check tests/admin/meta-health-ui.spec.ts` (0), `python3 scripts/check_packet.py` (0, packet structure only; incidental timestamp output restored), ownership generation and `--check` (0), `bash scripts/dev/depmap.sh` (0, no generated dependency-map diff), evidence-retention check (0). No local tests or servers. These are E1 only; browser behavior awaits this PR's own CI.
+
+Relay source SHA-256:
+- `tests/admin/parity-live-sessions.ts`: `0e6b0e68ae44c283af2db4efef29fbfc573a16cba0c1972f39daee7e049cb0f0`
+- `tests/admin/meta-health-ui.spec.ts`: `b1feee2c6e0fb43a395db3a75ba66027cd2ce6f4b0b3b074bd0cadf0768fce42`
+- `output/ci-select-backend-browser/browser-ownership.json`: `41a4c5eef692818aafc3700e429e682bb2416a30363e74e84cf231b8e09d5720`
+
+Raw downloaded job logs and browser artifacts stay ignored in `fix1-artifacts/relay1/`; only pointers/hashes are retained here. Downloaded log SHA-256:
+
+- `foundation.log`: `d4cf4a0139a90ee8cd9223e15175acfa22d6c0a6d862166a9fd578865a8d9f17`
+- `bundle05.log`: `1a2be31bec2fc9501b5743b08f3aa6cb4a0c7c5d01f8e153faad98e09aa895e6`
+- `bundle06.log`: `e2544d5c7ac19d4eee937600a77342f8dea029f7ee54d214629b3fbc3033fe5a`
+- `bundle07.log`: `83172f8db794d61c5777af14f9878dc25df21fdb4ef5bf9aa99230560382b1e4`
+- `receipts.log`: `4d5d23da1edb57c19bd2c594615a6c0d1aa73070dfaf1a28e6a2f96803ef1a87`
+
+NOT_RUN: final-head CI (pending push/run IDs), all local functional tests (prohibited), independent review/E4, provider SANDBOX/LIVE and production acceptance. Integrator owns wake-up/relay. Humaux/coord/canvas tools are unavailable; no store, claim or canvas update is asserted.
+
+Relay artifact archive digests (GitHub Actions API, run 41267520139):
+
+| Artifact | ID | SHA-256 |
+|---|---|---|
+| gate-browser-e2e | 13067808862 | abe1535528848e59fe59176e1fec0aff22446632cc747d599103cb47bc7ca365 |
+| gate-browser-meta-health-ui | 13068661896 | 4488e1fee07decf5637b9cb92b8e5675d71965e738c6ed53b512a30678991326 |
+| gate-browser-customers-billing | 13069050216 | 61fc3cf77ce1186fda0a0f05bbcc895490a41d89826ca0f5af2c3aaef767c371 |

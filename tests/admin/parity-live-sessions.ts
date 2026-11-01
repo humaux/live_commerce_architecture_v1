@@ -92,7 +92,7 @@ export async function openClaimTools(page: Page) {
   const disclosure = page.locator("details").filter({ has: page.getByText(/^(Advanced|進階|进阶)$/, { exact: true }) });
   await expect(disclosure).toBeVisible();
   if (await disclosure.getAttribute("open") === null)
-    await disclosure.locator("summary").click();
+    await disclosure.locator(":scope > summary").click();
   await expect(page.locator("#claims-mode")).toBeVisible();
 }
 

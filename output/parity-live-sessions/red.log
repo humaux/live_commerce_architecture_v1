@@ -26,3 +26,15 @@ implementation=SOURCE_AUTHORED; one implementation push follows this verified RE
 GREEN=PENDING_PR_OWN_CI
 local_tests=NOT_RUN_OWNER_PROHIBITED
 wake_owner=integrator; relay a fresh session after the implementation Gates/Foundation run concludes
+
+phase=FIX1_RELAY1_SECOND_DIRECTED_FIX
+head=1d77b89cd4775db6fc9a8bc19627e04af8ae27d5
+tested_merge=5b30adce3cab5d42a650a464cb9580c54f92e724
+foundation_run=41267520054 foundation_job=124733309565 failure=browser_ownership_drift
+gates_run=41267520139
+gates_jobs=124734313790,124734313755,124734313470
+assertion_shared=parity-live-sessions.ts:95 summary strict violation (2 elements); deal-loop/live-tools/CB11
+assertion_meta=meta-health-ui.spec.ts:148 metaconnect-token data-state active absent after reload of collapsed settings
+base_run=41266607808 base_head=da2cc7a3fc1e6eac11de727b158412ae9aff8ba9 base_conclusion=success
+classification=E3_FAILURE_EVIDENCE_ONLY; current GREEN pending
+stop_condition=same_assertion_RED_after_this_second_directed_fix=>BLOCKED_no_third_approach

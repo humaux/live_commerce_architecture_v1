@@ -145,7 +145,7 @@ test("reconnect uses the existing OAuth picker and restores the same Page",async
  await page.getByTestId("meta-health-settings").click();
  await click(page,"existing-reconnect",async()=>{await page.getByTestId("metaconnect-reconnect").click();await page.getByRole("button",{name:parityWords.en.official,exact:true}).click();await page.getByRole("button",{name:parityWords.en.official,exact:true}).click();},()=>expect(page.getByTestId("metaconnect-pick-submit")).toBeVisible(),"real OAuth callback opens the existing Page picker");
  await click(page,"confirm-same-page",async()=>{await page.getByTestId("metaconnect-pick-submit").click();await page.getByRole("button",{name:parityWords.en.confirmConnect,exact:true}).click();await page.getByRole("button",{name:parityWords.en.returnList,exact:true}).click();},()=>expect(page.getByTestId(`metaconnect-row-${pageID}`)).toBeVisible(),"same Page is connected again");
- await control("probe");await page.reload();await expect(page.getByTestId("meta-health-banner")).toHaveCount(0);await expect(page.getByTestId("metaconnect-token")).toHaveAttribute("data-state","active");
+ await control("probe");await page.reload();await enterSettings(page);await expect(page.getByTestId("meta-health-banner")).toHaveCount(0);await expect(page.getByTestId("metaconnect-token")).toHaveAttribute("data-state","active");
 });
 
 for(const viewport of parityViewports)test(`C4 feature checks frame ${viewport.width}`,async({page})=>{
