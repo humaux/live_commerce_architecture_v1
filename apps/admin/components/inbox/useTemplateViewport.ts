@@ -1,5 +1,6 @@
 // Purpose: size the template page to the visible viewport so its scroll pane ends above its footer.
-// Depends on: React and native viewport/resize observers. Used by: MessageTemplateList and MessageTemplateForm.
+// Depends on: React and native viewport/resize observers.
+// Used by: MessageTemplateList and MessageTemplateForm.
 // Invariant: presentation only; no template data, permissions or command state.
 "use client";
 import { useLayoutEffect, useRef } from "react";
