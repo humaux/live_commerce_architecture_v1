@@ -99,8 +99,9 @@ func TestCustomerImportRoutesTransportRules(t *testing.T) {
 	}
 }
 
-// Run the whole router, so accepting a capability reaches the existing auth
-// boundary (401) while malformed/unsupported queries stop before any DB work.
+// A canonical synthetic bearer passes the outer route guard before query
+// validation. Valid queries then reach the nil-pool scope refusal (401), while
+// invalid queries return 422. Without a bearer the outer guard always returns 401.
 func TestCustomerImportRowErrorsCapabilityTransport(t *testing.T) {
 	h := NewHandler(nil)
 	base := "/v1/admin/stores/" + custStore + "/imports"
@@ -108,6 +109,21 @@ func TestCustomerImportRowErrorsCapabilityTransport(t *testing.T) {
 		sep := "?"
 		if strings.Contains(endpoint, "?") {
 			sep = "&"
+		}
+		for _, query := range []string{"row_errors=field-v1", "row_errors=unknown"} {
+			t.Run("no bearer"+endpoint+"/"+query, func(t *testing.T) {
+				r := httptest.NewRequest("POST", base+endpoint+sep+query, strings.NewReader("customer_id,name\nFIELD-1,Synthetic\n"))
+				r.Header.Set("Content-Type", "text/csv")
+				w := httptest.NewRecorder()
+				h.ServeHTTP(w, r)
+				var envelope httperror.Envelope
+				if err := json.Unmarshal(w.Body.Bytes(), &envelope); err != nil || w.Code != 401 || envelope.Code != "unauthorized" {
+					t.Fatalf("missing bearer: status=%d code=%q err=%v", w.Code, envelope.Code, err)
+				}
+				if w.Header().Get("Cache-Control") != "private, no-store" {
+					t.Fatal("private cache policy changed")
+				}
+			})
 		}
 		for _, tc := range []struct {
 			query  string
@@ -133,6 +149,7 @@ func TestCustomerImportRowErrorsCapabilityTransport(t *testing.T) {
 		} {
 			t.Run(endpoint+"/"+tc.query, func(t *testing.T) {
 				r := httptest.NewRequest("POST", base+endpoint+sep+tc.query, strings.NewReader("customer_id,name\nFIELD-1,Synthetic\n"))
+				r.Header.Set("Authorization", custBearer)
 				r.Header.Set("Content-Type", "text/csv")
 				w := httptest.NewRecorder()
 				h.ServeHTTP(w, r)
