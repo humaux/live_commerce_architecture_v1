@@ -87,6 +87,7 @@ async function upload(page: Page, file: FileCase, kind: "customers" | "orders" =
   await step(page, "CSV file picker", "unknown source headers become header-only mapping options", async () => {
     await page.getByTestId("import-file").setInputFiles({ name: `${file.prefix}.csv`, mimeType: "text/csv", buffer: file.buffer });
     await expect(page.getByTestId(`import-map-${kind === "customers" ? "external_id" : "order_id"}`)).toBeVisible();
+    await expect(page.getByTestId(`import-map-${kind === "customers" ? "external_id" : "order_id"}`)).toBeEnabled();
   }, "setInputFiles");
   const advanced = page.getByTestId("import-advanced");
   if (await advanced.count()) await advanced.locator("summary").click();
