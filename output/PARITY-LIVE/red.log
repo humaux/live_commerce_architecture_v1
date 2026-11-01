@@ -134,3 +134,123 @@ local_static=check_packet_EXIT0_PASS_PACKET_STRUCTURE_ONLY; ownership_generate_E
 local_runtime=NOT_RUN_prohibited; product_implementation=NOT_RUN_until_assertion_RED
 report=output/PARITY-LIVE/CONSOLE-FIX.md
 wakeup=integrator_fresh_session_on_registered_run_conclusion; poll_limit_about10min
+
+CONSOLE_FIX_RED_PUSH head=f483929e1aec118f79ed9783a4ffbbdd8570c382 PR355
+WAIT_RUN Foundation=41277939402 job=124763822904 in_progress
+WAIT_RUN Gates=41277939407 in_progress gate_jobs_NOT_CREATED
+RED_assertion=PENDING; GREEN=NOT_RUN; integrator_fresh_session_relay_on_conclusion
+
+
+CONSOLE-FIX RELAY 1 — confirmed assertion RED, 2026-11-01
+head=f483929e1aec118f79ed9783a4ffbbdd8570c382
+Gates run=41277939407 job=124764486910 conclusion=FAIL; Foundation run=41277939402 job=124763822904 conclusion=PASS
+artifact=13072770968 gate-browser-live-console; all six existing locale/viewport cases fail new line303 assertion: live-primary-action expected visible, received hidden.
+playwright/run.ck7e1PPM/live-console-1703289824/results/live-console-LC-U1-MOCK-contract-real-clicks-en-1586/error-context.md
+sha256=2befee4ff945a1ce1ee93344acdc500b7045d7b5bb8f4b19917f14fd9fd982b0
+```
+Error: expect(locator).toBeVisible() failed
+
+Locator:  getByTestId('live-primary-action')
+Expected: visible
+Received: hidden
+Timeout:  10000ms
+
+Call log:
+  - Expect "toBeVisible" getByTestId('live-primary-action') with timeout 10000ms
+  - waiting for getByTestId('live-primary-action')
+    24 × locator resolved to <button type="button" class="primary" data-testid="live-primary-action">Start live session</button>
+       - unexpected value "hidden"
+
+```
+
+playwright/run.ck7e1PPM/live-console-1703289824/results/live-console-LC-U1-MOCK-contract-real-clicks-en-390/error-context.md
+sha256=810fe9d43af3f566f7a27a9403ecebf2cb6d058869594d8a4d7360b6c8279557
+```
+Error: expect(locator).toBeVisible() failed
+
+Locator:  getByTestId('live-primary-action')
+Expected: visible
+Received: hidden
+Timeout:  10000ms
+
+Call log:
+  - Expect "toBeVisible" getByTestId('live-primary-action') with timeout 10000ms
+  - waiting for getByTestId('live-primary-action')
+    24 × locator resolved to <button type="button" class="primary" data-testid="live-primary-action">Start live session</button>
+       - unexpected value "hidden"
+
+```
+
+playwright/run.ck7e1PPM/live-console-1703289824/results/live-console-LC-U1-MOCK-contract-real-clicks-zh-CN-1586/error-context.md
+sha256=6ceec5b2922b7c5f0907c0f83f6330bfe0d63b765e648737e0c75cec42590cb8
+```
+Error: expect(locator).toBeVisible() failed
+
+Locator:  getByTestId('live-primary-action')
+Expected: visible
+Received: hidden
+Timeout:  10000ms
+
+Call log:
+  - Expect "toBeVisible" getByTestId('live-primary-action') with timeout 10000ms
+  - waiting for getByTestId('live-primary-action')
+    24 × locator resolved to <button type="button" class="primary" data-testid="live-primary-action">开始直播</button>
+       - unexpected value "hidden"
+
+```
+
+playwright/run.ck7e1PPM/live-console-1703289824/results/live-console-LC-U1-MOCK-contract-real-clicks-zh-CN-390/error-context.md
+sha256=dbfff2f22d0c2223abd8f53dd8cf628b24576dcbff3a8e55054fbc293a4f6c2f
+```
+Error: expect(locator).toBeVisible() failed
+
+Locator:  getByTestId('live-primary-action')
+Expected: visible
+Received: hidden
+Timeout:  10000ms
+
+Call log:
+  - Expect "toBeVisible" getByTestId('live-primary-action') with timeout 10000ms
+  - waiting for getByTestId('live-primary-action')
+    24 × locator resolved to <button type="button" class="primary" data-testid="live-primary-action">开始直播</button>
+       - unexpected value "hidden"
+
+```
+
+playwright/run.ck7e1PPM/live-console-1703289824/results/live-console-LC-U1-MOCK-contract-real-clicks-zh-TW-1586/error-context.md
+sha256=db521ee7bd01eb3fad3be9fccab5bfe6655585c0de46b9b0292e9097eb7dabc1
+```
+Error: expect(locator).toBeVisible() failed
+
+Locator:  getByTestId('live-primary-action')
+Expected: visible
+Received: hidden
+Timeout:  10000ms
+
+Call log:
+  - Expect "toBeVisible" getByTestId('live-primary-action') with timeout 10000ms
+  - waiting for getByTestId('live-primary-action')
+    24 × locator resolved to <button type="button" class="primary" data-testid="live-primary-action">開始直播</button>
+       - unexpected value "hidden"
+
+```
+
+playwright/run.ck7e1PPM/live-console-1703289824/results/live-console-LC-U1-MOCK-contract-real-clicks-zh-TW-390/error-context.md
+sha256=73c7c83ec15ed7cac65aed96b8599eb6913b2c4161bee3f5e844255d306f6318
+```
+Error: expect(locator).toBeVisible() failed
+
+Locator:  getByTestId('live-primary-action')
+Expected: visible
+Received: hidden
+Timeout:  10000ms
+
+Call log:
+  - Expect "toBeVisible" getByTestId('live-primary-action') with timeout 10000ms
+  - waiting for getByTestId('live-primary-action')
+    24 × locator resolved to <button type="button" class="primary" data-testid="live-primary-action">開始直播</button>
+       - unexpected value "hidden"
+
+```
+Parity job=124764486539 FAIL; upload rejected parity/1429:39502.png (Colon :), so its browser assertion is UNKNOWN.
+bundle:07 job=124764487132 PASS at same head; returns/auth remains class(c), unchanged.

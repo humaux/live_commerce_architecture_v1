@@ -28,6 +28,8 @@ export async function showLiveTools(page: Page) {
   await showLivePanel(page, "live");
   // Index the stable disclosures, never :not([open]): clicking removes a match from that filtered list.
   const tools = page.locator("[data-live-tools]");
+  // Primary actions are visible directly; only remaining secondary disclosures need opening.
+  if (await tools.count() === 0) return;
   await expect(tools.first()).toBeAttached();
   for (let index = 0; index < await tools.count(); index++) {
     const details = tools.nth(index);

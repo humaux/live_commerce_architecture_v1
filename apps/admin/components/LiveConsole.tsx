@@ -123,8 +123,7 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard, onRefre
         <div><dt>{c.orders}</dt><dd>{data.stats.orders.count}</dd></div>
         <div><dt>{c.paidOrders}</dt><dd>{data.stats.paid.count}</dd></div>
       </dl>
-      <details className="live-advanced" data-live-tools>
-        <summary>{c.advanced}</summary>
+      <div className="live-advanced">
         <div className="live-phase-header">
           {action && !copying && <button type="button" className="primary" data-testid="live-primary-action" disabled={!manage || command.blocked} aria-describedby={!manage ? "live-management-reason" : undefined} onClick={() => void primary()}>{command.busy ? c.pending : c[action]}</button>}
           {!manage && <p id="live-management-reason">{c.manageRequired}</p>}
@@ -136,7 +135,7 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard, onRefre
         </dl>
         <p className="live-helper">{c.updated} {displayTime(locale, data.stats.as_of)} · {c.taipei}</p>
         <p className="live-helper" role="status">{c.feed}: {c.stream[data.stream.state]}</p>
-      </details>
+      </div>
       <div className="live-mobile-tabs" role="tablist" aria-label={c.title}>
         {([['live', c.liveTab], ['comments', c.commentsTab], ['buyer', c.buyerTab]] as const).map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={tab === key} aria-controls={`live-panel-${key}`} onClick={() => setTab(key)}>{label}</button>)}
       </div>
@@ -189,7 +188,6 @@ function OfferRow({ offer, maxQuantity, c, locale, currency, editable, stockEdit
     <p><strong>{c.remaining} {offer.stock.tracked ? offer.stock.sellable : "—"} · {c.soldCount} {offer.paid_qty}</strong></p>
     <p className="live-helper">{c.maxPerBuyer} {maxQuantity ?? "—"} · {c.reserved} {offer.stock.reserved}. {c.stockHelper}</p>
     <button className="live-product-toggle" type="button" disabled={!editable || !canToggle} onClick={() => void onToggle()}>{offer.active ? c.offProduct : c.onProduct}</button>
-    <details data-live-tools><summary>{c.advanced}</summary>
     <div>
       <label className="live-offer-toggle"><input type="checkbox" role="switch" data-testid={`live-offer-toggle-${offer.offer_id}`} checked={offer.active} disabled={!editable || !canToggle} onChange={() => void onToggle()} />{offer.active ? c.open : c.closed}</label>
     </div>
@@ -207,6 +205,5 @@ function OfferRow({ offer, maxQuantity, c, locale, currency, editable, stockEdit
     {reason && offer.stock.tracked && <p className="live-helper" id={`stock-reason-${offer.offer_id}`}>{reason}</p>}
     {invalid && <p role="alert">{c.stockInvalid}</p>}
     <p className="live-helper">{c.recommendHint}</p>
-    </details>
   </li>;
 }

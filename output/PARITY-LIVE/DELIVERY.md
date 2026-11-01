@@ -1,3 +1,5 @@
+CONSOLE-FIX relay1 current stage (2026-11-01): confirmed tests-only assertion RED at f483929e, Gates41277939407/job124764486910, all six locales/sizes fail new primary-action visibility assertion. Implementation removes the two action disclosures, preserves helper calls with a zero-disclosure return, and sanitizes screenshot basenames. No new copy/design. Report: CONSOLE-FIX.md; exact error excerpts/hashes: red.log. GREEN, refreshed stock23/offer-off assertions and independent parity/density acceptance PENDING. Earlier status below is historical at its recorded head.
+
 # PARITY-LIVE — implementation handoff
 
 ## CONSOLE-FIX current stage — 2026-11-01

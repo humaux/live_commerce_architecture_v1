@@ -937,7 +937,7 @@ async function parityTab(page: Page, locale: ParityLocale, tab: string) {
 }
 async function parityShot(page: Page, id: string) {
   await mkdir(`${evidence}/parity`, { recursive: true });
-  await page.screenshot({ path: `${evidence}/parity/${id}.png`, animations: "disabled" });
+  await page.screenshot({ path: `${evidence}/parity/${id.replace(":", "-")}.png`, animations: "disabled" });
 }
 
 // The legacy test block is intentionally untouched. Each current signed state is selected by an actual click.
