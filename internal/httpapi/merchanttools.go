@@ -12,7 +12,9 @@
 package httpapi
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"mime"
@@ -111,7 +113,7 @@ func registerMerchantToolsRoutes(mux *http.ServeMux, pool *pgxpool.Pool, manual 
 		respond(w, http.StatusOK, map[string]any{"options": options})
 	}))
 	mux.HandleFunc("POST "+base+"/orders/manual", cvsRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
-		in, ok := cvsStrictBody[merchanttools.ManualInput](w, r, manualOrderFields, nil)
+		in, ok := manualDiscountBody[merchanttools.ManualInput](w, r, manualOrderFields)
 		if !ok {
 			return
 		}
@@ -363,7 +365,7 @@ func registerForBuyerRoutes(mux *http.ServeMux, forBuyer *merchanttools.ForBuyer
 		respond(w, http.StatusOK, out)
 	}))
 	mux.HandleFunc("POST "+base+"/orders/for-buyer", cvsRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
-		in, ok := cvsStrictBody[merchanttools.ForBuyerInput](w, r, forBuyerFields, nil)
+		in, ok := manualDiscountBody[merchanttools.ForBuyerInput](w, r, forBuyerFields)
 		if !ok {
 			return
 		}
@@ -408,4 +410,33 @@ func prefillQuery(r *http.Request) (conversation, bundle *string, ok bool) {
 func respondForBuyerError(w http.ResponseWriter, err error) {
 	status, code := toolsClassify(err)
 	respondErrorDetails(w, err, status, code)
+}
+
+// manualDiscountBody preserves the required legacy keys while admitting only an
+// optional non-null discount. studioDecodeRaw still rejects duplicate/unknown keys
+// at every nesting level and non-integer money at the typed JSON boundary.
+func manualDiscountBody[T any](w http.ResponseWriter, r *http.Request, required []string) (T, bool) {
+	in, raw, ok := studioDecodeRaw[T](w, r, append(append([]string{}, required...), "discount"))
+	if !ok {
+		return in, false
+	}
+	var fields map[string]json.RawMessage
+	if json.Unmarshal(raw, &fields) != nil {
+		respondError(w, 422, "invalid_request")
+		return in, false
+	}
+	for _, key := range required {
+		if value, found := fields[key]; !found || bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
+			respondError(w, 422, "invalid_request")
+			return in, false
+		}
+	}
+	if value, found := fields["discount"]; found {
+		var d map[string]json.RawMessage
+		if json.Unmarshal(value, &d) != nil || len(d) != 2 || d["name"] == nil || d["amount_minor"] == nil || bytes.Equal(bytes.TrimSpace(d["name"]), []byte("null")) || bytes.Equal(bytes.TrimSpace(d["amount_minor"]), []byte("null")) {
+			respondError(w, 422, "invalid_request")
+			return in, false
+		}
+	}
+	return in, true
 }

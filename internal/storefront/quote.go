@@ -1,6 +1,7 @@
 // Purpose: storefront quote snapshots and frozen per-line price/origin evidence.
 // Depends on: buyer command scope, catalog, pricing and promotions in the caller's PG transaction.
 // Used by: storefront quote creation and typed checkout order snapshot reads.
+// Invariants: immutable quote is charge authority; manual adjustments require merchant authorization.
 package storefront
 
 import (
@@ -60,15 +61,34 @@ type Quote struct {
 	// Promotion is the code this quote was priced with (nil = none). omitempty: a code-less snapshot has no key, so pre-0091 quotes
 	// round-trip byte-equal through checkout.begin_hold's snapshot comparison. Version freezes the merchant's code row (promo_changed).
 	Promotion *pricing.Promo `json:"promotion,omitempty"`
-	CreatedAt time.Time      `json:"created_at"`
-	ExpiresAt time.Time      `json:"expires_at"`
+	// Adjustments are merchant-authorized lines, frozen and re-proved at checkout.
+	Adjustments []pricing.Adjustment `json:"adjustments,omitempty"`
+	CreatedAt   time.Time            `json:"created_at"`
+	ExpiresAt   time.Time            `json:"expires_at"`
 }
 
-func CreateQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in QuoteInput) (out Quote, err error) {
+func CreateQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in QuoteInput) (Quote, error) {
+	return createQuote(ctx, tx, s, key, in, false)
+}
+
+// CreateManualQuote is server-only: the merchant pipeline authorized this synthetic owner first.
+// Public buyer routes always use CreateQuote and cannot request an adjustment.
+func CreateManualQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in QuoteInput) (Quote, error) {
+	return createQuote(ctx, tx, s, key, in, true)
+}
+
+func createQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in QuoteInput, manual bool) (out Quote, err error) {
 	if in.CartVersion < 1 || !command.ValidID(in.MarketID) || len(in.Country) != 2 || in.Country[0] < 'A' || in.Country[0] > 'Z' || in.Country[1] < 'A' || in.Country[1] > 'Z' || !pricing.ValidMethod(in.Method) {
 		return out, command.ErrInvalid
 	}
-	err = buyer.RunCommand(ctx, tx, s, "quote.create", key, in, &out, func() error {
+	var request any = in
+	if manual {
+		request = struct {
+			QuoteInput
+			Manual bool `json:"merchant_manual"`
+		}{in, true}
+	}
+	err = buyer.RunCommand(ctx, tx, s, "quote.create", key, request, &out, func() error {
 		cart, err := readCart(ctx, tx, s, false)
 		if err != nil {
 			return err
@@ -124,7 +144,17 @@ func CreateQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in Q
 			}
 			promo = &found
 		}
-		amount, err := pricing.CalculateWith(policy, inputs, promo)
+		var adjustments []pricing.Adjustment
+		if manual {
+			d, e := manualDiscount(ctx, tx, s, "")
+			if e != nil {
+				return e
+			}
+			if d != nil {
+				adjustments = []pricing.Adjustment{{Kind: "manual_discount", Currency: cart.Currency, ManualDiscount: *d}}
+			}
+		}
+		amount, err := pricing.CalculateAdjusted(policy, inputs, promo, adjustments)
 		if err != nil {
 			return err
 		}
@@ -136,7 +166,7 @@ func CreateQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in Q
 		for i := range lines {
 			lines[i].Amount = amount.Lines[i]
 		}
-		out = Quote{CartID: cart.ID, Currency: cart.Currency, CalculationVersion: "v1", CartVersion: cart.Version, MarketVersion: market.Version, Policy: policy, Lines: lines, Amount: amount, Promotion: promo}
+		out = Quote{CartID: cart.ID, Currency: cart.Currency, CalculationVersion: "v1", CartVersion: cart.Version, MarketVersion: market.Version, Policy: policy, Lines: lines, Amount: amount, Promotion: promo, Adjustments: adjustments}
 		if err = tx.QueryRow(ctx, `SELECT gen_random_uuid()::text,clock_timestamp()`).Scan(&out.ID, &out.CreatedAt); err != nil {
 			return err
 		}

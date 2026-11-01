@@ -347,6 +347,11 @@ func Calculate(policy Policy, lines []AmountLine) (Calculation, error) {
 
 // CalculateWith is the pure quote calculator. promo == nil is byte-identical to the pre-0091 calculation (discount 0).
 func CalculateWith(policy Policy, lines []AmountLine, promo *Promo) (Calculation, error) {
+	return CalculateAdjusted(policy, lines, promo, nil)
+}
+
+// CalculateAdjusted preserves legacy promotions and applies at most one authorized manual adjustment.
+func CalculateAdjusted(policy Policy, lines []AmountLine, promo *Promo, adjustments []Adjustment) (Calculation, error) {
 	result := Calculation{ShippingMinor: policy.ShippingMinor, Lines: make([]LineAmount, 0, len(lines))}
 	if !validPolicy(policy) || len(lines) == 0 || len(lines) > 50 {
 		return Calculation{}, command.ErrInvalid
@@ -368,7 +373,25 @@ func CalculateWith(policy Policy, lines []AmountLine, promo *Promo) (Calculation
 			return Calculation{}, err
 		}
 	}
-	shares := allocateDiscount(result.DiscountMinor, subtotals, result.SubtotalMinor)
+	if len(adjustments) > 1 || (len(adjustments) > 0 && promo != nil) {
+		return Calculation{}, command.ErrInvalid
+	}
+	if len(adjustments) == 1 {
+		d := adjustments[0]
+		if d.Kind != "manual_discount" || d.Currency != policy.Currency || !ValidManualDiscount(d.ManualDiscount) {
+			return Calculation{}, command.ErrInvalid
+		}
+		if d.AmountMinor > result.SubtotalMinor {
+			return Calculation{}, &DiscountError{Code: "discount_exceeds_subtotal"}
+		}
+		result.DiscountMinor = d.AmountMinor
+	}
+	var shares []int64
+	if len(adjustments) > 0 {
+		shares = allocateManualDiscount(result.DiscountMinor, subtotals, result.SubtotalMinor)
+	} else {
+		shares = allocateDiscount(result.DiscountMinor, subtotals, result.SubtotalMinor)
+	}
 	for i, subtotal := range subtotals {
 		net := subtotal - shares[i] // >= 0: a share never exceeds its line
 		tax := taxMinor(net, policy.TaxRateBPS, policy.TaxMode)

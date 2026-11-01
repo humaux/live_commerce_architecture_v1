@@ -511,3 +511,34 @@ Acceptance: PR's own CI runs `TestCatalogCoreAutomaticCollections` plus existing
 upgrade and public-route gates. RED head `7cdb89bd`, Gates run `41055677410`, job `124069013163`
 failed all five new subtests on missing HTTP rule/mode behavior (400 versus expected 200).
 GREEN and independent acceptance remain pending until the implementation head is tested.
+
+## Amendment 2026-11-01 — FEAT-MANUAL-DISCOUNT (§G3 + picker thumbnail; migration 0216)
+
+Supersedes: §G3's prohibition on a discount **only** for the bounded named adjustment below. It does not supersede the no-item-price, tenant/store authority, payment/stock, messaging or permission boundaries. Migration **0216** is assigned by the integrator's 2026-11-01 FIX3 revision; 0215 belongs to customer consent and is untouched. Quote/refund allocation authority: [cart-quote-v1 amendment](cart-quote-v1.md#amendment-2026-11-01--feat-manual-discount-0216).
+
+| Existing endpoint (prefix `/v1/admin/stores/{store_id}`) | Additive request/response | Authority/result |
+| --- | --- | --- |
+| `POST /orders/manual` | Optional non-null `discount:{name,amount_minor}`; all existing body keys remain required. Success adds the normalized `discount` when supplied. | `inventory:reserve` AND `catalog:read`; 201 new / 200 exact replay |
+| `POST /orders/for-buyer` | Same optional discount in the shared pipeline; existing `for` and `send_payment_link` semantics unchanged. | Existing for-buyer permissions and eligibility; 201 / 200 |
+| `GET /orders/{order_id}` | Optional `adjustments:[{kind:"manual_discount",name,amount_minor,currency}]` from the stored order quote; absent for older/no-discount orders. | `orders:read`; 200, no repricing |
+| `GET /catalog-products` (existing search/filter/pagination) | Each product adds `cover_image_url:string|null`. Main image uses `/api/stores/{authenticated store}/products/{product}/images/{cover_image_id}?w=360`; no image -> null. | `catalog:read`; 200; existing private image route authenticates and scopes every read |
+
+Buyer `GET /v1/buyer/orders/{order_id}` and the existing order-link exchange carry the same `snapshot.quote.adjustments` and frozen final money. Their owner capability, link expiry and opaque refusal rules are unchanged. Existing bank-transfer/pickup/COD payment views continue to use the discounted order total. UI: pending PARITY-MANUAL-ORDER; this card adds no UI page.
+
+Example addition to the **existing** manual/for-buyer request:
+```json
+{"discount":{"name":"  直播優惠  ","amount_minor":100}}
+```
+This is not a complete body: items/customer/delivery/payment_mode/locale (and the for-buyer keys) are still required. Full success shape for manual creation:
+```json
+{"order_id":"uuid","commercial_state":"AWAITING_TRANSFER","payment_mode":"bank_transfer","total_minor":2400,"currency":"TWD","expires_at":"RFC3339-UTC","buyer_link":null,"link_state":"storefront_unavailable","source":"merchant_manual","discount":{"name":"直播優惠","amount_minor":100}}
+```
+Name is trimmed, 1..30 printable Unicode characters; amount is integer `0 < amount_minor <= server goods subtotal` and <= 1e12. Shipping is excluded. Only one fixed amount is supported, in the quote's currency; a body currency, item price, client total, tenant_id or store_id remains an unknown-field refusal. No permission or setting is added.
+
+Every POST retains the required canonical `Idempotency-Key` (8..128 `[A-Za-z0-9_.:-]`), JSON <=64 KiB, no query, duplicate/unknown-key refusal at every depth, server-authenticated session scope and no automatic retry. Same key + same normalized discount name/amount = the same order/link/amount, with no second hold/audit; different discount name or amount (including added/removed discount) = **409 `idempotency_conflict`**, including a resume before receipt completion. Existing version/conflict checks remain: cart/service/allocation/policy changes or expired quote -> 409 `conflict`; existing for-buyer `bundle_already_ordered` / `bundle_buyer_mismatch` apply. There is no discount PATCH or independent version to edit after placement.
+
+Results/errors (additive to §G3 and live-console-v1 §5): 200 replay, 201 creation; 400 `invalid_json` (duplicate/unknown fields, malformed JSON or non-integer typed amount); 415 `json_required`; 422 `invalid_request` (missing/null discount components, empty/overlong/control name, nonpositive/out-of-range amount or existing validation); **422 `discount_exceeds_subtotal`**; **422 `cod_limit`** (manual/for-buyer final total + surcharge above cap or failing the existing COD amount constraint); 409 `idempotency_conflict|conflict|insufficient_inventory`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found` (foreign scope/order stays opaque); 503 `retry_later` (uncertain, retry SAME key explicitly). Existing 422 `bank_transfer_unavailable|pay_at_pickup_unavailable|pay_at_pickup_amount_exceeds|cash_on_delivery_unavailable|cvs_entry_unavailable` and 429 `cash_on_delivery_limit` remain. For-buyer optional DM uses only the existing dispatcher/outbox and existing eligibility; unrequested DM remains not sent. BFF transport failures retain 503/504 semantics.
+
+Audit/receipt: `order.manual_created.details.discount` and `ops.command_results.response.discount` contain normalized name + amount in the same existing merchant command transaction; no body/contact data is added to audit. Receipt lifetime/idempotency and link retention remain §G3. `storefront.manual_order_discounts` retains authorization/hash/one quote binding with financial order evidence and contains no buyer/contact/plaintext token. No destructive migration, historical repricing or cleanup is part of this amendment. Thumbnail width follows media-sizes-v1 (360px, no new pipeline); the authenticated image route and its existing fallback/cache policy remain authoritative.
+
+OpenAPI additions: core-openapi `ManualOrderDiscount` / `QuoteAdjustment` and merchant detail `adjustments`; catalog-inventory-openapi product-list `cover_image_url`. The existing admin tools BFF admits the bounded discount object and preserves coded errors; strict admin/buyer models retain the additive fields. Gate: the CI-only assertions and RED run IDs in cart-quote-v1's amendment; E3 requires this PR's own GREEN and independent review before integration acceptance.

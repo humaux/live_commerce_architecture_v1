@@ -19,6 +19,7 @@ export type ProductSummary = {
   status: ProductStatus;
   version: number;
   cover_image_id: string | null;
+  cover_image_url?: string | null;
   price_min_minor: number | null;
   price_max_minor: number | null;
   currency: string;
@@ -141,9 +142,13 @@ export function parseAxis(v: unknown): OptionAxis {
 }
 export function parseSummary(v: unknown): ProductSummary {
   const r = rec(v);
+  // Only the existing authenticated, product/image-bound 360px route can be a picker thumbnail.
+  if (r.cover_image_url !== undefined && (r.cover_image_id === null ? r.cover_image_url !== null :
+    typeof r.cover_image_url !== "string" || !new RegExp(`^/api/stores/[0-9a-f-]{36}/products/${uuid(r.id)}/images/${uuid(r.cover_image_id)}\\?w=360$`).test(r.cover_image_url))) throw new Error("invalid");
   return {
     id: uuid(r.id), slug: str(r.slug, limits.slug, 1), name: str(r.name, limits.name, 1), status: oneOf(r.status, statuses),
     version: int(r.version, 1, Number.MAX_SAFE_INTEGER), cover_image_id: nullable(r.cover_image_id, uuid),
+    ...(r.cover_image_url !== undefined ? { cover_image_url: r.cover_image_url as string | null } : {}),
     price_min_minor: nullable(r.price_min_minor, (x) => int(x, 0, maxMoney)), price_max_minor: nullable(r.price_max_minor, (x) => int(x, 0, maxMoney)),
     currency: str(r.currency, 3), sku_count: int(r.sku_count, 0, 1000), available: int(r.available, -maxMoney, maxMoney),
     keyword: str(r.keyword, 16), inventory_tracked: boolean(r.inventory_tracked), updated_at: timestamp(r.updated_at),

@@ -33,6 +33,7 @@ import (
 	"livecommerce/internal/inbox"
 	"livecommerce/internal/merchantorders"
 	"livecommerce/internal/platform"
+	"livecommerce/internal/pricing"
 	"livecommerce/internal/storefront"
 )
 
@@ -52,15 +53,16 @@ type ForBuyerTarget struct {
 	ConversationID *string  `json:"conversation_id"`
 }
 
-// ForBuyerInput is the exact POST orders/for-buyer body. There is no price, discount or tenant field.
+// ForBuyerInput is the exact POST orders/for-buyer body. There is no item-price or tenant field; the optional discount is a named quote adjustment.
 type ForBuyerInput struct {
-	Items           []ManualItem   `json:"items"`
-	Customer        ManualCustomer `json:"customer"`
-	Delivery        ManualDelivery `json:"delivery"`
-	PaymentMode     string         `json:"payment_mode"`
-	Locale          string         `json:"locale"`
-	For             ForBuyerTarget `json:"for"`
-	SendPaymentLink bool           `json:"send_payment_link"`
+	Items           []ManualItem            `json:"items"`
+	Customer        ManualCustomer          `json:"customer"`
+	Delivery        ManualDelivery          `json:"delivery"`
+	PaymentMode     string                  `json:"payment_mode"`
+	Locale          string                  `json:"locale"`
+	Discount        *pricing.ManualDiscount `json:"discount,omitempty"`
+	For             ForBuyerTarget          `json:"for"`
+	SendPaymentLink bool                    `json:"send_payment_link"`
 }
 
 // ForBuyerSend is the DM outcome: {operation_id, state:"queued"} when planned, else {state:"not_sent", reason} (the UI offers copy-link).
@@ -159,7 +161,7 @@ func (f *ForBuyer) Place(ctx context.Context, token, storeID, key string, in For
 		return ForBuyerResult{}, false, ErrManualDisabled
 	}
 	m := f.manual
-	manualIn, err := ValidateManual(ManualInput{Items: in.Items, Customer: in.Customer, Delivery: in.Delivery, PaymentMode: in.PaymentMode, Locale: in.Locale})
+	manualIn, err := ValidateManual(ManualInput{Items: in.Items, Customer: in.Customer, Delivery: in.Delivery, PaymentMode: in.PaymentMode, Locale: in.Locale, Discount: in.Discount})
 	if err != nil {
 		return ForBuyerResult{}, false, err
 	}
