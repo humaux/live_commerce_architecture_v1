@@ -73,6 +73,11 @@ test.describe("PARITY-LEFTOVERS signed frames (BROWSER MOCK)", () => {
     test(`訂單匯出說明 zh-TW ${size}: signed visible copy`, async ({ page }) => {
       await page.setViewportSize({ width: mobile ? 390 : 1440, height: mobile ? 844 : 900 });
       await login(page);
+      const sideEffects: string[] = [];
+      page.on("request", (request) => {
+        if (!["GET", "HEAD"].includes(request.method()) || /\.csv(?:\?|$)/.test(request.url())) sideEffects.push(`${request.method()} ${new URL(request.url()).pathname}`);
+      });
+      page.on("download", () => sideEffects.push("download"));
       await page.goto(`${origin}/zh-TW/orders/export?store=${store}`);
 
       await expect(page.getByRole("heading", { name: "訂單匯出說明", exact: true })).toBeVisible();
@@ -81,6 +86,11 @@ test.describe("PARITY-LEFTOVERS signed frames (BROWSER MOCK)", () => {
       await expect(page.getByRole("button", { name: "返回訂單", exact: true })).toBeVisible();
 
       await screenshot(page, mobile ? "808:5619" : "808:5618");
+      await action(page, "返回訂單", "click", "orders list keeps authenticated store and performs no export", async () => {
+        await page.getByRole("button", { name: "返回訂單", exact: true }).click();
+        await expect(page).toHaveURL((url) => url.pathname === "/zh-TW/orders" && url.searchParams.get("store") === store);
+      });
+      expect(sideEffects).toEqual([]);
     });
 
     test(`媒体上传 zh-TW ${size}: signed visible copy in product editor`, async ({ page }) => {
@@ -135,9 +145,12 @@ test.describe("PARITY-LEFTOVERS signed frames (BROWSER MOCK)", () => {
     test(`消息模板 zh-TW ${size}: signed visible copy`, async ({ page }) => {
       await page.setViewportSize({ width: mobile ? 390 : 1440, height: mobile ? 844 : 900 });
       await login(page);
+      const writes: string[] = [];
+      page.on("request", (request) => { if (!["GET", "HEAD"].includes(request.method())) writes.push(`${request.method()} ${new URL(request.url()).pathname}`); });
       await page.goto(`${origin}/zh-TW/messages/templates?store=${store}`);
 
-      await expect(page.getByRole("heading", { name: "消息模板", exact: true })).toBeVisible();
+      // Signed TEXT: desktop 677:2857 differs from mobile appbar 5:15140.
+      await expect(page.getByRole("heading", { name: mobile ? "消息模板" : "消息範本", exact: true })).toBeVisible();
       await expect(page.getByText("已發布版本 · 示範資料 6 筆", { exact: true })).toBeVisible();
       await expect(page.getByText("發布不等於發送；實際發送前仍會檢查連接授權與消息期限。", { exact: true })).toBeVisible();
       await expect(page.getByText("既有範本目前無法讀取正文，因此暫不支援編輯。你可以新增自訂範本。", { exact: true })).toBeVisible();
@@ -151,24 +164,54 @@ test.describe("PARITY-LEFTOVERS signed frames (BROWSER MOCK)", () => {
         { name: "退款說明", version: "v1", types: "私訊", public: "否", date: "2026-10-21", edit: "暫不可用" },
         { name: "直播預告", version: "v1", types: "公開回覆、商品推薦", public: "是", date: "2026-10-20", edit: "暫不可用" },
       ];
-      for (const template of templates) {
-        await expect(page.getByText(template.name, { exact: true })).toBeVisible();
-        await expect(page.getByText(template.version, { exact: true })).toBeVisible();
-        await expect(page.getByText(template.types, { exact: true })).toBeVisible();
-        await expect(page.getByText(template.public, { exact: true })).toBeVisible();
-        await expect(page.getByText(template.date, { exact: true })).toBeVisible();
-        await expect(page.getByText(template.edit, { exact: true })).toBeVisible();
-      }
-
       await screenshot(page, mobile ? "5:15135" : "5:15002");
+      for (const template of templates) {
+        // Scope repeated v1/私訊/否 to its record; preserve every metadata field.
+        const item = mobile
+          ? page.getByRole("listitem").filter({ has: page.getByText(`${template.name} · ${template.version}`, { exact: true }) })
+          : page.getByRole("row").filter({ has: page.getByText(template.name, { exact: true }) });
+        await expect(item).toHaveCount(1);
+        const texts = mobile
+          ? [`${template.name} · ${template.version}`, template.types, `公開安全：${template.public} · 建立：${template.date}`, "編輯不可用：暫無正文讀取功能"]
+          : [template.name, template.version, template.types, template.public, template.date, template.edit];
+        for (const text of texts) {
+          const field = item.getByText(text, { exact: true });
+          await field.scrollIntoViewIfNeeded();
+          await expect(field).toBeInViewport();
+          await expect(field).toBeVisible();
+          // Fixed add dock must not cover the final card's metadata.
+          expect(await field.evaluate((el) => {
+            const r = el.getBoundingClientRect();
+            const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+            return !!hit && (el.contains(hit) || hit.contains(el));
+          })).toBe(true);
+        }
+        await expect(item.getByRole("button", { name: "編輯", exact: true })).toHaveCount(0);
+        await expect(item.getByRole("link", { name: "編輯", exact: true })).toHaveCount(0);
+      }
+      await expect(page.getByRole("textbox", { name: "訊息正文 *" })).toHaveCount(0);
+      await action(page, "＋ 新增自訂範本", "click", "new form keeps authenticated store", async () => {
+        await page.getByRole("button", { name: "＋ 新增自訂範本", exact: true }).click();
+        await expect(page).toHaveURL((url) => url.pathname === "/zh-TW/messages/templates/new" && url.searchParams.get("store") === store);
+        await expect(page.getByRole("heading", { name: "新增自訂範本", exact: true })).toBeVisible();
+      });
+      await action(page, "取消", "click", "template list keeps authenticated store without publishing", async () => {
+        await page.getByRole("button", { name: "取消", exact: true }).click();
+        await expect(page).toHaveURL((url) => url.pathname === "/zh-TW/messages/templates" && url.searchParams.get("store") === store);
+        await expect(page.getByRole("heading", { name: mobile ? "消息模板" : "消息範本", exact: true })).toBeVisible();
+      });
+      expect(writes).toEqual([]);
     });
 
     test(`新增自訂訊息範本 zh-TW ${size}: signed visible copy`, async ({ page }) => {
       await page.setViewportSize({ width: mobile ? 390 : 1440, height: mobile ? 844 : 900 });
       await login(page);
+      const writes: string[] = [];
+      page.on("request", (request) => { if (!["GET", "HEAD"].includes(request.method())) writes.push(`${request.method()} ${new URL(request.url()).pathname}`); });
       await page.goto(`${origin}/zh-TW/messages/templates/new?store=${store}`);
 
       await expect(page.getByRole("heading", { name: "新增自訂範本", exact: true })).toBeVisible();
+      if (mobile) await expect(page.getByRole("heading", { name: "新增範本", exact: true })).toBeVisible();
       await expect(page.getByText("先確認內容與適用類型，再發布版本；發布不會傳送訊息。", { exact: true })).toBeVisible();
       await expect(page.getByText("範本名稱 *", { exact: true })).toBeVisible();
       await expect(page.getByRole("textbox", { name: "範本名稱 *" })).toBeVisible();
@@ -179,6 +222,7 @@ test.describe("PARITY-LEFTOVERS signed frames (BROWSER MOCK)", () => {
       await expect(page.getByText("訊息正文 *", { exact: true })).toBeVisible();
       await expect(page.getByRole("textbox", { name: "訊息正文 *" })).toBeVisible();
       await expect(page.getByText("正文最多 2,000 字元；啟用公開安全檢查時，所有類型均限 300 字元。", { exact: true })).toBeVisible();
+      await screenshot(page, mobile ? "673:2916" : "673:2847");
       await expect(page.getByText("適用消息類型 *", { exact: true })).toBeVisible();
       await expect(page.getByText("可複選；選擇公開回覆或推薦時，須啟用公開安全檢查。", { exact: true })).toBeVisible();
       await expect(page.getByRole("checkbox", { name: "私訊" })).toBeVisible();
@@ -189,14 +233,45 @@ test.describe("PARITY-LEFTOVERS signed frames (BROWSER MOCK)", () => {
       await expect(page.getByText("公開內容不可放入網址、聯絡方式、買家資料、訂單資料或付款連結。", { exact: true })).toBeVisible();
       await expect(page.getByText("內容預覽", { exact: true })).toBeVisible();
       await expect(page.getByText("發布前確認", { exact: true })).toBeVisible();
-      await expect(page.getByText("1. 選擇至少一種適用消息。", { exact: true })).toBeVisible();
-      await expect(page.getByText("2. 公開回覆與推薦需通過公開安全檢查。", { exact: true })).toBeVisible();
-      await expect(page.getByText("3. 系統固定範本不能覆寫。", { exact: true })).toBeVisible();
+      // One signed TEXT node contains all three lines (673:2847 / 673:2916).
+      await expect(page.getByText("1. 選擇至少一種適用消息。 2. 公開回覆與推薦需通過公開安全檢查。 3. 系統固定範本不能覆寫。", { exact: true })).toBeVisible();
       await expect(page.getByText("發送時仍會檢查權限、對話資格與消息期限；發布範本不代表可以立即發送。", { exact: true })).toBeVisible();
       await expect(page.getByRole("button", { name: "取消", exact: true })).toBeVisible();
       await expect(page.getByRole("button", { name: "檢查發布內容", exact: true })).toBeVisible();
 
-      await screenshot(page, mobile ? "673:2916" : "673:2847");
+      // Scroll every lower control and review item clear of the fixed action dock.
+      for (const control of [
+        page.getByRole("checkbox", { name: "私訊", exact: true }),
+        page.getByRole("checkbox", { name: "留言的私密回覆", exact: true }),
+        page.getByRole("checkbox", { name: "公開回覆", exact: true }),
+        page.getByRole("checkbox", { name: "商品推薦", exact: true }),
+        page.getByRole("checkbox", { name: "啟用公開安全檢查", exact: true }),
+        page.getByText("發送時仍會檢查權限、對話資格與消息期限；發布範本不代表可以立即發送。", { exact: true }),
+        page.getByRole("button", { name: "取消", exact: true }),
+        page.getByRole("button", { name: "檢查發布內容", exact: true }),
+      ]) {
+        await control.scrollIntoViewIfNeeded();
+        await expect(control).toBeInViewport();
+        expect(await control.evaluate((el) => {
+          const r = el.getBoundingClientRect();
+          const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+          return !!hit && (el.contains(hit) || hit.contains(el));
+        })).toBe(true);
+      }
+      await action(page, "範本名稱 / 範本識別碼 / 訊息正文", "fill", "synthetic content previews locally", async () => {
+        await page.getByRole("textbox", { name: "範本名稱 *", exact: true }).fill("合成驗收範本");
+        await page.getByRole("textbox", { name: "範本識別碼 *", exact: true }).fill("merchant/parity-check");
+        await page.getByRole("textbox", { name: "訊息正文 *", exact: true }).fill("此為合成驗收內容。");
+        await page.getByRole("checkbox", { name: "留言的私密回覆", exact: true }).check();
+        await page.getByText("此為合成驗收內容。", { exact: true }).scrollIntoViewIfNeeded();
+        await expect(page.getByText("此為合成驗收內容。", { exact: true })).toBeVisible();
+      });
+      await action(page, "檢查發布內容", "click", "structural check neither publishes nor sends", async () => {
+        await page.getByRole("button", { name: "檢查發布內容", exact: true }).click();
+        await expect(page).toHaveURL((url) => url.pathname === "/zh-TW/messages/templates/new" && url.searchParams.get("store") === store);
+        await expect(page.getByRole("button", { name: /^(發布|發送|傳送)$/ })).toHaveCount(0);
+      });
+      expect(writes).toEqual([]);
     });
   }
 });
