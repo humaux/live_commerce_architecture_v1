@@ -120,26 +120,108 @@ if (process.env.LC_BROWSER_PARITY_DENIED !== "1") test.describe("PARITY-LEFTOVER
       await login(page);
       await page.goto(`${origin}/zh-TW/products/${productId}?store=${store}`);
 
-      const bulkFillButton = page.getByRole("button", { name: "批量填充", exact: true });
-      await expect(bulkFillButton).toBeVisible();
-      await action(page, "批量填充", "click", "bulk fill dialog opens", async () => {
-        await bulkFillButton.click();
-        await expect(page.getByRole("region", { name: /批量填充/ })).toBeVisible();
+      // Existing GET projection has one enabled SKU, no option axes, TWD 1200 minor.
+      // Keep that real single-SKU entry RED instead of adding fake variants.
+      const writes: string[] = [];
+      page.on("request", (request) => {
+        if (!["GET", "HEAD"].includes(request.method())) writes.push(`${request.method()} ${new URL(request.url()).pathname}`);
       });
-      await expect(page.getByText("欄位", { exact: true })).toBeVisible();
-      await expect(page.getByRole("combobox", { name: "欄位" })).toBeVisible();
-      await expect(page.getByText("範圍：全部啟用的規格", { exact: true })).toBeVisible();
-      await expect(page.getByText("範圍：僅空白", { exact: true })).toBeVisible();
-      await expect(page.getByText("全部啟用的規格", { exact: true })).toBeVisible();
-      await expect(page.getByText("填入售價（元）", { exact: true })).toBeVisible();
-      await expect(page.getByRole("spinbutton", { name: "填入售價（元）" })).toBeVisible();
-      await expect(page.getByText("− 10 / + 10", { exact: true })).toBeVisible();
-      await expect(page.getByText("設為 / 增加 / 減少", { exact: true })).toBeVisible();
-      await expect(page.getByText("設為", { exact: true })).toBeVisible();
-      await expect(page.getByRole("button", { name: "取消", exact: true })).toBeVisible();
-      await expect(page.getByRole("button", { name: "套用批量填充", exact: true })).toBeVisible();
-
+      const draftPrice = page.getByTestId("product-price");
+      await expect(draftPrice).toHaveValue("12");
+      const bulkFillButton = page.getByRole("button", { name: "批量填充", exact: true });
+      const panel = page.getByRole("region", { name: /批量填充/ });
+      const priceInput = panel.getByRole("spinbutton", { name: "填入售價（元）", exact: true });
+      await expect(bulkFillButton).toBeVisible();
+      await action(page, "批量填充", "click", "single-SKU bulk panel opens and focuses amount", async () => {
+        await bulkFillButton.click();
+        await expect(panel).toBeVisible();
+        await expect(priceInput).toBeFocused();
+      });
+      await expect(panel.getByText("欄位", { exact: true })).toBeVisible();
+      // c5.1 / 48:1277 replaces the old field select with three independent actions.
+      await expect(panel.getByRole("button", { name: "售價", exact: true })).toBeVisible();
+      await expect(panel.getByRole("button", { name: "SKU 貨號", exact: true })).toBeVisible();
+      await expect(panel.getByRole("button", { name: "SKU 貨號", exact: true })).toBeDisabled();
+      await action(page, "直播關鍵字", "click", "keyword field replaces the price input", async () => {
+        await panel.getByRole("button", { name: "直播關鍵字", exact: true }).click();
+        await expect(priceInput).toBeHidden();
+      });
+      await action(page, "售價", "click", "price input returns", async () => {
+        await panel.getByRole("button", { name: "售價", exact: true }).click();
+        await expect(priceInput).toBeVisible();
+      });
+      for (const [control, summary] of [
+        ["範圍：僅空白", "僅空白"],
+        ["範圍：全部啟用的規格", "全部啟用的規格"],
+      ] as const) await action(page, control, "click", `scope visibly becomes ${summary}`, async () => {
+        await panel.getByRole("button", { name: control, exact: true }).click();
+        await expect(panel.getByText(summary, { exact: true })).toBeVisible();
+      });
+      await action(page, "填入售價（元）", "fill", "amount is 10", async () => {
+        await priceInput.fill("10");
+        await expect(priceInput).toHaveValue("10");
+      });
+      for (const [control, expected] of [["+ 10", "20"], ["− 10", "10"]] as const)
+        await action(page, control, "click", `amount becomes ${expected}`, async () => {
+          await panel.getByRole("button", { name: control, exact: true }).click();
+          await expect(priceInput).toHaveValue(expected);
+        });
+      for (const mode of ["設為", "增加", "減少", "增加"] as const)
+        await action(page, mode, "click", `visible operation summary is ${mode}`, async () => {
+          await panel.getByRole("button", { name: mode, exact: true }).click();
+          // Signed frame has both the action and the independent current-mode summary.
+          const visibleMode = panel.getByText(mode, { exact: true });
+          await expect(visibleMode).toHaveCount(2);
+          await expect(visibleMode.last()).toBeVisible();
+        });
+      await expect(panel.getByRole("button", { name: "取消", exact: true })).toBeVisible();
+      await expect(panel.getByRole("button", { name: "套用批量填充", exact: true })).toBeVisible();
       await screenshot(page, "48:1277");
+      await action(page, "取消", "click", "panel closes, price stays 12 and focus returns", async () => {
+        await panel.getByRole("button", { name: "取消", exact: true }).click();
+        await expect(panel).toBeHidden();
+        await expect(draftPrice).toHaveValue("12");
+        await expect(bulkFillButton).toBeFocused();
+      });
+      await action(page, "批量填充 / Escape", "click + key", "reopen and Escape discard without a write", async () => {
+        await bulkFillButton.click();
+        await expect(panel).toBeVisible();
+        await priceInput.fill("99");
+        await priceInput.press("Escape");
+        await expect(panel).toBeHidden();
+        await expect(draftPrice).toHaveValue("12");
+        await expect(bulkFillButton).toBeFocused();
+      });
+      await action(page, "批量填充 / 返回", "click", "return discards panel edits and restores focus", async () => {
+        await bulkFillButton.click();
+        await expect(panel).toBeVisible();
+        await priceInput.fill("99");
+        await panel.getByRole("button", { name: "返回", exact: true }).click();
+        await expect(panel).toBeHidden();
+        await expect(draftPrice).toHaveValue("12");
+        await expect(bulkFillButton).toBeFocused();
+      });
+      await action(page, "套用批量填充", "click", "add 10 to the existing 12 locally", async () => {
+        await bulkFillButton.click();
+        await expect(panel).toBeVisible();
+        await priceInput.fill("10");
+        await panel.getByRole("button", { name: "增加", exact: true }).click();
+        await panel.getByRole("button", { name: "套用批量填充", exact: true }).click();
+        await expect(panel).toBeHidden();
+        await expect(draftPrice).toHaveValue("22");
+        await expect(bulkFillButton).toBeFocused();
+      });
+      await action(page, "填入售價（元） / Enter", "click + fill + key", "Enter subtracts 10 locally", async () => {
+        await bulkFillButton.click();
+        await expect(panel).toBeVisible();
+        await priceInput.fill("10");
+        await panel.getByRole("button", { name: "減少", exact: true }).click();
+        await priceInput.press("Enter");
+        await expect(panel).toBeHidden();
+        await expect(draftPrice).toHaveValue("12");
+        await expect(bulkFillButton).toBeFocused();
+      });
+      expect(writes, "bulk apply/cancel/return/keyboard never persist the draft").toEqual([]);
     });
 
     test(`消息模板 zh-TW ${size}: signed visible copy`, async ({ page }) => {
