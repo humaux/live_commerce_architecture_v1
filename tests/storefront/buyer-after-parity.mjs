@@ -457,7 +457,7 @@ for (const [key, pay, shown, notShown] of [
   ["refunded", { state: "REFUNDED", handoff: "CLOSED", methods: false, refund: { refunded_minor: 48000, pending_minor: 0 } }, ["已退款 NT$480"], ["已付款", "退款處理中"]],
   ["partially-refunded", { state: "PARTIALLY_REFUNDED", handoff: "CLOSED", methods: false, refund: { refunded_minor: 20000, pending_minor: 0 } }, ["已退款 NT$200"], ["已付款", "退款處理中"]],
   ["refund-processing", { state: "CAPTURED", handoff: "CLOSED", methods: false, refund: { refunded_minor: 0, pending_minor: 48000 } }, ["退款處理中"], ["已付款", "已退款"]],
-  ["review-required", { state: "REVIEW_REQUIRED", handoff: "CLOSED", methods: false }, ["付款結果需要確認"], ["已付款"]],
+  ["review-required", { state: "REVIEW_REQUIRED", handoff: "CLOSED", methods: false }, ["付款結果待人工確認"], ["已付款"]],
 ]) {
   test(`terminal order view · shipped card order · ${key}`, async () => {
     const n = fresh();
