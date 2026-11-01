@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registryHash": "196b580890a63075fb77d550a7a4b2290696005b8cea800625f4c17521bfdf26",
+  "registryHash": "465ac71e8a6576026025a16cca0c44b89e8fde9815aa769faf4886422c3ae1ad",
   "sources": {
     "tests/admin/ads-model.test.ts": "a89483826fba28e2e86fcc1196475cefe1851cec367e66cfdc7bb69def18f309",
     "tests/admin/ads-request.test.ts": "190103fd72ab76050512616cef988d13d7e3725659883f142710555f36686de5",
@@ -287,6 +287,7 @@
     "tests/foundation/browser_operations_ads_test.go": "1d25eb9632f10dbef68a6b155046da4d4c2438f3a020819539df7303b14ca7d1",
     "tests/foundation/browser_ops_polish_test.go": "1bd05c73623b63c399f63dd801e8c3c5af2a16c53cf23816cc30074c9b386692",
     "tests/foundation/browser_order_chain_test.go": "008b21e7e0972486567b7bc10f1160a673f89b174b2f641dc874aa11d6980a29",
+    "tests/foundation/browser_parity_leftovers_test.go": "f9b477fc6c447a665e2712fddd3434a1602e1d160134048453bbd94d4301b0c9",
     "tests/foundation/browser_password_auth_test.go": "3a986cf4a303e715cf73547e726f1e850d70124b5c2f11e29a1951d6c593e09d",
     "tests/foundation/browser_pool_capacity_test.go": "4d17106dc62339b8b380692ce440b5b414184f7f0bdda2dd70e81c2855d15814",
     "tests/foundation/browser_product_media_v2_fixture_test.go": "44ae8540fa92d78e66d48e4f694cbe469f64773d2d53aab7d1097ffddea76454",
@@ -784,7 +785,7 @@
     "tests/ui/visual-lint-lib.test.mjs": "5e28a7b30ab357bb6bf266c3426d6fbd1122811fc7a156a077b213095086edd0",
     "tests/ui/visual-scroll-capture.mjs": "538525d5cb94cdc26e91954c0589a48372b5d4ce771721dcbbeb76e6b81a0229",
     "tests/ui/visual-scroll-capture.test.mjs": "1cf6d1a8bcb8481c65d19cd69e7bc1e25701067d4041e86f29b9a0a8cc8a58a5",
-    "scripts/dev/test-local.sh": "196b580890a63075fb77d550a7a4b2290696005b8cea800625f4c17521bfdf26",
+    "scripts/dev/test-local.sh": "465ac71e8a6576026025a16cca0c44b89e8fde9815aa769faf4886422c3ae1ad",
     "playwright.config.ts": "ad5ff56ccc1c4302c7a9daad01eb9e40c3ba02383e1b8692c9a7cf42f6c47c04",
     "apps/admin/package.json": "8ff4057bb534e821455b9cb47b93429a0d66040faad1d9c25edeabd4864dbbb4",
     "apps/storefront/package.json": "e25eed3dcbc88ef821828200325f2cb7f92934447e1978998efdd4fa58eb8987",
@@ -3217,14 +3218,16 @@
       "specs": [
         "tests/admin/live-settings-bff.test.ts",
         "tests/admin/live-settings-model.test.ts",
-        "tests/admin/live-settings.spec.ts"
+        "tests/admin/live-settings.spec.ts",
+        "tests/admin/parity-leftovers.spec.ts"
       ],
       "inputs": [
         "tests/admin/fixtures/native-device.ts",
         "tests/admin/inbox-private-evidence.ts",
         "tests/admin/live-settings-bff.test.ts",
         "tests/admin/live-settings-model.test.ts",
-        "tests/admin/live-settings.spec.ts"
+        "tests/admin/live-settings.spec.ts",
+        "tests/admin/parity-leftovers.spec.ts"
       ],
       "apps": [
         "admin"
@@ -3240,9 +3243,11 @@
       "evidence": [
         "harness:tests/foundation/browser_live_settings_fixture_test.go",
         "harness:tests/foundation/browser_live_settings_test.go",
+        "harness:tests/foundation/browser_parity_leftovers_test.go",
         "registry:--browser-live-settings -> tests/admin/live-settings-bff.test.ts",
         "registry:--browser-live-settings -> tests/admin/live-settings-model.test.ts",
         "registry:--browser-live-settings -> tests/admin/live-settings.spec.ts",
+        "registry:--browser-live-settings -> tests/admin/parity-leftovers.spec.ts",
         "scripts/dev/test-local.sh:--browser-live-settings:lc_build=admin",
         "scripts/dev/test-node.sh:foundation covers computed Node loader tests/admin/live-settings-bff.test.ts",
         "tests/admin/live-settings-bff.test.ts:import apps/admin/proxy.ts",
@@ -3252,7 +3257,9 @@
         "tests/admin/live-settings-model.test.ts:server/import apps/admin",
         "tests/foundation/browser_live_settings_test.go -> tests/admin/live-settings.spec.ts",
         "tests/foundation/browser_live_settings_test.go:server/import apps/admin",
-        "tests/foundation/browser_live_settings_test.go:suite=live-settings -> tests/admin/live-settings.spec.ts"
+        "tests/foundation/browser_live_settings_test.go:suite=live-settings -> tests/admin/live-settings.spec.ts",
+        "tests/foundation/browser_parity_leftovers_test.go -> tests/admin/parity-leftovers.spec.ts",
+        "tests/foundation/browser_parity_leftovers_test.go:server/import apps/admin"
       ]
     },
     "--browser-admin-parity": {
