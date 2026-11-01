@@ -9,10 +9,11 @@ import type { Locale } from "@live-commerce/i18n";
 import { money, displayTime } from "@live-commerce/format";
 import type { Store } from "@/lib/model";
 import { readStudioDetail } from "@/lib/studio-client";
-import { readClaimsBoard, setClaimWindow, readClaimSource } from "@/lib/claims-client";
+import { readClaimsBoard, readClaimSource } from "@/lib/claims-client";
+import { csrfCookie, sessionBoundary } from "@/lib/settings-client";
 import { readConsole, readOfferControls } from "@/src/features/live/console-client";
 import type { ConsoleOffer, CopyResult } from "@/src/features/live/console-model";
-import { liveRequest } from "@/src/features/live/command-journal";
+import { liveRequest, type LiveRequest } from "@/src/features/live/command-journal";
 import { primaryAction, stockDelta, facebookPostLink, liveStockAllowed, consoleCommentStat } from "@/src/features/live/workspace-model";
 import { useLiveRead, useLiveCommand } from "@/src/features/live/use-live-workspace";
 import { workspaceCopy, type WorkspaceCopy } from "@/src/features/live/workspace-copy";
@@ -33,48 +34,67 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard, onRefre
     const result = value as CopyResult;
     router.push(`/${locale}/studio/${result.conflicts.length ? "claims" : "console"}?store=${store.id}&scene=${result.session.session_id}`);
   });
-  useEffect(() => {
-    navigationGuard.current = () => {
-      if ((command.busy || command.canRetry) && !window.confirm(c.leavePending)) return false;
-      command.invalidate(); return true;
-    };
-    return () => { navigationGuard.current = () => true; };
-  }, [navigationGuard, command.busy, command.canRetry, c.leavePending, command.invalidate]);
   const [tab, setTab] = useState("comments");
-  const [windowBusy, setWindowBusy] = useState(false), [windowIssue, setWindowIssue] = useState("");
-  const windowActive = useRef(false), windowMounted = useRef(true), windowRead = useRef<AbortController | null>(null);
+  const [windowBusy, setWindowBusy] = useState(false), [windowIssue, setWindowIssue] = useState(""), [legacyIssue, setLegacyIssue] = useState("");
+  const windowActive = useRef(false), windowMounted = useRef(true), windowRead = useRef<AbortController | null>(null), windowEpoch = useRef(0);
+  const windowIdentity = useRef(""); windowIdentity.current = `${scope}|${signedOut ? "" : view.boundary}`;
   useEffect(() => { windowMounted.current = true; return () => { windowMounted.current = false; windowRead.current?.abort(); }; }, []);
   const windowFence = `live-console-window:${scope}`;
+  const readLegacyWindow = () => { try { return sessionStorage.getItem(windowFence) !== null ? c.uncertain : ""; } catch { return c.recovery; } };
   useEffect(() => {
-    if (!view.boundary) return;
-    try { if (sessionStorage.getItem(windowFence)) { windowActive.current = true; setWindowBusy(true); setWindowIssue(c.uncertain); } }
-    catch { windowActive.current = true; setWindowBusy(true); setWindowIssue(c.recovery); }
+    // Old bool markers have no recoverable request/key. Preserve them without creating a fresh command.
+    setLegacyIssue(readLegacyWindow());
   }, [windowFence, view.boundary, c.uncertain, c.recovery]);
+  useEffect(() => {
+    const cancel = () => { ++windowEpoch.current; windowRead.current?.abort(); windowActive.current = false; if (windowMounted.current) setWindowBusy(false); };
+    const visibility = () => { if (document.visibilityState !== "visible") cancel(); };
+    const storage = (event: StorageEvent) => { if (event.key === "commerce-session-logout") cancel(); };
+    const channel = typeof BroadcastChannel !== "undefined" ? new BroadcastChannel("commerce-session") : null;
+    if (channel) channel.onmessage = (event) => { if (event.data?.type === "logout") cancel(); };
+    document.addEventListener("visibilitychange", visibility); window.addEventListener("pagehide", cancel);
+    window.addEventListener("commerce-session-logout", cancel); window.addEventListener("storage", storage);
+    return () => { cancel(); channel?.close(); document.removeEventListener("visibilitychange", visibility); window.removeEventListener("pagehide", cancel); window.removeEventListener("commerce-session-logout", cancel); window.removeEventListener("storage", storage); };
+  }, [scope, view.boundary, signedOut]);
+  const blocked = command.blocked || windowBusy || !!legacyIssue;
+  const run = async <T,>(input: LiveRequest, complete?: (value: T) => void) => {
+    const legacy = readLegacyWindow();
+    if (legacy) { setLegacyIssue(legacy); return; }
+    if (windowActive.current || blocked) return;
+    await command.run<T>(input, complete);
+  };
+  const retry = async () => {
+    const legacy = readLegacyWindow();
+    if (legacy) { setLegacyIssue(legacy); return; }
+    if (!windowActive.current) await command.retry();
+  };
+  useEffect(() => {
+    navigationGuard.current = () => {
+      if ((command.busy || command.canRetry || windowActive.current || legacyIssue) && !window.confirm(c.leavePending)) return false;
+      ++windowEpoch.current; windowRead.current?.abort(); command.invalidate(); return true;
+    };
+    return () => { navigationGuard.current = () => true; };
+  }, [navigationGuard, command.busy, command.canRetry, legacyIssue, c.leavePending, command.invalidate]);
   const toggleWindow = async () => {
-    if (windowActive.current || !view.boundary || !can("live:manage")) return;
-    try { if (sessionStorage.getItem(windowFence)) { windowActive.current = true; setWindowBusy(true); setWindowIssue(c.uncertain); return; } }
-    catch { windowActive.current = true; setWindowBusy(true); setWindowIssue(c.recovery); return; }
+    if (windowActive.current || blocked || !view.boundary || !view.data || !can("live:manage")) return;
+    const legacy = readLegacyWindow(); if (legacy) { setLegacyIssue(legacy); return; }
     const target = view.data?.window.state === "OPEN" ? "CLOSED" : "OPEN";
+    const epoch = ++windowEpoch.current, identity = windowIdentity.current, csrf = csrfCookie();
     windowActive.current = true; setWindowBusy(true); setWindowIssue("");
-    let armed = false;
     try {
       windowRead.current = new AbortController();
-      const board = await readClaimsBoard(store.id, sessionID, AbortSignal.any([windowRead.current.signal, AbortSignal.timeout(15000)]));
-      if (!windowMounted.current || document.visibilityState !== "visible") throw new Error("window_read_cancelled");
-      if (board.window.state === target) { windowActive.current = false; setWindowBusy(false); refresh(); return; }
-      sessionStorage.setItem(windowFence, "1");
-      if (sessionStorage.getItem(windowFence) !== "1") throw new Error("window_fence_unavailable");
-      armed = true;
-      await setClaimWindow(store.id, sessionID, { expected_version: board.window.version, state: target, match_mode: board.window.match_mode }, crypto.randomUUID(), view.boundary);
-      sessionStorage.removeItem(windowFence); windowActive.current = false; setWindowBusy(false); refresh();
+      const signal = AbortSignal.any([windowRead.current.signal, AbortSignal.timeout(15000)]);
+      const board = await readClaimsBoard(store.id, sessionID, signal);
+      const boundary = await sessionBoundary(csrf);
+      if (!windowMounted.current || epoch !== windowEpoch.current || identity !== windowIdentity.current || signal.aborted || document.visibilityState !== "visible" || !csrf || csrfCookie() !== csrf || boundary !== view.boundary) return;
+      // This board read prepares only a new command. Existing UNKNOWN commands bypass it and replay their durable descriptor.
+      await command.run(liveRequest(store.id, sessionID, "claims/window", "POST", { expected_version: board.window.version, state: target, match_mode: board.window.match_mode }));
+      // A read may update the displayed window after a lost ACK; only the original command receipt settles its journal.
+      if (windowMounted.current && epoch === windowEpoch.current) view.refresh();
     } catch (error) {
-      // Once dispatched, unknown outcomes stay locked across reload. Never recreate or auto-retry the command.
       const code = error && typeof error === "object" && "code" in error ? error.code : "uncertain";
-      if (!armed || ["conflict", "forbidden", "signed-out", "invalid"].includes(String(code))) {
-        try { sessionStorage.removeItem(windowFence); } catch { /* retain the fail-closed lock */ }
-        windowActive.current = false; setWindowBusy(false);
-      }
-      if (windowMounted.current) { setWindowIssue(code === "conflict" ? c.conflict : code === "forbidden" ? c.forbidden : code === "signed-out" ? c.signedOut : armed ? c.uncertain : c.failed); refresh(); }
+      if (windowMounted.current && epoch === windowEpoch.current) setWindowIssue(code === "forbidden" ? c.forbidden : code === "signed-out" ? c.signedOut : c.failed);
+    } finally {
+      if (windowMounted.current && epoch === windowEpoch.current) { windowActive.current = false; setWindowBusy(false); }
     }
   };
   const [copying, setCopying] = useState(false), [title, setTitle] = useState(""), [copyConflict, setCopyConflict] = useState("");
@@ -85,21 +105,21 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard, onRefre
   const facebookLink = source?.active && source.verified ? facebookPostLink(source.platform, source.source_object_id) : null;
   const action = data ? primaryAction(data.session.lifecycle) : null;
   const manage = can("live:manage") && detail?.can_manage === true;
-  const sessionEditable = !!data && ["draft", "live"].includes(data.session.lifecycle) && !command.blocked;
+  const sessionEditable = !!data && ["draft", "live"].includes(data.session.lifecycle) && !blocked;
   const editable = manage && sessionEditable;
   const comments = data ? consoleCommentStat(data.stream.source_platform, data.stats.comments) : null;
   const refusal = Object.hasOwn(c.refusals, command.reason) ? c.refusals[command.reason as keyof typeof c.refusals] : null;
   const feedback = refusal ?? (command.error === "uncertain" ? c.uncertain : command.error === "recovery" ? c.recovery : command.error === "conflict" ? c.conflict : command.error === "signed-out" ? c.signedOut : command.error === "forbidden" ? c.forbidden : c.failed);
   const primary = async () => {
-    if (!data || !action || !manage) return;
+    if (!data || !action || !manage || blocked || windowActive.current) return;
     if (action === "copy") { setTitle(data.session.title); setCopying(true); return; }
     if (action === "end" && !window.confirm(c.confirmEnd)) return;
-    await command.run(liveRequest(store.id, sessionID, "lifecycle", "POST", { action, expected_version: data.session.version }));
+    await run(liveRequest(store.id, sessionID, "lifecycle", "POST", { action, expected_version: data.session.version }));
   };
   const submitCopy = async () => {
     if (!detail || !title.trim()) return;
     // A5 copy uses the planning version, never the separate A7 lifecycle CAS.
-    await command.run<CopyResult>(liveRequest(store.id, sessionID, "copy", "POST", { title: title.trim(), scheduled_at: null, expected_version: detail.draft.version }), (result) => {
+    await run<CopyResult>(liveRequest(store.id, sessionID, "copy", "POST", { title: title.trim(), scheduled_at: null, expected_version: detail.draft.version }), (result) => {
       setCopying(false);
       if (result.conflicts.length) setCopyConflict(result.session.session_id);
       else router.push(`/${locale}/studio/console?store=${store.id}&scene=${result.session.session_id}`);
@@ -114,9 +134,10 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard, onRefre
         <h2>{data.session.title}</h2>
         {Object.values(data.capabilities).some((platform) => Object.values(platform ?? {}).some((capability) => capability?.evidence === "MOCK")) && <span className="live-demo-tag">{c.demoData}</span>}
         <span className="live-order-state">{data.window.state === "OPEN" ? c.ordersOpen : c.ordersPaused}</span>
-        <button type="button" onClick={() => void toggleWindow()} disabled={windowBusy || !manage || command.blocked}>{data.window.state === "OPEN" ? c.pauseOrders : c.resumeOrders}</button>
+        <button type="button" onClick={() => void toggleWindow()} disabled={!manage || blocked}>{data.window.state === "OPEN" ? c.pauseOrders : c.resumeOrders}</button>
       </header>
       {windowIssue && <p role="alert">{windowIssue}</p>}
+      {legacyIssue && <p role="alert">{legacyIssue}</p>}
       <dl className="live-status-bar">
         <div><dt>{comments?.source === "stream_seen" ? c.observed : c.comments}</dt><dd>{comments?.source === "unavailable" ? "—" : comments?.total ?? "—"}</dd></div>
         <div><dt>{c.keyword}</dt><dd>{data.stats.keyword_comments}</dd></div>
@@ -125,7 +146,7 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard, onRefre
       </dl>
       <div className="live-advanced">
         <div className="live-phase-header">
-          {action && !copying && <button type="button" className="primary" data-testid="live-primary-action" disabled={!manage || command.blocked} aria-describedby={!manage ? "live-management-reason" : undefined} onClick={() => void primary()}>{command.busy ? c.pending : c[action]}</button>}
+          {action && !copying && <button type="button" className="primary" data-testid="live-primary-action" disabled={!manage || blocked} aria-describedby={!manage ? "live-management-reason" : undefined} onClick={() => void primary()}>{command.busy ? c.pending : c[action]}</button>}
           {!manage && <p id="live-management-reason">{c.manageRequired}</p>}
         </div>
         <dl className="live-revenue-stats">
@@ -139,12 +160,12 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard, onRefre
       <div className="live-mobile-tabs" role="tablist" aria-label={c.title}>
         {([['live', c.liveTab], ['comments', c.commentsTab], ['buyer', c.buyerTab]] as const).map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={tab === key} aria-controls={`live-panel-${key}`} onClick={() => setTab(key)}>{label}</button>)}
       </div>
-      {command.error && <div role="alert" className="live-feedback"><p>{feedback}</p>{command.canRetry && <button type="button" data-testid="live-command-retry" onClick={() => void command.retry()}>{c.retry}</button>}</div>}
+      {command.error && <div role="alert" className="live-feedback"><p>{feedback}</p>{command.canRetry && !legacyIssue && <button type="button" data-testid="live-command-retry" disabled={windowBusy} onClick={() => void retry()}>{c.retry}</button>}</div>}
       {copyConflict && <p role="status">{c.copiedConflicts} <a href={`/${locale}/studio/claims?store=${store.id}&scene=${copyConflict}`}>{c.configure}</a></p>}
       {copying && <form className="live-copy-form" onSubmit={(event) => { event.preventDefault(); void submitCopy(); }}>
-        <label>{c.name}<input data-testid="live-copy-title" maxLength={200} value={title} onChange={(event) => setTitle(event.target.value)} autoFocus /></label>
-        <button type="submit" className="primary" data-testid="live-copy-confirm" disabled={command.blocked || !title.trim()}>{c.confirmCopy}</button>
-        <button type="button" disabled={command.busy} onClick={() => setCopying(false)}>{c.cancel}</button>
+        <label>{c.name}<input data-testid="live-copy-title" maxLength={200} value={title} disabled={blocked} onChange={(event) => setTitle(event.target.value)} autoFocus /></label>
+        <button type="submit" className="primary" data-testid="live-copy-confirm" disabled={blocked || !title.trim()}>{c.confirmCopy}</button>
+        <button type="button" disabled={blocked} onClick={() => setCopying(false)}>{c.cancel}</button>
       </form>}
       <div className="live-console-columns">
         <div className="live-console-left" id="live-panel-live">
@@ -158,9 +179,9 @@ export function LiveConsole({ locale, store, sessionID, navigationGuard, onRefre
           {!data.offers.length && <p>{c.empty}</p>}
           <ul>{data.offers.map((offer) => <OfferRow key={offer.offer_id} offer={offer} maxQuantity={controls.find((control) => control.offer_id === offer.offer_id)?.max_quantity_per_claim} c={c} locale={locale} currency={data.stats.currency}
             editable={editable} stockEditable={sessionEditable} canToggle={controls.some((o) => o.offer_id === offer.offer_id && o.version === offer.version)} canStock={liveStockAllowed(store)} recommended={data.recommended?.offer_id === offer.offer_id}
-            onToggle={() => { const control = controls.find((o) => o.offer_id === offer.offer_id && o.version === offer.version); if (!control) return Promise.resolve(); return command.run(liveRequest(store.id, sessionID, `claims/offers/${offer.offer_id}`, "PATCH", { expected_version: offer.version, active: !offer.active, max_quantity_per_claim: control.max_quantity_per_claim })); }}
-            onRecommend={() => command.run(liveRequest(store.id, sessionID, `claims/offers/${offer.offer_id}/recommend`, "POST", { expected_version: offer.version, post_comment: false }))}
-            onStock={(delta, version, saved) => offer.stock.warehouse_id ? command.run(liveRequest(store.id, sessionID, "inventory/adjustments", "POST", { warehouse_id: offer.stock.warehouse_id, sku_id: offer.sku_id, delta, expected_version: version, reason: "live_console_edit" }), saved) : Promise.resolve()}
+            onToggle={() => { const control = controls.find((o) => o.offer_id === offer.offer_id && o.version === offer.version); if (!control) return Promise.resolve(); return run(liveRequest(store.id, sessionID, `claims/offers/${offer.offer_id}`, "PATCH", { expected_version: offer.version, active: !offer.active, max_quantity_per_claim: control.max_quantity_per_claim })); }}
+            onRecommend={() => run(liveRequest(store.id, sessionID, `claims/offers/${offer.offer_id}/recommend`, "POST", { expected_version: offer.version, post_comment: false }))}
+            onStock={(delta, version, saved) => offer.stock.warehouse_id ? run(liveRequest(store.id, sessionID, "inventory/adjustments", "POST", { warehouse_id: offer.stock.warehouse_id, sku_id: offer.sku_id, delta, expected_version: version, reason: "live_console_edit" }), saved) : Promise.resolve()}
           />)}</ul>
         </section>
         </div>

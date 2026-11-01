@@ -244,6 +244,26 @@ test("UNKNOWN journal restores the exact key/method/path/body and explicit retry
   assert.equal(f.saved.size, 0);
 });
 
+test("window UNKNOWN durably fences other commands and reload retries its exact descriptor until receipt", async (t) => {
+  const f = fixture(); t.after(f.stop);
+  const input = { method: "POST", path: path.replace("/lifecycle", "/claims/window"), body: JSON.stringify({ expected_version: 0, state: "CLOSED", match_mode: "KEYWORD_QTY_CONTAINS" }) };
+  f.setExecute(async () => { throw new f.studio.StudioError("uncertain"); });
+  let h = f.mount(() => f.hooks.useLiveCommand(scope, "session-one", () => {})); await flush();
+  await h.view.run(input); await flush();
+  const stored = f.saved.get(`live-workspace-command:${scope}`)!;
+  assert.equal(JSON.parse(stored).mayHaveCommitted, true); assert.equal(h.view.blocked, true);
+  await h.view.run(request); assert.equal(f.calls.length, 1);
+  f.stop(); h = f.mount(() => f.hooks.useLiveCommand(scope, "session-one", () => {})); await flush();
+  assert.equal(h.view.canRetry, true); assert.equal(f.calls.length, 1);
+  let finish!: (value: unknown) => void;
+  f.setExecute(() => new Promise(resolve => { finish = resolve; }));
+  const pending = h.view.retry(); await flush();
+  assert.equal(f.calls.length, 2); assert.deepEqual(f.calls[1], f.calls[0]);
+  assert.equal(f.calls[1].body, input.body); assert.equal(f.saved.get(`live-workspace-command:${scope}`), stored);
+  finish({ state: "CLOSED" }); await pending; await flush();
+  assert.equal(f.saved.size, 0); assert.equal(h.view.blocked, false);
+});
+
 test("first definite 403 clears journal but locks commands; late success after navigation clears only its own key", async (t) => {
   const f = fixture(); f.setExecute(async () => { throw new f.studio.StudioError("forbidden", "forbidden", 0, 403); });
   let h = f.mount(() => f.hooks.useLiveCommand(scope, "session-one", () => {})); t.after(f.stop); await flush();
@@ -302,6 +322,44 @@ function element(tree: any, predicate: (node: any) => boolean): any {
   if (Array.isArray(tree)) { for (const child of tree) { const found = element(child, predicate); if (found) return found; } return null; }
   return predicate(tree) ? tree : element(tree.props?.children, predicate);
 }
+
+test("window preparation blocks sibling commands and rejects late reads after privacy or identity loss", async () => {
+  for (const action of ["current", "hide", "logout", "scope", "boundary", "csrf", "unmount", "legacy", "legacy-journal"] as const) {
+    const f = fixture(); let selectedScene = scene, boundary = "session-one", boardReads = 0, finish!: (value: unknown) => void;
+    const snapshot = { session: { id: scene, title: "Synthetic", lifecycle: "live", version: 1 }, window: { state: "OPEN" }, stats: { comments: { total: 0, source: "graph_summary" }, keyword_comments: 0, buyers: 0, orders: { count: 0, amount_minor: 0 }, paid: { count: 0, amount_minor: 0 }, currency: "TWD", as_of: "2026-11-01T00:00:00Z" }, stream: { source_platform: "facebook", state: "live" }, offers: [], capabilities: {} };
+    f.hooks.useLiveRead = (s: string) => ({ data: s.endsWith(":detail") ? { can_manage: true } : s.endsWith(":source") ? { source: null } : s.endsWith(":controls") ? [] : snapshot, boundary, error: "", refresh: () => {} });
+    f.load("apps/admin/lib/claims-client.ts").readClaimsBoard = () => { boardReads++; return new Promise(resolve => { finish = resolve; }); };
+    if (action.startsWith("legacy")) f.saved.set(`live-console-window:${scope}`, "1");
+    if (action === "legacy-journal") f.saved.set(`live-workspace-command:${scope}`, JSON.stringify({ method: "POST", path: path.replace("/lifecycle", "/claims/window"), body: JSON.stringify({ expected_version: 0, state: "CLOSED", match_mode: "EXACT" }), key: "44444444-4444-4444-8444-444444444444", mayHaveCommitted: true }));
+    const initialSaved = [...f.saved];
+    const { LiveConsole } = f.load("apps/admin/components/LiveConsole.tsx");
+    const h = f.mount(() => LiveConsole({ locale: "en", store: { id: store, role: "owner" }, sessionID: selectedScene, navigationGuard: { current: () => true } }));
+    try {
+      await flush();
+      const pause = element(h.view, n => n.type === "button" && n.props.children === "Pause orders");
+      const primary = element(h.view, n => n.props?.["data-testid"] === "live-primary-action");
+      if (action.startsWith("legacy")) {
+        assert.equal(pause.props.disabled, true); assert.equal(primary.props.disabled, true);
+        assert.equal(element(h.view, n => n.props?.["data-testid"] === "live-command-retry"), null);
+        pause.props.onClick(); primary.props.onClick(); await flush();
+        assert.equal(boardReads, 0); assert.equal(f.calls.length, 0); assert.deepEqual([...f.saved], initialSaved); continue;
+      }
+      assert.equal(pause.props.disabled, false); assert.equal(primary.props.disabled, false);
+      pause.props.onClick(); pause.props.onClick(); primary.props.onClick(); await flush();
+      assert.equal(boardReads, 1); assert.equal(f.calls.length, 0);
+      assert.equal(element(h.view, n => n.props?.["data-testid"] === "live-primary-action").props.disabled, true);
+      if (action === "hide") { f.document.visibilityState = "hidden"; f.document.dispatchEvent(new Event("visibilitychange")); }
+      if (action === "logout") f.window.dispatchEvent(new Event("commerce-session-logout"));
+      if (action === "scope") { selectedScene = "33333333-3333-4333-8333-333333333333"; h.render(); }
+      if (action === "boundary") { boundary = "session-two"; h.render(); }
+      if (action === "csrf") f.document.cookie = "changed-csrf";
+      if (action === "unmount") f.stop();
+      await flush(); finish({ window: { version: 1, state: "OPEN", match_mode: "EXACT" } }); await flush();
+      assert.equal(f.calls.length, action === "current" ? 1 : 0, action);
+      if (action === "current") assert.equal(f.calls[0].body, JSON.stringify({ expected_version: 1, state: "CLOSED", match_mode: "EXACT" }));
+    } finally { f.stop(); }
+  }
+});
 
 test("SessionCopy resyncs closed same-ID titles, preserves open edits and cancels to latest draft", async (t) => {
   const f = fixture(), { SessionCopy } = f.load("apps/admin/src/features/live/SessionCopy.tsx");
