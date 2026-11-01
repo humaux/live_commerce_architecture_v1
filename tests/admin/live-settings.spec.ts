@@ -1,5 +1,5 @@
 // Purpose: W3-U2 independent real-click gate across three locales and desktop/mobile, including CAS and UNKNOWN fences.
-// Depends on: Playwright, private-evidence guard, native-device fixture and signed Next/Go/PG harness env LC_BROWSER_SETTINGS_*.
+// Depends on: Playwright, private-evidence guard, shared real-click console controls, native-device and signed Next/Go/PG harness env LC_BROWSER_SETTINGS_*.
 // Used by: TestBrowserLiveSettingsUIRealChain and --browser-live-settings; business facts/providers explicitly MOCK.
 // Invariants: I01/I02/I06/I11/I14/I18; no browser response substitution, private DOM trace or note-bearing evidence.
 import { expect, type Page, type APIRequestContext, type BrowserContext } from "@playwright/test";
@@ -7,6 +7,7 @@ import { test } from "./inbox-private-evidence";
 import { writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
 import { nativePage } from "./fixtures/native-device";
+import { showLivePanel, showLiveBuyerDetails } from "./fixtures/live-console-controls";
 
 const required = (name: string): string => {
   const value = process.env[name];
@@ -167,7 +168,8 @@ for (const locale of locales) for (const viewport of viewports) {
     });
     await snapshot(page,`settings-${locale}-${viewport.width}`);await privacyCheck(page);
     await page.goto(`${origin}/${locale}/studio/console?store=${f.store}&scene=${f.scene}`);
-    await page.getByTestId(`comment-select-${f.comment}`).click();await expect(page.getByTestId("buyer-panel")).toBeVisible();
+    await showLivePanel(page,"comments");
+    await page.getByTestId(`comment-select-${f.comment}`).click();await showLiveBuyerDetails(page);await expect(page.getByTestId("buyer-panel")).toBeVisible();
     await step(page,"buyer-block-note","fill","200 character note admitted, 201 rejected",async()=>{
       await page.getByTestId("buyer-block-note").fill("x".repeat(201));
       // Native maxlength clipping or UI rejection are both valid, but no 201-character write may be sent.
@@ -178,7 +180,7 @@ for (const locale of locales) for (const viewport of viewports) {
     await step(page,"buyer-block-add","click","bundle reference plus note -> restricted badge persists",async()=>{
       const response=await waitWrite(page,"/claims/blocklist","POST",()=>page.getByTestId("buyer-block-add").click());expect(response.status()).toBe(200);
       expect(response.request().postDataJSON()).toEqual({bundle_id:f.bundle,note:"PRIVATE_BUYER_NOTE_SENTINEL"});
-      await expect(page.getByTestId("buyer-restricted")).toBeVisible();await page.reload();await page.getByTestId(`comment-select-${f.comment}`).click();await expect(page.getByTestId("buyer-restricted")).toBeVisible();
+      await expect(page.getByTestId("buyer-restricted")).toBeVisible();await page.reload();await showLivePanel(page,"comments");await page.getByTestId(`comment-select-${f.comment}`).click();await showLiveBuyerDetails(page);await expect(page.getByTestId("buyer-restricted")).toBeVisible();
     });
     await privacyCheck(page);
   });
@@ -418,7 +420,7 @@ for(const locale of locales)for(const viewport of viewports) {
     };
     await assertStates();
     for(const ref of f.reply_refs)await step(page,`comment-select-${ref}`,"click","selected row shows buyer panel without claiming unsent reply delivered",async()=>{
-      await page.getByTestId(`comment-select-${ref}`).click();await expect(page.getByTestId(`comment-row-${ref}`)).toHaveAttribute("data-selected","true");await expect(page.getByTestId("buyer-panel")).toBeVisible();await assertStates();
+      await showLivePanel(page,"comments");await page.getByTestId(`comment-select-${ref}`).click();await expect(page.getByTestId(`comment-row-${ref}`)).toHaveAttribute("data-selected","true");await showLiveBuyerDetails(page);await expect(page.getByTestId("buyer-panel")).toBeVisible();await showLivePanel(page,"comments");await assertStates();
     });
     await page.reload();await assertStates();
     // READ/MEASURE: custom screenshot keeps five public status/badge rows visible.
