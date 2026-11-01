@@ -262,6 +262,45 @@ Navigation: `GET /v1/admin/stores` items also carry the caller's `role` and effe
 - Limits: 20 live invitations and 50 creations per 24 h per store (PT429 `too_many_invitations`). Mail: one send after commit, outcome in `mail_state`, a resend is a new invitation that revokes the old one.
 - Evidence tier: REAL_PG author smoke `tests/foundation/staff_team_smoke_test.go` (4 tests, one red run each for email binding and owner floor); browser/E2E and mail over real SMTP: NOT_RUN.
 
+<a id="d-i11-staff-invitation-link-exception"></a>
+
+### D. I11 staff invitation link exception (owner approval 2026-11-01)
+
+Authority: the owner answered **「批准受限邀请链接例外（推荐）」** in the current task conversation,
+to the explicit question permitting the existing one-time invitation URL while prohibiting full-link/token logging,
+caching and Referrer leakage. Humaux `42086c79-d536-4769-990f-417115a458a0` indexes the recorded question and reply;
+the conversation approval is the authority. This section is the sole detailed definition of the I11 exception.
+
+- The exception permits only the existing staff invitation link on the configured HTTPS public admin origin,
+  `/{zh-CN|zh-TW|en}/invite/{token}`. The 256-bit random invitation token is single-use, expires after **72 hours**,
+  is bound to the invitation's store, role and email, and grants nothing until a signed-in principal with the matching
+  **verified email** accepts it. Expired, revoked, consumed and wrong-account invitations remain invalid.
+- Only the invitation token may occupy that path segment. Merchant/buyer session tokens, API/BFF keys, provider access
+  or refresh tokens, addresses and chat bodies retain I11's prohibition. This amendment does not authorize any other
+  URL token, including storefront preview tokens; their presence elsewhere is not an extension of this exception.
+- Acceptance carries the token in the authenticated POST JSON body, never an API query string. Existing exact Origin,
+  CSRF, server-derived scope and generic refusal checks remain. Sign-in return paths use the existing validated fragment
+  carrier; the invitation URL must not be copied into a login query string, error, analytics event or trace attribute.
+- The invitation response requires real `Referrer-Policy: no-referrer` and `Cache-Control: no-store` headers, including
+  signed-out/error responses. No shared or private cache may retain the token or full link. The token and full link must
+  not enter application, proxy/CDN/access logs, telemetry or Referrer headers; deployment must omit or redact the secret
+  path segment before logging. A meta tag alone does not establish this boundary.
+- This is URL classification only: it does not authorize production email or deployment, change the post-commit mail
+  behavior above, freeze an outbox design, or lift the current PARITY-TEAM invitation pause. Staff product inclusion
+  does not waive the separate backend and UI rollout gates. The UI/BFF/server refusal requirements in
+  [merchant-identity-v1 CF-TEAM](merchant-identity-v1.md#amendment-2026-10-28-cf-team) are not proof that those entry points
+  currently enforce a pause; report implementation and runtime evidence separately. Reopening remains a separate card.
+
+Acceptance (no implied PASS): `tests/admin/team-bff.test.ts` **I11-SI** binds this exception to the unchanged general P0
+prohibition and rejects invitation/session/provider/API credentials in API URLs, cacheable responses and echoed secrets;
+`tests/admin/invite-next.test.ts` checks the allowed relative invite shape and hostile return paths. Existing
+`tests/foundation/staff_team_gate_test.go` **SG01/SG06** cover expiry, email/store binding, single-use and secret exclusion
+from SQL/API URLs/logs; `tests/admin/staff-team.spec.ts` checks real browser Referrer behavior through
+`TestBrowserStaffTeam`. These tests must continue to pass on the delivery SHA; I11-SI is not browser or edge-log evidence.
+Before enabling delivery, obtain synthetic-link evidence that the served invitation response is no-store/no-referrer and
+that application plus deployed proxy/CDN logs and caches contain neither the full link nor token. Missing deployment or
+browser evidence is **NOT_RUN**, and blocks enabling this path; document-only or BFF success cannot substitute for it.
+
 ## F. Promotions (producer: unit promotions, migration 0091; amendment written before code, R4 wave 2)
 
 Discount codes. The server quote stays the only price authority (cart-quote-v1, checkout-quote-validation-v1): a code is validated
