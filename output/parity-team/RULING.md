@@ -1,5 +1,23 @@
 # PARITY-TEAM ROUND 3 ruling implementation
 
+## RELAY 3 — current dispatch cannot clear the preserved gates (2026-11-01)
+
+This section is the current handoff; earlier sections are historical. No new product fix attempt or CI push in this relay. `git fetch origin r3/integration` and `git merge --no-edit origin/r3/integration` both exit 0 (already up to date at `c52b65283a5ac738d0c527a464d0cccc9523b1f4`). Entry head is `887dbc885ef49f5fb585a81dfc2c4448634fb81d`; PR #476 remote head remains `3eb0e63a0d34dd1e351cf2b09961e170e240bb15`. The existing unpushed fix `98b265b465791f76f1415f04b29fcb933909555e` is not CI-verified.
+
+Authority: this dispatch retains the invitation pause, forbids admin confirmation/result flows and forbids test weakening. Current source enforces these rulings (`Team.tsx:89,148-161`). The original RED suite still demands mutually incompatible outcomes:
+
+| Exact-head E3 failure receipt | Preserved requirement / conflict |
+|---|---|
+| Gates `41289265846`, job `124798201364` | `browser_oc_test.go:259`: invitation replay >=3. `browser_staff_team_test.go:217`: SMTP mail >=4. Both require the send path this UI card must keep paused; backend/outbox changes are expressly forbidden. |
+| Gates `41289265846`, job `124798201256` | `parity-team.mjs:179-185` refuses an admin transition, while `content()` still requires the unreachable admin confirmation/result frames. The same helper infers buttons from signed headings at lines 217-224. No inert duplicate controls or fake result screens were added. |
+| Foundation `41289265756`, job `124796913759` | `Team.tsx: format 1 > 0`; already addressed in the unpushed fix. This old failure does not verify that fix. |
+
+Fresh workflow metadata confirms both failed runs have headSha `3eb0e63a0d34dd1e351cf2b09961e170e240bb15`. Read `gh pr checks 476` and filtered `gh run view --log-failed --job` for those three jobs. Causal tests-only RED remains Gates `41279053547`, job `124769729983`, missing signed 員工名單 at `parity-team.mjs:171`. No new RED/GREEN claim. Suite SHA-256 remains `7ff876032ca732452330e152eed4513d45cc7b504eb4920ef9656d7e5e8d18c6`.
+
+STOP under the outside-card gate rule. Repeating the two product rulings does not reconcile these preserved assertions. Integrator must supply acceptance-scope reconciliation consistent with the pause and disabled Continue; this lane must not send mail, change backend/outbox, skip tests or manufacture success. DEFERRED table below and PR body remain applicable.
+
+E1: browser ownership regenerated, then `--check`, both exit 0, no generated diff. No local tests/server or dependency install. Humaux/code-index tools are unavailable in this runtime; memory store, coord/canvas and indexing are NOT_RUN, not represented as persisted. Entry untracked files preserved. This relay changes only this report and the card PR body. Own PASS = E0. NOT_RUN: GREEN for local fixes, successful click/persistence/parity/density acceptance, independent review, SANDBOX, LIVE. WAIT_RUN: none (STOP before push; integrator owns reconciliation/re-dispatch). No local background process started.
+
 ## RELAY 2 — verified stop (2026-11-01)
 
 Re-read the current dispatch, both original cards, AGENTS.md and architecture §§0,1,2,26,27. `git fetch origin r3/integration unit/parity-team` and `git merge --no-edit origin/r3/integration` exit 0; already current at integration `c52b65283a5ac738d0c527a464d0cccc9523b1f4`. Remote PR head is still `3eb0e63a0d34dd1e351cf2b09961e170e240bb15`. Existing local implementation fix is `98b265b465791f76f1415f04b29fcb933909555e`; it has not been pushed or CI-verified. No new product/test change or fix attempt in this relay.
@@ -132,4 +150,4 @@ The preserved tests `tests/admin/parity-team.mjs` still require invite writes, s
 
 One implementation push follows the already observed tests-only RED; no evidence-only commit after CI. Gates/Foundation run IDs will be recorded in a PR comment once registered, and returned as WAIT_RUN. CI queue ownership returns to the integrator for re-dispatch, with no unattended local process.
 
-STATUS: BLOCKED_ASSERTION_RULING_CONFLICT_RELAY2_NO_PUSH
+STATUS: BLOCKED_ASSERTION_RULING_CONFLICT_RELAY3_NO_PUSH
