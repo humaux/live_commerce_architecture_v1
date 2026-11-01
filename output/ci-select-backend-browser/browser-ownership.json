@@ -151,6 +151,9 @@
     "tests/admin/parcels-model.test.ts": "4af0a4b7881802004e29343b7361076ae333fcc50a89b2b8fd527254685148ff",
     "tests/admin/parcels-request.test.ts": "2e6b5ce176f30a273a9eeb9aee7fef931676c8bcee2569842b361ed1bcf8957f",
     "tests/admin/parcels-scope.test.ts": "01a84682b27f95d14665813cbb8c0b1189bbdd8cb2f3d26fa5939fdec71a0257",
+    "tests/admin/parity-customer-import.spec.ts": "54554e3dac86792217ee5af515a248449f656549db492d91e62b5f49b47ebf7d",
+    "tests/admin/parity-data-ops-support.ts": "3313c1a2b19d6ebea5b465a7a61256fc51a27ab05c45ffb2de09cb64c4bde0f3",
+    "tests/admin/parity-data-ops.spec.ts": "da9744c2bb31eb8b6853feb73cc71e91bf5be1eec9b6ddae21f53240993bb374",
     "tests/admin/parity-entry-dashboard.ts": "f099136e2273212106002fc8a6d1cf4f366d32b925f79f0cbd901384b9b1075d",
     "tests/admin/parity-entry.spec.ts": "6b11d4a2c5796aab411121d42509c69cf991505d7665bef5eaa64cfcaffab2b3",
     "tests/admin/parity-money-support.ts": "b6fbedd1dfb167be5821ef89e025a10ed09401113c7864a8779b10581fd7dad7",
@@ -252,7 +255,7 @@
     "tests/foundation/browser_buyer_chain_test.go": "a7bdee104acee6ed6fc32594e6a33abae0f2a6a5b1b724054620c787c44aa8ed",
     "tests/foundation/browser_buyer_comms_test.go": "4e7ab136ef2e5ac637e487e853fd6285301c190a57d3036c6ca26430b2908e61",
     "tests/foundation/browser_card_payments_test.go": "6904038cf08495111a962d1a22b60db5c4cfc06085ba4b808930548264d67b68",
-    "tests/foundation/browser_catalog_core_test.go": "e8de00dd606de8ba4415abda19244ae64122c76ddc665fc13476fc653f82f307",
+    "tests/foundation/browser_catalog_core_test.go": "82ed3818cda5328ff139453cea052878a768e2e52255e771827baf8401ca4196",
     "tests/foundation/browser_catalog_media_test.go": "d7a727165f4cc4e1d6ca57fc54292a686c3b7950164cdcfef8ec673a06207b2c",
     "tests/foundation/browser_checkout_offline_test.go": "6199cd3dd28ce70a726ebc6883db06a74795f767c6c5eebe3a35fc77b6ceedaf",
     "tests/foundation/browser_claim_checkout_test.go": "d0b7d2eb285373130f715ae81cca5e5b2bdd718bc6fc6569ea8235dc9c941605",
@@ -281,7 +284,7 @@
     "tests/foundation/browser_meta_connect_gate_test.go": "1cd920e7bedf84530c9ff2b1c5af2ed64e81b50cae94213da0b795df2a9709a3",
     "tests/foundation/browser_meta_connect_test.go": "da790bf52680476dd06e7a451e75ad8b4ee4eb083ab7b67da26c15fbbe5ae586",
     "tests/foundation/browser_meta_health_ui_test.go": "0a90fbf4988333402d0934db5bf8139855c4c53cc8b40dc27e59218074553249",
-    "tests/foundation/browser_migration_import_ui_test.go": "3d74670f4513e99a8ad42ba19d442c56a1aea6f26d6a0034aaf0032e729cd853",
+    "tests/foundation/browser_migration_import_ui_test.go": "4ffa7aed4ea7fdc422987c8dec175684f717a7c263bbb3e808095ee68cd036a5",
     "tests/foundation/browser_oc_test.go": "23851ecd8adecca436a21429098c5a7372e5dbab82d82f7e8660cf8aa84f9904",
     "tests/foundation/browser_operations_ads_test.go": "1d25eb9632f10dbef68a6b155046da4d4c2438f3a020819539df7303b14ca7d1",
     "tests/foundation/browser_ops_polish_test.go": "1bd05c73623b63c399f63dd801e8c3c5af2a16c53cf23816cc30074c9b386692",
@@ -2783,6 +2786,7 @@
     "--browser-product-editor": {
       "specs": [
         "tests/admin/catalog-core.spec.ts",
+        "tests/admin/parity-data-ops.spec.ts",
         "tests/ci/product-editor-matrix-claims.mjs",
         "tests/ci/product-editor-matrix-controls.mjs",
         "tests/ci/product-editor-matrix-controls.test.mjs",
@@ -2796,6 +2800,8 @@
         "tests/admin/catalog-document-driver.ts",
         "tests/admin/catalog-v2-simplified.acceptance.ts",
         "tests/admin/fixtures/native-device.ts",
+        "tests/admin/parity-data-ops-support.ts",
+        "tests/admin/parity-data-ops.spec.ts",
         "tests/admin/product-editor-layout.acceptance.ts",
         "tests/admin/product-editor-matrix-ledger.ts",
         "tests/admin/product-editor.acceptance.ts",
@@ -2859,6 +2865,7 @@
         "tests/ci/product-editor-matrix-controls.test.mjs:server/import apps/admin",
         "tests/ci/product-editor-matrix-ledger.test.mjs:server/import apps/admin",
         "tests/foundation/browser_catalog_core_test.go -> tests/admin/catalog-core.spec.ts",
+        "tests/foundation/browser_catalog_core_test.go -> tests/admin/parity-data-ops.spec.ts",
         "tests/foundation/browser_catalog_core_test.go:server/import apps/admin",
         "tests/foundation/catalog_matrix_ledger_test.go -> tests/ci/product-editor-matrix-claims.mjs",
         "tests/foundation/catalog_matrix_ledger_test.go -> tests/ci/product-editor-matrix-controls.mjs",
@@ -2873,6 +2880,7 @@
     "--browser-catalog-core": {
       "specs": [
         "tests/admin/catalog-core.spec.ts",
+        "tests/admin/parity-data-ops.spec.ts",
         "tests/ci/product-editor-matrix-claims.mjs",
         "tests/ci/product-editor-matrix-controls.mjs",
         "tests/ci/product-editor-matrix-controls.test.mjs",
@@ -2886,6 +2894,8 @@
         "tests/admin/catalog-document-driver.ts",
         "tests/admin/catalog-v2-simplified.acceptance.ts",
         "tests/admin/fixtures/native-device.ts",
+        "tests/admin/parity-data-ops-support.ts",
+        "tests/admin/parity-data-ops.spec.ts",
         "tests/admin/product-editor-layout.acceptance.ts",
         "tests/admin/product-editor-matrix-ledger.ts",
         "tests/admin/product-editor.acceptance.ts",
@@ -2949,6 +2959,7 @@
         "tests/ci/product-editor-matrix-controls.test.mjs:server/import apps/admin",
         "tests/ci/product-editor-matrix-ledger.test.mjs:server/import apps/admin",
         "tests/foundation/browser_catalog_core_test.go -> tests/admin/catalog-core.spec.ts",
+        "tests/foundation/browser_catalog_core_test.go -> tests/admin/parity-data-ops.spec.ts",
         "tests/foundation/browser_catalog_core_test.go:server/import apps/admin",
         "tests/foundation/catalog_matrix_ledger_test.go -> tests/ci/product-editor-matrix-claims.mjs",
         "tests/foundation/catalog_matrix_ledger_test.go -> tests/ci/product-editor-matrix-controls.mjs",
@@ -3131,7 +3142,8 @@
         "tests/admin/import-view.test.ts",
         "tests/admin/import-wire-header.test.ts",
         "tests/admin/import-wire-model.test.ts",
-        "tests/admin/import-wizard.spec.ts"
+        "tests/admin/import-wizard.spec.ts",
+        "tests/admin/parity-customer-import.spec.ts"
       ],
       "inputs": [
         "tests/admin/import-client.test.mjs",
@@ -3143,7 +3155,9 @@
         "tests/admin/import-wire-header.test.ts",
         "tests/admin/import-wire-model.test.ts",
         "tests/admin/import-wire-real-loader.mjs",
-        "tests/admin/import-wizard.spec.ts"
+        "tests/admin/import-wizard.spec.ts",
+        "tests/admin/parity-customer-import.spec.ts",
+        "tests/admin/parity-data-ops-support.ts"
       ],
       "apps": [
         "admin"
@@ -3208,6 +3222,7 @@
         "tests/admin/import-wizard.spec.ts:import apps/admin/src/shell-copy.ts",
         "tests/admin/import-wizard.spec.ts:server/import apps/admin",
         "tests/foundation/browser_migration_import_ui_test.go -> tests/admin/import-wizard.spec.ts",
+        "tests/foundation/browser_migration_import_ui_test.go -> tests/admin/parity-customer-import.spec.ts",
         "tests/foundation/browser_migration_import_ui_test.go:server/import apps/admin"
       ]
     },

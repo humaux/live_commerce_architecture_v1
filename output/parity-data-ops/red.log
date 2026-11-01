@@ -1,0 +1,8 @@
+PARITY-DATA-OPS ROUND 1
+Evidence: E1 static only; browser RED NOT_RUN
+PR: NOT_CREATED (integrator opens after guard)
+RED run/job: NOT_CREATED
+WAIT_RUN: NOT_CREATED
+GREEN: NOT_RUN (ROUND 1 tests-only)
+Expected RED: signed real-route heading/control/legacy-selector assertion failure, not compile.
+See DELIVERY.md and typecheck.log.
