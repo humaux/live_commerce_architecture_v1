@@ -81,3 +81,28 @@ In legacy, retain every original assertion through line559. Replace only the mig
 Execution coverage is already provided by `TestBrowserCatalogCore`: `browser_catalog_core_test.go:122–128` always runs `CC12-frozen`, including when the product-editor mode also runs PE12–17. The CC12 call sets `peFlag="0"` and runs catalog-core.spec.ts at lines195–207. Thus both `--browser-catalog-core` and `--browser-product-editor` reach the added signed test through the existing required CC12 member. No new Go harness, runner, timeout, auth toggle or test registry mode is needed.
 
 Future implementation write_paths for root approval: `tests/admin/ledger.spec.ts` (tail only), `tests/admin/catalog-core.spec.ts` (one additive signed registration), this report, and root-owned generated `output/ci-select-backend-browser/browser-ownership.json`. Acceptance: GitHub admin-legacy must pass retained tray/price/absence plus explicit unsigned destination; both catalog-core and product-editor CC12 must run and pass the named signed positive test, retaining its href and real-click destination assertions. Independent review should compare each original positive assertion above against the destination, with no deletion/weakening or fixture permission changes. All of that remains **NOT_RUN / NOT_IMPLEMENTED** in this commit.
+
+## Authorized exact positive-oracle migration (subsequent root dispatch)
+
+Root then approved this concrete plan after reading the actual test tails and registration code. This section records its implementation on base `01a5458dd5c60b09244c3f18b1bc645d8fd5f3ba`; the preceding plan is historical. task_id remains `53ea9f21-3f3b-4626-87ab-42dc853507b9-sub-inventory-repair`. Model/reasoning: **Sol/high**, supplied by the root dispatch (earlier rounds could only report UNKNOWN). Role: inventory UI implementation worker. Single implementation pass, one local commit, no push or runtime run.
+
+The original six positive statements at base ledger lines561–566 now follow `signedLogin(page)` in the independent catalog-core test named **inventory Back to products opens the full product editor for a signed merchant**. Statement contents, regexes, exact role/name matching, real clicks and final URL assertion were copied verbatim; only indentation follows the new nesting. Registration is after the PE block and before the unchanged CC12 variants, guarded by `PRODUCT_EDITOR_ACCEPTANCE !== "1"`. The signed test points back to the original legacy test by its exact name. No existing CC12/PE body was changed.
+
+Legacy retains every original statement through line559, including the visible tray and stock controls, required reason, whole-dollar NT$ price regex, no price input, edit-product href, all six forbidden inline controls, no name/price/description inputs, and no create panel. Only its tail now asserts the Back to products href, clicks the actual link, asserts the product-list destination, requires the exact **Sign in to view products.** alert and verifies product-new count0. A reciprocal comment names the signed positive test. These added refusal checks describe the observed unsigned fixture; the original positive oracle continues in its signed owner, not as an exemption.
+
+No product source, auth/config, fixture/grant, Go harness, guard, timeout/retry, generated ownership, prior search synchronization, or Astra guard candidate changed. The existing assertion guard's source discovery is for storefront `*-gate.mjs`; this change does not modify those inputs or its mappings/whitelist. No source-level conflict was found; runtime guard execution remains NOT_RUN, and a future guard failure must be reported rather than waived.
+
+| Actual static command | Exit | Result |
+|---|---:|---|
+| `node --check --experimental-strip-types tests/admin/ledger.spec.ts` | 0 | Syntax only; no imports/test code executed. |
+| `node --check --experimental-strip-types tests/admin/catalog-core.spec.ts` | 0 | Syntax only; no imports/test code executed. |
+| `git diff --check` | 0 | No whitespace errors. |
+| `git diff -- tests/admin/ledger.spec.ts tests/admin/catalog-core.spec.ts` | 0 | Only the approved legacy tail and one standalone signed registration. |
+| `shasum -a 256 tests/admin/ledger.spec.ts tests/admin/catalog-core.spec.ts` | 0 | Current source hashes below. |
+
+```text
+0eb1a3d0f62865e5275727cd0ba621e094c458e9db016dd9cee91a1ba943dc92  tests/admin/ledger.spec.ts
+d5949041e1a8699d0986414b428ea9b60cb5d4f5841240d17443f73071d43594  tests/admin/catalog-core.spec.ts
+```
+
+Only these two specs and this existing report are staged. The five own extracted evidence files remain untracked and no ZIP is staged. Root must regenerate browser ownership with all lanes and independently review this diff plus the positive-statement mapping. GitHub admin-legacy, catalog-core/product-editor CC12, required checks, strict typecheck, all runtime tests, screenshots/click ledgers for this candidate, independent acceptance, SANDBOX and LIVE remain **NOT_RUN**. E1 syntax/structure is ready; current-source runtime success is UNKNOWN. No local process, fixture, port or WAIT_RUN was created.

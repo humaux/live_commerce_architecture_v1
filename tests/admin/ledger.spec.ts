@@ -557,13 +557,16 @@ test("inventory tray keeps stock and read-only price; product editing lives on t
     await expect(tray.getByTestId(id), id).toHaveCount(0);
   await expect(tray.locator("input[name=name], input[name=price], textarea[name=description]")).toHaveCount(0);
   await expect(page.locator(".create-panel")).toHaveCount(0);
-  // the header "Add product" is a plain link to the full editor, not a panel toggle
+  // Positive editor entry lives in catalog-core.spec.ts:
+  // "inventory Back to products opens the full product editor for a signed merchant".
+  // This legacy bearer supplies shell metadata, but no signed product-page identity.
   await page.goto("/en/inventory");
-  await page.getByRole("link", { name: "Back to products", exact: true }).click();
-  const add = page.getByTestId("product-new");
-  await expect(add).toHaveAttribute("href", /^\/en\/products\/new(\?store=[0-9a-f-]{36})?$/);
-  await add.click();
-  await expect(page).toHaveURL(/\/en\/products\/new/);
+  const back = page.getByRole("link", { name: "Back to products", exact: true });
+  await expect(back).toHaveAttribute("href", /^\/en\/products(\?store=[0-9a-f-]{36})?$/);
+  await back.click();
+  await expect(page).toHaveURL(/\/en\/products(\?store=[0-9a-f-]{36})?$/);
+  await expect(page.getByRole("alert").getByText("Sign in to view products.", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("product-new")).toHaveCount(0);
 });
 
 // ---- stop-bleed D04 + M07/M08: no invented channel status, and the nav scrolls so Settings and Sign out stay reachable ---------------

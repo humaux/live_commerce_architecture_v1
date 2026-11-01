@@ -105,6 +105,20 @@ if (process.env.PRODUCT_EDITOR_ACCEPTANCE === "1") {
   if (process.env.PRODUCT_VISUAL_PHASE) registerProductVisualAcceptance();
 }
 
+if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") {
+  test("inventory Back to products opens the full product editor for a signed merchant", async ({ page }) => {
+    // Positive entry moved from ledger.spec.ts:
+    // "inventory tray keeps stock and read-only price; product editing lives on the product page".
+    await signedLogin(page);
+    await page.goto("/en/inventory");
+    await page.getByRole("link", { name: "Back to products", exact: true }).click();
+    const add = page.getByTestId("product-new");
+    await expect(add).toHaveAttribute("href", /^\/en\/products\/new(\?store=[0-9a-f-]{36})?$/);
+    await add.click();
+    await expect(page).toHaveURL(/\/en\/products\/new/);
+  });
+}
+
 for (const v of process.env.PRODUCT_EDITOR_ACCEPTANCE === "1" ? [] : variants) {
   test.describe(`CC12 ${v.vp} ${v.locale}`, () => {
     test.use({ viewport: v.viewport, locale: v.locale === "en" ? "en-US" : "zh-TW" });
