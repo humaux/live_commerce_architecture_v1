@@ -233,7 +233,7 @@ func bplProjections() map[string]any {
 	row["live_sessions"] = []any{}
 	row["item_summary"] = map[string]any{"items": []any{map[string]any{"product_name": "Synthetic item", "variant_label": nil, "quantity": 1}}, "total_item_count": 1}
 	counts := map[string]int{"all": 1, "unpaid": 1, "transfer_review": 0, "ready_to_ship": 0, "ready_to_consign": 0, "shipped": 0, "completed": 0, "cancelled": 0}
-	sku := map[string]any{"id": bplSKU, "code": "MOCK-LEFTOVER", "title": "Standard", "price_minor": 1200, "compare_at_minor": nil, "option_values": []string{}, "version": 1, "currency": "TWD", "available": 10, "inventory_tracked": true, "max_per_order": nil, "keyword": "", "on_hand": 10, "committed": 0, "weight_grams": 100, "length_mm": 10, "width_mm": 10, "height_mm": 10, "origin_country": "TW", "customs_name": "Synthetic item", "hs_candidate": ""}
+	sku := map[string]any{"id": bplSKU, "code": "MOCK-LEFTOVER", "title": "Standard", "price_minor": 1200, "compare_at_minor": nil, "option_values": []string{}, "version": 1, "currency": "USD", "available": 10, "inventory_tracked": true, "max_per_order": nil, "keyword": "", "on_hand": 10, "committed": 0, "weight_grams": 100, "length_mm": 10, "width_mm": 10, "height_mm": 10, "origin_country": "TW", "customs_name": "Synthetic item", "hs_candidate": ""}
 	product := map[string]any{"id": bplProduct, "slug": "mock-leftover", "name": "Synthetic item", "description": "MOCK catalog read", "status": "draft", "version": 1, "seo_title": "", "seo_description": "", "options": []any{}, "skus": []any{sku}, "collection_ids": []any{}, "warehouse_id": nil}
 	templates := []any{}
 	for i, name := range []string{"關鍵字協助", "結帳說明", "物流查詢", "人工回覆說明", "退款說明", "直播預告"} {

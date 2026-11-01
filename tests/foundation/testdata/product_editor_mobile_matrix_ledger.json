@@ -644,8 +644,148 @@
     "locale": "zh-TW",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-field-keyword",
+    "action": "click",
+    "expected": "Create bulk-field-keyword visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field-price",
+    "action": "click",
+    "expected": "Create bulk-field-price visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-scope-empty",
+    "action": "click",
+    "expected": "Create bulk-scope-empty visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-scope-all",
+    "action": "click",
+    "expected": "Create bulk-scope-all visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-subtract",
+    "action": "click",
+    "expected": "Create bulk-operation-subtract visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-add",
+    "action": "click",
+    "expected": "Create bulk-operation-add visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-set",
+    "action": "click",
+    "expected": "Create bulk-operation-set visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill step amount",
+    "expected": "Create step amount 10 visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-step-up",
+    "action": "click",
+    "expected": "Create step up yields 20; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-step-down",
+    "action": "click",
+    "expected": "Create step down yields 10; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-back",
+    "action": "click",
+    "expected": "Create bulk-back closes panel and restores focus; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click after bulk-back",
+    "expected": "Create panel reopened empty after bulk-back; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-cancel",
+    "action": "click",
+    "expected": "Create bulk-cancel closes panel and restores focus; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click after bulk-cancel",
+    "expected": "Create panel reopened empty after bulk-cancel; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field-code",
+    "action": "click",
     "expected": "Bulk field code is selected; no document write",
     "actual": "PASS"
   },
@@ -794,6 +934,96 @@
     "locale": "zh-TW",
     "width": 390,
     "row": "",
+    "control": "bulk-field-code",
+    "action": "verify existing SKU code disabled",
+    "expected": "Existing SKU code remains visible and disabled, both SKU codes unchanged; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field-keyword",
+    "action": "click",
+    "expected": "keyword field selected and value input focused; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field-price",
+    "action": "click",
+    "expected": "price field selected and value input focused; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill step amount",
+    "expected": "Step amount 10 is visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-step-up",
+    "action": "click",
+    "expected": "Price step up yields 20; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-step-down",
+    "action": "click",
+    "expected": "Price step down yields 10; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-set",
+    "action": "click",
+    "expected": "Set mode has independent visible summary; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-back",
+    "action": "click",
+    "expected": "Return discards edits, restores trigger focus, quantities remain 3 and 4; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click after return",
+    "expected": "Reopen after Return starts empty and focused; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
     "control": "bulk-value",
     "action": "fill cancel",
     "expected": "Discardable bulk value 777 is visible; no document write",
@@ -824,8 +1054,18 @@
     "locale": "zh-TW",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-cancel",
+    "action": "click before quantity",
+    "expected": "Close main panel before the legacy field entry; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open-quantity",
+    "action": "click",
     "expected": "Quantity field selected; no document write",
     "actual": "PASS"
   },
@@ -844,9 +1084,9 @@
     "locale": "zh-TW",
     "width": 390,
     "row": "",
-    "control": "bulk-scope",
-    "action": "select select",
-    "expected": "Scope changes empty to all; no document write",
+    "control": "bulk-scope-empty",
+    "action": "click",
+    "expected": "Scope becomes empty; no document write",
     "actual": "PASS"
   },
   {
@@ -854,9 +1094,39 @@
     "locale": "zh-TW",
     "width": 390,
     "row": "",
-    "control": "bulk-operation",
-    "action": "select select",
-    "expected": "Operation changes subtract to add; no document write",
+    "control": "bulk-scope-all",
+    "action": "click",
+    "expected": "Scope returns to all and resets target to all; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-target",
+    "action": "select after all scope",
+    "expected": "Selected target restored after explicit all scope; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-subtract",
+    "action": "click",
+    "expected": "Operation becomes subtract; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-add",
+    "action": "click",
+    "expected": "Operation becomes add; no document write",
     "actual": "PASS"
   },
   {
@@ -1034,8 +1304,8 @@
     "locale": "zh-TW",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-field-price",
+    "action": "click",
     "expected": "Bulk field price is selected for set; no document write",
     "actual": "PASS"
   },
@@ -1074,9 +1344,49 @@
     "locale": "zh-TW",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-cancel",
+    "action": "click before column",
+    "expected": "Close main panel before the legacy field entry; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open-compare",
+    "action": "click",
     "expected": "Bulk field compare is selected for set; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-scope-empty",
+    "action": "click",
+    "expected": "Compare bulk-scope-empty selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-scope-all",
+    "action": "click",
+    "expected": "Compare bulk-scope-all selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-set",
+    "action": "click",
+    "expected": "Compare bulk-operation-set selected; no document write",
     "actual": "PASS"
   },
   {
@@ -1114,8 +1424,18 @@
     "locale": "zh-TW",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-cancel",
+    "action": "click before column",
+    "expected": "Close main panel before the legacy field entry; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity set",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open-quantity",
+    "action": "click",
     "expected": "Bulk field quantity is selected for set; no document write",
     "actual": "PASS"
   },
@@ -1154,8 +1474,18 @@
     "locale": "zh-TW",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-cancel",
+    "action": "click before column",
+    "expected": "Close main panel before the legacy field entry; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity subtract",
+    "locale": "zh-TW",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open-quantity",
+    "action": "click",
     "expected": "Bulk field quantity is selected for subtract; no document write",
     "actual": "PASS"
   },
@@ -1164,8 +1494,8 @@
     "locale": "zh-TW",
     "width": 390,
     "row": "",
-    "control": "bulk-operation",
-    "action": "select",
+    "control": "bulk-operation-subtract",
+    "action": "click",
     "expected": "Bulk operation subtract is selected for quantity; no document write",
     "actual": "PASS"
   },
@@ -1254,7 +1584,7 @@
     "locale": "zh-TW",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
+    "control": "bulk-value",
     "action": "Escape",
     "expected": "Escape closes the bulk edit dialog and returns focus to bulk open without a document write",
     "actual": "PASS"
@@ -1294,8 +1624,8 @@
     "locale": "zh-TW",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-field-keyword",
+    "action": "click",
     "expected": "Bulk field keyword is selected; no document write",
     "actual": "PASS"
   },
@@ -1974,8 +2304,148 @@
     "locale": "zh-CN",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-field-keyword",
+    "action": "click",
+    "expected": "Create bulk-field-keyword visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field-price",
+    "action": "click",
+    "expected": "Create bulk-field-price visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-scope-empty",
+    "action": "click",
+    "expected": "Create bulk-scope-empty visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-scope-all",
+    "action": "click",
+    "expected": "Create bulk-scope-all visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-subtract",
+    "action": "click",
+    "expected": "Create bulk-operation-subtract visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-add",
+    "action": "click",
+    "expected": "Create bulk-operation-add visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-set",
+    "action": "click",
+    "expected": "Create bulk-operation-set visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill step amount",
+    "expected": "Create step amount 10 visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-step-up",
+    "action": "click",
+    "expected": "Create step up yields 20; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-step-down",
+    "action": "click",
+    "expected": "Create step down yields 10; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-back",
+    "action": "click",
+    "expected": "Create bulk-back closes panel and restores focus; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click after bulk-back",
+    "expected": "Create panel reopened empty after bulk-back; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-cancel",
+    "action": "click",
+    "expected": "Create bulk-cancel closes panel and restores focus; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click after bulk-cancel",
+    "expected": "Create panel reopened empty after bulk-cancel; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field-code",
+    "action": "click",
     "expected": "Bulk field code is selected; no document write",
     "actual": "PASS"
   },
@@ -2124,6 +2594,96 @@
     "locale": "zh-CN",
     "width": 390,
     "row": "",
+    "control": "bulk-field-code",
+    "action": "verify existing SKU code disabled",
+    "expected": "Existing SKU code remains visible and disabled, both SKU codes unchanged; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field-keyword",
+    "action": "click",
+    "expected": "keyword field selected and value input focused; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field-price",
+    "action": "click",
+    "expected": "price field selected and value input focused; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill step amount",
+    "expected": "Step amount 10 is visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-step-up",
+    "action": "click",
+    "expected": "Price step up yields 20; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-step-down",
+    "action": "click",
+    "expected": "Price step down yields 10; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-set",
+    "action": "click",
+    "expected": "Set mode has independent visible summary; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-back",
+    "action": "click",
+    "expected": "Return discards edits, restores trigger focus, quantities remain 3 and 4; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click after return",
+    "expected": "Reopen after Return starts empty and focused; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
     "control": "bulk-value",
     "action": "fill cancel",
     "expected": "Discardable bulk value 777 is visible; no document write",
@@ -2154,8 +2714,18 @@
     "locale": "zh-CN",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-cancel",
+    "action": "click before quantity",
+    "expected": "Close main panel before the legacy field entry; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open-quantity",
+    "action": "click",
     "expected": "Quantity field selected; no document write",
     "actual": "PASS"
   },
@@ -2174,9 +2744,9 @@
     "locale": "zh-CN",
     "width": 390,
     "row": "",
-    "control": "bulk-scope",
-    "action": "select select",
-    "expected": "Scope changes empty to all; no document write",
+    "control": "bulk-scope-empty",
+    "action": "click",
+    "expected": "Scope becomes empty; no document write",
     "actual": "PASS"
   },
   {
@@ -2184,9 +2754,39 @@
     "locale": "zh-CN",
     "width": 390,
     "row": "",
-    "control": "bulk-operation",
-    "action": "select select",
-    "expected": "Operation changes subtract to add; no document write",
+    "control": "bulk-scope-all",
+    "action": "click",
+    "expected": "Scope returns to all and resets target to all; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-target",
+    "action": "select after all scope",
+    "expected": "Selected target restored after explicit all scope; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-subtract",
+    "action": "click",
+    "expected": "Operation becomes subtract; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-add",
+    "action": "click",
+    "expected": "Operation becomes add; no document write",
     "actual": "PASS"
   },
   {
@@ -2364,8 +2964,8 @@
     "locale": "zh-CN",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-field-price",
+    "action": "click",
     "expected": "Bulk field price is selected for set; no document write",
     "actual": "PASS"
   },
@@ -2404,9 +3004,49 @@
     "locale": "zh-CN",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-cancel",
+    "action": "click before column",
+    "expected": "Close main panel before the legacy field entry; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open-compare",
+    "action": "click",
     "expected": "Bulk field compare is selected for set; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-scope-empty",
+    "action": "click",
+    "expected": "Compare bulk-scope-empty selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-scope-all",
+    "action": "click",
+    "expected": "Compare bulk-scope-all selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-set",
+    "action": "click",
+    "expected": "Compare bulk-operation-set selected; no document write",
     "actual": "PASS"
   },
   {
@@ -2444,8 +3084,18 @@
     "locale": "zh-CN",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-cancel",
+    "action": "click before column",
+    "expected": "Close main panel before the legacy field entry; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity set",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open-quantity",
+    "action": "click",
     "expected": "Bulk field quantity is selected for set; no document write",
     "actual": "PASS"
   },
@@ -2484,8 +3134,18 @@
     "locale": "zh-CN",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-cancel",
+    "action": "click before column",
+    "expected": "Close main panel before the legacy field entry; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity subtract",
+    "locale": "zh-CN",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open-quantity",
+    "action": "click",
     "expected": "Bulk field quantity is selected for subtract; no document write",
     "actual": "PASS"
   },
@@ -2494,8 +3154,8 @@
     "locale": "zh-CN",
     "width": 390,
     "row": "",
-    "control": "bulk-operation",
-    "action": "select",
+    "control": "bulk-operation-subtract",
+    "action": "click",
     "expected": "Bulk operation subtract is selected for quantity; no document write",
     "actual": "PASS"
   },
@@ -2584,7 +3244,7 @@
     "locale": "zh-CN",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
+    "control": "bulk-value",
     "action": "Escape",
     "expected": "Escape closes the bulk edit dialog and returns focus to bulk open without a document write",
     "actual": "PASS"
@@ -2624,8 +3284,8 @@
     "locale": "zh-CN",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-field-keyword",
+    "action": "click",
     "expected": "Bulk field keyword is selected; no document write",
     "actual": "PASS"
   },
@@ -3304,8 +3964,148 @@
     "locale": "en",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-field-keyword",
+    "action": "click",
+    "expected": "Create bulk-field-keyword visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field-price",
+    "action": "click",
+    "expected": "Create bulk-field-price visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-scope-empty",
+    "action": "click",
+    "expected": "Create bulk-scope-empty visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-scope-all",
+    "action": "click",
+    "expected": "Create bulk-scope-all visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-subtract",
+    "action": "click",
+    "expected": "Create bulk-operation-subtract visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-add",
+    "action": "click",
+    "expected": "Create bulk-operation-add visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-set",
+    "action": "click",
+    "expected": "Create bulk-operation-set visibly selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill step amount",
+    "expected": "Create step amount 10 visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-step-up",
+    "action": "click",
+    "expected": "Create step up yields 20; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-step-down",
+    "action": "click",
+    "expected": "Create step down yields 10; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-back",
+    "action": "click",
+    "expected": "Create bulk-back closes panel and restores focus; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click after bulk-back",
+    "expected": "Create panel reopened empty after bulk-back; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-cancel",
+    "action": "click",
+    "expected": "Create bulk-cancel closes panel and restores focus; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click after bulk-cancel",
+    "expected": "Create panel reopened empty after bulk-cancel; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk code set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field-code",
+    "action": "click",
     "expected": "Bulk field code is selected; no document write",
     "actual": "PASS"
   },
@@ -3454,6 +4254,96 @@
     "locale": "en",
     "width": 390,
     "row": "",
+    "control": "bulk-field-code",
+    "action": "verify existing SKU code disabled",
+    "expected": "Existing SKU code remains visible and disabled, both SKU codes unchanged; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field-keyword",
+    "action": "click",
+    "expected": "keyword field selected and value input focused; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-field-price",
+    "action": "click",
+    "expected": "price field selected and value input focused; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-value",
+    "action": "fill step amount",
+    "expected": "Step amount 10 is visible; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-step-up",
+    "action": "click",
+    "expected": "Price step up yields 20; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-step-down",
+    "action": "click",
+    "expected": "Price step down yields 10; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-set",
+    "action": "click",
+    "expected": "Set mode has independent visible summary; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-back",
+    "action": "click",
+    "expected": "Return discards edits, restores trigger focus, quantities remain 3 and 4; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open",
+    "action": "click after return",
+    "expected": "Reopen after Return starts empty and focused; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "en",
+    "width": 390,
+    "row": "",
     "control": "bulk-value",
     "action": "fill cancel",
     "expected": "Discardable bulk value 777 is visible; no document write",
@@ -3484,8 +4374,18 @@
     "locale": "en",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-cancel",
+    "action": "click before quantity",
+    "expected": "Close main panel before the legacy field entry; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open-quantity",
+    "action": "click",
     "expected": "Quantity field selected; no document write",
     "actual": "PASS"
   },
@@ -3504,9 +4404,9 @@
     "locale": "en",
     "width": 390,
     "row": "",
-    "control": "bulk-scope",
-    "action": "select select",
-    "expected": "Scope changes empty to all; no document write",
+    "control": "bulk-scope-empty",
+    "action": "click",
+    "expected": "Scope becomes empty; no document write",
     "actual": "PASS"
   },
   {
@@ -3514,9 +4414,39 @@
     "locale": "en",
     "width": 390,
     "row": "",
-    "control": "bulk-operation",
-    "action": "select select",
-    "expected": "Operation changes subtract to add; no document write",
+    "control": "bulk-scope-all",
+    "action": "click",
+    "expected": "Scope returns to all and resets target to all; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-target",
+    "action": "select after all scope",
+    "expected": "Selected target restored after explicit all scope; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-subtract",
+    "action": "click",
+    "expected": "Operation becomes subtract; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-add",
+    "action": "click",
+    "expected": "Operation becomes add; no document write",
     "actual": "PASS"
   },
   {
@@ -3694,8 +4624,8 @@
     "locale": "en",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-field-price",
+    "action": "click",
     "expected": "Bulk field price is selected for set; no document write",
     "actual": "PASS"
   },
@@ -3734,9 +4664,49 @@
     "locale": "en",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-cancel",
+    "action": "click before column",
+    "expected": "Close main panel before the legacy field entry; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open-compare",
+    "action": "click",
     "expected": "Bulk field compare is selected for set; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-scope-empty",
+    "action": "click",
+    "expected": "Compare bulk-scope-empty selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-scope-all",
+    "action": "click",
+    "expected": "Compare bulk-scope-all selected; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk compare set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-operation-set",
+    "action": "click",
+    "expected": "Compare bulk-operation-set selected; no document write",
     "actual": "PASS"
   },
   {
@@ -3774,8 +4744,18 @@
     "locale": "en",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-cancel",
+    "action": "click before column",
+    "expected": "Close main panel before the legacy field entry; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity set",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open-quantity",
+    "action": "click",
     "expected": "Bulk field quantity is selected for set; no document write",
     "actual": "PASS"
   },
@@ -3814,8 +4794,18 @@
     "locale": "en",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-cancel",
+    "action": "click before column",
+    "expected": "Close main panel before the legacy field entry; no document write",
+    "actual": "PASS"
+  },
+  {
+    "page": "mobile matrix bulk quantity subtract",
+    "locale": "en",
+    "width": 390,
+    "row": "",
+    "control": "bulk-open-quantity",
+    "action": "click",
     "expected": "Bulk field quantity is selected for subtract; no document write",
     "actual": "PASS"
   },
@@ -3824,8 +4814,8 @@
     "locale": "en",
     "width": 390,
     "row": "",
-    "control": "bulk-operation",
-    "action": "select",
+    "control": "bulk-operation-subtract",
+    "action": "click",
     "expected": "Bulk operation subtract is selected for quantity; no document write",
     "actual": "PASS"
   },
@@ -3914,7 +4904,7 @@
     "locale": "en",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
+    "control": "bulk-value",
     "action": "Escape",
     "expected": "Escape closes the bulk edit dialog and returns focus to bulk open without a document write",
     "actual": "PASS"
@@ -3954,8 +4944,8 @@
     "locale": "en",
     "width": 390,
     "row": "",
-    "control": "bulk-field",
-    "action": "select",
+    "control": "bulk-field-keyword",
+    "action": "click",
     "expected": "Bulk field keyword is selected; no document write",
     "actual": "PASS"
   },

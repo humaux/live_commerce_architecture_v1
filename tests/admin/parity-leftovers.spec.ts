@@ -120,14 +120,29 @@ if (process.env.LC_BROWSER_PARITY_DENIED !== "1") test.describe("PARITY-LEFTOVER
       await login(page);
       await page.goto(`${origin}/zh-TW/products/${productId}?store=${store}`);
 
-      // Existing GET projection has one enabled SKU, no option axes, TWD 1200 minor.
-      // Keep that real single-SKU entry RED instead of adding fake variants.
+      // Existing GET projection has one enabled SKU, no option axes, USD 1200 minor.
+      // The real route defaults to the compact editor; bulk is in its advanced view.
       const writes: string[] = [];
       page.on("request", (request) => {
         if (!["GET", "HEAD"].includes(request.method())) writes.push(`${request.method()} ${new URL(request.url()).pathname}`);
       });
+      await expect(page.getByTestId("catalog-common-price")).toHaveValue("12.00");
+      await action(page, "進階", "click", "advanced single-SKU editor opens without a write", async () => {
+        const advanced = page.getByTestId("catalog-advanced-toggle");
+        await expect(advanced).toHaveText("進階");
+        await advanced.click();
+        await expect(page.getByTestId("product-price")).toBeVisible();
+      });
       const draftPrice = page.getByTestId("product-price");
-      await expect(draftPrice).toHaveValue("12");
+      const expectDraftPrice = async (display: "12.00" | "22.00", minor: 1200 | 2200) => {
+        await expect(draftPrice).toHaveValue(display);
+        const value = await draftPrice.inputValue();
+        // Independent USD oracle: strict decimal digits, no production money parser.
+        expect(value).toMatch(/^\d+\.\d{2}$/);
+        const [whole, fraction] = value.split(".");
+        expect(Number(whole) * 100 + Number(fraction)).toBe(minor);
+      };
+      await expectDraftPrice("12.00", 1200);
       const bulkFillButton = page.getByRole("button", { name: "批量填充", exact: true });
       const panel = page.getByRole("region", { name: /批量填充/ });
       const priceInput = panel.getByRole("spinbutton", { name: "填入售價（元）", exact: true });
@@ -180,7 +195,7 @@ if (process.env.LC_BROWSER_PARITY_DENIED !== "1") test.describe("PARITY-LEFTOVER
       await action(page, "取消", "click", "panel closes, price stays 12 and focus returns", async () => {
         await panel.getByRole("button", { name: "取消", exact: true }).click();
         await expect(panel).toBeHidden();
-        await expect(draftPrice).toHaveValue("12");
+        await expectDraftPrice("12.00", 1200);
         await expect(bulkFillButton).toBeFocused();
       });
       await action(page, "批量填充 / Escape", "click + key", "reopen and Escape discard without a write", async () => {
@@ -189,7 +204,7 @@ if (process.env.LC_BROWSER_PARITY_DENIED !== "1") test.describe("PARITY-LEFTOVER
         await priceInput.fill("99");
         await priceInput.press("Escape");
         await expect(panel).toBeHidden();
-        await expect(draftPrice).toHaveValue("12");
+        await expectDraftPrice("12.00", 1200);
         await expect(bulkFillButton).toBeFocused();
       });
       await action(page, "批量填充 / 返回", "click", "return discards panel edits and restores focus", async () => {
@@ -198,7 +213,7 @@ if (process.env.LC_BROWSER_PARITY_DENIED !== "1") test.describe("PARITY-LEFTOVER
         await priceInput.fill("99");
         await panel.getByRole("button", { name: "返回", exact: true }).click();
         await expect(panel).toBeHidden();
-        await expect(draftPrice).toHaveValue("12");
+        await expectDraftPrice("12.00", 1200);
         await expect(bulkFillButton).toBeFocused();
       });
       await action(page, "套用批量填充", "click", "add 10 to the existing 12 locally", async () => {
@@ -208,7 +223,7 @@ if (process.env.LC_BROWSER_PARITY_DENIED !== "1") test.describe("PARITY-LEFTOVER
         await panel.getByRole("button", { name: "增加", exact: true }).click();
         await panel.getByRole("button", { name: "套用批量填充", exact: true }).click();
         await expect(panel).toBeHidden();
-        await expect(draftPrice).toHaveValue("22");
+        await expectDraftPrice("22.00", 2200);
         await expect(bulkFillButton).toBeFocused();
       });
       await action(page, "填入售價（元） / Enter", "click + fill + key", "Enter subtracts 10 locally", async () => {
@@ -218,7 +233,7 @@ if (process.env.LC_BROWSER_PARITY_DENIED !== "1") test.describe("PARITY-LEFTOVER
         await panel.getByRole("button", { name: "減少", exact: true }).click();
         await priceInput.press("Enter");
         await expect(panel).toBeHidden();
-        await expect(draftPrice).toHaveValue("12");
+        await expectDraftPrice("12.00", 1200);
         await expect(bulkFillButton).toBeFocused();
       });
       expect(writes, "bulk apply/cancel/return/keyboard never persist the draft").toEqual([]);
