@@ -495,7 +495,6 @@ export function StudioClaims({ locale, store, scene, initialError }: {
           <div className={taskStyle.card}><h2>{p.matchQuestion}</h2><div className={taskStyle.row}>{(["EXACT", "KEYWORD_QTY_ONLY", "KEYWORD_QTY_CONTAINS"] as MatchMode[]).map(mode => <button key={mode} type="button" aria-pressed={modeDraft === mode} disabled={blocked || claimWindow.state !== "CLOSED" || modeDraft === mode} onClick={() => changeMode(mode)}>{mode === "EXACT" ? c.modeExact : mode === "KEYWORD_QTY_ONLY" ? c.modeQty : c.modeContains}</button>)}</div>{alert("window")}</div>
           <p className={`${taskStyle.note} ${taskStyle.muted}`}>{p.localBoundary}</p><div className={taskStyle.footer}><a href={`/${locale}/studio?store=${storeID}`}>{p.back}</a><a href={`/${locale}/studio/console?store=${storeID}&scene=${scene}`}>{p.console}</a></div>
         </section>
-        <details open={task === "advanced"}><summary>{p.advanced}</summary>
         <div className="claims-surface">
           <aside className="claims-rail" aria-labelledby="claims-window-title">
             <div className="claims-window-head">
@@ -515,11 +514,11 @@ export function StudioClaims({ locale, store, scene, initialError }: {
             {claimWindow.state === "OPEN" && <p className="claims-muted">{c.modeLocked}</p>}
             <button type="button" className="primary claims-window-action" disabled={blocked} onClick={toggleWindow}>
               {busy === "window" ? c.working : claimWindow.state === "OPEN" ? c.closeWindow : c.openWindow}</button>
+            <details open={task === "advanced"}><summary>{p.advanced}</summary>
             <dl className="claims-facts">
               <div><dt>{c.round}</dt><dd>{claimWindow.generation}</dd></div>
               {claimWindow.state === "OPEN" && claimWindow.opened_at && <div><dt>{c.openedAt}</dt><dd>{displayTime(locale, claimWindow.opened_at)}</dd></div>}
             </dl>
-            {alert("window")}
             <details className="claims-stats" open={board.stats.accepted > 0 || persistedReasons.some((reason) => board.stats.rejected[reason] > 0)}>
               <summary id="claims-stats-title">{c.stats}</summary>
               <dl className="claims-facts">
@@ -528,6 +527,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                   <dd data-testid={`claims-rejected-${reason}`}>{board.stats.rejected[reason]}</dd></div>)}
               </dl>
               {board.stats.rejected.NO_MATCH > 0 && <p className="claims-hint" role="status">{c.notUnderstood(board.stats.rejected.NO_MATCH)}</p>}
+            </details>
             </details>
             {prompt && <section className="claims-prompt" aria-labelledby="claims-prompt-title">
               <h3 id="claims-prompt-title">{c.prompt}</h3>
@@ -768,7 +768,6 @@ export function StudioClaims({ locale, store, scene, initialError }: {
           </TableFrame> : <p className="claims-muted">{c.noBundles}</p>}
           {facts.next && <button type="button" className="claims-more" onClick={() => void loadMore()}>{c.more}</button>}
         </section>
-        </details>
       </>}
       <dialog ref={dialog} className="claims-dialog" aria-labelledby="claims-dialog-title" onCancel={closeDialog}>
         {issued && <div className="claims-dialog-body">
