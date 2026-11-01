@@ -40,9 +40,9 @@ DO $$ DECLARE n text; BEGIN
  END LOOP;
 END $$;
 GRANT UPDATE(status,version,rejection_reason,return_id,updated_at) ON returns.buyer_requests TO commerce_checkout_writer;
-COMMENT ON TABLE returns.buyer_requests IS '0210 buyer application, separate from merchant RMA; terminal decision CAS and linked return, never a refund.';
-COMMENT ON TABLE returns.buyer_request_lines IS '0210 immutable selected order lines; one requested application per line enforced under the order row lock.';
-COMMENT ON TABLE returns.buyer_request_receipts IS '0210 actor-scoped immutable command results; no direct runtime table privileges; retain with application.';
+COMMENT ON TABLE returns.buyer_requests IS '0217 buyer application, separate from merchant RMA; terminal decision CAS and linked return, never a refund.';
+COMMENT ON TABLE returns.buyer_request_lines IS '0217 immutable selected order lines; one requested application per line enforced under the order row lock.';
+COMMENT ON TABLE returns.buyer_request_receipts IS '0217 actor-scoped immutable command results; no direct runtime table privileges; retain with application.';
 GRANT USAGE ON SCHEMA returns TO commerce_buyer_writer,commerce_buyer_runtime,commerce_checkout_runtime;
 
 -- This narrow helper keeps capability table access in its existing owner; no old function ACL is widened.
@@ -61,7 +61,7 @@ END $$;
 ALTER FUNCTION returns.buyer_request_scope(bytea,uuid) OWNER TO commerce_buyer_writer;
 REVOKE ALL ON FUNCTION returns.buyer_request_scope(bytea,uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION returns.buyer_request_scope(bytea,uuid) TO commerce_checkout_writer;
-COMMENT ON FUNCTION returns.buyer_request_scope(bytea,uuid) IS '0210 internal only: resolve and lock full buyer authority, refuse view-only capability; establish server-derived scope.';
+COMMENT ON FUNCTION returns.buyer_request_scope(bytea,uuid) IS '0217 internal only: resolve and lock full buyer authority, refuse view-only capability; establish server-derived scope.';
 
 CREATE FUNCTION returns.buyer_request_json(p_t uuid,p_store uuid,p_id uuid) RETURNS jsonb
 LANGUAGE sql STABLE SET search_path=pg_catalog AS $$
@@ -77,7 +77,7 @@ LANGUAGE sql STABLE SET search_path=pg_catalog AS $$
 $$;
 ALTER FUNCTION returns.buyer_request_json(uuid,uuid,uuid) OWNER TO commerce_checkout_writer;
 REVOKE ALL ON FUNCTION returns.buyer_request_json(uuid,uuid,uuid) FROM PUBLIC;
-COMMENT ON FUNCTION returns.buyer_request_json(uuid,uuid,uuid) IS '0210 internal safe projection: no buyer/staff identity or contact fields; linked return state read live.';
+COMMENT ON FUNCTION returns.buyer_request_json(uuid,uuid,uuid) IS '0217 internal safe projection: no buyer/staff identity or contact fields; linked return state read live.';
 
 CREATE FUNCTION returns.create_buyer_request(p_hash bytea,p_store uuid,p_order uuid,p_key text,p_reason text,p_note text,p_lines jsonb)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -146,7 +146,7 @@ END $$;
 ALTER FUNCTION returns.create_buyer_request(bytea,uuid,uuid,text,text,text,jsonb) OWNER TO commerce_checkout_writer;
 REVOKE ALL ON FUNCTION returns.create_buyer_request(bytea,uuid,uuid,text,text,text,jsonb) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION returns.create_buyer_request(bytea,uuid,uuid,text,text,text,jsonb) TO commerce_buyer_runtime,commerce_checkout_runtime;
-COMMENT ON FUNCTION returns.create_buyer_request(bytea,uuid,uuid,text,text,text,jsonb) IS '0210 buyer create: full own-order authority, trusted window, order lock, one open request per line, existing RMA capacity, actor-scoped replay, final authorization; no money.';
+COMMENT ON FUNCTION returns.create_buyer_request(bytea,uuid,uuid,text,text,text,jsonb) IS '0217 buyer create: full own-order authority, trusted window, order lock, one open request per line, existing RMA capacity, actor-scoped replay, final authorization; no money.';
 
 -- Shared read: merchant scope needs orders:read; buyer scope must be full and owns every projected row.
 CREATE FUNCTION returns.read_buyer_requests(p_hash bytea,p_store uuid,p_id uuid,p_merchant boolean)
@@ -171,7 +171,7 @@ END $$;
 ALTER FUNCTION returns.read_buyer_requests(bytea,uuid,uuid,boolean) OWNER TO commerce_checkout_writer;
 REVOKE ALL ON FUNCTION returns.read_buyer_requests(bytea,uuid,uuid,boolean) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION returns.read_buyer_requests(bytea,uuid,uuid,boolean) TO commerce_runtime,commerce_buyer_runtime,commerce_checkout_runtime;
-COMMENT ON FUNCTION returns.read_buyer_requests(bytea,uuid,uuid,boolean) IS '0210 scoped list/detail; merchant orders:read or full buyer own records; no contact/authority fields; reauthorize before returning.';
+COMMENT ON FUNCTION returns.read_buyer_requests(bytea,uuid,uuid,boolean) IS '0217 scoped list/detail; merchant orders:read or full buyer own records; no contact/authority fields; reauthorize before returning.';
 
 CREATE FUNCTION returns.decide_buyer_request(p_hash bytea,p_store uuid,p_id uuid,p_key text,p_expected bigint,p_action text,p_reason text)
 RETURNS jsonb LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -223,7 +223,7 @@ END $$;
 ALTER FUNCTION returns.decide_buyer_request(bytea,uuid,uuid,text,bigint,text,text) OWNER TO commerce_checkout_writer;
 REVOKE ALL ON FUNCTION returns.decide_buyer_request(bytea,uuid,uuid,text,bigint,text,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION returns.decide_buyer_request(bytea,uuid,uuid,text,bigint,text,text) TO commerce_runtime,commerce_buyer_runtime,commerce_checkout_runtime;
-COMMENT ON FUNCTION returns.decide_buyer_request(bytea,uuid,uuid,text,bigint,text,text) IS '0210 CAS/replay: full buyer withdraw, fulfillment:write approve/reject. Approval calls unchanged register_rma in same transaction. Rollback on any refusal, no refunds.';
+COMMENT ON FUNCTION returns.decide_buyer_request(bytea,uuid,uuid,text,bigint,text,text) IS '0217 CAS/replay: full buyer withdraw, fulfillment:write approve/reject. Approval calls unchanged register_rma in same transaction. Rollback on any refusal, no refunds.';
 
 COMMENT ON COLUMN returns.buyer_requests.tenant_id IS 'Server-derived tenant scope; forced RLS key.';
 COMMENT ON COLUMN returns.buyer_requests.store_id IS 'Server-derived store scope; forced RLS key.';
