@@ -1,3 +1,60 @@
+# Current candidate: bounded assertion migration 2 (2026-11-01)
+
+- task_id: `53ea9f21-3f3b-4626-87ab-42dc853507b9-sub-assertion-guard`; parent/root retains the PR475 author lease. This is the second and final bounded candidate.
+- base_commit: `4556b8268f7b003a98bb2ab1ccc6d7aef009cdc1`; worktree `/Volumes/data/live_commerce_architecture_v1/.worktrees/codex-pr475-inventory-repair`; branch `codex/pr475-inventory-repair`; entry status clean and HEAD matched.
+- role/model/reasoning: same subordinate gate implementer, Astra high as assigned. No delegation. Independent review NOT_RUN.
+- changed paths this round: `tests/ci/next-startup.test.mjs`, this report only. Direct caller/product/fixtures/lockfiles/CI budgets untouched.
+- Current evidence level E1, static structure only. Runtime/mutation execution for this candidate remains NOT_RUN; no push/merge.
+
+## New observed failure and finite correction
+
+Foundation `41302317135`, job `124835659113`, at the above base reported one failing test: eleven-adapter parity, first missing merchant-buyer `expect(merchant.getByRole("link", { name: "Add product", exact: true })).toBeVisible()`. The same run passed the catalog twelve-mutation test and the original environment/readiness mutation test. Evidence read: `output/integrator/tools/logs/heartbeat-1144-pr475/foundation-filtered.log` in the integration workspace; raw receipt <https://api.github.com/repos/humaux/live_commerce_architecture_v1/actions/jobs/124835659113/logs>. This previous run does not accept the new candidate.
+
+A full static AST inventory found precisely three remaining outer assertion migrations (six nodes including nested `expect`):
+
+1. merchant-buyer `Add product` link visibility -> exact `Back to products` link visibility.
+2. merchant-buyer `ledgerRow.locator(".available-value")` text `"0"` -> `ledgerBalance` text `"0"`.
+3. storefront-publish `Add product` link visibility -> exact `Back to products` link visibility.
+
+These are complete-call mappings scoped to their two files, using the prior whole-subtree replacement mechanism. No monetary expression, expected stock value, matcher strength, ordering comparator or baseline SHA changes. `tests/storefront/merchant-product.mjs` was read: creation uses real Back to products then product-new clicks with the exact editor href asserted; selection searches the requested `code`, requires one matching row, clicks its product button and disclosure, then returns `inventory-current-available`. `InventoryView.tsx` binds that test ID to the available balance. Neither the helper nor its callers were edited.
+
+New negatives: each of the two gates must reject deleted entry assertion, wrong role, non-exact name, and attached-only matcher (eight cases); merchant-buyer additionally rejects deleting the zero-stock assertion and changing zero to one (two cases). Positive controls call the same parity function. Ten new mutation executions are staged for GitHub, not claimed as locally passed. The existing catalog and readiness negatives are unmodified.
+
+## Static inventory of all eleven adapters
+
+Read-only inline `node --input-type=module` used the **already installed** Prettier 3.9.8 Babel parser; no dependency install, gate execution, app startup or browser occurred. It parsed source and mapping literals, compared normalized complete call ASTs in original order, including nested `expect`, and compared startup classes. Excluded only parser location/comment/raw-format metadata. This is independent static evidence, not TypeScript-printer or runtime acceptance.
+
+| Adapter | Original assertion nodes | Current nodes | Remaining missing after exact mappings |
+| --- | ---: | ---: | ---: |
+| browser | 106 | 106 | 0 |
+| buyer-comms | 77 | 77 | 0 |
+| catalog-media | 92 | 106 | 0 |
+| manual-order-link | 107 | 115 | 0 |
+| merchant-buyer | 59 | 59 | 0 |
+| order | 434 | 462 | 0 |
+| promotions | 112 | 158 | 0 |
+| shop | 206 | 208 | 0 |
+| shop-real | 173 | 262 | 0 |
+| store-domains | 191 | 193 | 0 |
+| storefront-publish | 100 | 102 | 0 |
+
+All eleven also matched all five startup AST classes: environment member assignments, readiness status predicates, readiness/env for-loops, spawn calls, and env/childEnv/args/bin declarations. Final diagnostic output: `{"staticASTAdapters":11,"failures":0,"runtimeTests":"NOT_RUN"}`; process exit 0. These counts describe complete assertion equality in order; counts alone were not the comparator.
+
+## Actual commands, failures and hashes
+
+- `git status --short && git rev-parse HEAD`: exit 0, clean and matching base.
+- `node --check tests/ci/next-startup.test.mjs`: exit 0.
+- `git diff --check`: exit 0.
+- Inline `node --input-type=module` AST enumeration before the change: exit 0; all eleven enumerated, only the three outer assertions above absent.
+- Expanded inline AST startup comparison first exited 1 because Prettier adds offset field `__contentEnd` to statements. Inspecting the two readiness nodes proved equal semantics with only offsets 4586/5558 differing; the final diagnostic excluded this location field and exited 0. The actual repository guard was not changed for this diagnostic artifact.
+- A read of the integration log by worktree-relative path failed (file not in this tree); the explicit integration-workspace path succeeded. No missing log was treated as evidence.
+- `shasum -a 256 tests/ci/next-startup.test.mjs`: `2164284c76a2e6e058d7729bd38da17dba1889bd29d0f376c0bdea9d72785bdd`.
+- Read-only caller hashes: merchant-buyer `099c2bf813e0f216fe0b41d77ff48f51619bcf0aff9ce6d41b436a2645dbd9a4`; storefront-publish `ab10d5c9778d074d998a1538bf92181b3d7fc2acbbbe3f7b75eb1a88532070a0`; merchant-product helper `2c36a724923195cdb9a5dac5397f986457a47612a24d0e31387a5b43de252c16`.
+
+Root must regenerate ownership if required, run GitHub Foundation with all prior/new mutation witnesses, and obtain independent review after green. No local runtime tests, Go/PG/browser, services, downloads, push, merge or production writes. No new temporary file/process requires cleanup. Runtime equality and browser behavior remain NOT_RUN/UNKNOWN until CI. Stop after this candidate; a further failure requires root adjudication.
+
+---
+
 # PR475 signed inventory assertion guard candidate
 
 - task_id: `53ea9f21-3f3b-4626-87ab-42dc853507b9-sub-assertion-guard`; parent coord remains held by root.

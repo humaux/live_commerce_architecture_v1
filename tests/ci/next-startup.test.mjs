@@ -260,6 +260,19 @@ const CATALOG_ASSERTION_REWRITES = {
   'expect(row(fx.sku2.code).locator(".status-col .status.archived")).toBeVisible()': 'expect(merchant.locator("section.inspector .status.archived")).toBeVisible()',
   'expect(row(fx.sku1.code).locator("[data-photo=real]")).toBeVisible()': 'expect(merchant.locator("section.inspector [data-photo=real]")).toBeVisible()',
 };
+// Signed C6: inventory routes through Back to products -> product-new. The existing shared helper
+// performs both real clicks; selectLedgerRow searches the requested code and returns its selected
+// inventory-current-available value. Only these complete calls migrate; exact role/name and zero stay required.
+const SIGNED_ASSERTION_REWRITES = {
+  "tests/storefront/catalog-media-gate.mjs": CATALOG_ASSERTION_REWRITES,
+  "tests/storefront/merchant-buyer-gate.mjs": {
+    'expect(merchant.getByRole("link", { name: "Add product", exact: true })).toBeVisible()': 'expect(merchant.getByRole("link", { name: "Back to products", exact: true })).toBeVisible()',
+    'expect(ledgerRow.locator(".available-value")).toHaveText("0")': 'expect(ledgerBalance).toHaveText("0")',
+  },
+  "tests/storefront/storefront-publish-gate.mjs": {
+    'expect(merchant.getByRole("link", { name: "Add product", exact: true })).toBeVisible()': 'expect(merchant.getByRole("link", { name: "Back to products", exact: true })).toBeVisible()',
+  },
+};
 // These facts now depend on selecting the right SKU. Freeze the real click/readback sequence as well
 // as the assertions: wrong selection, missing disclosure, or disabled-control checks on the active SKU
 // must not satisfy parity. This is one signed UI migration, not a general waiver for reordered assertions.
@@ -327,7 +340,7 @@ function assertGateParity(file, before, currentSource) {
   const assertions = (n, source) => ts.isCallExpression(n) && /^(assert|expect)(?:\.|\(|$)/.test(n.expression.getText(source));
   // Every baseline assertion must survive, in order (no weakening or removal); added assertions are allowed, since a
   // later fix may legitimately strengthen a gate (e.g. waiting for the regenerated link to render).
-  const kept = collect(current, current, assertions), original = collect(old, old, assertions, file === "tests/storefront/catalog-media-gate.mjs" ? CATALOG_ASSERTION_REWRITES : {}).map((call) => (SIGNED_FRAME_REWRITES[file] ?? []).reduce((s, [from, to]) => s.replaceAll(from, to), call));
+  const kept = collect(current, current, assertions), original = collect(old, old, assertions, SIGNED_ASSERTION_REWRITES[file] ?? {}).map((call) => (SIGNED_FRAME_REWRITES[file] ?? []).reduce((s, [from, to]) => s.replaceAll(from, to), call));
   let at = 0;
   for (const call of kept) if (at < original.length && call === original[at]) at++;
   assert.equal(at, original.length, `${file}: original gate assertions changed (missing: ${original[at]})`);
@@ -383,6 +396,31 @@ test("signed inventory parity rejects missing facts, changed price oracles and w
     const mutated = current.replace(from, to);
     assert.notEqual(mutated, current, `${label}: mutation target missing`);
     assert.throws(() => assertGateParity(file, before, mutated), /original gate assertions changed|signed inventory SKU selection\/readback changed/, label);
+  }
+});
+
+test("signed product entry and selected stock parity reject deleted or weakened assertions", async () => {
+  for (const file of ["tests/storefront/merchant-buyer-gate.mjs", "tests/storefront/storefront-publish-gate.mjs"]) {
+    const before = execFileSync("git", ["show", `${GATE_BASELINE}:${file}`], { encoding: "utf8" });
+    const current = await readFile(file, "utf8");
+    assert.equal(assertGateParity(file, before, current), true);
+    const entry = current.split("\n").find(line => line.includes('name: "Back to products", exact: true') && line.includes('.toBeVisible()'));
+    assert.ok(entry, `${file}: signed product entry mutation target missing`);
+    const mutations = [
+      ["delete product entry", entry, ""],
+      ["wrong entry role", entry, entry.replace('"link"', '"button"')],
+      ["non-exact entry name", entry, entry.replace("exact: true", "exact: false")],
+      ["hidden product entry", entry, entry.replace(".toBeVisible()", ".toBeAttached()")],
+    ];
+    if (file === "tests/storefront/merchant-buyer-gate.mjs") {
+      const balance = 'await expect(ledgerBalance).toHaveText("0");';
+      mutations.push(["delete selected stock", balance, ""], ["wrong stock oracle", balance, balance.replace('"0"', '"1"')]);
+    }
+    for (const [label, from, to] of mutations) {
+      const mutated = current.replace(from, to);
+      assert.notEqual(mutated, current, `${file}: ${label}: mutation target missing`);
+      assert.throws(() => assertGateParity(file, before, mutated), /original gate assertions changed/, `${file}: ${label}`);
+    }
   }
 });
 
