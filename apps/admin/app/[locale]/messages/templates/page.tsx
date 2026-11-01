@@ -1,4 +1,5 @@
-// Purpose: authorized MessageTemplateList real route. Depends on shared server session/store loader and WorkspaceFrame.
+// Purpose: authorized MessageTemplateList real route.
+// Depends on: shared server session/store loader, WorkspaceFrame and MessageTemplateList.
 // Used by: Next app router. Invariants: exact locale/store query only; no writes; original server-auth scope retained.
 import { MessageTemplateList } from "@/components/inbox/MessageTemplateList";
 import { WorkspaceFrame } from "@/components/WorkspaceFrame";

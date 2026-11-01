@@ -1,4 +1,5 @@
-// Purpose: authorized OrderExportHelp real route. Depends on shared server session/store loader and WorkspaceFrame.
+// Purpose: authorized OrderExportHelp real route.
+// Depends on: shared server session/store loader, WorkspaceFrame and OrderExportHelp.
 // Used by: Next app router. Invariants: exact locale/store query only; no writes; original server-auth scope retained.
 import { OrderExportHelp } from "@/components/orders/OrderExportHelp";
 import { WorkspaceFrame } from "@/components/WorkspaceFrame";

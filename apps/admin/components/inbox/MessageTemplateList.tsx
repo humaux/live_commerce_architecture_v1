@@ -1,5 +1,6 @@
 // Figma local links: https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X?node-id=5-15002 and https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X?node-id=5-15135
-// Purpose: signed metadata-only list 5:15002/15135; depends on guarded read + existing strict settings transport.
+// Purpose: signed metadata-only list 5:15002/15135.
+// Depends on: useGuardedRead, readLiveSettings, message permissions and shared admin states.
 // Used by: templates/page. Invariants: inbox:reply; no body read/edit/write; unknown kinds remain raw metadata; no cached rows.
 "use client";
 import { useEffect, useRef } from "react";

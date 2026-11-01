@@ -1,4 +1,6 @@
-// Purpose: typed three-locale export-help copy; depends on Locale; used by OrderExportHelp. No export authority.
+// Purpose: typed three-locale export-help copy without export authority.
+// Depends on: Locale from @live-commerce/i18n.
+// Used by: OrderExportHelp.
 import type { Locale } from "@live-commerce/i18n";
 export const orderExportHelpCopy = {
   "zh-TW": {

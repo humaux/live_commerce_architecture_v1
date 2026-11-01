@@ -1,5 +1,6 @@
 // Figma local links: https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X?node-id=808-5618 and https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X?node-id=808-5619
-// Purpose: signed help-only frame 808:5618/5619; depends on authenticated page context and shared states.
+// Purpose: signed help-only frame 808:5618/5619.
+// Depends on: authenticated page context, message permissions and shared admin states.
 // Used by: orders/export/page. Invariants: orders:read; no export/CSV/write transport; return retains authenticated store.
 "use client";
 import { useRouter } from "next/navigation";

@@ -1,4 +1,5 @@
-// Purpose: authorized MessageTemplateForm real route. Depends on shared server session/store loader and WorkspaceFrame.
+// Purpose: authorized MessageTemplateForm real route.
+// Depends on: shared server session/store loader, WorkspaceFrame and MessageTemplateForm.
 // Used by: Next app router. Invariants: exact locale/store query only; no writes; original server-auth scope retained.
 import { MessageTemplateForm } from "@/components/inbox/MessageTemplateForm";
 import { WorkspaceFrame } from "@/components/WorkspaceFrame";

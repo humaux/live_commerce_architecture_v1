@@ -1,6 +1,7 @@
 // Figma local links: https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X?node-id=673-2847 and https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X?node-id=673-2916
 // Purpose: signed initial form 673:2847/2916 with local preview/format checks only.
-// Depends on: authenticated page context, existing merchantTemplate grammar, React; used by templates/new/page.
+// Depends on: authenticated page context, existing merchantTemplate grammar and React.
+// Used by: app/[locale]/messages/templates/new/page.tsx.
 // Invariants: live:manage; no POST/publication/sending or persistence; drafts clear on hide/logout; server validates public safety separately.
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";

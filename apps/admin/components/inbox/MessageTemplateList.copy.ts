@@ -1,4 +1,6 @@
-// Purpose: typed three-locale signed template copy. Depends on Locale; used by list/form. No publication claim.
+// Purpose: typed three-locale signed template copy without a publication claim.
+// Depends on: Locale from @live-commerce/i18n.
+// Used by: MessageTemplateList and MessageTemplateForm.
 import type { Locale } from "@live-commerce/i18n";
 const tw = {
   title: "消息範本",
