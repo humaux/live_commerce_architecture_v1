@@ -1,3 +1,7 @@
+// Purpose: Shared real-click product creation and signed inventory selection.
+// Depends on: Node assertions, Playwright and the authenticated admin routes.
+// Used by: merchant-buyer-gate and storefront-publish-gate.
+// Invariants: stock and product writes use existing UI controls and original server receipts.
 // Shared merchant step of the joint browser gates (merchant-buyer-gate, storefront-publish-gate, catalog-media-gate): create ONE live product
 // with ONE SKU through the real admin UI, signed in as the MOCK-IdP merchant.
 // stop-bleed D01 (product-editor §c9): the inventory page no longer has the inline "quick add" (product, then first SKU); the only product
@@ -10,7 +14,11 @@ import { expect } from "@playwright/test";
 
 export async function createProductInEditor(merchant, { adminOrigin, store, locale = "en", name, description, code, price }) {
   const api = (method, resource) => merchant.waitForResponse(response => response.request().method() === method && new URL(response.url()).pathname === `/api/stores/${store}/${resource}`);
-  await merchant.goto(`${adminOrigin}/${locale}/products/new?store=${store}`);
+  const back = { en: "Back to products", "zh-TW": "返回商品", "zh-CN": "返回商品" }[locale];
+  await merchant.goto(`${adminOrigin}/${locale}/inventory`);
+  await merchant.getByRole("link", { name: back, exact: true }).click();
+  await expect(merchant.getByTestId("product-new")).toHaveAttribute("href", `/${locale}/products/new?store=${store}`);
+  await merchant.getByTestId("product-new").click();
   await expect(merchant.getByTestId("product-create-form")).toBeVisible();
   await merchant.getByTestId("product-name").fill(name);
   await merchant.getByTestId("product-description").fill(description);
@@ -35,13 +43,16 @@ export async function createProductInEditor(merchant, { adminOrigin, store, loca
   return { product, sku };
 }
 
-// The stock ledger row of a SKU code (search, then select it) so the tray and the purchase entry are about that product.
-export async function selectLedgerRow(merchant, { adminOrigin, locale = "en", code, searchLabel = "Search product name or SKU", searchButton = "Search" }) {
+// Search/select the signed SKU panel, open its product disclosure and return its server-owned available balance.
+export async function selectLedgerRow(merchant, { adminOrigin, locale = "en", code, searchButton = { en: "Search", "zh-TW": "搜尋", "zh-CN": "搜索" }[locale] }) {
   await merchant.goto(`${adminOrigin}/${locale}/inventory`);
-  await merchant.getByRole("textbox", { name: searchLabel }).fill(code);
+  const c = { en: ["Search SKU", "SKU or product name", "Product"], "zh-TW": ["搜尋貨號", "貨號或商品名稱", "商品"], "zh-CN": ["搜索货号", "货号或商品名称", "商品"] }[locale];
+  await merchant.getByRole("button", { name: c[0], exact: true }).click();
+  await merchant.getByRole("textbox", { name: c[1], exact: true }).fill(code);
   await merchant.getByRole("button", { name: searchButton, exact: true }).click();
   const row = merchant.locator("tbody tr").filter({ hasText: code });
   await expect(row).toHaveCount(1);
   await row.locator("button.product-name").click();
-  return row;
+  await merchant.getByTestId("inventory-product-details").locator("summary").click();
+  return merchant.getByTestId("inventory-current-available");
 }

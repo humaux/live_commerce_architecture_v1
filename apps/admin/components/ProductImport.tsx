@@ -1,6 +1,7 @@
 // Purpose: Owns product CSV preview, import commit and export controls.
-// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/catalog-v2-copy, @/lib/model, @/lib/settings-client, @/lib/merchant-tools-client, @/lib/merchant-tools-model, @/lib/merchant-tools-copy, ./WorkspaceFrame, ./AdminPageHeader, ./orders.css, ./customers.css, ./merchant-tools.css, ./ProductAdmin.css
+// Depends on: React, data-ops locale namespace, merchant-tools client/model/copy, session boundary and WorkspaceFrame.
 // Used by: apps/admin/app/[locale]/products/import/page.tsx
+// Invariants: server-only CSV parsing; all-or-nothing writes; uncertain commits keep the selected bytes.
 "use client";
 
 // Product CSV import / export (/{locale}/products/import). BFF /api/stores/{store}/tools/products/{export.csv, import/preview, import/commit}
@@ -8,9 +9,10 @@
 // (preview: the server runs the whole import and rolls back, so every row error appears with its row number), then "import" the SAME file
 // (all-or-nothing; the same bytes uploaded twice replay and change nothing). The file is read once into a Blob, never stored, and never
 // parsed here: Go is the only parser, so the browser and the server cannot disagree. The session fence is lib/merchant-tools-client.
+import { dataOpsCopy, dataOpsText } from "../../../packages/i18n/src/data-ops";
+import "./imports/data-ops.css";
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
-import { FilePicker } from "@live-commerce/ui";
 import { catalogPresentationCopy } from "@/lib/catalog-v2-copy";
 import type { Store } from "@/lib/model";
 import { sessionBoundary } from "@/lib/settings-client";
@@ -18,7 +20,6 @@ import { fetchExport, sendImport } from "@/lib/merchant-tools-client";
 import { csvFileProblem, type ImportResult } from "@/lib/merchant-tools-model";
 import { toolsCopy } from "@/lib/merchant-tools-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
-import { AdminPageHeader } from "./AdminPageHeader";
 import "./orders.css";
 import "./customers.css";
 import "./merchant-tools.css";
@@ -37,11 +38,13 @@ export function ProductImport({
   store: Store | null;
 }) {
   const c = toolsCopy[locale].importer;
+  const d = dataOpsCopy(locale);
   const [boundary, setBoundary] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<ImportResult | null>(null);
   const [problem, setProblem] = useState("");
+  const [unknown, setUnknown] = useState(false);
   const [exporting, setExporting] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -67,10 +70,12 @@ export function ProductImport({
     setPhase(mode === "preview" ? "checking" : "committing");
     const outcome = await sendImport(store.id, mode, file, boundary);
     if (!outcome.ok) {
-      setProblem(errorFor(outcome.code));
+      if (mode === "commit" && outcome.uncertain) { setUnknown(true); setProblem(d.pendingHelp); }
+      else setProblem(errorFor(outcome.code));
       setPhase(mode === "preview" ? "idle" : "checked");
       return;
     }
+    setUnknown(false);
     setResult(outcome.value);
     setPhase(mode === "commit" && outcome.value.committed ? "done" : "checked");
   }
@@ -133,217 +138,48 @@ export function ProductImport({
             ? p.fixFileFirst
             : p.checkFileFirst
           : "";
-  return (
-    <WorkspaceFrame
-      locale={locale}
-      storeName={store?.name ?? c.noStore}
-      active="products"
-    >
-      <div
-        className="orders-page product-admin product-import-page"
-        data-testid="import-page"
-      >
-        <AdminPageHeader locale={locale} description={c.subtitle} />
-        {stores.length > 1 && (
-          <div className="orders-controls">
-            <label>
-              {c.store}
-              <select
-                data-testid="store-selector"
-                value={store?.id ?? ""}
-                onChange={(event) =>
-                  window.location.assign(
-                    `/${locale}/products/import?store=${event.target.value}`,
-                  )
-                }
-              >
-                {stores.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-        )}
-        {!store && (
-          <p className="orders-message" role="status">
-            {c.noStore}
-          </p>
-        )}
-        {store && (
-          <div className="product-import-grid">
-            <section className="mt-card" aria-label={c.exportTitle}>
-              <h2>{c.exportTitle}</h2>
-              <p className="mt-note">{c.exportText}</p>
-              <div className="mt-actions" style={{ marginTop: 14 }}>
-                <button
-                  type="button"
-                  data-testid="import-export"
-                  disabled={exporting}
-                  onClick={() => void download()}
-                >
-                  {exporting ? c.exporting : c.exportButton}
-                </button>
-              </div>
-            </section>
-            <section className="mt-card" aria-label={c.importTitle}>
-              <h2>{c.importTitle}</h2>
-              <p className="mt-note">{c.importText}</p>
-              <ul className="mt-rules">
-                {c.rules.map((rule) => (
-                  <li key={rule}>{rule}</li>
-                ))}
-              </ul>
-              <p className="mt-note">{c.limits}</p>
-              <div className="mt-form" style={{ marginTop: 14 }}>
-                <FilePicker
-                  label={c.chooseFile}
-                  emptyLabel={p.noFile}
-                  fileName={file?.name ?? ""}
-                  inputRef={input}
-                  accept=".csv,text/csv"
-                  data-testid="import-file"
-                  onChange={(event) => pick(event.target.files?.[0] ?? null)}
-                />
-                <div className="mt-actions">
-                  <button
-                    type="button"
-                    data-testid="import-preview"
-                    aria-describedby={
-                      previewReason ? "import-preview-reason" : undefined
-                    }
-                    disabled={
-                      !file ||
-                      !boundary ||
-                      phase === "checking" ||
-                      phase === "committing"
-                    }
-                    onClick={() => void run("preview")}
-                  >
-                    {phase === "checking" ? c.previewing : c.preview}
-                  </button>
-                  <button
-                    type="button"
-                    className="product-primary"
-                    data-testid="import-commit"
-                    aria-describedby={
-                      commitReason
-                        ? commitReason === previewReason
-                          ? "import-preview-reason"
-                          : "import-commit-reason"
-                        : undefined
-                    }
-                    disabled={
-                      !clean ||
-                      phase === "committing" ||
-                      phase === "done" ||
-                      result?.committed
-                    }
-                    onClick={() => void run("commit")}
-                  >
-                    {phase === "committing" ? c.committing : c.commit}
-                  </button>
-                </div>
-                {previewReason && (
-                  <p
-                    id="import-preview-reason"
-                    className="product-disabled-reason"
-                  >
-                    {previewReason}
-                  </p>
-                )}
-                {commitReason && commitReason !== previewReason && (
-                  <p
-                    id="import-commit-reason"
-                    className="product-disabled-reason"
-                  >
-                    {commitReason}
-                  </p>
-                )}
-              </div>
-            </section>
-          </div>
-        )}
-        {problem && (
-          <p className="mt-warn" role="alert" data-testid="import-problem">
-            {problem}
-          </p>
-        )}
-        {result && (
-          <section
-            className="mt-card"
-            aria-label={c.summary}
-            data-testid="import-result"
-          >
-            <h2>{c.summary}</h2>
-            {result.committed && (
-              <p className="mt-ok" role="status">
-                {result.replayed ? c.replayed : c.committed}
-              </p>
-            )}
-            {!result.committed && clean && (
-              <p className="mt-ok" role="status">
-                {c.previewOK}
-              </p>
-            )}
-            <dl className="mt-stats">
-              {(
-                [
-                  [c.rows, result.rows],
-                  [c.createdProducts, result.created_products],
-                  [c.updatedProducts, result.updated_products],
-                  [c.createdSkus, result.created_skus],
-                  [c.updatedSkus, result.updated_skus],
-                  [c.stock, result.stock_adjustments],
-                  [c.unchanged, result.unchanged_rows],
-                ] as const
-              ).map(([label, n]) => (
-                <div key={label}>
-                  <dt>{label}</dt>
-                  <dd>{n}</dd>
-                </div>
-              ))}
-            </dl>
-            {result.errors.length > 0 && (
-              <>
-                <h3>
-                  {c.problems} ({result.errors.length}
-                  {result.errors_truncated ? "+" : ""})
-                </h3>
-                <p className="mt-note">{c.fix}</p>
-                <div className="mt-table-frame" data-testid="import-errors">
-                  <table className="mt-table">
-                    <thead>
-                      <tr>
-                        <th scope="col" className="num">
-                          {c.row}
-                        </th>
-                        <th scope="col">{c.column}</th>
-                        <th scope="col">{c.problem}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {result.errors.map((e, index) => (
-                        <tr key={`${e.row}|${e.column}|${e.code}|${index}`}>
-                          <td className="num">
-                            {e.row === 0 ? c.fileLevel : e.row}
-                          </td>
-                          <td>{e.column || "—"}</td>
-                          <td>{c.codes[e.code] ?? e.code}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-                {result.errors_truncated && (
-                  <p className="mt-note">{c.truncated}</p>
-                )}
-              </>
-            )}
-          </section>
-        )}
-      </div>
-    </WorkspaceFrame>
-  );
+  const storeQuery = store ? `?store=${encodeURIComponent(store.id)}` : "";
+  const errors = !!result?.errors.length;
+  const title = phase === "done" ? d.productResult : errors ? d.productErrors : phase === "checked" ? d.previewProduct : d.productTitle;
+  const reset = () => { setPhase("idle"); setResult(null); setProblem(""); };
+  return <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="products">
+    <div className="data-ops" data-testid="import-page">
+      <header><h1>{title}</h1>{phase === "idle" && <button data-testid="import-export" disabled={!store || exporting} onClick={() => void download()}>{exporting ? c.exporting : d.exportProduct}</button>}</header>
+      {stores.length > 1 && <label>{c.store}<select data-testid="store-selector" value={store?.id ?? ""} onChange={event => window.location.assign(`/${locale}/products/import?store=${encodeURIComponent(event.target.value)}`)}>{stores.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
+      {!store && <p role="status">{c.noStore}</p>}
+      {store && <>
+        {(phase === "idle" || phase === "checking") && <section className="ops-card">
+          <h2>{d.productUpload}</h2><p className="ops-callout">{d.productLimits}</p>
+          <label className="ops-file">{d.productFile}<input ref={input} type="file" accept=".csv,text/csv" data-testid="import-file" disabled={phase === "checking"} onChange={event => pick(event.target.files?.[0] ?? null)} /></label>
+          {file && <p>{file.name}</p>}<p>{d.productRule}</p><p>{d.productStock}</p>
+          <button className="primary" data-testid="import-preview" disabled={!!previewReason} onClick={() => void run("preview")}>{phase === "checking" ? c.previewing : d.previewFile}</button>
+          {previewReason && file && <p className="ops-note">{previewReason}</p>}
+        </section>}
+        {(phase === "checked" || phase === "committing") && result && <section className="ops-card" data-testid="import-result">
+          {errors ? <>
+            <p>{dataOpsText(d.productInvalidRows, { n: new Set(result.errors.map(error => error.row)).size })}</p><p className="ops-warning">{d.noBatch}</p><p>{d.repairCSV}</p>
+            <div data-testid="import-errors">{result.errors.map((error, index) => <section className="ops-row" key={index}>
+              <h2>{dataOpsText(d.row, { n: error.row, field: error.column === "price" ? d.priceField : error.column === "collections" ? d.collectionField : error.column })}</h2>
+              <p>{error.code === "required" && error.column === "price" ? d.missingPrice : error.code === "unknown_collection" ? d.missingCollection : c.codes[error.code]}</p>
+              {error.column === "price" && <p className="ops-note">{d.priceRepair}</p>}{error.code === "unknown_collection" && <p className="ops-note">{d.collectionRepair}</p>}
+            </section>)}</div>
+            {result.errors_truncated && <p>{c.truncated}</p>}
+            <button onClick={reset}>{d.reupload}</button>
+          </> : <>
+            <p>{dataOpsText(d.productRows, { file: file?.name ?? "", n: result.rows })}</p><p>{d.productPreviewRule}</p>
+            <dl className="ops-stats"><div><dt>{d.newProducts}</dt><dd>{result.created_products}</dd></div><div><dt>{d.updatedProducts}</dt><dd>{result.updated_products}</dd></div><div><dt>{d.stockAdjustments}</dt><dd>{result.stock_adjustments}</dd></div></dl>
+            <div className="ops-actions"><button onClick={reset} disabled={unknown || phase === "committing"}>{d.importHome}</button><button className="primary" data-testid="import-commit" disabled={!!commitReason} onClick={() => void run("commit")}>{phase === "committing" ? c.committing : c.commit}</button></div>
+          </>}
+        </section>}
+        {phase === "done" && result && <section className="ops-card" data-testid="import-result">
+          <h2>{d.importDone}</h2><dl className="ops-stats"><div><dt>{d.newProducts}</dt><dd>{result.created_products}</dd></div><div><dt>{d.updatedProducts}</dt><dd>{result.updated_products}</dd></div><div><dt>{d.stockAdjustments}</dt><dd>{result.stock_adjustments}</dd></div></dl>
+          <p>{dataOpsText(d.productTotals, { n: result.rows, failed: result.errors.length, same: result.unchanged_rows })}</p>
+          {result.replayed && <p>{c.replayed}</p>}
+          <div className="ops-actions"><button onClick={reset}>{d.importHome}</button><a className="ops-link" href={`/${locale}/products${storeQuery}`}>{d.viewProducts}</a></div>
+        </section>}
+        <a className="ops-link" href={`/${locale}/customers/import${storeQuery}`}>{d.customerImport}</a>
+      </>}
+      {problem && <p role="alert">{problem}</p>}
+    </div>
+  </WorkspaceFrame>;
 }

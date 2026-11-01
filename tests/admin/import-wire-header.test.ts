@@ -42,3 +42,26 @@ test("raw-byte cap does not decode/rebuild uploads and cancels oversized chunks"
  assert.deepEqual(await readImportBytes(new Response(bytes),100),bytes);
  assert.equal(await readImportBytes(new Response(bytes),3),null);
 });
+
+// Frozen migration-import-v1 §4.1: the marker changes representation, never mapping/count grammar.
+test("customer field-v1 admits exactly one decoded marker on preview and commit",async(t)=>{
+ for(const action of ["preview","commit"] as const)for(const marker of ["row_errors=field-v1","%72ow_errors=field%2Dv1"])
+  await t.test(`${action} ${marker}`,()=>{
+   const q=marker+(action==="commit"?"&expected_apply_rows=1":"");
+   const request=new Request(`https://admin.example.invalid/?${q}`,{method:"POST",headers:{"Content-Type":"text/csv"}});
+   assert.equal(validImportRequest(request,{kind:"customers",action}),true);
+  });
+});
+test("field-v1 rejects malformed/duplicate markers and every non-customer route",()=>{
+ const invalid=["row_errors=","row_errors=unknown","row_errors=FIELD-V1","row_errors=field-v1%20","row_errors=field-v1,legacy",
+  "row_errors=field-v1&row_errors=field-v1","row_errors=field-v1&%72ow_errors=field-v1","row_errors=field%ZZv1","row_errors=field-v1;only=failed","row_errors="+"x".repeat(4096)];
+ for(const action of ["preview","commit"] as const)for(const q of invalid){
+  const request=new Request(`https://admin.example.invalid/?${q}${action==="commit"?"&expected_apply_rows=1":""}`,{method:"POST",headers:{"Content-Type":"text/csv"}});
+  assert.equal(validImportRequest(request,{kind:"customers",action}),false,q);
+ }
+ for(const action of ["preview","commit"] as const){
+  const request=new Request(`https://admin.example.invalid/?row_errors=field-v1${action==="commit"?"&expected_apply_rows=1":""}`,{method:"POST",headers:{"Content-Type":"text/csv"}});
+  assert.equal(validImportRequest(request,{kind:"orders",action}),false);
+ }
+ assert.equal(validImportRequest(new Request("https://admin.example.invalid/?only=failed&row_errors=field-v1"),{batch:id,action:"results.csv"}),false);
+});

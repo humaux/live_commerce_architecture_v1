@@ -1,0 +1,132 @@
+PARITY-DATA-OPS ROUND 2 — RED evidence repair, attempt 1
+PR: 475 -> r3/integration
+Test-only RED head: 6aaeb503e311c61dd93f998ba085b504451a7a60
+Gates run: 41278886420; synthetic merge: 2021e81c4253cfab5c5ef6dd1efff4d02c278aec
+Failed job 124767463291 (bundle:03): catalog-core and product-editor browser exits 1.
+Failed job 124767463908 (bundle:07): migration-import browser exits 1.
+Browser assertion details are in playwright.log/artifacts, not streamed to CI stdout.
+Artifact uploads rejected parity/21:480.png and other colon-containing frame filenames.
+Artifact API returned no product-editor, catalog-core or migration-import artifact for this run.
+Causal assertion RED: UNCONFIRMED; do not infer assertion contents from browser exit status.
+Foundation run 41278886326/job124766544430: success (structure only, no product acceptance).
+Fix: capture() encodes frame ID colon as hyphen in filename; original ID retained in attachment label.
+No RED assertions, selectors, thresholds, fixtures or exemptions changed.
+Product implementation, GREEN, parity comparison, independent review, SANDBOX/LIVE: NOT_RUN.
+Next: integrator relays fresh session after repaired tests-only Gates completes; read assertion artifacts first.
+
+ROUND 2 IMPLEMENTATION RELAY — causal RED confirmed 2026-11-01
+Head a2c5eeb2e1dda3e8aaad61ccec47978c02c0e1f3; Gates 41282897989; merge 5fb94235200b4f07bbe820630e64981b67906f1b
+Jobs: 124780074650 bundle:03; 124780074941 bundle:07.
+Artifacts: 13075056471 catalog-core, 13074639559 product-editor, 13075007382 migration-import.
+
+output/parity-data-ops/red-ci/gate-browser-migration-import/playwright/run.IfPK7caz/migration-import/20261101T073530.438809606/playwright.log
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: '匯入顧客', exact: true })
+    Expected: visible
+    Timeout: 15000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: '匯入顧客', exact: true }) with timeout 15000ms
+      - waiting for getByRole('heading', { name: '匯入顧客', exact: true })
+
+
+       at parity-data-ops-support.ts:37
+
+      35 |
+      36 | export async function heading(page: Page, name: string) {
+    > 37 |   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+         |                                                                  ^
+      38 |   // READ/MEASURE only, after the signed-copy assertion: RED must identify copy drift before layout drift.
+      39 |   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+      40 | }
+        at heading (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/parity-data-ops-support.ts:37:66)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/parity-customer-import.spec.ts:28:15
+
+
+
+output/parity-data-ops/red-ci/gate-browser-product-editor/playwright/run.clNn7FiI/catalog-core/20261101T071557.684050423/playwright.log
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: '商品匯入與匯出', exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: '商品匯入與匯出', exact: true }) with timeout 10000ms
+      - waiting for getByRole('heading', { name: '商品匯入與匯出', exact: true })
+
+
+       at parity-data-ops-support.ts:37
+
+      35 |
+      36 | export async function heading(page: Page, name: string) {
+    > 37 |   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+         |                                                                  ^
+      38 |   // READ/MEASURE only, after the signed-copy assertion: RED must identify copy drift before layout drift.
+      39 |   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+      40 | }
+        at heading (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/parity-data-ops-support.ts:37:66)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/parity-data-ops.spec.ts:47:15
+
+
+
+output/parity-data-ops/red-ci/gate-browser-product-editor/playwright/run.clNn7FiI/catalog-core/20261101T072409.791146779/playwright.log
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: '商品匯入與匯出', exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: '商品匯入與匯出', exact: true }) with timeout 10000ms
+      - waiting for getByRole('heading', { name: '商品匯入與匯出', exact: true })
+
+
+       at parity-data-ops-support.ts:37
+
+      35 |
+      36 | export async function heading(page: Page, name: string) {
+    > 37 |   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+         |                                                                  ^
+      38 |   // READ/MEASURE only, after the signed-copy assertion: RED must identify copy drift before layout drift.
+      39 |   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+      40 | }
+        at heading (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/parity-data-ops-support.ts:37:66)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/parity-data-ops.spec.ts:47:15
+
+
+
+output/parity-data-ops/red-ci/gate-browser-catalog-core/playwright/run.UWqs9aki/catalog-core/20261101T073130.575950696/playwright.log
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: '商品匯入與匯出', exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: '商品匯入與匯出', exact: true }) with timeout 10000ms
+      - waiting for getByRole('heading', { name: '商品匯入與匯出', exact: true })
+
+
+       at parity-data-ops-support.ts:37
+
+      35 |
+      36 | export async function heading(page: Page, name: string) {
+    > 37 |   await expect(page.getByRole("heading", { name, exact: true })).toBeVisible();
+         |                                                                  ^
+      38 |   // READ/MEASURE only, after the signed-copy assertion: RED must identify copy drift before layout drift.
+      39 |   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+      40 | }
+        at heading (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/parity-data-ops-support.ts:37:66)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/parity-data-ops.spec.ts:47:15
+
+
+
+Only new parity specs fail: catalog-core 32 new assertion failures / 6 pass; migration-import 18 new assertion failures / 15 pass; product-editor all failures in new parity spec. Entry headings and four mapping controls absent. Compile/setup succeeded. No assertions changed.
+
+Implementation selector correction (allowed wrong-selector exception): the zh-CN/en entry count of four mapping comboboxes is scoped to [data-testid=import-wizard]. The global selector also counted the two shared shell comboboxes (locale/store), so a correct four-field screen would produce six. Expected count remains four; no copy/behavior assertion changed.

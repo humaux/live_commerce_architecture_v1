@@ -29,3 +29,27 @@ test("commit receipt has exactly five keys and no extra customer cells",()=>{
  const receipt={batch_id:"11111111-1111-4111-8111-111111111111",created:1,updated:0,failed:1,replayed:false};
  assert.deepEqual(parseImportReceipt(receipt),receipt);assert.throws(()=>parseImportReceipt({...receipt,name:"raw"}));
 });
+
+// A reader understands the extension; the actual BFF tests below own request-capability admission.
+test("safe customer reader accepts explicit closed error fields and preserves legacy absence without guessing",async(t)=>{
+ for(const field of ["external_id","name",undefined])await t.test(String(field),()=>{
+  const safe={...base,erased_rows:0,rows:[{row:1,outcome:"created",consent_ignored:true},{row:2,outcome:"failed",code:"required",...(field===undefined?{}:{error_field:field})}]};
+  const before=structuredClone(safe),parsed=parseImportPreview(safe,"customers");
+  assert.deepEqual(parsed,safe);assert.deepEqual(safe,before);
+ });
+});
+test("safe reader rejects enum/cross-field metadata and never accepts source IDs as field metadata",()=>{
+ const safe={...base,erased_rows:0,rows:[{row:1,outcome:"created",consent_ignored:true},{row:2,outcome:"failed",code:"required"}]};
+ for(const field of [null,"", "phone","Customer ID","synthetic-source",1,{},["name"]])
+  assert.throws(()=>parseImportPreview({...safe,rows:[safe.rows[0],{...safe.rows[1],error_field:field}]},"customers"));
+ assert.throws(()=>parseImportPreview({...safe,rows:[{...safe.rows[0],error_field:"name"},safe.rows[1]]},"customers"));
+ assert.throws(()=>parseImportPreview({...safe,rows:[safe.rows[0],{...safe.rows[1],code:"invalid_external_id",error_field:"external_id"}]},"customers"));
+ const {consent_ignored_rows:_unused,...order}=safe;
+ assert.throws(()=>parseImportPreview({...order,mapping:{order_id:"Customer ID"},city_dropped_rows:0,rows:[{row:1,outcome:"created"},{row:2,outcome:"failed",code:"required",error_field:"name"}]},"orders"));
+});
+test("legacy raw projection is a fresh exact safe row copy and does not infer required fields from redacted IDs",()=>{
+ const legacy={...base,erased_rows:0,rows:[base.rows[0],{row:2,external_id:"",outcome:"failed",code:"required"}]};
+ const before=structuredClone(legacy),safe=projectImportPreview(legacy,"customers");
+ assert.deepEqual(safe.rows,[{row:1,outcome:"created",consent_ignored:true},{row:2,outcome:"failed",code:"required"}]);
+ assert.deepEqual(legacy,before);assert.notEqual(safe.rows,legacy.rows);assert.notEqual(safe.rows[1],legacy.rows[1]);
+});

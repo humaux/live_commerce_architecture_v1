@@ -1,6 +1,8 @@
 // Purpose: Checks inventory ledger interactions and responsive tables using the isolated identity fixture.
 // Depends on: ./fixtures/ledger-identity, node:fs/promises, ../../apps/admin/src/shell-copy; harness env: COMMERCE_FIXTURE_STORE_ID, COMMERCE_FIXTURE_TOKEN, UI_SHOT_PHASE
 // Used by: apps/admin/src/features/catalog/routes.ts, tests/foundation/browser_admin_legacy_test.go
+import { dataOpsCopy } from "../../packages/i18n/src/data-ops";
+import type { Page } from "@playwright/test";
 import { browserEvidenceDirectory } from "../browser-evidence.mjs";
 import { test, expect } from "./fixtures/ledger-identity";
 import { mkdir } from "node:fs/promises";
@@ -9,6 +11,18 @@ import { shellCopy } from "../../apps/admin/src/shell-copy";
 const reviewEvidence = browserEvidenceDirectory("ledger-review");
 const fixesEvidence = browserEvidenceDirectory("admin-ui-fixes");
 
+// Pre-Figma radio/tray selection now uses the signed SKU action; auxiliary product facts remain in its disclosure.
+async function selectSKU(page: Page, sku?: string, details = true) {
+  const rows = page.getByRole("row");
+  const row = sku ? rows.filter({ hasText: sku }) : rows.filter({ has: page.getByRole("button", { name: dataOpsCopy("en").adjust, exact: true }) }).first();
+  const locale = new URL(page.url()).pathname.split("/")[1] as "en" | "zh-CN" | "zh-TW";
+  await row.getByRole("button", { name: dataOpsCopy(locale).adjust, exact: true }).click();
+  if (details) await page.getByTestId("inventory-product-details").locator("summary").click();
+}
+async function confirmStock(page: Page) {
+  await page.getByRole("button", { name: dataOpsCopy("en").reviewAdjust, exact: true }).click();
+  await page.getByRole("button", { name: dataOpsCopy("en").confirmAdjust, exact: true }).click();
+}
 test.describe.configure({ mode: "serial" });
 
 test("approved ledger reproduction and mobile table remain usable", async ({
@@ -20,9 +34,7 @@ test("approved ledger reproduction and mobile table remain usable", async ({
   await expect(
     page.getByText("隔离本地测试店铺 · 非客户真实库存"),
   ).toBeVisible();
-  await page
-    .getByRole("radio", { name: "选择 AC-002-BK", exact: true })
-    .check();
+  await selectSKU(page, "AC-002-BK");
   await mkdir(reviewEvidence, { recursive: true });
   await page.screenshot({
     path: `${reviewEvidence}/hero-repro.png`,
@@ -79,11 +91,9 @@ test("lost mutation response retries original key and payload only once", async 
   page,
 }) => {
   await page.goto("/en/inventory?q=AC-002-BK");
-  await page
-    .getByRole("radio", { name: "Select AC-002-BK", exact: true })
-    .check();
+  await selectSKU(page, "AC-002-BK");
   const available = Number(
-    await page.locator("tbody .available-value").innerText(),
+    await page.getByTestId("inventory-current-available").innerText(),
   );
   const requests: { key: string | null; body: string | null }[] = [];
   await page.route("**/api/stores/*/inventory/adjustments", async (route) => {
@@ -101,17 +111,16 @@ test("lost mutation response retries original key and payload only once", async 
   await page
     .getByRole("textbox", { name: "Reason (required)" })
     .fill("Browser acceptance: response loss");
-  await page.getByRole("button", { name: "Confirm adjustment" }).click();
+  await confirmStock(page);
   await expect(
-    page.getByRole("button", { name: "Retry", exact: true }),
+    page.getByRole("button", { name: "Check the same request again", exact: true }),
   ).toBeVisible();
+  await expect(page.getByRole("spinbutton", { name: "Adjustment quantity" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Check the same request again", exact: true }).click();
   await expect(
-    page.getByRole("spinbutton", { name: "Adjustment quantity" }),
-  ).toBeDisabled();
-  await page.getByRole("button", { name: "Retry", exact: true }).click();
-  await expect(
-    page.getByText("Inventory updated", { exact: true }),
+    page.getByText("Inventory adjusted", { exact: true }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Back to inventory", exact: true }).click();
   await expect(page.locator("tbody .available-value")).toHaveText(
     String(available + 3),
   );
@@ -124,11 +133,9 @@ test("uncertain command survives closing a tab and storage denial sends no write
   context,
 }) => {
   await page.goto("/en/inventory?q=CB-005-TC");
-  await page
-    .getByRole("radio", { name: "Select CB-005-TC", exact: true })
-    .check();
+  await selectSKU(page, "CB-005-TC");
   const available = Number(
-    await page.locator("tbody .available-value").innerText(),
+    await page.getByTestId("inventory-current-available").innerText(),
   );
   let originalKey = "";
   await page.route("**/api/stores/*/inventory/adjustments", async (route) => {
@@ -140,28 +147,27 @@ test("uncertain command survives closing a tab and storage denial sends no write
   await page
     .getByRole("textbox", { name: "Reason (required)" })
     .fill("Recover after closing tab");
-  await page.getByRole("button", { name: "Confirm adjustment" }).click();
+  await confirmStock(page);
   await expect(
-    page.getByRole("button", { name: "Retry", exact: true }),
+    page.getByRole("button", { name: "Check the same request again", exact: true }),
   ).toBeVisible();
   await page.close();
   const recovered = await context.newPage();
   await recovered.goto("/en/inventory?q=CB-005-TC");
   await expect(
-    recovered.getByRole("button", { name: "Retry", exact: true }),
+    recovered.getByRole("button", { name: "Check the same request again", exact: true }),
   ).toBeVisible();
   const retried = recovered.waitForRequest("**/inventory/adjustments");
-  await recovered.getByRole("button", { name: "Retry", exact: true }).click();
+  await recovered.getByRole("button", { name: "Check the same request again", exact: true }).click();
   expect((await retried).headers()["idempotency-key"]).toBe(originalKey);
   await expect(
-    recovered.getByText("Inventory updated", { exact: true }),
+    recovered.getByText("Inventory adjusted", { exact: true }),
   ).toBeVisible();
+  await recovered.getByRole("button", { name: "Back to inventory", exact: true }).click();
   await expect(recovered.locator("tbody .available-value")).toHaveText(
     String(available + 4),
   );
-  await recovered
-    .getByRole("radio", { name: "Select CB-005-TC", exact: true })
-    .check();
+  await selectSKU(recovered, "CB-005-TC");
   await recovered.evaluate(() => {
     Storage.prototype.setItem = () => {
       throw new DOMException("Blocked", "QuotaExceededError");
@@ -177,7 +183,7 @@ test("uncertain command survives closing a tab and storage denial sends no write
   await recovered
     .getByRole("textbox", { name: "Reason (required)" })
     .fill("Must not be sent without a journal");
-  await recovered.getByRole("button", { name: "Confirm adjustment" }).click();
+  await confirmStock(recovered);
   await expect(recovered.locator('.message[role="alert"]')).toContainText(
     "command storage",
   );
@@ -189,9 +195,7 @@ test("stale balance fails closed and refresh enables a new command", async ({
   request,
 }) => {
   await page.goto("/en/inventory?q=HA-001-BE");
-  await page
-    .getByRole("radio", { name: "Select HA-001-BE", exact: true })
-    .check();
+  await selectSKU(page, "HA-001-BE");
   const storeID = process.env.COMMERCE_FIXTURE_STORE_ID!;
   expect(storeID).toBeTruthy();
   const warehouseReply = await request.get(`/api/stores/${storeID}/warehouses`);
@@ -222,32 +226,25 @@ test("stale balance fails closed and refresh enables a new command", async ({
   await page
     .getByRole("textbox", { name: "Reason (required)" })
     .fill("Stale version must fail");
-  await page.getByRole("button", { name: "Confirm adjustment" }).click();
-  await expect(page.locator('.message[role="alert"]')).toContainText(
-    "Inventory changed",
-  );
-  await page
-    .getByRole("region", { name: "Products & inventory", exact: true })
-    .getByRole("button", { name: "Refresh", exact: true })
-    .click();
-  await expect(page.locator("tbody .available-value")).toHaveText(
-    String(row.available + 1),
-  );
+  await confirmStock(page);
+  await expect(page.getByRole("heading", { name: "Inventory was updated by another operation", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Reload and review", exact: true }).click();
+  await expect(page.getByTestId("inventory-current-available")).toHaveText(String(row.available + 1));
+
 });
 
-// stop-bleed D01 (product-editor §c9): the inline "quick add" (product, then first SKU) is gone from this page. A product is created in the
-// full editor (/products/new; the catalog-core gate drives that flow with a real session), so here "Add product" is a link and no create
-// panel exists to open.
-test("Add product leaves for the product editor; no inline create panel on the inventory page", async ({
+// Signed C6 inventory replaces Add product with Back to products. This legacy fixture has no signed identity;
+// catalog-core retains the real-session list -> New product -> full-editor journey. Keep scoped navigation and no-inline-create checks here.
+test("Back to products leaves inventory; no inline create panel on the inventory page", async ({
   page,
 }) => {
   await page.goto("/en/inventory");
   await expect(page.locator(".create-panel")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Add product", exact: true })).toHaveCount(0);
-  const add = page.getByRole("link", { name: "Add product", exact: true });
-  await expect(add).toHaveAttribute("href", /^\/en\/products\/new\?store=[0-9a-f-]{36}$/);
-  await add.click();
-  await expect(page).toHaveURL(/\/en\/products\/new\?store=[0-9a-f-]{36}$/);
+  const back = page.getByRole("link", { name: "Back to products", exact: true });
+  await expect(back).toHaveAttribute("href", /^\/en\/products\?store=[0-9a-f-]{36}$/);
+  await back.click();
+  await expect(page).toHaveURL(/\/en\/products\?store=[0-9a-f-]{36}$/);
   await expect(page.locator(".create-panel")).toHaveCount(0);
 });
 
@@ -365,7 +362,8 @@ test("purchase-entry read failure says the product is unchanged, offers a refres
       });
     },
   );
-  await page.goto("/en/inventory"); // the fixture pre-selects a row, which loads its purchase entry
+  await page.goto("/en/inventory"); await selectSKU(page);
+  if (!(await page.getByTestId("inventory-product-details").count())) await selectSKU(page);
   const panel = page.getByTestId("purchase-entry");
   await expect(panel.getByRole("alert")).toContainText("saved product is unchanged");
   expect(reads).toBeGreaterThanOrEqual(1);
@@ -395,19 +393,17 @@ test("stock adjustment denial reports permission without claiming the inventory 
     });
   });
   await page.goto("/en/inventory?q=AC-002-BK");
-  await page
-    .getByRole("radio", { name: "Select AC-002-BK", exact: true })
-    .check();
+  await selectSKU(page, "AC-002-BK");
   await page.getByRole("spinbutton", { name: "Adjustment quantity" }).fill("1");
   await page
     .getByRole("textbox", { name: "Reason (required)" })
     .fill("Permission probe");
-  await page.getByRole("button", { name: "Confirm adjustment" }).click();
+  await confirmStock(page);
   await expect(page.locator('.message[role="alert"]')).toContainText(
     "cannot perform this action",
   );
   await expect(
-    page.getByText("Inventory updated", { exact: true }),
+    page.getByText("Inventory adjusted", { exact: true }),
   ).toHaveCount(0);
   expect(writes).toBe(1);
 });
@@ -436,6 +432,7 @@ test("purchase controls recheck current state before copying or opening", async 
     },
   );
   await page.goto("/en/inventory");
+  if (!(await page.getByTestId("inventory-product-details").count())) await selectSKU(page);
   const panel = page.getByTestId("purchase-entry");
   await expect(
     panel.getByRole("button", { name: "Copy address" }),
@@ -484,6 +481,7 @@ for (const [width, height] of [
   }) => {
     await page.setViewportSize({ width, height });
     await page.goto("/en/inventory");
+    await selectSKU(page);
     const tray = page.locator("section.inspector");
     await expect(tray).toBeVisible(); // the fixture pre-selects a row
     await mkdir(fixesEvidence, { recursive: true });
@@ -539,13 +537,14 @@ test("inventory tray keeps stock and read-only price; product editing lives on t
   page,
 }) => {
   await page.goto("/en/inventory");
+  await selectSKU(page);
   const tray = page.locator("section.inspector");
   await expect(tray).toBeVisible();
   // kept: stock info, the explicit adjustment with a required reason
   await expect(tray.getByRole("heading", { name: "Inventory", exact: true })).toBeVisible();
-  await expect(tray.getByRole("spinbutton", { name: "Adjustment quantity" })).toBeVisible();
-  await expect(tray.getByRole("textbox", { name: "Reason (required)" })).toBeVisible();
-  await expect(tray.getByRole("button", { name: "Confirm adjustment" })).toBeVisible();
+  await expect(page.getByRole("spinbutton", { name: "Adjustment quantity" })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Reason (required)" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Review adjustment" })).toBeVisible();
   // read-only price in whole dollars, never minor units or decimals
   const price = tray.getByTestId("tray-price");
   await expect(price).toHaveText(/^Price: NT\$[\d,]+$/);
@@ -558,11 +557,16 @@ test("inventory tray keeps stock and read-only price; product editing lives on t
     await expect(tray.getByTestId(id), id).toHaveCount(0);
   await expect(tray.locator("input[name=name], input[name=price], textarea[name=description]")).toHaveCount(0);
   await expect(page.locator(".create-panel")).toHaveCount(0);
-  // the header "Add product" is a plain link to the full editor, not a panel toggle
-  const add = page.getByRole("link", { name: "Add product", exact: true });
-  await expect(add).toHaveAttribute("href", /^\/en\/products\/new(\?store=[0-9a-f-]{36})?$/);
-  await add.click();
-  await expect(page).toHaveURL(/\/en\/products\/new/);
+  // Positive editor entry lives in catalog-core.spec.ts:
+  // "inventory Back to products opens the full product editor for a signed merchant".
+  // This legacy bearer supplies shell metadata, but no signed product-page identity.
+  await page.goto("/en/inventory");
+  const back = page.getByRole("link", { name: "Back to products", exact: true });
+  await expect(back).toHaveAttribute("href", /^\/en\/products(\?store=[0-9a-f-]{36})?$/);
+  await back.click();
+  await expect(page).toHaveURL(/\/en\/products(\?store=[0-9a-f-]{36})?$/);
+  await expect(page.getByRole("alert").getByText("Sign in to view products.", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("product-new")).toHaveCount(0);
 });
 
 // ---- stop-bleed D04 + M07/M08: no invented channel status, and the nav scrolls so Settings and Sign out stay reachable ---------------

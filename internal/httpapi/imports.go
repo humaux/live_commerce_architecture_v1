@@ -34,8 +34,8 @@ func registerImportRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 	const base = "/v1/admin/stores/{store_id}/imports"
 	// POST preview: dry-run one CSV (optional ?mapping=JSON); the transaction always rolls back, nothing is written.
 	mux.HandleFunc("POST "+base+"/customers/preview", trackingImportRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
-		q, ok := importQuery(r, "mapping")
-		if !ok {
+		q, ok := importQuery(r, "mapping", "row_errors")
+		if !ok || (q.Has("row_errors") && q.Get("row_errors") != "field-v1") {
 			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
 			return
 		}
@@ -45,15 +45,15 @@ func registerImportRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 			respondError(w, status, code)
 			return
 		}
-		importCSV(w, r, pool, func(ctx context.Context, tx pgx.Tx, s platform.Scope, data []byte) (any, error) {
+		importCSV(w, r, pool, q.Get("row_errors") == "field-v1", func(ctx context.Context, tx pgx.Tx, s platform.Scope, data []byte) (any, error) {
 			return migrationimport.CustomersPreview(ctx, tx, s, bearerToken(r), data, mapping)
 		})
 	}))
 	// POST commit?expected_apply_rows=N[&mapping=JSON]: apply the previewed file once (idempotent per file hash).
 	mux.HandleFunc("POST "+base+"/customers/commit", trackingImportRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
-		q, ok := importQuery(r, "expected_apply_rows", "mapping")
+		q, ok := importQuery(r, "expected_apply_rows", "mapping", "row_errors")
 		expected, perr := strconv.ParseInt(q.Get("expected_apply_rows"), 10, 64)
-		if !ok || q.Get("expected_apply_rows") == "" || perr != nil || expected < 0 || expected > migrationimport.MaxRows {
+		if !ok || (q.Has("row_errors") && q.Get("row_errors") != "field-v1") || q.Get("expected_apply_rows") == "" || perr != nil || expected < 0 || expected > migrationimport.MaxRows {
 			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
 			return
 		}
@@ -63,7 +63,7 @@ func registerImportRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 			respondError(w, status, code)
 			return
 		}
-		importCSV(w, r, pool, func(ctx context.Context, tx pgx.Tx, s platform.Scope, data []byte) (any, error) {
+		importCSV(w, r, pool, q.Get("row_errors") == "field-v1", func(ctx context.Context, tx pgx.Tx, s platform.Scope, data []byte) (any, error) {
 			return migrationimport.CustomersCommit(ctx, tx, s, bearerToken(r), data, mapping, expected)
 		})
 	}))
@@ -81,7 +81,7 @@ func registerImportRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 			respondError(w, status, code)
 			return
 		}
-		importCSV(w, r, pool, func(ctx context.Context, tx pgx.Tx, s platform.Scope, data []byte) (any, error) {
+		importCSV(w, r, pool, false, func(ctx context.Context, tx pgx.Tx, s platform.Scope, data []byte) (any, error) {
 			return migrationimport.OrdersPreview(ctx, tx, s, bearerToken(r), data, mapping)
 		})
 	}))
@@ -98,7 +98,7 @@ func registerImportRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 			respondError(w, status, code)
 			return
 		}
-		importCSV(w, r, pool, func(ctx context.Context, tx pgx.Tx, s platform.Scope, data []byte) (any, error) {
+		importCSV(w, r, pool, false, func(ctx context.Context, tx pgx.Tx, s platform.Scope, data []byte) (any, error) {
 			return migrationimport.OrdersCommit(ctx, tx, s, bearerToken(r), data, mapping, expected)
 		})
 	}))
@@ -145,7 +145,7 @@ func importQuery(r *http.Request, allowed ...string) (url.Values, bool) {
 
 // importCSV reads one 2 MiB text/csv body and runs fn in one 60 s WithScopeBudget transaction (customers:privacy): the preview always
 // rolls back, the commit keeps only a matching preview. A stale commit answers 409 preview_stale with the fresh preview.
-func importCSV(w http.ResponseWriter, r *http.Request, pool *pgxpool.Pool, fn func(context.Context, pgx.Tx, platform.Scope, []byte) (any, error)) {
+func importCSV(w http.ResponseWriter, r *http.Request, pool *pgxpool.Pool, rowErrors bool, fn func(context.Context, pgx.Tx, platform.Scope, []byte) (any, error)) {
 	media, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
 	if err != nil || media != "text/csv" {
 		respondError(w, http.StatusUnsupportedMediaType, "invalid_request")
@@ -169,16 +169,37 @@ func importCSV(w http.ResponseWriter, r *http.Request, pool *pgxpool.Pool, fn fu
 	})
 	switch {
 	case err == nil || errors.Is(err, migrationimport.ErrPreviewRolledBack):
-		respond(w, http.StatusOK, result) // a preview answers 200 even with row failures; its transaction rolled back
+		respond(w, http.StatusOK, importPreviewResponse(result, rowErrors)) // a preview answers 200 even with row failures; its transaction rolled back
 	default:
 		var stale *migrationimport.PreviewStaleError
 		if errors.As(err, &stale) {
-			respond(w, http.StatusConflict, stale.Preview) // 409 preview_stale, body = the fresh preview
+			respond(w, http.StatusConflict, importPreviewResponse(stale.Preview, rowErrors)) // 409 preview_stale, body = the fresh preview
 			return
 		}
 		status, code := importClassify(err)
 		respondError(w, status, code)
 	}
+}
+
+// importPreviewResponse copies customer rows at the HTTP boundary: legacy clients keep their exact shape, and representation
+// metadata never mutates domain previews. Receipts, order previews and error envelopes pass through unchanged.
+func importPreviewResponse(result any, rowErrors bool) any {
+	preview, ok := result.(migrationimport.CustomerPreview)
+	if !ok {
+		return result
+	}
+	if preview.Rows != nil {
+		rows := make([]migrationimport.PreviewRow, len(preview.Rows))
+		copy(rows, preview.Rows)
+		preview.Rows = rows
+	}
+	for i := range preview.Rows {
+		row := &preview.Rows[i]
+		if !rowErrors || row.Outcome != "failed" || row.Code != "required" || (row.ErrorField != "external_id" && row.ErrorField != "name") {
+			row.ErrorField = ""
+		}
+	}
+	return preview
 }
 
 // importClassify maps a migrationimport coded refusal first, then the shared merchant-tools / claims table.

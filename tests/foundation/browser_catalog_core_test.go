@@ -1,8 +1,9 @@
 //go:build browser
 
 // Purpose: Verify persisted catalog facts after the real admin catalog/product-editor browser workflow.
-// Depends on: isolated PostgreSQL foundation fixture, production Next/Go stack and Playwright merchant clicks.
+// Depends on: isolated PostgreSQL foundation fixture, production Next/Go stack and Playwright merchant clicks, parity-data-ops.spec.ts.
 // Used by: --browser-catalog-core and --browser-product-editor gates; all fixture writes remain caller-owned.
+// Invariants: C6 registration is additive; existing catalog/product-editor assertions and readbacks remain intact.
 package foundation_test
 
 // CC12 (contracts/storefront-v2.md section A acceptance CC12): the catalog v2 admin pages in real Chromium, desktop and 390 px, zh-TW and en.
@@ -203,7 +204,7 @@ func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
 	if d := os.Getenv("LC_BROWSER_DIAGNOSTIC"); d != "" { // diagnostic only, see the spec: never part of the gate
 		env["LC_BROWSER_DIAGNOSTIC"] = d
 	}
-	brfPlaywright(t, ctx, stack, []string{"catalog-core.spec.ts"}, env)
+	brfPlaywright(t, ctx, stack, []string{"catalog-core.spec.ts", "parity-data-ops.spec.ts"}, env)
 	if productEditor {
 		ledgerPath := filepath.Join(evidence, "product-editor-click-ledger.json")
 		ledger, err := os.ReadFile(ledgerPath)

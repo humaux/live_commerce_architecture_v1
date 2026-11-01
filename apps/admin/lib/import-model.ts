@@ -9,7 +9,7 @@ export type ImportKind = "customers" | "orders";
 /** Requested mapping is field -> exact header text, never CSV data. */
 export type ImportMapping = Record<string, string>;
 /** Displayable row verdict; source IDs and uploaded cells are intentionally absent. */
-export type SafeImportRow = { row: number; outcome: "created" | "updated" | "failed"; code?: string; consent_ignored?: boolean; warning?: "city_dropped" };
+export type SafeImportRow = { row: number; outcome: "created" | "updated" | "failed"; code?: string; error_field?: "external_id" | "name"; consent_ignored?: boolean; warning?: "city_dropped" };
 /** A preview is a dry-run count and safe-row projection, not an import receipt. */
 export type ImportPreview = { file_sha256: string; headers: string[]; mapping: ImportMapping; rows_total: number; new_rows: number;
   update_rows: number; apply_rows: number; failed_rows: number; erased_rows: number; consent_ignored_rows?: number; city_dropped_rows?: number; rows: SafeImportRow[] };
@@ -44,13 +44,13 @@ export function validImportMapping(value: unknown, kind: ImportKind): value is I
 
 /** Parse only privacy-safe client DTOs; source IDs are never accepted in browser data. */
 export function parseImportPreview(value: unknown, kind: ImportKind): ImportPreview {
-  return preview(value, kind, false);
+  return preview(value, kind, false, true);
 }
 /** Validate backend DTOs and remove every external_id before crossing the browser boundary. */
-export function projectImportPreview(value: unknown, kind: ImportKind): ImportPreview {
-  return preview(value, kind, true);
+export function projectImportPreview(value: unknown, kind: ImportKind, fieldErrors = false): ImportPreview {
+  return preview(value, kind, true, fieldErrors);
 }
-function preview(value: unknown, kind: ImportKind, raw: boolean): ImportPreview {
+function preview(value: unknown, kind: ImportKind, raw: boolean, fieldErrors: boolean): ImportPreview {
   const counter = kind === "customers" ? "consent_ignored_rows" : "city_dropped_rows";
   const v = object(value, ["file_sha256", "headers", "mapping", "rows_total", "new_rows", "update_rows", "apply_rows", "failed_rows", "erased_rows", counter, "rows"]);
   if (typeof v.file_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(v.file_sha256) || !Array.isArray(v.headers) ||
@@ -61,18 +61,20 @@ function preview(value: unknown, kind: ImportKind, raw: boolean): ImportPreview 
     !Array.isArray(v.rows) || v.rows.length !== v.rows_total) throw new Error("invalid_response");
   let previous = 0, created = 0, updated = 0, failed = 0, erased = 0, flagged = 0;
   const rows = v.rows.map((value) => {
-    const r = object(value, ["row", "outcome", ...(raw ? ["external_id"] : [])], ["code", kind === "customers" ? "consent_ignored" : "warning"]);
+    const r = object(value, ["row", "outcome", ...(raw ? ["external_id"] : [])], ["code", kind === "customers" ? "consent_ignored" : "warning", ...(kind === "customers" && fieldErrors ? ["error_field"] : [])]);
     if (!count(r.row) || r.row <= previous || !["created", "updated", "failed"].includes(String(r.outcome)) ||
       (raw && (typeof r.external_id !== "string" || Array.from(r.external_id).length > 64 || (r.outcome === "failed" && r.external_id !== ""))) ||
       (r.code !== undefined && !(importRowCodes as readonly unknown[]).includes(r.code)) || (r.outcome === "failed" && r.code === undefined) ||
       (r.outcome !== "failed" && r.code !== undefined) || (r.consent_ignored !== undefined && typeof r.consent_ignored !== "boolean") ||
-      (r.warning !== undefined && (r.warning !== "city_dropped" || r.outcome === "failed"))) throw new Error("invalid_response");
+      (r.warning !== undefined && (r.warning !== "city_dropped" || r.outcome === "failed")) ||
+      (Object.hasOwn(r,"error_field") && (r.outcome !== "failed" || r.code !== "required" || (r.error_field !== "external_id" && r.error_field !== "name")))) throw new Error("invalid_response");
     previous = r.row;
     if (r.outcome === "created") created++; else if (r.outcome === "updated") updated++; else failed++;
     if (r.code === "erased") erased++;
     if (r.consent_ignored === true || r.warning === "city_dropped") flagged++;
     // Deliberately construct a fresh object: successful source IDs are also private and never spread through.
     return { row: r.row, outcome: r.outcome, ...(r.code === undefined ? {} : {code:r.code}),
+      ...(r.error_field === undefined ? {} : {error_field:r.error_field}),
       ...(r.consent_ignored === undefined ? {} : {consent_ignored:r.consent_ignored}), ...(r.warning === undefined ? {} : {warning:r.warning}) } as SafeImportRow;
   });
   if (created !== v.new_rows || updated !== v.update_rows || failed !== v.failed_rows || erased !== v.erased_rows || flagged !== v[counter]) throw new Error("invalid_response");

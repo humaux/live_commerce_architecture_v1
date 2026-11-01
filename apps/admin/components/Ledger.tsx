@@ -1,6 +1,7 @@
 // Purpose: Owns the merchant inventory ledger page and product inspection.
-// Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/copy, @/lib/model, @/lib/client, @/lib/images-client, ./ProductPhoto, ./Icon, ./WorkspaceFrame, ./AdminPageHeader, ./LedgerTable
+// Depends on: React/Next, InventoryView, scoped catalog balances, command journal, purchase-entry read, ProductPhoto and WorkspaceFrame.
 // Used by: apps/admin/app/[locale]/inventory/page.tsx
+// Invariants: server balances/version authorize writes; durable journals retain the original key and bytes.
 "use client";
 
 // Stock ledger (/[locale]/inventory). BFF routes used (all -> Go internal/httpapi, scope from the merchant session):
@@ -9,6 +10,8 @@
 //   (product-editor §c9); this tray keeps stock info, the explicit stock adjustment, a read-only price and a link there.
 //   Never trusts a client tenant/store id.
 
+import { InventoryView, type InventoryState } from "./inventory/InventoryView";
+import "./imports/data-ops.css";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -21,8 +24,6 @@ import { imageURL } from "@/lib/images-client";
 import { ProductPhoto } from "./ProductPhoto";
 import { Icon } from "./Icon";
 import { WorkspaceFrame } from "./WorkspaceFrame";
-import { AdminPageHeader } from "./AdminPageHeader";
-import { LedgerTable } from "./LedgerTable";
 
 function errorText(error: APIError, c: Copy) {
   if (error.code === "unauthorized") return c.noSession;
@@ -108,6 +109,8 @@ export function Ledger({
   locale: Locale;
   initial: WorkspaceData;
 }) {
+  const [view, setView] = useState<InventoryState>("list");
+  const before = useRef<WorkspaceData["rows"]["items"][number] | undefined>(undefined);
   const c = copy[locale],
     router = useRouter(),
     pathname = usePathname(),
@@ -132,7 +135,6 @@ export function Ledger({
   const [entryFeedback, setEntryFeedback] = useState("");
   const [query, setQuery] = useState(searchQuery);
   // catalog-core: the home ledger is the Inventory view; Products and Collections are their own pages (WorkspaceFrame).
-  const [section, setSection] = useState("inventory");
   const [pending, setPending] = useState<PendingCommand | null>(null),
     [busy, setBusy] = useState(false);
   const [journalReady, setJournalReady] = useState(false);
@@ -168,6 +170,7 @@ export function Ledger({
         // is still replayed with its original key and bytes so an uncertain write can never be duplicated.
         if (!validJournalCommand(cmd)) throw new Error("Invalid journal");
         setPending(cmd);
+        setView("unknown");
       }
       // The inline "quick add" that used this key is gone (product-editor §c9): drop the leftover half-created marker.
       localStorage.removeItem(`${key}:product`);
@@ -322,6 +325,7 @@ export function Ledger({
           const prior = JSON.parse(existing) as PendingCommand;
           if (prior.key !== command.key) {
             setPending(prior);
+            setView("unknown");
             return;
           }
           // The persisted bytes, not editable UI fields, are authoritative on retry.
@@ -335,16 +339,17 @@ export function Ledger({
         const result = await sendCommand(initial.storeID, command);
         if (result.uncertain) {
           setError(result.body);
+          setView("unknown");
           return;
         }
         if (result.status >= 400) {
           localStorage.removeItem(key);
           setPending(null);
           setError(result.body);
+          setView(result.body.code === "conflict" || result.body.code === "insufficient_inventory" ? "conflict" : "review");
           return;
         }
-        setDelta("0");
-        setReason("");
+        setView("result");
         setNotice(c.success);
         localStorage.removeItem(key);
         setPending(null);
@@ -393,6 +398,7 @@ export function Ledger({
       });
       return;
     }
+    before.current = selected;
     command("adjust", "inventory/adjustments", {
       warehouse_id: selected.warehouse_id,
       sku_id: selected.sku_id,
@@ -425,189 +431,22 @@ export function Ledger({
       setWarehouseLoading(false);
     }
   }
-  return (
-    <WorkspaceFrame
-      locale={locale}
-      storeName={
-        initial.storeName || (initial.fixture ? c.store : c.notConnected)
-      }
-      active={section}
-      locked={locked}
-      onSection={setSection}
-    >
-      {/* Only products and inventory live here; the other nav entries are separate pages (WorkspaceFrame). */}
-      <>
-          <AdminPageHeader locale={locale} description={c.subtitle} actions={<>
-            {/* One way to create a product: the full editor (product-editor §c9); no inline quick-add on this page. */}
-            {initial.storeID && (
-              <Link
-                className="primary create-button"
-                href={`/${locale}/products/new?store=${initial.storeID}`}
-                aria-disabled={locked}
-                onClick={(event) => locked && event.preventDefault()}
-              >
-                <Icon name="plus" size={18} />
-                {c.create}
-              </Link>
-            )}
-          </>} />
-          <div className="section-bar">
-            <span>
-              {section === "inventory" ? c.inventory : c.products} / SKU
-            </span>
-            {initial.fixture && <small>{c.fixture}</small>}
-          </div>
-          {(initial.error || error) && (
-            <div className="message error" role="alert">
-              <strong>{errorText(error ?? initial.error!, c)}</strong>
-              {(error ?? initial.error)?.code === "unauthorized" && (
-                <p>{c.noSessionHint}</p>
-              )}
-              {(error ?? initial.error)?.request_id && (
-                <small>
-                  {c.requestID}: {(error ?? initial.error)?.request_id}
-                </small>
-              )}
-            </div>
-          )}
-          {notice && (
-            <p className="message success" role="status">
-              {notice}
-            </p>
-          )}
-          {pending && !busy && (
-            <div className="message pending" role="status">
-              <span>{c.failed}</span>
-              <button onClick={() => void submit(pending)}>{c.retry}</button>
-            </div>
-          )}
-          <section className="ledger-card" aria-label={c.heading}>
-            <form
-              className="filters"
-              onSubmit={(event) => {
-                event.preventDefault();
-                navigate({ q: query });
-              }}
-            >
-              <div className="search-field">
-                <Icon name="search" size={17} />
-                <input
-                  aria-label={c.search}
-                  placeholder={c.search}
-                  value={query}
-                  disabled={locked}
-                  maxLength={120}
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-                <button type="submit" disabled={locked}>
-                  {c.searchAction}
-                </button>
-              </div>
-              <label>
-                <span className="sr-only">{c.warehouse}</span>
-                <select
-                  aria-label={c.warehouse}
-                  disabled={locked || !warehouseChoices.length}
-                  value={initial.warehouseID}
-                  onChange={(event) =>
-                    navigate({ warehouse: event.target.value })
-                  }
-                >
-                  {!warehouseChoices.length && (
-                    <option value="">{c.selectWarehouse}</option>
-                  )}
-                  {warehouseChoices.map((warehouse) => (
-                    <option key={warehouse.id} value={warehouse.id}>
-                      {warehouse.name}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {warehouseCursor && (
-                <button
-                  type="button"
-                  disabled={warehouseLoading || locked}
-                  onClick={() => void moreWarehouses()}
-                >
-                  {c.next}
-                </button>
-              )}
-              <label>
-                <span className="sr-only">{c.status}</span>
-                <select
-                  aria-label={c.status}
-                  value={search.get("status") ?? "all"}
-                  disabled={locked}
-                  onChange={(event) => navigate({ status: event.target.value })}
-                >
-                  <option value="all">{c.all}</option>
-                  <option value="active">{c.active}</option>
-                  <option value="archived">{c.archived}</option>
-                </select>
-              </label>
-              <button
-                disabled={locked}
-                type="button"
-                onClick={() => {
-                  setQuery("");
-                  navigate({ q: "", status: "" });
-                }}
-              >
-                {c.reset}
-              </button>
-              <button
-                className="refresh-button"
-                type="button"
-                disabled={locked}
-                onClick={() => router.refresh()}
-              >
-                {c.refresh}
-              </button>
-            </form>
-            <LedgerTable
-              locale={locale}
-              c={c}
-              rows={initial.rows.items}
-              storeID={initial.storeID}
-              fixture={initial.fixture}
-              readError={Boolean(initial.error)}
-              selectedID={selectedID}
-              locked={locked}
-              onSelect={select}
-              onRadioSelect={(skuID) => {
-                select(skuID);
-                setDelta("0");
-                setReason("");
-                setError(null);
-              }}
-            />
-            {(initial.rows.next_cursor || search.get("cursor")) && (
-              <div className="pagination">
-                <button
-                  disabled={locked || !search.get("cursor")}
-                  onClick={() => navigate({ cursor: "" })}
-                >
-                  {c.reset}
-                </button>
-                <button
-                  disabled={locked || !initial.rows.next_cursor}
-                  onClick={() =>
-                    navigate({ cursor: initial.rows.next_cursor }, false)
-                  }
-                >
-                  {c.next}
-                  <Icon name="chevron" size={15} />
-                </button>
-              </div>
-            )}
-          </section>
-          {selected ? (
-            <section className="inspector" aria-label={c.selected}>
+  return <WorkspaceFrame locale={locale} storeName={initial.storeName || (initial.fixture ? c.store : c.notConnected)} active="inventory" locked={locked}>
+    <InventoryView locale={locale} initial={initial} state={view} setState={setView}
+      selected={view === "result" ? before.current ?? selected : selected}
+      select={select} delta={delta} setDelta={setDelta} reason={reason} setReason={setReason}
+      busy={busy} locked={locked} query={query} setQuery={setQuery} navigate={navigate}
+      submit={() => adjust({ preventDefault() {} } as FormEvent)} retry={() => { if (pending) void submit(pending); }}
+      reload={() => { setError(null); setView("edit"); setReason(""); router.refresh(); }}
+      error={initial.error || error ? errorText(error ?? initial.error!, c) : ""}>
+      {view === "list" && initial.fixture && <p className="ops-note">{c.fixture}</p>}
+      {view === "list" && !initial.rows.items.length && <div className="empty-state"><h2>{initial.error ? c.noSession : c.empty}</h2><p>{initial.error ? c.noSessionHint : c.emptyHint}</p></div>}
+      {view === "edit" && selected && <details className="ops-card" data-testid="inventory-product-details"><summary>{c.product}</summary><label>{c.reason}<input type="text" value={reason} disabled={locked || selected.status !== "active"} maxLength={240} onChange={event => setReason(event.target.value)} /></label>            <section className="inspector" aria-label={c.selected}>
               <button
                 className="close-details icon-button"
                 aria-label={c.close}
                 disabled={locked}
-                onClick={() => select("")}
+                onClick={() => { select(""); setView("list"); }}
               >
                 <Icon name="close" size={17} />
               </button>
@@ -656,43 +495,7 @@ export function Ledger({
                   ))}
                 </dl>
               </div>
-              <form className="adjustment" onSubmit={adjust}>
-                <h2>{c.adjustment}</h2>
-                <fieldset disabled={locked || selected.status !== "active"}>
-                  <label>
-                    {c.quantity}
-                    <input
-                      aria-label={c.quantity}
-                      type="number"
-                      step="1"
-                      required
-                      value={delta}
-                      onChange={(event) => setDelta(event.target.value)}
-                    />
-                  </label>
-                  <label className="reason-field">
-                    {c.reason}
-                    <input
-                      aria-label={c.reason}
-                      required
-                      maxLength={240}
-                      placeholder={c.reasonHint}
-                      value={reason}
-                      onChange={(event) => setReason(event.target.value)}
-                    />
-                  </label>
-                  <button type="submit" className="primary">
-                    {busy ? c.pending : c.confirm}
-                  </button>
-                </fieldset>
-                <p className="audit-hint">{c.auditHint}</p>
-              </form>
-            </section>
-          ) : !entryProductID ? (
-            <p className="selection-hint">{c.choose}</p>
-          ) : null}
-          {entryProductID && (
-            <section
+            </section>            <section
               className="purchase-entry"
               aria-label={c.purchaseEntry}
               data-testid="purchase-entry"
@@ -756,9 +559,7 @@ export function Ledger({
                   )}
                 </div>
               </div>
-            </section>
-          )}
-      </>
-    </WorkspaceFrame>
-  );
+            </section></details>}
+    </InventoryView>
+  </WorkspaceFrame>;
 }

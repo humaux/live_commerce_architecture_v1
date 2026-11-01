@@ -17,12 +17,14 @@ export function validImportRequest(request: Request, route: ImportRoute): boolea
   if (request.headers.has("idempotency-key") || request.headers.has("transfer-encoding")) return false;
   const raw = new URL(request.url).search.slice(1);
   if (new TextEncoder().encode(raw).length > 4096 || /%(?![a-fA-F0-9]{2})/.test(raw) || raw.includes(";") || request.url.endsWith("?")) return false;
+  try { decodeURIComponent(raw); } catch { return false; }
   const query = new URLSearchParams(raw), seen = new Set<string>();
   for (const [key,value] of query) {
     if (!value || seen.has(key)) return false;
     seen.add(key);
     if (route.action === "results.csv") { if (key !== "only" || value !== "failed") return false; }
     else if (key === "mapping") { try { if (!validImportMapping(JSON.parse(value), route.kind)) return false; } catch {return false;} }
+    else if (key === "row_errors" && route.kind === "customers" && value === "field-v1") { /* representation only */ }
     else if (key !== "expected_apply_rows" || route.action !== "commit" || !/^(?:0|[1-9][0-9]{0,3})$/.test(value) || Number(value) > maxImportRows) return false;
   }
   if (route.action === "results.csv") return raw === "only=failed" && request.body === null && (!request.headers.has("content-length") || request.headers.get("content-length") === "0");

@@ -269,7 +269,7 @@ export function registerProductEditorAcceptance() {
       });
       await page.goto(url("en", "products/new"));
       await page.goto(url("en", "collections"));
-      await page.getByTestId("collection-new").click();
+      await page.getByTestId("collection-manage-new").click();
       await page.getByTestId("collection-title").fill(`${tag} picks`);
       await page.getByTestId("collection-save").click();
       await expect(page.getByTestId("collection-members")).toBeVisible();
@@ -504,6 +504,7 @@ export function registerProductEditorAcceptance() {
         await page.setViewportSize({ width, height });
         await page.goto(url("en", "inventory"));
         await page.locator("button.product-name").first().click();
+        await page.getByTestId("inventory-product-details").locator("summary").click();
         const inspector = page.locator(".inspector");
         await expect(inspector).toBeVisible();
         await expect(inspector.getByTestId("tray-price")).toBeVisible();

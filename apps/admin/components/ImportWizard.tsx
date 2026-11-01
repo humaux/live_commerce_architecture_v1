@@ -3,6 +3,8 @@
 // Used by: /[locale]/customers/import; commits replay the same immutable file/mapping/count after UNKNOWN.
 // Invariants: I01 scope, I06 no automatic retry or repeated confirmed-mismatch replay, I11 no raw cells in display/storage/logs, I05 archive never revenue.
 "use client";
+import { dataOpsCopy, dataOpsText } from "../../../packages/i18n/src/data-ops";
+import "./imports/data-ops.css";
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import type { Store } from "../lib/model";
@@ -14,15 +16,14 @@ import { importCopy } from "../lib/import-copy";
 import { importViewCopy } from "../lib/import-view-copy";
 import { safeImportFailureCSV } from "../lib/import-view-model";
 import { WorkspaceFrame } from "./WorkspaceFrame";
-import { AdminPageHeader } from "./AdminPageHeader";
 import { ImportColumnMapping, ImportPreviewCounts, ImportVerdictTable } from "./ImportWizardSteps";
 import "./orders.css";
 import "./import-wizard.css";
 
 const pageHidden = () => document.visibilityState === "hidden";
 
-type Stage = "select" | "upload" | "mapping" | "preview" | "confirm" | "result";
-type Attempt = { kind: ImportKind; file: File; mapping: ImportMapping; expected: number; unknown: boolean };
+type Stage = "select" | "upload" | "mapping" | "preview" | "confirm" | "result" | "errors";
+type Attempt = { kind: ImportKind; file: File; mapping: ImportMapping; expected: number; readonly rowErrors?: "field-v1"; unknown: boolean };
 
 /** Mount no file-bearing form until its current CSRF/session fence is established; hiding/leaving unmounts it. */
 export function ImportWizard({ locale, store, initialError, renderKey }: {
@@ -54,9 +55,8 @@ export function ImportWizard({ locale, store, initialError, renderKey }: {
   const denial = initialError === "forbidden" ? c.forbidden : initialError === "unavailable" ? c.unavailable
     : initialError || failed ? c.signedOut : !store ? c.notFound : !store.permissions?.includes("customers:privacy") ? c.forbidden : "";
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? c.title} active="customers">
-    <div className="orders-page import-wizard" data-testid="import-wizard">
-      <AdminPageHeader locale={locale} description={c.subtitle} />
-      <p>{c.consentNotice}</p><p>{c.historyNotice}</p><p className="orders-hint">{importViewCopy[locale].scopeReset}</p>
+    <div className="import-wizard" data-testid="import-wizard">
+
       {denial ? <p role="status">{denial}</p> : !scope || !store ? <p role="status">{c.loading}</p> :
         <ImportForm key={`${store.id}|${renderKey}|${scope.version}|${scope.boundary}`} locale={locale} store={store.id} boundary={scope.boundary}
           onSignedOut={uncertain => { setScope(null); setFailed(true); setExpiredUnknown(current => current || uncertain); }}
@@ -69,7 +69,7 @@ export function ImportWizard({ locale, store, initialError, renderKey }: {
 function ImportForm({ locale, store, boundary, onSignedOut, onUnconfirmed }: {
   locale: Locale; store: string; boundary: string; onSignedOut: (uncertain: boolean) => void; onUnconfirmed: () => void;
 }) {
-  const c = importCopy[locale], v = importViewCopy[locale];
+  const c = importCopy[locale], v = importViewCopy[locale], d = dataOpsCopy(locale);
   const [kind, setKind] = useState<ImportKind>("customers"); const [stage, setStage] = useState<Stage>("select");
   const [file, setFile] = useState<File | null>(null), [headers, setHeaders] = useState<string[]>([]);
   const [mapping, setMapping] = useState<ImportMapping>({}), [preview, setPreview] = useState<ImportPreview | null>(null);
@@ -79,6 +79,8 @@ function ImportForm({ locale, store, boundary, onSignedOut, onUnconfirmed }: {
   const [notice, setNotice] = useState(""); const [previewVersion, setPreviewVersion] = useState(0);
   const mounted = useRef(true), revision = useRef(0), active = useRef<AbortController | null>(null), inflight = useRef(false);
   const pending = useRef<Attempt | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const [staleUnknown, setStaleUnknown] = useState(false);
   useEffect(() => { mounted.current = true;
     return () => {
       // Keep only a boolean notice outside the private form: abort/drop does not prove a dispatched commit had no effect.
@@ -91,12 +93,14 @@ function ImportForm({ locale, store, boundary, onSignedOut, onUnconfirmed }: {
   function reset(nextKind: ImportKind, nextStage: Stage = "upload") {
     if (inflight.current || pending.current?.unknown) return;
     revision.current++; setKind(nextKind); setStage(nextStage); setFile(null); setHeaders([]); setMapping({});
-    setPreview(null); setReceipt(null); setReceiptMismatch(false); setError(""); setNotice(""); pending.current = null;
+    setPreview(null); setReceipt(null); setReceiptMismatch(false); setError(""); setNotice(""); setStaleUnknown(false); pending.current = null;
   }
   async function selectFile(chosen: File | undefined) {
     if (inflight.current || pending.current?.unknown) return;
     const current = ++revision.current;
-    setFile(null); setHeaders([]); setMapping({}); setPreview(null); setReceipt(null); setReceiptMismatch(false); setError(""); setNotice("");
+    // A rejected or cancelled replacement must keep the picker reachable after the old preview is cleared.
+    setStage("upload");
+    setFile(null); setHeaders([]); setMapping({}); setPreview(null); setReceipt(null); setReceiptMismatch(false); setError(""); setNotice(""); setStaleUnknown(false);
     if (!chosen) return;
     setBusy(true); inflight.current = true;
     try {
@@ -118,12 +122,14 @@ function ImportForm({ locale, store, boundary, onSignedOut, onUnconfirmed }: {
     if (action === "commit" && !replay && (!preview || preview.apply_rows === 0)) return;
     const p: Attempt = replay && pending.current ? pending.current : {
       kind, file, mapping: Object.freeze({ ...mapping }), expected: preview?.apply_rows ?? 0, unknown: false,
+      ...(kind === "customers" ? { rowErrors: "field-v1" as const } : {}),
     };
     if (action === "commit") pending.current = p;
     const controller = new AbortController(); active.current = controller; inflight.current = true;
     setBusy(true); setError(""); setNotice("");
     try {
       const result = await sendImport({ store, kind: p.kind, action, file: p.file, mapping: p.mapping,
+        ...(p.rowErrors ? { rowErrors: p.rowErrors } : {}),
         ...(action === "commit" ? { expectedApplyRows: p.expected } : {}), boundary, signal: controller.signal });
       if (!mounted.current || controller.signal.aborted || pageHidden()) return;
       if (result.kind === "error") {
@@ -148,7 +154,7 @@ function ImportForm({ locale, store, boundary, onSignedOut, onUnconfirmed }: {
       }
       if (result.kind === "stale" && p.unknown) {
         // A refused retry cannot erase a previous UNKNOWN receipt. Keep the old immutable command until confirmed.
-        setUnknown(true); setError(c.staleNotice); return;
+        setUnknown(true); setStaleUnknown(true); setError(c.staleNotice); return;
       }
       // command.Run hashes the REQUESTED mapping, including omitted/empty fields. Resolved preview metadata must not replace it.
       pending.current = null; setUnknown(false); setPreview(result.value);
@@ -192,11 +198,75 @@ function ImportForm({ locale, store, boundary, onSignedOut, onUnconfirmed }: {
     finally { inflight.current = false; if (mounted.current) setBusy(false); }
   }
   const rowFailures = receipt?.failed ?? preview?.failed_rows ?? 0;
+  if (kind === "customers") {
+    const title = unknown ? d.pendingTitle : stage === "result" ? d.customerResult : stage === "errors" ? d.customerErrors : stage === "preview" || stage === "confirm" ? d.reviewCustomers : d.customerTitle;
+    const filePicker = <section className="ops-card"><h2>{d.selectedFile}</h2>{file && <p>{file.name}</p>}<p className="ops-note">{d.customerLimits}</p>
+      <input className="ops-hidden-input" ref={fileInput} type="file" data-testid="import-file" accept=".csv,text/csv" disabled={locked} onChange={event => void selectFile(event.target.files?.[0])} />
+      <button type="button" disabled={locked} onClick={() => fileInput.current?.click()}>{d.changeFile}</button></section>;
+    const impact = <><h2>{d.updateImpact}</h2>{mapping.phone ? <><p>{mapping.phone} → {c.fieldLabels.phone}</p><p className="ops-warning">{d.clearPhone}</p></> : null}
+      {!mapping.email && <><p>{d.noEmail}</p><p className="ops-note">{d.keepEmail}</p></>}
+      <p>{d.consentSummary}</p></>;
+    return <div className="data-ops" data-stage={stage}>
+      <header><h1>{title}</h1></header>
+      {!unknown && !["preview", "confirm", "result", "errors"].includes(stage) && <>
+        <p className="ops-note">{d.customerSteps}</p><div className="ops-columns"><div>{filePicker}<section className="ops-card">
+          <h2>{d.customerMap}</h2><p className="ops-note">{d.customerMatch}</p>
+          {[["external_id", d.sourceLabel], ["name", d.nameLabel], ["phone", d.phoneLabel], ["email", d.emailLabel]].map(([field,label]) => <div className="ops-mapping" key={field}>
+            <label><span>{label}</span><select data-testid={`import-map-${field}`} value={mapping[field] ?? ""} disabled={locked || !file} onChange={event => { setMapping(current => ({ ...current, [field]: event.target.value })); setPreview(null); setError(""); }}>
+              <option value="">{field === "email" ? d.noEmail : c.unmapped}</option>{headers.map(header => <option key={header} value={header}>{header}</option>)}
+            </select></label><small className="ops-note">{field === "external_id" ? c.sourceIdHint : field === "phone" && mapping.phone ? d.clearPhone : field === "email" && !mapping.email ? d.keepEmail : ""}</small>
+          </div>)}
+          {file && headers.length > 4 && <details data-testid="import-advanced"><summary>{d.noConsent}</summary><label>{c.fieldLabels.consent}<select data-testid="import-map-consent" value={mapping.consent ?? ""} disabled={locked} onChange={event => setMapping(current => ({ ...current, consent: event.target.value }))}><option value="">{c.unmapped}</option>{headers.map(header => <option key={header} value={header}>{header}</option>)}</select></label></details>}
+          {file && <button type="button" data-testid="import-guess" disabled={locked} onClick={() => setMapping(guessImportMapping(kind, headers))}>{c.guess}</button>}
+          {file && (missing || duplicate) && <p>{c.requiredMapping}</p>}
+        </section></div><aside><section className="ops-callout"><h2>{d.beforeImport}</h2><p>{d.mappedHelp}</p></section><section className="ops-callout"><h2>{d.noConsent}</h2><p>{d.consentHelp}</p></section></aside></div>
+        <div className="ops-footer"><a className="ops-link" href={`/${locale}/customers?store=${store}`}>{d.backCustomers}</a><button className="primary" type="button" data-testid="import-preview" disabled={locked || !file || missing || duplicate} onClick={() => void execute("preview")}>{d.previewCustomers}</button></div>
+      </>}
+      {!unknown && (stage === "preview" || stage === "confirm") && preview && <>
+        <p className="ops-note">{d.previewStep}</p>{notice && <section className="ops-warning"><p>{notice}</p><p>{d.staleHelp}</p></section>}
+        <div className="ops-columns"><div><section className="ops-card"><h2>{notice ? d.latestPreview : file?.name}</h2><p>{dataOpsText(d.customerTotals, { new: preview.new_rows, updated: preview.update_rows, failed: preview.failed_rows })}</p><p className="ops-note">{d.applyHelp}</p></section>
+          <section className="ops-card">{impact}<button type="button" data-testid="import-back" disabled={locked} onClick={() => { setPreview(null); setNotice(""); setStage("mapping"); }}>{d.backMapping}</button></section>
+        </div><aside><section className="ops-card"><h2>{d.rowOutcomes}</h2><p className="ops-note">{d.privateRows}</p><ImportVerdictTable key={previewVersion} locale={locale} preview={preview} signed />{preview.failed_rows > 0 && <button type="button" onClick={() => setStage("errors")}>{d.viewReasons}</button>}</section><section className="ops-callout"><h2>{d.recheck}</h2><p>{d.recheckHelp}</p></section></aside></div>
+        <details><summary>{d.rowOutcomes}</summary><ImportPreviewCounts locale={locale} kind={kind} preview={preview} /></details>
+        <div className="ops-footer"><button type="button" disabled={locked} onClick={() => { setPreview(null); setNotice(""); setStage("mapping"); }}>{d.backMapping}</button><button type="button" className="primary" data-testid="import-confirm" disabled={locked || preview.apply_rows === 0} onClick={() => void execute("commit")}>{notice ? d.confirm : dataOpsText(d.confirmImport, { n: preview.apply_rows })}</button></div>
+      </>}
+      {!unknown && stage === "errors" && preview && <>
+        <section className="ops-card">{preview.rows.filter(row => row.outcome === "failed").map(row => {
+          const column = preview.mapping.external_id;
+          const source = row.code === "required" && row.error_field === "external_id" && !!column && preview.headers.includes(column);
+          return <section className="ops-row" key={row.row}>
+            <h2>{row.code === "required" ? dataOpsText(source ? d.sourceError : d.requiredError, { n: row.row })
+              : dataOpsText(d.willSkip, { n: row.row, reason: c.errors[row.code ?? ""] ?? c.errors.invalid_request })}</h2>
+            {row.code === "required" && <p>{source ? dataOpsText(d.sourceRepair, { column }) : d.requiredRepair}</p>}
+          </section>;
+        })}<p className="ops-note">{d.errorPrivacy}</p><button type="button" data-testid="import-download-failed" disabled={locked || rowFailures === 0} onClick={() => void download()}>{c.failedDownload}</button></section>
+        <div className="ops-footer"><button type="button" onClick={() => setStage("preview")}>{d.backPreview}</button><button type="button" onClick={() => fileInput.current?.click()}>{d.correctedFile}</button></div>{filePicker}
+      </>}
+      {!unknown && stage === "result" && receipt && <>
+        <section className="ops-card" data-testid="import-receipt">
+          <h2>{dataOpsText(d.importedRows, { n: receipt.created + receipt.updated })}</h2><p>{dataOpsText(d.receiptTotals, { new: receipt.created, updated: receipt.updated, failed: receipt.failed })}</p><p>{file?.name}</p>
+          {receiptMismatch && <p role="alert" data-testid="import-terminal-mismatch">{v.receiptMismatch}</p>}
+          {receipt.replayed && <p data-testid="import-replayed">{c.replayed}</p>}
+          {receipt.failed > 0 && <><h2>{d.remaining}</h2><p>{d.repairCustomer}</p><button type="button" onClick={() => setStage("errors")}>{d.viewReasons}</button><button type="button" data-testid="import-download-failed" disabled={locked} onClick={() => void download()}>{c.failedDownload}</button></>}
+          <details><summary>{d.rowOutcomes}</summary><dl className="import-counts"><div><dt>{c.created}</dt><dd>{receipt.created}</dd></div><div><dt>{c.updated}</dt><dd>{receipt.updated}</dd></div><div><dt>{c.failed}</dt><dd>{receipt.failed}</dd></div></dl></details>
+        </section>
+        {customerDone && <details><summary>{c.ordersKind}</summary><p>{c.historyNotice}</p><button type="button" data-testid="import-type-orders" disabled={locked || !customerDone} onClick={() => reset("orders")}>{c.ordersKind}</button></details>}
+        <div className="ops-footer"><a className="ops-link" href={`/${locale}/customers?store=${store}`}>{d.returnCustomers}</a><button type="button" data-testid="import-restart" disabled={locked} onClick={() => reset("customers", "select")}>{d.anotherFile}</button></div>
+      </>}
+      {unknown && <>
+        <p>{d.pendingSubtitle}</p><section className="ops-callout"><h2>{d.dontResubmit}</h2><p>{d.pendingHelp}</p></section>
+        {staleUnknown && <section className="ops-warning"><p>{c.staleNotice}</p><p>{d.staleUnknown}</p></section>}
+        <section className="ops-card"><h2>{d.retainedRequest}</h2><p>{file?.name}</p><p>{dataOpsText(d.confirmImport, { n: pending.current?.expected ?? 0 })}</p><button type="button" disabled>{d.changeFile}</button></section>
+        <div className="ops-footer"><button className="primary" type="button" data-testid="import-retry-same" disabled={busy} onClick={() => void execute("commit", true)}>{staleUnknown ? d.retryStale : d.retryImport}</button><button type="button" data-testid="import-restart" disabled>{d.anotherFile}</button></div>
+      </>}
+      {busy && <p role="status">{c.working}</p>}{error && !unknown && <p role="alert">{error}</p>}
+    </div>;
+  }
   return <div data-stage={stage}>
     <ol className="import-stages">{(["select", "upload", "mapping", "preview", "confirm", "result"] as const).map(step =>
       <li key={step} aria-current={stage === step ? "step" : undefined}>{c.stages[step]}</li>)}</ol>
     <div className="import-type" role="group" aria-label={c.stages.select}>
-      <button type="button" data-testid="import-type-customers" disabled={locked} aria-pressed={kind === "customers"} onClick={() => reset("customers")}>{c.customerKind}</button>
+      <button type="button" data-testid="import-type-customers" disabled={locked} aria-pressed={false} onClick={() => reset("customers")}>{c.customerKind}</button>
       <button type="button" data-testid="import-type-orders" disabled={locked || !customerDone} aria-pressed={kind === "orders"} onClick={() => reset("orders")}>{c.ordersKind}</button>
     </div>
     <p role="status">{customerDone ? v.ready : c.customerFirst}</p>

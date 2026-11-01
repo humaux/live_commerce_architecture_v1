@@ -1,5 +1,5 @@
 // Purpose: render import header mapping and safe paged row verdicts; no uploaded data cells are rendered.
-// Depends on: React, import-copy, import-model safe DTO types and import-view-model ordering.
+// Depends on: React, data-ops namespace, import-copy, import-model safe DTO types and import-view-model ordering.
 // Used by: ImportWizard; column names are metadata, all verdict messages come from local copy.
 // Invariants: source-ID help never renders identifiers; mapping values and import retry semantics stay unchanged.
 "use client";
@@ -9,6 +9,7 @@ import type { ImportKind, ImportMapping, ImportPreview } from "../lib/import-mod
 import { importCopy } from "../lib/import-copy";
 import { orderedImportRows } from "../lib/import-view-model";
 import { importViewCopy } from "../lib/import-view-copy";
+import { dataOpsCopy, dataOpsText } from "../../../packages/i18n/src/data-ops";
 
 /** Map each known field to one source header; this form never reads uploaded row values. */
 export function ImportColumnMapping({ locale, fields, required, headers, mapping, disabled, onChange }: {
@@ -42,23 +43,24 @@ export function ImportPreviewCounts({ locale, kind, preview }: { locale: Locale;
 }
 
 /** Page fifty safe verdicts at a time, with failures first and stable source row numbers. */
-export function ImportVerdictTable({ locale, preview }: { locale: Locale; preview: ImportPreview }) {
+export function ImportVerdictTable({ locale, preview, signed = false }: { locale: Locale; preview: ImportPreview; signed?: boolean }) {
   const c = importCopy[locale]; const [page, setPage] = useState(0);
+  const d = dataOpsCopy(locale);
   const rows = orderedImportRows(preview.rows), start = page * 50;
   return <>
-    <p className="orders-hint">{c.onlyRowsHint}</p>
+    {!signed && <p className="orders-hint">{c.onlyRowsHint}</p>}
     <div className="orders-table-scroll"><table className="orders-table import-verdicts" data-testid="import-rows">
-      <thead><tr><th>{c.row}</th><th>{c.outcome}</th><th>{c.code}</th></tr></thead>
+      <thead className={signed ? "sr-only" : undefined}><tr><th>{c.row}</th><th>{c.outcome}</th><th>{c.code}</th></tr></thead>
       <tbody>{rows.slice(start, start + 50).map(row => <tr key={row.row} data-testid={`import-row-${row.row}`}>
-        <td>{row.row}</td><td>{c.outcomes[row.outcome]}</td>
-        <td>{row.code && <span>{c.errors[row.code] ?? c.unavailable}</span>}
+        <td>{signed ? dataOpsText(row.outcome === "created" ? d.willCreate : row.outcome === "updated" ? d.willUpdate : d.willSkip, { n: row.row, reason: c.errors[row.code ?? ""] ?? c.unavailable }) : row.row}</td><td>{!signed && c.outcomes[row.outcome]}</td>
+        <td>{!signed && row.code && <span>{c.errors[row.code] ?? c.unavailable}</span>}
           {row.consent_ignored && <span className="import-verdict-note">{c.consentIgnoredRows}</span>}
           {row.warning === "city_dropped" && <span className="import-verdict-note">{c.cityDroppedRows}</span>}
         </td>
       </tr>)}</tbody>
     </table></div>
     {rows.length === 0 && <p>{c.empty}</p>}
-    <div className="import-actions">
+    <div className="import-actions" hidden={signed && rows.length <= 50}>
       <button type="button" data-testid="import-row-previous" disabled={page === 0} onClick={() => setPage(value => value - 1)}>{importViewCopy[locale].previous}</button>
       <output aria-live="polite">{rows.length ? start + 1 : 0}–{Math.min(start + 50, rows.length)} / {rows.length}</output>
       <button type="button" data-testid="import-row-next" disabled={start + 50 >= rows.length} onClick={() => setPage(value => value + 1)}>{importViewCopy[locale].next}</button>

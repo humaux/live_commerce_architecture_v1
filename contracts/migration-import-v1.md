@@ -50,13 +50,43 @@ Evidence class: REAL_PG + MOCK (synthetic data only). The order-history import (
 ## 4. HTTP (all `/v1/admin/stores/{store_id}/imports`, private no-store, `customers:privacy`, no `Idempotency-Key` — the file hash is the key)
 | Method and path | Body / query | Result |
 |---|---|---|
-| `POST customers/preview` | `text/csv`; `?mapping=` | 200 `{file_sha256, headers, mapping, rows_total, new_rows, update_rows, apply_rows, failed_rows, erased_rows, consent_ignored_rows, rows:[{row, external_id, outcome created\|updated\|failed, code?, consent_ignored?}]}`. The transaction is always rolled back. |
-| `POST customers/commit?expected_apply_rows=N` | `text/csv`; `&mapping=` | 200 `{batch_id, created, updated, failed, replayed}`; 409 `preview_stale` (body = fresh preview, nothing written); 409 `idempotency_conflict` (same bytes with another mapping or N); 422 `nothing_to_apply`. |
+| `POST /v1/admin/stores/{store_id}/imports/customers/preview` | `text/csv`; `?mapping=` | 200 `{file_sha256, headers, mapping, rows_total, new_rows, update_rows, apply_rows, failed_rows, erased_rows, consent_ignored_rows, rows:[{row, external_id, outcome created\|updated\|failed, code?, consent_ignored?}]}`. The transaction is always rolled back. |
+| `POST /v1/admin/stores/{store_id}/imports/customers/commit?expected_apply_rows=N` | `text/csv`; `&mapping=` | 200 `{batch_id, created, updated, failed, replayed}`; 409 `preview_stale` (body = fresh preview, nothing written); 409 `idempotency_conflict` (same bytes with another mapping or N); 422 `nothing_to_apply`. |
 | `GET {batch_id}/results.csv[?only=failed]` | none | UTF-8 BOM CSV `row,external_id,outcome,code`, every text cell formula-guarded; 404 for another store's batch. |
 - A committed file is keyed by its bytes forever: the same bytes with another mapping or count is `idempotency_conflict`, so a merchant who
   committed a wrong mapping must change the file (W5-U1 copy must say so). The brief's `Idempotency-Key` header is deliberately NOT used.
 - 60 s `WithScopeBudget`; commit is one transaction (`command.Run` operation `migrationimport.customers_commit`, key `cimp-<sha256[:32]>`).
 - Audit: `customers.imported` (action only).
+
+### 4.1 Customer row-error capability (frozen 2026-11-01; implementation/acceptance NOT_RUN)
+Integrator freeze: `692f69f4-2b7d-41c0-9849-b280342a491d`, grounded in this contract and signed customer-error frames
+`1028:7221` / `1028:7299` (`output/parity-data-ops/FRAME-COPY.md`). This is a representation extension, not release approval.
+
+- **Request:** only `POST customers/preview` and `POST customers/commit` accept optional query `row_errors=field-v1`.
+  The decoded key may occur exactly once and its value must equal `field-v1`. An absent key selects the exact legacy DTO above.
+  Empty/unknown values, case variants, whitespace, lists, repeated keys (including identical values or encoded duplicate keys),
+  malformed query encoding and the existing query-size violations are `422 invalid_request` before import effects.
+  Orders and result CSV routes reject this key. No header alternative or capability list is accepted.
+- **Row metadata:** an opted-in customer preview may include `error_field?: "external_id" | "name"`, only on
+  `outcome:"failed", code:"required"` rows. The supporting producer emits the canonical field for these missing-value defects;
+  its values come from server field constants, never CSV cells, source identifiers or header text. Existing first-error order remains:
+  missing `external_id`, invalid `external_id`, then missing `name`; both missing on a non-blank row select `external_id`.
+  Fully blank records remain skipped. Other errors, successful rows and order rows omit the field. Strict consumers reject
+  `null`, empty/unknown enum values, non-string values and illegal kind/outcome/code combinations. Absence remains valid for legacy
+  responses and uses generic guidance; a redacted empty ID must never be used to infer the missing field.
+- **Both response paths:** the domain computes the metadata; the HTTP boundary copies preview rows and exposes it only when opted in,
+  for both preview `200` and the fresh preview in commit `409 preview_stale`. The BFF also gates its validated privacy-safe projection
+  on the incoming capability. No-marker requests must retain the exact old raw and safe shapes, so existing strict browsers continue
+  working without refresh. Copying/projection must not mutate domain rows or retained results. Commit receipts and error envelopes
+  retain their existing shapes; all failed raw IDs remain blank and all source IDs remain absent from browser-safe rows.
+- **No business effect:** the capability and metadata do not enter persistence, database schema, result CSV, uploaded bytes/file SHA,
+  mapping, `expected_apply_rows`, or the `command.Run` idempotency tuple. Counts, validation, transaction/rollback, audit, tenant scope,
+  privacy and erasure rules are unchanged. Backend CSV remains `row,external_id,outcome,code`; safe failure CSV remains
+  `row,outcome,code`. Switching capability with the same bytes/mapping/count must replay the same batch, not create another import.
+- **Compatibility and UI:** deploy backend/BFF support for both shapes before enabling new clients to opt in on both preview and commit.
+  An old server's `422` remains visible; never remove the marker and automatically retry a commit, including after a lost ACK (`UNKNOWN`).
+  Source-ID-specific guidance requires explicit `error_field:"external_id"` and the actual mapped source column; `name` or absent
+  metadata must not be labelled as a missing source ID. The signed `source_id` instruction applies to that mapped column.
 
 ## 5. Customer list and detail (amendment to customers-billing-v1)
 - `identity.read_merchant_customers` lists customers that have an import profile (no order or bundle needed), orders them by
@@ -81,6 +111,22 @@ Evidence class: REAL_PG + MOCK (synthetic data only). The order-history import (
 ## 6. Gates
 `bash scripts/dev/test-focused.sh '^TestCustomerImport$'` (CI01-CI15), `internal/migrationimport` and `internal/httpapi/imports_test.go`
 (DB-free), the schema/comment/upgrade pins (`TestCustomersBillingCB02*`, `TestR2IntegrationUpgradeFromReleaseHead`).
+
+### 6.1 Row-error capability acceptance (required; all NOT_RUN at contract freeze)
+Existing gates and signed UI assertions remain required. Add the following cases through the real request/projection paths; do not
+replace existing fixtures or relax their expected counts/copy. Runtime evidence must bind the implementation SHA; the contract alone
+does not establish a passing gate. Contract author is not the sole acceptance reviewer.
+
+| Case | Required evidence |
+|---|---|
+| Legacy compatibility | No-marker preview `200` and stale `409` pass frozen old raw/safe parsers unchanged, including through new BFF/backend; no browser refresh required. |
+| Opt-in and first defect | Marked `200` and `409` preserve the correct enum for missing ID, missing name, and both missing on a non-blank row; fully blank rows remain skipped and invalid ID precedes missing name. |
+| Closed request grammar | BFF and Go reject empty/unknown/list/case/whitespace values, identical or encoded duplicate keys, malformed encoding and oversize queries; reject capability on orders/CSV, with no import effects. |
+| Strict metadata/privacy | Reject unknown/null/non-string enums and illegal kind/outcome/code combinations; accept legacy absence. No name/phone/email/source-ID/cell/header text enters metadata; failed raw IDs stay blank and safe rows contain no IDs. |
+| Cross-capability replay | Same bytes/mapping/N, absent then marked and marked then absent: same batch, one import/audit effect, unchanged counts. Changed mapping or N still conflicts. |
+| Stale/CSV invariants | Toggle capability on a fresh stale `409`: identical file hash/counts and rollback/no batch creation. Receipt, backend CSV and safe CSV formats remain unchanged; projection does not mutate its input rows. |
+| Real UI and transport | New customer client sends the marker on preview and commit; absent legacy clients do not. Preserve signed source-ID assertions, add missing-name/generic-absence cases, and verify actual mapped-column guidance. Lost ACK remains UNKNOWN with no automatic marker-removal retry; auth/scope/CSRF/private no-store remain intact. |
+| Mutation witnesses | Inject unmarked metadata emission, a dropped commit marker, and capability in the idempotency identity: each must produce RED in the corresponding compatibility/409/replay gate, then GREEN after correction on GitHub. Retain both outcomes. |
 
 ## 7. Historical order import (W5-03B, migration `0156_order_history_import.sql`) — a READ-ONLY ARCHIVE
 Status: DRAFT by the unit implementer (Claude Sonnet, 2026-10-07) for integrator freeze. Evidence class REAL_PG + MOCK (synthetic data).
@@ -115,8 +161,8 @@ Status: DRAFT by the unit implementer (Claude Sonnet, 2026-10-07) for integrator
   `invalid_date`, `invalid_amount`, `invalid_status`, `invalid_item`, `invalid_quantity`, `inconsistent_order`, `invalid_request`
   (field-count mismatch), plus the database codes `customer_not_imported`, `erased`, `order_owner_conflict` (the order number belongs to
   another customer), `order_limit`. `rows_total / applied / updated / failed` of the batch count units; the row number of a unit is its first line.
-- **HTTP** (`/v1/admin/stores/{store_id}/imports`, `customers:privacy`, no `Idempotency-Key`): `POST orders/preview` and
-  `POST orders/commit?expected_apply_rows=N` with the same bodies, answers, 409 `preview_stale` / `idempotency_conflict`, 422
+- **HTTP** (`/v1/admin/stores/{store_id}/imports`, `customers:privacy`, no `Idempotency-Key`): `POST /v1/admin/stores/{store_id}/imports/orders/preview` and
+  `POST /v1/admin/stores/{store_id}/imports/orders/commit?expected_apply_rows=N` with the same bodies, answers, 409 `preview_stale` / `idempotency_conflict`, 422
   `nothing_to_apply` and 60 s budget as section 4 (preview: `{file_sha256, headers, mapping, rows_total, new_rows, update_rows, apply_rows,
   failed_rows, erased_rows, rows:[{row, external_id, outcome, code?}]}`; a failed row never echoes an id). `GET {batch_id}/results.csv`
   serves orders batches too (external_id column empty). Read: `GET /v1/admin/stores/{store_id}/customers/{customer_id}/historical-orders[?limit&after]`
