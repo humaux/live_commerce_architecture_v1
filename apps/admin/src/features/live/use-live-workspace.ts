@@ -45,6 +45,8 @@ export function useLiveRead<T>(scope: string, enabled: boolean, read: (signal: A
         const data = await readRef.current(request.signal);
         if (!alive || epoch !== current) return;
         if (boundary !== await sessionBoundary().catch(() => "")) throw new StudioError("signed-out");
+        // Late authentication responses cannot revive a concealed or replaced view.
+        if (!alive || epoch !== current) return;
         failures = 0; cookie.current = csrfCookie(); setView({ scope, data, error: "", boundary });
       } catch (error) {
         if (!alive || epoch !== current) return;
