@@ -54,4 +54,24 @@ Acceptance gate: #355's OWN implementation-head Foundation/Gates checks, six new
 
 NOT_RUN: implementation CI GREEN, all161 results/upload recovery, current implementation actual click ledger/density/parity review, independent E4, local runtime tests/servers, local tsc, SANDBOX/LIVE/deployment, Humaux store/canvas/coord/code index. No product-completion claim.
 
-STATUS: WAIT_GREEN — implementation prepared after confirmed assertion RED; own CI and independent review pending.
+## Registered implementation push (post-push local record; also PR comment)
+
+Head7085179ec9af8e8b698972ba767a79e2c2fff69f. WAIT_RUN Foundation41281883816/job124775288450 queued; Gates41281883852 queued, actual browser jobs not yet created. Both headSha values verified. No evidence-only commit/push. PR body152 frame mappings updated; remote CI has timeout/conclusion and integrator fresh-session relay is the wakeup route. No local watcher or task-owned process remains.
+
+## RELAY 2 — own-head failure readback and targeted repair 1
+
+Authority: owner's RELAY 2 / CONSOLE-FIX card; current PR head verified as 7085179ec9af8e8b698972ba767a79e2c2fff69f. `gh pr checks 355`, `gh run view 41281883852 --log-failed --job 124776275936` and the completed job logs were read. Foundation41281883816/job124775288450 SUCCESS; original Console41281883852/job124776275824 SUCCESS; bundle:07/job124776276159 SUCCESS. Parity/job124776275936 FAILURE; receipts124784300783 and required124784354654 fail downstream. These are E3 observations of that exact head, not overall GREEN.
+
+Evidence upload is repaired: artifact13074046827 (1063849 bytes), ZIP SHA25664219958de6d7e52648695f77e15944e789fe164900a68059bf628bd50f3cfee, uploaded successfully with hyphenated screenshot names. It contains 12 frame PNGs and nine error contexts from the first 21-case shard (12 passed / 9 failed); the shell stops after that failed shard, so remaining seven shards are NOT_RUN. Downloaded evidence is local only under console-fix-relay2/, excluded from the commit. Its playwright.log SHA2566264372470713e40ce265d4c0c1d3ca7b27b7fb190b970d3d71f89a7e69b951e.
+
+All nine errors are existing exact-name textbox assertions at spec:967/1002: expected textbox named 回覆內容, element not found. They cover sent, pending and sold states on desktop/mobile. Source root: CommentReply's label wraps c.text, textarea AND the dynamic length counter; that counter participates in the implicit accessible name. The signed field name is therefore not stable as text changes. Repair: add only `aria-label={c.text}` to the textarea, reusing all three existing locale translations. This is an accessibility fix in the same Console module, not a selector/assertion/fixture relaxation. Existing exact-name assertions are the RED; all remain byte-for-byte unchanged. Visible copy, fields, controls, state, permissions, unknown fences, timers, viewport and screenshots remain unchanged. Mobile CSS keeps the sticky composer visible across all three tabs. No added imports; inspected comment-stream-hooks harness needs no allowlist change. Root-cause assessment is author E0 until own repair-head CI.
+
+Fetched origin/r3/integration4b8c04c7213025c173e260db6f9c81cb5b818c61 and merged first: already up to date. Rollback point7085179ec9af8e8b698972ba767a79e2c2fff69f. Scope extension: apps/admin/components/CommentReply.tsx (same-module pre-approved); list in PR body. Generated browser ownership regenerated and --check exit0, byte-identical; no generated diff. Packet structure exit0 E1; timestamp-only packet-check.json restored to pre-run HEAD. git diff --check exit0. No Go dependency change, so dependency map unchanged. No local tests/servers or runtime verification. Impeccable runtime context/detector scripts omitted under owner's explicit local-check restriction; harden/craft-floor references read.
+
+bundle:07 remains class(c): no authored returns/order/auth changes, no causal path identified. Base and head returns-ui.spec.ts SHA25614bd880a95d1fa9898fefd158f9a66d96cbae1b1d97016a110585d6d3135d67f match. Current own-head bundle passes; do not claim this PR repaired a former auth failure.
+
+Humaux became available after initial discovery: task-specific search, own canvas/coord reads, code map/query and original development detail7bdb220b-0798-4b1d-aff5-16ee94cae75f read; rejected sample2/9 (coverage0.2222, not exhaustive). Dispatched-child exemption: no new claim or delegation. Store/canvas/index receipt follows in PR comment. Existing RULING-FIX edits and untracked prior evidence preserved. No source mutation/test servers/background processes beyond this bounded card.
+
+NOT_RUN: repair-head CI GREEN; full161 parity and screenshot review/density; independent E4; local tests/servers/tsc; SANDBOX/LIVE/deployment. Integrator relays a fresh session when registered Gates/Foundation conclude; no evidence-only push after GREEN.
+
+STATUS: WAIT_GREEN — targeted repair 1 prepared; own repair-head CI pending; author E0 / static E1, no completion claim.

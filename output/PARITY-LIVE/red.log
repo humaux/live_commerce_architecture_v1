@@ -254,3 +254,17 @@ Call log:
 ```
 Parity job=124764486539 FAIL; upload rejected parity/1429:39502.png (Colon :), so its browser assertion is UNKNOWN.
 bundle:07 job=124764487132 PASS at same head; returns/auth remains class(c), unchanged.
+
+CONSOLE-FIX RELAY2 regression RED at implementation head7085179ec9af8e8b698972ba767a79e2c2fff69f
+Foundation=41281883816 job124775288450 SUCCESS
+Gates=41281883852 Console124776275824 SUCCESS bundle07=124776276159 SUCCESS
+Parity=124776275936 FAILURE receipts124784300783 FAILURE required124784354654 FAILURE
+artifact=13074046827 size1063849 zip_sha256=64219958de6d7e52648695f77e15944e789fe164900a68059bf628bd50f3cfee
+artifact_upload=SUCCESS with safe names parity/1429-39502.png etc
+first_shard=21 tests:12 passed9 failed; remaining7shards NOT_RUN (stop on failure)
+failure=9 existing exact-name textbox assertions spec967/1002 expected 回覆內容; element not found
+root_static=CommentReply label contains c.text and dynamic counter; accessible name changes with count
+repair1=only textarea aria-label={c.text}; all three existing translations; ALL assertions and fixtures unchanged
+repair1_GREEN=PENDING; causal explanation authorE0 until own CI
+playwright_log_sha256=6264372470713e40ce265d4c0c1d3ca7b27b7fb190b970d3d71f89a7e69b951e
+rollback=7085179ec9af8e8b698972ba767a79e2c2fff69f

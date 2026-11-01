@@ -404,6 +404,7 @@ export function CommentReply({
             {c.text}
             <textarea
               data-testid="comment-reply-text"
+              aria-label={c.text}
               value={text}
               onChange={(e) => { setText(e.target.value); remember(e.target.value, mode); }}
               rows={3}
