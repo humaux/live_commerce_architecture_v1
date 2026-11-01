@@ -17,6 +17,7 @@ export function ProductDocumentVariants({
   disabled,
   c,
   sign,
+  currency,
   inventoryDisabled = false,
   codeDisabled = false,
   onInvalidValues,
@@ -28,6 +29,7 @@ export function ProductDocumentVariants({
   disabled: boolean;
   c: ProductEditorCopy;
   sign: string;
+  currency: string;
   inventoryDisabled?: boolean;
   codeDisabled?: boolean;
   onInvalidValues: () => void;
@@ -145,6 +147,7 @@ export function ProductDocumentVariants({
                       value,
                       scope,
                       operation,
+                      currency,
                     );
                     // Code suffixes retain the original matrix ordinal even
                     // when only a subset is selected (SKU2 must not become SKU1).
@@ -156,6 +159,7 @@ export function ProductDocumentVariants({
                             value,
                             scope,
                             operation,
+                            currency,
                           ).rows.filter((r) =>
                             targets.some((t) => rowKey(t) === rowKey(r)),
                           )

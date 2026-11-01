@@ -518,6 +518,7 @@ export function ProductDocumentForm({
           <ProductDocumentVariants
             c={c}
             sign={sign}
+            currency={store.currency}
             axes={draft.axes}
             rows={draft.rows}
             setAxes={setAxes}
