@@ -33,11 +33,12 @@ type PageLiveVideosRead struct {
 // LiveVideoItem is one normalized live video: never a token, never viewer/buyer data. StartedAt is
 // the raw Meta creation_time (bounded by the worker, not parsed — its +0000 offset is not RFC 3339).
 type LiveVideoItem struct {
-	VideoID   string `json:"video_id"`
-	PostID    string `json:"post_id"`
-	Title     string `json:"title"`
-	Status    string `json:"status"`
-	StartedAt string `json:"started_at"`
+	VideoID      string `json:"video_id"`
+	PostID       string `json:"post_id"`
+	Title        string `json:"title"`
+	Status       string `json:"status"`
+	StartedAt    string `json:"started_at"`
+	PermalinkURL string `json:"permalink_url,omitempty"`
 }
 
 // PageLiveVideos is the A5-3 GET response: none until a read is requested, pending while one is in

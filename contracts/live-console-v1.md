@@ -1289,3 +1289,52 @@ run-log shape as C1–C6) and the missing RD4 hook to `claims.apply_actor_erasur
   with its replay, the peer-link-only PT404 case, and (round 2) the three peer-key-less erasure paths — comment-ref
   selector, bundle selector and restore replay — each removing the erased actor's links while other actors' and stores'
   links stay byte-identical. CRP02's privilege/RLS matrix declares the new grants and policies.
+
+
+## Amendment FEAT-LIVE-REPLAY — merchant public replay toggle (2026-10-31)
+
+Owner 2026-10-30: 「补后端一起做」. Additive to §9/§11; no older amendment is replaced.
+The buyer read contract, official Meta sources/scopes, permalink validation and retention
+are authoritative in `storefront-v2.md` Amendment FEAT-LIVE-REPLAY. **Supersedes OC-Q9**
+(`owner-choices-20261026-v1.md`, planned/no storefront live-replay entry) for backend replay
+publication/read only; OC-Q9 text remains unchanged. UI: pending PARITY-NEWFEAT.
+
+| Endpoint (prefix `/v1/admin/stores/{store_id}`) | Permission | JSON |
+| --- | --- | --- |
+| `GET /live-sessions/{session_id}/replay` | `live:read` | no query/body/Idempotency-Key → `200 {"session_id":"uuid","public":false,"version":1}` |
+| `PUT /live-sessions/{session_id}/replay` | `live:manage` | `{"public":true,"expected_version":1}` + Idempotency-Key → `200 {"session_id":"uuid","public":true,"version":2}` |
+
+BFF mirrors these paths under `/api/stores/{store}/live-sessions/{session}/replay`, using
+signed merchant session/store grants, same-origin and CSRF for writes. All responses
+`Cache-Control: private, no-store`; no UI page. Server-authenticated tenant/store/principal
+only; body tenant_id/store_id and other unknown keys return `400 invalid_json` under
+DisallowUnknownFields; null/missing keys are refused, not trusted. Rejected spoofed
+scope leaves replay publication and replay_version unchanged.
+Both operations require a canonical session UUID. Both toggle directions require ENDED;
+publication additionally requires a stored valid Facebook permalink joined to the session's
+active Facebook source by exact tenant/store/binding/post. Instagram/old-session absence
+returns `409 no_official_video`; draft/live/archived returns `409 invalid_transition`.
+No implicit Meta read or retry. Buyer projection independently checks ENDED/public/link on
+every read; a flag cannot expose a live or archived session.
+
+`replay_version` is independent of draft/lifecycle versions, starts at 1; expected_version
+is an integer 1..9007199254740990, increments once per accepted new command (including same
+boolean). Stale version or reused key with changed canonical input is `409 version_conflict`.
+Idempotency-Key is 8..128 characters `[A-Za-z0-9_.:-]`, exactly one, required on PUT;
+canonical receipt binds principal, session, public and expected_version in operation
+`live.replay.set`. Same authenticated key/input returns exactly the frozen result even
+after later toggles, without reapplying it. Recheck auth/scope/revision/permission after
+lock waits and on receipt replay; receipt and audit `live.replay.updated` commit together.
+Errors roll back. Existing command-receipt retention applies; replay publication metadata
+has the session lifetime and no new purge/deletion API in this card.
+
+Other results/codes: 401 unauthorized; 403 forbidden (missing live permission / stale
+revision / CSRF); 404 not_found (missing/foreign store or session); 405 method_not_allowed;
+422 invalid_request (input/query/key/UUID); malformed JSON 400 invalid_json or 415 json_required
+under the existing body decoder; transient failure 503 unavailable/retry_later. No external
+operation, River job, buyer PII, Meta write or customer message is created by the toggle.
+
+Gate: CI-only merchant/public buyer HTTP plus REAL_PG/MOCK dispatcher tests in
+`tests/foundation/live_replay_test.go` and `internal/integrations/metareply/live_replay_test.go`.
+Source compile/static checks are E1 only. Deployment, LIVE permissions and UI parity are
+separate acceptance boundaries.
