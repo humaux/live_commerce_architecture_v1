@@ -56,7 +56,7 @@ test.describe("PARITY-LEFTOVERS signed frames (BROWSER MOCK)", () => {
       await page.setViewportSize({ width: mobile ? 390 : 1440, height: mobile ? 844 : 900 });
       await login(page);
       await page.goto(`${origin}/zh-TW/orders/${orderMissing}?store=${store}`);
-      
+
       await expect(page.getByRole("heading", { name: "請補齊收件資料", exact: true })).toBeVisible();
       await expect(page.getByText("訂單尚未建立，也尚未收款。原商品與數量仍在草稿中。", { exact: true })).toBeVisible();
       await expect(page.getByRole("heading", { name: "待補資料", exact: true })).toBeVisible();
