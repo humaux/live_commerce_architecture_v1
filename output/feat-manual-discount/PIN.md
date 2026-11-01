@@ -62,3 +62,14 @@ NOT_RUN: all local runtime/unit/integration/browser/model tests and servers; loc
 candidate CI pending push; independent whole-closure review; SANDBOX/LIVE and production deployment.
 
 STATUS: PIN_CANDIDATE_CI_AND_INDEPENDENT_REVIEW_PENDING
+
+
+## REBASE — #396 base preserved (2026-11-01)
+
+Integration base `87c67e33c329a43bb6fc0d51d9160ac4c9826b98`. Base buyerhttp.Routes `reviewed` verbatim:
+`output/buyer-route-table/FEAT-LIVE-REPLAY-FIX2-pin-candidate.md`. The integrator REBASE card states this base re-pin is reviewed.
+Merged candidate `a816f2699027fc26ca5fa3b7c87258e8b809ebb3c97e24baff797f88b9e9ba30` retains base functions/declarations (83/154),
+adding/removing none. Full current delta and static scanner receipts:
+`output/buyer-route-table/manual-discount-pin-candidate.md`. Independent candidate review is pending.
+Migration 0216 is renamed to integrator-assigned 0220 after base 0219; R2 count 143 -> 144.
+This note grants no merge/deploy permission.

@@ -1,62 +1,50 @@
-# FEAT-MANUAL-DISCOUNT pin candidate: buyerhttp.Routes
+# FEAT-MANUAL-DISCOUNT rebased pin candidate: buyerhttp.Routes
 
-Candidate only; pending independent review, not approval. Authority: integrator's PIN card (2026-11-01),
-`docs/engineering/contractdrift.md`, and the original source/CI receipts below. PR #394, branch
-`unit/feat-manual-discount`, target `r3/integration`. Author: Codex implementation lane; model/reasoning
-configuration is not exposed by this runtime. No delegation or independent reviewer is claimed.
+Candidate only; pending independent whole-closure review, never author approval.
+Authority: integrator REBASE card 2026-11-01 and docs/engineering/contractdrift.md.
+PR #394, unit/feat-manual-discount -> r3/integration. Role: dispatched implementation lane,
+Codex GPT-6 runtime; exact model identifier/reasoning setting unavailable. No delegation.
 
-## Base and hash
+## Source binding and base approval
 
-- Fetched and merged `origin/r3/integration` at `fde11c1310fce20b576fc98023bd3003c66c205b`; merge exit 0,
-  Already up to date. Source HEAD before this pin-only commit: `3a4e5f724edf9302766258f22a75d1dc8227758f`.
-- Old dispatcher hash: `bfbb4441b77afb0b48f0c3bd0c326b75e276a528fa54e588a645cbe0f814c43a`.
-- Candidate dispatcher hash: `a8b1feb94a2439eb02b09a2d42e10c0e273abacfd53dc31708725147d9a2590a`.
-  This is the actual hash printed by [Gates run 41275855308, plan job 124757772578](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41275855308/job/124757772578),
-  whose `headSha` is the source HEAD above. No local scanner/test was run. Integration introduced no newer
-  buyerhttp source; the closure source is unchanged from that CI head.
-- `reviewed`: `pending independent review (FEAT-MANUAL-DISCOUNT adjustments projection)`.
-- Function list: 82 -> 82; declaration list: 151 -> 151. Added functions/declarations: none. Removed: none.
-  Both lists remain byte-for-byte unchanged and sorted. `pricing.Adjustment` is imported, so it does not
-  introduce a same-package closure member. No other pin entry changes.
+- Integration base: `87c67e33c329a43bb6fc0d51d9160ac4c9826b98` (#396).
+- Pre-merge PR head: `65d02773ac43f7663e66bee255eeac70d0e6036b`.
+- Base hash: `31499ffb3ce0f159bcacb0f380bcbfe7fb94c220f5b91231d91e5edd840fbbd7`.
+- Merged candidate hash: `a816f2699027fc26ca5fa3b7c87258e8b809ebb3c97e24baff797f88b9e9ba30`.
+- Base `reviewed` retained verbatim in this PIN note: `output/buyer-route-table/FEAT-LIVE-REPLAY-FIX2-pin-candidate.md`.
+  The REBASE card states that #396's base re-pin is reviewed; that statement does not approve this candidate.
+- Candidate `reviewed`: `pending independent review (FEAT-MANUAL-DISCOUNT adjustments projection; base re-pin by #396 is reviewed)`.
+- Functions: 83 -> 83; declarations: 154 -> 154.
+  Added/removed functions: none. Added/removed declarations: none. Both lists stay byte-for-byte equal to base.
+  Every other table entry stays equal to base.
 
-## Whole closure delta, declaration by declaration
+## Exact closure delta against the new base
 
-`git diff fde11c1310fce20b576fc98023bd3003c66c205b -- internal/buyerhttp` has exactly these two changes,
-both in `internal/buyerhttp/projections.go`; all other package files are unchanged.
+`git diff 87c67e33c329a43bb6fc0d51d9160ac4c9826b98 -- internal/buyerhttp` contains only the following two changes
+in `internal/buyerhttp/projections.go`; all other files are equal to the new base.
 
-| Frozen declaration | Current file:line | Exact change | Required reason |
+| Declaration | Source | Delta | Authority |
 | --- | --- | --- | --- |
-| `type orderQuoteResponse` | `internal/buyerhttp/projections.go:285` (new field :290) | Adds `Adjustments []pricing.Adjustment` with JSON tag `adjustments,omitempty`; existing fields only realign under gofmt. | `contracts/cart-quote-v1.md:205` requires buyer order/link GETs to retain the frozen `snapshot.quote.adjustments`. The closed DTO previously dropped it; empty slices retain omission. |
-| `func projectOrder` | `internal/buyerhttp/projections.go:366` (assignment :382) | Adds `Adjustments: quote.Adjustments` beside the existing promotion projection. | Copies the stored quote adjustment without repricing, taking client money, or exposing merchant authorization fields. No other statement changes. |
+| type orderQuoteResponse | projections.go:285 (field :290) | Adds `Adjustments []pricing.Adjustment` with `json:"adjustments,omitempty"`; other fields only align under gofmt. | contracts/cart-quote-v1.md amendment 0220 requires frozen quote adjustments on buyer order/link reads. |
+| func projectOrder | projections.go:366 (assignment :382) | Adds `Adjustments: quote.Adjustments` alongside existing promotion projection. | Copies stored quote money without repricing or accepting client amounts. |
 
-Every other function/declaration already listed under `buyerhttp.Routes` in the pin is unchanged.
-The imported type is defined at `internal/pricing/manual_discount.go:22`: kind and currency plus embedded
-`ManualDiscount` (:17), containing name and amount_minor only. It has no staff identifier, internal reason,
-customer contact, or credential. Its implementation is outside the same-package freeze and remains subject
-to the normal feature review and CI gates, rather than this pin's approval.
+`pricing.Adjustment` is imported, so introduces no same-package closure member. Its fields contain
+kind, currency, normalized name and amount only; no staff identifier, reason, buyer contact or secret.
+The replay handlers/types/routes and constant-block changes introduced by #396 remain intact.
+No new URL, method, authorization, tenant scope or other closure declaration changes against that base.
 
-**No URL, method, auth or tenant-scope logic in the closure changed.** The full buyerhttp diff above contains
-only an output DTO field and its assignment. `routes.go`, `routeRows`, `matchRoute`, `matchPattern`, `allowed`,
-`handler.ServeHTTP`, `handler.dispatch`, `handler.authorizeView`, `viewAllowed`, `bearer`, `forbiddenInput`,
-origin resolution and all other closure declarations are unchanged. There is no route addition/removal.
+## Static scanner receipts (E1 only)
 
-## Reviewer readback (no local runtime verification)
+- `go run ./scripts/dev/contractdrift` with BASE's pin: exit 1, printed
+  `buyerhttp.Routes a816f2699027fc26ca5fa3b7c87258e8b809ebb3c97e24baff797f88b9e9ba30 want 31499ffb3ce0f159bcacb0f380bcbfe7fb94c220f5b91231d91e5edd840fbbd7`.
+  Receipt: output/feat-manual-discount/rebase-scanner-before.log.
+- Same unchanged scanner after this candidate: exit 0, errors=0. It checks both exact function and
+  declaration lists, so unchanged base lists resolve the merged closure without any exemption.
+  Receipt: output/feat-manual-discount/rebase-scanner-after.log.
+- Source projections.go Git blob: `16c1f89d9d05b99b0fbb460ac953e4f4785d19b5`;
+  SHA-256: `68d5cd2348fcdacfcec0314fac5698272041cdb17b0511d6030543a09b51e6e1`.
+- Pin file SHA-256: `46dd697c08dd2d67b38c3719844f08814f06641dc41a79996f708e9d0b56d4c3`.
 
-Read the entire current closure, not only this delta, before approving. Its exact 82 functions and 151
-declarations are enumerated in `contracts/route-table-dispatchers.json` under `buyerhttp.Routes`.
-
-```sh
-git diff fde11c1310fce20b576fc98023bd3003c66c205b -- internal/buyerhttp
-git diff 3a4e5f724edf9302766258f22a75d1dc8227758f -- contracts/route-table-dispatchers.json
-git ls-files 'internal/buyerhttp/*.go' ':!:internal/buyerhttp/*_test.go'
-gh run view 41275855308 --log-failed | grep -m 1 'buyerhttp.Routes'
-gh pr checks 394
-```
-
-Source binding: `internal/buyerhttp/projections.go` Git blob `16c1f89d9d05b99b0fbb460ac953e4f4785d19b5`,
-SHA-256 `68d5cd2348fcdacfcec0314fac5698272041cdb17b0511d6030543a09b51e6e1`.
-Candidate pin file SHA-256: `081463c1e82f8dfb2fc9571df7f10c0f4ca3c6c41826b1f4c0f228b5878c0b29`.
-Static generation/check of browser ownership and packet structure exit 0 (E1); ownership artifact has no diff.
-Existing Foundation run 41275855282 / job 124757772556 fails `TestGoRepositoryInventory` with missing buyer
-table rows (E3 negative, same pre-pin source HEAD). Current candidate GREEN is pending its own PR CI.
-Only the integrator may change `reviewed` after independent whole-closure approval.
+Review must read the entire current closure (83 functions / 154 declarations, enumerated in the pin),
+including #396's replay additions, then explicitly approve this candidate. Current PR CI and E4 independent
+review remain pending. No scanner code, baseline, allowlist, routes or tests were relaxed. No local tests/server.

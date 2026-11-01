@@ -1,0 +1,8 @@
+command: go run ./scripts/dev/contractdrift
+exit: 1
+evidence_level: E1 (static scanner; no runtime tests)
+raw_log: rebase-scanner-before.raw.log (retained locally, not staged)
+raw_sha256: 5d5a8effc7b59dc9bb0481e913e23a315ae413a68bdfadbe4cf1acff0fc90059
+ERROR (dispatcher freeze) UNRESOLVED DELETE /v1/buyer/session internal/buyerhttp/routes.go:44 route-table dispatcher changed or unpinned: buyerhttp.Routes a816f2699027fc26ca5fa3b7c87258e8b809ebb3c97e24baff797f88b9e9ba30 want 31499ffb3ce0f159bcacb0f380bcbfe7fb94c220f5b91231d91e5edd840fbbd7; review the dispatcher and update contracts/route-table-dispatchers.json
+SUMMARY routes go=291 contract=187 bff=312; errors=136 warnings=280 BFF_NO_GO=39 CONTRACT_ONLY=81 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=91 GO_NOT_IN_BFF=18 GO_ONLY=189 GO_ROUTE_TABLE=1 METHOD_MISMATCH=4 UNRESOLVED=103
+exit status 1

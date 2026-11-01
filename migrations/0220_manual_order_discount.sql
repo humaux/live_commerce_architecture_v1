@@ -1,4 +1,4 @@
--- Purpose: immutable merchant authorization for one named quote adjustment, and private order-detail projection.
+-- Purpose: 0220 immutable merchant authorization for one named quote adjustment, and private order-detail projection.
 -- Depends on: buyer.owners, storefront.quotes, checkout.orders, identity access fences (0094/0129 patterns).
 -- Used by: internal/merchanttools pipeline, internal/storefront quote/revalidation, internal/merchantorders detail.
 -- Invariants: no buyer writer, no price override, FORCE RLS, one bound quote per authorization, forward-only additive schema.

@@ -1,5 +1,5 @@
 // Purpose: authorize and bind the manual pipeline's discount before checkout, including uncertain-request replay.
-// Depends on: buyer capability registration, merchant scope/permissions and storefront.manual_order_discounts (0216).
+// Depends on: buyer capability registration, merchant scope/permissions and storefront.manual_order_discounts (0220).
 // Used by: ManualOrders.pipeline for both manual and for-buyer orders.
 // Invariants: authorization is immutable per synthetic owner, even without a discount; a changed request conflicts before an order/hold.
 

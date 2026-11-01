@@ -1,5 +1,5 @@
 // Purpose: read a merchant-authorized adjustment for a synthetic manual-order owner.
-// Depends on: storefront.manual_order_discounts (0216), buyer/checkout scoped transactions and pricing types.
+// Depends on: storefront.manual_order_discounts (0220), buyer/checkout scoped transactions and pricing types.
 // Used by: CreateManualQuote and RevalidateQuote; public CreateQuote never requests a manual discount.
 // Invariants: buyer roles cannot write authorization; checkout must match the exact merchant-bound quote.
 

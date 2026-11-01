@@ -185,7 +185,7 @@ against races; root full race/vet regression and independent P0/P1 closure.
 Policy configuration/Quote creation are not provider sandbox/live, legal approval,
 verified address/deliverability, public UI, payment or global G03/G05 acceptance.
 
-## Amendment 2026-11-01 — FEAT-MANUAL-DISCOUNT (0216)
+## Amendment 2026-11-01 — FEAT-MANUAL-DISCOUNT (0220)
 
 Supersedes: this contract's original no-coupon/no-adjustment boundary **only for a merchant-authorized named fixed discount** in storefront-v2 §G3. Older text and promotion-code rules remain historical; public buyer quote requests gain no money field.
 

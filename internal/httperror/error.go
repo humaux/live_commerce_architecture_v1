@@ -67,7 +67,9 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"rate_limited":           "Too many requests.",
 		"insufficient_inventory": "Insufficient available inventory.",
 		"retry_later":            "Temporarily unavailable.", "unavailable": "Temporarily unavailable.",
-		"internal": "Request could not be completed.",
+		"internal":           "Request could not be completed.",
+		"invalid_transition": "Operation is not available in the current state.",
+		"no_official_video":  "No official replay video is available.",
 		// merchant-password-auth-v1 §16 (OC-15): recent re-authentication and the disabled owner role (both 403, never 401).
 		"reauth_required":     "Confirm it is you to continue.",
 		"owner_role_disabled": "The owner role cannot be granted.",

@@ -36,7 +36,7 @@
   },
   {
     "table": "buyerhttp.Routes",
-    "dispatcher_sha256": "a8b1feb94a2439eb02b09a2d42e10c0e273abacfd53dc31708725147d9a2590a",
+    "dispatcher_sha256": "a816f2699027fc26ca5fa3b7c87258e8b809ebb3c97e24baff797f88b9e9ba30",
     "functions": [
       "RouteTable.HasPrefix",
       "admittedPaymentMethod",
@@ -76,6 +76,7 @@
       "handler.privacyExport",
       "handler.privacyGet",
       "handler.quoteWithCodDue",
+      "handler.replayGet",
       "handler.storeMedia",
       "handler.transferRequest",
       "handler.viewOnly",
@@ -122,7 +123,7 @@
       "writeOK"
     ],
     "declarations": [
-      "const bootstrapRoute,cartRoute,catalogRoute,catalogV2CollectionRoute,catalogV2CollectionsRoute,catalogV2ProductRoute,catalogV2ProductsRoute,checkoutRoute,claimLinkRoute,claimRedeemRoute,collectionMediaRoute,consentsRoute,designPreviewRoute,designPublishedRoute,destinationItemRoute,destinationRoute,mediaRoute,optionsRoute,orderRoute,ordersRoute,paymentCancelRoute,paymentHandoffRoute,paymentPrepareRoute,paymentRefreshRoute,paymentRoute,primaryOriginRoute,privacyErasureRoute,privacyExportRoute,privacyRoute,quoteRoute,quotesRoute,retireRoute,sessionRoute,storeMediaRoute,unknownRoute",
+      "const bootstrapRoute,cartRoute,catalogRoute,catalogV2CollectionRoute,catalogV2CollectionsRoute,catalogV2ProductRoute,catalogV2ProductsRoute,checkoutRoute,claimLinkRoute,claimRedeemRoute,collectionMediaRoute,consentsRoute,designPreviewRoute,designPublishedRoute,destinationItemRoute,destinationRoute,mediaRoute,optionsRoute,orderRoute,ordersRoute,paymentCancelRoute,paymentHandoffRoute,paymentPrepareRoute,paymentRefreshRoute,paymentRoute,primaryOriginRoute,privacyErasureRoute,privacyExportRoute,privacyRoute,quoteRoute,quotesRoute,replayDetailRoute,replayListRoute,retireRoute,sessionRoute,storeMediaRoute,unknownRoute",
       "const claimDerivedKeyPrefix,claimLinkPath,claimRedeemPath,claimTokenHeader",
       "const designPreviewPath,designPublishedPath,previewTokenHeader",
       "const lookupPath,lookupWindow,routeLookup",
@@ -169,6 +170,7 @@
       "func handler.privacyExport",
       "func handler.privacyGet",
       "func handler.quoteWithCodDue",
+      "func handler.replayGet",
       "func handler.storeMedia",
       "func handler.transferRequest",
       "func handler.viewOnly",
@@ -251,6 +253,8 @@
       "type quoteAmountResponse",
       "type quoteLineResponse",
       "type quoteResponse",
+      "type replayItem",
+      "type replayOffer",
       "type responseError",
       "type route",
       "type routeEntry",
@@ -274,6 +278,6 @@
       "var linkTokenPattern",
       "var v2Slug"
     ],
-    "reviewed": "pending independent review (FEAT-MANUAL-DISCOUNT adjustments projection)"
+    "reviewed": "pending independent review (FEAT-MANUAL-DISCOUNT adjustments projection; base re-pin by #396 is reviewed)"
   }
 ]

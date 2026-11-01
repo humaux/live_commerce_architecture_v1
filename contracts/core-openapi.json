@@ -1489,7 +1489,7 @@
             "items": {
               "$ref": "#/components/schemas/QuoteAdjustment"
             },
-            "description": "Optional immutable named adjustment, same line as snapshot.quote.adjustments (0216)."
+            "description": "Optional immutable named adjustment, same line as snapshot.quote.adjustments (0220)."
           }
         },
         "description": "Merchant order detail (0063): 15 merchant-orders-v1 keys + refunded_minor, refund_pending_minor, shipment (null until recorded)."
