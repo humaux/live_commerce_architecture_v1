@@ -1,8 +1,15 @@
-PARITY-DATA-OPS ROUND 1
-Evidence: E1 static only; browser RED NOT_RUN
-PR: NOT_CREATED (integrator opens after guard)
-RED run/job: NOT_CREATED
-WAIT_RUN: NOT_CREATED
-GREEN: NOT_RUN (ROUND 1 tests-only)
-Expected RED: signed real-route heading/control/legacy-selector assertion failure, not compile.
-See DELIVERY.md and typecheck.log.
+PARITY-DATA-OPS ROUND 2 — RED evidence repair, attempt 1
+PR: 475 -> r3/integration
+Test-only RED head: 6aaeb503e311c61dd93f998ba085b504451a7a60
+Gates run: 41278886420; synthetic merge: 2021e81c4253cfab5c5ef6dd1efff4d02c278aec
+Failed job 124767463291 (bundle:03): catalog-core and product-editor browser exits 1.
+Failed job 124767463908 (bundle:07): migration-import browser exits 1.
+Browser assertion details are in playwright.log/artifacts, not streamed to CI stdout.
+Artifact uploads rejected parity/21:480.png and other colon-containing frame filenames.
+Artifact API returned no product-editor, catalog-core or migration-import artifact for this run.
+Causal assertion RED: UNCONFIRMED; do not infer assertion contents from browser exit status.
+Foundation run 41278886326/job124766544430: success (structure only, no product acceptance).
+Fix: capture() encodes frame ID colon as hyphen in filename; original ID retained in attachment label.
+No RED assertions, selectors, thresholds, fixtures or exemptions changed.
+Product implementation, GREEN, parity comparison, independent review, SANDBOX/LIVE: NOT_RUN.
+Next: integrator relays fresh session after repaired tests-only Gates completes; read assertion artifacts first.

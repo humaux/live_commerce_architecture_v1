@@ -1,4 +1,15 @@
-# PARITY-DATA-OPS — ROUND 1 tests-only handoff
+# PARITY-DATA-OPS — ROUND 2 RED evidence repair
+
+## Current handoff (2026-11-01, supersedes ROUND 1 status below)
+
+- PR #475, tests-only head `6aaeb503e311c61dd93f998ba085b504451a7a60`; origin/r3/integration remains `4b8c04c7213025c173e260db6f9c81cb5b818c61`, already an ancestor. CATALOG-PEOPLE #363 is merged (GitHub receipt 2026-10-31T13:10:01Z).
+- Gates `41278886420`, jobs `124767463291` (catalog-core/product-editor) and `124767463908` (migration-import) exit 1. Their assertion details were written to browser artifacts; uploads failed because frame filenames contain `:`. Artifact inventory confirms the three relevant artifacts are absent. This does **not** establish causal assertion RED.
+- Repair attempt 1 changes only screenshot filename encoding (`21:480` → `21-480.png`); attachment labels preserve exact signed IDs. All assertions/selectors/fixtures remain unchanged. CI screenshot paths in the mapping below use this encoding; reference PNG paths remain unchanged.
+- Implementation waits for readable failing assertions from the repaired tests-only CI. No local tests or servers; no merge, auto-merge, force push, status write or production action.
+- Humaux tools are available in ROUND 2. Directed search and rejected enumeration were read; rejected sample coverage 3/9, not a complete set. Integrator-dispatched lane retains inherited task ownership; no new claim or delegation. Current handoff is recorded separately under the lane's own memory/canvas element.
+- E1: node syntax and generated browser ownership checks; author assessment E0. GREEN, interaction acceptance, screenshot comparison and independent review remain NOT_RUN.
+
+## ROUND 1 history (not current status)
 
 **Evidence: E1 static checks only. BROWSER/RED/GREEN/independent review: NOT_RUN. No product implementation or production action.**
 
@@ -46,50 +57,50 @@ Paths below are targets, not claims that CI captures exist. Entry captures occur
 
 | Frame | Real-route CI screenshot | Signed reference PNG from Fleet Bridge | State / limitation |
 |---|---|---|---|
-| `5:15211` | `parity/5:15211.png` | `figma/get_screenshot-5-15211-1793511922329-0.png` | Admin Desktop · 商品匯入與匯出 · SHOPLINE · 1440×900px |
-| `5:15352` | `parity/5:15352.png` | `figma/get_screenshot-5-15352-1793511922571-0.png` | Admin Mobile · 商品匯入與匯出 · SHOPLINE · 390×844px |
-| `30:1441` | `parity/30:1441.png` | `figma/get_screenshot-30-1441-1793511923021-0.png` | Admin Desktop · 預覽商品匯入 · SHOPLINE · 1440×900px |
-| `30:1528` | `parity/30:1528.png` | `figma/get_screenshot-30-1528-1793511923321-0.png` | Admin Mobile · 預覽商品匯入 · SHOPLINE · 390×844px |
-| `30:1574` | `parity/30:1574.png` | `figma/get_screenshot-30-1574-1793511923787-0.png` | Admin Desktop · 匯入結果 · SHOPLINE · 1440×900px |
-| `30:1635` | `parity/30:1635.png` | `figma/get_screenshot-30-1635-1793511924044-0.png` | Admin Mobile · 匯入結果 · SHOPLINE · 390×844px |
-| `750:3456` | `parity/750:3456.png` | `figma/get_screenshot-750-3456-1793511924483-0.png` | Admin Desktop · 匯入錯誤明細 · SHOPLINE · 1440×900px |
-| `750:3598` | `parity/750:3598.png` | `figma/get_screenshot-750-3598-1793511924824-0.png` | Admin Mobile · 匯入錯誤明細 · SHOPLINE · 390×844px |
-| `6:19050` | `parity/6:19050.png` | `figma/get_screenshot-6-19050-1793511925268-0.png` | Admin Desktop · 調整庫存 · 選中貨號 · 1440×900px |
-| `6:19202` | `parity/6:19202.png` | `figma/get_screenshot-6-19202-1793511925605-0.png` | Admin Mobile · 調整庫存 · 選中貨號 · 390×844px |
+| `5:15211` | `parity/5-15211.png` | `figma/get_screenshot-5-15211-1793511922329-0.png` | Admin Desktop · 商品匯入與匯出 · SHOPLINE · 1440×900px |
+| `5:15352` | `parity/5-15352.png` | `figma/get_screenshot-5-15352-1793511922571-0.png` | Admin Mobile · 商品匯入與匯出 · SHOPLINE · 390×844px |
+| `30:1441` | `parity/30-1441.png` | `figma/get_screenshot-30-1441-1793511923021-0.png` | Admin Desktop · 預覽商品匯入 · SHOPLINE · 1440×900px |
+| `30:1528` | `parity/30-1528.png` | `figma/get_screenshot-30-1528-1793511923321-0.png` | Admin Mobile · 預覽商品匯入 · SHOPLINE · 390×844px |
+| `30:1574` | `parity/30-1574.png` | `figma/get_screenshot-30-1574-1793511923787-0.png` | Admin Desktop · 匯入結果 · SHOPLINE · 1440×900px |
+| `30:1635` | `parity/30-1635.png` | `figma/get_screenshot-30-1635-1793511924044-0.png` | Admin Mobile · 匯入結果 · SHOPLINE · 390×844px |
+| `750:3456` | `parity/750-3456.png` | `figma/get_screenshot-750-3456-1793511924483-0.png` | Admin Desktop · 匯入錯誤明細 · SHOPLINE · 1440×900px |
+| `750:3598` | `parity/750-3598.png` | `figma/get_screenshot-750-3598-1793511924824-0.png` | Admin Mobile · 匯入錯誤明細 · SHOPLINE · 390×844px |
+| `6:19050` | `parity/6-19050.png` | `figma/get_screenshot-6-19050-1793511925268-0.png` | Admin Desktop · 調整庫存 · 選中貨號 · 1440×900px |
+| `6:19202` | `parity/6-19202.png` | `figma/get_screenshot-6-19202-1793511925605-0.png` | Admin Mobile · 調整庫存 · 選中貨號 · 390×844px |
 | `6:22818` | DEFERRED | `figma/get_screenshot-6-22818-1793511926003-0.png` | Historical inventory rows need a scoped ledger GET with timestamp, actor, source, reason and before/after quantities; current catalog-ledger returns balances only. |
 | `6:22986` | DEFERRED | `figma/get_screenshot-6-22986-1793511926336-0.png` | Same missing historical inventory read contract as 6:22818. |
-| `21:480` | `parity/21:480.png` | `figma/get_screenshot-21-480-1793511926755-0.png` | Admin Desktop · 庫存 · 選中貨號 · 1440×900px |
-| `21:899` | `parity/21:899.png` | `figma/get_screenshot-21-899-1793511927005-0.png` | Admin Mobile · 庫存 · 選中貨號 · 390×844px |
-| `840:5246` | `parity/840:5246.png` | `figma/get_screenshot-840-5246-1793511927450-0.png` | Admin Desktop · 庫存 / review · 1440×900px |
-| `840:5247` | `parity/840:5247.png` | `figma/get_screenshot-840-5247-1793511927697-0.png` | Admin Mobile · 庫存 / review · 390×844px |
-| `840:5248` | `parity/840:5248.png` | `figma/get_screenshot-840-5248-1793511928145-0.png` | Admin Desktop · 庫存 / result · 1440×900px |
-| `840:5249` | `parity/840:5249.png` | `figma/get_screenshot-840-5249-1793511928374-0.png` | Admin Mobile · 庫存 / result · 390×844px |
-| `840:5250` | `parity/840:5250.png` | `figma/get_screenshot-840-5250-1793511928736-0.png` | Admin Desktop · 庫存 / conflict · 1440×900px |
-| `840:5251` | `parity/840:5251.png` | `figma/get_screenshot-840-5251-1793511929048-0.png` | Admin Mobile · 庫存 / conflict · 390×844px |
-| `840:5252` | `parity/840:5252.png` | `figma/get_screenshot-840-5252-1793511929412-0.png` | Admin Desktop · 庫存 / unknown · 1440×900px |
-| `840:5253` | `parity/840:5253.png` | `figma/get_screenshot-840-5253-1793511929683-0.png` | Admin Mobile · 庫存 / unknown · 390×844px |
-| `840:5254` | `parity/840:5254.png` | `figma/get_screenshot-840-5254-1793511930053-0.png` | Admin Desktop · 庫存 / search · 1440×900px |
-| `840:5255` | `parity/840:5255.png` | `figma/get_screenshot-840-5255-1793511930310-0.png` | Admin Mobile · 庫存 / search · 390×844px |
-| `840:5256` | `parity/840:5256.png` | `figma/get_screenshot-840-5256-1793511930770-0.png` | Admin Desktop · 庫存 / discard · 1440×900px |
-| `840:5257` | `parity/840:5257.png` | `figma/get_screenshot-840-5257-1793511931065-0.png` | Admin Mobile · 庫存 / discard · 390×844px |
-| `6:19278` | `parity/6:19278.png` | `figma/get_screenshot-6-19278-1793511931612-0.png` | Admin · 集合分类 · SHOPLINE · 1440×900px |
-| `6:19486` | `parity/6:19486.png` | `figma/get_screenshot-6-19486-1793511931845-0.png` | Admin Mobile · 集合分类 · SHOPLINE · 390×844px |
-| `6:18298` | `parity/6:18298.png` | `figma/get_screenshot-6-18298-1793511932301-0.png` | Admin Desktop · 顧客匯入 · SHOPLINE · 1440×900px |
-| `6:18486` | `parity/6:18486.png` | `figma/get_screenshot-6-18486-1793511932617-0.png` | Admin Mobile · 顧客匯入 · SHOPLINE · 390×844px |
-| `1028:6685` | `parity/1028:6685.png` | `figma/get_screenshot-1028-6685-1793511933025-0.png` | Admin Desktop · 顧客匯入 · preview · 1440×900px |
-| `1028:6763` | `parity/1028:6763.png` | `figma/get_screenshot-1028-6763-1793511933287-0.png` | Admin Mobile · 顧客匯入 · preview · 390×844px |
-| `1028:6819` | `parity/1028:6819.png` | `figma/get_screenshot-1028-6819-1793511933715-0.png` | Admin Desktop · 顧客匯入 · result · 1440×900px |
-| `1028:6897` | `parity/1028:6897.png` | `figma/get_screenshot-1028-6897-1793511934034-0.png` | Admin Mobile · 顧客匯入 · result · 390×844px |
-| `1028:6953` | `parity/1028:6953.png` | `figma/get_screenshot-1028-6953-1793511934448-0.png` | Admin Desktop · 顧客匯入 · pending · 1440×900px |
-| `1028:7031` | `parity/1028:7031.png` | `figma/get_screenshot-1028-7031-1793511934701-0.png` | Admin Mobile · 顧客匯入 · pending · 390×844px |
+| `21:480` | `parity/21-480.png` | `figma/get_screenshot-21-480-1793511926755-0.png` | Admin Desktop · 庫存 · 選中貨號 · 1440×900px |
+| `21:899` | `parity/21-899.png` | `figma/get_screenshot-21-899-1793511927005-0.png` | Admin Mobile · 庫存 · 選中貨號 · 390×844px |
+| `840:5246` | `parity/840-5246.png` | `figma/get_screenshot-840-5246-1793511927450-0.png` | Admin Desktop · 庫存 / review · 1440×900px |
+| `840:5247` | `parity/840-5247.png` | `figma/get_screenshot-840-5247-1793511927697-0.png` | Admin Mobile · 庫存 / review · 390×844px |
+| `840:5248` | `parity/840-5248.png` | `figma/get_screenshot-840-5248-1793511928145-0.png` | Admin Desktop · 庫存 / result · 1440×900px |
+| `840:5249` | `parity/840-5249.png` | `figma/get_screenshot-840-5249-1793511928374-0.png` | Admin Mobile · 庫存 / result · 390×844px |
+| `840:5250` | `parity/840-5250.png` | `figma/get_screenshot-840-5250-1793511928736-0.png` | Admin Desktop · 庫存 / conflict · 1440×900px |
+| `840:5251` | `parity/840-5251.png` | `figma/get_screenshot-840-5251-1793511929048-0.png` | Admin Mobile · 庫存 / conflict · 390×844px |
+| `840:5252` | `parity/840-5252.png` | `figma/get_screenshot-840-5252-1793511929412-0.png` | Admin Desktop · 庫存 / unknown · 1440×900px |
+| `840:5253` | `parity/840-5253.png` | `figma/get_screenshot-840-5253-1793511929683-0.png` | Admin Mobile · 庫存 / unknown · 390×844px |
+| `840:5254` | `parity/840-5254.png` | `figma/get_screenshot-840-5254-1793511930053-0.png` | Admin Desktop · 庫存 / search · 1440×900px |
+| `840:5255` | `parity/840-5255.png` | `figma/get_screenshot-840-5255-1793511930310-0.png` | Admin Mobile · 庫存 / search · 390×844px |
+| `840:5256` | `parity/840-5256.png` | `figma/get_screenshot-840-5256-1793511930770-0.png` | Admin Desktop · 庫存 / discard · 1440×900px |
+| `840:5257` | `parity/840-5257.png` | `figma/get_screenshot-840-5257-1793511931065-0.png` | Admin Mobile · 庫存 / discard · 390×844px |
+| `6:19278` | `parity/6-19278.png` | `figma/get_screenshot-6-19278-1793511931612-0.png` | Admin · 集合分类 · SHOPLINE · 1440×900px |
+| `6:19486` | `parity/6-19486.png` | `figma/get_screenshot-6-19486-1793511931845-0.png` | Admin Mobile · 集合分类 · SHOPLINE · 390×844px |
+| `6:18298` | `parity/6-18298.png` | `figma/get_screenshot-6-18298-1793511932301-0.png` | Admin Desktop · 顧客匯入 · SHOPLINE · 1440×900px |
+| `6:18486` | `parity/6-18486.png` | `figma/get_screenshot-6-18486-1793511932617-0.png` | Admin Mobile · 顧客匯入 · SHOPLINE · 390×844px |
+| `1028:6685` | `parity/1028-6685.png` | `figma/get_screenshot-1028-6685-1793511933025-0.png` | Admin Desktop · 顧客匯入 · preview · 1440×900px |
+| `1028:6763` | `parity/1028-6763.png` | `figma/get_screenshot-1028-6763-1793511933287-0.png` | Admin Mobile · 顧客匯入 · preview · 390×844px |
+| `1028:6819` | `parity/1028-6819.png` | `figma/get_screenshot-1028-6819-1793511933715-0.png` | Admin Desktop · 顧客匯入 · result · 1440×900px |
+| `1028:6897` | `parity/1028-6897.png` | `figma/get_screenshot-1028-6897-1793511934034-0.png` | Admin Mobile · 顧客匯入 · result · 390×844px |
+| `1028:6953` | `parity/1028-6953.png` | `figma/get_screenshot-1028-6953-1793511934448-0.png` | Admin Desktop · 顧客匯入 · pending · 1440×900px |
+| `1028:7031` | `parity/1028-7031.png` | `figma/get_screenshot-1028-7031-1793511934701-0.png` | Admin Mobile · 顧客匯入 · pending · 390×844px |
 | `1028:7087` | DEFERRED | `figma/get_screenshot-1028-7087-1793511935106-0.png` | Prototype-only demo CSV chooser; real native CSV file selection is covered instead. |
 | `1028:7165` | DEFERRED | `figma/get_screenshot-1028-7165-1793511935368-0.png` | Prototype-only demo CSV chooser; real native CSV file selection is covered instead. |
-| `1028:7221` | `parity/1028:7221.png` | `figma/get_screenshot-1028-7221-1793511935733-0.png` | Admin Desktop · 顧客匯入 · errors · 1440×900px |
-| `1028:7299` | `parity/1028:7299.png` | `figma/get_screenshot-1028-7299-1793511936005-0.png` | Admin Mobile · 顧客匯入 · errors · 390×844px |
-| `1198:10518` | `parity/1198:10518.png` | `figma/get_screenshot-1198-10518-1793511936445-0.png` | Admin Desktop · 顧客匯入 · stale · DRAFT-COPY · 1440×900px |
-| `1198:10588` | `parity/1198:10588.png` | `figma/get_screenshot-1198-10588-1793511936729-0.png` | Admin Mobile · 顧客匯入 · stale · DRAFT-COPY · 390×844px |
-| `1198:10633` | `parity/1198:10633.png` | `figma/get_screenshot-1198-10633-1793511937146-0.png` | Admin Desktop · 顧客匯入 · stale-unknown · DRAFT-COPY · 1440×900px |
-| `1198:10678` | `parity/1198:10678.png` | `figma/get_screenshot-1198-10678-1793511937434-0.png` | Admin Mobile · 顧客匯入 · stale-unknown · DRAFT-COPY · 390×844px |
+| `1028:7221` | `parity/1028-7221.png` | `figma/get_screenshot-1028-7221-1793511935733-0.png` | Admin Desktop · 顧客匯入 · errors · 1440×900px |
+| `1028:7299` | `parity/1028-7299.png` | `figma/get_screenshot-1028-7299-1793511936005-0.png` | Admin Mobile · 顧客匯入 · errors · 390×844px |
+| `1198:10518` | `parity/1198-10518.png` | `figma/get_screenshot-1198-10518-1793511936445-0.png` | Admin Desktop · 顧客匯入 · stale · DRAFT-COPY · 1440×900px |
+| `1198:10588` | `parity/1198-10588.png` | `figma/get_screenshot-1198-10588-1793511936729-0.png` | Admin Mobile · 顧客匯入 · stale · DRAFT-COPY · 390×844px |
+| `1198:10633` | `parity/1198-10633.png` | `figma/get_screenshot-1198-10633-1793511937146-0.png` | Admin Desktop · 顧客匯入 · stale-unknown · DRAFT-COPY · 1440×900px |
+| `1198:10678` | `parity/1198-10678.png` | `figma/get_screenshot-1198-10678-1793511937434-0.png` | Admin Mobile · 顧客匯入 · stale-unknown · DRAFT-COPY · 390×844px |
 
 ## DEFERRED / NOT_RUN
 

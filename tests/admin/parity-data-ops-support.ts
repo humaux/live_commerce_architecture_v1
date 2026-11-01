@@ -26,7 +26,8 @@ export async function click(page: Page, name: string, expected: string, verify: 
 }
 
 export async function capture(page: Page, frame: string) {
-  const file = path.join(evidence, "parity", `${frame}.png`);
+  // GitHub artifact uploads reject colons; keep the signed frame ID in the attachment label.
+  const file = path.join(evidence, "parity", `${frame.replaceAll(":", "-")}.png`);
   await mkdir(path.dirname(file), { recursive: true });
   await page.screenshot({ path: file, animations: "disabled" });
   await test.info().attach(`Figma ${frame}`, { path: file, contentType: "image/png" });
