@@ -1,9 +1,12 @@
 // Purpose: server page of /{locale}/settings/settlements: resolves locale, query and the authorized stores (customers/page-data.ts) and renders Settlements; it fetches no settlement data itself.
 // Depends on: @/components/Settlements, ../../customers/page-data (loadPage).
 // Used by: Next routing (route registry entry "settlements", permission billing:manage, nav:false).
+// Invariants: statement is a canonical UUID read selector; the server still owns store/statement authorization.
 // Route /{locale}/settings/settlements (billing:manage). BFF (browser, via Settlements.tsx):
 // GET /api/stores/{store}/settlements[/{statement_id}] -> Go settlement reads (internal/payments/settlement,
-// W4-S2; contract stripe-platform-account-v1). Read-only; no query beyond ?store.
+// W4-S2; contract stripe-platform-account-v1). Read-only; store and optional statement selector only.
+import { notFound } from "next/navigation";
+import { canonicalUUID } from "@/lib/orders-model";
 import { Settlements } from "@/components/Settlements";
 import { loadPage } from "../../customers/page-data";
 
@@ -14,7 +17,8 @@ export default async function SettlementsPage({
   params: Promise<{ locale: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const page = await loadPage(params, searchParams, ["store"]);
+  const page = await loadPage(params, searchParams, ["store", "statement"]);
+  if (page.query.statement !== undefined && !canonicalUUID.test(page.query.statement)) notFound();
   return (
     <Settlements locale={page.locale} stores={page.stores} store={page.store}
       initialError={page.initialError} renderKey={page.renderKey} />

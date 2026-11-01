@@ -51,6 +51,13 @@ const ui = {
 
 test.use({ baseURL: origin, trace: "retain-on-failure", screenshot: "only-on-failure" });
 
+async function revealSavedFacts(page: Page) {
+  const url=new URL(page.url());
+  if(!/\/orders\/[0-9a-f-]{36}$/.test(url.pathname)&&!url.searchParams.has("order"))return;
+  const facts=page.getByTestId("order-more-details");
+  await expect(facts).toBeVisible();
+  if(await facts.getAttribute("open")===null)await facts.locator("summary").first().click();
+}
 async function signedLogin(page: Page) {
   await page.goto(new URL("/en/", origin).toString());
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
@@ -58,11 +65,13 @@ async function signedLogin(page: Page) {
 }
 /** Opens the orders page deep-linked at one order; the page expands ?order= itself. */
 async function openOrder(page: Page, locale: string, orderId: string): Promise<Locator> {
-  await page.goto(new URL(`/${locale}/orders?store=${store}&state=all&order=${orderId}`, origin).toString());
+  await page.goto(new URL(`/${locale}/orders/${orderId}?store=${store}&state=all`, origin).toString());
   await expect(page.getByTestId("merchant-orders")).toBeVisible();
   const detail = page.getByTestId("order-detail");
   await expect(detail).toHaveAttribute("aria-label", new RegExp(orderId));
-  return detail;
+  const facts=page.getByTestId("order-more-details");
+  if(await facts.getAttribute("open")===null) await facts.locator("summary").first().click();
+  return detail.getByTestId("order-facts");
 }
 async function asToken(context: BrowserContext, token: string) {
   await context.clearCookies();
@@ -183,7 +192,7 @@ test("W3-U5 full RMA walk: register -> receive -> inspect -> close, one keyed PO
   expect(JSON.parse(posts.find((p) => p.url.endsWith(`/returns/${rmaId}/close`))?.body ?? "{}")).toMatchObject({ expected_version: 3 });
 
   // refresh persistence: the closed RMA is still there after a full reload
-  await page.reload();
+  await page.reload(); await revealSavedFacts(page);
   const again = await openOrder(page, "zh-TW", shippedOrder);
   await expect(rmaCards(again, "CLOSED").first()).toBeVisible();
 });
@@ -255,6 +264,8 @@ test("W3-U5 returns page: RMA list, state filter links and the refund-gap row su
   await signedLogin(page);
   await page.goto(new URL(`/zh-TW/returns?store=${store}`, origin).toString());
   await expect(page.getByTestId("returns-page")).toBeVisible();
+  // Signed after-sales home opens requests explicitly; retain the same list/filter/gap persistence assertions.
+  await page.getByRole("button", { name: "查看售後申請", exact: true }).click();
   await expect(page.getByTestId("returns-list")).toBeVisible();
   // the RMAs from the flows above are listed, newest first
   await expect(page.locator('[data-testid^="returns-row-"]').first()).toBeVisible();
@@ -264,7 +275,7 @@ test("W3-U5 returns page: RMA list, state filter links and the refund-gap row su
   await expect(page.locator('tr[data-testid^="returns-row-"]').first()).toBeVisible();
   for (const row of await page.locator('tr[data-testid^="returns-row-"]').all())
     await expect(row.locator('[data-state="CLOSED"]')).toBeVisible();
-  await page.reload();
+  await page.reload(); await revealSavedFacts(page);
   await expect(page).toHaveURL(/state=CLOSED/);
   await expect(page.getByTestId("returns-list")).toBeVisible();
   // 退款失敗待處理: the seeded gap links to the cancelled order

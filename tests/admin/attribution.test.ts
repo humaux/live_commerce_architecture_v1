@@ -21,6 +21,8 @@ import ts from "typescript-api";
 import { money, displayTime } from "../../packages/format/src/index.ts";
 import { formatROAS } from "../../apps/admin/lib/attribution-format.ts";
 import { pageTitle } from "../../apps/admin/src/page-title.ts";
+import { growthCopy } from "../../packages/i18n/src/growth.ts";
+import { adsCopy } from "../../apps/admin/lib/ads-copy.ts";
 import { presentationCopy } from "../../apps/admin/lib/presentation-copy.ts";
 
 // MOCK SSR: execute the actual panel JSX; only navigation and the separate read control are stubbed.
@@ -93,6 +95,9 @@ runInNewContext(code, {
         default: ({ children, ...props }: any) =>
           React.createElement("a", props, children),
       };
+    if (name === "@live-commerce/i18n") return { growthCopy };
+    if (name === "@/lib/ads-copy") return { adsCopy };
+    if (name === "./AdsResults") return { ReportSection: () => null };
     if (name === "@live-commerce/format") return { money, displayTime };
     if (name === "@live-commerce/ui") return presentation;
     if (name === "./AdminPageHeader") return header;
@@ -131,7 +136,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
     reportForRender = structuredClone(attributionFixture);
     stateCalls = 0;
     const page = renderPanel("Attribution", { locale, store: { id: "test-store", name: "Synthetic", currency: "TWD" }, from: "2026-10-01", to: "2026-10-03", draftID: "", sessionID: "", initialError: null });
-    assert.ok(page.includes(`<h1>${pageTitle(locale, "/ads/attribution")}</h1>`));
+    assert.ok(page.includes(`<h1>${growthCopy[locale].attribution}</h1>`));
     assert.match(page, /id="attribution-from"[^>]*lang=/);
     assert.ok(page.includes('for="attribution-session"'));
     reportForRender = null;

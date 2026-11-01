@@ -7,6 +7,7 @@ package customers
 import (
 	"encoding/json"
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -133,7 +134,7 @@ func rowJSON(t *testing.T, mutate func(map[string]any)) json.RawMessage {
 	m := map[string]any{"customer_id": testUUID, "first_seen_at": testTS, "last_activity_at": testTS, "display_name": "Alice",
 		"phone_last3": "678", "orders_count": 2, "paid_orders_count": 1, "captured_minor": 1200, "refunded_minor": 200,
 		"currency": "TWD", "claims_count": 1, "platforms": []string{"facebook"},
-		"consents": map[string]bool{"marketing_messages": false, "ads_personalization": true}, "active": true, "imported": false,
+		"consents": map[string]bool{"marketing_messages": false, "ads_personalization": true}, "consent_state": map[string]string{"marketing_messages": "never", "ads_personalization": "granted"}, "active": true, "imported": false,
 		"tags": []map[string]string{{"id": testUUID, "name": "VIP", "color": "red"}}}
 	if mutate != nil {
 		mutate(m)
@@ -175,6 +176,13 @@ func TestDecodeCustomerStrict(t *testing.T) {
 		"unknown consent key": func(m map[string]any) {
 			m["consents"] = map[string]bool{"marketing_messages": true, "ads_personalization": true, "x": true}
 		},
+		"missing consent_state": func(m map[string]any) { delete(m, "consent_state") },
+		"bad consent_state value": func(m map[string]any) {
+			m["consent_state"] = map[string]string{"marketing_messages": "unknown", "ads_personalization": "granted"}
+		},
+		"consent_state disagrees with consents": func(m map[string]any) {
+			m["consent_state"] = map[string]string{"marketing_messages": "granted", "ads_personalization": "granted"}
+		},
 	} {
 		if _, err := decodeCustomer(rowJSON(t, mutate)); !errors.Is(err, ErrUnavailable) {
 			t.Fatalf("%s accepted: %v", name, err)
@@ -195,8 +203,15 @@ func detailJSON(t *testing.T, mutate func(map[string]any)) json.RawMessage {
 	m["privacy_actions"] = []map[string]any{{"kind": "EXPORT", "via": "merchant", "completed_at": testTS, "summary": map[string]int{"orders": 1}}}
 	m["tags_revision"] = strings.Repeat("a", 64)
 	m["notes"] = []map[string]any{{"id": testUUID, "body": "only 7-11", "author_id": testUUID, "created_at": testTS, "edited_at": nil, "version": 1}}
+	origState := m["consent_state"]
 	if mutate != nil {
 		mutate(m)
+	}
+	if reflect.DeepEqual(m["consent_state"], origState) {
+		if hist, ok := m["consent_history"].([]ConsentEvent); ok {
+			st := consentState(hist)
+			m["consent_state"] = map[string]string{"marketing_messages": st.MarketingMessages, "ads_personalization": st.AdsPersonalization}
+		}
 	}
 	raw, _ := json.Marshal(m)
 	return raw
@@ -210,6 +225,9 @@ func TestDecodeDetailStrict(t *testing.T) {
 	for name, mutate := range map[string]func(map[string]any){
 		"row consents disagree with history": func(m map[string]any) {
 			m["consents"] = map[string]bool{"marketing_messages": true, "ads_personalization": true}
+		},
+		"row consent_state disagrees with history": func(m map[string]any) {
+			m["consent_state"] = map[string]string{"marketing_messages": "granted", "ads_personalization": "never"}
 		},
 		"merchant grant in history": func(m map[string]any) {
 			m["consent_history"] = []map[string]any{{"purpose": "marketing_messages", "channel": "meta_dm", "granted": true,
@@ -353,5 +371,40 @@ func TestBuyerTokenAndAuthorityInput(t *testing.T) {
 	}
 	if _, err := BuyerErase(nil, nil, strings.Repeat("A", 43), testUUID, "erase-key-0001"); !errors.Is(err, command.ErrInvalid) { //nolint:staticcheck
 		t.Fatalf("buyer erase: %v", err)
+	}
+}
+
+// PARITY-CATALOG-PEOPLE: assert additive read state without requiring a new symbol to compile on RED.
+func TestParityConsentStateProjection(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		history []ConsentEvent
+		want    string
+	}{
+		{"never", []ConsentEvent{}, "never"},
+		{"withdrawn", []ConsentEvent{ev(PurposeMarketingMessages, ChannelMetaDM, false, testTS)}, "withdrawn"},
+		{"granted", []ConsentEvent{ev(PurposeMarketingMessages, ChannelMetaDM, true, testTS)}, "granted"},
+		{"regranted", []ConsentEvent{ev(PurposeMarketingMessages, ChannelMetaDM, true, "2026-10-01T04:05:06.123456Z"), ev(PurposeMarketingMessages, ChannelMetaDM, false, testTS)}, "granted"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			raw := detailJSON(t, func(m map[string]any) { m["consent_history"] = tc.history; m["consents"] = CurrentConsents(tc.history) })
+			d, err := decodeDetail(raw)
+			if err != nil {
+				t.Fatal(err)
+			}
+			encoded, err := json.Marshal(d.Customer)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var row struct {
+				State map[string]string `json:"consent_state"`
+			}
+			if err := json.Unmarshal(encoded, &row); err != nil {
+				t.Fatal(err)
+			}
+			if row.State[PurposeMarketingMessages] != tc.want || row.State[PurposeAdsPersonalization] != "never" {
+				t.Fatalf("PARITY-CONSENT-STATE: %s got %v; want marketing=%s ads=never", tc.name, row.State, tc.want)
+			}
+		})
 	}
 }

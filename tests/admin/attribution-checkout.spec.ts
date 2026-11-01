@@ -52,6 +52,9 @@ test.use({
 
 async function checkoutDraftFacts(page: Page, locale: Locale) {
   const c = attributionCopy[locale];
+  const audit = page.getByTestId("attribution-advanced");
+  await expect(audit).toBeVisible();
+  if (await audit.getAttribute("open") === null) await audit.locator(":scope > summary").click();
   const draft = page.getByTestId("attribution-draft-panel");
   const ours = draft.getByTestId("attribution-ours");
   await expect(draft).toBeVisible();
@@ -184,6 +187,9 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const)
           actual: "PASS",
         });
         await page.reload();
+        const selection = page.getByTestId("attribution-selection");
+        await expect(selection).toBeVisible();
+        if (await selection.getAttribute("open") === null) await selection.locator(":scope > summary").click();
         await expect(page.getByTestId("attribution-draft")).toHaveValue(
           fixture.draft_id,
         );

@@ -1,0 +1,311 @@
+{
+  "read_at_utc": "2026-10-30T13:28:17.117007+00:00",
+  "tool": "Fleet Bridge get_design_context + get_screenshot (read only)",
+  "file": "iJ9lDdFIXgTlKkt5Tvrc0X",
+  "frames": [
+    {
+      "frame": "5:17304",
+      "viewport": "1440x900",
+      "current_png_sha256": "3f825a10a94107428bcbb664e9061e947e2dca20d50fc1ce67012b85a2c04ddd",
+      "same_as_signed_reference": true,
+      "reference": "figma/5-17304/get_screenshot-5-17304-1793361325193-0.png",
+      "current_context_sha256": "ea3d7fe2948038eb25d15675bdc71a61dd8cb6d9f494dc1a86bd83d4b18a348f"
+    },
+    {
+      "frame": "5:17438",
+      "viewport": "390x844",
+      "current_png_sha256": "a0bae7480dfe7cefc01b8906de690c61c5c59cd3808194c68c3a822eaf21b839",
+      "same_as_signed_reference": true,
+      "reference": "figma/5-17438/get_screenshot-5-17438-1793361326127-0.png",
+      "current_context_sha256": "c1f20b4a31772b0153915b4ccd0ff1066426c03540a8e3cd904cf78d9d82e3f7"
+    },
+    {
+      "frame": "5:17516",
+      "viewport": "1440x900",
+      "current_png_sha256": "b0737210e46cfadc43f073a2382b95e7c248b8a6af8a98b255fd15e1882e3b43",
+      "same_as_signed_reference": true,
+      "reference": "figma/5-17516/get_screenshot-5-17516-1793361328107-0.png",
+      "current_context_sha256": "84a46533756ee2c8453371c579bfb11894c64c0555e6d380363840fc9f70315d"
+    },
+    {
+      "frame": "5:17633",
+      "viewport": "390x844",
+      "current_png_sha256": "be88b5da64844f1e761738afa0ba7a464d99a9cb23cd22c728f86b227ab3a887",
+      "same_as_signed_reference": true,
+      "reference": "figma/5-17633/get_screenshot-5-17633-1793361329143-0.png",
+      "current_context_sha256": "acfd2984d040cf77dcf973b3af91b6c23b5ece9972d6590822f044092ce9cc85"
+    },
+    {
+      "frame": "6:20130",
+      "viewport": "1440x900",
+      "current_png_sha256": "4b88cdfa95ebddf82546eb2bb27b6fb34522e4239e750f6ad6875c0bf3dea760",
+      "same_as_signed_reference": true,
+      "reference": "figma/6-20130/get_screenshot-6-20130-1793361330220-0.png",
+      "current_context_sha256": "41e3c996251503d042a22ecb2c454e15c34ac0ee67ad205734b450ae90a0f0ea"
+    },
+    {
+      "frame": "6:20255",
+      "viewport": "390x844",
+      "current_png_sha256": "f3ea7e0ab4abc775626100a8b60a9ae0455277b1250670c90a678db76a1129b2",
+      "same_as_signed_reference": true,
+      "reference": "figma/6-20255/get_screenshot-6-20255-1793361331165-0.png",
+      "current_context_sha256": "3db0b1372485617a2465dcc72d37007f505bd1b6572b746ff859f73d04b8eae1"
+    },
+    {
+      "frame": "6:23064",
+      "viewport": "1440x900",
+      "current_png_sha256": "c0373c1370126e118f0ac903a5bda11bf693fddf3f2638256ab7f542f089a81d",
+      "same_as_signed_reference": true,
+      "reference": "figma/6-23064/get_screenshot-6-23064-1793361332168-0.png",
+      "current_context_sha256": "6099e72e5ae830fbe7bf52020cf4a9ede9e481df87617e2ea049d4b088b180cf"
+    },
+    {
+      "frame": "6:23199",
+      "viewport": "390x844",
+      "current_png_sha256": "7ae7e1e8f8d931f1f985f5000be69175fa764c1dbb0c6143898bbebed2737573",
+      "same_as_signed_reference": true,
+      "reference": "figma/6-23199/get_screenshot-6-23199-1793361333035-0.png",
+      "current_context_sha256": "de918e82f3d1d062c7e45a19f04c3286435d5b8de07a65571e632604d1aef9da"
+    },
+    {
+      "frame": "1049:6945",
+      "viewport": "1440x900",
+      "current_png_sha256": "997aa85c1987c7437259ccca443302c61aa179289aa52bbc6170e94ebd3ea33e",
+      "same_as_signed_reference": true,
+      "reference": "figma/1049-6945/get_screenshot-1049-6945-1793361334045-0.png",
+      "current_context_sha256": "cbdfa011755637e2bc30f781598d612b93209727e7d935bc716dd5cc98d89553"
+    },
+    {
+      "frame": "1049:7058",
+      "viewport": "390x844",
+      "current_png_sha256": "91e114b08bac4dfc4a0a52e37acb9b10d9acf2a96a6968e581684bcd77f5736a",
+      "same_as_signed_reference": true,
+      "reference": "figma/1049-7058/get_screenshot-1049-7058-1793361334851-0.png",
+      "current_context_sha256": "18c556315de6f4d4226e9dcb94c8f419631a9f492e903c05f29832e0882a92f4"
+    },
+    {
+      "frame": "1049:7120",
+      "viewport": "1440x900",
+      "current_png_sha256": "2ff924069e4058bd9557d818cd126c98eaecc5b22fe1d5551114f77ca97ef4fb",
+      "same_as_signed_reference": true,
+      "reference": "figma/1049-7120/get_screenshot-1049-7120-1793361336145-0.png",
+      "current_context_sha256": "ac553e8f6b3b1ee7ef5eb7e9d46dd02ad06d0389f630a3842fa9c8815db4b41e"
+    },
+    {
+      "frame": "1049:7233",
+      "viewport": "390x844",
+      "current_png_sha256": "130fb330e941dd629fd614945659a45628b91171276e5a012f88e764fe00e3c2",
+      "same_as_signed_reference": true,
+      "reference": "figma/1049-7233/get_screenshot-1049-7233-1793361337052-0.png",
+      "current_context_sha256": "951728a0731c2cb550478f522cde74f0da9362f3cc310567f9340d5a7fb2b2e0"
+    },
+    {
+      "frame": "1049:7295",
+      "viewport": "1440x900",
+      "current_png_sha256": "04d85b72645bd530a366f22a52d722a9a9f314ce28e06d4c477bcd607c8c1065",
+      "same_as_signed_reference": true,
+      "reference": "figma/1049-7295/get_screenshot-1049-7295-1793361338469-0.png",
+      "current_context_sha256": "ab6c4831ed56a3f1b62d728429af75d0a608d36d2b832bd07f17ce2106eafa98"
+    },
+    {
+      "frame": "1049:7408",
+      "viewport": "390x844",
+      "current_png_sha256": "e322788bce9fc1c04fd779985a63bb7a751d4bb1f8d7eeaf260c698008d73457",
+      "same_as_signed_reference": true,
+      "reference": "figma/1049-7408/get_screenshot-1049-7408-1793361339565-0.png",
+      "current_context_sha256": "ff90d13641787231690655b9aa7a7930ebb19db69175e98ae4c7bbe1f73d1c1a"
+    },
+    {
+      "frame": "1049:7470",
+      "viewport": "1440x900",
+      "current_png_sha256": "1ffab850de4bdff713d648856d3c1a823460ee405f6856036271b1c51aeb0de5",
+      "same_as_signed_reference": true,
+      "reference": "figma/1049-7470/get_screenshot-1049-7470-1793361341105-0.png",
+      "current_context_sha256": "4b979056f81b917493c221c1974c5e74dc2b77eb22df0782e89b635aeb2131bf"
+    },
+    {
+      "frame": "1049:7583",
+      "viewport": "390x844",
+      "current_png_sha256": "610aafa13714764e8e43a81624ad1da24232f5be6b0d4f0c43f63dc5793bc64d",
+      "same_as_signed_reference": true,
+      "reference": "figma/1049-7583/get_screenshot-1049-7583-1793361342801-0.png",
+      "current_context_sha256": "647fd7b720819c6077ac919b9b116ad888b2c148cedb89dc4f3533b005da3c11"
+    },
+    {
+      "frame": "1049:7645",
+      "viewport": "1440x900",
+      "current_png_sha256": "93b9c2146a4096735f852da674be067c0338f0ea016b801c7751cea06ea97c57",
+      "same_as_signed_reference": true,
+      "reference": "figma/1049-7645/get_screenshot-1049-7645-1793361344573-0.png",
+      "current_context_sha256": "a43c18900f976f6da8f22db0042770931003cd7810b79823d1b71da1e0b5e45d"
+    },
+    {
+      "frame": "1049:7758",
+      "viewport": "390x844",
+      "current_png_sha256": "bad45f8f669957d6d54b08b07e2d56a54dc081d3157c6f7b86b4fdb6a7d60d72",
+      "same_as_signed_reference": true,
+      "reference": "figma/1049-7758/get_screenshot-1049-7758-1793361345566-0.png",
+      "current_context_sha256": "4298d7858c37a95e6ecdd793a7f4f10e7e6cd5b0d8f29bf7a0c67b2506c75e94"
+    },
+    {
+      "frame": "1049:7820",
+      "viewport": "1440x900",
+      "current_png_sha256": "afe196d4dbb3b47124788c3cc5d7108bbe233da0d98f21e62344de67c18104c7",
+      "same_as_signed_reference": true,
+      "reference": "figma/1049-7820/get_screenshot-1049-7820-1793361346963-0.png",
+      "current_context_sha256": "ebd4d2a3c370870dce7b9d5ca5ad898ab62bd505c696a3d3c3e2a5df57684006"
+    },
+    {
+      "frame": "1049:7933",
+      "viewport": "390x844",
+      "current_png_sha256": "3a5a634c23a9c318e0f1e2d4c856de64325ba75ea990d50dc436628d7b99901c",
+      "same_as_signed_reference": true,
+      "reference": "figma/1049-7933/get_screenshot-1049-7933-1793361348136-0.png",
+      "current_context_sha256": "8344d190256c75a2a7c16b4519a7a5ae987d7c1d707854b3db0caaf3378ad4f3"
+    },
+    {
+      "frame": "1049:7995",
+      "viewport": "1440x900",
+      "current_png_sha256": "ced54f7e0b4cdc52158c7b934d15f4970334211a6639fa94c4b4f95eb5315913",
+      "same_as_signed_reference": true,
+      "reference": "figma/1049-7995/get_screenshot-1049-7995-1793361349622-0.png",
+      "current_context_sha256": "b319b199bd1ba1542f9110eab3374049b6ecb0a3a9b97e50077771fcf9b99740"
+    },
+    {
+      "frame": "1049:8108",
+      "viewport": "390x844",
+      "current_png_sha256": "5a29aec36a4955e8da1262203c5fec33789f64a21edcf3a8f95332adaee28de8",
+      "same_as_signed_reference": true,
+      "reference": "figma/1049-8108/get_screenshot-1049-8108-1793361350258-0.png",
+      "current_context_sha256": "540650de96923c9674a8dbac4aa924eceabb68daf2f69a4e005e8fd2ecff6c20"
+    },
+    {
+      "frame": "1134:9548",
+      "viewport": "1440x900",
+      "current_png_sha256": "3deee0c99950eb80e85c94b6d297077cd7c7621792ce8d46b0e9e0b18b10eda1",
+      "same_as_signed_reference": true,
+      "reference": "figma/1134-9548/get_screenshot-1134-9548-1793361351393-0.png",
+      "current_context_sha256": "4c11e1ed4124f8a65b45cb3d8f8425f7cd386b7659f4951841f855ae31b66114"
+    },
+    {
+      "frame": "1134:9549",
+      "viewport": "390x844",
+      "current_png_sha256": "e36ad3497e46f06cd4caa745f6e53f7269025cf33297bd732d24126a7be8e551",
+      "same_as_signed_reference": true,
+      "reference": "figma/1134-9549/get_screenshot-1134-9549-1793361352015-0.png",
+      "current_context_sha256": "39dea2011e30801ffc5ec316dccce02ac29d0c7b3a11d9167b2dc0c694d88399"
+    },
+    {
+      "frame": "1134:9550",
+      "viewport": "1440x900",
+      "current_png_sha256": "c0a6b0465573316278b4a63d586c9eef85e0a76444011fdad91d1f90bc3bdf68",
+      "same_as_signed_reference": true,
+      "reference": "figma/1134-9550/get_screenshot-1134-9550-1793361353077-0.png",
+      "current_context_sha256": "01c08dbefedd04b5a325f759282e577c8899cb00bafe4ea1621cc93c9af86611"
+    },
+    {
+      "frame": "1134:9551",
+      "viewport": "390x844",
+      "current_png_sha256": "00d56af85294e5677c1ae287d3c698db296097442f5e85869c4c8d578d15c2e6",
+      "same_as_signed_reference": true,
+      "reference": "figma/1134-9551/get_screenshot-1134-9551-1793361353601-0.png",
+      "current_context_sha256": "cc73454b41afa6bbc7a1e957758b8ef073cbd1b261ed6a29d88435228eb3bcd0"
+    },
+    {
+      "frame": "1151:9420",
+      "viewport": "1440x900",
+      "current_png_sha256": "0904554b5bd5777dcafa569c4c72c4f5ebffb548832c3e66f2765ecbac4d5288",
+      "same_as_signed_reference": true,
+      "reference": "figma/1151-9420/get_screenshot-1151-9420-1793361354607-0.png",
+      "current_context_sha256": "61b932f3d2533f40d5b9899c1da1f2fe40e5cc699f35edf48c8eaa5536090b0b"
+    },
+    {
+      "frame": "1151:9421",
+      "viewport": "390x844",
+      "current_png_sha256": "46988d03ff57b6e52c79e85bd6b6473915f546e7c0f4353e0dedae2121c1bc3d",
+      "same_as_signed_reference": true,
+      "reference": "figma/1151-9421/get_screenshot-1151-9421-1793361355231-0.png",
+      "current_context_sha256": "1717b3285c53b8d87e3e570fd3d80f562ae02bcd98cbf9cc23b7c2e251e71d85"
+    },
+    {
+      "frame": "1151:9422",
+      "viewport": "1440x900",
+      "current_png_sha256": "06306feabceb7cee49634a488cba431c7247ca6b4a042076d993625a92556b4e",
+      "same_as_signed_reference": true,
+      "reference": "figma/1151-9422/get_screenshot-1151-9422-1793361356209-0.png",
+      "current_context_sha256": "462772514d48303a3b626b72288a90ba78792abb18158445b1ebdebe8f54baeb"
+    },
+    {
+      "frame": "1151:9423",
+      "viewport": "390x844",
+      "current_png_sha256": "e6c0b21455abd7d784f234d521290819e526f95d2c6683ce4e297e2cd5a2d8a7",
+      "same_as_signed_reference": true,
+      "reference": "figma/1151-9423/get_screenshot-1151-9423-1793361357321-0.png",
+      "current_context_sha256": "b2b2de09e8f40542a966818b930f6811a5b10c44fc4a0ee144a41ff6fa536f4f"
+    },
+    {
+      "frame": "1151:9428",
+      "viewport": "1440x900",
+      "current_png_sha256": "2d95d3877b1f3ba870e227c2d3b1d543954ec8dbaf4b6b4ff8268699afa1696d",
+      "same_as_signed_reference": true,
+      "reference": "figma/1151-9428/get_screenshot-1151-9428-1793361358350-0.png",
+      "current_context_sha256": "ba2e544398e0c0dceb2185feeeb65d4f693233cdddf5fe5231586ff0d3d0c2a6"
+    },
+    {
+      "frame": "1151:9429",
+      "viewport": "390x844",
+      "current_png_sha256": "7aae748e6dc21c30a7fc665322762fd65aa36442036f548279b949c39f15add3",
+      "same_as_signed_reference": true,
+      "reference": "figma/1151-9429/get_screenshot-1151-9429-1793361358989-0.png",
+      "current_context_sha256": "057454962062f22a978a7d16431b4e84977eaba7d5b84c7fad8e9c24ec4e5a7f"
+    },
+    {
+      "frame": "4:11612",
+      "viewport": "1440x900",
+      "current_png_sha256": "e156e7c360e656e65d18be8a76b8f177bec334a2c755f00e3c80640982ef864c",
+      "same_as_signed_reference": true,
+      "reference": "figma/4-11612/get_screenshot-4-11612-1793361359948-0.png",
+      "current_context_sha256": "98d486904f57aef3a687b322e1a17fa37c0ee549344383076f0318194a45df3b"
+    },
+    {
+      "frame": "4:11750",
+      "viewport": "390x844",
+      "current_png_sha256": "07809dd37adca5f6ad5256cb53dcbf30187108b891a0278c553310b72f2805f4",
+      "same_as_signed_reference": true,
+      "reference": "figma/4-11750/get_screenshot-4-11750-1793361360696-0.png",
+      "current_context_sha256": "4f793276f317e90de571a045ab8fddfb148d55338e86b743c5e808772add5936"
+    },
+    {
+      "frame": "6:18113",
+      "viewport": "1440x900",
+      "current_png_sha256": "63027494800f402ddb5e5aedef0c14c28ccf847fdf1d2268d62912977f4e14fc",
+      "same_as_signed_reference": true,
+      "reference": "figma/6-18113/get_screenshot-6-18113-1793361361726-0.png",
+      "current_context_sha256": "63d4530e9a2d732db037abb5a5cac1867b03cd4c764c7e0d04364be31d02505c"
+    },
+    {
+      "frame": "6:18232",
+      "viewport": "390x844",
+      "current_png_sha256": "54798b3bcfebf43c4512f417ef5b217f9ae1ca9060e3a8e7a8ee931731de6163",
+      "same_as_signed_reference": true,
+      "reference": "figma/6-18232/get_screenshot-6-18232-1793361362834-0.png",
+      "current_context_sha256": "6004a81c055359c160a554ba47de0882b067b602f762bc0fc166d8db3b3e42be"
+    },
+    {
+      "frame": "1194:7740",
+      "viewport": "1440x900",
+      "current_png_sha256": "5fd97f4bccadd7b2b441dcd70c3d8c71939b754b8f233f136d8963356e4eb644",
+      "same_as_signed_reference": true,
+      "reference": "figma/1194-7740/get_screenshot-1194-7740-1793361364024-0.png",
+      "current_context_sha256": "fcb51860ddede8ad46483df0818b2d3149db76f236c786adc9a85e04c308bce6"
+    },
+    {
+      "frame": "1194:7796",
+      "viewport": "390x844",
+      "current_png_sha256": "c6864772196143aec1710c543783be1806a2c5003951a2b516ced36fcca0d09f",
+      "same_as_signed_reference": true,
+      "reference": "figma/1194-7796/get_screenshot-1194-7796-1793361364571-0.png",
+      "current_context_sha256": "17f51ebcf5b03ec8dcbc2219f2a67aa4d5c1ef32104c49d903cccdcd39cf14e8"
+    }
+  ]
+}

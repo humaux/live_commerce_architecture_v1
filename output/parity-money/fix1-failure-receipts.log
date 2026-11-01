@@ -1,0 +1,340 @@
+Gates run41081415303 head53287ed7c95292956d7e675adeb1376e231994ba execution924158045e3d1413b8df3e349a0ecde3bb8090e5
+E3 failure evidence only; no GREEN acceptance.
+
+SOURCE fix1-124155702313.log
+gate (shard:g09)	Gate	2026-10-30T16:15:59.3391528Z     order_history_import_test.go:217: finance summary moved: {"generated_at":"2026-10-30T16:15:59.31274234Z","from":"2026-03-01","to":"2026-04-30","timezone":"Asia/Taipei","rows":[],"totals":[]}
+gate (shard:g09)	Gate	2026-10-30T16:15:59.3393226Z          -> {"generated_at":"2026-10-30T16:15:59.338372497Z","from":"2026-03-01","to":"2026-04-30","timezone":"Asia/Taipei","rows":[],"totals":[]}
+gate (shard:g09)	Gate	2026-10-30T16:16:00.3972916Z --- FAIL: TestOrderHistoryImport (1.57s)
+gate (shard:g09)	Gate	2026-10-30T16:16:00.3977263Z     --- FAIL: TestOrderHistoryImport/OH03_I05_the_archive_touches_no_money,_order_or_inventory_row_and_no_such_function_reads_it (0.13s)
+
+SOURCE fix1-124155702353.log
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T15:51:39.6706858Z ##[group]bundle member --browser-cvs
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T15:55:43.8535316Z bundle member --browser-cvs: success
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T15:55:43.9151711Z ##[group]bundle member --browser-customers-billing
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T15:56:46.5413850Z --- FAIL: TestBrowserCustomersBilling (55.35s)
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T15:57:23.7094654Z bundle member --browser-customers-billing: failure
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T15:57:23.7539910Z matrix-receipts: {"mode":"--browser-customers-billing","run_id":"41081415303","run_attempt":"1","sha":"924158045e3d1413b8df3e349a0ecde3bb8090e5","status":"FAIL","test_count":121,"spec_count":31}
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T15:57:23.7627840Z bundle member --browser-customers-billing: receipt receipt-browser-customers-billing.json is not PASS
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T15:57:23.7686747Z ##[group]bundle member --browser-identity
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T15:58:40.4889942Z bundle member --browser-identity: success
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T15:58:40.5532014Z ##[group]bundle member --browser-migration-import
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T15:59:27.5770593Z     browser_migration_import_ui_test.go:91: archive changed finance/summary report
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T15:59:27.6399463Z --- FAIL: TestBrowserMigrationImport (41.12s)
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T15:59:27.9170797Z bundle member --browser-migration-import: failure
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T15:59:27.9632721Z matrix-receipts: {"mode":"--browser-migration-import","run_id":"41081415303","run_attempt":"1","sha":"924158045e3d1413b8df3e349a0ecde3bb8090e5","status":"FAIL","test_count":58,"spec_count":16}
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T15:59:27.9722070Z bundle member --browser-migration-import: receipt receipt-browser-migration-import.json is not PASS
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T15:59:27.9782037Z ##[group]bundle member --browser-returns-ui
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T16:00:00.6824371Z bundle member --browser-returns-ui: success
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T16:00:00.7426198Z ##[group]bundle member --browser-manual-order
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T16:00:16.6668804Z bundle member --browser-manual-order: success
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T16:00:16.7475042Z --- FAIL: TestBrowserCustomersBilling (55.35s)
+gate (bundle:07)	UNKNOWN STEP	2026-10-30T16:00:16.7483736Z --- FAIL: TestBrowserMigrationImport (41.12s)
+
+SOURCE fix1-124155702726.log
+gate (bundle:08)	Gate	2026-10-30T16:29:27.4453566Z ##[group]bundle member --browser-password-auth
+gate (bundle:08)	Gate	2026-10-30T16:31:26.7630359Z --- FAIL: TestBrowserOC (111.51s)
+gate (bundle:08)	Gate	2026-10-30T16:33:09.7026241Z bundle member --browser-password-auth: failure
+gate (bundle:08)	Gate	2026-10-30T16:33:09.7520143Z matrix-receipts: {"mode":"--browser-password-auth","run_id":"41081415303","run_attempt":"1","sha":"924158045e3d1413b8df3e349a0ecde3bb8090e5","status":"FAIL","test_count":47,"spec_count":28}
+gate (bundle:08)	Gate	2026-10-30T16:33:09.7609345Z bundle member --browser-password-auth: receipt receipt-browser-password-auth.json is not PASS
+gate (bundle:08)	Gate	2026-10-30T16:33:09.7676179Z ##[group]bundle member --browser-meta-connect
+gate (bundle:08)	Gate	2026-10-30T16:34:13.6340877Z bundle member --browser-meta-connect: success
+gate (bundle:08)	Gate	2026-10-30T16:34:13.6961182Z ##[group]bundle member --browser-checkout-offline
+gate (bundle:08)	Gate	2026-10-30T16:35:07.9173080Z bundle member --browser-checkout-offline: success
+gate (bundle:08)	Gate	2026-10-30T16:35:07.9789597Z ##[group]bundle member --browser-live-claims
+gate (bundle:08)	Gate	2026-10-30T16:35:35.1885180Z bundle member --browser-live-claims: success
+gate (bundle:08)	Gate	2026-10-30T16:35:35.2462259Z ##[group]bundle member --browser-input-delivery
+gate (bundle:08)	Gate	2026-10-30T16:35:50.6615124Z bundle member --browser-input-delivery: success
+
+SOURCE fix1-124155702778.log
+gate (bundle:02)	Gate	2026-10-30T16:24:41.0309365Z ##[group]bundle member --browser-payment
+gate (bundle:02)	Gate	2026-10-30T16:29:04.4655906Z bundle member --browser-payment: success
+gate (bundle:02)	Gate	2026-10-30T16:29:04.5227764Z ##[group]bundle member --browser-order
+gate (bundle:02)	Gate	2026-10-30T16:29:50.7106995Z bundle member --browser-order: success
+gate (bundle:02)	Gate	2026-10-30T16:29:50.7589131Z ##[group]bundle member --browser-reports
+gate (bundle:02)	Gate	2026-10-30T16:32:00.2460114Z --- FAIL: TestBrowserW6Reports (124.09s)
+gate (bundle:02)	Gate	2026-10-30T16:32:00.4771711Z bundle member --browser-reports: failure
+gate (bundle:02)	Gate	2026-10-30T16:32:00.5190494Z matrix-receipts: {"mode":"--browser-reports","run_id":"41081415303","run_attempt":"1","sha":"924158045e3d1413b8df3e349a0ecde3bb8090e5","status":"FAIL","test_count":45,"spec_count":2}
+gate (bundle:02)	Gate	2026-10-30T16:32:00.5268686Z bundle member --browser-reports: receipt receipt-browser-reports.json is not PASS
+gate (bundle:02)	Gate	2026-10-30T16:32:00.5319067Z ##[group]bundle member --browser-storefront
+gate (bundle:02)	Gate	2026-10-30T16:32:23.5363170Z bundle member --browser-storefront: success
+
+SOURCE fix1-124155702803.log
+gate (bundle:06)	Gate	2026-10-30T16:06:16.3955931Z ##[group]bundle member --browser-tracking-backfill
+gate (bundle:06)	Gate	2026-10-30T16:08:25.1274020Z bundle member --browser-tracking-backfill: success
+gate (bundle:06)	Gate	2026-10-30T16:08:25.1725141Z ##[group]bundle member --browser-inbox
+gate (bundle:06)	Gate	2026-10-30T16:10:52.2771971Z bundle member --browser-inbox: success
+gate (bundle:06)	Gate	2026-10-30T16:10:52.3180882Z ##[group]bundle member --browser-card-payments
+gate (bundle:06)	Gate	2026-10-30T16:13:57.9192692Z --- FAIL: TestBrowserCardPayments (181.21s)
+gate (bundle:06)	Gate	2026-10-30T16:13:58.1431736Z bundle member --browser-card-payments: failure
+gate (bundle:06)	Gate	2026-10-30T16:13:58.1791980Z matrix-receipts: {"mode":"--browser-card-payments","run_id":"41081415303","run_attempt":"1","sha":"924158045e3d1413b8df3e349a0ecde3bb8090e5","status":"FAIL","test_count":94,"spec_count":36}
+gate (bundle:06)	Gate	2026-10-30T16:13:58.1870725Z bundle member --browser-card-payments: receipt receipt-browser-card-payments.json is not PASS
+gate (bundle:06)	Gate	2026-10-30T16:13:58.1920482Z ##[group]bundle member --browser-home-cod
+gate (bundle:06)	Gate	2026-10-30T16:15:48.4010405Z bundle member --browser-home-cod: success
+gate (bundle:06)	Gate	2026-10-30T16:15:48.4465269Z ##[group]bundle member --browser-meta-health-ui
+gate (bundle:06)	Gate	2026-10-30T16:16:13.1674456Z bundle member --browser-meta-health-ui: success
+gate (bundle:06)	Gate	2026-10-30T16:16:13.2154706Z ##[group]bundle member --browser-catalog-media
+gate (bundle:06)	Gate	2026-10-30T16:16:32.0408037Z bundle member --browser-catalog-media: success
+
+SOURCE fix1-124155702868.log
+gate (bundle:05)	Gate	2026-10-30T16:07:28.0242982Z ##[group]bundle member --browser-platform-site
+gate (bundle:05)	Gate	2026-10-30T16:10:19.9364687Z bundle member --browser-platform-site: success
+gate (bundle:05)	Gate	2026-10-30T16:10:19.9997867Z ##[group]bundle member --browser-e2e
+gate (bundle:05)	Gate	2026-10-30T16:11:41.6122221Z bundle member --browser-e2e: success
+gate (bundle:05)	Gate	2026-10-30T16:11:41.6751671Z ##[group]bundle member --browser-refund-fulfilment
+gate (bundle:05)	Gate	2026-10-30T16:13:03.9090459Z bundle member --browser-refund-fulfilment: success
+gate (bundle:05)	Gate	2026-10-30T16:13:03.9727914Z ##[group]bundle member --browser-storefront-publish
+gate (bundle:05)	Gate	2026-10-30T16:13:46.9718362Z bundle member --browser-storefront-publish: success
+gate (bundle:05)	Gate	2026-10-30T16:13:47.0356923Z ##[group]bundle member --browser-promotions
+gate (bundle:05)	Gate	2026-10-30T16:14:33.4417199Z --- FAIL: TestBrowserPromotions (41.65s)
+gate (bundle:05)	Gate	2026-10-30T16:14:33.7194999Z bundle member --browser-promotions: failure
+gate (bundle:05)	Gate	2026-10-30T16:14:33.7649241Z matrix-receipts: {"mode":"--browser-promotions","run_id":"41081415303","run_attempt":"1","sha":"924158045e3d1413b8df3e349a0ecde3bb8090e5","status":"FAIL","test_count":9,"spec_count":8}
+gate (bundle:05)	Gate	2026-10-30T16:14:33.7735131Z bundle member --browser-promotions: receipt receipt-browser-promotions.json is not PASS
+gate (bundle:05)	Gate	2026-10-30T16:14:33.7796023Z ##[group]bundle member --browser-merchant-orders-bff
+gate (bundle:05)	Gate	2026-10-30T16:14:54.6106581Z bundle member --browser-merchant-orders-bff: success
+
+ARTIFACT gate-browser-card-payments/playwright/run.knaW4q3s/card-payments/20261030T161110.266071113/playwright.log
+  1) tests/admin/settlements.spec.ts:109:3 › PARITY-MONEY settlement list, detail and returned frames (zh-TW, 1440)
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: '結算單明細', exact: true, level: 1 })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: '結算單明細', exact: true, level: 1 }) with timeout 10000ms
+      - waiting for getByRole('heading', { name: '結算單明細', exact: true, level: 1 })
+
+
+      124 |     await moneyShot(page, evidence, "statement", locale, width);
+      125 |     await page.reload();
+    > 126 |     await expect(page.getByRole("heading", { level: 1, name: c.statement, exact: true })).toBeVisible();
+          |                                                                                           ^
+      127 |     await page.getByRole("button", { name: c.backStatements, exact: true }).click();
+      128 |     await expect(page.getByRole("heading", { level: 1, name: c.statements, exact: true })).toBeVisible();
+      129 |     const rows = await returnedFixture(page); // disclosed frozen DTO read fixture, same as STL6; never writes money
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/settlements.spec.ts:126:91
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.knaW4q3s/card-payments/20261030T161110.266071113/results/settlements-PARITY-MONEY-s-52fc5-returned-frames-zh-TW-1440-/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.knaW4q3s/card-payments/20261030T161110.266071113/results/settlements-PARITY-MONEY-s-52fc5-returned-frames-zh-TW-1440-/error-context.md
+
+  7) tests/admin/settlements.spec.ts:157:1 › STL1–STL5 real settlement ledger › STL1 list: every statement row shows the server's numbers (signed) and the right payout state
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  getByRole('heading', { level: 1 })
+    Expected: "Settlements"
+    Received: "Settlement statements"
+    Timeout:  10000ms
+
+    Call log:
+      - Expect "toHaveText" getByRole('heading', { level: 1 }) with timeout 10000ms
+      - waiting for getByRole('heading', { level: 1 })
+        24 × locator resolved to <h1>Settlement statements</h1>
+           - unexpected value "Settlement statements"
+
+
+      159 |   await page.goto(url("en"));
+      160 |   await expect(page.getByTestId("settlements-page")).toBeVisible();
+    > 161 |   await expect(page.getByRole("heading", { level: 1 })).toHaveText(shellCopy.en.settlements);
+          |                                                         ^
+      162 |   const statements = await listOf(page);
+      163 |   expect(statements.map((s) => s.statement_id).sort()).toEqual([paid, carried, pending].sort());
+      164 |   await expect(page.locator('[data-testid^="settlement-row-"]')).toHaveCount(3);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/settlements.spec.ts:161:57
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.knaW4q3s/card-payments/20261030T161110.266071113/results/settlements-STL1–STL5-real-475e5--and-the-right-payout-state/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) tests/admin/settlements.spec.ts:320:5 › STL6 returned payout and carried funds survive reload (zh-TW, 1586px, frozen DTO MOCK)
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('columnheader', { name: '退回款帶入（加計）', exact: true })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('columnheader', { name: '退回款帶入（加計）', exact: true }) with timeout 10000ms
+      - waiting for getByRole('columnheader', { name: '退回款帶入（加計）', exact: true })
+
+
+      329 |       await expect(page.getByTestId(`settlement-status-${source.statement_id}`)).toHaveText(copy.status);
+      330 |       await expect(page.getByTestId(`settlement-returned-message-${source.statement_id}`)).toHaveText(copy.message);
+    > 331 |       await expect(page.getByRole("columnheader", { name: copy.amount, exact: true })).toBeVisible();
+          |                                                                                        ^
+      332 |       await expect(page.getByTestId(`settlement-row-${carrying.statement_id}`)).toContainText("+" + money(locale, "TWD", 125000));
+      333 |       await clickProof(page, locale, `settlement-open-${source.statement_id}`, "returned state, explanation and original payout retained", async () => {
+      334 |         await expect(page.getByTestId("settlement-detail-status")).toHaveAttribute("data-state", "returned");
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/settlements.spec.ts:331:88
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.knaW4q3s/card-payments/20261030T161110.266071113/results/settlements-STL6-returned--0fcf5--TW-1586px-frozen-DTO-MOCK-/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.knaW4q3s/card-payments/20261030T161110.266071113/results/settlements-STL6-returned--0fcf5--TW-1586px-frozen-DTO-MOCK-/error-context.md
+
+
+ARTIFACT gate-browser-customers-billing/playwright/run.PalPKs9o/customers-billing/20261030T155559.037111062/playwright.log
+  1) tests/admin/customers-billing.spec.ts:94:3 › PARITY-MONEY finance signed states (zh-TW, 1440) ─
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('heading', { name: '財務每日明細', exact: true, level: 1 })
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('heading', { name: '財務每日明細', exact: true, level: 1 }) with timeout 10000ms
+      - waiting for getByRole('heading', { name: '財務每日明細', exact: true, level: 1 })
+
+
+      111 |     await moneyShot(page, evidence, "daily", locale, width);
+      112 |     await page.reload();
+    > 113 |     await expect(page.getByRole("heading", { level: 1, name: c.dailyTitle, exact: true })).toBeVisible();
+          |                                                                                            ^
+      114 |     await page.getByRole("button", { name: c.backFinance, exact: true }).click();
+      115 |     await moneyClick(page, evidence, c.basis, "signed explanation, no financial write", async () => {
+      116 |       await page.getByRole("button", { name: c.basis, exact: true }).click();
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/customers-billing.spec.ts:113:92
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.PalPKs9o/customers-billing/20261030T155559.037111062/results/customers-billing-PARITY-M-b642c-e-signed-states-zh-TW-1440-/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.PalPKs9o/customers-billing/20261030T155559.037111062/results/customers-billing-PARITY-M-b642c-e-signed-states-zh-TW-1440-/error-context.md
+
+
+ARTIFACT gate-browser-customers-billing/playwright/run.PalPKs9o/w6-customers/20261030T155646.927052081/playwright.log
+
+ARTIFACT gate-browser-password-auth/playwright/run.XrEgWmrt/oc-20261030T162937.767583314/playwright.log
+  1) tests/admin/oc/reauth.spec.ts:141:5 › OC-04 zh-TW finance: expired re-auth CSV click opens dialog and downloads after one replay
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('finance-csv')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('finance-csv') with timeout 10000ms
+      - waiting for getByTestId('finance-csv')
+
+
+      187 |         expect(new URL(page.url()).pathname).toBe(`/${locale}/${kind}`);
+      188 |         await page.reload();
+    > 189 |         await expect(control).toBeVisible();
+          |                               ^
+      190 |         await expect(modal(page)).toHaveCount(0);
+      191 |         expect(urls, "refresh must not repeat the download").toHaveLength(2);
+      192 |         expect(downloads).toHaveLength(1);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:189:31
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.XrEgWmrt/oc-20261030T162937.767583314/results/oc-reauth-OC-04-zh-TW-fina-77ec1--downloads-after-one-replay/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.XrEgWmrt/oc-20261030T162937.767583314/results/oc-reauth-OC-04-zh-TW-fina-77ec1--downloads-after-one-replay/error-context.md
+
+  2) tests/admin/oc/reauth.spec.ts:141:5 › OC-04 zh-CN finance: expired re-auth CSV click opens dialog and downloads after one replay
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('finance-csv')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('finance-csv') with timeout 10000ms
+      - waiting for getByTestId('finance-csv')
+
+
+      187 |         expect(new URL(page.url()).pathname).toBe(`/${locale}/${kind}`);
+      188 |         await page.reload();
+    > 189 |         await expect(control).toBeVisible();
+          |                               ^
+      190 |         await expect(modal(page)).toHaveCount(0);
+      191 |         expect(urls, "refresh must not repeat the download").toHaveLength(2);
+      192 |         expect(downloads).toHaveLength(1);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:189:31
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.XrEgWmrt/oc-20261030T162937.767583314/results/oc-reauth-OC-04-zh-CN-fina-41684--downloads-after-one-replay/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.XrEgWmrt/oc-20261030T162937.767583314/results/oc-reauth-OC-04-zh-CN-fina-41684--downloads-after-one-replay/error-context.md
+
+  3) tests/admin/oc/reauth.spec.ts:141:5 › OC-04 en finance: expired re-auth CSV click opens dialog and downloads after one replay
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByTestId('finance-csv')
+    Expected: visible
+    Timeout: 10000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByTestId('finance-csv') with timeout 10000ms
+      - waiting for getByTestId('finance-csv')
+
+
+      187 |         expect(new URL(page.url()).pathname).toBe(`/${locale}/${kind}`);
+      188 |         await page.reload();
+    > 189 |         await expect(control).toBeVisible();
+          |                               ^
+      190 |         await expect(modal(page)).toHaveCount(0);
+      191 |         expect(urls, "refresh must not repeat the download").toHaveLength(2);
+      192 |         expect(downloads).toHaveLength(1);
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/oc/reauth.spec.ts:189:31
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/run.XrEgWmrt/oc-20261030T162937.767583314/results/oc-reauth-OC-04-en-finance-623bd--downloads-after-one-replay/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/run.XrEgWmrt/oc-20261030T162937.767583314/results/oc-reauth-OC-04-en-finance-623bd--downloads-after-one-replay/error-context.md
+
+
+ARTIFACT gate-browser-reports/playwright/run.ZQU8E4ym/w6-reports/20261030T162958.193490709/playwright.log
+
+Running 14 tests using 1 worker
+
+  ✘   1 tests/admin/reports.spec.ts:84:3 › PARITY-MONEY report date and failure frames (zh-TW, 1440) (2.0m)
+  -   2 tests/admin/reports.spec.ts:84:3 › PARITY-MONEY report date and failure frames (zh-TW, 390)
+  -   3 tests/admin/reports.spec.ts:84:3 › PARITY-MONEY report date and failure frames (zh-CN, 1440)
+  -   4 tests/admin/reports.spec.ts:84:3 › PARITY-MONEY report date and failure frames (zh-CN, 390)
+  -   5 tests/admin/reports.spec.ts:84:3 › PARITY-MONEY report date and failure frames (en, 1440)
+  -   6 tests/admin/reports.spec.ts:84:3 › PARITY-MONEY report date and failure frames (en, 390)
+  -   7 tests/admin/reports.spec.ts:124:1 › RPUI calibration-sensitive response: genuine products read renders data
+  -   8 tests/admin/reports.spec.ts:137:1 › RPUI tables contain overflow at desktop and mobile widths
+  -   9 tests/admin/reports.spec.ts:185:3 › RPUI all report controls, CSV and persistence en/1440
+  -  10 tests/admin/reports.spec.ts:185:3 › RPUI all report controls, CSV and persistence en/390
+  -  11 tests/admin/reports.spec.ts:185:3 › RPUI all report controls, CSV and persistence zh-TW/1440
+  -  12 tests/admin/reports.spec.ts:185:3 › RPUI all report controls, CSV and persistence zh-TW/390
+  -  13 tests/admin/reports.spec.ts:299:1 › RPUI 92/93 days, reversed dates, real truncated/failed reads and empty success
+  -  14 tests/admin/reports.spec.ts:325:1 › RPUI reader/no-orders signed identities: export disabled and funnel permission refusal
+
+
+  1) tests/admin/reports.spec.ts:84:3 › PARITY-MONEY report date and failure frames (zh-TW, 1440) ──
+
+    Test timeout of 120000ms exceeded.
+
+    Error: browserContext.close: Test ended.
+[
+  {
+    "page": "/zh-TW/finance/reports",
+    "control": "選擇日期範圍",
+    "operation": "real user interaction",
+    "expected": "signed date editor opens, cancelling preserves range",
+    "actual": "locator.fill: Test ended.\nCall log:\n\u001b[2m  - waiting for getByLabel('開始日期', { exact: true })\u001b[22m\n",
+    "result": "FAIL"
+  }
+]

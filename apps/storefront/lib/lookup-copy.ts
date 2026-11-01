@@ -1,12 +1,15 @@
 // Copy (zh-CN / zh-TW / en) of the guest order lookup page (contracts/storefront-v2.md §E5), rendered by
 // app/[locale]/orders/lookup/LookupForm.tsx and the order page shell. One refusal text covers every mismatch on purpose: the page must not say
 // whether the order number or the contact was wrong.
+// Signed frames: 26:708 / 26:995 (default state) and 1253:17225 / 1253:17256 (not-found state, typed values kept).
 import type { Locale } from "@live-commerce/i18n";
 
 export type LookupText = {
   title: string; intro: string; orderRef: string; orderRefHint: string; contact: string; contactHint: string; submit: string; submitting: string;
   noMatch: string; invalid: string; tooMany: string; unavailable: string; sessionNote: string; orderTitle: string; loading: string;
   loadFailed: string; retry: string; lookupLink: string;
+  // default state: card heading, intro, foot note; not-found state: button label and the "values kept" line.
+  heading: string; introDefault: string; submitMiss: string; footNote: string; kept: string;
 };
 
 export const lookupCopy: Record<Locale, LookupText> = {
@@ -17,7 +20,7 @@ export const lookupCopy: Record<Locale, LookupText> = {
     orderRefHint: "格式如 0123-ABCD-4567",
     contact: "電子郵件或手機號碼",
     contactHint: "與下單時填寫的相同",
-    submit: "查詢",
+    submit: "查詢訂單",
     submitting: "查詢中…",
     noMatch: "找不到符合的訂單，請確認訂單編號與電子郵件或手機號碼。",
     invalid: "請檢查訂單編號與聯絡方式的格式。",
@@ -29,6 +32,11 @@ export const lookupCopy: Record<Locale, LookupText> = {
     loadFailed: "無法載入訂單。",
     retry: "重試",
     lookupLink: "改用訂單編號查詢",
+    heading: "尋找你的訂單",
+    introDefault: "請輸入這家商店的訂單編號及下單時填寫的聯絡資料。",
+    submitMiss: "查詢",
+    footNote: "找不到訂單時，請核對商店、訂單編號與聯絡資料。",
+    kept: "你輸入的內容已保留，可直接修改後再查詢。",
   },
   "zh-CN": {
     title: "查询订单",
@@ -37,7 +45,7 @@ export const lookupCopy: Record<Locale, LookupText> = {
     orderRefHint: "格式如 0123-ABCD-4567",
     contact: "邮箱或手机号码",
     contactHint: "与下单时填写的相同",
-    submit: "查询",
+    submit: "查询订单",
     submitting: "查询中…",
     noMatch: "找不到匹配的订单，请确认订单编号与邮箱或手机号码。",
     invalid: "请检查订单编号与联系方式的格式。",
@@ -49,6 +57,11 @@ export const lookupCopy: Record<Locale, LookupText> = {
     loadFailed: "无法加载订单。",
     retry: "重试",
     lookupLink: "改用订单编号查询",
+    heading: "查找你的订单",
+    introDefault: "请输入这家商店的订单编号及下单时填写的联系资料。",
+    submitMiss: "查询",
+    footNote: "找不到订单时，请核对商店、订单编号与联系资料。",
+    kept: "你输入的内容已保留，可直接修改后再查询。",
   },
   en: {
     title: "Find your order",
@@ -69,5 +82,10 @@ export const lookupCopy: Record<Locale, LookupText> = {
     loadFailed: "The order could not be loaded.",
     retry: "Try again",
     lookupLink: "Look up another order",
+    heading: "Look up your order",
+    introDefault: "Enter this store's order number and the contact details you gave at checkout.",
+    submitMiss: "Find",
+    footNote: "If the order is not found, check the store, the order number and your contact details.",
+    kept: "What you entered is kept. Edit it and try again.",
   },
 };

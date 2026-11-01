@@ -3,6 +3,7 @@
 // Purpose: explicit claim preview -> cart merge -> direct checkout with order recovery first.
 // Depends on: buyer BFF B1/B2, purchase Web Lock/recovery, claim copy/contract and checkout routes; shared Taipei time formatting.
 // Used by: /{locale}/claim; the token remains only in this mounted component.
+// Frames: 4:12347 / 4:12417 confirm, 66:1746 / 66:1747 link gone, 66:1754 / 66:1755 result not confirmed.
 
 // Owns the buyer claim page UI (/{locale}/claim, live-keyword-claims-v1 §11.1): read the
 // one-time link token from `#t=`, remove it from the address bar and history at once, keep
@@ -249,8 +250,10 @@ export default function ClaimLink({
   const buyable = preview?.lines.filter((line) => line.available && !line.sold_out && (line.pending ||
     cart?.items.some((item) => item.sku_id === line.sku_id && item.quantity === line.quantity))) ?? [];
   const applicable = buyable.length > 0;
-  const partial = preview?.lines.some((line) => line.pending && (!line.available || line.sold_out));
-  const cartVisible = (view === "ready" || view === "conflict") && cart;
+  const cartVisible = (view === "ready" || view === "conflict") && cart; // the remove-an-item list stays: it resolves a 409 and trims what "共 N 件" checks out
+  // 4:12347: "共 N 件" = what checkout will hold: the claimed lines plus every cart item that is not one of them.
+  const cartOthers = cart?.items.reduce((n, item) => n + (names.has(item.sku_id) ? 0 : item.quantity), 0) ?? 0;
+  const checkoutCount = cartOthers + buyable.reduce((n, line) => n + line.quantity, 0);
   let previousOrder = false;
   try {
     previousOrder = !!context && !!(knownOrderID(context) || pendingPurchase(context)?.kind === "next-cart");
@@ -283,18 +286,22 @@ export default function ClaimLink({
       </header>
       {demonstration && <p className="demonstration">{copy.demonstration}</p>}
       <main className="purchase-main claim-main" aria-busy={view === "loading" || busy}>
-        <h1>{copy.title}</h1>
+        <h1>{view === "not-found" ? copy.goneTitle : view === "failed" ? copy.unknownTitle : copy.confirmTitle}</h1>
         {view === "loading" && <p role="status">{copy.loading}</p>}
         {view === "not-found" && (
-          <p role="alert" className="purchase-error claim-alert" data-testid="claim-not-found">
-            {notice === "reopen" ? copy.reopen : copy.notFound}
-          </p>
+          <section role="alert" className="purchase-error claim-alert" data-testid="claim-not-found">
+            <p>{copy.goneBody}</p>
+            <p className="claim-note">{copy.goneNote}</p>
+            <a className="tap-link" href={cartPath(locale)}>{copy.viewCart}</a>
+          </section>
         )}
         {view === "failed" && (
-          <div role="alert" className="purchase-error">
-            <p>{copy.failed}</p>
-            <button disabled={busy} onClick={() => void load()}>{copy.reload}</button>
-          </div>
+          <section role="alert" className="purchase-error" data-testid="claim-unknown">
+            <h2>{copy.unknownBadge}</h2>
+            <p>{copy.unknownBody}</p>
+            <p className="claim-note">{copy.unknownNote}</p>
+            <button className="primary" disabled={busy} onClick={() => void load()}>{copy.reread}</button>
+          </section>
         )}
         {view === "session" && (
           <div role="alert" className="purchase-error">
@@ -313,14 +320,13 @@ export default function ClaimLink({
         )}
         {view === "ready" && preview && (
           <section className="claim-preview" aria-labelledby="claim-lines-title">
-            <p className="claim-intro">{copy.intro}</p>
-            <h2 id="claim-lines-title" className="sr-only">{copy.title}</h2>
+            <h2 id="claim-lines-title">{copy.fromComments}</h2>
             <ul className="claim-lines">
               {preview.lines.map((line) => (
                 <li key={line.sku_id} data-testid={`claim-line-${line.keyword}`}>
                   <div>
                     <strong>{line.product_name}</strong>
-                    <span>{line.sku_code} · {copy.keyword} {line.keyword}</span>
+                    <span>{line.sku_code} · {copy.quantity} {line.quantity}</span>
                     {!line.available ? (
                       <small className="claim-flag">{copy.unavailable}</small>
                     ) : line.sold_out ? (
@@ -330,14 +336,14 @@ export default function ClaimLink({
                     ) : null}
                   </div>
                   <div className="claim-amounts">
-                    <span>{copy.quantity} {line.quantity}</span>
+                    <span>{copy.subtotal}</span>
                     <strong>{money(line.unit_price_minor * line.quantity, line.currency)}</strong>
                   </div>
                 </li>
               ))}
             </ul>
-            <p className="claim-note">{copy.price}</p>
-            <p className="claim-note">{copy.stock}</p>
+            <p className="claim-note">{copy.noPay}</p>
+            {cartOthers > 0 && <p className="claim-note" data-testid="claim-merge-notice">{copy.mergedNote(cartOthers, checkoutCount)}</p>}
             <p className="claim-note">
               {copy.expires(displayTime(locale, preview.expires_at))} · {copy.taipeiTime}
             </p>
@@ -346,20 +352,22 @@ export default function ClaimLink({
             {notice === "unavailable" && <a href={cartPath(locale)}>{copy.cartLink}</a>}
             {notice === "nothing" && <p role="status" className="claim-success">{copy.nothing}</p>}
             {skipped && <p role="status" className="claim-note">{copy.skipped}</p>}
-            {cart?.items.some((item) => !names.has(item.sku_id)) && <p className="claim-note" data-testid="claim-merge-notice">{copy.mergeNotice}</p>}
             {previousOrder &&
               <p className="claim-note" data-testid="claim-previous-order">{copy.previousOrder}</p>}
-            <button
-              className="primary claim-add"
-              data-testid="claim-add"
-              disabled={busy || !applicable}
-              onClick={() => void redeem()}
-            >
-              {busy ? copy.adding : partial && applicable ? copy.partial(buyable.reduce((n, line) => n + line.quantity, 0)) : copy.add}
-            </button>
+            <div className="claim-actions">
+              <button
+                className="primary claim-add"
+                data-testid="claim-add"
+                disabled={busy || !applicable}
+                onClick={() => void redeem()}
+              >
+                {busy ? copy.adding : copy.checkoutAll(checkoutCount)}
+              </button>
+              {/* ponytail: the claim preview carries no product id or slug, so this opens the product list; a per-product link needs an additive preview field. */}
+              <a className="tap-link" href={`/${locale}/products`}>{copy.viewProduct}</a>
+            </div>
           </section>
         )}
-        {view === "not-found" && !!cart?.items.length && <a href={cartPath(locale)}>{copy.cartLink}</a>}
         {cartVisible && (
           <section id="claim-cart" className="claim-cart" aria-labelledby="claim-cart-title" data-testid="claim-cart">
             <h2 id="claim-cart-title">{copy.cart}</h2>

@@ -4,7 +4,7 @@
 // No response interception or completed-order synthesis. The runner supplies authoritative fixture totals.
 // Actual buyer ad URL -> checkout (AT5) is added by the root's storefront/checkout acceptance path.
 import { expect, test, type Page } from "@playwright/test";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile, mkdir, appendFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
 import { attributionCopy } from "../../apps/admin/lib/attribution-copy";
@@ -205,9 +205,23 @@ async function login(page: Page, width: number) {
     await expect(page.locator("[data-shell-rail]")).toBeHidden();
   }
 }
+// Signed layout: selections and complete audit facts use native disclosures, opened by real clicks.
+async function openDisclosure(page: Page, id: string) {
+  const details = page.getByTestId(id);
+  await expect(details).toBeVisible();
+  if (await details.getAttribute("open") === null) await details.locator(":scope > summary").click();
+}
+async function auditTask(page: Page) { await openDisclosure(page, "attribution-advanced"); }
+async function selectTask(page: Page, kind: "draft" | "session", id: string) {
+  await openDisclosure(page, "attribution-selection");
+  await page.getByTestId(`attribution-${kind}`).selectOption(id);
+  await auditTask(page);
+}
+
 async function visibleFacts(page: Page, locale: Locale) {
   const c = attributionCopy[locale],
     expected = fixture.expected;
+  await auditTask(page);
   const session = page.getByTestId("attribution-session-panel"),
     draft = page.getByTestId("attribution-draft-panel");
   await expect(session).toBeVisible();
@@ -470,6 +484,7 @@ async function audienceStateClicks(page: Page, locale: Locale, width: number) {
     }
   };
   const assertInsufficient = async () => {
+    await auditTask(page);
     await expect(selection).toHaveValue(fixture.state_sessions.insufficient);
     await expect(panel.getByTestId("attribution-insufficient")).toHaveText(
       requiredLabels[locale].insufficient,
@@ -485,16 +500,18 @@ async function audienceStateClicks(page: Page, locale: Locale, width: number) {
     await expect(panel.getByRole("table")).toHaveCount(0);
     await assertUnknownSpend();
   };
-  await selection.selectOption(fixture.state_sessions.insufficient);
+  await selectTask(page, "session", fixture.state_sessions.insufficient);
   await expect(page).toHaveURL(
     new RegExp(`session=${fixture.state_sessions.insufficient}`),
   );
   await assertInsufficient();
   await page.reload();
+        await auditTask(page);
   await assertInsufficient();
   await reportShot(page, locale, width, "insufficient");
 
   const assertNotAuthorized = async () => {
+    await auditTask(page);
     await expect(selection).toHaveValue(fixture.state_sessions.not_authorized);
     await expect(panel.getByTestId("attribution-not-authorized")).toHaveText(
       requiredLabels[locale].notAuthorized,
@@ -504,12 +521,13 @@ async function audienceStateClicks(page: Page, locale: Locale, width: number) {
     await expect(panel.getByRole("table")).toHaveCount(0);
     await assertUnknownSpend();
   };
-  await selection.selectOption(fixture.state_sessions.not_authorized);
+  await selectTask(page, "session", fixture.state_sessions.not_authorized);
   await expect(page).toHaveURL(
     new RegExp(`session=${fixture.state_sessions.not_authorized}`),
   );
   await assertNotAuthorized();
   await page.reload();
+        await auditTask(page);
   await assertNotAuthorized();
   await reportShot(page, locale, width, "not-authorized");
 
@@ -518,15 +536,16 @@ async function audienceStateClicks(page: Page, locale: Locale, width: number) {
   await expect(page).toHaveURL(
     new RegExp(`/${locale}/settings\\?store=${store}$`),
   );
-  // Rare configuration lives behind the signed Settings overview's Advanced entry.
-  await page.getByRole("button", { name: { en: "Advanced", "zh-TW": "進階", "zh-CN": "进阶" }[locale], exact: true }).click();
+  // Rare configuration lives behind the signed Settings overview's Edit settings entry.
+  await page.getByRole("button", { name: { en: "Edit settings", "zh-TW": "編輯設定", "zh-CN": "编辑设置" }[locale], exact: true }).click();
   await expect(page.getByTestId("metaconnect-card")).toBeVisible();
   await page.reload();
+  await page.getByRole("button", { name: { en: "Edit settings", "zh-TW": "編輯設定", "zh-CN": "编辑设置" }[locale], exact: true }).click();
   await expect(page.getByTestId("metaconnect-card")).toBeVisible();
   await page.goto(reportURL); // Return to the report after the reconnect entry's actual click + reload.
   await assertNotAuthorized();
 
-  await selection.selectOption(fixture.session_id);
+  await selectTask(page, "session", fixture.session_id);
   await expect(page).toHaveURL(new RegExp(`session=${fixture.session_id}`));
   await visibleFacts(page, locale);
 }
@@ -534,6 +553,7 @@ async function audienceStateClicks(page: Page, locale: Locale, width: number) {
 async function unknownDraftClicks(page: Page, locale: Locale, width: number) {
   const selection = page.getByTestId("attribution-draft");
   const assertUnknown = async () => {
+    await auditTask(page);
     await expect(selection).toHaveValue(fixture.unknown_draft_id);
     const facts = page
       .getByTestId("attribution-draft-panel")
@@ -544,13 +564,14 @@ async function unknownDraftClicks(page: Page, locale: Locale, width: number) {
       requiredLabels[locale].truncated,
     );
   };
-  await selection.selectOption(fixture.unknown_draft_id);
+  await selectTask(page, "draft", fixture.unknown_draft_id);
   await expect(page).toHaveURL(new RegExp(`draft=${fixture.unknown_draft_id}`));
   await assertUnknown();
   await page.reload();
+        await auditTask(page);
   await assertUnknown();
   await reportShot(page, locale, width, "unknown-draft");
-  await selection.selectOption(fixture.draft_id);
+  await selectTask(page, "draft", fixture.draft_id);
   await expect(page).toHaveURL(new RegExp(`draft=${fixture.draft_id}`));
   await visibleFacts(page, locale);
 }
@@ -707,13 +728,9 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
           expected: "fixture date window",
           actual: "PASS",
         });
-        await page
-          .getByTestId("attribution-draft")
-          .selectOption(fixture.draft_id);
+        await selectTask(page, "draft", fixture.draft_id);
         await expect(page).toHaveURL(new RegExp(`draft=${fixture.draft_id}`));
-        await page
-          .getByTestId("attribution-session")
-          .selectOption(fixture.session_id);
+        await selectTask(page, "session", fixture.session_id);
         await expect(page).toHaveURL(
           new RegExp(`session=${fixture.session_id}`),
         );
@@ -779,9 +796,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
           );
         // R12: real unboosted claim + consented card Begin/capture remains in
         // its session cohort, without crediting any ad/draft.
-        await page
-          .getByTestId("attribution-session")
-          .selectOption(fixture.organic.session_id);
+        await selectTask(page, "session", fixture.organic.session_id);
         const organicPanel = page.getByTestId("attribution-session-panel");
         const organicFacts = organicPanel.getByTestId(
           "attribution-session-facts",
@@ -811,9 +826,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
         });
         // Acknowledged UNKNOWN is a read-only receipt. Reload retains it but
         // does not disable a new intention; the server replays during cooldown.
-        await page
-          .getByTestId("attribution-session")
-          .selectOption(fixture.state_sessions.not_read);
+        await selectTask(page, "session", fixture.state_sessions.not_read);
         await expect(page.getByTestId("attribution-not-read")).toHaveText(
           c.notRead,
         );
@@ -842,6 +855,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
             page.getByTestId("attribution-audience-retry"),
           ).toHaveCount(0);
           await page.reload();
+        await auditTask(page);
           await expect(
             page.getByTestId("attribution-audience-unconfirmed"),
           ).toHaveText(c.audienceUnconfirmed);
@@ -856,9 +870,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
         });
         const freshSession =
           fixture.fresh_audience_sessions[`${locale}/${width}`];
-        await page
-          .getByTestId("attribution-session")
-          .selectOption(freshSession);
+        await selectTask(page, "session", freshSession);
         await expect(page).toHaveURL(new RegExp(`session=${freshSession}`));
         await expect(page.getByTestId("attribution-not-read")).toHaveText(
           c.notRead,
@@ -886,6 +898,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
           page.getByTestId("attribution-audience-completed"),
         ).toHaveCount(0);
         await page.reload();
+        await auditTask(page);
         await expect(page.getByTestId("attribution-session")).toHaveValue(
           freshSession,
         );
@@ -899,9 +912,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
             "new READY receipt and operation_id; queued receipt survives reload; one operation per fresh session",
           actual: "PASS",
         });
-        await page
-          .getByTestId("attribution-session")
-          .selectOption(fixture.session_id);
+        await selectTask(page, "session", fixture.session_id);
         await expect(page).toHaveURL(
           new RegExp(`session=${fixture.session_id}`),
         );
@@ -942,6 +953,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
           actual: "PASS",
         });
         await page.reload();
+        await auditTask(page);
         await expect(page.getByTestId("attribution-draft")).toHaveValue(
           fixture.draft_id,
         );
@@ -1027,3 +1039,101 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
       }
     });
   }
+
+// C3 cases live in this registered fixture entry point so check-gates proves reachability.
+{
+type Environment = {
+  origin: string; store: string; evidence: string;
+  login: (page: Page) => Promise<void>;
+};
+const devices = [
+  { width: 1440, height: 900, side: 0 },
+  { width: 390, height: 844, side: 1 },
+] as const;
+const frames = {
+  editor: ["6:20130", "6:20255"], source: ["1049:6945", "1049:7058"],
+  settings: ["1049:7120", "1049:7233"], review: ["1049:7295", "1049:7408"],
+  saved: ["1049:7470", "1049:7583"], status: ["1049:7645", "1049:7758"],
+  leave: ["1049:7820", "1049:7933"], conflict: ["1049:7995", "1049:8108"],
+  detail: ["5:17304", "5:17438"], assets: ["5:17516", "5:17633"],
+  legend: ["1134:9548", "1134:9549"], loading: ["1134:9550", "1134:9551"],
+  list: ["4:11612", "4:11750"], index: ["6:23064", "6:23199"],
+  results: ["1151:9420", "1151:9421"], attribution: ["1151:9422", "1151:9423"],
+  breakdown: ["1151:9428", "1151:9429"],
+} as const;
+
+async function shot(page: Page, env: Environment, frame: string) {
+  const directory = path.join(env.evidence, "parity");
+  // GitHub artifacts reject colons in paths; retain the exact Figma id in frames.jsonl.
+  expect(frame).toMatch(/^\d+:\d+$/);
+  const filename = `${frame.replace(":", "-")}.png`;
+  expect(filename).toMatch(/^\d+-\d+\.png$/);
+  await mkdir(directory, { recursive: true });
+  // READ/MEASURE only. Screenshots document the real route, never /ui-gallery.
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
+  await page.screenshot({ path: path.join(directory, filename), animations: "disabled" });
+  // READ/MEASURE: visible text only; never change the DOM or use it to drive the journey.
+  const density = await page.locator(".growth-task").evaluate(root => {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node: Node | null; const texts: string[] = [];
+    while ((node = walker.nextNode())) {
+      const text = node.textContent?.trim(); if (!text || !node.parentElement?.checkVisibility()) continue;
+      const range = document.createRange(); range.selectNodeContents(node);
+      const box = range.getBoundingClientRect();
+      if (box.bottom > 0 && box.top < innerHeight && box.width > 0) texts.push(text);
+    }
+    return { blocks: texts.length, characters: texts.reduce((n, text) => n + text.length, 0) };
+  });
+  await appendFile(path.join(directory, "density.jsonl"), JSON.stringify({ frame, ...density }) + "\n");
+  await appendFile(path.join(directory, "frames.jsonl"), JSON.stringify({ frame, route: page.url(), screenshot: `parity/${filename}` }) + "\n");
+}
+async function click(page: Page, env: Environment, name: string, expected: string) {
+  await page.getByRole("button", { name, exact: true }).click();
+  await expect(page.getByRole("heading", { name: expected, exact: true })).toBeVisible();
+  await appendFile(path.join(env.evidence, "growth-click-ledger.jsonl"), JSON.stringify({ route: page.url(), control: name, operation: "click", expected, actual: "visible", result: "PASS" }) + "\n");
+}
+/** Uses the original real PG/Go attribution fixture; no reports or balances are synthesized. */
+function registerGrowthAttributionParity(env: Environment & { draftID: string; from: string; to: string }) {
+  for (const device of devices) test(`C3 signed attribution task screens ${device.width}`, async ({ page }) => {
+    await env.login(page); await page.setViewportSize({ width: device.width, height: device.height });
+    const base = `${env.origin}/zh-TW/ads/attribution?store=${env.store}&from=${env.from}&to=${env.to}`;
+    await page.goto(base);
+    await expect(page.getByRole("heading", { name: "歸因報表", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "廣告歸因與直播復盤", exact: true })).toHaveCount(0);
+    await expect(page.getByText("先選一份廣告草稿或一場直播，再核對它帶來的訂單。", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("attribution-session-panel")).toHaveCount(0);
+    await expect(page.getByTestId("attribution-draft-panel")).toHaveCount(0);
+    await shot(page, env, frames.index[device.side]);
+    await click(page, env, "成效總覽", "成效總覽");
+    for (const label of ["本平台 · 信用卡收付款", "Meta · 刊登成效", "Meta · 回報購買"])
+      await expect(page.getByRole("heading", { name: label, exact: true })).toBeVisible();
+    await shot(page, env, frames.results[device.side]);
+    await page.getByRole("button", { name: "查看廣告／直播歸因", exact: true }).click();
+    await page.getByTestId(`attribution-open-${env.draftID}`).click();
+    await expect(page.getByRole("heading", { name: "廣告歸因", exact: true })).toBeVisible();
+    await expect(page.getByText("待收款 · 不算入已收款", { exact: true })).toBeVisible();
+    await shot(page, env, frames.attribution[device.side]);
+    await click(page, env, "Meta 分組明細", "Meta 分組明細");
+    await expect(page.getByText("Meta 彙總，不是買家個人資料。", { exact: true })).toBeVisible();
+    await shot(page, env, frames.breakdown[device.side]);
+    await page.getByRole("button", { name: "重新讀取", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Meta 分組明細", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "返回廣告歸因", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "廣告歸因", exact: true })).toBeVisible();
+  });
+  test("C3 attribution main screen in all three locales", async ({ page }) => {
+    await env.login(page);
+    for (const [locale, heading, action] of [["zh-TW", "歸因報表", "成效總覽"], ["zh-CN", "归因报表", "成效总览"], ["en", "Attribution report", "Results overview"]]) {
+      await page.goto(`${env.origin}/${locale}/ads/attribution?store=${env.store}&from=${env.from}&to=${env.to}`);
+      await expect(page.getByRole("heading", { level: 1, name: heading, exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: action, exact: true })).toBeVisible();
+    }
+  });
+}
+
+// Independent group: a signed-frame assertion failure must not hide the existing AT gates.
+test.describe("PARITY-GROWTH attribution", () => {
+  test.describe.configure({ mode: "default" });
+  registerGrowthAttributionParity({ origin, store, evidence, draftID: fixture.draft_id, from: fixture.from, to: fixture.to, login: page => login(page, 1586) });
+});
+}

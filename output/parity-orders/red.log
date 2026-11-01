@@ -1,0 +1,60 @@
+PARITY-ORDERS RED dispatch receipt — 2026-10-30T12:05:23.981281+00:00
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/362 (draft)
+Branch: unit/parity-orders -> r3/integration
+Tests-only head: 7093800f8a743fbd3f8c3caf6cbce269fa4d2f3a
+Gates run: 41052482621 (IN_PROGRESS; plan only); gate test job ids not assigned/readable yet. Plan job is NOT acceptance.
+Foundation run: 41052482837 (QUEUED); job: 124051700926 (foundation, QUEUED).
+Expected new Go assertion: PARITY-ORDERS: list is missing additive item_summary
+Expected new browser assertions: orders-table count 0; separate /[locale]/orders/[order] route.
+Actual new-assertion failure: NOT_RUN/PENDING (queue); do not call this proven RED.
+GREEN: NOT_RUN; implementation not pushed before RED.
+Local tests/PG/browser/servers: NOT_RUN (prohibited).
+E1 static: gofmt/go vet/strict tsc/ownership derive+check/diff check exit 0; see static-checks.log.
+No implementation PASS or E3/E4 claim. No merge/status posting/production actions.
+WAIT_RUN: 41052482621
+WAIT_RUN: 41052482837
+Wake-up owner: integrator relays a fresh session with this run's conclusion per implementation-card protocol.
+Next: gh pr checks 362; gh run view <id> --log-failed filtered to this card. Capture actual assertion failures and job ids before implementing.
+
+RELAY1 current-head causal RED (2026-10-30)
+HEAD 7093800f8a743fbd3f8c3caf6cbce269fa4d2f3a
+Gates run 41052482621 / browser job 124054769784 FAILURE.
+Raw job log API confirms real TestBrowserMerchantOrdersUIRealChain execution (320.39s).
+Artifact 12975688337: playwright.log: 12 new PARITY-ORDERS cases failed; 21 original cases passed.
+New assertions: orders-list missing (line102), orders-table count expected0 actual1 (line100), standalone /orders/<id> expected but old ?order=<id> returned (line196).
+Foundation run41052482837/job124051700926 SUCCESS is static foundation, not PG or product acceptance.
+Go item_summary RED remains pending Gates shards on same head; implementation push must retain that test.
+
+Confirmed Go RED: Gates41052482621/job124054770244 shard:g10.
+Native log relay1-g10.log lines1714–1721: TestMerchantOrdersV2ItemSummaryContract both private-search=false/true fail at merchant_orders_v2_test.go:98, “PARITY-ORDERS: list is missing additive item_summary”.
+No compile, fixture or transport failure caused this RED.
+
+
+FIX1 directed RED receipt (2026-10-31)
+Native head 0a8d2dc8962021a119fd57992bddf59d3b2ae1ff; synthetic tested merge f4e7b63b08b57d26188ed4e0a0518b66b5fd84a7. Run 41077800398.
+gate (bundle:08)	Gate	2026-10-30T15:32:18.8824821Z --- FAIL: TestBrowserOC (110.48s)
+gate (bundle:08)	Gate	2026-10-30T15:34:04.6281242Z bundle member --browser-password-auth: failure
+gate (bundle:05)	Gate	2026-10-30T15:39:44.0240113Z --- FAIL: TestBrowserE2EDealLoop (41.06s)
+gate (bundle:05)	Gate	2026-10-30T15:40:30.3585413Z bundle member --browser-e2e: failure
+gate (bundle:05)	Gate	2026-10-30T15:41:11.6962080Z --- FAIL: TestBrowserManualFulfilment (36.39s)
+gate (bundle:05)	Gate	2026-10-30T15:41:50.2338085Z bundle member --browser-refund-fulfilment: failure
+gate (bundle:05)	Gate	2026-10-30T15:43:17.5243608Z --- FAIL: TestBrowserPromotions (41.10s)
+gate (bundle:05)	Gate	2026-10-30T15:43:17.7974693Z bundle member --browser-promotions: failure
+gate (--browser-click-sweep@8/10)	UNKNOWN STEP	2026-10-30T16:00:46.8603449Z --- FAIL: TestBrowserClickSweep (954.01s)
+gate (--browser-click-sweep@8/10)	UNKNOWN STEP	2026-10-30T16:00:48.3844483Z --- FAIL: TestBrowserClickSweep (954.01s)
+gate (bundle:09)	Gate	2026-10-30T15:45:43.7850679Z --- FAIL: TestBrowserMerchantOrdersUIRealChain (262.13s)
+gate (bundle:09)	Gate	2026-10-30T15:45:44.0314472Z bundle member --browser-merchant-orders-ui: failure
+gate (bundle:09)	Gate	2026-10-30T15:48:43.4815547Z bundle member --browser-picklist: failure
+gate (bundle:09)	Bundle member 1 evidence	2026-10-30T15:49:25.5259694Z ##[error]The path for one of the files in artifact is not valid: /playwright/merchant-orders-c-browser/20261030T154131.041085887/results/orders-ui-PARITY-ORDERS-si-06b7d--shipping-entry-zh-TW-1440-/parity/1429:25977.png. Contains the following character:  Colon :
+
+FIX1 current relay BLOCKED receipt (2026-10-31)
+Native head 932937e7aead8773880a977e6b2a47a717cb84ac; tested synthetic merge ab50d04f2c36fcc6ee6f817d9699b80147002ee1; Gates41090484680 attempt1.
+Job124185561277 --browser-webkit: cvs: pass=0 fail=2 skip=0 leaf_pass=0 leaf_fail=1 leaf_skip=0 exit=1 verdict=1.
+Artifact12994344180 gate-browser-webkit / cvs-buyer.mjs.log:17-32: ExpectError expect(locator).toBeVisible(); getByTestId('cvs-candidate-024793'); expected visible; timeout5000ms; element(s) not found; tests/storefront/cvs-picker.mjs:387:34.
+Go wrapper browser_taiwan_cvs_test.go:159 reports storefront browser gate failed; merchant orders half NOT_RUN in this attempt. Out-of-app blocker, no class(c) base failure claim.
+Job124185561381 bundle08: --- FAIL: TestBrowserOC (107.33s); --browser-password-auth member failure.
+Artifact12995610677 gate-browser-password-auth / oc-20261030T164550.766850856/playwright.log:15-100: OC-04 orders zh-TW/zh-CN/en fails tests/admin/oc/reauth.spec.ts:188:31 after reload; getByTestId('orders-export') expected visible, received hidden, timeout10000ms. Same OC-04 test still RED after FIX1; card stop condition, no third approach.
+Foundation41090484506/job124182766494 success on same native head (E1, not Gates GREEN).
+WAIT_RUN41090484680; no new push or rerun. Raw downloaded failures retained under fix1-current-webkit/ and fix1-current-password/; current job logs fix1-current-job.log and fix1-current-bundle08.log. Overall Gates still pending at observation; no acceptance claimed.
+
+FIX2 directed RED,2026-10-31: run41090484680 native932937e7 testedab50d04f; completed FAILURE. Jobs124185561381 OC04 orders3locales;124185562324 orders10cases; OMITTED124185561277 WebKit CVS cvs-candidate-024793 not visible5000ms. Receipts124214325754 fails all3; required124214689095 downstream. Base41107905131 pending. FIX2.md has every failure/class; STOP out-of-card, no new push/GREEN.

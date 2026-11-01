@@ -1,0 +1,48 @@
+{
+  "evidence": "E1_STATIC_ONLY",
+  "local_tests_servers": "NOT_RUN_PROHIBITED",
+  "checks": [
+    {
+      "command": "gofmt -w tests/foundation/order_history_import_test.go tests/foundation/browser_migration_import_ui_test.go",
+      "exit_code": 0
+    },
+    {
+      "command": "GOTOOLCHAIN=go1.27.3 go vet -tags browser ./tests/foundation",
+      "exit_code": 0
+    },
+    {
+      "command": "tsc --project output/parity-money/tsconfig.static.json --noEmit",
+      "exit_code": 0
+    },
+    {
+      "command": "node --check (three changed specs, reports-render.test.mjs, promotions-gate.mjs)",
+      "exit_code": 0
+    },
+    {
+      "command": "node scripts/dev/derive-browser-ownership.mjs",
+      "exit_code": 0
+    },
+    {
+      "command": "node scripts/dev/derive-browser-ownership.mjs --check",
+      "exit_code": 0
+    },
+    {
+      "command": "bash scripts/dev/depmap.sh",
+      "exit_code": 0
+    },
+    {
+      "command": "python3 scripts/check_packet.py",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "hashes": "fix1-source-hashes.json",
+  "notes": [
+    "Temporary own-worktree dependency symlinks removed; dependency targets read only.",
+    "Depmap regenerated without diff. Packet timestamp-only incidental output restored.",
+    "CI thresholds, baselines, exemption lists and synthetic fixture values unchanged. Signed-layout oracle mappings are listed in FIX1.md."
+  ]
+}

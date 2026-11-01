@@ -1,0 +1,10 @@
+node --check tests/ui/click-sweep.mjs: exit0
+node --check tests/ui/visual-audit.mjs: exit0
+browser ownership derive and --check: exit0
+depmap regeneration: exit0, unchanged
+strict tsc --noEmit -p output/parity-orders/static-tsconfig.json: exit0 with existing read-only shared dependencies via temporary worktree links, links removed
+Earlier attempts: missing worktree dependencies (tsc exit127, then exit1); no source changes made for these.
+python3 scripts/check_packet.py: exit0; generated packet report restored byte-for-byte
+Earlier packet --output attempt exit2 (unsupported argument); corrected to existing CLI.
+git diff --check: exit0
+No local tests, browser, servers, PG or containers run.

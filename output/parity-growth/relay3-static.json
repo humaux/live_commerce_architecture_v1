@@ -1,0 +1,46 @@
+{
+  "evidence": "E1 static only; author product acceptance E0",
+  "date_utc": "2026-10-30T14:50:51.099948+00:00",
+  "baseline": "f239dbc50b89df1a0c2c622a18f269bfc0d51552",
+  "checks": [
+    {
+      "command": "node --check tests/admin/ads.spec.ts && node --check tests/admin/attribution.spec.ts && node --check tests/storefront/promotions-gate.mjs",
+      "exit_code": 0
+    },
+    {
+      "command": "node scripts/dev/derive-browser-ownership.mjs && node scripts/dev/derive-browser-ownership.mjs --check",
+      "exit_code": 0,
+      "modes": 53
+    },
+    {
+      "command": "python3 scripts/check_packet.py",
+      "exit_code": 0,
+      "meaning": "packet structure only; auto-written timestamp in experiments/results restored to HEAD"
+    },
+    {
+      "command": "node /Volumes/data/live_commerce_architecture_v1/node_modules/typescript/bin/tsc --noEmit -p output/parity-growth/tsconfig-static.json --pretty false",
+      "exit_code": 0,
+      "setup": "read-only installed dependencies, temporary worktree node_modules symlinks removed afterward; no install",
+      "initial_attempts": "local binary absent (127); dependency resolution failed (1), resolved with temporary worktree dependency symlinks"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "source_sha256": {
+    "apps/admin/components/AdsDraft.tsx": "7e657f1926f5950f1d657080fa563e495599e199aaa3ef670ec2b34fca5a4ffd",
+    "packages/i18n/src/growth.ts": "24c95563e443c709017a4c3586ef81f9021eef2e1f2d9c094054ec0dd7d73cd1",
+    "tests/admin/ads.spec.ts": "a35e0eb35ad18e94ddd419d4ac7e1996e5bbd2bc7dc02848ae5a368e3bb6ed4f",
+    "tests/admin/attribution.spec.ts": "2f639edb0cdefdf03ad171040fa7324cd11c8415c48558b93516347fced24d87",
+    "tests/storefront/promotions-gate.mjs": "c3ed6971a63f3f9737db3126d1bd8122ef02e850bc82020c784879c259375b4d",
+    "output/ci-select-backend-browser/browser-ownership.json": "8b39bdc33b9723be94eb52e175264de01c84054160484c91b3cd01c86d107072"
+  },
+  "NOT_RUN": [
+    "local tests/servers/PG/browser (prohibited)",
+    "new-head CI (not pushed at receipt creation)",
+    "independent screenshot/density review",
+    "LIVE Meta/spend/audience upload/deploy",
+    "Impeccable detector (local executable checks restricted by card)"
+  ]
+}

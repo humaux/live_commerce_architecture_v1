@@ -82,22 +82,53 @@ type Consents struct {
 	AdsPersonalization bool `json:"ads_personalization"`
 }
 
+// ConsentState distinguishes an absent decision from a recorded withdrawal. It is
+// a read projection only; Consents remains the authorization result (CD4).
+type ConsentState struct {
+	MarketingMessages  string `json:"marketing_messages"`
+	AdsPersonalization string `json:"ads_personalization"`
+}
+
+// consentState adds whether a decision exists; CD4's current-grant derivation stays shared.
+func consentState(history []ConsentEvent) ConsentState {
+	current := CurrentConsents(history)
+	out := ConsentState{MarketingMessages: "never", AdsPersonalization: "never"}
+	for _, event := range history {
+		if !ValidPair(event.Purpose, event.Channel) {
+			continue
+		}
+		if event.Purpose == PurposeMarketingMessages {
+			out.MarketingMessages = "withdrawn"
+			if current.MarketingMessages {
+				out.MarketingMessages = "granted"
+			}
+		} else {
+			out.AdsPersonalization = "withdrawn"
+			if current.AdsPersonalization {
+				out.AdsPersonalization = "granted"
+			}
+		}
+	}
+	return out
+}
+
 // Customer is one list row (contract §5). CustomerID is the buyer.owners id (C-1, D1): it is not a credential.
 type Customer struct {
-	CustomerID      string   `json:"customer_id"`
-	FirstSeenAt     string   `json:"first_seen_at"`
-	LastActivityAt  string   `json:"last_activity_at"`
-	DisplayName     *string  `json:"display_name"`
-	PhoneLast3      *string  `json:"phone_last3"`
-	OrdersCount     int64    `json:"orders_count"`
-	PaidOrdersCount int64    `json:"paid_orders_count"`
-	CapturedMinor   int64    `json:"captured_minor"`
-	RefundedMinor   int64    `json:"refunded_minor"`
-	Currency        *string  `json:"currency"`
-	ClaimsCount     int64    `json:"claims_count"`
-	Platforms       []string `json:"platforms"`
-	Consents        Consents `json:"consents"`
-	Active          bool     `json:"active"`
+	CustomerID      string       `json:"customer_id"`
+	FirstSeenAt     string       `json:"first_seen_at"`
+	LastActivityAt  string       `json:"last_activity_at"`
+	DisplayName     *string      `json:"display_name"`
+	PhoneLast3      *string      `json:"phone_last3"`
+	OrdersCount     int64        `json:"orders_count"`
+	PaidOrdersCount int64        `json:"paid_orders_count"`
+	CapturedMinor   int64        `json:"captured_minor"`
+	RefundedMinor   int64        `json:"refunded_minor"`
+	Currency        *string      `json:"currency"`
+	ClaimsCount     int64        `json:"claims_count"`
+	Platforms       []string     `json:"platforms"`
+	Consents        Consents     `json:"consents"`
+	ConsentState    ConsentState `json:"consent_state"`
+	Active          bool         `json:"active"`
 	// Imported is true for a customer created by the CSV import (W5-02B): it has an import profile instead of orders or bundles.
 	Imported bool `json:"imported"`
 	// Tags are the merchant-typed store tags of this customer, name-ordered (W6-01B); never nil.
@@ -306,7 +337,7 @@ func strict(raw []byte, out any) error {
 }
 
 var customerKeys = []string{"customer_id", "first_seen_at", "last_activity_at", "display_name", "phone_last3", "orders_count",
-	"paid_orders_count", "captured_minor", "refunded_minor", "currency", "claims_count", "platforms", "consents", "active", "imported", "tags"}
+	"paid_orders_count", "captured_minor", "refunded_minor", "currency", "claims_count", "platforms", "consents", "consent_state", "active", "imported", "tags"}
 var detailKeys = append(append([]string{}, customerKeys...), "order_ids", "claims", "consent_history", "privacy_actions",
 	"tags_revision", "notes")
 
@@ -319,13 +350,31 @@ func nonNegative(values ...int64) bool {
 	return true
 }
 
+func validStateValue(v string) bool {
+	return v == "never" || v == "granted" || v == "withdrawn"
+}
+
+func validConsentState(s ConsentState, consents Consents) bool {
+	if !validStateValue(s.MarketingMessages) || !validStateValue(s.AdsPersonalization) {
+		return false
+	}
+	if (s.MarketingMessages == "granted") != consents.MarketingMessages {
+		return false
+	}
+	if (s.AdsPersonalization == "granted") != consents.AdsPersonalization {
+		return false
+	}
+	return true
+}
+
 // validCustomer re-checks the database projection (drift is a failure, not data).
 func validCustomer(c Customer) bool {
 	_, e1 := canonicalTime(c.FirstSeenAt)
 	_, e2 := canonicalTime(c.LastActivityAt)
 	if !command.ValidID(c.CustomerID) || e1 != nil || e2 != nil ||
 		!nonNegative(c.OrdersCount, c.PaidOrdersCount, c.CapturedMinor, c.RefundedMinor, c.ClaimsCount) ||
-		c.PaidOrdersCount > c.OrdersCount || c.RefundedMinor > c.CapturedMinor || c.Platforms == nil || !validTags(c.Tags) {
+		c.PaidOrdersCount > c.OrdersCount || c.RefundedMinor > c.CapturedMinor || c.Platforms == nil || !validTags(c.Tags) ||
+		!validConsentState(c.ConsentState, c.Consents) {
 		return false
 	}
 	if c.PhoneLast3 != nil && !phoneLast3.MatchString(*c.PhoneLast3) {
@@ -426,6 +475,9 @@ func decodeDetail(raw json.RawMessage) (detailWire, error) {
 	}
 	// CD4: the SQL row's consents must equal the derivation from the history it returned with them.
 	if CurrentConsents(d.ConsentHistory) != d.Consents {
+		return detailWire{}, ErrUnavailable
+	}
+	if consentState(d.ConsentHistory) != d.ConsentState {
 		return detailWire{}, ErrUnavailable
 	}
 	return d, nil

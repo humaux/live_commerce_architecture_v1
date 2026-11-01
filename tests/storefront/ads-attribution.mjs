@@ -3,6 +3,7 @@
 // No page.route, synthesized order, payment completion, CAPI consent, or Meta request is part of this driver.
 // Required LC_AT_*: ORIGIN, PRODUCT, DRAFT, EVIDENCE, CONTROL, CONTROL_KEY; COMMERCE_BUYER_* as ads-consent.mjs.
 // Control POST /order-check: X-Gate-Key + {order_id,draft_id} -> {order_id,path:'ad_click',draft_id}.
+import { openCheckoutDetails } from "./shop-helpers.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import http from "node:http";
@@ -438,6 +439,7 @@ async function place(locale, width) {
   assert(destinationResponse.ok(), "real destination accepted");
   const destination = await destinationResponse.json();
   assert(uuid.test(destination.id), "real confirmed destination ID");
+  await openCheckoutDetails(page);
   await expect(page.getByTestId("create-order")).toBeEnabled();
   await shot(page, "checkout", locale, width);
   const beginWait = page.waitForResponse((response) =>
@@ -502,7 +504,7 @@ async function place(locale, width) {
   const linked = await page.goto(`${origin}/${locale}/orders/${orderID}`);
   assert.equal(linked.status(), 200);
   assert.equal((await orderRead).status(), 200, "own order link read succeeds");
-  await expect(page.getByTestId("order-id")).toHaveText(orderID);
+  await expect(page.getByTestId("order-section").getByRole("heading", { level: 1 })).toContainText(orderID.replace(/-/g, "").slice(0, 12).toUpperCase().replace(/^(.{4})(.{4})(.{4})$/, "$1-$2-$3")); // signed frame: mail order number
   record(locale, width, "open real own-order URL", { order_id: orderID });
   const facts = await checkOrder(orderID);
   results.push({ locale, width, ...facts });

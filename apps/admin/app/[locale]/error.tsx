@@ -22,6 +22,7 @@ export default function LocaleError({ reset }: { error: Error & { digest?: strin
         retryLabel={c.retry}
         actionHref={`/${locale}`}
         actionLabel={c.home}
+        failed
       />
     </main>
   );

@@ -1,0 +1,280 @@
+
+Running 42 tests using 1 worker
+
+  ✘   1 tests/admin/shipping-center.spec.ts:150:5 › PARITY-SHIPCENTER RV3 zh-TW: long batch summary cannot cover rows or pagination at 1440 and 390 (3.6s)
+  ✘   2 tests/admin/shipping-center.spec.ts:251:5 › PARITY-SHIPCENTER RV3 zh-TW: printed cross-border home address retains destination country (13.0s)
+  ✓   3 tests/admin/shipping-center.spec.ts:279:7 › PARITY-SHIPCENTER zh-TW first: select, review, print, return and refresh (4.5s)
+  ✓   4 tests/admin/shipping-center.spec.ts:279:7 › PARITY-SHIPCENTER zh-TW first-third: select, review, print, return and refresh (4.3s)
+  ✓   5 tests/admin/shipping-center.spec.ts:279:7 › PARITY-SHIPCENTER zh-TW review: select, review, print, return and refresh (5.4s)
+  ✓   6 tests/admin/shipping-center.spec.ts:279:7 › PARITY-SHIPCENTER zh-TW third: select, review, print, return and refresh (4.8s)
+  ✓   7 tests/admin/shipping-center.spec.ts:279:7 › PARITY-SHIPCENTER zh-TW first-review: select, review, print, return and refresh (4.0s)
+  ✓   8 tests/admin/shipping-center.spec.ts:279:7 › PARITY-SHIPCENTER zh-TW review-third: select, review, print, return and refresh (4.0s)
+  ✓   9 tests/admin/shipping-center.spec.ts:279:7 › PARITY-SHIPCENTER zh-TW all: select, review, print, return and refresh (4.8s)
+  ✓  10 tests/admin/shipping-center.spec.ts:369:5 › PARITY-SHIPCENTER zh-TW signed mobile single-order screen (3.5s)
+  ✘  11 tests/admin/shipping-center.spec.ts:150:5 › PARITY-SHIPCENTER RV3 zh-CN: long batch summary cannot cover rows or pagination at 1440 and 390 (3.1s)
+  ✘  12 tests/admin/shipping-center.spec.ts:251:5 › PARITY-SHIPCENTER RV3 zh-CN: printed cross-border home address retains destination country (13.5s)
+  ✓  13 tests/admin/shipping-center.spec.ts:279:7 › PARITY-SHIPCENTER zh-CN all: select, review, print, return and refresh (4.3s)
+  ✓  14 tests/admin/shipping-center.spec.ts:369:5 › PARITY-SHIPCENTER zh-CN signed mobile single-order screen (4.1s)
+  ✘  15 tests/admin/shipping-center.spec.ts:150:5 › PARITY-SHIPCENTER RV3 en: long batch summary cannot cover rows or pagination at 1440 and 390 (3.3s)
+  ✘  16 tests/admin/shipping-center.spec.ts:251:5 › PARITY-SHIPCENTER RV3 en: printed cross-border home address retains destination country (12.6s)
+  ✓  17 tests/admin/shipping-center.spec.ts:279:7 › PARITY-SHIPCENTER en all: select, review, print, return and refresh (4.0s)
+  ✓  18 tests/admin/shipping-center.spec.ts:369:5 › PARITY-SHIPCENTER en signed mobile single-order screen (3.2s)
+  ✓  19 tests/admin/shipping-center.spec.ts:400:3 › PARITY-SHIPCENTER every selection/review cancellation and return control (5.1s)
+  ✓  20 tests/admin/shipping-center.spec.ts:451:3 › PARITY-SHIPCENTER existing server reads reach preview without synthetic DTO interception (3.0s)
+  ✓  21 tests/admin/shipping-center.spec.ts:482:3 › PARITY-SHIPCENTER detail read failure cannot print partial or invented slips; Retry recovers (2.9s)
+  ✓  22 tests/admin/orders-ui.spec.ts:229:1 › MOU01/04 real login, cursor pagination, financial state and frozen detail (6.2s)
+  ✓  23 tests/admin/orders-ui.spec.ts:305:1 › MOU02 two principals, store authority and invalid sessions never reveal PII (4.7s)
+  ✓  24 tests/admin/orders-ui.spec.ts:364:1 › MOU03 controlled delayed detail, pagehide, history and cross-tab logout (4.2s)
+  ✓  25 tests/admin/orders-ui.spec.ts:505:1 › MOU03 actual visibility hide clears PII and visible return needs fresh authorized detail (3.5s)
+  ✓  26 tests/admin/orders-ui.spec.ts:564:1 › MOU03 labeled fault injection: invalid DTO, non-JSON and network failure recover via real retry (3.3s)
+  ✓  27 tests/admin/orders-ui.spec.ts:608:1 › MOU03 delayed old success/error cannot repaint filter, locale or new session; shell store switch cancels the in-flight old-store read (2.9s)
+  ✓  28 tests/admin/orders-ui.spec.ts:717:1 › MOU07 v2 private search, SQL queues, filters and three-language ledger (19.8s)
+  ✓  29 tests/admin/orders-ui.spec.ts:890:44 › MOU08 authoritative poll denial clears list and full detail (private cursor=false) (21.8s)
+  ✓  30 tests/admin/orders-ui.spec.ts:890:44 › MOU08 authoritative poll denial clears list and full detail (private cursor=true) (22.7s)
+  ✓  31 tests/admin/orders-ui.spec.ts:917:1 › MOU05 approved inline comp at desktop/mobile in three locales and page-two locale context (7.5s)
+  ✓  32 tests/admin/orders-ui.spec.ts:1104:1 › ORDERS-V2-IMPL queue tabs, all paginated rows and result total agree with the server after refresh (6.1s)
+  ✓  33 tests/admin/orders-ui.spec.ts:1131:3 › ORDERS-V2-IMPL mobile later queue stays visible through detail, back and refresh (zh-TW) (3.3s)
+  ✓  34 tests/admin/orders-ui.spec.ts:1131:3 › ORDERS-V2-IMPL mobile later queue stays visible through detail, back and refresh (zh-CN) (3.5s)
+  ✓  35 tests/admin/orders-ui.spec.ts:1131:3 › ORDERS-V2-IMPL mobile later queue stays visible through detail, back and refresh (en) (3.1s)
+  ✓  36 tests/admin/orders-ui.spec.ts:1162:1 › ORDERS-V2-IMPL mobile sticky search and private page survive detail/back without persisting the search on refresh (3.6s)
+  ✓  37 tests/admin/orders-ui.spec.ts:1199:1 › ORDERS-V2-IMPL desktop selection names the actual orders and uses the existing preview/cancel flow (3.1s)
+  ✓  38 tests/admin/orders-ui.spec.ts:1233:3 › ORDERS-V2-IMPL MOCK manual shipment requires confirmation, one identity, cancel and refreshed readback (en/1586) (4.0s)
+  ✓  39 tests/admin/orders-ui.spec.ts:1233:3 › ORDERS-V2-IMPL MOCK manual shipment requires confirmation, one identity, cancel and refreshed readback (zh-TW/390) (3.9s)
+  ✓  40 tests/admin/orders-ui.spec.ts:1233:3 › ORDERS-V2-IMPL MOCK manual shipment requires confirmation, one identity, cancel and refreshed readback (zh-CN/390) (3.5s)
+  ✓  41 tests/admin/orders-ui.spec.ts:1296:3 › ORDERS-V2-IMPL status help explains PROVIDER_LABEL_CREATED without treating it as shipment/payment (3.0s)
+  ✓  42 tests/admin/orders-ui.spec.ts:1296:3 › ORDERS-V2-IMPL status help explains REVIEW_REQUIRED without treating it as shipment/payment (2.2s)
+
+
+  1) tests/admin/shipping-center.spec.ts:150:5 › PARITY-SHIPCENTER RV3 zh-TW: long batch summary cannot cover rows or pagination at 1440 and 390
+
+    Error: RV3 selection footer stays within the signed 76px height
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 76
+    Received:    86
+
+      184 |           const footer = await content(page).locator("footer").boundingBox();
+      185 |           expect(footer, "selection footer exists").not.toBeNull();
+    > 186 |           expect(footer!.height, "RV3 selection footer stays within the signed 76px height").toBeLessThanOrEqual(76);
+          |                                                                                              ^
+      187 |           expect(footer!.y).toBeGreaterThanOrEqual(0);
+      188 |           expect(footer!.y + footer!.height).toBeLessThanOrEqual(900);
+      189 |         });
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/shipping-center.spec.ts:186:94
+        at Object.click (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/shipping-center.spec.ts:132:9)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/shipping-center.spec.ts:180:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-05c7e--pagination-at-1440-and-390/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-05c7e--pagination-at-1440-and-390/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-05c7e--pagination-at-1440-and-390/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-05c7e--pagination-at-1440-and-390/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests/admin/shipping-center.spec.ts:251:5 › PARITY-SHIPCENTER RV3 zh-TW: printed cross-border home address retains destination country
+
+    Error: RV3 printed home address includes server destination fact HK
+
+    expect(locator).toContainText(expected) failed
+
+    Locator: getByTestId('shipping-center').getByTestId('shipping-packing-slip').locator('dl > div').filter({ has: locator('dt').filter({ hasText: '配送目的地' }) }).locator('dd')
+    Expected substring: "HK"
+    Received string:    "000 Synthetic city Synthetic address"
+    Timeout: 10000ms
+
+    Call log:
+      - RV3 printed home address includes server destination fact HK getByTestId('shipping-center').getByTestId('shipping-packing-slip').locator('dl > div').filter({ has: locator('dt').filter({ hasText: '配送目的地' }) }).locator('dd') with timeout 10000ms
+      - waiting for getByTestId('shipping-center').getByTestId('shipping-packing-slip').locator('dl > div').filter({ has: locator('dt').filter({ hasText: '配送目的地' }) }).locator('dd')
+        24 × locator resolved to <dd>000 Synthetic city Synthetic address</dd>
+           - unexpected value "000 Synthetic city Synthetic address"
+
+
+      270 |       await expect(address).toBeVisible();
+      271 |       for (const fact of ["000", "Synthetic city", "Synthetic address", "HK"]) {
+    > 272 |         await expect(address, `RV3 printed home address includes server destination fact ${fact}`).toContainText(fact);
+          |                                                                                                    ^
+      273 |       }
+      274 |       expect(writes).toEqual([]);
+      275 |     });
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/shipping-center.spec.ts:272:100
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-92b7c-retains-destination-country/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-92b7c-retains-destination-country/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-92b7c-retains-destination-country/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-92b7c-retains-destination-country/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests/admin/shipping-center.spec.ts:150:5 › PARITY-SHIPCENTER RV3 zh-CN: long batch summary cannot cover rows or pagination at 1440 and 390
+
+    Error: RV3 selection footer stays within the signed 76px height
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 76
+    Received:    86
+
+      184 |           const footer = await content(page).locator("footer").boundingBox();
+      185 |           expect(footer, "selection footer exists").not.toBeNull();
+    > 186 |           expect(footer!.height, "RV3 selection footer stays within the signed 76px height").toBeLessThanOrEqual(76);
+          |                                                                                              ^
+      187 |           expect(footer!.y).toBeGreaterThanOrEqual(0);
+      188 |           expect(footer!.y + footer!.height).toBeLessThanOrEqual(900);
+      189 |         });
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/shipping-center.spec.ts:186:94
+        at Object.click (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/shipping-center.spec.ts:132:9)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/shipping-center.spec.ts:180:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-3b2d2--pagination-at-1440-and-390/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-3b2d2--pagination-at-1440-and-390/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-3b2d2--pagination-at-1440-and-390/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-3b2d2--pagination-at-1440-and-390/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) tests/admin/shipping-center.spec.ts:251:5 › PARITY-SHIPCENTER RV3 zh-CN: printed cross-border home address retains destination country
+
+    Error: RV3 printed home address includes server destination fact HK
+
+    expect(locator).toContainText(expected) failed
+
+    Locator: getByTestId('shipping-center').getByTestId('shipping-packing-slip').locator('dl > div').filter({ has: locator('dt').filter({ hasText: '配送目的地' }) }).locator('dd')
+    Expected substring: "HK"
+    Received string:    "000 Synthetic city Synthetic address"
+    Timeout: 10000ms
+
+    Call log:
+      - RV3 printed home address includes server destination fact HK getByTestId('shipping-center').getByTestId('shipping-packing-slip').locator('dl > div').filter({ has: locator('dt').filter({ hasText: '配送目的地' }) }).locator('dd') with timeout 10000ms
+      - waiting for getByTestId('shipping-center').getByTestId('shipping-packing-slip').locator('dl > div').filter({ has: locator('dt').filter({ hasText: '配送目的地' }) }).locator('dd')
+        24 × locator resolved to <dd>000 Synthetic city Synthetic address</dd>
+           - unexpected value "000 Synthetic city Synthetic address"
+
+
+      270 |       await expect(address).toBeVisible();
+      271 |       for (const fact of ["000", "Synthetic city", "Synthetic address", "HK"]) {
+    > 272 |         await expect(address, `RV3 printed home address includes server destination fact ${fact}`).toContainText(fact);
+          |                                                                                                    ^
+      273 |       }
+      274 |       expect(writes).toEqual([]);
+      275 |     });
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/shipping-center.spec.ts:272:100
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-6b556-retains-destination-country/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-6b556-retains-destination-country/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-6b556-retains-destination-country/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-6b556-retains-destination-country/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) tests/admin/shipping-center.spec.ts:150:5 › PARITY-SHIPCENTER RV3 en: long batch summary cannot cover rows or pagination at 1440 and 390
+
+    Error: RV3 selection footer stays within the signed 76px height
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 76
+    Received:    104
+
+      184 |           const footer = await content(page).locator("footer").boundingBox();
+      185 |           expect(footer, "selection footer exists").not.toBeNull();
+    > 186 |           expect(footer!.height, "RV3 selection footer stays within the signed 76px height").toBeLessThanOrEqual(76);
+          |                                                                                              ^
+      187 |           expect(footer!.y).toBeGreaterThanOrEqual(0);
+      188 |           expect(footer!.y + footer!.height).toBeLessThanOrEqual(900);
+      189 |         });
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/shipping-center.spec.ts:186:94
+        at Object.click (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/shipping-center.spec.ts:132:9)
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/shipping-center.spec.ts:180:9
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-e99dd--pagination-at-1440-and-390/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-e99dd--pagination-at-1440-and-390/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-e99dd--pagination-at-1440-and-390/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-e99dd--pagination-at-1440-and-390/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) tests/admin/shipping-center.spec.ts:251:5 › PARITY-SHIPCENTER RV3 en: printed cross-border home address retains destination country
+
+    Error: RV3 printed home address includes server destination fact HK
+
+    expect(locator).toContainText(expected) failed
+
+    Locator: getByTestId('shipping-center').getByTestId('shipping-packing-slip').locator('dl > div').filter({ has: locator('dt').filter({ hasText: 'Destination' }) }).locator('dd')
+    Expected substring: "HK"
+    Received string:    "000 Synthetic city Synthetic address"
+    Timeout: 10000ms
+
+    Call log:
+      - RV3 printed home address includes server destination fact HK getByTestId('shipping-center').getByTestId('shipping-packing-slip').locator('dl > div').filter({ has: locator('dt').filter({ hasText: 'Destination' }) }).locator('dd') with timeout 10000ms
+      - waiting for getByTestId('shipping-center').getByTestId('shipping-packing-slip').locator('dl > div').filter({ has: locator('dt').filter({ hasText: 'Destination' }) }).locator('dd')
+        24 × locator resolved to <dd>000 Synthetic city Synthetic address</dd>
+           - unexpected value "000 Synthetic city Synthetic address"
+
+
+      270 |       await expect(address).toBeVisible();
+      271 |       for (const fact of ["000", "Synthetic city", "Synthetic address", "HK"]) {
+    > 272 |         await expect(address, `RV3 printed home address includes server destination fact ${fact}`).toContainText(fact);
+          |                                                                                                    ^
+      273 |       }
+      274 |       expect(writes).toEqual([]);
+      275 |     });
+        at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/shipping-center.spec.ts:272:100
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-9a312-retains-destination-country/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-9a312-retains-destination-country/error-context.md
+
+    attachment #3: trace (application/zip) ─────────────────────────────────────────────────────────
+    output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-9a312-retains-destination-country/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace output/playwright/merchant-orders-c-browser/20261030T173126.334803112/results/orders-ui-PARITY-SHIPCENTE-9a312-retains-destination-country/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6 failed
+    tests/admin/shipping-center.spec.ts:150:5 › PARITY-SHIPCENTER RV3 zh-TW: long batch summary cannot cover rows or pagination at 1440 and 390
+    tests/admin/shipping-center.spec.ts:251:5 › PARITY-SHIPCENTER RV3 zh-TW: printed cross-border home address retains destination country
+    tests/admin/shipping-center.spec.ts:150:5 › PARITY-SHIPCENTER RV3 zh-CN: long batch summary cannot cover rows or pagination at 1440 and 390
+    tests/admin/shipping-center.spec.ts:251:5 › PARITY-SHIPCENTER RV3 zh-CN: printed cross-border home address retains destination country
+    tests/admin/shipping-center.spec.ts:150:5 › PARITY-SHIPCENTER RV3 en: long batch summary cannot cover rows or pagination at 1440 and 390
+    tests/admin/shipping-center.spec.ts:251:5 › PARITY-SHIPCENTER RV3 en: printed cross-border home address retains destination country
+  36 passed (4.4m)

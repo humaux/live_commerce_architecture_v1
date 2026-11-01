@@ -447,9 +447,8 @@ export function registerProductEditorAcceptance() {
         expected: "12 local rows, preserved first price60, others80; persisted",
         actual: "PASS",
       });
-      await page.goto(url("en", "products"));
-      await page.getByTestId("products-search").fill(tag);
-      await page.getByTestId("products-search-submit").click();
+      // Read-only fixture scoping; all Copy/bulk commands still originate in real clicks.
+      await page.goto(url("en", `products?q=${encodeURIComponent(tag)}`));
       await expect(page.locator('[data-testid^="product-row-"]')).toHaveCount(
         2,
       );
@@ -477,7 +476,6 @@ export function registerProductEditorAcceptance() {
       }
       await page.setViewportSize({ width: 1586, height: 992 });
       await page.getByTestId("products-select-all").check();
-      await page.getByTestId("product-batch").locator("summary").click();
       await page
         .getByTestId("product-batch")
         .getByRole("button", { name: "Unpublish to draft", exact: true })
@@ -649,13 +647,13 @@ export function registerProductEditorAcceptance() {
       };
       await stageStock();
       await expect(page.getByTestId('catalog-stock-total')).toHaveValue('5');
-      await expect(page.getByTestId('catalog-stock-delta')).toHaveValue('0');
-      await page.getByTestId('catalog-stock-delta').fill('2');
-      await expect(page.getByTestId('catalog-stock-total')).toHaveValue('7');
+      // Signed stock frame: a tracked row edits the on-hand total only (no tracking toggle, no delta field).
+      await expect(page.getByTestId('catalog-stock-tracked')).toHaveCount(0);
+      await expect(page.getByTestId('catalog-stock-delta')).toHaveCount(0);
+      await page.getByTestId('catalog-stock-total').fill('7');
       await stageStock();
       await expect(page.getByTestId('catalog-stock-total')).toHaveValue('7');
       await page.getByTestId('catalog-stock-total').fill('0');
-      await expect(page.getByTestId('catalog-stock-delta')).toHaveValue('-7');
       await stageStock();
       await expect(page.getByTestId('catalog-stock-total')).toHaveValue('0');
       await page.keyboard.press('Escape');
@@ -2019,7 +2017,7 @@ export function registerProductEditorAcceptance() {
       await page.getByTestId("product-new").click();
       await expect(page).toHaveURL(recoveryURL);
       await expect(
-        page.getByTestId("products-copy-selected"),
+        page.getByTestId("products-copy-entry"),
       ).toBeDisabled();
       expect(
         writes

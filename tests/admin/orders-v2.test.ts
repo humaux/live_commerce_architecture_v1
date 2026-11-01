@@ -12,7 +12,7 @@ test("legacy display sentinels preserve a list row without admitting arbitrary o
     currency: "TWD", total_minor: 2500, commercial_state: "DRAFT", fulfillment_state: "MANUAL_UNASSIGNED",
     payment_state: "NOT_STARTED", test_mode: false, work_state: "NONE", refunded_minor: 0, refund_pending_minor: 0,
     source: "storefront", pickup_source: null, payment_mode: "card", collection_state: null, cod_surcharge_minor: null, cod_collect_minor: null,
-    recipient_masked: "—", delivery_kind: "unknown", live_sessions: [],
+    recipient_masked: "—", delivery_kind: "unknown", live_sessions: [], item_summary:{items:[{product_name:"Synthetic frozen item",variant_label:null,quantity:1}],total_item_count:1},
   };
   const page = { items: [row], next_cursor: "", total: 1, counts: { ...counts, all: 1 }, sessions: [] };
   assert.equal(parseOrderListV2(page).items[0].recipient_masked, "—");
@@ -20,6 +20,12 @@ test("legacy display sentinels preserve a list row without admitting arbitrary o
   for (const invalid of [{recipient_masked:"Synthetic full name"}, {recipient_masked:""}, {recipient_masked:null}, {delivery_kind:"legacy_unknown"}, {total_minor:-1}]) {
     assert.throws(() => parseOrderListV2({...page, items:[{...row, ...invalid}]}));
   }
+  for(const summary of [
+    {items:[],total_item_count:1},
+    {items:[{product_name:"Synthetic",variant_label:null,quantity:1,phone:"synthetic-private"}],total_item_count:1},
+    {items:[{product_name:"Synthetic",variant_label:null,quantity:2}],total_item_count:1},
+    {items:Array.from({length:4},()=>({product_name:"Synthetic",variant_label:null,quantity:1})),total_item_count:4},
+  ]) assert.throws(()=>parseOrderListV2({...page,items:[{...row,item_summary:summary}]}));
   assert.equal(validOrderFilters({...emptyFilters, delivery:"unknown"}), false);
 });
 test("orders-v2 accepts bounded filters and Taipei inclusive dates; rejects ambiguity", () => {

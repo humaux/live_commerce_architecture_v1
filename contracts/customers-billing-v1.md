@@ -316,7 +316,7 @@ the existing allowlist proxy; same session/CSRF/Origin rules as orders; bodies s
 | `POST customers/{id}/consent-withdrawals` `{purpose,channel}` + Idempotency-Key | customers:privacy | 201 |
 | `POST customers/{id}/exports` + Idempotency-Key | customers:privacy + customers:read + orders:read (amended, R1 review P1-2) | 200 `application/json` attachment `lc.customer-export.v1` (≤ 1 MiB, ≤ 200 orders else 409 `export_too_large`), `Cache-Control: no-store` |
 | `POST customers/{id}/erasure` `{confirm:"ERASE"}` + Idempotency-Key | customers:privacy | 200 summary counts; 409 `erasure_blocked` |
-| `GET finance/summary?from&to` / `GET finance/summary.csv?…` | orders:read / +orders:export | daily rows + totals |
+| `GET finance/summary?from&to` / `GET finance/summary.csv?…` | orders:read / +orders:export | JSON: daily rows + totals + `generated_at` (server UTC RFC3339 observation time; not ledger modification time). CSV: unchanged 13 daily columns, no totals/timestamp |
 | `GET billing` | billing:manage | §3.2 `read_billing` + `plans[]` (configured price ids with name/amount/currency/interval from Stripe, 10-min process cache) + `stale` flag |
 | `GET billing/standing` | store:read | `{standing}` |
 | `POST billing/checkout` `{price_id}` | billing:manage | 200 `{url}`; 409 `subscription_exists`; 503 `billing_unavailable` (BD1 conflict) — steps below |

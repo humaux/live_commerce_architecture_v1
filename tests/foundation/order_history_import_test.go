@@ -1,3 +1,7 @@
+// Purpose: Verify archive imports cannot change transactional rows or financial facts.
+// Depends on: isolated foundation Go/PG fixtures, migration import HTTP and finance summary.
+// Used by: foundation g09 and browser migration-import's financial snapshot oracle.
+// Invariants: I05; per-read observation metadata is validated separately from unchanged money.
 package foundation_test
 
 // OH01-OH12 (contracts/migration-import-v1.md section 7; unit w5-03b-order-history-import; tier REAL_PG over httpapi.NewHandler, MOCK data:
@@ -18,12 +22,43 @@ package foundation_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
+
+// financeSnapshotFacts retains every financial key, value and row. Only the signed
+// overview's observation timestamp varies per read; require it inside that request.
+func financeSnapshotFacts(t *testing.T, raw []byte, started, finished time.Time) string {
+	t.Helper()
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &fields); err != nil || len(fields) != 6 {
+		t.Fatalf("finance snapshot must have the six summary fields: %s (%v)", raw, err)
+	}
+	for _, key := range []string{"generated_at", "from", "to", "timezone", "rows", "totals"} {
+		if _, ok := fields[key]; !ok {
+			t.Fatalf("finance snapshot missing %s", key)
+		}
+	}
+	var stamp string
+	if err := json.Unmarshal(fields["generated_at"], &stamp); err != nil {
+		t.Fatalf("finance observation timestamp: %v", err)
+	}
+	generated, err := time.Parse(time.RFC3339Nano, stamp)
+	if err != nil || !strings.HasSuffix(stamp, "Z") || generated.Before(started) || generated.After(finished) {
+		t.Fatalf("finance observation must be UTC inside its request: %q (%v)", stamp, err)
+	}
+	delete(fields, "generated_at")
+	facts, err := json.Marshal(fields)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(facts)
+}
 
 type ohEnv struct {
 	*ciEnv
@@ -200,7 +235,12 @@ func TestOrderHistoryImport(t *testing.T) {
 
 	t.Run("OH03 I05 the archive touches no money, order or inventory row and no such function reads it", func(t *testing.T) {
 		before := c.moneySnapshot()
-		_, rawBefore, _ := c.call("GET", "/v1/admin/stores/"+c.store+"/finance/summary?from=2026-03-01&to=2026-04-30", c.finTok, "")
+		started := time.Now().UTC()
+		status, rawBefore, _ := c.call("GET", "/v1/admin/stores/"+c.store+"/finance/summary?from=2026-03-01&to=2026-04-30", c.finTok, "")
+		if status != 200 {
+			t.Fatalf("finance before archive: HTTP %d", status)
+		}
+		factsBefore := financeSnapshotFacts(t, rawBefore, started, time.Now().UTC())
 		changed := strings.Replace(file, ",已完成,500,", ",已完成,600,", 2)
 		st, cm := c.ocommit(c.adminTok, changed, 3, "")
 		if st != 200 || cm["updated"] != float64(3) {
@@ -212,8 +252,12 @@ func TestOrderHistoryImport(t *testing.T) {
 				t.Errorf("%s changed from %d to %d rows", table, n, after[table])
 			}
 		}
-		_, rawAfter, _ := c.call("GET", "/v1/admin/stores/"+c.store+"/finance/summary?from=2026-03-01&to=2026-04-30", c.finTok, "")
-		if string(rawBefore) != string(rawAfter) || len(rawBefore) == 0 {
+		started = time.Now().UTC()
+		status, rawAfter, _ := c.call("GET", "/v1/admin/stores/"+c.store+"/finance/summary?from=2026-03-01&to=2026-04-30", c.finTok, "")
+		if status != 200 {
+			t.Fatalf("finance after archive: HTTP %d", status)
+		}
+		if factsBefore != financeSnapshotFacts(t, rawAfter, started, time.Now().UTC()) {
 			t.Errorf("finance summary moved: %s -> %s", rawBefore, rawAfter)
 		}
 		// Static: only the importer, the reader, the erasure hook and the export reader may name the table.
