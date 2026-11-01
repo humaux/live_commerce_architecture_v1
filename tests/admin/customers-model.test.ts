@@ -136,6 +136,15 @@ test("finance summary: net = captured - refunded (I05), totals carry an empty da
   assert.throws(() => parseFinanceSummary({ ...ok, extra: 1 }));
 });
 
+test("finance summary without generated_at parses (admin may ship before the Go backend); a present bad value still fails", () => {
+  const old = { from: "2026-09-01", to: "2026-09-30", timezone: "Asia/Taipei", rows: [row()], totals: [row({ day: "" })] };
+  const parsed = parseFinanceSummary(old);
+  assert.equal(parsed.generated_at, undefined);
+  assert.equal(parsed.totals[0].net_minor, 150000);
+  assert.throws(() => parseFinanceSummary({ ...old, generated_at: "not-a-date" }));
+  assert.throws(() => parseFinanceSummary({ ...old, extra: 1 }));
+});
+
 test("financeDay is the UTC+8 day", () => {
   assert.equal(financeDay(new Date("2026-09-29T16:30:00Z")), "2026-09-30");
   assert.equal(financeDay(new Date("2026-09-29T15:30:00Z")), "2026-09-29");

@@ -274,6 +274,10 @@ test("CPU5 platform not OPEN: 'not open yet' in zh-TW and en, no toggle at all; 
   await ctl("platform/close");
   for (const locale of ["zh-TW", "en"] as const) {
     await page.goto(cardUrl(locale));
+    // RVFIX-370 P1-1: state and notes are primary content, visible on a fresh load with Advanced still closed.
+    await expect(badge(page), "badge visible without opening Advanced").toBeVisible();
+    await expect(page.getByTestId("platform-state-badge"), "platform badge visible without opening Advanced").toHaveText(cardPaymentsCopy[locale].platformCLOSED);
+    await expect(page.getByTestId("card-not-open"), "not-open note visible without opening Advanced").toBeVisible();
       await page.getByTestId("card-advanced").locator("summary").click();
     await expect(page.getByTestId("card-not-open")).toBeVisible();
     await expect(page.getByTestId("card-not-open")).toHaveText(locale === "zh-TW" ? NOT_OPEN_ZH_TW : en.notOpen);
@@ -284,6 +288,9 @@ test("CPU5 platform not OPEN: 'not open yet' in zh-TW and en, no toggle at all; 
   }
   await ctl("platform/open");
   await page.goto(cardUrl("en"));
+  // RVFIX-370 P1-1: a DISABLED store sees its badge and the Enable action with Advanced closed.
+  await expect(badge(page), "DISABLED badge visible without opening Advanced").toHaveText(en.stateDISABLED);
+  await expect(page.getByTestId("card-enable-open"), "Enable visible without opening Advanced").toBeVisible();
   await page.getByTestId("card-advanced").locator("summary").click();
   await expect(page.getByTestId("card-not-open")).toHaveCount(0);
   await expect(page.getByTestId("card-enable-open")).toBeVisible();
@@ -295,6 +302,10 @@ test("CPU6 BLOCKED: the suspended note, disable only (never enable), and unblock
   await signedLogin(page);
   await ctl("store/block");
   await page.goto(cardUrl("zh-TW"));
+  // RVFIX-370 P1-1: BLOCKED badge, suspended note and the allowed Disable are visible with Advanced closed.
+  await expect(badge(page), "BLOCKED badge visible without opening Advanced").toHaveText(cardPaymentsCopy["zh-TW"].stateBLOCKED);
+  await expect(page.getByTestId("card-blocked-note"), "blocked note visible without opening Advanced").toHaveText(BLOCKED_ZH_TW);
+  await expect(page.getByTestId("card-disable-open"), "Disable visible without opening Advanced").toBeVisible();
   await page.getByTestId("card-advanced").locator("summary").click();
   await expect(page.getByTestId("card-blocked-note")).toHaveText(BLOCKED_ZH_TW);
   await expect(badge(page)).toHaveText(cardPaymentsCopy["zh-TW"].stateBLOCKED);
@@ -313,6 +324,8 @@ test("CPU6 BLOCKED: the suspended note, disable only (never enable), and unblock
   await expect(page.getByTestId("card-enable-open")).toHaveCount(0);
   await ctl("store/unblock");
   await page.goto(cardUrl("en"));
+  await expect(badge(page), "DISABLED badge visible without opening Advanced").toHaveText(en.stateDISABLED);
+  await expect(page.getByTestId("card-enable-open"), "Enable visible without opening Advanced").toBeVisible();
   await page.getByTestId("card-advanced").locator("summary").click();
   await expect(badge(page)).toHaveText(en.stateDISABLED);
   await expect(page.getByTestId("card-blocked-note")).toHaveCount(0);
@@ -325,12 +338,15 @@ test("CPU6b not allowlisted reads like not open (same message, no 'platform open
   await signedLogin(page);
   await ctl("store/disallow"); // the real platform-disallow definer: the allowlist is withdrawn AND the enrolled store is blocked (PF11)
   await page.goto(cardUrl("zh-TW"));
+  await expect(page.getByTestId("card-blocked-note"), "blocked note visible without opening Advanced").toHaveText(BLOCKED_ZH_TW);
   await page.getByTestId("card-advanced").locator("summary").click();
   await expect(page.getByTestId("card-blocked-note")).toHaveText(BLOCKED_ZH_TW);
   await expect(page.getByTestId("card-enable-open")).toHaveCount(0);
   await ctl("store/unblock"); // the block is cleared, the allowlist is still withdrawn: DISABLED and not allowlisted
   for (const locale of ["zh-TW", "en"] as const) {
     await page.goto(cardUrl(locale));
+    await expect(badge(page), "DISABLED badge visible without opening Advanced").toHaveText(cardPaymentsCopy[locale].stateDISABLED);
+    await expect(page.getByTestId("card-not-open"), "not-open note visible without opening Advanced").toHaveText(locale === "zh-TW" ? NOT_OPEN_ZH_TW : en.notOpen);
       await page.getByTestId("card-advanced").locator("summary").click();
     await expect(page.getByTestId("card-not-open")).toHaveText(locale === "zh-TW" ? NOT_OPEN_ZH_TW : en.notOpen);
     await expect(page.getByTestId("platform-state-badge")).toHaveCount(0); // "platform open" would contradict the message
@@ -343,6 +359,7 @@ test("CPU6b not allowlisted reads like not open (same message, no 'platform open
   await shot(page, "card-not-allowlisted", "en", "desktop");
   await ctl("store/allow");
   await page.goto(cardUrl("en"));
+  await expect(page.getByTestId("card-enable-open"), "Enable visible without opening Advanced").toBeVisible();
   await page.getByTestId("card-advanced").locator("summary").click();
   await expect(page.getByTestId("card-not-open")).toHaveCount(0);
   await expect(page.getByTestId("platform-state-badge")).toHaveText(en.platformOPEN);
@@ -384,6 +401,8 @@ test("CPU7b platform not OPEN while the store is ENABLED: 'not open yet' and no 
   await expect(badge(page)).toHaveText(en.stateENABLED);
   await ctl("platform/close");
   await page.goto(cardUrl("zh-TW"));
+  await expect(page.getByTestId("card-not-open"), "not-open note visible without opening Advanced").toHaveText(NOT_OPEN_ZH_TW);
+  await expect(page.getByTestId("card-disable-open"), "Disable visible without opening Advanced").toBeVisible();
   await page.getByTestId("card-advanced").locator("summary").click();
   await expect(page.getByTestId("card-not-open")).toHaveText(NOT_OPEN_ZH_TW);
   await expect(page.getByTestId("platform-state-badge")).toHaveText(cardPaymentsCopy["zh-TW"].platformCLOSED);

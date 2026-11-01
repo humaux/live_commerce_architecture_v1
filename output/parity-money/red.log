@@ -86,3 +86,21 @@ source_changes=tests only plus authorized generated browser ownership; product r
 2900-2026-10-30T13:01:50.9979531Z ##[group]Run actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
 2901-2026-10-30T13:01:50.9979966Z with:
 2902-2026-10-30T13:01:50.9980257Z   name: receipt-gate-shard_g09
+
+RVFIX-370 current tests-only RED handoff (2026-10-31)
+head_sha=07cc2c2b7e7c4af1f143b5c943fa297200d619c8
+Gates_run=41106372580
+Gates_test_job=NOT_ASSIGNED (plan excluded)
+Foundation_run=41106372611
+Foundation_job=124237155577 (in_progress at registration)
+RED= PENDING own assertion failure; expected RVFIX-370 report refusal must retain report navigation
+GREEN=NOT_RUN; product implementation intentionally unchanged
+Integrator relays completion in fresh session; record actual failed run/job/assertion here before implementation.
+
+RVFIX-370 RED (card RVFIX-370, push 1 = tests only, base = merge of origin/r3/integration e8b735f10 into c8e3de002)
+Expected failures on the current implementation (record the real run/job ids here after CI):
+- tests/admin/card-payments.spec.ts CPU5, CPU6, CPU6b, CPU7b: new "visible without opening Advanced" assertions fail (badge/not-open note/blocked note/Enable/Disable are inside the closed <details data-testid=card-advanced>) [P1-1]
+- tests/admin/customers-billing.spec.ts "RVFIX-370 finance: a reversed-range URL ...": the range-invalid alert is missing and the page shows the not-found failure with no date editor [P1-2]
+- tests/admin/settlements.spec.ts STL1 (settlements-legend / settlements-formula) and STL2 (settlement-detail settlements-formula): restored verbatim from origin/r3/integration, Legend is a null stub [P2-3]
+- tests/admin/customers-model.test.ts "finance summary without generated_at parses ...": parseFinanceSummary throws unavailable on a summary without generated_at [P2-7]
+GREEN=NOT_RUN; product implementation intentionally unchanged in this commit

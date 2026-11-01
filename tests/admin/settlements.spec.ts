@@ -184,6 +184,8 @@ test("STL1 list: every statement row shows the server's numbers (signed) and the
     expect(displayedNet).toBe(s.net_payable_minor);
     await page.getByTestId("settlement-back").click();
   }
+  await expect(page.getByTestId("settlements-legend")).toContainText(en.legend);
+  await expect(page.getByTestId("settlements-formula")).toHaveText(en.formula);
   // the three sign cases are really on screen: a negative net, a negative dispute total (reversal), a carried debt
   expect(statements.find((s) => s.statement_id === carried)!.net_payable_minor).toBeLessThan(0);
   expect(statements.find((s) => s.statement_id === pending)!.dispute_minor).toBeLessThan(0);
@@ -205,7 +207,7 @@ test("STL2 detail: lines, payout reference of the paid statement, none for the o
     for (const [index, minor] of contributions(s).entries())
       await expect(page.getByTestId(`settlement-detail-${detailKeys[index]}`)).toHaveText(signed(s.currency, minor));
     await expect(page.getByTestId("settlement-detail-net")).toHaveText(money("en", s.currency, s.net_payable_minor));
-    // Seller copy replaces the internal formula; the seven signed values and net remain asserted above.
+    await expect(page.getByTestId("settlement-detail").getByTestId("settlements-formula")).toHaveText(en.formula);
     await expect(page.getByRole("heading",{name:moneyDesign.en.composition,exact:true})).toBeVisible();
     const lines = page.locator('[data-testid^="settlement-line-"]');
     await expect(lines).toHaveCount(s.line_count);

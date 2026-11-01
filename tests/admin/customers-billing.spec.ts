@@ -483,6 +483,31 @@ test("CB11 finance: native date inputs, the 91-day rule, one summary table, the 
   expect(download.suggestedFilename()).toMatch(/^finance-.*\.csv$/);
 });
 
+test("RVFIX-370 finance: a reversed-range URL keeps the date editor and says the range is invalid, never 'not found'", async ({ page }) => {
+  await signedLogin(page);
+  await page.goto(`/en/finance?store=${store}&from=${financeDay(0)}&to=${financeDay(-5)}`);
+  await expect(page.getByTestId("finance-page")).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: en.rangeInvalid })).toBeVisible();
+  await expect(page.getByTestId("finance-page")).not.toContainText(/not found/i);
+  await expect(page.getByTestId("finance-page")).not.toContainText(en.notFound);
+  await expect(page.getByRole("heading", { name: moneyDesign.en.financeFailure, exact: true })).toHaveCount(0);
+  // the way out is a real click into the editor, which also reports the invalid draft and keeps Apply off
+  await page.getByRole("button", { name: moneyDesign.en.financeDates, exact: true }).click();
+  await expect(page.getByTestId("finance-from")).toBeVisible();
+  await expect(page.getByTestId("finance-to")).toBeVisible();
+  await expect(page.getByTestId("finance-range-invalid")).toHaveText(en.rangeInvalid);
+  await expect(page.getByTestId("finance-show")).toBeDisabled();
+  // fixing the range through the editor applies and persists across a reload
+  await page.getByTestId("finance-from").fill(financeDay(-2));
+  await page.getByTestId("finance-to").fill(financeDay(0));
+  await page.getByTestId("finance-show").click();
+  await expect(page).toHaveURL(new RegExp(`from=${financeDay(-2)}`));
+  await expect(page.getByTestId(`finance-generated-at`)).toBeVisible();
+  await page.reload();
+  await expect(page).toHaveURL(new RegExp(`from=${financeDay(-2)}`));
+  await expect(page.getByTestId("finance-generated-at")).toBeVisible();
+});
+
 test("CB11 billing: standing, subscribe redirects to hosted Checkout (MOCK), the return updates, portal redirect, no URL kept", async ({ page }) => {
   await ctl("standing/unbilled");
   await signedLogin(page);
