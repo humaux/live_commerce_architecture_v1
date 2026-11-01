@@ -1,0 +1,24 @@
+FIX-LATENT-BUNDLES round 2, 2026-11-01
+PR #478 head 9a718122fb71dc969107dc5efa7b54f02090e943
+Own trigger Gates 41282493913, executed merge 31e73f6309e915fd30e47a836c9c97df764f279c
+Target CVS/WebKit: PASS, job 124778237038 (bundle:07).
+Target INU05: PASS, job 124778236979 (bundle:06), 88 passed.
+No target assertion RED on the unchanged-base trigger; historical RED is not substituted for it.
+Historical #440 Gates 41278013182, CVS job 124764811243:
+  Artifact 13073600021: cvs-candidate-024793 expected visible, element not found, cvs-picker.mjs:392.
+Historical #440 Gates 41278013182, inbox job 124764810973:
+  Artifact 13073056034: INU05 route.fetch: Request context disposed (messages?limit=1).
+Outside-card blocker: Gates 41282493913 job 124778237011, --browser-webkit order failed.
+No implementation, no new commit/push/dispatch; see FIX.md.
+
+FIX1 directed card, 2026-11-01: existing tests-only RED retained; no extra RED push.
+RED head: 9a718122fb71dc969107dc5efa7b54f02090e943
+Run 41282493913 / job 124778237011, executed merge 31e73f6309e915fd30e47a836c9c97df764f279c
+TestBrowserBuyerOrderUI / BO05, order-gate.mjs:627 -> created at :153:
+  expect(getByTestId('order-section')).toBeVisible(): expected visible; element not found; 5000ms.
+Artifact gate-browser-webkit (13074304456), sha256 a1620635e39940cd0df9bd92d6895e184d835aea3e0a3f255e9bf22fa521811d
+  browser.log and failure-6.txt show the unresolved recovery control after the click.
+Dependent RED: receipts 124786249686 (only --browser-webkit FAIL); required 124786325493.
+Hypothesis/repair: shared recovery helper settles main idle and native focus before one real click.
+Exact focus/compositor attribution and GREEN remain pending this PR's CI; MODEL_ONLY check is supplemental.
+See FIX1.md for the complete classification and limits. No raw CI logs/artifacts copied.

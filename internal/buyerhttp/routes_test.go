@@ -20,7 +20,7 @@ func routeSample(pattern string) string {
 }
 
 func TestRouteTableEntriesAreDispatched(t *testing.T) {
-	if len(routeRows) != 46 {
+	if len(routeRows) != 48 { // 46 frozen legacy rows plus exactly two FEAT-LIVE-REPLAY reads.
 		t.Fatalf("inventory changed: %d entries", len(routeRows))
 	}
 	seen := map[string]bool{}
@@ -77,11 +77,23 @@ func TestRouteTableMatchesLegacy(t *testing.T) {
 	methods := []string{"", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE", "CONNECT", "get"}
 	for path := range paths {
 		got, want := matchRoute(path), legacyMatchRoute(path)
+		// Keep the immutable legacy oracle unchanged. Independently specify the two additive
+		// replay paths, including the existing matcher's deferred UUID validation and strict segments.
+		replay := false
+		if path == "/v1/buyer/replays" {
+			want, replay = route{kind: replayListRoute}, true
+		} else if id, ok := strings.CutPrefix(path, "/v1/buyer/replays/"); ok && id != "" && !strings.Contains(id, "/") {
+			want, replay = route{kind: replayDetailRoute, id: id}, true
+		}
 		if got != want {
 			t.Errorf("path %q: got %+v want %+v", path, got, want)
 		}
 		for _, method := range methods {
-			if allowed(got.kind, method) != legacyAllowed(want.kind, method) {
+			wantMethod := legacyAllowed(want.kind, method)
+			if replay {
+				wantMethod = method == http.MethodGet
+			}
+			if allowed(got.kind, method) != wantMethod {
 				t.Errorf("method drift: %s %s", method, path)
 			}
 		}

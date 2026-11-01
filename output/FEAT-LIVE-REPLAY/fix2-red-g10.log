@@ -1,0 +1,20 @@
+1673-2026-10-30T17:26:27.2124938Z === RUN   TestLiveConsoleOrderForBuyerPausedOfferKeepsLivePrice
+1674-2026-10-30T17:26:28.4166149Z --- PASS: TestLiveConsoleOrderForBuyerPausedOfferKeepsLivePrice (1.20s)
+1675-2026-10-30T17:26:28.4167444Z === RUN   TestLiveReplayOfficialReadPersistsVideo
+1676:2026-10-30T17:26:29.0882354Z     live_replay_test.go:72: FEAT-LIVE-REPLAY: successful official read must persist a durable live-video row
+1677:2026-10-30T17:26:29.1120537Z --- FAIL: TestLiveReplayOfficialReadPersistsVideo (0.70s)
+1678-2026-10-30T17:26:29.1123169Z === RUN   TestLiveReplayPublicationAndBuyerReads
+1679:2026-10-30T17:26:29.7121894Z     live_replay_test.go:123: FEAT-LIVE-REPLAY GET: status=404 want=200 body={"code":"not_found","message":"Resource not found.","request_id":"f90c34283221ec5259f3e64ee92c66b5","retryable":false,"details":{}}
+1680:2026-10-30T17:26:29.7279675Z --- FAIL: TestLiveReplayPublicationAndBuyerReads (0.62s)
+1681-2026-10-30T17:26:29.7394875Z === RUN   TestLiveToolsGateRoleBoundaries
+1682-2026-10-30T17:26:30.3069888Z --- PASS: TestLiveToolsGateRoleBoundaries (0.57s)
+1683-2026-10-30T17:26:30.3070456Z === RUN   TestLiveToolsLivePriceOnlyThroughClaimOrigin
+--
+3174-2026-10-30T17:36:10.8312519Z   EXTRA_ENV:
+3175-2026-10-30T17:36:10.8312824Z   COREPACK_ENABLE_NETWORK: 0
+3176-2026-10-30T17:36:10.8313098Z ##[endgroup]
+3177:2026-10-30T17:36:10.8368655Z --- FAIL: TestLiveReplayOfficialReadPersistsVideo (0.70s)
+3178:2026-10-30T17:36:10.8369283Z --- FAIL: TestLiveReplayPublicationAndBuyerReads (0.62s)
+3179-2026-10-30T17:36:10.8370374Z     manual_fulfilment_schema_test.go:365: NOT_RUN: migrations.Apply has no partial-apply hook; a database frozen at 0062 with rows cannot be built without re-implementing the migrator
+3180-2026-10-30T17:36:10.8371966Z     meta_ads_sandbox_test.go:184: NOT_RUN: META_ADS_SANDBOX=1 and the owner's sandbox inputs are required (app 大梦 roles, sandbox ad account); never run in CI
+3181-2026-10-30T17:36:10.8373386Z     stripe_live_rak_test.go:99: NOT_RUN: SL08 needs STRIPE_SANDBOX=1 and the owner's rk_test_ restricted test key (STRIPE_RESTRICTED_TEST_KEY); SANDBOX only, LIVE is refused

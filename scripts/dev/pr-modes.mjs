@@ -150,6 +150,7 @@ function hasBrowserTag(source) {
  * derivation now records that wiring as go-fixture-import evidence, and the CVS modes' lc_covers name the package.
  */
 export const BACKEND_ONLY_PACKAGES = {
+  "internal/httpapi/live_replay.go": "replay has no browser UI/harness yet (FEAT-LIVE-REPLAY); merchant GET/PUT and buyer projection are exercised by TestLiveReplayPublicationAndBuyerReads in tests/foundation/live_replay_test.go (g10)",
   "internal/tlsask": "TLS-ask listener middleware wired only by cmd/api main (cmd/api/tlsask.go); browser harnesses serve plain HTTP in-process and never construct it — a cmd/api change still selects all Go-booting browser modes via the cmd/** rule",
   "internal/retention": "retention sweeps run only in cmd/claims-worker and cmd/retention-admin; no browser harness starts a worker, and browser fixtures are always newer than any retention horizon",
 };

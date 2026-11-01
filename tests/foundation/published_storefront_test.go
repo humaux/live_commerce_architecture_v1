@@ -229,10 +229,33 @@ func TestPublishedStorefrontAuthorityAndConstraints(t *testing.T) {
 		 SELECT 1 FROM aclexplode(p.proacl) a WHERE a.privilege_type='EXECUTE'
 		 AND a.grantee NOT IN ('commerce_buyer_writer'::regrole,'commerce_buyer_issuer'::regrole,'commerce_ads_writer'::regrole,'commerce_catalog_media'::regrole,
 		  -- 0087 store-design (contracts/storefront-v2.md §B): the published design document is resolved by verified origin too.
-		  'commerce_design_reader'::regrole))
+		  'commerce_design_reader'::regrole,
+		  -- 0219 FEAT-LIVE-REPLAY: origin-scoped buyer_replays resolves publication through this function only.
+		  'commerce_replay_reader'::regrole))
 		FROM pg_proc p WHERE p.oid='buyer.resolve_published_store(text)'::regprocedure`).Scan(&safe)
 	if err != nil || !safe {
 		t.Fatalf("function owner/ACL/search_path: %v", err)
+	}
+	// 0219 replay definers retain the same closed owner/ACL/search_path contract.
+	for _, fn := range []struct {
+		signature, owner string
+		callers          []string
+	}{
+		{"live.persist_replay_videos()", "commerce_integration_writer", nil},
+		{"live.replay_permalink(uuid)", "commerce_replay_reader", []string{"commerce_runtime"}},
+		{"live.buyer_replays(text,uuid)", "commerce_replay_reader", []string{"commerce_buyer_runtime"}},
+		{"live.buyer_replay_product(text,text)", "commerce_replay_reader", []string{"commerce_buyer_runtime"}},
+	} {
+		allowed := append([]string{fn.owner}, fn.callers...)
+		err := f.owner.QueryRow(ctx, `SELECT p.prosecdef AND pg_get_userbyid(p.proowner)=$2
+			AND p.proconfig=ARRAY['search_path=pg_catalog']::text[] AND NOT EXISTS (
+			 SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a
+			 WHERE a.privilege_type='EXECUTE' AND NOT (pg_get_userbyid(a.grantee)=ANY($3::text[])))
+			AND (SELECT bool_and(has_function_privilege(r,p.oid,'EXECUTE')) FROM unnest($3::text[]) r)
+			FROM pg_proc p WHERE p.oid=$1::regprocedure`, fn.signature, fn.owner, allowed).Scan(&safe)
+		if err != nil || !safe {
+			t.Fatalf("replay function owner/ACL/search_path %s: %v", fn.signature, err)
+		}
 	}
 	for _, table := range []string{"control.storefront_publications", "control.storefront_domains"} {
 		if err = f.owner.QueryRow(ctx, `SELECT relrowsecurity AND relforcerowsecurity FROM pg_class WHERE oid=$1::regclass`, table).Scan(&safe); err != nil || !safe {
