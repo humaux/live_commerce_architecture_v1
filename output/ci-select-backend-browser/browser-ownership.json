@@ -1368,9 +1368,7 @@
       "apps": [
         "admin"
       ],
-      "unresolved": [
-        "tests/admin/ledger.spec.ts: unresolved import ../../packages/i18n/src/data-ops"
-      ],
+      "unresolved": [],
       "foundationInputs": [],
       "foundationUnresolvedInputs": [],
       "evidence": [
@@ -3164,9 +3162,7 @@
       "apps": [
         "admin"
       ],
-      "unresolved": [
-        "tests/admin/import-wizard.spec.ts: unresolved import ../../packages/i18n/src/data-ops"
-      ],
+      "unresolved": [],
       "foundationInputs": [
         "tests/admin/import-client.test.mjs",
         "tests/admin/import-coordinator.test.mjs",
@@ -3178,9 +3174,7 @@
         "tests/admin/import-wire-model.test.ts",
         "tests/admin/import-wire-real-loader.mjs"
       ],
-      "foundationUnresolvedInputs": [
-        "tests/admin/import-coordinator.test.mjs"
-      ],
+      "foundationUnresolvedInputs": [],
       "evidence": [
         "harness:tests/foundation/browser_migration_import_ui_test.go",
         "registry:--browser-migration-import -> tests/admin/import-client.test.mjs",
@@ -3192,7 +3186,6 @@
         "registry:--browser-migration-import -> tests/admin/import-wire-model.test.ts",
         "registry:--browser-migration-import -> tests/admin/import-wizard.spec.ts",
         "scripts/dev/test-local.sh:--browser-migration-import:lc_build=admin",
-        "scripts/dev/test-node.sh:foundation covers computed Node loader tests/admin/import-coordinator.test.mjs",
         "tests/admin/import-client.test.mjs:import apps/admin/app/api/stores/[store]/imports/[param]/[action]/route.ts",
         "tests/admin/import-client.test.mjs:import apps/admin/lib/auth.ts",
         "tests/admin/import-client.test.mjs:import apps/admin/lib/import-client.ts",
