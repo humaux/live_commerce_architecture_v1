@@ -1,0 +1,7 @@
+RVFIX-444 push 1 (tests only) at base 93b7d55c1. Expected RED (not run locally; CI runs tests/storefront/buyer-after-parity.mjs):
+- terminal order view · shipped card order · refunded            -> missing text 「已退款 NT$480」; legacy text still shown 「已付款」
+- terminal order view · shipped card order · partially-refunded   -> missing text 「已退款 NT$200」; legacy text still shown 「已付款」
+- terminal order view · shipped card order · refund-processing    -> missing text 「退款處理中」; legacy text still shown 「已付款」
+- terminal order view · shipped card order · review-required      -> missing text 「付款結果待人工確認」; legacy text still shown 「已付款」
+Cause: OrderStatusView.tsx:90 decides "completed" from commercial/fulfillment state alone; OrderTerminalView.tsx never reads the payment view.
+IMPLEMENTATION (relay 1): CI on f69c135f was RED on these four cases as expected; fix = OrderStatusView.tsx reads the payment view for shipped card orders, OrderTerminalView.tsx prints 已付款 only for captured+unrefunded and shows the §7.2 refund lines.

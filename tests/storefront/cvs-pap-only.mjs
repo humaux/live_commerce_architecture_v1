@@ -4,6 +4,7 @@
 // edge, as in tests/storefront/cvs-buyer.mjs. Store: buyer_entered mode (no ECPay profile), 7-ELEVEN enabled, pay-at-pickup enabled, no home delivery
 // offered. For each of zh-TW / en on Chromium desktop and a 390px phone: the delivery list offers the chain, the payment mode is PRE-SELECTED to pay at
 // pickup, there is no card radio, and the order is placed (PENDING collection, no card payment step). Evidence: screenshots (hashed).
+import { confirmCheckoutAddress } from "./shop-helpers.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import http from "node:http";
@@ -133,7 +134,7 @@ try {
     const options = await page.locator("#delivery option").allInnerTexts();
     assert(options.some((o) => o.includes(copy[locale].chain)), `${locale}/${viewport}: the 7-ELEVEN option must be offered, got ${JSON.stringify(options)}`);
     assert(!options.some((o) => /home|宅配|配送上门|Mock delivery|测试配送|測試配送/i.test(o)), `${locale}/${viewport}: a card-only home option is offered: ${JSON.stringify(options)}`);
-    await page.locator("#delivery").selectOption({ label: `${copy[locale].chain} · TW` });
+    await page.locator("#delivery").selectOption({ label: `${copy[locale].chain}` });
     await page.getByRole("button", { name: copy[locale].quote, exact: true }).click();
     await expect(page.getByTestId("address-section")).toBeVisible();
     const codUnavailable = page.locator(".cod-home-only");
@@ -156,7 +157,7 @@ try {
     await page.getByTestId("cvs-recipient-name").fill("王小明");
     await page.getByTestId("cvs-recipient-phone").fill("0912345678");
     await page.getByTestId("cvs-entered-code").fill("131386");
-    await page.getByTestId("confirm-address").click();
+    await confirmCheckoutAddress(page);
     await expect(page.getByTestId("create-order")).toBeEnabled();
     await shot(page, "pap-only-before", locale, viewport);
     await page.getByTestId("create-order").click();

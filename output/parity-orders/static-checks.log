@@ -1,0 +1,22 @@
+PARITY-ORDERS tests-only static checks; 2026-10-30
+gofmt -w tests/foundation/merchant_orders_v2_test.go => exit 0
+go vet ./tests/foundation => exit 0; no tests executed
+pnpm exec tsc => unavailable in this worktree (no node_modules)
+temporary read-only dependency symlink; tsc without --types node => exit 1 (Node 7 explicit ambient types)
+node node_modules/typescript/bin/tsc --noEmit --target ES2023 --module esnext --moduleResolution bundler --strict --skipLibCheck --allowImportingTsExtensions --types node --typeRoots /Volumes/data/live_commerce_architecture_v1/node_modules/.pnpm/node_modules/@types tests/admin/orders-ui.spec.ts => exit 0
+temporary dependency symlink removed; no install or lockfile change
+node scripts/dev/derive-browser-ownership.mjs => exit 0; 53 modes
+node scripts/dev/derive-browser-ownership.mjs --check => exit 0
+git diff --check => exit 0
+Local tests/servers/browser/PG: NOT_RUN (prohibited)
+
+RELAY1 implementation static checks (not runtime acceptance):
+Go build ./internal/merchantorders ./internal/httpapi => final exit0 (initial compile assignment error corrected).
+Go vet ./internal/merchantorders ./internal/httpapi => exit0; no tests executed.
+Strict tsc admin + all changed browser harnesses with worktree source path mappings and existing shared dependencies => exit0; output relay1-tsc.log empty. No package install/lockfile change.
+node --check tests/admin/picklist-fixture.mjs => exit0.
+node scripts/dev/derive-browser-ownership.mjs + --check => exit0,53modes.
+bash scripts/dev/depmap.sh => exit0, generated dependency-map unchanged.
+python3 scripts/check_packet.py => exit0, architecture-structure only; own generated packet-check result restored to starting committed bytes.
+git diff --check => exit0.
+Local tests, PG, browser, servers, containers and LIVE => NOT_RUN (prohibited).

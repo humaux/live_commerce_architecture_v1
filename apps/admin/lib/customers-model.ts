@@ -1,3 +1,7 @@
+// Purpose: Strictly decode customer and finance responses at the browser boundary.
+// Depends on: ./orders-model.ts; frozen customer/finance DTO contracts.
+// Used by: customers-client, billing/settlement parsers and admin contract tests.
+// Invariants: unknown keys and invalid money/permission projections fail closed.
 // Admin customers/finance model: strict parsers for the frozen Go DTOs (BFF `/api/stores/{store}/customers*`,
 // `finance/summary` -> Go `internal/customers` + `internal/reporting`, contract customers-billing-v1 §5, customers-core
 // FROZEN block). Unknown key, wrong type or broken invariant = invalid response (thrown "unavailable"); the server
@@ -11,6 +15,7 @@ export const consentPairs: readonly { purpose: ConsentPurpose; channel: ConsentC
   { purpose: "marketing_messages", channel: "meta_dm" },
   { purpose: "ads_personalization", channel: "meta_ads" },
 ];
+export type ConsentState = Record<ConsentPurpose, "granted" | "withdrawn" | "never">;
 export type Consents = { marketing_messages: boolean; ads_personalization: boolean };
 // W6-01B (customers-billing-v1 Amendment): merchant-typed tags and private notes. Parsers only; rendering is W6-U1.
 export const tagColors = ["gray", "red", "orange", "yellow", "green", "teal", "blue", "purple"] as const;
@@ -31,6 +36,7 @@ export type Customer = {
   claims_count: number;
   platforms: string[];
   consents: Consents;
+  consent_state?: ConsentState;
   active: boolean;
   imported: boolean; // W5-02B: created by a customer import (migration 0152); consent is never imported
   tags: Tag[];
@@ -72,7 +78,7 @@ export type FinanceRow = {
   cod_collected_count: number;
   cod_collected_minor: number;
 };
-export type FinanceSummary = { from: string; to: string; timezone: string; rows: FinanceRow[]; totals: FinanceRow[] };
+export type FinanceSummary = { generated_at?: string; from: string; to: string; timezone: string; rows: FinanceRow[]; totals: FinanceRow[] };
 export type ErasureSummary = {
   consents_withdrawn: number;
   sessions_revoked: number;
@@ -154,10 +160,21 @@ function customerFrom(v: Record<string, unknown>): Customer {
   // An erased owner (active=false) never shows a granted consent: consent_allows is false for it (CD4/CD7).
   const consents = parseConsents(v.consents);
   if (!v.active && (consents.marketing_messages || consents.ads_personalization)) throw new Error("unavailable");
+  // Additive rollout: an old read may omit this field, but false never implies withdrawal.
+  if (v.consent_state !== undefined) {
+    const state = object(v.consent_state, ["marketing_messages", "ads_personalization"]);
+    for (const { purpose } of consentPairs) {
+      if (!["granted", "withdrawn", "never"].includes(String(state[purpose])) ||
+        (state[purpose] === "granted") !== consents[purpose]) throw new Error("unavailable");
+    }
+  }
   return { ...(v as Omit<Customer, "consents" | "tags">), consents, tags: parseTags(v.tags) };
 }
+function customerReadKeys(value: unknown): string[] {
+  return value && typeof value === "object" && Object.hasOwn(value, "consent_state") ? [...customerKeys, "consent_state"] : customerKeys;
+}
 export function parseCustomer(value: unknown): Customer {
-  return customerFrom(object(value, customerKeys));
+  return customerFrom(object(value, customerReadKeys(value)));
 }
 
 export function parseCustomerList(value: unknown): CustomerList {
@@ -193,8 +210,8 @@ function parsePrivacyAction(value: unknown): PrivacyAction {
 }
 
 export function parseCustomerDetail(value: unknown, requestedID: string): CustomerDetail {
-  const v = object(value, [...customerKeys, "orders", "claims", "consent_history", "privacy_actions", "tags_revision", "notes"]);
-  const head = customerFrom(Object.fromEntries(customerKeys.map((key) => [key, v[key]])));
+  const v = object(value, [...customerReadKeys(value), "orders", "claims", "consent_history", "privacy_actions", "tags_revision", "notes"]);
+  const head = customerFrom(Object.fromEntries(customerReadKeys(value).map((key) => [key, v[key]])));
   // Bounds: newest 50 orders (§7); the other lists are bounded by what one owner can hold in v1.
   if (head.customer_id !== requestedID || !Array.isArray(v.orders) || v.orders.length > 50 ||
     !Array.isArray(v.claims) || v.claims.length > 500 || !Array.isArray(v.consent_history) ||
@@ -248,13 +265,16 @@ function parseFinanceRow(value: unknown, total: boolean): FinanceRow {
   return v as FinanceRow;
 }
 export function parseFinanceSummary(value: unknown): FinanceSummary {
-  const v = object(value, ["from", "to", "timezone", "rows", "totals"]);
-  if (typeof v.from !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v.from) ||
+  // generated_at is optional so a deploy that lands before the server field cannot break the finance page.
+  const hasStamp = !!value && typeof value === "object" && "generated_at" in value;
+  const v = object(value, [...(hasStamp ? ["generated_at"] : []), "from", "to", "timezone", "rows", "totals"]);
+  if ((v.generated_at !== undefined && !isInstant(v.generated_at)) || typeof v.from !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v.from) ||
     typeof v.to !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v.to) ||
     typeof v.timezone !== "string" || !short(v.timezone, 64) || v.timezone === "" ||
     !Array.isArray(v.rows) || v.rows.length > 2000 || !Array.isArray(v.totals) || v.totals.length > 20)
     throw new Error("unavailable");
   return {
+    ...(v.generated_at === undefined ? {} : { generated_at: v.generated_at as string }),
     from: v.from,
     to: v.to,
     timezone: v.timezone,

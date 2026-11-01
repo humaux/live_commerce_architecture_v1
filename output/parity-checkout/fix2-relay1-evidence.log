@@ -1,0 +1,15 @@
+2026-10-30T18:30:59.4774806Z Downloading single artifact
+2026-10-30T18:30:59.7483998Z Preparing to download the following artifacts:
+2026-10-30T18:30:59.7485664Z - prebuilt (ID: 13000719375, Size: 158977254, Expected Digest: sha256:7050d19fb6a9eff2c08d4438374376b53d9b8203f99a066ab86746df4767aa23)
+2026-10-30T18:31:00.2837751Z Starting download of artifact to: /home/runner/work/_temp/prebuilt
+2026-10-30T18:31:51.5752632Z ##[error]Unable to download artifact(s): Unable to download and extract artifact: Artifact download failed after 5 retries.
+2026-10-30T18:34:46.6548001Z   GATE_OUTCOME: skipped
+2026-10-30T18:34:46.6548217Z ##[endgroup]
+2026-10-30T18:34:46.7045214Z matrix-receipts: {"mode":"--browser-click-sweep@5/10","run_id":"41105720054","run_attempt":"1","sha":"bd0dc709c3c95023678a44b418de98df4c9b55a3","status":"FAIL","test_count":0,"spec_count":0}
+2026-10-30T18:34:48.5952124Z git version 2.56.0
+2026-10-30T18:34:48.5995849Z Temporarily overriding HOME='/home/runner/work/_temp/6dd1c582-2254-4b2d-af9a-aae5c9e73412' before making global git config changes
+2026-10-30T18:34:48.5997814Z Adding repository directory to the temporary git global config as a safe directory
+2026-10-30T18:34:48.6003022Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1
+2026-10-30T18:34:48.6052013Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2026-10-30T18:34:48.6129321Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2026-10-30T18:34:48.6428399Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader

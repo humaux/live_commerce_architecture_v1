@@ -3,11 +3,14 @@
 // Non-goals: not a Meta data-deletion callback (Q9: instructions page only in v1) and not a request form; store data is
 // erased from /{locale}/privacy or by asking the store. Indexable on purpose (App Review must fetch it), unlike the
 // rest of the storefront (layout.tsx sets noindex).
-// Depends on: lib/privacy-copy.ts.
+// Layout and copy: signed frames 5:15707 / 5:15793 (shopping data, Facebook / Instagram data, contact the store).
+// Depends on: lib/privacy-copy.ts (language label), components/privacy/copy.ts, components/privacy/ContactStoreButton.tsx.
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale } from "@live-commerce/i18n";
 import LocaleSelect from "../../../components/LocaleSelect";
+import ContactStoreButton from "../../../components/privacy/ContactStoreButton";
+import { privacyFrameCopy } from "../../../components/privacy/copy";
 import { privacyCopy } from "../../../lib/privacy-copy";
 
 export const metadata: Metadata = { robots: { index: true, follow: true } };
@@ -15,32 +18,32 @@ export const metadata: Metadata = { robots: { index: true, follow: true } };
 export default async function Page({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
-  const copy = privacyCopy[locale];
+  const f = privacyFrameCopy[locale];
   return (
     <>
       <header className="shop-header">
-        <span>{copy.deletionTitle}</span>
-        <LocaleSelect locale={locale} label={copy.language} path="/data-deletion" />
+        <span>{f.deletionTitle}</span>
+        <LocaleSelect locale={locale} label={privacyCopy[locale].language} path="/data-deletion" />
       </header>
       <main className="purchase-main claim-main" data-testid="data-deletion">
-        <h1>{copy.deletionTitle}</h1>
-        <p className="claim-intro">{copy.deletionIntro}</p>
-        <section className="claim-preview" aria-labelledby="deletion-steps-title">
-          <h2 id="deletion-steps-title">{copy.deletionStepsTitle}</h2>
-          <ol>
-            {copy.deletionSteps.map((step) => (
-              <li key={step}>{step}</li>
-            ))}
-          </ol>
-        </section>
-        <section className="claim-preview" aria-labelledby="deletion-store-title">
-          <h2 id="deletion-store-title">{copy.deletionStoreTitle}</h2>
-          <p>{copy.deletionStoreText}</p>
-          <p className="claim-note">{copy.deletionKept}</p>
+        <h1>{f.deletionTitle}</h1>
+        <p className="claim-intro">{f.deletionSub}</p>
+        <section className="claim-preview" aria-labelledby="deletion-shop-title">
+          <h2 id="deletion-shop-title">{f.deletionShopTitle}</h2>
+          <p>{f.deletionShopText}</p>
+          <p className="claim-note">{f.deletionShopKept}</p>
           <p>
-            <a className="tap-link" href={`/${locale}/privacy`} data-testid="data-deletion-privacy-link">{copy.deletionLink}</a>
+            <a className="tap-link" href={`/${locale}/privacy`} data-testid="data-deletion-privacy-link">{f.deletionGo}</a>
           </p>
         </section>
+        <section className="claim-preview" aria-labelledby="deletion-meta-title">
+          <h2 id="deletion-meta-title">{f.deletionMetaTitle}</h2>
+          <p>{f.deletionMetaText}</p>
+        </section>
+        <p>{f.deletionHelp}</p>
+        <p>
+          <ContactStoreButton label={f.contact} locale={locale} />
+        </p>
       </main>
     </>
   );

@@ -187,7 +187,7 @@ func mapDashboardError(err error) error {
 		case "PT401":
 			return platform.ErrUnauthorized
 		case "PT403":
-			return platform.ErrForbidden
+			return platform.PT403(pg.Message, platform.ErrForbidden)
 		case "PT404":
 			return platform.ErrScopeNotFound
 		}

@@ -1,10 +1,16 @@
+/* Purpose: storefront tokens and shared buyer surfaces, including signed checkout layout.
+ * Depends on: storefront component class names and published shop tokens.
+ * Used by: the storefront locale layout.
+ * Invariants: primary actions are navy; disabled actions are solid grey; fixed checkout never covers content. */
 :root {
   color-scheme: light;
   --navy: #193c61;
   --ink: #142942;
   --muted: #64758a;
   --line: #dde5ee;
-  --teal: #247965;
+  --teal: #142942;
+  --action: #142942;
+  --action-disabled: #e7edf3;
   --focus: #1264ba;
   font-family: Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
   color: var(--ink);
@@ -319,15 +325,14 @@ h1 {
   font-weight: 700;
 }
 .primary:hover:not(:disabled) {
-  background: #1c6554;
+  background: #193c61;
 }
-/* A disabled action is grey with a dashed edge, never the action teal faded (the pale teal read as an enabled button gone wrong).
-   The reason is written next to it and linked with aria-describedby (OrderFlow create-order-hint). */
+/* Disabled actions retain a solid light-grey surface and a visible reason. */
 .primary:disabled,
 .payment-pay:disabled {
   background: #e7edf3;
   color: #46566a;
-  border: 1px dashed #98a8ba;
+  border: 1px solid #e7edf3;
   opacity: 1;
   cursor: not-allowed;
 }
@@ -599,7 +604,7 @@ h2 {
   width: 100%;
 }
 .payment-pay:hover:not(:disabled) {
-  background: #1c6554;
+  background: #193c61;
 }
 @media (min-width: 600px) {
   .address-fields {
@@ -763,4 +768,39 @@ h2 {
 }
 .claim-cart strong {
   font-variant-numeric: tabular-nums;
+}
+
+/* Signed buyer checkout: one review task, optional details and a measured fixed commitment bar. */
+body:has(.checkout-surface--review) { background: #f6f7f8; }
+body:has(.checkout-surface--review) .sf-header,
+body:has(.checkout-surface--review) .sf-announce { display: none; }
+body .sf-btn--primary { background: var(--action); color: #fff; border-color: var(--action); }
+body .sf-btn--primary:hover:not(:disabled) { background: var(--navy); }
+body .sf-btn--primary:disabled { background: var(--action-disabled); color: #46566a; border: 1px solid var(--action-disabled); opacity: 1; }
+.checkout-top { height: 64px; background: #fff; padding: 8px 16px; }
+.checkout-top a { display: inline-flex; align-items: center; justify-content: center; height: 48px; min-width: 88px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); text-decoration: none; }
+.checkout-surface--review { min-height: calc(100dvh - 64px); max-width: 800px; padding: 18px 16px 40px; }
+.checkout-surface h1 { font-size: 24px; line-height: 28px; margin-bottom: 8px; }
+.checkout-surface [hidden], .checkout-fixed-bar [hidden] { display: none !important; }
+.checkout-surface .address-section { margin-top: 0; border-top: 0; padding-top: 0; }
+.checkout-review { overflow-wrap: anywhere; }
+.checkout-recipient { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+.checkout-recipient p { line-height: 26px; margin: 0 0 8px; }
+.checkout-recipient p:last-child { margin-bottom: 0; }
+.checkout-surface .quotation .total { display: none; }
+.checkout-surface .sku-options { margin-top: 16px; }
+.checkout-fixed-bar { max-width: 800px; margin-inline: auto; padding: 16px; }
+.checkout-fixed-bar .footer-inner { max-width: none; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+.checkout-fixed-bar .checkout-bar-amount { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.checkout-bar-amount > span { margin-right: auto; }
+.checkout-fixed-bar strong { font-size: 24px; color: var(--ink); }
+.checkout-fixed-bar .checkout-details-toggle { padding: 0; border: 0; border-radius: 0; min-width: 72px; text-decoration: underline; text-underline-offset: 3px; font-size: 14px; white-space: nowrap; }
+.checkout-bar-timing { display: flex; align-items: center; gap: 8px; }
+.checkout-fixed-bar .checkout-help-toggle { background: #eaf6f2; border: 0; border-radius: 0; min-width: 44px; min-height: 44px; padding: 0; flex: none; }
+.checkout-fixed-bar .checkout-bar-timing small { color: var(--ink); font-weight: 600; }
+.checkout-fixed-bar .primary { width: 100%; min-height: 52px; border-radius: 8px; font-size: 16px; }
+.checkout-fixed-bar #payment-help-content { padding-block: 8px; font-size: 14px; line-height: 1.5; }
+@media (max-width: 600px) {
+  .checkout-surface--review { padding-inline: 16px; padding-top: 18px; }
+  .checkout-fixed-bar .checkout-bar-amount { gap: 8px; }
 }

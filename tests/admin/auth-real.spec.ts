@@ -275,7 +275,7 @@ test("REAL_PG signed IdP login, first store, authorization and logout", async ({
   });
   await page.getByRole("button", { name: "進入工作區" }).click();
   // merchant-tools G1 (migration 0094): the workspace landing is the dashboard; the stock ledger moved to /inventory.
-  await expect(page.getByRole("heading", { name: "總覽", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "工作台", level: 1 })).toBeVisible();
 
   const warehouses = await browserJSON(
     page,

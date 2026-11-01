@@ -1,3 +1,7 @@
+// Purpose: Declare order task routes and their permissions, navigation placement and browser coverage.
+// Depends on: ../../route-types.ts and the localized shell label keys.
+// Used by: apps/admin/src/routes.ts and route-registry/browser-ownership gates.
+// Invariants: Detail and action routes never add a sidebar item or grant a permission; orders remains a singleton rail entry.
 // W0 route metadata only; data/authorization remain in the existing BFF and Go.
 import type { RouteEntry } from "../../route-types.ts";
 export const ordersRoutes = [
@@ -24,6 +28,11 @@ export const ordersRoutes = [
     spec: "tests/admin/shell-browser.mjs",
   },
   {
+    id: "order-detail", path: "/orders/[order]", group: "orders", labelKey: "orderList",
+    icon: "orders", permission: "orders:read", template: "detail", nav: false,
+    spec: "tests/admin/orders-ui.spec.ts",
+  },
+  {
     id: "returns",
     path: "/returns",
     group: "orders",
@@ -35,6 +44,29 @@ export const ordersRoutes = [
     // browser spec clicks (WorkspaceFrame). Reached from the orders list ("退貨與取消" link in OrderListFilters).
     nav: false,
     spec: "tests/admin/returns-ui.spec.ts",
+  },
+  {
+    id: "cvs-match",
+    path: "/orders/cvs-match",
+    group: "orders",
+    labelKey: "cvsMatch",
+    icon: "orders",
+    permission: "orders:read",
+    template: "workspace",
+    nav: false,
+    spec: "tests/admin/parity-order-ops.spec.ts",
+  },
+  {
+    id: "shipping-center",
+    path: "/orders/shipping",
+    group: "orders",
+    labelKey: "shippingCenter",
+    icon: "orders",
+    permission: "orders:read",
+    template: "workspace",
+    // Keep the orders navigation singleton. Shipping is reached by its real task URL.
+    nav: false,
+    spec: "tests/admin/shipping-center.spec.ts",
   },
   {
     id: "cvs-print",

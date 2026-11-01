@@ -44,6 +44,12 @@ test("TabStrip reserves a hidden hint only when the caller opts in", () => {
 });
 const header = jsx("apps/admin/components/AdminPageHeader.tsx", (name) => name === "@live-commerce/ui" ? ui :
   name === "@/src/page-title" ? { pageTitle } : name === "next/navigation" ? { usePathname: () => pathname } : requireApp(name));
+// Load the actual signed DS components and denial boundary for the shell's SSR contract.
+const iconDS = jsx("packages/ui/src/ds/Icon.tsx", requireApp);
+const logicDS = jsx("packages/ui/src/ds/logic.ts", requireApp);
+const controlsDS = jsx("packages/ui/src/ds/Controls.tsx", name => name.endsWith(".css") ? css : name === "./Icon" ? iconDS : name === "./logic" ? logicDS : requireApp(name));
+const statesDS = jsx("packages/ui/src/ds/States.tsx", name => name.endsWith(".css") ? css : name === "./Controls" ? controlsDS : name === "./Icon" ? iconDS : name === "./logic" ? logicDS : requireApp(name));
+const forbidden = jsx("apps/admin/components/AdminForbidden.tsx", name => name.endsWith(".css") ? css : name === "@live-commerce/i18n" ? i18n : name === "@live-commerce/ui/ds" ? statesDS : requireApp(name));
 const frame = jsx("apps/admin/components/WorkspaceFrame.tsx", (name) => {
   if (name === "react") return { ...React, useState: (initial: unknown) => {
     const at = stateCalls++;
@@ -53,6 +59,8 @@ const frame = jsx("apps/admin/components/WorkspaceFrame.tsx", (name) => {
   } };
   if (name === "next/navigation") return { usePathname: () => pathname, useSearchParams: () => new URLSearchParams({ store: store.id }), useRouter: () => ({ push() {} }) };
   if (name === "@live-commerce/ui") return ui;
+  if (name === "@live-commerce/ui/ds") return statesDS;
+  if (name === "./AdminForbidden") return forbidden;
   if (name === "@live-commerce/i18n") return i18n;
   if (name === "@/src/shell-copy") return { shellCopy };
   if (name === "@/src/page-title") return { pageTitle };

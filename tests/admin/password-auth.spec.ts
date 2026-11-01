@@ -11,6 +11,7 @@
 // canaries.txt (every password, emailed code and address used; the Go side scans server logs for them).
 import { createHash, randomBytes } from "node:crypto";
 import { responseBodyForSecretScan } from "./password-response-canaries.ts";
+import { dashboardParity } from "./parity-entry-dashboard.ts";
 import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -86,7 +87,7 @@ const wrongCodeFor = (code: string) => (code === "000000" ? "000001" : "000000")
 
 // ---- page helpers --------------------------------------------------------------------------------
 const emailInput = (page: Page) => page.locator('input[type="email"]');
-const passwordInput = (page: Page) => page.locator('input[type="password"]');
+const passwordInput = (page: Page) => page.locator('input[name="password"], input[name="new_password"]');
 const codeInput = (page: Page) => page.locator('input[autocomplete="one-time-code"]');
 // Next injects an empty role=alert route announcer into every page; only alerts that carry text are messages.
 const alert = (page: Page) => page.getByRole("alert").filter({ hasText: /\S/ });
@@ -146,7 +147,10 @@ async function hydrated(page: Page) {
 async function fillCredentials(page: Page, email: string, password?: string) {
   await hydrated(page);
   await emailInput(page).fill(email);
-  if (password !== undefined) await passwordInput(page).fill(password);
+  if (password !== undefined) {
+    await passwordInput(page).fill(password);
+    if (new URL(page.url()).pathname.endsWith("/signup")) await page.locator('input[name="confirm_password"]').fill(password);
+  }
   await expect(emailInput(page)).toHaveValue(email);
   if (password !== undefined) await expect(passwordInput(page)).toHaveValue(password);
 }
@@ -228,7 +232,9 @@ test("full chain: sign-up -> code -> onboarding -> logout -> sign-in -> code -> 
   await expect(page.getByTestId("entry-address").getByRole("link")).toHaveText(storeReceipt.storefront_origin);
   await page.getByRole("button", { name: "進入工作區" }).click();
   // merchant-tools G1 (migration 0094): the workspace landing is the dashboard; the stock ledger moved to /inventory.
-  await expect(page.getByRole("heading", { name: "總覽", level: 1 })).toBeVisible();
+  // PARITY-ENTRY: same signed-in landing assertion, now the signed frame's page-content heading.
+  await expect(page.getByRole("heading", { name: "工作台", level: 1 })).toBeVisible();
+  await dashboardParity(page, evidenceDir!);
 
   // logout
   expect((await browserJSON(page, "/api/auth/logout", { method: "POST", body: {}, csrf: true })).status).toBe(204);
@@ -271,6 +277,8 @@ test("full chain: sign-up -> code -> onboarding -> logout -> sign-in -> code -> 
   await fillCredentials(page2, email);
   await expect(passwordInput(page2)).toHaveCount(0); // step 1 of reset asks for the address only
   await submitButton(page2).click();
+  await expect(page2.getByRole("heading", { name: "請查看信箱", exact: true })).toBeVisible();
+  await page2.getByRole("button", { name: "輸入確認碼", exact: true }).click();
   await expect(codeInput(page2)).toBeVisible();
   await expect(page2.locator("body")).not.toContainText(email);
   const resetCode = await nthCode(email, 3);
@@ -464,6 +472,7 @@ test("slow hydration: an early typist on the invite sign-up never loses the addr
   if (!blocked) {
     await emailInput(page).fill(email);
     await passwordInput(page).fill(password);
+    await page.locator('input[name="confirm_password"]').fill(password);
   }
   await page.waitForLoadState("load");
   await page.waitForLoadState("networkidle");
@@ -608,11 +617,14 @@ test("matrix: locale copy differs per locale and the reset wording is the same f
     await page.goto("/en/reset");
     await fillCredentials(page, email);
     await submitButton(page).click();
-    await expect(codeInput(page)).toBeVisible();
-    const text = await page.locator("main, body").first().innerText();
+    await expect(page.getByRole("heading", { name: "Check your email", exact: true })).toBeVisible();
+    const sentText = await page.locator("main, body").first().innerText();
     const masked = `${email[0]}***@${email.split("@")[1]}`;
-    expect(text).toContain(masked);
-    return text.replaceAll(masked, "<MASK>");
+    expect(sentText).toContain(masked);
+    await page.getByRole("button", { name: "Enter the confirmation code", exact: true }).click();
+    await expect(codeInput(page)).toBeVisible();
+    const codeText = await page.locator("main, body").first().innerText();
+    return `${sentText.replaceAll(masked, "<MASK>")}\n${codeText.replaceAll(masked, "<MASK>")}`;
   };
   const known = newEmail();
   await (await playwrightRequest.newContext({ ignoreHTTPSErrors: true, baseURL: publicOrigin, extraHTTPHeaders: { origin: publicOrigin, "x-forwarded-for": source() } })).post("/api/auth/password/signup", { data: { email: known, password: newPassword(), locale: "en" } });

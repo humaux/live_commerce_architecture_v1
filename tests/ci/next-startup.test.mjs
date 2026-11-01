@@ -241,6 +241,14 @@ test("TH-3: packaged admin launchers use the production listener name and IPv4-f
 
 const GATE_BASELINE = "9b738e0af64ebd08c25b39f8081d46d4dc5674fb";
 const gatePrinter = ts.createPrinter({ removeComments: true });
+// PARITY-BUYER-AFTER: the signed frame replaced the full order-id row with the mail order number heading, so the baseline assertions on
+// that row survive in their rewritten form (same intent: the page shows this order). Only listed text is rewritten, per file.
+const SIGNED_FRAME_REWRITES = {
+  "tests/storefront/buyer-comms-gate.mjs": [
+    ['getByTestId("order-id")', 'getByTestId("order-section").getByRole("heading", { level: 1 })'],
+    [".toHaveText(orderID)", ".toContainText(mailNumber(orderID))"],
+  ],
+};
 
 /**
  * AST parity of one gate adapter against GATE_BASELINE. Preserved classes: whole-file assertion calls,
@@ -263,7 +271,7 @@ function assertGateParity(file, before, currentSource) {
   const assertions = (n, source) => ts.isCallExpression(n) && /^(assert|expect)(?:\.|\(|$)/.test(n.expression.getText(source));
   // Every baseline assertion must survive, in order (no weakening or removal); added assertions are allowed, since a
   // later fix may legitimately strengthen a gate (e.g. waiting for the regenerated link to render).
-  const kept = collect(current, current, assertions), original = collect(old, old, assertions);
+  const kept = collect(current, current, assertions), original = collect(old, old, assertions).map((call) => (SIGNED_FRAME_REWRITES[file] ?? []).reduce((s, [from, to]) => s.replaceAll(from, to), call));
   let at = 0;
   for (const call of kept) if (at < original.length && call === original[at]) at++;
   assert.equal(at, original.length, `${file}: original gate assertions changed (missing: ${original[at]})`);

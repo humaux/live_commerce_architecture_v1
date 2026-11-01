@@ -129,9 +129,12 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0207 (IDENT-P2: OIDC re-auth infinity cap; #215/#228) adds one: 136 -> 137.
 	// 0208 (#196/#197 settlement item completeness) adds one: 137 -> 138.
 	// 0209 (STORE-PROFILE-API authenticated profile CAS) adds one to base 0b831887a: 138 -> 139.
-	// 0210 (FEAT-BUYER-RMA separate buyer requests) adds one to base be932cbb: 139 -> 140.
-	if len(r2) != 140 {
-		t.Fatalf("R2 migration set = %d files %v, want 140", len(r2), r2)
+	// 0212 (FEAT-AUTO-COLLECTIONS saved rules) adds one to base a3dc78e4d; integrator ruling 2026-10-31: 139 -> 140.
+	// 0214 (FIX-EXPORT-REAUTH) adds one to base 71e403e8f (after 0212): 140 -> 141.
+	// 0215 (PARITY-CATALOG-PEOPLE consent_state list projection) adds one: 141 -> 142.
+	// 0217 (FEAT-BUYER-RMA separate buyer requests; renumbered from 0210 by the integrator 2026-11-01) adds one to base 0215: 142 -> 143.
+	if len(r2) != 143 {
+		t.Fatalf("R2 migration set = %d files %v, want 143", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

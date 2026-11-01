@@ -1,5 +1,5 @@
 // Purpose: execute the actual order-gate locale probe's pending-head path with a deterministic clock.
-// Depends on: Node vm and the real stableLocaleTarget source; only browser/network observations are controlled.
+// Depends on: Node vm and real order-gate/shop-helpers source; only browser/network observations are controlled.
 // Used by: test-node.sh storefront wildcard; the real UI success path runs in --browser-order.
 // Invariants: injected timing models exercise real gate statements; only CI browsers prove engine behaviour.
 import test from "node:test";
@@ -120,9 +120,23 @@ test("BO03 quote-less address reconfirmation reaches its control during a focus-
   const end=source.indexOf("await expect.poll(()=>stored(noQuoteTab)).toBeNull();",begin);
   assert.ok(begin>=0&&end>begin,"actual quote-less reconfirmation must remain covered");
   const p=orderControlRace("confirm-address");
-  const run=runInNewContext(`(async()=>{${source.slice(begin,end)}})`,{noQuoteTab:p.page,expect:p.check});
+  // Execute the actual imported helpers too: a stub would conceal changes to the
+  // pointer path or the post-confirmation details disclosure.
+  const helpers=readFileSync(new URL("../../../tests/storefront/shop-helpers.mjs",import.meta.url),"utf8");
+  const helperStart=helpers.indexOf("export async function confirmCheckoutAddress(");
+  assert.ok(helperStart>=0&&helpers.indexOf("export async function openCheckoutDetails(",helperStart)>helperStart);
+  const main={},details={async isVisible(){p.events.push("details-checked");return false;}};
+  const noQuoteTab={
+    locator(selector){assert.equal(selector,".purchase-main");return main;},
+    getByTestId(id){return id==="checkout-details-toggle"?details:p.page.getByTestId(id);},
+  };
+  const expect=value=>value===main?{not:{async toHaveAttribute(name,value){
+    assert.equal(name,"aria-busy");assert.equal(value,"true");p.events.push("idle-checked");
+  }}}:p.check(value);
+  const run=runInNewContext(`(async()=>{${helpers.slice(helperStart).replace(/^export /gm,"")}\n${source.slice(begin,end)}})`,{noQuoteTab,expect});
   await run();
   assert.deepEqual(p.clicks,["confirm-address"],"one real pointer action must reach address confirmation, not the sticky bar");
+  assert.deepEqual(p.events,["focus-settled","click","idle-checked","idle-checked","details-checked"],"real confirmation helper waits for idle before inspecting the quote-less disclosure");
 });
 
 test("BH locale history activation settles focus and arms the real read before its single click",async()=>{

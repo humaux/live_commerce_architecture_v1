@@ -122,6 +122,20 @@ test("G-UI1 copy key parity: no missing or extra key in any locale", () => {
       Object.keys(shellCopy.en).sort(),
     );
 });
+test("CVS lookup is registered, localized and available only with order access, outside the rail", () => {
+  const lookup = matchRoute("/orders/cvs-match")!;
+  assert.equal(lookup.id, "cvs-match");
+  assert.equal(lookup.group, "orders");
+  assert.equal(lookup.permission, "orders:read");
+  assert.equal(lookup.nav, false);
+  assert.equal(lookup.spec, "tests/admin/parity-order-ops.spec.ts");
+  assert.equal(canOpen(lookup, null), false);
+  assert.equal(canOpen(lookup, { role: "staff", permissions: ["catalog:read"] }), false);
+  assert.equal(canOpen(lookup, { role: "staff", permissions: ["orders:read"] }), true);
+  assert.equal(canOpen(lookup, { role: "owner", permissions: [] }), true);
+  for (const [locale, title] of [["zh-TW", "查門市編號"], ["zh-CN", "查门店编号"], ["en", "Find store code"]] as const)
+    assert.equal(pageTitle(locale, `/${locale}/orders/cvs-match`), title);
+});
 test("G-UI2 staff without catalog:read cannot see products/inventory or open a product URL", () => {
   const access = { role: "staff", permissions: ["orders:read"] };
   assert.equal(

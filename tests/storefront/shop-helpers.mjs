@@ -1,3 +1,9 @@
+// Purpose: real-user cart/checkout setup and expanded-detail paths for browser gates.
+// Depends on: Playwright and the production storefront routes.
+// Used by: storefront browser gates in GitHub CI.
+// Invariants: click/fill only; expanded details never change server money or consent.
+import { expect } from "@playwright/test";
+
 // Shared steps for browser gates that used to start on the old single-product page (/{locale}/products/{id} with its SKU radios and
 // "Choose delivery" button). That page is now the storefront shell: a product is bought through Add to cart, and the delivery, quotation,
 // address, payment and order screens live at /{locale}/checkout (apps/storefront/lib/routes.ts; the CVS map return allowlist accepts exactly
@@ -51,4 +57,18 @@ export async function openBuyerSession(page) {
     if (current.state === "inactive") await call("POST", "session/activate", current.context), (current = await call("GET", "session"));
     return current.context;
   });
+}
+
+// Legacy lifecycle cases intentionally inspect optional fields and the secondary form action.
+// Open their signed details disclosure after confirmation; parity cases use the collapsed path directly.
+export async function confirmCheckoutAddress(page) {
+  await page.getByTestId("confirm-address").click();
+  await expect(page.locator(".purchase-main")).not.toHaveAttribute("aria-busy", "true");
+  await openCheckoutDetails(page);
+}
+
+export async function openCheckoutDetails(page) {
+  await expect(page.locator(".purchase-main")).not.toHaveAttribute("aria-busy", "true");
+  const toggle = page.getByTestId("checkout-details-toggle");
+  if (await toggle.isVisible() && await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
 }

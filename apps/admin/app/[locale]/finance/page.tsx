@@ -1,4 +1,8 @@
-// Route /{locale}/finance. BFF (browser, via Finance.tsx): GET /api/stores/{store}/finance/summary?from&to and the plain
+// Purpose: Resolve authorized finance scope, dates and persisted read-only screens.
+// Depends on: loadPage, financeDay, next/navigation and Finance.
+// Used by: Next /{locale}/finance route.
+// Invariants: only daily/basis/csv views; queries never determine authorization or money.
+// BFF (browser, via Finance.tsx): GET /api/stores/{store}/finance/summary?from&to and the plain
 // download link finance/summary.csv, plus GET order-actions (orders_export) for the CSV link
 // -> Go GET /v1/admin/stores/{id}/finance/summary[.csv] (internal/httpapi/finance.go; orders:read, + orders:export).
 // This server file resolves the range: query from/to, else the last 30 finance days ending today (UTC+8, Q11).
@@ -16,7 +20,8 @@ export default async function FinancePage({
   params: Promise<{ locale: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const page = await loadPage(params, searchParams, ["store", "from", "to"]);
+  const page = await loadPage(params, searchParams, ["store", "from", "to", "view"]);
+  if (page.query.view !== undefined && !["daily", "basis", "csv"].includes(page.query.view)) notFound();
   const now = new Date();
   const { from = financeDay(now, -29), to = financeDay(now) } = page.query;
   if (!dayPattern.test(from) || !dayPattern.test(to)) notFound();

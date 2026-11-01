@@ -45,6 +45,13 @@ const ui = {
 
 test.use({ baseURL: origin, trace: "retain-on-failure", screenshot: "only-on-failure" });
 
+async function revealSavedFacts(page: Page) {
+  const url=new URL(page.url());
+  if(!/\/orders\/[0-9a-f-]{36}$/.test(url.pathname)&&!url.searchParams.has("order"))return;
+  const facts=page.getByTestId("order-more-details");
+  await expect(facts).toBeVisible();
+  if(await facts.getAttribute("open")===null)await facts.locator("summary").first().click();
+}
 async function signedLogin(page: Page) {
   await page.goto(new URL("/en/", origin).toString());
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
@@ -60,20 +67,25 @@ async function openOrders(page: Page, locale: string) {
   if (await selector.count()) {
     if ((await selector.inputValue()) !== store) await selector.selectOption(store);
   }
-  await expect(page.getByTestId("orders-table")).toBeVisible();
+  await expect(page.getByTestId("orders-list")).toBeVisible();
+  const more=page.getByTestId("orders-more-filters");
+  if(await more.getAttribute("aria-expanded")==="false") await more.click();
 }
 async function expand(page: Page): Promise<Locator> {
+  if(await page.getByTestId("order-detail-back").count()) await page.getByTestId("order-detail-back").click();
   for (let pageNo = 0; pageNo < 3; pageNo++) {
     const button = page.getByTestId(`order-expand-${order}`);
     if (await button.count()) {
       if ((await button.getAttribute("aria-expanded")) !== "true") await button.click();
       const detail = page.getByTestId("order-detail");
       await expect(detail).toHaveAttribute("aria-label", new RegExp(order));
-      return detail;
+      const facts=page.getByTestId("order-more-details");
+      if(await facts.getAttribute("open")===null) await facts.locator("summary").first().click();
+      return detail.getByTestId("order-facts");
     }
     await expect(page.getByTestId("orders-next")).toBeEnabled();
     await page.getByTestId("orders-next").click();
-    await expect(page.getByTestId("orders-table")).toBeVisible();
+    await expect(page.getByTestId("orders-list")).toBeVisible();
   }
   throw new Error("fixture order was absent from three real cursor pages");
 }

@@ -1,9 +1,9 @@
 // Purpose: Owns the DS-2 state blocks (Empty, Error, Permission, Blocked), the DS-3 StatePanel/InlineError recovery states, and the Dropzone that shows format and size limits before any upload.
 // Depends on: React, shared Icon/Controls, ./states.module.css, ./Controls (Button, ButtonLink), ./logic (fileProblem); no API, routing or translation.
-// Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx.
+// Used by: packages/ui/src/ds/index.ts; apps/admin/components/UiGallery.tsx, shared admin boundaries and storefront/components/state/StorefrontState.tsx.
 // Invariants: StatePanel has one primary action and no external chevron. UNKNOWN actions only re-read the same operation/order status (for example 「查詢狀態」), never resubmit or replay a write. Forbidden renders no resource identifier. Offline/unknown updates use a polite status live region.
 "use client";
-import { useId, useRef, useState, type DragEvent, type ReactNode } from "react";
+import { useId, useRef, useState, type DragEvent, type MouseEvent, type ReactNode } from "react";
 import { Icon, type IconName } from "./Icon";
 import s from "./states.module.css";
 import { Button, ButtonLink } from "./Controls";
@@ -11,28 +11,30 @@ import { fileProblem, type FileProblem, type FileRule } from "./logic";
 
 export type StatePanelVariant = "empty" | "forbidden" | "offline" | "expired" | "unknown";
 export type StateAction =
-  | { label: string; href: string; onClick?: never }
-  | { label: string; onClick: () => void; href?: never };
+  | { label: string; href: string; onClick?: (event: MouseEvent<HTMLAnchorElement>) => void; testId?: string }
+  | { label: string; onClick: () => void; href?: never; testId?: string };
 export type StatePanelProps = {
-  variant: StatePanelVariant;
+  variant: StatePanelVariant | "loading";
   title: ReactNode;
-  body: ReactNode;
+  body?: ReactNode;
   note?: ReactNode;
-  action: StateAction;
+  action?: StateAction;
   status?: ReactNode;
+  headingLevel?: 1 | 2;
 };
 export type InlineErrorProps = { message: ReactNode; action?: StateAction };
 
 function StateActionControl({ action }: { action: StateAction }) {
   if (action.href !== undefined) {
-    return <ButtonLink variant="primary" href={action.href}>{action.label}</ButtonLink>;
+    return <ButtonLink variant="primary" href={action.href} onClick={action.onClick} data-testid={action.testId}>{action.label}</ButtonLink>;
   }
-  return <Button variant="primary" onClick={action.onClick}>{action.label}</Button>;
+  return <Button variant="primary" onClick={action.onClick} data-testid={action.testId}>{action.label}</Button>;
 }
 
 /** Owner-signed recovery panel. The caller owns the route/read semantics; forbidden copy must remain non-leaking. */
-export function StatePanel({ variant, title, body, note, action, status }: StatePanelProps) {
-  const transient = variant === "offline" || variant === "unknown";
+export function StatePanel({ variant, title, body, note, action, status, headingLevel = 2 }: StatePanelProps) {
+  const transient = variant === "offline" || variant === "unknown" || variant === "loading";
+  const Heading = headingLevel === 1 ? "h1" : "h2";
   return (
     <section
       className={s.statePanel}
@@ -40,11 +42,11 @@ export function StatePanel({ variant, title, body, note, action, status }: State
       role={transient ? "status" : undefined}
       aria-live={transient ? "polite" : undefined}
     >
-      <h2 className={s.statePanelTitle}>{title}</h2>
-      <p className={s.statePanelBody}>{body}</p>
+      <Heading className={s.statePanelTitle}>{title}</Heading>
+      {body && <p className={s.statePanelBody}>{body}</p>}
       {note && <p className={s.statePanelNote}>{note}</p>}
       {status && <div className={s.statePanelStatus}>{status}</div>}
-      <div className={s.statePanelAction}><StateActionControl action={action} /></div>
+      {action && <div className={s.statePanelAction}><StateActionControl action={action} /></div>}
     </section>
   );
 }

@@ -1,7 +1,8 @@
 // Route /{locale}/promotions. BFF (browser, via Promotions.tsx): GET|POST /api/stores/{store}/promotions, POST .../promotions/{id} -> Go
-// internal/httpapi/promotions.go (pricing:read / pricing:write; migration 0091, contracts/storefront-v2.md §F). Locale, query (`?store=<id>` only)
+// internal/httpapi/promotions.go (pricing:read / pricing:write; migration 0091, contracts/storefront-v2.md §F). Locale, query (`?store=<id>`, `?view=codes`)
 // and the authorized store list come from the shared loader of the customers pages; the codes themselves are read in the browser through the
 // BFF so the response is fenced by the session boundary (useGuardedRead).
+import { notFound } from "next/navigation";
 import { Promotions } from "@/components/Promotions";
 import { loadPage } from "../customers/page-data";
 
@@ -12,6 +13,7 @@ export default async function PromotionsPage({
   params: Promise<{ locale: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const page = await loadPage(params, searchParams, ["store"]);
-  return <Promotions locale={page.locale} stores={page.stores} store={page.store} initialError={page.initialError} renderKey={page.renderKey} />;
+  const page = await loadPage(params, searchParams, ["store", "view"]);
+  if (page.query.view !== undefined && page.query.view !== "codes") notFound();
+  return <Promotions locale={page.locale} stores={page.stores} store={page.store} initialError={page.initialError} renderKey={page.renderKey} codes={page.query.view === "codes"} />;
 }
