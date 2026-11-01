@@ -133,7 +133,8 @@ console.log('PASS: current product/media/order/template DTO parsers; MOCK projec
 // bplProjections prepares valid current DTOs. A current order requires a complete frozen destination;
 // the missing-recipient pre-order screen has no equivalent DTO here and must fail visibly in product assertions.
 func bplProjections() map[string]any {
-	summary := map[string]any{"order_id": bplOrder, "created_at": "2026-10-25T00:00:00Z", "updated_at": "2026-10-25T00:00:00Z", "currency": "TWD", "total_minor": 1200, "commercial_state": "DRAFT", "fulfillment_state": "MANUAL_UNASSIGNED", "payment_state": "NOT_STARTED", "test_mode": true, "work_state": "NONE", "refunded_minor": 0, "refund_pending_minor": 0, "source": "storefront", "pickup_source": nil, "payment_mode": "card", "collection_state": nil, "cod_surcharge_minor": nil, "cod_collect_minor": nil}
+	// orders-model requires canonical microseconds and no test-mode payment flag before any attempt exists.
+	summary := map[string]any{"order_id": bplOrder, "created_at": "2026-10-25T00:00:00.000000Z", "updated_at": "2026-10-25T00:00:00.000000Z", "currency": "TWD", "total_minor": 1200, "commercial_state": "DRAFT", "fulfillment_state": "MANUAL_UNASSIGNED", "payment_state": "NOT_STARTED", "test_mode": false, "work_state": "NONE", "refunded_minor": 0, "refund_pending_minor": 0, "source": "storefront", "pickup_source": nil, "payment_mode": "card", "collection_state": nil, "cod_surcharge_minor": nil, "cod_collect_minor": nil}
 	detail := map[string]any{}
 	row := map[string]any{}
 	for k, v := range summary {
