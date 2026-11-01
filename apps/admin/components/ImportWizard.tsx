@@ -247,8 +247,9 @@ function ImportForm({ locale, store, boundary, onSignedOut, onUnconfirmed }: {
           {receipt.replayed && <p data-testid="import-replayed">{c.replayed}</p>}
           {receipt.failed > 0 && <><h2>{d.remaining}</h2><p>{d.repairCustomer}</p><button type="button" onClick={() => setStage("errors")}>{d.viewReasons}</button><button type="button" data-testid="import-download-failed" disabled={locked} onClick={() => void download()}>{c.failedDownload}</button></>}
           <details><summary>{d.rowOutcomes}</summary><dl className="import-counts"><div><dt>{c.created}</dt><dd>{receipt.created}</dd></div><div><dt>{c.updated}</dt><dd>{receipt.updated}</dd></div><div><dt>{c.failed}</dt><dd>{receipt.failed}</dd></div></dl></details>
-        </section><div className="ops-footer"><a className="ops-link" href={`/${locale}/customers?store=${store}`}>{d.returnCustomers}</a><button type="button" data-testid="import-restart" disabled={locked} onClick={() => reset("customers", "select")}>{d.anotherFile}</button></div>
+        </section>
         {customerDone && <details><summary>{c.ordersKind}</summary><p>{c.historyNotice}</p><button type="button" data-testid="import-type-orders" disabled={locked || !customerDone} onClick={() => reset("orders")}>{c.ordersKind}</button></details>}
+        <div className="ops-footer"><a className="ops-link" href={`/${locale}/customers?store=${store}`}>{d.returnCustomers}</a><button type="button" data-testid="import-restart" disabled={locked} onClick={() => reset("customers", "select")}>{d.anotherFile}</button></div>
       </>}
       {unknown && <>
         <p>{d.pendingSubtitle}</p><section className="ops-callout"><h2>{d.dontResubmit}</h2><p>{d.pendingHelp}</p></section>
