@@ -80,7 +80,8 @@ test.describe("PARITY-DATA-OPS C6 customer import", () => {
         await capture(page, frame("1028:6685", "1028:6763"));
       });
       if (outcome === "preview") {
-        await click(page, "返回調整欄位", "column choices are retained", async () => {
+        await action(page, "返回調整欄位", "click", "column choices are retained", async () => {
+          await page.locator(".ops-card").filter({ has: page.getByTestId("import-back") }).getByRole("button", { name: "返回調整欄位", exact: true }).click();
           await expect(page.getByRole("combobox", { name: "電話 · 選填", exact: true })).toHaveValue("phone");
         });
         return;
@@ -145,7 +146,8 @@ test.describe("PARITY-DATA-OPS C6 customer import", () => {
       await expect(page.getByText("已匯入 2 筆", { exact: true })).toBeVisible();
       await expect(page.getByText("新增 1 · 更新 1 · 未匯入 1", { exact: true })).toBeVisible();
       await capture(page, frame("1028:6819", "1028:6897"));
-      await click(page, "回顧客", "imported customer remains after refresh", async () => {
+      await action(page, "回顧客", "click", "imported customer remains after refresh", async () => {
+        await page.getByRole("link", { name: "回顧客", exact: true }).click();
         await page.reload(); await expect(page.getByText(nameA, { exact: true })).toBeVisible();
       });
     });
