@@ -1,3 +1,6 @@
+// Purpose: localized buyer-browsing labels and mobile product-option task copy.
+// Depends on: shared Locale identifiers; contains no merchant facts or transport state.
+// Used by: product, search and collection surfaces, including MobileProductOptions.
 import type { Locale } from "@live-commerce/i18n";
 
 const en = {
