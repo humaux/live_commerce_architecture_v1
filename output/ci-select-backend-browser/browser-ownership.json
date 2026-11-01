@@ -175,6 +175,7 @@
     "tests/admin/product-editor.acceptance.ts": "aea2fa2ae3ce42cca68e67bc6f9649422566dcb147d8fe45d3f98f9aa0923d9c",
     "tests/admin/product-feedback.acceptance.ts": "8308b62cf46606b7ef432e4b47dd3390b98ff5e635b46b539fbc88e7e9360d56",
     "tests/admin/product-list-layout.acceptance.ts": "1e61e4737d297fb95c094df3d422ef0572a5ed022964816782aee377a52302f9",
+    "tests/admin/product-media-bff.test.mjs": "ebafac55f0ed030e6f0a34a77c9000a2a28ff2fee43231ed3562e72672bef5fc",
     "tests/admin/product-media-model.test.ts": "9d2e7abba16faf56ca6081a01ee1f2b429adc45ee5240f167ab8f5db6c492d59",
     "tests/admin/product-media-ui-model.test.ts": "1eab6a9d65097f63b55ccb37c0b85ad20a63bc0dd1528d52dc7b08ece3275cce",
     "tests/admin/product-media-v2.spec.ts": "02242f41bda1dab4c29b0a4d9c9305ee586392e5e11870b93320ca31a6067c23",
@@ -793,7 +794,7 @@
     "packages/format/package.json": "0a52b62b35e640298589968137e2d8899151bbcb2e0714f3f9204afc70beb3ed",
     "packages/i18n/package.json": "096562b66a71f0479808557beb6490deef65c7cf1626867ec23cffbdaedebfce",
     "packages/ui/package.json": "85891954909057d1783e4a0b8585e5b8f4609f9259116ae808ce34f1f4347078",
-    "scripts/dev/test-node.sh": "dbc6099ac8d83d1c84ef3618c69da212ae48a160c10f29aed8e90c265b4f8850"
+    "scripts/dev/test-node.sh": "c98030fc67da2fbfd334370edbc4860edee433a940360b683a9ac64166d45d24"
   },
   "modes": {
     "--browser-inbox": {
