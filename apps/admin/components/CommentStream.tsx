@@ -309,15 +309,15 @@ export function CommentStream({
       <aside className="comment-buyer" id="live-panel-buyer" data-testid="comment-buyer">
         <div className="live-buyer-context">
           {privacy.visible && chosen ? <>
-            <h3>{chosen.author_name ?? c.unnamed}</h3>
-            <p>{c.original}: {chosen.text}</p>
+            <h3 data-private="comment-author">{chosen.author_name ?? c.unnamed}</h3>
+            <p>{c.original}: <span data-private="comment-text">{chosen.text}</span></p>
             {selectedOffer && <>
               <p className="comment-mark">{selectedOffer.product_name} {chosen.marks.claim?.quantity} {c.units} · {registered}</p>
               <p className="live-helper">{c.stock} {selectedOffer.stock.tracked ? selectedOffer.stock.sellable : "—"} · {c.soldCount} {selectedOffer.paid_qty}</p>
               <p className="live-helper">{selectedOffer.keyword} · {c.cap} {selectedLimit ?? "—"} · {c.reserved} {selectedOffer.stock.reserved}<br />{c.stockHelper}</p>
             </>}
             {facts && facts.orderCount !== null && <p className="live-helper">{facts.orderCount === 0 ? c.buyerOrders : c.recentOrders} {facts.orderCount}</p>}
-            <h4>{c.history}</h4><p>{chosen.author_name ?? c.unnamed}: {chosen.text}</p>
+            <h4>{c.history}</h4><p><span data-private="comment-author">{chosen.author_name ?? c.unnamed}</span>: <span data-private="comment-text">{chosen.text}</span></p>
           </> : <p>{c.noSelection}</p>}
           {privacy.visible && bundle && permitted(store, "inbox:read") && <details data-live-buyer-details>
             <summary>{c.buyerDetails}</summary>
@@ -326,7 +326,7 @@ export function CommentStream({
         </div>
         {privacy.visible && chosen && <div className="live-sticky-reply">
           <div data-testid="live-reply-summary" className="live-reply-summary">
-            <strong>{chosen.author_name ?? c.unnamed}</strong> · {chosen.text}
+            <strong data-private="comment-author">{chosen.author_name ?? c.unnamed}</strong> · <span data-private="comment-text">{chosen.text}</span>
             {selectedOffer && <><br />{selectedOffer.product_name} {chosen.marks.claim?.quantity} {c.units} · {registered}{facts && facts.orderCount !== null && <> · {facts.orderCount === 0 ? c.buyerOrders : c.recentOrders} {facts.orderCount}</>}<br />{c.stock} {selectedOffer.stock.tracked ? selectedOffer.stock.sellable : "—"} · {c.soldCount} {selectedOffer.paid_qty} · {c.cap} {selectedLimit ?? "—"} · {c.reserved} {selectedOffer.stock.reserved}</>}
           </div>
           <CommentReply key={`${session}:${chosen.ref}:${stream.resetGeneration}`} store={store} session={session} comment={chosen} locale={locale} platform={platform} capabilities={capabilities} offer={selectedOffer} drafts={drafts.current} onSent={stream.refresh} onDenied={privacy.expire} />

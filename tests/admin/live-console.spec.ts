@@ -47,7 +47,7 @@ type Facts = { class: "MOCK"; scenes: Record<string, Scene>; receipts: Receipt[]
 test.use({ baseURL: origin, trace: "off", screenshot: "off", video:"off" });
 test.setTimeout(110_000);
 // The existing comment screenshot below and the dynamic coverage oracle use the same actual mask set.
-const commentScreenshotMaskSelectors = ['[data-testid="comment-rows"]', '[data-testid="buyer-panel"]', '[data-testid="comment-reply-text"]'] as const;
+const commentScreenshotMaskSelectors = ['[data-testid="comment-rows"]', '[data-testid="buyer-panel"]', '[data-testid="comment-reply-text"]', '[data-private="comment-author"]:not([data-testid="comment-rows"] *), [data-private="comment-text"]:not([data-testid="comment-rows"] *)'] as const;
 
 async function facts(request: APIRequestContext): Promise<Facts> {
   const response = await request.get(`${api}/__test/live-console/facts`, { headers: { "X-Console-Control": control } });

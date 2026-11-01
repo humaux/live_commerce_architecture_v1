@@ -369,7 +369,7 @@ export function CommentReply({
           {commentReason(locale, error)}
         </p>
       )}
-      {drafts && <div className="comment-reply-target"><strong>{c.target} {comment.author_name ?? c.unnamed}</strong>{offer && <p>{offer.product_name} · {comment.marks.claim?.quantity} {c.units}</p>}</div>}
+      {drafts && <div className="comment-reply-target"><strong>{c.target} <span data-private="comment-author">{comment.author_name ?? c.unnamed}</span></strong>{offer && <p>{offer.product_name} · {comment.marks.claim?.quantity} {c.units}</p>}</div>}
       <fieldset
         disabled={
           !allowed ||
