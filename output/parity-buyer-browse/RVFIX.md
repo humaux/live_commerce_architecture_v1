@@ -44,3 +44,7 @@ Failing job: `gate (bundle:02)` → `--browser-storefront` (`receipts` and `requ
 Root cause (class b, my assertion): `price_desc` orders by the highest variant price (migrations/0212_collection_rules.sql:103, contracts/storefront-v2.md), the card shows only the lowest ("from") price (ProductCard.tsx:53), so the displayed list is not strictly descending. The product is right; the check read the wrong number. Fix: `trendsDown` (first card's from-price not below the last card's, at least 3 cards) replaces strict `descending` in the three desc assertions, and the step text says why. tests/storefront/buyer-browse-parity.spec.ts:56-58, :355-360, :386-396, :410. Browser ownership regenerated.
 
 The 22 COVERED in run 41258218002 is the real result of that run; with the fix the plan is 24 COVERED / 41 NOT_COVERED / 4 DEFERRED / 4 BLOCKED. Confirmed only by the next CI run.
+
+## RVFIX2-440 (review of 867f685d6, P1: hard-coded navy overrides tenant accent)
+
+Push 1 is tests only (RED). tests/storefront/buyer-browse-parity.spec.ts product-page step no longer asserts rgb(26, 43, 74); it asserts the add-to-cart background equals the page's resolved `--accent` (read in-page, commented as a measurement). The fixture shop uses a non-navy accent, so this fails on the current `--action: #1a2b4a`. Pending relay push 2: shop.css `--action/--on-action/--action-text` default to `var(--accent)/var(--on-accent)/var(--accent-text)`, primary hover mixes toward `#000` as on base. Unrun locally; CI decides.

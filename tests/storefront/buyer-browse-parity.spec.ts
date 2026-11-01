@@ -415,11 +415,22 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
         const productFrame = f("4:9441", "4:9532");
         const productRoute = `/${locale}/products/${candle.slug}`;
         await page.goto(`${origin}${productRoute}`);
-        await step(productFrame, productRoute, "add-to-cart + buy-now buttons", "goto + assert", `"${c.addToCart}" (signed navy action colour) and "${c.buyNow}" visible and enabled`, async () => {
+        await step(productFrame, productRoute, "add-to-cart + buy-now buttons", "goto + assert", `"${c.addToCart}" (merchant accent background) and "${c.buyNow}" visible and enabled`, async () => {
           const add = page.getByTestId("add-to-cart");
           await expect(add).toHaveText(c.addToCart, { timeout: T });
           await expect(add).toBeEnabled();
-          await expect(add).toHaveCSS("background-color", "rgb(26, 43, 74)");
+          // measurement: the shop has ONE merchant accent (shop.css header contract), so the primary button must equal this
+          // page's resolved --accent. Reading the custom property and resolving it to rgb in-page only gets the expected value.
+          const accentRgb = await add.evaluate((el) => {
+            const probe = document.createElement("span");
+            probe.style.color = getComputedStyle(el).getPropertyValue("--accent").trim();
+            document.body.appendChild(probe);
+            const rgb = getComputedStyle(probe).color;
+            probe.remove();
+            return rgb;
+          });
+          assert.notEqual(accentRgb, "", "page has no resolved --accent");
+          await expect(add).toHaveCSS("background-color", accentRgb);
           await expect(page.getByTestId("buy-now")).toHaveText(c.buyNow);
         });
         await shot(productFrame, productRoute);
