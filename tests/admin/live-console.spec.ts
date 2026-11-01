@@ -46,6 +46,8 @@ type Facts = { class: "MOCK"; scenes: Record<string, Scene>; receipts: Receipt[]
 // Trace records credential headers; page-only screenshots and redacted receipts are the evidence.
 test.use({ baseURL: origin, trace: "off", screenshot: "off", video:"off" });
 test.setTimeout(110_000);
+// The existing comment screenshot below and the dynamic coverage oracle use the same actual mask set.
+const commentScreenshotMaskSelectors = ['[data-testid="comment-rows"]', '[data-testid="buyer-panel"]', '[data-testid="comment-reply-text"]'] as const;
 
 async function facts(request: APIRequestContext): Promise<Facts> {
   const response = await request.get(`${api}/__test/live-console/facts`, { headers: { "X-Console-Control": control } });
@@ -156,7 +158,7 @@ test.describe("LC-U2a REAL_PG comment stream",()=>{
       expect((await facts(request)).comments.private_operations).toBe(before.private_operations+1);
       expect(await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth)).toBeLessThanOrEqual(1);
       // Mask the bounded scrolling region: masking offscreen children projects rectangles outside their clipped ancestor.
-      await page.screenshot({path:`${evidence}/comments-${locale}-${size.width}.png`,fullPage:true,animations:"disabled",mask:[page.getByTestId("comment-rows"),page.getByTestId("buyer-panel"),page.getByTestId("comment-reply-text")]});
+      await page.screenshot({path:`${evidence}/comments-${locale}-${size.width}.png`,fullPage:true,animations:"disabled",mask:commentScreenshotMaskSelectors.map(selector=>page.locator(selector))});
     });
   }
   test("native hidden tab stops A2 and clears private selections",async({request})=>{
@@ -956,6 +958,34 @@ async function parityShot(page: Page, id: string) {
   await page.screenshot({ path: `${evidence}/parity/${id.replace(":", "-")}.png`, animations: "disabled" });
 }
 
+/** READ ONLY: report counts for synthetic private text nodes, never return their text or capture an unmasked image. */
+async function parityPrivateTextCounts(page: Page) {
+  return page.evaluate(({ regions, tokens, masks }) => {
+    const covered = Array.from(document.querySelectorAll(masks.join(",")));
+    return regions.map(selector => {
+      const root = document.querySelector(selector), counts = { names: 0, bodies: 0, visible: 0, unmarked: 0, unmasked: 0 };
+      if (!root) return counts;
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const name = node.textContent?.includes(tokens[0]!) === true, body = node.textContent?.includes(tokens[1]!) === true;
+        if (!name && !body) continue;
+        const range = document.createRange(); range.selectNodeContents(node);
+        let visible = Array.from(range.getClientRects()).some(rect => rect.width > 0 && rect.height > 0);
+        for (let element = node.parentElement; element; element = element.parentElement) {
+          const style = getComputedStyle(element);
+          if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") visible = false;
+        }
+        if (!visible) continue;
+        if (name) counts.names++; if (body) counts.bodies++;
+        counts.visible++;
+        if (!node.parentElement?.closest("[data-private]")) counts.unmarked++;
+        if (!covered.some(mask => mask.contains(node))) counts.unmasked++;
+      }
+      return counts;
+    });
+  }, { regions: [".live-buyer-context", '[data-testid="live-reply-summary"]', ".comment-reply-target"], tokens: [`${parityCopy.en.buyer} B`, parityCopy.en.question], masks: [...commentScreenshotMaskSelectors] });
+}
+
 // The legacy test block is intentionally untouched. Each current signed state is selected by an actual click.
 // Exact IDs let the independent reviewer compare the real route's artifact to the v3 DELIVERY export.
 test.describe("PARITY-LIVE current Figma route parity (MOCK)", () => {
@@ -964,6 +994,53 @@ test.describe("PARITY-LIVE current Figma route parity (MOCK)", () => {
   test.afterEach(async ({}, info) => {
     await info.attach("click-ledger-outcome", { body: JSON.stringify({ page: "/[locale]/studio/console", test: info.title, expected: "signed copy, controls, buyer context and reply fencing", actual: info.status, result: info.status === "passed" ? "PASS in MOCK browser only" : "FAIL or NOT_RUN; inspect assertion failure", persistence: "explicit reload checks only; no buyer text stored" }), contentType: "application/json" });
   });
+  test("selected buyer context summary and reply target private text has real screenshot coverage", async ({ page }) => {
+    await parityFixture(page, "en"); await page.setViewportSize({ width: 1440, height: 1100 });
+    await login(page); await page.goto(route("en", comments.session)); await paritySelect(page, "en", "B");
+    for (const selector of [".live-buyer-context", '[data-testid="live-reply-summary"]', ".comment-reply-target"]) await expect(page.locator(selector)).toBeVisible();
+    const regions = await parityPrivateTextCounts(page);
+    expect(regions).toHaveLength(3);
+    for (const [index, counts] of regions.entries()) {
+      expect(counts.names, `region ${index} really contains the selected synthetic author`).toBeGreaterThan(0);
+      if (index < 2) expect(counts.bodies, `region ${index} really contains the selected synthetic body`).toBeGreaterThan(0);
+      expect(counts.visible, `region ${index} must render private text before checking protection`).toBeGreaterThan(0);
+    }
+    // Both are required: adding a marker alone cannot falsely certify an actual screenshot mask.
+    expect(regions.map(counts => counts.unmasked), "actual screenshot masks must cover every visible private text node").toEqual([0, 0, 0]);
+    expect(regions.map(counts => counts.unmarked), "private text nodes must have a private ancestor").toEqual([0, 0, 0]);
+  });
+
+  test("scoped 403 clears new buyer context summary and reply target text from the DOM", async ({ page }) => {
+    await parityFixture(page, "en"); await page.setViewportSize({ width: 1440, height: 1100 });
+    await login(page); await page.goto(route("en", comments.session)); await paritySelect(page, "en", "B");
+    for (const selector of [".live-buyer-context", '[data-testid="live-reply-summary"]', ".comment-reply-target"]) await expect(page.locator(selector)).toBeVisible();
+    const before = await parityPrivateTextCounts(page);
+    for (const [index, counts] of before.entries()) {
+      expect(counts.names, `region ${index} initially has selected author`).toBeGreaterThan(0);
+      if (index < 2) expect(counts.bodies, `region ${index} initially has selected body`).toBeGreaterThan(0);
+      expect(counts.visible, `region ${index} initially renders private text`).toBeGreaterThan(0);
+    }
+    const path = `/api/stores/${store}/live-sessions/${comments.session}/comments`;
+    // MOCK boundary fault: the existing client receives its real scoped-403 response shape after selection.
+    await page.route(`**${path}**`, intercepted => new URL(intercepted.request().url()).pathname === path && intercepted.request().method() === "GET"
+      ? intercepted.fulfill({ status: 403, contentType: "application/json", headers: { "cache-control": "private, no-store" }, body: JSON.stringify({ code: "forbidden" }) })
+      : intercepted.fallback());
+    const denied = page.waitForResponse(response => new URL(response.url()).pathname === path && response.status() === 403);
+    await page.getByTestId("comment-refresh").click(); await denied;
+    await expect(page.getByTestId("comment-refresh")).toBeDisabled();
+    await expect.poll(async () => (await parityPrivateTextCounts(page)).map(counts => counts.names + counts.bodies)).toEqual([0, 0, 0]);
+    // Read the whole document too: hidden/unmarked copies must disappear, not merely gain a mask.
+    const remaining = () => page.evaluate(tokens => {
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let count = 0;
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) if (tokens.some(token => node.textContent?.includes(token))) count++;
+      return count;
+    }, [`${parityCopy.en.buyer} B`, parityCopy.en.question]);
+    await expect.poll(remaining).toBe(0);
+    await expect(page.getByTestId("comment-rows")).toHaveCount(0);
+    await expect(page.getByTestId("live-reply-summary")).toHaveCount(0);
+    await expect(page.locator(".comment-reply-target")).toHaveCount(0);
+  });
+
   test("claim-window lost ACK reload requires explicit replay of the original command", async ({ page }) => {
     const locale = "en", c = parityCopy[locale], copy = workspaceCopy[locale];
     const mock = await parityFixture(page, locale, "selected", "A", "", false, true);
