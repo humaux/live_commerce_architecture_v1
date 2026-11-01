@@ -1,0 +1,22 @@
+# PARITY-GROWTH-FIX1 — directed fix of PR #366, run 41084050704 (head 4fdf52f5)
+
+Base-Gates reference: 41204331038 on 3c8997eb3 (push run, success; bundle matrix jobs are pull_request-only, so the
+PR-head runs listed below are the comparable evidence). `receipts` / `required` / `aggregate` in this run fail only as a
+cascade of the two bundle members below (receipts log job 124208027681: `FAIL: --browser-cvs: status FAIL`,
+`FAIL: --browser-operations-ads: status FAIL`; required log job 124209655416: plain `GATE: failure / RECEIPTS: failure`
+guard) — no independent defect in either.
+
+| failing job | failing test | evidence | class | what changed |
+|---|---|---|---|---|
+| gate (bundle:09) 8m25s, run 41084050704 job 124178338229 (same failure at head 5ef4cc448, run 41075396782 job 124143814275) | `operations-ads.spec.ts >> read-only permissions hide mutation controls after reload` — `expect(getByTestId('ads-connections')).toContainText(account)` → `element(s) not found` (test/fixture source: `tests/admin/operations-ads.spec.ts:193` `ads()` helper); bundle wrapper `TestBrowserOperationsAds` + "bundle member --browser-operations-ads: failure" | artifact `gate-browser-operations-ads` → `playwright/run.SF21V9JR/operations-ads/20261030T164605.130247243/results/…/error-context.md`: page renders the signed list screen (heading "Ad drafts", sandbox status, draft table) but no inline `ads-connections` region | (a) | PR #366 replaced the ads stack with the signed C3 frame (apps/admin/components/Ads.tsx), which moved the ad account connection to its own screen reached by the wording button (`growthCopy.assets` = "View ad account connection"). Rewrote the older assertions to the signed frame with real clicks: `openAssets(page)` navigates via the button, then the same `ads-connections` account-id, `ads-unbind` visibility/count, `ads-feed-url`, clipboard-copy and reload-persistence assertions run unchanged. Committed upstream in this worktree as e9a0e8994 (`tests/admin/operations-ads.spec.ts:182-197,232,254-262`); ownership regenerated. |
+| gate (bundle:07) 11m4s, run 41084050704 job 124178338822 | `TestBrowserTaiwanCvs/WebKit` — `expect(locator).toBeVisible() failed … getByTestId('cvs-candidate-2656') … cvs-picker.mjs:387`; bundle wrapper "bundle member --browser-cvs: failure" (receipt-browser-cvs.json not PASS) | artifact `gate-browser-cvs` → `playwright/run.GN1qYdQ4/taiwan-cvs/20261030T164650.946452663/cvs-buyer.mjs.log`: HILIFE iteration; ariaSnapshot at the 5s mark shows `萊爾富` pressed, `cvs-picker-query` EMPTY, helper text, no candidates and no loading/fail state; `TestBrowserTaiwanCvs/MOCK` passed. Same content (base's cvs-picker.mjs, no PR change) PASSED at heads 5ef4cc448 (41075396782 bundle:07) and in MOCK | (b) | Lost-input race in the brand-switch journey: the click triggers `POST /api/buyer/quotes`; when the response lands after `fill`, the client commit (aria-pressed + new quote id → OrderFlow remount) replaces the picker instance and the typed code is discarded. Product fix would live in apps/storefront (CheckoutFlow.tsx onCvsBrand / CvsStorePicker), which this lane may not edit (owner rule: backend only). Made the shared helper deterministic instead — same intent, same coverage, real clicks: wait for the actual `POST /api/buyer/quotes` response + aria-pressed before each `fill`(`tests/storefront/cvs-picker.mjs:379-387`). No assertion, fixture, timeout or threshold loosened; click ledger and density captures unchanged. |
+| receipts 22s (job 124208027681) | matrix-receipts verify | receipts log: only `--browser-cvs` / `--browser-operations-ads` FAIL entries | cascade | none — flips green when both bundle members pass. |
+| required 3s (job 124209655416) | required gate guard | required log: `plan=success build=success gate=failure aggregate=success deploy=skipped receipts=failure` | cascade | none. |
+
+Not a tests-only RED on new assertions → no red.log update. Aggregate stayed pass; plan/build pass; no foundation,
+ownership-drift or receipts-alone failures to act on.
+
+Checks run locally: `node scripts/dev/derive-browser-ownership.mjs` (wrote 54 modes) then `--check` exit 0;
+`node scripts/dev/check-evidence-retention.mjs --base origin/r3/integration` PASS (27 files, 624690 bytes);
+`gofmt -l .` clean. Evidence cited by run id/job/artifact name only — no raw CI copies are committed (ADR-20261031),
+retention gate verifies HEAD against origin/r3/integration. No apps/** source edits in this lane.
