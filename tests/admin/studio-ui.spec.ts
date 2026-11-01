@@ -437,12 +437,15 @@ test("STU05 the Studio route without a scene settles: live-sessions reads stay b
     if (round > 0) await page.reload(); // each round still exercises the bare route before opening its first card
     await expect(page.getByText("Loading scenes…")).toHaveCount(0);
     await expect(page.locator(".studio-scene-list .studio-scene").first()).toBeVisible();
+    await expect(page.getByRole("button", { name: parityWords.en.all, exact: true })).toBeDisabled();
     const firstCard = page.locator(".studio-scene-list .studio-scene").first();
     const firstTitle = await firstCard.locator("strong").innerText();
     await firstCard.click();
     await expect(page.getByRole("heading", { level: 1, name: parityWords.en.prepare, exact: true })).toBeVisible();
     await expect(page.getByTestId("merchant-studio").getByText(firstTitle, { exact: true })).toBeVisible();
-    await expect(page).toHaveURL(/\/en\/studio\?.*scene=[0-9a-f-]{36}/);
+    await expect(page).toHaveURL(/\/en\/studio\?.*scene=[0-9a-f-]{36}#preparation$/);
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1, name: parityWords.en.prepare, exact: true })).toBeVisible();
     // G-UI8 settle window: a looping page keeps issuing reads here; a settled one issues none (the scene list read plus a handful of detail reads at most).
     await page.waitForTimeout(2500);
     expect(reads.length, `round ${round}: live-sessions GETs while the bare Studio route settled`).toBeLessThanOrEqual(6);

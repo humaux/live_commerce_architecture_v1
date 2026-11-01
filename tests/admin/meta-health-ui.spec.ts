@@ -24,6 +24,7 @@ async function enterSettings(page:Page){
  if(await advanced.isVisible())await advanced.click();
 }
 async function openFeatureChecks(page:Page){
+ await enterSettings(page);
  const locale=(new URL(page.url()).pathname.split("/")[1] || "en") as "en"|"zh-TW"|"zh-CN";
  await page.getByRole("button",{name:parityWords[locale].detail,exact:true}).first().click();
  await page.getByRole("button",{name:parityWords[locale].health,exact:true}).click();

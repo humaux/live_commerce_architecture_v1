@@ -494,7 +494,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
     if (depart) explicitDeparture.current = true;
     return true;
   }
-  function navigate(nextStore: string, nextCursor: string, nextScene: string) {
+  function navigate(nextStore: string, nextCursor: string, nextScene: string, nextTask = "edit") {
     if (!mayLeave(true)) return false;
     dirty.current = false;
     setNewMode(false);
@@ -503,8 +503,11 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
       detailEpoch.current++;
       detailController.current?.abort();
       setDetail({ key: `${nextStore}|${nextScene}`, status: "loading", data: null });
+      // Selecting the already loaded first card keeps the same detail key.
+      // Restart the read that navigation just cancelled, even in that case.
+      if (nextScene === selectedID) setDetailReload((value) => value + 1);
     }
-    router.push(`${studioURL(locale, nextStore, nextCursor, nextScene)}${nextScene ? "#edit" : ""}`);
+    router.push(`${studioURL(locale, nextStore, nextCursor, nextScene)}${nextScene ? `#${nextTask}` : ""}`);
     return true;
   }
   function newScene() {
@@ -656,7 +659,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
           {locale === "zh-CN" ? "返回待处理场次" : locale === "zh-TW" ? "返回待處理場次" : "Return to session"}
         </button>
       </p>}
-      <div className={taskStyle.filters}>{([["all", p.all], ["draft", p.preparing], ["live", p.live], ["ended", p.ended]] as const).map(([value, label]) => <button key={value} type="button" aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}</div>
+      <div className={taskStyle.filters}>{([["all", p.all], ["draft", p.preparing], ["live", p.live], ["ended", p.ended]] as const).map(([value, label]) => <button key={value} type="button" aria-pressed={filter === value} disabled={filter === value} onClick={() => setFilter(value)}>{label}</button>)}</div>
       <div className={`studio-surface${mediaOn ? "" : " studio-planning-only"}`} style={!scene && !newMode ? { display: "block", maxWidth: 1000 } : undefined}>
         <section className="studio-scenes" aria-label={c.scenes}>
           <button type="button" className="primary studio-new" disabled={!creationReady || recoveryGuard || recoveryElsewhere || !storeID || busy || actionError === "uncertain" || shown?.can_manage === false}
@@ -669,7 +672,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
               {currentPage.data.items.filter(item => filter === "all" || phases.data?.find(row => row.id === item.session_id)?.snapshot?.session.lifecycle === filter || filter === "ended" && phases.data?.find(row => row.id === item.session_id)?.snapshot?.session.lifecycle === "archived").map((item) => <article key={item.session_id} className={taskStyle.card}><button type="button"
                 className={`studio-scene ${!newMode && selectedID === item.session_id ? "selected" : ""}`}
                 aria-current={!newMode && selectedID === item.session_id ? "true" : undefined}
-                onClick={() => { navigate(storeID, cursor, item.session_id); }}>
+                onClick={() => { navigate(storeID, cursor, item.session_id, "preparation"); }}>
                 <strong>{item.title}</strong><Badge>{(() => { const phase = phases.data?.find(row => row.id === item.session_id)?.snapshot?.session.lifecycle; return phase === "live" ? p.live : phase === "ended" || phase === "archived" ? p.ended : phase === "draft" ? p.preparing : c.state[item.state as keyof typeof c.state] ?? c.loading; })()}</Badge>
                 <small>{item.scheduled_at ? `${displayTime(locale, item.scheduled_at)} ${c.taipeiTime}` : c.schedule}</small>
                 <span className="live-session-results" data-testid={`live-session-results-${item.session_id}`}>

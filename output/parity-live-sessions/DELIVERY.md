@@ -1,3 +1,5 @@
+Latest directed fix: [FIX1.md](FIX1.md), 2026-11-01. Integration merged; one combined fix push pending CI. Earlier relay status below is historical. Bulk Figma captures are now local-only; [figma-capture-manifest.json](figma-capture-manifest.json) preserves node/hash receipts. Original linked captures remain addressable at commit `85bad87abae9eac6c26ad62bed3e7564c340feb0`. Humaux access is available in FIX1; current store/canvas IDs are reported in the handoff. No current GREEN or E4 claim.
+
 # PARITY-LIVE-SESSIONS · implementation CI handoff · 2026-10-30
 
 Latest relay: Relay 4 below; browser-blocker fix attempt 2; new-head CI PENDING.

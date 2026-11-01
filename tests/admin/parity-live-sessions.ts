@@ -1,6 +1,6 @@
 // Purpose: Independent signed-frame copy, real-click ledger and screenshot oracle for C4.
 // Depends on: Playwright, node:fs/promises and the owning spec's isolated evidence directory.
-// Used by: studio-ui, claims-ui, live-console, attribution, meta-connect, meta-connect-gate and meta-health-ui specs.
+// Used by: studio-ui, claims-ui, live-console, attribution, meta-connect, meta-connect-gate, meta-health-ui, customers-billing and e2e specs.
 // Invariants: real routes only; screenshots supplement clicks; no product state or DOM mutation.
 import { expect, test, type Page, type Locator } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -85,4 +85,29 @@ export async function parityShot(page: Page, evidence: string, locale: ParityLoc
     await page.screenshot({ path: `${evidence}/parity/${artifactId}.png`, fullPage: false, animations: "disabled" });
     await writeFile(`${evidence}/parity/${artifactId}.json`, JSON.stringify({ frame, route: new URL(page.url()).pathname, viewport: page.viewportSize(), density, evidence: "MOCK browser; screenshot supplements real clicks" }));
   }
+}
+
+/** Enter the signed advanced claim tools through the real disclosure, once per visit. */
+export async function openClaimTools(page: Page) {
+  const disclosure = page.locator("details").filter({ has: page.getByText(/^(Advanced|進階|进阶)$/, { exact: true }) });
+  await expect(disclosure).toBeVisible();
+  if (await disclosure.getAttribute("open") === null)
+    await disclosure.locator("summary").click();
+  await expect(page.locator("#claims-mode")).toBeVisible();
+}
+
+/** Shared real-click setup; server-created drafts keep their original authority and receipts. */
+export async function createClaimSession(page: Page, origin: string, store: string, locale: keyof typeof parityWords, title: string) {
+  await page.goto(`${origin}/${locale}/studio?store=${store}`);
+  await expect(page.getByTestId("merchant-studio")).toBeVisible();
+  await page.getByRole("button", { name: parityWords[locale].create, exact: true }).click();
+  await page.getByLabel({ en: "Scene name", "zh-TW": "場次名稱", "zh-CN": "场次名称" }[locale], { exact: true }).fill(title);
+  await page.getByRole("button", { name: locale === "en" ? "Create draft" : "建立草稿", exact: true }).click();
+  await page.waitForURL(/scene=[0-9a-f-]{36}/);
+  await expect(page.locator(".studio-surface.studio-planning-only")).toBeVisible();
+  await expect(page.getByRole("button", { name: /MOCK rehearsal|Request stop/ })).toHaveCount(0);
+  await page.getByTestId("studio-open-claims").click();
+  await expect(page.getByTestId("merchant-claims")).toBeVisible();
+  await openClaimTools(page);
+  return new URL(page.url()).searchParams.get("scene")!;
 }

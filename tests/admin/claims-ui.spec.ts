@@ -565,6 +565,7 @@ for (const viewport of parityViewports) test(`C4 preflight products and keyword 
   await expect(page.getByTestId("merchant-claims")).toBeVisible();
   await expect(page.getByRole("heading", { name:c.preflight, exact:true })).toBeVisible();
   await expect(page.getByText("留言怎樣才算認領？", {exact:true})).toBeVisible();
+  await expect(page.getByRole("button", { pressed: true })).toBeDisabled();
   await expect(page.getByRole("button", {name:"查看預設留言口令",exact:true})).toBeVisible();
   await expect(page.getByRole("heading", {name:"MOCK manual comment",exact:true})).toHaveCount(0);
   await parityShot(page,evidence,"zh-TW",viewport.width===1440?"19:373":"19:375");

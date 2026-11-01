@@ -1,5 +1,5 @@
 // Purpose: Exercises customer, finance and billing UI with the real harness and MOCK billing provider.
-// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/billing-copy, ../../apps/admin/lib/claims-copy, ../../apps/admin/lib/customers-copy, ../../apps/admin/src/shell-copy; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_CUSTOMER, LC_BROWSER_CUSTOMER_ERASE, LC_BROWSER_ORDER, LC_BROWSER_SESSION, LC_BROWSER_PRICE, LC_BROWSER_CONTROL, LC_BROWSER_CONTROL_KEY, LC_BROWSER_PHONE_TAIL, LC_BROWSER_PHONE_FULL, LC_BROWSER_ACTOR_KEY, LC_BROWSER_RESTRICTED_TOKEN, LC_BROWSER_NOFIN_TOKEN, ./parity-money-support
+// Depends on: ./parity-live-sessions, @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/billing-copy, ../../apps/admin/lib/claims-copy, ../../apps/admin/lib/customers-copy, ../../apps/admin/src/shell-copy; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_CUSTOMER, LC_BROWSER_CUSTOMER_ERASE, LC_BROWSER_ORDER, LC_BROWSER_SESSION, LC_BROWSER_PRICE, LC_BROWSER_CONTROL, LC_BROWSER_CONTROL_KEY, LC_BROWSER_PHONE_TAIL, LC_BROWSER_PHONE_FULL, LC_BROWSER_ACTOR_KEY, LC_BROWSER_RESTRICTED_TOKEN, LC_BROWSER_NOFIN_TOKEN, ./parity-money-support
 // Used by: apps/admin/src/features/customers/routes.ts, apps/admin/src/features/finance/routes.ts, apps/admin/src/features/settings/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_customers_billing_test.go
 // CB11 admin half (contracts/customers-billing-v1.md §5 "Admin screens", §8 CB11; customers-billing-ui.md U1-U6, U9).
 // BFF routes exercised through the UI: GET|POST /api/stores/{store}/customers*, GET finance/summary[.csv],
@@ -10,6 +10,7 @@
 // MOCK fake (checkout.stripe.com / billing.stripe.com are answered by page.route, never contacted).
 // Locators use the UI unit's data-testid vocabulary and its copy files (customers-copy, billing-copy, claims-copy);
 // every assertion restates the contract or a frozen UI default, not the implementation.
+import { openClaimTools } from "./parity-live-sessions";
 import { expect, test, type Page } from "@playwright/test";
 import { createHash, randomBytes } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
@@ -593,6 +594,7 @@ test("CB11 studio: opening a claim window under RESTRICTED says why and links to
   await signedLogin(page);
   await ctl("standing/restricted");
   await page.goto(`/en/studio/claims?store=${store}&scene=${scene}`);
+  await openClaimTools(page);
   await expect(page.getByTestId("merchant-claims")).toBeVisible();
   await expect(page.getByTestId("claims-window-state")).toHaveText("Closed");
   const posts: number[] = [];
@@ -643,6 +645,7 @@ for (const locale of ["en", "zh-TW"] as const) {
         await expect(page.getByTestId("billing-standing")).toHaveAttribute("data-standing", "RESTRICTED");
         await shot(page, "billing", locale, viewport);
         await page.goto(`/${locale}/studio/claims?store=${store}&scene=${scene}`);
+        await openClaimTools(page);
         await expect(page.getByTestId("merchant-claims")).toBeVisible();
         await page.getByRole("button", { name: claimsCopy[locale].openWindow }).click();
         await expect(page.getByTestId("claims-billing-link")).toBeVisible();

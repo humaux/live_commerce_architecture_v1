@@ -459,13 +459,17 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await expect(page.getByTestId(`live-session-results-${scene}`)).toContainText(workspaceCopy[locale].paidOrders);
     // Cover the separate A5 list-copy surface once; every locale/size still exercises console copy below.
     if (index === 0) {
-      await page.getByTestId("live-copy-session").click();
-      await page.getByLabel(workspaceCopy[locale].name, { exact: true }).fill("LC-U1 copied from session list");
-      await page.getByRole("button", { name: workspaceCopy[locale].confirmCopy, exact: true }).click();
-      await phase(page, "draft");
+      await page.getByRole("button", { name: parityWords[locale].copyLast, exact: true }).click();
+      await page.getByLabel(parityWords[locale].copyName, { exact: true }).fill("LC-U1 copied from session list");
+      await page.getByRole("button", { name: parityWords[locale].copyReview, exact: true }).click();
+      await expect(page.getByRole("heading", { name: parityWords[locale].copied, exact: true })).toBeVisible();
       const listCopy = new URL(page.url()).searchParams.get("scene");
       expect(listCopy).not.toBe(scene);
       expect((await facts(request)).scenes[listCopy!]!.Title).toBe("LC-U1 copied from session list");
+      expect((await facts(request)).scenes[listCopy!]!.Phase).toBe("draft");
+      await page.reload();
+      await expect(page.getByRole("heading", { name: parityWords[locale].copied, exact: true })).toBeVisible();
+      await expect(page.getByText("LC-U1 copied from session list", { exact: true })).toBeVisible();
       await screenshot(page, "en-1586-session-list-copy");
     }
     await page.goto(route(locale, scene));

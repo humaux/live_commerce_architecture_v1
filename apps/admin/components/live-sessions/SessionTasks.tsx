@@ -17,6 +17,9 @@ import s from "./session-tasks.module.css";
 /** Hash is navigation state only; command authority is never read from a hash. */
 export function useSessionTask() {
   const [task, setTask] = useState("");
+  // Next's SPA router can update the URL without emitting native hashchange.
+  // Read after each commit as well as after native anchor/back navigation.
+  useEffect(() => { setTask(window.location.hash.slice(1)); });
   useEffect(() => { const read = () => setTask(window.location.hash.slice(1)); read(); window.addEventListener("hashchange", read); return () => window.removeEventListener("hashchange", read); }, []);
   return task;
 }
@@ -36,7 +39,7 @@ export function SessionTasks({ locale, store, detail, task, refresh, copyResult,
     else window.location.hash = "post-live";
   });
   function copied(value: CopyResult) { onCopy(value); router.push(`/${locale}/studio?store=${store}&scene=${value.session.session_id}#next-draft`); }
-  const phase = task === "next-draft" ? "next" : copying ? "copy" : task === "end" ? "end" : task === "post-live" ? "after" : "prepare";
+  const phase = task === "next-draft" ? "next" : task === "copy" || copying ? "copy" : task === "end" ? "end" : task === "post-live" ? "after" : "prepare";
   const titleKey = phase === "next" ? c.copied : phase === "copy" ? c.copy : phase === "end" ? c.end : phase === "after" ? c.after : c.prepare;
   const error = command.error || snapshot.error;
   return <section className={s.page} aria-busy={command.busy}>

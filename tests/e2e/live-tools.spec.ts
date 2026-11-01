@@ -1,5 +1,5 @@
 // Purpose: real-click live-price claim checkout versus ordinary catalog-price purchase regression.
-// Depends on: production storefront/admin, real PG and signed MOCK Meta/IdP/provider fixtures.
+// Depends on: production storefront/admin, real PG, signed MOCK Meta/IdP/provider fixtures and ../admin/parity-live-sessions.
 // Used by: --browser-e2e TestBrowserLiveTools; no LIVE provider acceptance.
 // Live tools (R4) browser gate: keyword library import + live-only price, claimed through a signed MOCK Meta comment, bought with pay at pickup
 // at the live price, while the same SKU bought directly from the product page pays the normal price. Written from the contract
@@ -17,7 +17,7 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { claimsCopy, hostPrompt } from "../../apps/admin/lib/claims-copy";
-import { studioCopy } from "../../apps/admin/lib/studio-copy";
+import { createClaimSession } from "../admin/parity-live-sessions";
 import { claimCopy } from "../../apps/storefront/lib/claim-copy";
 import { cvsCopy } from "../../apps/storefront/lib/cvs-copy";
 import { purchaseCopy } from "../../apps/storefront/lib/purchase-copy";
@@ -126,7 +126,6 @@ for (const cell of cells) {
   test(`live tools ${cell.locale} ${cell.viewport}: library import, live price, signed Meta claim, pay at pickup at the live price; direct purchase at the normal price`, async ({ browser }) => {
     const { n, locale, viewport } = cell;
     const claims = claimsCopy[locale];
-    const studio = studioCopy[locale];
     const claim = claimCopy[locale];
     const run = await act("provision-run", { n });
     const kw = run.keyword as string;
@@ -147,16 +146,7 @@ for (const cell of cells) {
       await merchant.waitForURL((u) => u.origin === new URL(admin).origin && !u.pathname.startsWith("/api/"), { timeout: 30_000 });
 
       async function newScene(name: string) {
-        await merchant.goto(`${admin}/${locale}/studio?store=${store}`);
-        await expect(merchant.getByTestId("merchant-studio")).toBeVisible();
-        await merchant.getByRole("button", { name: studio.newScene }).click();
-        await merchant.getByLabel(studio.name).fill(name);
-        await merchant.getByRole("button", { name: studio.create }).click();
-        await merchant.waitForURL(/scene=[0-9a-f-]{36}/);
-        await expect(merchant.locator(".studio-surface.studio-planning-only")).toBeVisible();
-        await merchant.getByTestId("studio-open-claims").click();
-        await expect(merchant.getByTestId("merchant-claims")).toBeVisible();
-        return new URL(merchant.url()).searchParams.get("scene") as string;
+        return createClaimSession(merchant, admin, store, locale, name);
       }
 
       // 1. the keyword library: add this run's SKU keyword in a first scene (the offer form's pickers also feed "Add to library")
