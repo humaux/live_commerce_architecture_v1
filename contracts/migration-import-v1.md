@@ -50,8 +50,8 @@ Evidence class: REAL_PG + MOCK (synthetic data only). The order-history import (
 ## 4. HTTP (all `/v1/admin/stores/{store_id}/imports`, private no-store, `customers:privacy`, no `Idempotency-Key` — the file hash is the key)
 | Method and path | Body / query | Result |
 |---|---|---|
-| `POST customers/preview` | `text/csv`; `?mapping=` | 200 `{file_sha256, headers, mapping, rows_total, new_rows, update_rows, apply_rows, failed_rows, erased_rows, consent_ignored_rows, rows:[{row, external_id, outcome created\|updated\|failed, code?, consent_ignored?}]}`. The transaction is always rolled back. |
-| `POST customers/commit?expected_apply_rows=N` | `text/csv`; `&mapping=` | 200 `{batch_id, created, updated, failed, replayed}`; 409 `preview_stale` (body = fresh preview, nothing written); 409 `idempotency_conflict` (same bytes with another mapping or N); 422 `nothing_to_apply`. |
+| `POST /v1/admin/stores/{store_id}/imports/customers/preview` | `text/csv`; `?mapping=` | 200 `{file_sha256, headers, mapping, rows_total, new_rows, update_rows, apply_rows, failed_rows, erased_rows, consent_ignored_rows, rows:[{row, external_id, outcome created\|updated\|failed, code?, consent_ignored?}]}`. The transaction is always rolled back. |
+| `POST /v1/admin/stores/{store_id}/imports/customers/commit?expected_apply_rows=N` | `text/csv`; `&mapping=` | 200 `{batch_id, created, updated, failed, replayed}`; 409 `preview_stale` (body = fresh preview, nothing written); 409 `idempotency_conflict` (same bytes with another mapping or N); 422 `nothing_to_apply`. |
 | `GET {batch_id}/results.csv[?only=failed]` | none | UTF-8 BOM CSV `row,external_id,outcome,code`, every text cell formula-guarded; 404 for another store's batch. |
 - A committed file is keyed by its bytes forever: the same bytes with another mapping or count is `idempotency_conflict`, so a merchant who
   committed a wrong mapping must change the file (W5-U1 copy must say so). The brief's `Idempotency-Key` header is deliberately NOT used.
@@ -161,8 +161,8 @@ Status: DRAFT by the unit implementer (Claude Sonnet, 2026-10-07) for integrator
   `invalid_date`, `invalid_amount`, `invalid_status`, `invalid_item`, `invalid_quantity`, `inconsistent_order`, `invalid_request`
   (field-count mismatch), plus the database codes `customer_not_imported`, `erased`, `order_owner_conflict` (the order number belongs to
   another customer), `order_limit`. `rows_total / applied / updated / failed` of the batch count units; the row number of a unit is its first line.
-- **HTTP** (`/v1/admin/stores/{store_id}/imports`, `customers:privacy`, no `Idempotency-Key`): `POST orders/preview` and
-  `POST orders/commit?expected_apply_rows=N` with the same bodies, answers, 409 `preview_stale` / `idempotency_conflict`, 422
+- **HTTP** (`/v1/admin/stores/{store_id}/imports`, `customers:privacy`, no `Idempotency-Key`): `POST /v1/admin/stores/{store_id}/imports/orders/preview` and
+  `POST /v1/admin/stores/{store_id}/imports/orders/commit?expected_apply_rows=N` with the same bodies, answers, 409 `preview_stale` / `idempotency_conflict`, 422
   `nothing_to_apply` and 60 s budget as section 4 (preview: `{file_sha256, headers, mapping, rows_total, new_rows, update_rows, apply_rows,
   failed_rows, erased_rows, rows:[{row, external_id, outcome, code?}]}`; a failed row never echoes an id). `GET {batch_id}/results.csv`
   serves orders batches too (external_id column empty). Read: `GET /v1/admin/stores/{store_id}/customers/{customer_id}/historical-orders[?limit&after]`
