@@ -6,8 +6,8 @@ ALTER TABLE live.sessions
  ADD COLUMN replay_public boolean NOT NULL DEFAULT false,
  ADD COLUMN replay_version bigint NOT NULL DEFAULT 1 CHECK(replay_version BETWEEN 1 AND 9007199254740991);
 GRANT UPDATE(replay_public,replay_version) ON live.sessions TO commerce_runtime;
-COMMENT ON COLUMN live.sessions.replay_public IS '0213: explicit live:manage publication; buyer projection additionally requires ENDED and stored official permalink.';
-COMMENT ON COLUMN live.sessions.replay_version IS '0213: independent publication CAS; draft and lifecycle versions remain unchanged.';
+COMMENT ON COLUMN live.sessions.replay_public IS '0219: explicit live:manage publication; buyer projection additionally requires ENDED and stored official permalink.';
+COMMENT ON COLUMN live.sessions.replay_version IS '0219: independent publication CAS; draft and lifecycle versions remain unchanged.';
 
 CREATE TABLE live.replay_videos (
  tenant_id uuid NOT NULL,store_id uuid NOT NULL,binding_id uuid NOT NULL,
@@ -24,7 +24,7 @@ ALTER TABLE live.replay_videos FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON live.replay_videos FROM PUBLIC;
 GRANT SELECT,INSERT,UPDATE ON live.replay_videos TO commerce_integration_writer;
 CREATE POLICY replay_video_completion ON live.replay_videos TO commerce_integration_writer USING(true) WITH CHECK(true);
-COMMENT ON TABLE live.replay_videos IS '0213: Graph-supplied official permalinks from future lease-fenced live_videos completion only. No backfill, tokens or viewer data. Store-owned metadata retained with its binding; no automatic purge.';
+COMMENT ON TABLE live.replay_videos IS '0219: Graph-supplied official permalinks from future lease-fenced live_videos completion only. No backfill, tokens or viewer data. Store-owned metadata retained with its binding; no automatic purge.';
 
 -- Trigger attaches to the existing fenced completion boundary; no duplicate dispatcher or loosened lease check.
 CREATE FUNCTION live.persist_replay_videos() RETURNS trigger
@@ -47,7 +47,7 @@ ALTER FUNCTION live.persist_replay_videos() OWNER TO commerce_integration_writer
 REVOKE ALL ON FUNCTION live.persist_replay_videos() FROM PUBLIC;
 CREATE TRIGGER persist_replay_videos AFTER INSERT OR UPDATE ON live.page_live_video_snapshots
  FOR EACH ROW EXECUTE FUNCTION live.persist_replay_videos();
-COMMENT ON FUNCTION live.persist_replay_videos() IS '0213: only future successful snapshot writes persist references, in the same transaction after existing operation/lease/permission fences.';
+COMMENT ON FUNCTION live.persist_replay_videos() IS '0219: only future successful snapshot writes persist references, in the same transaction after existing operation/lease/permission fences.';
 
 CREATE ROLE commerce_replay_reader NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION;
 GRANT USAGE ON SCHEMA live,buyer,control,catalog TO commerce_replay_reader;
@@ -64,7 +64,7 @@ CREATE POLICY replay_source_projection ON live.claim_sources FOR SELECT TO comme
 CREATE POLICY replay_offer_projection ON live.offers FOR SELECT TO commerce_replay_reader USING(true);
 CREATE POLICY replay_sku_projection ON catalog.skus FOR SELECT TO commerce_replay_reader USING(true);
 CREATE POLICY replay_store_projection ON control.stores FOR SELECT TO commerce_replay_reader USING(true);
-COMMENT ON ROLE commerce_replay_reader IS '0213: no-login projection owner; only origin-scoped public replay and GUC-scoped merchant permalink definers are executable.';
+COMMENT ON ROLE commerce_replay_reader IS '0219: no-login projection owner; only origin-scoped public replay and GUC-scoped merchant permalink definers are executable.';
 
 CREATE FUNCTION live.replay_permalink(p_session uuid) RETURNS text
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -78,7 +78,7 @@ $$;
 ALTER FUNCTION live.replay_permalink(uuid) OWNER TO commerce_replay_reader;
 REVOKE ALL ON FUNCTION live.replay_permalink(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION live.replay_permalink(uuid) TO commerce_runtime;
-COMMENT ON FUNCTION live.replay_permalink(uuid) IS '0213: GUC-scoped merchant source lookup only; live:manage is rechecked in caller before publication.';
+COMMENT ON FUNCTION live.replay_permalink(uuid) IS '0219: GUC-scoped merchant source lookup only; live:manage is rechecked in caller before publication.';
 
 -- The projection supplies only product identifiers; the HTTP layer calls the existing buyer catalog
 -- projection in the same read transaction for CURRENT price/stock/publication and its closed DTO.
@@ -114,7 +114,7 @@ ALTER FUNCTION live.buyer_replays(text,uuid) OWNER TO commerce_replay_reader;
 REVOKE ALL ON FUNCTION live.buyer_replays(text,uuid) FROM PUBLIC;
 GRANT USAGE ON SCHEMA live TO commerce_buyer_runtime;
 GRANT EXECUTE ON FUNCTION live.buyer_replays(text,uuid) TO commerce_buyer_runtime;
-COMMENT ON FUNCTION live.buyer_replays(text,uuid) IS '0213: published-origin-only projection, at most 50 ENDED public sessions; no direct buyer table grants, secrets or historical money; missing/unpublished/foreign detail is PT404.';
+COMMENT ON FUNCTION live.buyer_replays(text,uuid) IS '0219: published-origin-only projection, at most 50 ENDED public sessions; no direct buyer table grants, secrets or historical money; missing/unpublished/foreign detail is PT404.';
 
 -- Missing/unpublished catalog products are omitted without aborting the enclosing replay transaction.
 CREATE FUNCTION live.buyer_replay_product(p_origin text,p_product text) RETURNS jsonb
@@ -127,4 +127,4 @@ GRANT EXECUTE ON FUNCTION catalog.buyer_v2_product(text,text) TO commerce_replay
 ALTER FUNCTION live.buyer_replay_product(text,text) OWNER TO commerce_replay_reader;
 REVOKE ALL ON FUNCTION live.buyer_replay_product(text,text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION live.buyer_replay_product(text,text) TO commerce_buyer_runtime;
-COMMENT ON FUNCTION live.buyer_replay_product(text,text) IS '0213: same catalog read and published-origin authority, converts catalog PT404 to absent product; no money/stock copy.';
+COMMENT ON FUNCTION live.buyer_replay_product(text,text) IS '0219: same catalog read and published-origin authority, converts catalog PT404 to absent product; no money/stock copy.';

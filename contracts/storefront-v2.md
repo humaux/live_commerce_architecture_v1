@@ -534,7 +534,7 @@ Official sources read on 2026-10-31, Graph API **v26.0**:
 
 The existing future `GET /{page}/live_videos` now requests
 `id,post_id,title,status,creation_time,permalink_url`. A successful lease-fenced completion
-persists a per-binding/per-video row in `live.replay_videos` (migration **0213**), in the
+persists a per-binding/per-video row in `live.replay_videos` (migration **0219**), in the
 same transaction as its existing bounded snapshot. Latest requested_at wins. Invalid or
 missing optional links normalize to empty without breaking the existing picker. Accept
 only HTTPS facebook.com/www.facebook.com video permalinks with an optional single Page

@@ -1,5 +1,5 @@
 // Purpose: public replay list/detail with current buyer catalog products and Facebook's official player URL.
-// Depends on: live.buyer_replays (0213), catalog.buyer_v2_product, projectV2/attachV2ImageSizes.
+// Depends on: live.buyer_replays (0219), catalog.buyer_v2_product, projectV2/attachV2ImageSizes.
 // Used by: handler.dispatch after strict route selection; storefront public BFF.
 // Invariants: verified origin + BFF key only; no buyer bearer, body or query; no historical price/video copy.
 package buyerhttp

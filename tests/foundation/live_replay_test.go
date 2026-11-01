@@ -1,5 +1,5 @@
 // Purpose: FEAT-LIVE-REPLAY REAL_PG/HTTP gates for merchant publication and buyer replay reads.
-// Depends on: csSetup/bhSetup, production admin/buyer routers, catalog-v2 reads and migration 0213.
+// Depends on: csSetup/bhSetup, production admin/buyer routers, catalog-v2 reads and migration 0219.
 // Used by: GitHub Foundation non-browser Go suite.
 // Invariants: server scope, live:manage, CAS and authenticated receipt replay; public ENDED sessions only;
 // official stored video only; catalog remains the current price/stock/publication authority. Fixtures are synthetic.

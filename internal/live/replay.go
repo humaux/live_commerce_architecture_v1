@@ -1,5 +1,5 @@
 // Purpose: merchant replay visibility with authenticated idempotency and an independent CAS version.
-// Depends on: live.sessions, live.replay_permalink (0213), authorize, command.Run/Audit.
+// Depends on: live.sessions, live.replay_permalink (0219), authorize, command.Run/Audit.
 // Used by: internal/httpapi live replay GET/PUT; no provider call or video backfill.
 // Invariants: server scope only; ENDED plus stored official video before publication; revocation fences receipts.
 package live
