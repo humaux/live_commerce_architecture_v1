@@ -370,12 +370,16 @@ if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") for (const mode of ["manual",
     await expect(quick.getByRole("alert")).toHaveText(catalogCopy.en.collections.uncertain);
     expect(commands).toHaveLength(1);
     expect(committedID).not.toBe("");
-    // Read-only authoritative readback: the lost reply is not simulated as a successful response.
+    // READ/MEASURE only: authenticated same-origin GET in the browser; no fixture writes or cookie export.
     const matching = async () => {
-      const response = await page.request.get(`${origin}${endpoint}?limit=100`);
-      expect(response.status()).toBe(200);
-      const body = await response.json();
-      return body.items.filter((item: { title: string }) => item.title === title);
+      const result = await page.evaluate(async ({ url, title }) => {
+        const response = await fetch(url, { method: "GET", credentials: "same-origin", cache: "no-store" });
+        if (response.status !== 200) return { status: response.status, items: [] as { id: string }[] };
+        const body = await response.json();
+        return { status: response.status, items: body.items.filter((item: { title: string }) => item.title === title).map((item: { id: string }) => ({ id: item.id })) };
+      }, { url: `${endpoint}?limit=100`, title });
+      expect(result.status).toBe(200);
+      return result.items;
     };
     expect((await matching()).map((item: { id: string }) => item.id)).toEqual([committedID]);
     await test.step(`${entry} entry cannot open an independent collection writer`, async () => {

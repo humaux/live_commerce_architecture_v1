@@ -71,7 +71,7 @@ test.describe("PARITY-DATA-OPS C6 customer import", () => {
         const error = invalid === "oversized" ? "請選擇不超過 2 MiB 的檔案。"
           : invalid === "utf8" ? "請另存為 CSV UTF-8，無法匯入 Big5 檔案。" : "請檢查 CSV 格式、每列欄位數與欄位對應。";
         await choose("選擇修正後檔案", `rejected-${invalid}.csv`, buffer);
-        await expect(page.getByRole("alert")).toHaveText(error);
+        await expect(page.getByTestId("import-wizard").getByRole("alert")).toHaveText(error);
         expect(requests, "a rejected corrected file never commits").toHaveLength(baselineCommits);
         for (const value of [prefix, privateName, "Synthetic excluded"]) await expect(page.locator("main")).not.toContainText(value);
         await action(page, "更換檔案", "recoverable picker", "invalid replacement leaves a reachable, enabled picker", async () => {
