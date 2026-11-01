@@ -61,7 +61,8 @@ export function registerProductReviewAcceptance() {
     await page.getByTestId("bulk-value").fill("60");
     await page.getByTestId("bulk-apply").click();
     await page.getByTestId("bulk-open").click();
-    await page.getByTestId("bulk-field").selectOption("quantity");
+    await page.getByTestId("bulk-cancel").click();
+    await page.getByTestId("bulk-open-quantity").click();
     await page.getByTestId("bulk-value").fill("0");
     await page.getByTestId("bulk-apply").click();
     await page.getByTestId("product-create").click();

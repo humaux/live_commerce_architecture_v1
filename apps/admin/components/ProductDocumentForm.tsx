@@ -519,6 +519,7 @@ export function ProductDocumentForm({
             c={c}
             sign={sign}
             currency={store.currency}
+            locale={locale} productName={draft.name} productCode={draft.rows[0]?.code ?? ""} dirty={dirty}
             axes={draft.axes}
             rows={draft.rows}
             setAxes={setAxes}

@@ -3,7 +3,8 @@
 // Depends on: lib/product-document (applyBulk, DraftRow); lib/catalog-v2-model (OptionAxis); ProductBulkFill; lib/product-editor-copy. Local state only, no API call.
 // Used by: ProductDocumentForm.
 import { useEffect, useRef, useState } from "react";
-import { applyBulk, type DraftRow } from "@/lib/product-document";
+import { applyBulk, type BulkField, type DraftRow } from "@/lib/product-document";
+import type { Locale } from "@live-commerce/i18n";
 import type { OptionAxis } from "@/lib/catalog-v2-model";
 import type { ProductEditorCopy } from "@/lib/product-editor-copy";
 import { ProductBulkFill } from "./ProductBulkFill";
@@ -18,6 +19,7 @@ export function ProductDocumentVariants({
   c,
   sign,
   currency,
+  locale, productName, productCode, dirty,
   inventoryDisabled = false,
   codeDisabled = false,
   onInvalidValues,
@@ -30,11 +32,12 @@ export function ProductDocumentVariants({
   c: ProductEditorCopy;
   sign: string;
   currency: string;
+  locale: Locale; productName: string; productCode: string; dirty: boolean;
   inventoryDisabled?: boolean;
   codeDisabled?: boolean;
   onInvalidValues: () => void;
 }) {
-  const [bulk, setBulk] = useState(false),
+  const [bulk, setBulk] = useState<BulkField | null>(null),
     [notice, setNotice] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -45,7 +48,7 @@ export function ProductDocumentVariants({
     setRows(rows.map((r, n) => (i === n ? { ...r, ...patch } : r)));
   function closeBulk() {
     trigger.current?.focus();
-    setBulk(false);
+    setBulk(null);
   }
   return (
     <section
@@ -114,27 +117,29 @@ export function ProductDocumentVariants({
       >
         {c.addAxis}
       </button>
-      {(axes.length > 0 || rows.length > 1) && (
-        <>
           <div className="pe-bulk-controls">
             <div className="pe-bulk-anchor">
               <button
                 type="button"
                 ref={trigger}
                 data-testid="bulk-open"
-                disabled={disabled}
-                aria-expanded={bulk}
-                onClick={() => setBulk(!bulk)}
+                disabled={disabled || !rows.some(r => r.active)}
+                aria-expanded={bulk !== null}
+                onClick={(e) => { trigger.current = e.currentTarget; setBulk(bulk ? null : "price"); }}
               >
                 {c.bulk}
               </button>
               {bulk && (
                 <ProductBulkFill
                   c={c}
+                  currency={currency} locale={locale} productName={productName} productCode={productCode} dirty={dirty}
+                  initialField={bulk}
+                  key={bulk}
                   inventoryDisabled={inventoryDisabled}
                   codeDisabled={codeDisabled}
+                  hasSelection={rows.some(r => selected.includes(rowKey(r)))}
                   selectedCount={
-                    rows.filter((r) => selected.includes(rowKey(r))).length
+                    rows.filter((r) => r.active && selected.includes(rowKey(r))).length
                   }
                   close={closeBulk}
                   apply={(field, value, scope, operation, target) => {
@@ -176,10 +181,12 @@ export function ProductDocumentVariants({
             </div>
             <p className="pe-hint">
               {rows.length} / 100 · {c.selected}:{" "}
-              {rows.filter((r) => selected.includes(rowKey(r))).length}
+              {rows.filter((r) => r.active && selected.includes(rowKey(r))).length}
             </p>
           </div>
           {notice && <p role="status">{notice}</p>}
+      {(axes.length > 0 || rows.length > 1) && (
+        <>
           <div
             className="pe-matrix"
             data-testid="variant-matrix"
@@ -187,13 +194,13 @@ export function ProductDocumentVariants({
             role="region"
             aria-label={c.variants}
           >
-            <div className="pe-matrix-head" aria-hidden="true">
+            <div className="pe-matrix-head">
               <span>{c.variants}</span>
               <span>
                 {c.price} ({sign})
               </span>
-              <span>{c.compare}</span>
-              <span>{c.stock}</span>
+              <span>{c.compare} <button type="button" data-testid="bulk-open-compare" aria-label={`${c.bulk} ${c.compare}`} disabled={disabled || !rows.some(r => r.active)} onClick={e => { trigger.current = e.currentTarget; setBulk("compare"); }}>{c.bulk}</button></span>
+              <span>{c.stock} <button type="button" data-testid="bulk-open-quantity" aria-label={`${c.bulk} ${c.quantity}`} disabled={disabled || inventoryDisabled || !rows.some(r => r.active)} onClick={e => { trigger.current = e.currentTarget; setBulk("quantity"); }}>{c.bulk}</button></span>
               <span>{c.code}</span>
               <span>{c.keyword}</span>
               <span>{c.active}</span>

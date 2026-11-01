@@ -42,11 +42,12 @@ export function registerProductVisualAcceptance() {
         target = "all",
       ) => {
         await page.getByTestId("bulk-open").click();
-        await page.getByTestId("bulk-field").selectOption(field);
-        await page.getByTestId("bulk-target").selectOption(target);
-        await page
-          .getByRole("combobox", { name: "Set to", exact: true })
-          .selectOption(op);
+        if (field === "compare" || field === "quantity") {
+          await page.getByTestId("bulk-cancel").click();
+          await page.getByTestId(`bulk-open-${field}`).click();
+        } else await page.getByTestId(`bulk-field-${field}`).click();
+        if (await page.getByTestId("bulk-target").count()) await page.getByTestId("bulk-target").selectOption(target);
+        await page.getByTestId(`bulk-operation-${op}`).click();
         await page.getByTestId("bulk-value").fill(value);
         await page.getByTestId("bulk-apply").click();
       };
