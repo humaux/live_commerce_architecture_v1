@@ -190,6 +190,9 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
       });
       await capture(page, frame("840:5254", "840:5255"));
       await click(page, "搜尋", "only selected SKU remains after reload", async () => {
+        await expect(page).toHaveURL(url => url.searchParams.get("q") === "C08");
+        await expect(page.getByText("C08 · 帆布收納袋", { exact: true })).toBeVisible();
+        await expect(page.getByText("A12 · 焦糖托特包", { exact: true })).toHaveCount(0);
         await page.reload(); await expect(page.getByText("C08 · 帆布收納袋", { exact: true })).toBeVisible();
         await expect(page.getByText("A12 · 焦糖托特包", { exact: true })).toHaveCount(0);
       });
