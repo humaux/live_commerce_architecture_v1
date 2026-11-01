@@ -170,7 +170,7 @@
     "tests/admin/platform-messaging-copy.fixture.mjs": "65b22f7eee960ffd6c608c75bc61b019a11e6879655286b64109e2e0a568cc54",
     "tests/admin/platform-runner.mjs": "e02e605c0a3bfbab1ae47d8b155a371c9efc5b011c1feb36fc323a96e3ade7e3",
     "tests/admin/platform-site.test.ts": "b62a03636786d85f95acd879d1d178d4ad159f4178bc4ec504ebc4ec10619418",
-    "tests/admin/product-document.test.ts": "5f8195c25fa6977bdb29bc207f83d3226551ebdbc6e957964ccbae30c0d88c2a",
+    "tests/admin/product-document.test.ts": "ccf9c067cd98ecd0fe1b71802b377ccb9f9ba2244e25a421c82a38569574a67f",
     "tests/admin/product-editor-layout.acceptance.ts": "2e91382e776fc9973f0dd919a67e4c3600c3dc9eb602aa2c0b4c45898c20dca4",
     "tests/admin/product-editor-matrix-ledger.ts": "c2dc541bfc0962097fe00349efe4c95b860345ee0deae0ece0f94f7d66d5d5ee",
     "tests/admin/product-editor.acceptance.ts": "aea2fa2ae3ce42cca68e67bc6f9649422566dcb147d8fe45d3f98f9aa0923d9c",
