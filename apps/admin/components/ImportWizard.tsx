@@ -98,6 +98,8 @@ function ImportForm({ locale, store, boundary, onSignedOut, onUnconfirmed }: {
   async function selectFile(chosen: File | undefined) {
     if (inflight.current || pending.current?.unknown) return;
     const current = ++revision.current;
+    // A rejected or cancelled replacement must keep the picker reachable after the old preview is cleared.
+    setStage("upload");
     setFile(null); setHeaders([]); setMapping({}); setPreview(null); setReceipt(null); setReceiptMismatch(false); setError(""); setNotice(""); setStaleUnknown(false);
     if (!chosen) return;
     setBusy(true); inflight.current = true;
