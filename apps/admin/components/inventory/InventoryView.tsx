@@ -31,15 +31,15 @@ export function InventoryView({ locale, initial, state, setState, selected, sele
     <header><h1>{title}</h1>{state === "list" && <a className="ops-link" href={`/${locale}/products${initial.storeID ? `?store=${initial.storeID}` : ""}`}>{c.backProducts}</a>}</header>
     {state === "list" ? <>
       {warehouse && <p className="ops-note">{warehouse.name}</p>}
-      <div className="ops-inventory-tools"><div className="ops-actions">{[["all", c.all], ["available", c.availableOnly], ["empty", c.soldOut]].map(([value, label]) => <button key={value} aria-pressed={filter === value} disabled={locked} onClick={() => setFilter(value)}>{label}</button>)}</div>
+      <div className="ops-inventory-tools"><div className="ops-actions">{[["all", c.all], ["available", c.availableOnly], ["empty", c.soldOut]].map(([value, label]) => <button key={value} aria-pressed={filter === value} disabled={locked || filter === value} onClick={() => setFilter(value)}>{label}</button>)}</div>
         <button disabled={locked} onClick={() => setState("search")}>{c.searchSKU}</button>
       </div>
-      <h2>{c.allStock}</h2><div className="ops-card"><table className="ops-stock-table"><thead><tr>{[c.skuProduct, c.onHand, c.reserved, c.allocated, c.unavailable, c.available, c.action].map(label => <th key={label}>{label}</th>)}</tr></thead><tbody>
+      <h2>{c.allStock}</h2><div className="ops-card"><div className="table-scroll ops-stock-scroll"><table className="ops-stock-table"><thead><tr>{[c.skuProduct, c.onHand, c.reserved, c.allocated, c.unavailable, c.available, c.action].map(label => <th key={label}>{label}</th>)}</tr></thead><tbody>
         {initial.rows.items.filter(row => filter === "all" || (filter === "available" ? row.available > 0 : row.available === 0)).map(row => <tr key={row.sku_id}>
           <td>{row.code} · <button className="product-name" disabled={locked} onClick={() => choose(row)}>{row.product_name}</button></td>{[row.on_hand, row.reserved, row.allocated, row.unavailable, row.available].map((n, i) => <td key={i} data-label={[c.onHand, c.reserved, c.allocated, c.unavailable, c.available][i]} className={i === 4 ? "available-value" : undefined}>{n}</td>)}
           <td><button disabled={locked || row.status !== "active"} onClick={() => choose(row)}>{c.adjust}</button></td>
         </tr>)}
-      </tbody></table>{children}</div>
+      </tbody></table></div>{children}</div>
       <p className="ops-note">{c.stockEquation}</p>
       {initial.rows.next_cursor && <button disabled={locked} onClick={() => navigate({ cursor: initial.rows.next_cursor })}>{c.allStock}</button>}
     </> : state === "search" ? <section className="ops-card"><form onSubmit={event => { event.preventDefault(); navigate({ q: query }); setState("list"); }}>

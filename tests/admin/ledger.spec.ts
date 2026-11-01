@@ -233,21 +233,18 @@ test("stale balance fails closed and refresh enables a new command", async ({
 
 });
 
-// stop-bleed D01 (product-editor §c9): the inline "quick add" (product, then first SKU) is gone from this page. A product is created in the
-// full editor (/products/new; the catalog-core gate drives that flow with a real session), so here "Add product" is a link and no create
-// panel exists to open.
-test("Add product leaves for the product editor; no inline create panel on the inventory page", async ({
+// Signed C6 inventory replaces Add product with Back to products. This legacy fixture has no signed identity;
+// catalog-core retains the real-session list -> New product -> full-editor journey. Keep scoped navigation and no-inline-create checks here.
+test("Back to products leaves inventory; no inline create panel on the inventory page", async ({
   page,
 }) => {
   await page.goto("/en/inventory");
   await expect(page.locator(".create-panel")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Add product", exact: true })).toHaveCount(0);
-  await page.goto("/en/inventory");
-  await page.getByRole("link", { name: "Back to products", exact: true }).click();
-  const add = page.getByTestId("product-new");
-  await expect(add).toHaveAttribute("href", /^\/en\/products\/new\?store=[0-9a-f-]{36}$/);
-  await add.click();
-  await expect(page).toHaveURL(/\/en\/products\/new\?store=[0-9a-f-]{36}$/);
+  const back = page.getByRole("link", { name: "Back to products", exact: true });
+  await expect(back).toHaveAttribute("href", /^\/en\/products\?store=[0-9a-f-]{36}$/);
+  await back.click();
+  await expect(page).toHaveURL(/\/en\/products\?store=[0-9a-f-]{36}$/);
   await expect(page.locator(".create-panel")).toHaveCount(0);
 });
 

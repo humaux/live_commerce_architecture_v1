@@ -106,7 +106,7 @@ export function CollectionManager({
           {!list.data.items.length && <p>{c.empty}</p>}
           <ul className="collections-list ops-collection-list" data-testid="collections-list">{list.data.items.map(item => <li key={item.id}>
             <button data-testid={`collection-item-${item.id}`} onClick={() => setSelected(item.id)} aria-current={selected === item.id ? "true" : undefined}>
-              <strong>{item.title}<span className="sr-only"> /{item.slug}</span></strong><span>{item.membership_mode === "automatic" ? d.automatic : d.manual}</span><span>{item.membership_mode === "automatic" && item.ruleDays.length ? dataOpsText(d.createdDays, { n: Math.max(...item.ruleDays) }) : "—"}</span><span>{item.product_count}</span><span>{item.status === "active" ? c.visible : c.hidden}</span>
+              <strong><span>{item.title}</span><span className="sr-only"> /{item.slug}</span></strong><span>{item.membership_mode === "automatic" ? d.automatic : d.manual}</span><span>{item.membership_mode === "automatic" && item.ruleDays.length ? dataOpsText(d.createdDays, { n: Math.max(...item.ruleDays) }) : "—"}</span><span>{item.product_count}</span><span>{item.status === "active" ? c.visible : c.hidden}</span>
             </button>
           </li>)}</ul><p className="ops-note">{d.deleteCollectionHelp}</p>
         </section>

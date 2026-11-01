@@ -16,19 +16,27 @@ const signed = {
 // FIXTURE PREPARATION ONLY: real authenticated BFF, synthetic stock and product facts.
 // Never count these API calls as click acceptance or read/store any buyer information.
 async function prepare(page: Page) {
-  const warehouses = await page.request.get(`${origin}/api/stores/${store}/warehouses`);
-  expect(warehouses.ok(), "catalog fixture warehouse read").toBe(true);
-  const wh = (await warehouses.json()).items[0];
+  // FIXTURE transport: browser fetch uses the same signed session/edge as the UI.
+  // APIRequestContext bypasses that browser transport and returned 401 in RED.
+  const warehouses = await page.evaluate(async store => {
+    const response = await fetch(`/api/stores/${store}/warehouses`);
+    return { ok: response.ok, body: await response.json() };
+  }, store);
+  expect(warehouses.ok, "catalog fixture warehouse read").toBe(true);
+  const wh = warehouses.body.items[0];
   expect(wh?.name).toBeTruthy();
   const cookie = (await page.context().cookies()).find(c => c.name === "__Host-commerce_csrf" || c.name === "commerce_csrf");
   expect(cookie, "fixture session established by real OIDC click").toBeTruthy();
   const tag = test.info().testId;
   const csv = `handle,title,sku,price,description,stock:${wh.name}\nparity-a12,焦糖托特包,A12,1280,${tag},24\nparity-b21,米白托特包,B21,980,${tag},8\nparity-c08,帆布收納袋,C08,300,${tag},0\n`;
-  const response = await page.request.post(`${origin}/api/stores/${store}/tools/products/import/commit`, {
-    headers: { "Content-Type": "text/csv", "X-CSRF-Token": cookie!.value, Origin: origin }, data: csv,
-  });
-  expect(response.status(), "synthetic CSV fixture commit").toBe(200);
-  expect((await response.json()).committed).toBe(true);
+  const response = await page.evaluate(async ({ store, csv, csrf }) => {
+    const response = await fetch(`/api/stores/${store}/tools/products/import/commit`, {
+      method: "POST", headers: { "Content-Type": "text/csv", "X-CSRF-Token": csrf }, body: csv,
+    });
+    return { status: response.status, body: await response.json() };
+  }, { store, csv, csrf: cookie!.value });
+  expect(response.status, "synthetic CSV fixture commit").toBe(200);
+  expect(response.body.committed).toBe(true);
 }
 
 recordEvidence();

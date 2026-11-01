@@ -1,5 +1,29 @@
 # PARITY-DATA-OPS — implementation relay, 2026-11-01
 
+## Current FIX1 handoff
+
+Read [FIX1.md](FIX1.md) for all current-head failures, classes, repairs and the exact base identity exception. The earlier sections below are historical implementation receipts, not current status. FIX1 remains E1 locally; no new-head GREEN or completed UI acceptance is claimed. Humaux was available this session; classification and independent subtask canvas were recorded.
+
+- Merged integration c52b65283 into own branch as5b428a0fe; generated ownership conflict resolved by generator.
+- Static checks: six node --check commands, targeted strict tsc including visual-states, static design detector, browser ownership generation/--check, depmap generation, packet check and git diff --check all exit0. Additional product-editor.acceptance compile closure is NOT_RUN locally (uninstalled axe-core); full CI remains authoritative. Depmap produced no diff; packet timestamp-only change restored.
+- Local CI artifacts/logs retained uncommitted; their run/job/artifact paths and SHA256 are in FIX1-evidence-manifest.json. New raw downloads are never staged.
+- Class(c) proof: base41256591992/job124701685425/artifact13063513565, settings-real browser log lines11–12,28,32,37, same disabled Save pricing policy at settings-v2.spec.ts1085; no settings edit.
+- CI wake/timeout: push once; identify exact-head Gates/Foundation runs, then integrator relays on completion/failure/cancellation. Do not poll beyond10min or attempt a third repair if the same assertion remains red.
+- Scope review: shared sweep monitor/driver, storefront merchant setup/callers and admin legacy/PE acceptance specs are outside literal C6 component paths, explicitly listed in PR under the directed FIX1 scope.
+
+### FIX1 required-fact parity and click acceptance
+
+| Required fact | Desktop | Mobile / review / summary | Evidence boundary |
+|---|---|---|---|
+| SKU identity and warehouse | Existing signed list/edit | Same selected SKU and warehouse | Source InventoryView; current-head real-click CI pending |
+| Server on-hand/reserved/allocated/unavailable/available | Five balances retained | Same balances; draft/review shows before/after plus reason | No client-owned persisted quantity; original stock9/7 and zero-stock oracles retained |
+| Original file, safe counts and immutable retry | Existing import stages | Same selected file and mapping through UNKNOWN/result | Result restart disabled prop explicit; replay/mismatch tests unchanged |
+| Collection title/type/rule/count/status | Existing list with visible title span | Same list metadata/mobile cards and editor | Hidden slug retained for accessible name; no field removed |
+
+Actual clicks/results for this FIX1 head are NOT_RUN until its own CI returns; no screenshot or static check substitutes. Existing per-control C6 and legacy click ledgers remain in CI artifacts. No new UI string or Figma design was authored, so the existing three-language copy table and five UI-process sections below remain the supplied design context.
+
+---
+
 PR #475 targets `r3/integration`; branch `unit/parity-data-ops`, inherited worktree. Base `4b8c04c7213025c173e260db6f9c81cb5b818c61` is still the current remote integration ancestor (fetched this session). CATALOG-PEOPLE #363 is merged. No other branch/worktree, merge, auto-merge, production or live data operation.
 
 **E1 structure ready; author assessment E0. Implementation GREEN, E3 UI acceptance and independent review NOT_RUN.** The precise customer error-field assertions remain BLOCKED below. This delivery supersedes earlier ROUND 1/RED-only handoffs.

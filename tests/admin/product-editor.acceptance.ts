@@ -269,7 +269,7 @@ export function registerProductEditorAcceptance() {
       });
       await page.goto(url("en", "products/new"));
       await page.goto(url("en", "collections"));
-      await page.getByTestId("collection-new").click();
+      await page.getByTestId("collection-manage-new").click();
       await page.getByTestId("collection-title").fill(`${tag} picks`);
       await page.getByTestId("collection-save").click();
       await expect(page.getByTestId("collection-members")).toBeVisible();

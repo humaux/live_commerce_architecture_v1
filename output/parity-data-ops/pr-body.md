@@ -92,4 +92,16 @@ Paths below are targets, not claims that CI captures exist. Entry captures occur
 | `1198:10633` | `parity/1198-10633.png` | `figma/get_screenshot-1198-10633-1793511937146-0.png` | Admin Desktop · 顧客匯入 · stale-unknown · DRAFT-COPY · 1440×900px |
 | `1198:10678` | `parity/1198-10678.png` | `figma/get_screenshot-1198-10678-1793511937434-0.png` | Admin Mobile · 顧客匯入 · stale-unknown · DRAFT-COPY · 390×844px |
 
+## FIX1 directed repair
+
+Read output/parity-data-ops/FIX1.md for every failed job/test/evidence/class. One combined repair push after merging current integration c52b65283 as5b428a0fe. Fixes native file chooser evidence, selected stock filters, owned color tokens/responsive CSS, explicit import-result lock, visible collection title, fixture browser-session transport, and signed real-click inventory/collection/product-entry paths. No thresholds, exemptions, fixture contents or business oracles relaxed.
+
+Base exception proven: identity failure is identical in base run41256591992, job124701685425, artifact13063513565. Artifact member playwright/settings-real-20261101T004621.374573085/playwright.log lines11–12/28/32/37 names the same disabled Save pricing policy click at settings-v2.spec.ts1085. Native job line3718 reports TestBrowserSettingsWizardRealChain FAIL. Latest green base41288903917 did not select identity/bundle07. Settings left unchanged; this is not an overall GREEN claim.
+
+Additional paths for integrator scope review: tests/ui/click-sweep.mjs, click-sweep-lib.mjs, click-sweep-lib.test.mjs; tests/storefront/merchant-product.mjs, merchant-buyer-gate.mjs, storefront-publish-gate.mjs; tests/admin/ledger.spec.ts, visual-states.spec.ts, product-editor.acceptance.ts; generated output/ci-select-backend-browser/browser-ownership.json. These are the directed failed callers/helpers named by FIX1; no other app, backend package, migration, contract, OpenAPI or lockfile changed. Depmap regenerated with no diff.
+
+Static E1: node syntax checks, targeted strict tsc, static design detector, ownership generation/--check, depmap, packet, evidence retention and whitespace. Additional product-editor acceptance type closure needs locally absent axe-core; CI runs it. No local tests/servers. Full click/visual acceptance, own-head GREEN and independent review remain NOT_RUN. Frozen customer required-field specificity remains a known downstream limitation; its assertions are unchanged. On repeated red after this batch, STOP rather than a third approach.
+
+Raw downloaded logs/artifacts uncommitted; run/job/member SHA256 manifest in output/parity-data-ops/FIX1-evidence-manifest.json. Rollback: revert this FIX1 commit through the integrator, no production or data changes.
+
 🤖 Generated with Codex (dispatched by Claude Code integrator).
