@@ -81,6 +81,7 @@ function makeOrder(n, o = {}) {
       order_id: order.order_id, currency: "TWD", total_minor: total, commercial_state: commercial === "AWAITING_COLLECTION" ? "AWAITING_PAYMENT" : commercial, test_mode: false,
       payment_state: p.state ?? "NOT_STARTED", handoff_state: p.handoff ?? "NONE", handoff_expires_at: stripe ? iso(1800e3) : null,
       ...(stripe ? { cancel_requested: Boolean(p.cancelRequested) } : {}),
+      ...(p.refund ? { refund: p.refund } : {}),
       methods: p.methods === false ? [] : [{ code: "stripe_checkout", version: 1, name_hans: "信用卡", name_hant: "信用卡", name_en: "Card" }],
     };
   }
@@ -445,6 +446,28 @@ for (const [key, n, o, frames, text, headings] of [
       await c.shot(frames[dev]);
       try { c.done(); } finally { await page.close(); }
     }
+  });
+}
+
+// RVFIX-444 (RD6): a refund never changes commercial/fulfillment state, so a shipped card order that was refunded must read the payment view:
+// show the §7.2 refund line and never 已付款.
+const SHIPPED = { line: "bag", unit: 48000, commercial: "CONFIRMED", fulfillment: "MERCHANT_SHIPPED",
+  shipment: { status: "SHIPPED", carrier_code: "other", carrier_name: "其他物流", tracking_number: "TRK12345", tracking_url: null, recorded_at: iso(-3600e3) } };
+for (const [key, pay, shown, notShown] of [
+  ["refunded", { state: "REFUNDED", handoff: "CLOSED", methods: false, refund: { refunded_minor: 48000, pending_minor: 0 } }, ["已退款 NT$480"], ["已付款", "退款處理中"]],
+  ["partially-refunded", { state: "PARTIALLY_REFUNDED", handoff: "CLOSED", methods: false, refund: { refunded_minor: 20000, pending_minor: 0 } }, ["已退款 NT$200"], ["已付款", "退款處理中"]],
+  ["refund-processing", { state: "CAPTURED", handoff: "CLOSED", methods: false, refund: { refunded_minor: 0, pending_minor: 48000 } }, ["退款處理中"], ["已付款", "已退款"]],
+  ["review-required", { state: "REVIEW_REQUIRED", handoff: "CLOSED", methods: false }, ["付款結果需要確認"], ["已付款"]],
+]) {
+  test(`terminal order view · shipped card order · ${key}`, async () => {
+    const n = fresh();
+    makeOrder(n, { ...SHIPPED, pay });
+    const page = await openOrder(DEVICES.d(), n);
+    const c = new Check(page, `terminal shipped ${key}`);
+    await c.load();
+    c.text(...shown);
+    c.gone(...notShown);
+    try { c.done(); } finally { await page.close(); }
   });
 }
 
