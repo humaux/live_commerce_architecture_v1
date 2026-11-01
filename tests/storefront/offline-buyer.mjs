@@ -188,12 +188,20 @@ async function send(page, last5, minor, minutesAgo = 10) {
     if (!route || (route.endsWith("/proof") ? method !== "PUT" : method !== "GET")) return;
     if (observed.length >= 16) { overflow = true; return; }
     observed.push((async () => {
-      const body = await r.json().catch(() => null);
+      let deadline;
+      let read;
+      try {
+        read = await Promise.race([
+          Promise.resolve().then(() => r.json()).then((body) => ({ body, kind: "OK" }), () => ({ body: null, kind: "ERROR" })),
+          new Promise((resolve) => { deadline = setTimeout(() => resolve({ body: null, kind: "TIMEOUT" }), 2000); }),
+        ]);
+      } finally { clearTimeout(deadline); }
+      const body = read.body;
       let sent = null;
       if (method === "PUT") { try { sent = r.request().postDataJSON(); } catch { /* diagnostic stays static */ } }
       const proof = method === "PUT" ? sent : body?.proof;
       return {
-        route, method, status: r.status(),
+        route, method, status: r.status(), body_read: read.kind,
         state: safeEnum(body?.state, transferStates), error_code: safeEnum(body?.code, transferErrors),
         last5_match: proof?.last5 === last5, amount_match: proof?.amount_minor === minor,
         expected_at: safeSyntheticInstant(expectedInstant, expectedInstant),
