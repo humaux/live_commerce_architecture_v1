@@ -307,7 +307,7 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
           return summaryCheck();
         });
 
-        await step(searchFrame, searchRoute, "cursor-page result summary", "goto + click + reload + assert", "last search page has product cards but no misleading total, including after refresh", async () => {
+        await step(searchFrame, searchRoute, "cursor-page result summary", "goto + follow server href + reload + assert", "last search page has product cards but no misleading total, including after refresh", async () => {
           const noJS = await browser.newContext(ctxOpts({ ignoreHTTPSErrors: true, javaScriptEnabled: false, viewport: { width, height }, locale }));
           try {
             const cursorPage = await noJS.newPage();
@@ -321,7 +321,8 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
             const nextURL = new URL(nextHref, cursorPage.url());
             assert(nextURL.searchParams.get("after"), "the real next-page URL must contain after");
             assert.equal(nextURL.searchParams.get("q"), q);
-            await nextLink.click();
+            // Read the real no-JS link as cursor setup: CI renders it hidden, so navigate to its exact server-issued URL.
+            await cursorPage.goto(nextURL.href);
             await expect(cursorPage).toHaveURL(nextURL.href, { timeout: T });
             const checkLastPage = async () => {
               await expect(cursorPage.getByTestId("product-card").first()).toBeVisible({ timeout: T });
@@ -334,7 +335,7 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
             const cards = await checkLastPage();
             await cursorPage.reload();
             assert.equal(await checkLastPage(), cards, "last-page cards persist after refresh");
-            return `${cards} last-page cards; no result count before or after refresh; real no-JS next link clicked`;
+            return `${cards} last-page cards; no result count before or after refresh; real no-JS next href followed`;
           } finally {
             await noJS.close();
           }

@@ -21,3 +21,28 @@ Files changed:
 - output/ci-select-backend-browser/browser-ownership.json (regenerated)
 
 RVFIX3-440 RED (head 067f3b447, run 41267308313): gate (bundle:02) --browser-storefront FAIL, the only failing member; the new on-accent/hover assertions are the only change in that head, so this is the expected RED. Implementation pushed next.
+
+RVFIX4-440 tests-only RED PUSHED (2026-11-01).
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/440
+Head: bb0dfc2897ca661fd22bfc5eac0a2be0461eccbe
+WAIT_RUN Gates: 41275173591 (plan job 124755805994 is not a test witness).
+WAIT_RUN Foundation: 41275173595; foundation job 124755805971.
+Expected RED assertion (NOT OBSERVED yet): buyer-browse-parity.spec.ts cursor-page result summary, exact localized last-page count line must have count 0 while product cards remain rendered.
+New assertion runs for zh-TW/zh-CN/en x desktop/mobile using a clicked real noscript after link, then refresh.
+Current evidence: E1 node --check and ownership generation exit 0; push exit 0. RED assertion result and GREEN NOT_RUN, CI pending.
+Relay resumes on CI conclusion; implement only page.tsx guard/comment after confirming this assertion fails. No local tests/servers, no product change, no fixture weakening.
+This run-id append is intentionally uncommitted for the relay; no second evidence-only push.
+
+RVFIX4-440 relay1 CI readback (2026-11-01), exact PR head bb0dfc2897ca661fd22bfc5eac0a2be0461eccbe:
+Gates run 41275173591 / gate (bundle:02) job 124756454702: FAIL TestBrowserStorefront.
+Foundation run 41275173595 / job 124755805971: PASS.
+Evidence: artifact gate-browser-storefront id 13070849643; playwright/run.K2PvJNjL/storefront/20261101T051124.349362417/parity-buyer-browse-click-ledger.json
+REJECTED causal RED: all six new cursor steps time out on locator.click because the noscript link is not visible; count-0 assertion NOT_REACHED. Receipts/required are downstream failures.
+zh-TW 1440x900: cursor-page result summary: locator.click: Timeout 30000ms exceeded.; element is not visible
+zh-TW 390x844: cursor-page result summary: locator.click: Timeout 30000ms exceeded.; element is not visible
+zh-CN 1440x900: cursor-page result summary: locator.click: Timeout 30000ms exceeded.; element is not visible
+zh-CN 390x844: cursor-page result summary: locator.click: Timeout 30000ms exceeded.; element is not visible
+en 1440x900: cursor-page result summary: locator.click: Timeout 30000ms exceeded.; element is not visible
+en 390x844: cursor-page result summary: locator.click: Timeout 30000ms exceeded.; element is not visible
+Targeted harness repair attempt 1: follow the exact href read from the server-rendered noscript link via page.goto, as the card explicitly permits. No fake cursor, removed assertion, forced click, DOM mutation, or product change.
+Next push is tests-only again; accepted assertion RED and implementation/GREEN remain pending.
