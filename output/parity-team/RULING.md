@@ -1,5 +1,20 @@
 # PARITY-TEAM ROUND 3 ruling implementation
 
+## RELAY 2 — verified stop (2026-11-01)
+
+Re-read the current dispatch, both original cards, AGENTS.md and architecture §§0,1,2,26,27. `git fetch origin r3/integration unit/parity-team` and `git merge --no-edit origin/r3/integration` exit 0; already current at integration `c52b65283a5ac738d0c527a464d0cccc9523b1f4`. Remote PR head is still `3eb0e63a0d34dd1e351cf2b09961e170e240bb15`. Existing local implementation fix is `98b265b465791f76f1415f04b29fcb933909555e`; it has not been pushed or CI-verified. No new product/test change or fix attempt in this relay.
+
+Fresh `gh pr checks 476` and raw failed-job reads confirm the following on that exact remote head (both workflow metadata headSha values checked):
+
+- Gates `41289265846`, browser job `124798201256`: list `1468:74273`, pending `1468:74492` and empty `1468:74559` pass. Admin confirmation/result frames `1468:78293`, `1468:78348`, `1468:78333`, `1468:78392` still fail, although this ruling explicitly defers them. The invite-entry assertion also demands a button named `邀請員工` where the signed entry has a heading (`tests/admin/parity-team.mjs:217-224`).
+- The same browser job requires module-shell text `設定與員工`; the original card explicitly authorizes the approved shared shell. Its source/content oracle has not been changed.
+- Gates `41289265846`, bundle:08 job `124798201364`: `TestBrowserStaffTeam`, `browser_staff_team_test.go:217`, fails with `invitation mails received by the real SMTP server: 1, want >= 4`; `TestBrowserOC` also fails. The no-send ruling cannot satisfy the invitation issuance/replay/mail assertions. No SMTP action was attempted here.
+- Foundation `41289265756`, job `124796913759`: `Team.tsx: format 1 > 0`. This and the CSS/mobile fixes are already in the unpushed local fix described below; no current GREEN receipt exists.
+
+STOP under the dispatch's outside-card gate rule. Integrator must reconcile preserved acceptance scope with the two explicit rulings and shared-shell exception. No test deletion, skip, fixture/oracle/threshold change, inert duplicate control, enabling admin promotion, backend/outbox change, or mail send was used to pass. The immutable suite SHA-256 is still `7ff876032ca732452330e152eed4513d45cc7b504eb4920ef9656d7e5e8d18c6`.
+
+Browser ownership regenerated, then `--check`, both exit 0; no working-tree change. No local tests/server, dependency installation or new CI. Inherited untracked files retained. This relay only updates this report; existing outside-path disclosure and DEFERRED table below remain applicable. E3 = exact-head observed CI failure only; E1 = static ownership structure only; own PASS = E0. NOT_RUN: GREEN for the local fix, successful click/persistence/parity/density acceptance, independent review, SANDBOX, LIVE. WAIT_RUN: none; integrator owns reconciliation/re-dispatch, no local background task remains.
+
 ## RELAY 1 — current fix batch (2026-11-01)
 
 This section supersedes the CI-pending and unavailable-tool statements below; the original ROUND 3 record is retained as history. Current remote head inspected: `3eb0e63a0d34dd1e351cf2b09961e170e240bb15`. Merged `origin/r3/integration` first, checkpoint `d60545a3870aef3dec814414f2fb2fb2241f72f1`. Existing untracked FIX1, reference PNG and r3-ci-handoff were present on entry and preserved. No delegation or new task claim; this is the integrator's assigned lane.
@@ -117,4 +132,4 @@ The preserved tests `tests/admin/parity-team.mjs` still require invite writes, s
 
 One implementation push follows the already observed tests-only RED; no evidence-only commit after CI. Gates/Foundation run IDs will be recorded in a PR comment once registered, and returned as WAIT_RUN. CI queue ownership returns to the integrator for re-dispatch, with no unattended local process.
 
-STATUS: BLOCKED_ASSERTION_RULING_CONFLICT_FIX1_LOCAL_NOT_PUSHED
+STATUS: BLOCKED_ASSERTION_RULING_CONFLICT_RELAY2_NO_PUSH
