@@ -7,7 +7,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { expect } from "@playwright/test";
 import { formatMoney } from "../../apps/storefront/lib/money.ts";
-import { reachCheckout, confirmCheckoutAddress, openCheckoutDetails } from "./shop-helpers.mjs";
+import { reachCheckout, confirmCheckoutAddress, openCheckoutDetails, recoverPurchase } from "./shop-helpers.mjs";
 
 const copy = {
   en: { timing: "Pay online after placing the order", open: "Expand payment help", close: "Collapse payment help", changed: "Total updated. Please confirm again.", confirm: "Confirm new total", change: "Change delivery", quote: "Get current total" },
@@ -149,7 +149,7 @@ export async function checkoutV2CodFeeChange({ newContext, origin, product, reci
       await step(page, `${label} original recovery`, "status click replays unchanged intent/key and recovers the original order and collection amount", async () => {
         const [request] = await Promise.all([
           page.waitForRequest((r) => new URL(r.url()).pathname === "/api/buyer/checkout" && r.method() === "POST"),
-          page.getByTestId("recover-purchase").click(),
+          recoverPurchase(page),
         ]);
         assert.equal(request.headers()["idempotency-key"], pending.key);
         assert.deepEqual(request.postDataJSON(), pending.body);

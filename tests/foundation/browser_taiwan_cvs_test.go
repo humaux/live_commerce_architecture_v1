@@ -3,6 +3,7 @@
 package foundation_test
 
 // TCV08 (contracts/taiwan-cvs-logistics-v1.md §10 TCV08) and the browser half of TCV14: real browsers. `TestBrowserTaiwanCvs`, prefix `brc`.
+// Used by: FIX-LATENT-BUNDLES 2026-11-01 to select unmodified-base --browser-cvs reproduction.
 // Run through `bash scripts/dev/test-local.sh --browser-cvs` (isolated PG 18, production storefront + admin Next builds).
 //
 // Stack (MOCK variant, always): three stores on three ACTIVE hosts served by one private buyerhttp handler behind the production storefront
