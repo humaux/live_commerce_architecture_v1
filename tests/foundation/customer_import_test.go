@@ -732,6 +732,7 @@ func TestCustomerImport(t *testing.T) {
 			t.Fatalf("external id shape: %d %v", st, codes)
 		}
 	})
+	t.Run("CI16 row-error capability contract", func(t *testing.T) { ciRowErrorsCapability(t, c) })
 }
 
 func (c *ciEnv) resultsCSV(batch string) string {
@@ -745,8 +746,7 @@ func (c *ciEnv) resultsCSV(batch string) string {
 
 // §4.1/6.1 uses real HTTP + PG. The frozen legacy row-key allowlist is
 // independent of the producer DTO; decoding through a future DTO would hide drift.
-func TestCustomerImportRowErrorsCapability(t *testing.T) {
-	c := ciSetup(t)
+func ciRowErrorsCapability(t *testing.T, c *ciEnv) {
 	f := c.f
 	snapshot := func() []int {
 		out := []int{}
