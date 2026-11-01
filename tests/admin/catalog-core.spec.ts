@@ -339,3 +339,85 @@ for (const v of process.env.PRODUCT_EDITOR_ACCEPTANCE === "1" ? [] : variants) {
 
 // CATALOG-V2-IMPL: additive signed-design cases; frozen CC12/PE cases above remain unchanged.
 if (process.env.PRODUCT_EDITOR_ACCEPTANCE === "1") registerCatalogSimplifiedAcceptance();
+
+// PR475 P1: the second creator must share the unresolved quick-create boundary.
+// These are UI writes against the existing real-PG harness; only the first committed response is dropped.
+if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") for (const mode of ["manual", "automatic"] as const)
+  for (const entry of ["manage", "new", "row"] as const) test(`collection ${mode} UNKNOWN fences ${entry} navigation and retries the original creation`, async ({ page }) => {
+    await signedLogin(page);
+    await page.goto(`/en/collections?store=${store}`);
+    await expect(page.getByTestId("collections-page")).toBeVisible();
+    const title = `${tag} unresolved ${mode} ${entry}`;
+    const commands: Array<{ key: string | null; body: string | null }> = [];
+    let committedID = "";
+    const endpoint = `/api/stores/${store}/collections`;
+    await page.route(`**${endpoint}`, async route => {
+      if (route.request().method() !== "POST") return route.continue();
+      commands.push({ key: route.request().headers()["idempotency-key"] ?? null, body: route.request().postData() });
+      if (commands.length === 1) {
+        const response = await route.fetch();
+        expect(response.status(), "the genuine collection POST committed before ACK loss").toBe(200);
+        const receipt = await response.json();
+        expect(receipt.id).toMatch(/^[0-9a-f-]{36}$/);
+        committedID = receipt.id;
+        await route.abort("connectionreset");
+      } else await route.continue();
+    });
+    const quick = page.locator("#collections-quick-create");
+    await quick.getByRole("textbox", { name: "Name", exact: true }).fill(title);
+    await quick.getByRole("radio", { name: mode === "manual" ? "Manual" : "Automatic", exact: true }).check();
+    await page.getByTestId("collection-new").click();
+    await expect(quick.getByRole("alert")).toHaveText(catalogCopy.en.collections.uncertain);
+    expect(commands).toHaveLength(1);
+    expect(committedID).not.toBe("");
+    // Read-only authoritative readback: the lost reply is not simulated as a successful response.
+    const matching = async () => {
+      const response = await page.request.get(`${origin}${endpoint}?limit=100`);
+      expect(response.status()).toBe(200);
+      const body = await response.json();
+      return body.items.filter((item: { title: string }) => item.title === title);
+    };
+    expect((await matching()).map((item: { id: string }) => item.id)).toEqual([committedID]);
+    await test.step(`${entry} entry cannot open an independent collection writer`, async () => {
+      const target = entry === "manage" ? page.getByTestId("collection-manage-new")
+        : entry === "new" ? page.getByTestId("collection-new") : page.locator('[data-testid^="collection-item-"]').first();
+      // A disabled entry is an acceptable fence; never force a disabled control.
+      await expect(target).toBeVisible();
+      if (await target.isEnabled()) await target.click();
+      const editor = page.getByTestId("collection-editor");
+      const retry = page.getByRole("button", { name: catalogCopy.en.edit.retry, exact: true });
+      if (entry !== "new") await expect(editor.or(retry)).toBeVisible();
+      if (entry === "manage" && await editor.isVisible()) {
+        // Exercise the demonstrated bypass to the server, rather than merely asserting a layout choice.
+        const input = editor.getByTestId("collection-title");
+        if (await input.isEnabled()) await input.fill(title);
+        const save = editor.getByTestId("collection-save");
+        if (await save.isEnabled()) {
+          const saved = page.waitForResponse(response => new URL(response.url()).pathname === endpoint && response.request().method() === "POST");
+          await save.click();
+          expect((await saved).status()).toBe(200);
+        }
+      }
+      // Soft assertions preserve the duplicate readback and original-retry evidence in the same failed run.
+      expect.soft(new Set(commands.map(command => command.key)).size, "UNKNOWN navigation must not create a fresh idempotency key").toBe(1);
+      expect.soft(await matching(), "UNKNOWN must not create a suffixed duplicate collection").toHaveLength(1);
+      await expect.soft(retry, "the original pending request remains visibly recoverable after navigation").toBeVisible();
+      // If navigation hid it, return through the real New control; never clear the pending command/journal.
+      if (!await retry.isVisible()) {
+        const back = page.getByTestId("collection-new");
+        if (await back.isEnabled()) await back.click();
+      }
+      await expect(retry).toBeVisible();
+      await retry.click();
+    });
+    await expect(page.getByTestId("collection-title")).toHaveValue(title);
+    expect(commands.length, "an explicit same-command retry reached the server").toBeGreaterThanOrEqual(2);
+    for (const command of commands) expect(command, "every creation attempt retains the original key and bytes").toEqual(commands[0]);
+    expect((await matching()).map((item: { id: string }) => item.id)).toEqual([committedID]);
+    const shopper = await shop("/v1/buyer/catalog/v2/collections");
+    expect(shopper.status).toBe(200);
+    expect(shopper.body.collections.filter((item: { title: string }) => item.title === title), "one actual shopper-visible collection, including suffix variants").toHaveLength(1);
+    await page.reload();
+    await expect(page.getByTestId(`collection-item-${committedID}`)).toBeVisible();
+    expect(await matching()).toHaveLength(1);
+  });

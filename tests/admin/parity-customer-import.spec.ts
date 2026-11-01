@@ -38,6 +38,57 @@ test.describe("PARITY-DATA-OPS C6 customer import", () => {
       await expect(page.locator("html")).toHaveAttribute("lang", locale);
     });
 
+    // PR475 P1: a rejected replacement must not strand the errors screen after clearing its old preview.
+    for (const entry of ["preview", "result"] as const) for (const invalid of ["oversized", "utf8", "header"] as const)
+      test(`customer import ${viewport.width}: ${entry} errors recover after ${invalid} corrected file`, async ({ page }) => {
+        await page.setViewportSize(viewport); await owner(); await login(page); await page.goto(href("zh-TW"));
+        const prefix = `REPAIR-${test.info().testId.replace(/[^a-z0-9]/gi, "").slice(-16)}`;
+        const privateName = `Synthetic ${prefix}`;
+        const requests: string[] = [];
+        page.on("request", request => {
+          if (request.method() === "POST" && new URL(request.url()).pathname === `/api/stores/${store}/imports/customers/commit`) requests.push(request.postData() ?? "");
+        });
+        const choose = async (button: string, name: string, buffer: Buffer) => action(page, button, "click + native filechooser", "file selection completes without reloading", async () => {
+          const chooser = page.waitForEvent("filechooser");
+          await page.getByRole("button", { name: button, exact: true }).click();
+          await (await chooser).setFiles({ name, mimeType: "text/csv", buffer });
+        });
+        await choose("更換檔案", "repair-source.csv", Buffer.from(`source_id,name\n${prefix},${privateName}\n,Synthetic excluded\n`));
+        await page.getByTestId("import-map-external_id").selectOption("source_id");
+        await page.getByTestId("import-map-name").selectOption("name");
+        await click(page, "預覽可套用資料", "real preview contains one applicable and one excluded row", async () => {
+          await heading(page, "確認前，再核對一次");
+          await expect(page.getByText("新增 1 · 更新 0 · 不匯入 1", { exact: true })).toBeVisible();
+        });
+        if (entry === "result") await click(page, "確認匯入 1 筆", "real import receipt precedes repair", () => heading(page, "顧客匯入結果"));
+        await click(page, "查看不匯入原因", "safe error details retain a corrected-file entry", () => heading(page, "回原檔修正這一筆"));
+        const baselineCommits = entry === "result" ? 1 : 0;
+        expect(requests).toHaveLength(baselineCommits);
+        const buffer = invalid === "oversized" ? Buffer.alloc(2 * 1024 * 1024 + 1, 97)
+          : invalid === "utf8" ? Buffer.from([0xff, 0xfe, 0x0a]) : Buffer.from('"source_id,name\n');
+        const error = invalid === "oversized" ? "請選擇不超過 2 MiB 的檔案。"
+          : invalid === "utf8" ? "請另存為 CSV UTF-8，無法匯入 Big5 檔案。" : "請檢查 CSV 格式、每列欄位數與欄位對應。";
+        await choose("選擇修正後檔案", `rejected-${invalid}.csv`, buffer);
+        await expect(page.getByRole("alert")).toHaveText(error);
+        expect(requests, "a rejected corrected file never commits").toHaveLength(baselineCommits);
+        for (const value of [prefix, privateName, "Synthetic excluded"]) await expect(page.locator("main")).not.toContainText(value);
+        await action(page, "更換檔案", "recoverable picker", "invalid replacement leaves a reachable, enabled picker", async () => {
+          // Causal RED at 5ad20902: errors + null preview removes this picker and every recovery action.
+          await expect(page.getByRole("button", { name: "更換檔案", exact: true })).toBeVisible();
+          await expect(page.getByRole("button", { name: "更換檔案", exact: true })).toBeEnabled();
+        });
+        await choose("更換檔案", "corrected.csv", Buffer.from(`source_id,name\n${prefix}-corrected,${privateName} corrected\n`));
+        await page.getByTestId("import-map-external_id").selectOption("source_id");
+        await page.getByTestId("import-map-name").selectOption("name");
+        await click(page, "預覽可套用資料", "same-page replacement reaches a fresh real preview", async () => {
+          await heading(page, "確認前，再核對一次");
+          await expect(page.getByText("新增 1 · 更新 0 · 不匯入 0", { exact: true })).toBeVisible();
+          await expect(page.getByRole("heading", { name: "corrected.csv", exact: true })).toBeVisible();
+          await expect(page.locator("main")).not.toContainText(privateName);
+          expect(requests).toHaveLength(baselineCommits);
+        });
+      });
+
     for (const outcome of ["preview", "errors", "result", "pending", "stale", "stale-unknown"] as const) test(`customer import ${viewport.width}: ${outcome}`, async ({ page }) => {
       await page.setViewportSize(viewport); await owner(); await login(page);
       await page.goto(href("zh-TW")); await heading(page, "匯入顧客");
