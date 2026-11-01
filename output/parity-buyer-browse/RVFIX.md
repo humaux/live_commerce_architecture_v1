@@ -56,3 +56,21 @@ Push 1 is tests only (RED). Fixture accent changed to light `#f2d049` (tests/fou
 Outcome RVFIX3-440 (relay 1): head 067f3b447 failed only gate (bundle:02) --browser-storefront (expected RED, run 41267308313). Fix: apps/storefront/app/globals.css:777-778 body .sf-btn--primary uses color var(--on-action) and hover color-mix(in srgb, var(--action) 88%, #000), same as shop.css:117. globals.css is loaded only by the storefront app, admin untouched. Unrun locally; CI decides.
 
 Outcome RVFIX3-440 (relay 2): head bdd44efa - bundle:02 --browser-storefront now green, so the accent fix holds. Only bundle:07 failed: --browser-identity / TestBrowserSettingsWizardRealChain (admin settings wizard, unrelated to this storefront-only diff, no Playwright detail in the job log). receipts/required follow from it. No code change; re-run bundle:07. Unrun locally; CI decides.
+
+## RVFIX4-440 — P1-1 cursor-page count, tests-only RED push (2026-11-01)
+
+Authority: current dispatched RVFIX4-440 ruling; review `output/issue-107/review-440-8763cda7a.md` read from the read-only main checkout; current source and `contracts/storefront-v2.md` catalog list/CC06. The ruling corrects the review's parameter name to `after`. P2 items and the closed accent blocker are outside this card.
+
+Merged `origin/r3/integration` first: fetch and merge exit 0, Already up to date (`fde11c1310fce20b576fc98023bd3003c66c205b`). Entry head: `8763cda7acdcb597c8945925133b03043c9e056d`. Role: dispatched test author (no delegation); runtime model family GPT-6 / effort not exposed. Branch: `unit/parity-buyer-browse`; assigned worktree: `.worktrees/parity-buyer-browse`.
+
+| Finding | Change (file:line) | RED run | GREEN run / outcome |
+| --- | --- | --- | --- |
+| P1-1: `!next` also holds on a last cursor page; page length is not a total | `tests/storefront/buyer-browse-parity.spec.ts:310`: no-JS context searches `e`, reads the real noscript next href, asserts `after` and retained `q`, clicks it, verifies products and no further next link, then requires the exact localized count line to have count 0; repeats after refresh | Pending tests-only push; append actual run/job IDs below and in red.log after dispatch | NOT_RUN. Relay owns the `!after` guard and explanatory comment in search/page.tsx after CI proves the new assertion RED |
+
+The existing fixture already has 24 Everyday items plus matching non-filler products, so `q=e` exceeds the default 24-card page without changing fixtures, forcing a page size, manufacturing a cursor or calling an API. Existing single-page summary and refresh assertions remain verbatim. New steps run in zh-TW, zh-CN and en at desktop/mobile widths; actual results are written by the existing CI click ledger, not claimed here.
+
+Static evidence E1: `node --check tests/storefront/buyer-browse-parity.spec.ts`, `node scripts/dev/derive-browser-ownership.mjs` (55 modes), and `git diff --check` exit 0. Generated ownership is the only source-adjacent change. No Go dependency changes: depmap regeneration is not needed. No new imports or component harness changes.
+
+Commit the pre-existing untracked FIX2 report byte-for-byte: SHA-256 `9a4a0d36821c4406fd4d51ad563ecf6e553131f1b397643fb17f832f166440f6`. Its historical blocker is not a current claim about this push. Allowed writes: this spec, RVFIX.md, red.log, unchanged FIX2.md and generated browser ownership. Outside-card writes: none.
+
+Humaux search and development rules read; earlier tool-unavailable statement was corrected after broader discovery. This dispatched child uses only its own canvas element `rvfix4-440-sub-1`, without separate claim. NOT_RUN: all local tests/servers (prohibited), new CI assertions pending, product fix, GREEN, independent review, SANDBOX/LIVE external operations. E0 author expectation: current product will fail the new exact-line count-0 assertion on the last page; no observed RED is claimed yet.

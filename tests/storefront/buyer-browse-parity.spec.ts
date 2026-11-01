@@ -307,6 +307,39 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
           return summaryCheck();
         });
 
+        await step(searchFrame, searchRoute, "cursor-page result summary", "goto + click + reload + assert", "last search page has product cards but no misleading total, including after refresh", async () => {
+          const noJS = await browser.newContext(ctxOpts({ ignoreHTTPSErrors: true, javaScriptEnabled: false, viewport: { width, height }, locale }));
+          try {
+            const cursorPage = await noJS.newPage();
+            // The existing fixture has 24 Everyday items plus other products matching "e": more than the default 24-card page.
+            const q = "e";
+            await cursorPage.goto(`${origin}${searchRoute}?q=${q}`);
+            const nextLink = cursorPage.locator('noscript a[href*="after="]');
+            await expect(nextLink).toHaveCount(1, { timeout: T });
+            const nextHref = await nextLink.getAttribute("href");
+            assert(nextHref, "the no-JS next-page link must expose the server-issued cursor");
+            const nextURL = new URL(nextHref, cursorPage.url());
+            assert(nextURL.searchParams.get("after"), "the real next-page URL must contain after");
+            assert.equal(nextURL.searchParams.get("q"), q);
+            await nextLink.click();
+            await expect(cursorPage).toHaveURL(nextURL.href, { timeout: T });
+            const checkLastPage = async () => {
+              await expect(cursorPage.getByTestId("product-card").first()).toBeVisible({ timeout: T });
+              await expect(cursorPage.locator('noscript a[href*="after="]')).toHaveCount(0);
+              const cards = await cursorPage.getByTestId("product-card").count();
+              const falseTotal = fmt(c.searchResults, { q, n: cards });
+              await expect(cursorPage.getByText(falseTotal, { exact: true })).toHaveCount(0, { timeout: T });
+              return cards;
+            };
+            const cards = await checkLastPage();
+            await cursorPage.reload();
+            assert.equal(await checkLastPage(), cards, "last-page cards persist after refresh");
+            return `${cards} last-page cards; no result count before or after refresh; real no-JS next link clicked`;
+          } finally {
+            await noJS.close();
+          }
+        });
+
         // ===== Search without results ==================================================================================================
         const emptySearchFrame = f("26:676", "26:968");
         await page.goto(`${origin}${searchRoute}`);
