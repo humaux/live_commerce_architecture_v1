@@ -192,6 +192,10 @@ export async function liveSettingsProxy(
         request.method,
         value,
       ) as Record<string, unknown>;
+      if ((route.kind === "contactDetail" || route.kind === "contactHandled") &&
+          (projected.id !== path.split("/")[1] ||
+           route.kind === "contactHandled" && (projected.status !== "handled" || projected.version !== 1)))
+        return denied(503, "retry_later");
       if (
         body !== undefined &&
         (route.kind === "settings" || route.kind === "templates" || route.kind === "profile")

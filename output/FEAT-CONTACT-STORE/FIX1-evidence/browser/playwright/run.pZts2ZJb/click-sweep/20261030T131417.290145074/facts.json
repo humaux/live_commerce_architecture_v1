@@ -1,0 +1,46 @@
+{
+  "store": "a9a134dd-3867-4dc4-81e5-471436af893e",
+  "store_name": "fixture-store-a1",
+  "store_origin": "https://buyer.example",
+  "products": [
+    {
+      "id": "7c1c7647-befd-4581-bdd9-8a801447dc9d",
+      "slug": "t04-175a61e5fb33",
+      "title": "Sweep Cedar Candle"
+    },
+    {
+      "id": "aeb61d07-0dd9-45e8-8de3-84c60b754aec",
+      "slug": "sweep-wool-scarf",
+      "title": "Sweep Wool Scarf"
+    },
+    {
+      "id": "2b38a622-d82a-4425-814f-fde637885ea6",
+      "slug": "sweep-ceramic-mug",
+      "title": "Sweep Ceramic Mug"
+    }
+  ],
+  "collections": [
+    {
+      "id": "7df770bd-b48b-4d63-8ad7-6d3e280212c5",
+      "slug": "sweep-home",
+      "title": "Sweep home"
+    },
+    {
+      "id": "b56e7aac-d225-4589-a1ac-64a6391d9748",
+      "slug": "sweep-wear",
+      "title": "Sweep wear"
+    }
+  ],
+  "orders": {
+    "bank_transfer": "b9cb69ee-7678-40c4-ac0d-c4e30700694c",
+    "cash_on_delivery": "334490e6-0bf5-4a87-be87-a12e36c1b374",
+    "cvs_bank_transfer": "80a3f38e-c2cc-49dc-8a3c-a3a0887b7a0a",
+    "cvs_label_created": "93457f84-7a25-4d9a-9d9c-b9eb1c46a5a2",
+    "cvs_pay_at_pickup": "6bf9c3d1-c7fd-4803-804a-13e71d8d11fa"
+  },
+  "customer": "7b265b4a-c4e8-4915-96b1-0d964409999c",
+  "session": "a681d933-bffa-446c-b0d8-c0c68950238e",
+  "promo": "c0660686-87a7-46ac-a6ec-0a303ecd9193",
+  "meta_page": "Sweep Page",
+  "journey_tag": "71ad862df94a"
+}

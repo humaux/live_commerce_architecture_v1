@@ -175,9 +175,9 @@ Package buyer owns the anonymous buyer capability boundary: issuing short-lived 
 
 ## `internal/buyerhttp`
 
-Package buyerhttp owns the private, BFF-only buyer transport (catalog, cart, quote, checkout, payment and claim routes).
+Purpose: public guest contact admission at the private BFF-only buyer boundary.
 
-- Depends on (internal): `internal/attribution`, `internal/buyer`, `internal/checkout`, `internal/claims`, `internal/command`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httperror`, `internal/pagination`, `internal/platform`, `internal/pricing`, `internal/promotions`, `internal/storefront`, `internal/storefrontdomains`
+- Depends on (internal): `internal/attribution`, `internal/buyer`, `internal/checkout`, `internal/claims`, `internal/command`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httperror`, `internal/integrations/meta`, `internal/pagination`, `internal/platform`, `internal/pricing`, `internal/promotions`, `internal/storefront`, `internal/storefrontdomains`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
 - Used by: `cmd/api`
 
@@ -271,9 +271,9 @@ Purpose: Per-market delivery allocation (which warehouses serve a delivery servi
 
 ## `internal/httpapi`
 
-Purpose: httpapi owns the composition layer for authenticated merchant/admin routes — routing, bearer resolution, request bounds and error mapping.
+Purpose: merchant contact list/detail and the one versioned mark-handled command.
 
-- Depends on (internal): `internal/ads`, `internal/billing`, `internal/catalog`, `internal/claims`, `internal/command`, `internal/customers`, `internal/design`, `internal/fulfillment`, `internal/httperror`, `internal/inbox`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/merchanttools`, `internal/metaconnect`, `internal/migrationimport`, `internal/msgtemplates`, `internal/notify`, `internal/pagination`, `internal/payments`, `internal/payments/platformstripe`, `internal/payments/settlement`, `internal/platform`, `internal/pricing`, `internal/promotions`, `internal/quickstart`, `internal/reporting`, `internal/returns`, `internal/storefrontadmin`, `internal/storefrontdomains`
+- Depends on (internal): `internal/ads`, `internal/billing`, `internal/catalog`, `internal/claims`, `internal/command`, `internal/customers`, `internal/design`, `internal/fulfillment`, `internal/httperror`, `internal/inbox`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/merchanttools`, `internal/metaconnect`, `internal/migrationimport`, `internal/msgtemplates`, `internal/notify`, `internal/pagination`, `internal/payments`, `internal/payments/platformstripe`, `internal/payments/settlement`, `internal/platform`, `internal/pricing`, `internal/promotions`, `internal/quickstart`, `internal/reporting`, `internal/returns`, `internal/storefront`, `internal/storefrontadmin`, `internal/storefrontdomains`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
 - Used by: `cmd/admin-fixture`, `cmd/api`
 
@@ -339,7 +339,7 @@ Purpose: the console's IG-live read-through projection (live-console-v1 §2.4 OP
 
 - Depends on (internal): `internal/claims/grammar`, `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`, `github.com/riverqueue/river/riverdriver/riverpgxv5`
-- Used by: `cmd/api`, `cmd/meta-worker`, `cmd/retention-admin`, `internal/inbox`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta/pagetoken/pageopen`, `internal/integrations/meta_ads`, `internal/integrations/meta_ads/tokenopen`, `internal/integrations/metareply`, `internal/live`
+- Used by: `cmd/api`, `cmd/meta-worker`, `cmd/retention-admin`, `internal/buyerhttp`, `internal/inbox`, `internal/integrations/meta/pagetoken`, `internal/integrations/meta/pagetoken/pageopen`, `internal/integrations/meta_ads`, `internal/integrations/meta_ads/tokenopen`, `internal/integrations/metareply`, `internal/live`
 
 ## `internal/integrations/meta/oauth`
 
@@ -651,7 +651,7 @@ Package storefront owns buyer purchase intent and immutable price snapshots: the
 
 - Depends on (internal): `internal/buyer`, `internal/command`, `internal/fulfillment`, `internal/pagination`, `internal/pricing`, `internal/promotions`
 - Depends on (third-party): `github.com/jackc/pgx/v5`
-- Used by: `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/merchantorders`, `internal/merchanttools`
+- Used by: `internal/buyerhttp`, `internal/checkout`, `internal/claims`, `internal/httpapi`, `internal/merchantorders`, `internal/merchanttools`
 
 ## `internal/storefrontadmin`
 

@@ -1,0 +1,45 @@
+browser engine: chromium
+[   2s] stack up; admin http://127.0.0.1:34839, storefront https://buyer.example (Next :42153); 33 registry routes; workers=1 sample=3
+[  10s] / desktop/zh-TW [skip] 1 controls, 1 classes sampled
+[  37s] / desktop/zh-TW [topbar] 3 controls, 3 classes sampled
+[  96s] / desktop/zh-TW [rail] 10 controls, 10 classes sampled
+[ 191s] / desktop/zh-TW [main] 15 controls, 15 classes sampled
+[ 334s] admin / desktop/zh-TW done
+[ 343s] /orders/new desktop/en [main] 5 controls, 5 classes sampled
+[ 384s] admin /orders/new desktop/en done
+[ 393s] /customers/[customer] mobile/zh-TW [main] 9 controls, 9 classes sampled
+[ 489s] admin /customers/[customer] mobile/zh-TW done
+[ 497s] /ads mobile/zh-TW [main] 10 controls, 10 classes sampled
+[ 584s] admin /ads mobile/zh-TW done
+[ 592s] /design mobile/zh-TW [main] 8 controls, 8 classes sampled
+[ 661s] admin /design mobile/zh-TW done
+[ 669s] /team desktop/en [main] 5 controls, 5 classes sampled
+[ 711s] admin /team desktop/en done
+[ 719s] /billing desktop/en [main] 2 controls, 2 classes sampled
+[ 735s] admin /billing desktop/en done
+[ 743s] /settings/settlements desktop/zh-TW [main] 1 controls, 1 classes sampled
+[ 750s] admin /settings/settlements desktop/zh-TW done
+[ 751s] /invite/[token] desktop/en [main] 2 controls, 2 classes sampled
+[ 753s] admin /invite/[token] desktop/en done
+[ 754s] /reset desktop/zh-TW [main] 3 controls, 3 classes sampled
+[ 758s] admin /reset desktop/zh-TW done
+[ 767s] /cart desktop/en [main] 5 controls, 5 classes sampled
+[ 779s] /checkout desktop/en [main] 4 controls, 4 classes sampled
+[ 788s] /orders/[orderID] desktop/en [main] 1 controls, 1 classes sampled
+[ 791s] / desktop/en [chrome] 18 controls, 18 classes sampled
+[ 837s] / desktop/en [main] 7 controls, 7 classes sampled
+[ 851s] /products desktop/en [main] 9 controls, 9 classes sampled
+[ 874s] /collections desktop/en [main] 3 controls, 3 classes sampled
+[ 880s] /collections/[slug] desktop/en [main] 9 controls, 9 classes sampled
+[ 902s] /products/[slug] desktop/en [main] 9 controls, 9 classes sampled
+[ 919s] /search desktop/en [main] 7 controls, 7 classes sampled
+[ 937s] /orders/lookup desktop/en [main] 1 controls, 1 classes sampled
+[ 940s] /order-link desktop/en [main] 1 controls, 1 classes sampled
+[ 942s] /claim desktop/en [main] 1 controls, 1 classes sampled
+[ 944s] /legal/anti-fraud desktop/en [main] 2 controls, 2 classes sampled
+[ 948s] /legal/[slug] desktop/en [main] 2 controls, 2 classes sampled
+[ 953s] /privacy desktop/en [main] 5 controls, 5 classes sampled
+[ 962s] /data-deletion desktop/en [main] 2 controls, 2 classes sampled
+[ 966s] /pages/[slug] desktop/en [main] 1 controls, 1 classes sampled
+[ 968s] shard 7/10: 27 page/viewport/locale units opened (0 with a page-load failure), 173 control clicks (169 pass, 1 fail, 3 skip), 0 journey steps (0 pass, 0 fail); failures: known 0, new 1; stale known-defect entries 0.
+NEW FAIL admin / desktop/zh-TW [main] "低庫存規格（5 件以下） 0" no-effect: no visible change within 3 s (output/playwright/run.pZts2ZJb/ui-click-sweep/screenshots/r00025.png)
