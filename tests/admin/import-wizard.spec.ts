@@ -295,7 +295,9 @@ test("MIUI order stale erasure returns zero-apply fresh preview and local failur
     const file: FileCase = { prefix: "ORDER-STALE-FILE", buffer: Buffer.from("order_id,customer_id,ordered_at,status,total\nMIUI-ORDER-STALE-H,ORDER-STALE-A,2026-04-01,paid,100\n"), mapping: { order_id: "order_id", customer_id: "customer_id", ordered_at: "ordered_at", status: "status", total: "total" }, markers: [] };
     await upload(page, file, "orders"); await preview(page, file, { new: 1, update: 0, failed: 0 }); await review(page); await ctl("erase-stale", "orders"); const erased = await state();
     await step(page, "stale order Confirm", "real409 reduces apply to zero without storing archive or batch", async () => {
-      await page.getByTestId("import-confirm").click(); await expect(wizard(page)).toContainText(c.staleNotice); await expect(page.getByTestId("import-erased-count").locator("dd")).toHaveText("1"); await expect(page.getByTestId("import-confirm")).toBeDisabled();
+      await page.getByTestId("import-confirm").click(); await expect(wizard(page)).toContainText(c.staleNotice); await expect(page.getByTestId("import-erased-count").locator("dd")).toHaveText("1");
+      await expect(page.getByTestId("import-confirm-next")).toBeDisabled();
+      await expect(page.getByTestId("import-confirm")).toHaveCount(0);
       const after = await state(); for (const key of ["history", "profiles", "batches", "receipts", "audits"]) expect(after.counts[key]).toBe(erased.counts[key]); expect(after.requests.at(-1)?.Status).toBe(409);
     });
     const rows = await failureCSV(page, false); expect(rows[1][2]).toBe("erased");
