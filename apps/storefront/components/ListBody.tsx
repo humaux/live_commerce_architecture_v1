@@ -34,7 +34,7 @@ export default function ListBody({
   if (preview) hidden.preview = preview;
   const clear = new URLSearchParams();
   if (loaded.form.q) clear.set("q", loaded.form.q);
-  if (loaded.form.sort !== "newest") clear.set("sort", loaded.form.sort);
+  if (loaded.query.sort) clear.set("sort", loaded.query.sort);
   if (preview) clear.set("preview", preview);
   const clearHref = `${path}${clear.size ? `?${clear}` : ""}`;
   const showControls = list.products.length > 0 || loaded.filtered || loaded.form.sort !== "newest";
