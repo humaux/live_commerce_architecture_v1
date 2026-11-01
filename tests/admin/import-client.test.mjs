@@ -271,3 +271,45 @@ test('encoded valid capability reaches actual upstream and commit receipts remai
   assert.equal(response.status,200);assert.deepEqual(await response.json(),zeroReceipt);assert.equal(calls.length,2);
  },{upstream:()=>json(zeroReceipt)});
 });
+
+test('actual sendImport opts in only explicitly: customer preview, stale commit and receipt keep one marker and original command',async()=>{
+ for(const [action,status,expectedRows] of [['preview',200,undefined],['commit',409,0],['commit',200,1]])await seam(async({calls,browserRequests})=>{
+  const data=await input({action,expectedApplyRows:expectedRows,rowErrors:'field-v1'}),bytes=new Uint8Array(await data.file.arrayBuffer());
+  const answer=await client.sendImport(data);
+  assert.equal(browserRequests.length,1);assert.equal(calls.length,2);
+  for(const requestURL of [browserRequests[0].url,calls[1].url]){
+   const query=new URL(requestURL).searchParams;
+   assert.deepEqual(query.getAll('row_errors'),['field-v1']);
+   assert.deepEqual(JSON.parse(query.get('mapping')),data.mapping);
+   assert.equal(query.get('expected_apply_rows'),action==='commit'?String(expectedRows):null);
+  }
+  assert.deepEqual([...calls[1].init.body],[...bytes]);
+  assert.equal(calls[1].init.headers['Idempotency-Key'],undefined);
+  assert.equal(answer.kind,action==='preview'?'preview':status===409?'stale':'receipt');
+  assert.deepEqual(answer.value,status===200&&action==='commit'?receipt:fieldSafe);
+ },{upstream:()=>json(status===200&&action==='commit'?receipt:fieldRaw,status)});
+});
+
+test('actual sendImport defaults stay unmarked for both domains; bad or order-only runtime capability refuses before effect',async()=>{
+ const orderMapping={order_id:'order',customer_id:'customer',ordered_at:'when',status:'state',total:'total'};
+ for(const kind of ['customers','orders'])for(const action of ['preview','commit'])await seam(async({calls,browserRequests})=>{
+  await client.sendImport(await input({kind,action,mapping:kind==='orders'?orderMapping:raw.mapping,expectedApplyRows:action==='commit'?1:undefined}));
+  assert.equal(browserRequests.length,1);assert.equal(calls.length,2);
+  for(const requestURL of [browserRequests[0].url,calls[1].url])assert.equal(new URL(requestURL).searchParams.has('row_errors'),false);
+ },{upstream:()=>json(kind==='customers'?raw:{code:'invalid_request'},kind==='customers'?200:422)});
+ for(const [kind,rowErrors] of [['customers','field-v2'],['orders','field-v1']])for(const action of ['preview','commit'])await seam(async({calls,browserRequests})=>{
+  const answer=await client.sendImport(await input({kind,action,rowErrors,mapping:kind==='orders'?orderMapping:raw.mapping,expectedApplyRows:action==='commit'?1:undefined}));
+  assert.deepEqual(answer,{kind:'error',code:'invalid_request',uncertain:false});
+  assert.equal(calls.length,0);assert.equal(browserRequests.length,0);
+ });
+});
+
+test('marked sendImport old-server 422 and lost ACK each dispatch once without silently removing the marker',async()=>{
+ for(const mode of ['old-server422','lost-ACK'])await seam(async({calls,browserRequests})=>{
+  const answer=await client.sendImport(await input({rowErrors:'field-v1'}));
+  assert.equal(browserRequests.length,1);assert.equal(calls.length,2);
+  assert.deepEqual(new URL(browserRequests[0].url).searchParams.getAll('row_errors'),['field-v1']);
+  assert.deepEqual(new URL(calls[1].url).searchParams.getAll('row_errors'),['field-v1']);
+  assert.deepEqual(answer,mode==='old-server422'?{kind:'error',code:'invalid_request',uncertain:false}:{kind:'error',code:'retry_later',uncertain:true});
+ },{upstream:()=>{if(mode==='lost-ACK')throw Error('synthetic lost ACK');return json({code:'invalid_request'},422);}});
+});

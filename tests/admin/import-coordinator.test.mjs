@@ -23,7 +23,7 @@ const preview = { file_sha256: "a".repeat(64), headers: ["ref", "label"], mappin
   rows: [{ row: 2, outcome: "created" }] };
 const receipt = { batch_id: "abcdef11-1111-4111-8111-111111111111", created: 1, updated: 0, failed: 0, replayed: false };
 
-function harness(commit, headerReader = async () => ["ref", "label"], locale = "en") {
+function harness(commit, headerReader = async () => ["ref", "label"], locale = "en", options = {}) {
   const slots = [], effects = [], calls = [], auth = [];
   let cursor = 0, unconfirmed = 0;
   const hooks = {
@@ -39,8 +39,9 @@ function harness(commit, headerReader = async () => ["ref", "label"], locale = "
     document: { visibilityState: "visible" },
     ImportColumnMapping: "mapping", ImportPreviewCounts: "counts", ImportVerdictTable: "verdicts",
     readImportHeader: headerReader,
-    guessImportMapping: () => ({ external_id: "ref", name: "label", phone: "" }),
-    sendImport: async args => { calls.push(args); return args.action === "preview" ? { kind: "preview", value: preview } : commit(args); },
+    guessImportMapping: kind => kind === "orders" ? (options.orderMapping ?? { order_id: "order", customer_id: "customer", ordered_at: "when", status: "state", total: "total" })
+      : (options.requestedMapping ?? { external_id: "ref", name: "label", phone: "" }),
+    sendImport: async args => { calls.push(args); return args.action === "preview" ? { kind: "preview", value: options.preview ?? preview } : commit(args); },
     require: name => { if (name === "react/jsx-runtime") return { jsx, jsxs: jsx }; throw Error("unexpected import " + name); },
   });
   const props = { locale, store: "store", boundary: "scope", onSignedOut: value => auth.push(value), onUnconfirmed: () => { unconfirmed++; } };
@@ -49,9 +50,9 @@ function harness(commit, headerReader = async () => ["ref", "label"], locale = "
   function nodes() { const all = []; function visit(node) { if (!node || typeof node !== "object") return; all.push(node); for (const child of [node.props?.children].flat(Infinity)) visit(child); } visit(tree); return all; }
   const control = id => { const node = nodes().find(node => node.props?.["data-testid"] === id); assert.ok(node, id); return node; };
   async function click(id) { control(id).props.onClick(); await tick(); render(); }
-  async function ready() {
+  async function ready(name = "synthetic.csv", contents = "\uFEFFref,label\r\nsynthetic-id,DO_NOT_SHOW_CELL\r\n") {
     render();
-    const file = new File(["\uFEFFref,label\r\nsynthetic-id,DO_NOT_SHOW_CELL\r\n"], "synthetic.csv", { type: "text/csv" });
+    const file = new File([contents], name, { type: "text/csv" });
     control("import-file").props.onChange({ target: { files: [file] } }); await tick(); render();
     await click("import-preview"); return file;
   }
@@ -125,4 +126,67 @@ test("a replayed mismatched receipt ends UNKNOWN without offering another retry 
   assert.equal(h.calls[2].file, file); assert.equal(h.calls[2].mapping, h.calls[1].mapping);
   assert.equal(h.calls[2].expectedApplyRows, 1);
   h.unmount(); assert.equal(h.unconfirmed(), 0);
+});
+
+test("real ImportForm freezes customer field-v1 across preview, UNKNOWN, manual refusals and success; orders omit it", async () => {
+  let attempts = 0;
+  const h = harness(async () => ++attempts === 1 ? { kind: "error", code: "retry_later", uncertain: true }
+    : attempts === 2 ? { kind: "error", code: "forbidden", uncertain: false } : { kind: "receipt", value: receipt },
+  async file => file.name === "orders.csv" ? ["order", "customer", "when", "state", "total"] : ["ref", "label"]);
+  const file = await h.ready();
+  assert.equal(h.calls.length, 1); assert.equal(h.calls[0].rowErrors, "field-v1");
+  assert.equal(h.calls[0].file, file); assert.equal(Object.hasOwn(h.calls[0], "expectedApplyRows"), false);
+  await h.click("import-confirm"); assert.equal(h.calls.length, 2);
+  assert.equal(h.control("import-restart").props.disabled, true);
+  await h.click("import-retry-same"); assert.equal(h.calls.length, 3);
+  assert.equal(h.control("import-restart").props.disabled, true);
+  await h.click("import-retry-same"); assert.equal(h.calls.length, 4);
+  assert.equal(h.control("import-restart").props.disabled, false);
+  for (const request of h.calls.slice(1, 4)) {
+    assert.equal(request.rowErrors, "field-v1"); assert.equal(request.file, file);
+    assert.equal(request.mapping, h.calls[1].mapping); assert.equal(request.expectedApplyRows, 1);
+    assert.equal(Object.isFrozen(request.mapping), true);
+    assert.deepEqual(JSON.parse(JSON.stringify(request.mapping)), JSON.parse(JSON.stringify(h.calls[0].mapping)));
+  }
+  await h.click("import-type-orders");
+  await h.ready("orders.csv", "order,customer,when,state,total\r\norder-1,customer-1,2026-01-01,paid,1\r\n");
+  await h.click("import-confirm-next"); await h.click("import-confirm");
+  assert.equal(h.calls.length, 6);
+  for (const request of h.calls.slice(4)) { assert.equal(request.kind, "orders"); assert.equal(Object.hasOwn(request, "rowErrors"), false); }
+});
+
+test("real ImportForm error rows use source guidance only for explicit external_id with an actual mapped column", async () => {
+  const words = {
+    "zh-TW": { source: "第 3 筆 · 缺少來源編號", sourceRepair: "在原檔的 source_id 欄位填入穩定且唯一的來源編號。不要填電話或電子郵件。", generic: "第 3 筆 · 缺少必填內容", genericRepair: "請回到原檔補齊這一列缺少的必填內容，再重新預覽。" },
+    "zh-CN": { source: "第 3 行 · 缺少来源编号", sourceRepair: "在原文件 source_id 列填入稳定且唯一的来源编号。不要填写电话或电子邮箱。", generic: "第 3 行 · 缺少必填内容", genericRepair: "请回到原文件补齐这一行缺少的必填内容，再重新预览。" },
+    en: { source: "Row 3 · Missing source ID", sourceRepair: "Fill in a stable, unique source_id in the original file. Do not use a phone number or email address.", generic: "Row 3 · Missing required value", genericRepair: "Fill in the missing required value in this row of the original file, then preview again." },
+  };
+  const cases = [
+    ...["zh-TW", "zh-CN", "en"].map(locale => ({ locale, column: "source_id", field: "external_id", source: true })),
+    { locale: "en", column: "ref", field: "external_id", source: true },
+    { locale: "en", column: "Customer ID", field: "external_id", source: true },
+    ...["zh-TW", "zh-CN", "en"].flatMap(locale => [{ locale, column: "source_id", field: "name" }, { locale, column: "source_id" }]),
+    { locale: "en", column: "", field: "external_id" },
+    { locale: "en", column: "not-in-headers", field: "external_id" },
+  ];
+  for (const { locale, column, field, source } of cases) {
+    const headers = !column || column === "not-in-headers" ? ["ref", "Name"] : [column, "Name"];
+    const row = { row: 3, outcome: "failed", code: "required", ...(field ? { error_field: field } : {}) };
+    const result = { ...preview, headers, mapping: { external_id: column, name: "Name" }, rows_total: 3, new_rows: 1, update_rows: 1, apply_rows: 2, failed_rows: 1,
+      rows: [{ row: 1, outcome: "created" }, { row: 2, outcome: "updated" }, row] };
+    const h = harness(async () => ({ kind: "receipt", value: receipt }), async () => headers, locale,
+      { preview: result, requestedMapping: { external_id: headers[0], name: "Name" } });
+    const badRow = field === "name" ? "source-3," : ",DO_NOT_SHOW_CELL";
+    await h.ready("synthetic.csv", `${headers.join(",")}\r\nsource-1,One\r\nsource-2,Two\r\n${badRow}\r\n`);
+    const reasons = h.nodes().find(node => node.type === "button" && node.props?.children === dataOpsCopy(locale).viewReasons);
+    assert.ok(reasons, `${locale} ${column} reasons control`); reasons.props.onClick(); h.render();
+    const failed = h.nodes().find(node => node.props?.className === "ops-row"); assert.ok(failed);
+    const [heading, repair] = failed.props.children;
+    const expectedHeading = source ? words[locale].source : words[locale].generic;
+    const expectedRepair = source ? words[locale].sourceRepair.replace("source_id", column) : words[locale].genericRepair;
+    assert.equal(heading.props.children, expectedHeading, `${locale} ${column} heading`);
+    assert.equal(repair.props.children, expectedRepair, `${locale} ${column} repair`);
+    for (const cell of ["DO_NOT_SHOW_CELL", "source-1", "source-2", "source-3"]) assert.equal(JSON.stringify(failed).includes(cell), false);
+    if (!source) assert.equal(JSON.stringify(failed).includes("source_id"), false, "generic row must not claim the source column is missing");
+  }
 });
