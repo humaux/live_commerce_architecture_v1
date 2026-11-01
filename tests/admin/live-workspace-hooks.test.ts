@@ -176,6 +176,30 @@ test("hide or logout during a retained refresh conceals and rejects late success
   }
 });
 
+// Hold the second boundary check after the read completed, not the earlier read promise.
+// A late old-scope success must neither revive concealed data nor replace the next scene's view.
+for (const action of ["hide", "logout", "scope"] as const) test(`post-read boundary completion cannot revive an invalidated ${action} view`, async (t) => {
+  const f = fixture(); t.after(f.stop);
+  const nextScope = `${store}:33333333-3333-4333-8333-333333333333`;
+  const privateData = { title: "PRIVATE" }, nextData = { title: "NEXT SCENE" };
+  let activeScope = scope, checks = 0, finishBoundary!: (boundary: string) => void;
+  const h = f.mount(() => f.hooks.useLiveRead(activeScope, true, async () => activeScope === scope ? privateData : nextData));
+  await flush(); assert.equal(h.view.data, privateData); assert.equal(h.view.boundary, "session-one");
+  f.setBoundary(async () => ++checks === 2 ? new Promise<string>(resolve => { finishBoundary = resolve; }) : "session-one");
+  h.view.refresh(); await flush(); assert.equal(checks, 2); assert.equal(h.view.data, privateData);
+  if (action === "hide") { f.document.visibilityState = "hidden"; f.document.dispatchEvent(new Event("visibilitychange")); }
+  else if (action === "logout") f.window.dispatchEvent(new Event("commerce-session-logout"));
+  else { activeScope = nextScope; h.render(); }
+  await flush();
+  assert.equal(h.view.data, action === "scope" ? nextData : null, `${action} establishes the replacement view first`);
+  if (action === "logout") assert.equal(h.view.boundary, "");
+  const concealedBoundary = h.view.boundary, concealedError = h.view.error;
+  finishBoundary("session-one"); await flush();
+  assert.equal(h.view.data, action === "scope" ? nextData : null, `${action} rejects the old PRIVATE completion`);
+  assert.equal(h.view.boundary, concealedBoundary, `${action} rejects a late identity restoration`);
+  assert.equal(h.view.error, concealedError, `${action} retains its concealment result`);
+});
+
 test("UNKNOWN journal restores the exact key/method/path/body and explicit retry after reload", async (t) => {
   const f = fixture(); f.setExecute(async () => { throw new f.studio.StudioError("uncertain"); });
   let h = f.mount(() => f.hooks.useLiveCommand(scope, "session-one", () => {})); t.after(f.stop); await flush();
