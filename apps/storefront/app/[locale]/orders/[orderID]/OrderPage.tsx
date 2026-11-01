@@ -1,12 +1,12 @@
 // Purpose: Server-owned buyer order facts with signed read and access recovery.
-// Depends on: buyer-client, purchase, lookup-copy, OrderFlow and state/StorefrontState.
+// Depends on: buyer-client, purchase, lookup-copy, order-status/OrderStatusView (signed frame layout) and state/StorefrontState.
 // Used by: localized order detail route.
 // Invariants: a failed read never fabricates an order or retries payment; denial clears prior details.
 "use client";
 
 // The buyer's order page (BFF /api/buyer/session[/prepare|activate], /api/buyer/orders/{id}[/payment|/bank-transfer...] -> Go /v1/buyer/*).
-// It reuses the order detail the product page and the history already render (OrderDetails) so payment, bank-transfer proof and CVS views
-// behave identically. A visitor without a valid capability (cookie missing, expired or another owner's order) gets the lookup link.
+// It draws the order in the signed frame layout (OrderStatusView); payment, bank-transfer proof and CVS views run on the same controllers as the
+// checkout / history order detail (OrderDetails in OrderFlow.tsx, unchanged). A visitor without a valid capability (cookie missing, expired or another owner's order) gets the lookup link.
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { BuyerClientError, readBuyerSession } from "../../../../lib/buyer-client";
@@ -15,7 +15,7 @@ import { formatMoney } from "../../../../lib/money";
 import { readOrder } from "../../../../lib/purchase";
 import type { Order } from "../../../../lib/purchase";
 import { StorefrontState } from "../../../../components/state/StorefrontState";
-import { OrderDetails } from "../../../../components/OrderFlow";
+import OrderStatusView from "../../../../components/order-status/OrderStatusView";
 
 export default function OrderPage({ locale, orderID }: { locale: Locale; orderID: string }) {
   const copy = lookupCopy[locale];
@@ -65,7 +65,7 @@ export default function OrderPage({ locale, orderID }: { locale: Locale; orderID
   const money = (amount: number, currency: string) => formatMoney(locale, amount, currency);
 
   return (
-    <main className="purchase-main claim-main" data-testid="order-page" aria-busy={state === "loading" || refreshing}>
+    <main className="purchase-main claim-main os-main" data-testid="order-page" aria-busy={state === "loading" || refreshing}>
       {(state === "loading" || refreshing) && <p role="status">{copy.loading}</p>}
       {(state === "failed" || state === "forbidden") && (
         <div data-testid="order-page-failed">
@@ -78,7 +78,7 @@ export default function OrderPage({ locale, orderID }: { locale: Locale; orderID
         </div>
       )}
       {state === "ready" && order && (
-        <OrderDetails
+        <OrderStatusView
           context={context}
           order={order}
           locale={locale}

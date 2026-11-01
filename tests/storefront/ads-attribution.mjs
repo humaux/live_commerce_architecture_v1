@@ -504,7 +504,7 @@ async function place(locale, width) {
   const linked = await page.goto(`${origin}/${locale}/orders/${orderID}`);
   assert.equal(linked.status(), 200);
   assert.equal((await orderRead).status(), 200, "own order link read succeeds");
-  await expect(page.getByTestId("order-id")).toHaveText(orderID);
+  await expect(page.getByTestId("order-section").getByRole("heading", { level: 1 })).toContainText(orderID.replace(/-/g, "").slice(0, 12).toUpperCase().replace(/^(.{4})(.{4})(.{4})$/, "$1-$2-$3")); // signed frame: mail order number
   record(locale, width, "open real own-order URL", { order_id: orderID });
   const facts = await checkOrder(orderID);
   results.push({ locale, width, ...facts });

@@ -25,6 +25,7 @@ import { reachCheckout, switchLocale, confirmCheckoutAddress } from "./shop-help
 import { expect } from "@playwright/test";
 import { launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 import { privacyCopy } from "../../apps/storefront/lib/privacy-copy.ts";
+import { privacyFrameCopy } from "../../apps/storefront/components/privacy/copy.ts";
 import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 
 const env = (name) => {
@@ -206,53 +207,59 @@ try {
   const puts4 = watchConsents(p4);
   const posts4 = [];
   p4.on("request", (r) => { if (r.method() === "POST" && /\/api\/buyer\/privacy\/(export|erasure)$/.test(new URL(r.url()).pathname)) posts4.push({ path: new URL(r.url()).pathname, key: r.headers()["idempotency-key"] ?? null, body: r.postData() }); });
+  const fr = privacyFrameCopy.en; // signed frames: PARITY-BUYER-AFTER (settings screen, done / failed screens, confirm screen)
   await p4.goto(`${origin}/en/privacy?notice=${policy}`);
   await expect(p4.getByTestId("privacy-choices")).toBeVisible();
-  await expect(p4.getByRole("heading", { level: 1 })).toHaveText(en.title);
+  await expect(p4.getByRole("heading", { level: 1 })).toHaveText(fr.title);
   await expect(p4.getByTestId("privacy-notice")).toContainText(policy);
-  for (const purpose of ["marketing_messages", "ads_personalization"]) await expect(p4.getByTestId(`privacy-${purpose}`)).toContainText(en.notGranted);
-  await p4.getByTestId("privacy-toggle-marketing_messages").click();
-  await expect(p4.getByTestId("privacy-marketing_messages")).toContainText(en.granted);
-  await expect(p4.getByTestId("privacy-message")).toHaveText(en.saved);
+  for (const purpose of ["marketing_messages", "ads_personalization"]) await expect(p4.getByTestId(`privacy-${purpose}`)).toContainText(fr.off);
+  const saveChoice = async (purpose, on) => {
+    await p4.getByTestId("privacy-manage").click();
+    if (on) await p4.getByTestId(`privacy-check-${purpose}`).check(); else await p4.getByTestId(`privacy-check-${purpose}`).uncheck();
+    await p4.getByTestId("privacy-save").click();
+    await expect(p4.getByTestId(`privacy-${purpose}`)).toContainText(on ? fr.on : fr.off);
+  };
+  await saveChoice("marketing_messages", true);
+  await expect(p4.getByTestId("privacy-message")).toHaveText(fr.saved);
   assert.equal(puts4.length, 1);
   assert.deepEqual(JSON.parse(puts4[0].body), { purpose: "marketing_messages", channel: "meta_dm", granted: true, context: "settings" });
   assert.match(puts4[0].key, keyPattern);
-  await p4.getByTestId("privacy-toggle-ads_personalization").click();
-  await expect(p4.getByTestId("privacy-ads_personalization")).toContainText(en.granted);
-  await p4.getByTestId("privacy-toggle-ads_personalization").click();
-  await expect(p4.getByTestId("privacy-ads_personalization")).toContainText(en.notGranted);
+  await saveChoice("ads_personalization", true);
+  await saveChoice("ads_personalization", false);
   assert.equal(puts4.length, 3);
-  assert.equal(new Set(puts4.map((x) => x.key)).size, 3, "every toggle is its own request key");
+  assert.equal(new Set(puts4.map((x) => x.key)).size, 3, "every saved change is its own request key");
   await p4.reload();
-  await expect(p4.getByTestId("privacy-marketing_messages")).toContainText(en.granted); // state is server-side, not local storage
+  await expect(p4.getByTestId("privacy-marketing_messages")).toContainText(fr.on); // state is server-side, not local storage
   assert.equal(await p4.evaluate(() => JSON.stringify({ ...localStorage, ...sessionStorage }).includes("marketing_messages")), false, "no privacy data in browser storage");
   // download: a JSON file, buyer envelope, no customer id
   const exportResponses = [];
   p4.on("response", (r) => { if (/\/api\/buyer\/privacy\/export$/.test(new URL(r.url()).pathname)) exportResponses.push(r); });
   const [download] = await Promise.all([p4.waitForEvent("download", { timeout: 15000 }), p4.getByTestId("privacy-download").click()]).catch(async (error) => {
     const seen = await Promise.all(exportResponses.map(async (r) => `${r.status()} ${(await r.text()).slice(0, 300)}`));
-    throw new Error(`no download: message=${JSON.stringify(await p4.getByTestId("privacy-message").textContent().catch(() => null))} export responses=${JSON.stringify(seen)} cause=${error.message.split("\n")[0]}`);
+    throw new Error(`no download: screen=${JSON.stringify(await p4.locator("main").innerText().catch(() => null))} export responses=${JSON.stringify(seen)} cause=${error.message.split("\n")[0]}`);
   });
   const doc = JSON.parse(await readFile(await download.path(), "utf8"));
   assert.equal(doc.format, "lc.customer-export.v1");
   assert.equal("customer_id" in doc, false, "the buyer export has no customer id");
   assert.deepEqual(doc.consents.map((x) => x.granted).sort(), [false, true, true]);
-  await expect(p4.getByTestId("privacy-message")).toHaveText(en.downloaded);
+  await expect(p4.getByTestId("privacy-export-done")).toContainText(fr.exportDoneTitle);
   assert.equal(posts4.filter((x) => x.path.endsWith("/export")).length, 1);
   assert.match(posts4[0].key, keyPattern);
   assert.ok(["", "{}"].includes(posts4[0].body ?? ""), "the browser-to-BFF export body is empty or the BFF `empty` shape {}; the Go hop takes none (internal/buyerhttp noBody)");
-  pass("U8 privacy page: state from the server, toggles use context settings with their own keys, download is a keyed body-less POST");
+  await p4.getByRole("button", { name: fr.back, exact: true }).click();
+  await expect(p4.getByTestId("privacy-choices")).toBeVisible();
+  pass("U8 privacy page: state from the server, saved choices use context settings with their own keys, download is a keyed body-less POST");
 
   // erase: typed confirmation, one keyed request, the erased state; the reload starts a new anonymous session
   await p4.getByTestId("privacy-erase").click();
   const dialog = p4.getByTestId("privacy-erase-dialog");
   await expect(dialog).toBeVisible();
   const typed = p4.getByTestId("privacy-erase-typed"), submit = p4.getByTestId("privacy-erase-submit");
-  await expect(dialog).toContainText(en.eraseKept);
+  await expect(dialog).toContainText(fr.confirmText);
   await expect(submit).toBeDisabled();
   for (const wrong of ["erase", "ERAS", "ERASE ", "Erase"]) { await typed.fill(wrong); await expect(submit).toBeDisabled(); }
-  await p4.keyboard.press("Escape");
-  await expect(dialog).toBeHidden();
+  await p4.getByRole("button", { name: fr.cancel, exact: true }).click();
+  await expect(dialog).toHaveCount(0);
   assert.equal(posts4.filter((x) => x.path.endsWith("/erasure")).length, 0);
   await p4.getByTestId("privacy-erase").click();
   await typed.fill("ERASE");
@@ -263,14 +270,14 @@ try {
     const seen = await Promise.all(erasureResponses.map(async (r) => `${r.status()} ${(await r.text()).slice(0, 300)}`));
     throw new Error(`no erased state: erasure responses=${JSON.stringify(seen)} cause=${error.message.split("\n")[0]}`);
   });
-  await expect(p4.getByTestId("privacy-erased")).toContainText(en.erasedTitle);
+  await expect(p4.getByTestId("privacy-erased")).toContainText(fr.erasedTitle);
   const erasures = posts4.filter((x) => x.path.endsWith("/erasure"));
   assert.equal(erasures.length, 1);
   assert.equal(erasures[0].body, JSON.stringify({ confirm: "ERASE" }));
   assert.match(erasures[0].key, keyPattern);
   await p4.reload();
   await expect(p4.getByTestId("privacy-choices")).toBeVisible();
-  for (const purpose of ["marketing_messages", "ads_personalization"]) await expect(p4.getByTestId(`privacy-${purpose}`)).toContainText(en.notGranted);
+  for (const purpose of ["marketing_messages", "ads_personalization"]) await expect(p4.getByTestId(`privacy-${purpose}`)).toContainText(fr.off);
   pass("U8 erase: typed ERASE, one keyed request, erased state; the capability is revoked, the next visit is a new anonymous session with nothing granted");
 
   // 410 erased -> the erased state (a buyer retry after a completed erasure)
@@ -282,23 +289,23 @@ try {
   await expect(p5.getByTestId("privacy-choices")).toHaveCount(0);
   pass("U8: 410 erased renders the erased state and no controls");
 
-  // erasure refused while an order is open (guest 1 has a DRAFT order): the message says why, nothing is erased
+  // erasure refused while an order is open (guest 1 has a DRAFT order): the blocked screen says why, nothing is erased
   const p1b = await c1.newPage();
   const eras1 = [];
   p1b.on("response", (r) => { if (r.request().method() === "POST" && new URL(r.url()).pathname.endsWith("/privacy/erasure")) eras1.push(r.status()); });
   await p1b.goto(`${origin}/en/privacy`);
   await expect(p1b.getByTestId("privacy-choices")).toBeVisible();
-  await expect(p1b.getByTestId("privacy-marketing_messages")).toContainText(en.granted);
+  await expect(p1b.getByTestId("privacy-marketing_messages")).toContainText(fr.on);
   await p1b.getByTestId("privacy-erase").click();
   await p1b.getByTestId("privacy-erase-typed").fill("ERASE");
   await p1b.getByTestId("privacy-erase-submit").click();
-  await expect(p1b.getByTestId("privacy-erase-problem")).toHaveText(en.eraseBlocked);
+  await expect(p1b.getByTestId("privacy-erase-blocked")).toContainText(fr.blockedSub);
   assert.deepEqual(eras1, [409]);
   await expect(p1b.getByTestId("privacy-erased")).toHaveCount(0);
-  await p1b.keyboard.press("Escape");
+  await p1b.getByRole("button", { name: fr.back, exact: true }).click();
   await p1b.reload();
-  await expect(p1b.getByTestId("privacy-marketing_messages")).toContainText(en.granted);
-  pass("U8 erase refused while an order is open: 409 erasure_blocked shown as text, consent intact");
+  await expect(p1b.getByTestId("privacy-marketing_messages")).toContainText(fr.on);
+  pass("U8 erase refused while an order is open: 409 erasure_blocked shown on the blocked screen, consent intact");
 
   // ---- data deletion instructions: public, static, no API except the shell's read-only session status ----
   for (const locale of ["en", "zh-TW"]) {
@@ -307,9 +314,9 @@ try {
     const urls = [];
     p.on("request", (r) => urls.push(`${r.method()} ${new URL(r.url()).pathname}`));
     await p.goto(`${origin}/${locale}/data-deletion`);
-    const words = privacyCopy[locale];
+    const words = privacyFrameCopy[locale];
     await expect(p.getByRole("heading", { level: 1 })).toHaveText(words.deletionTitle);
-    for (const step of words.deletionSteps) await expect(p.getByText(step, { exact: false }).first()).toBeVisible();
+    for (const line of [words.deletionSub, words.deletionShopText, words.deletionMetaText, words.deletionHelp]) await expect(p.getByText(line, { exact: false }).first()).toBeVisible();
     await expect(p.locator(`a[href="/${locale}/privacy"]`).first()).toBeVisible();
     await p.waitForLoadState("networkidle");
     // Storefront shell: every page's header reads the buyer SESSION STATUS (GET /api/buyer/session, the cart badge) and nothing else. That read
@@ -327,7 +334,7 @@ try {
       await p.goto(`${origin}/${locale}/privacy`);
       await expect(p.getByTestId("privacy-choices")).toBeVisible();
       await expect(p.locator("html")).toHaveAttribute("lang", locale);
-      await expect(p.getByRole("heading", { level: 1 })).toHaveText(privacyCopy[locale].title);
+      await expect(p.getByRole("heading", { level: 1 })).toHaveText(privacyFrameCopy[locale].title);
       await shot(p, "privacy", locale, viewport);
       await p.route("**/api/buyer/privacy", (route) => route.request().method() === "GET" ? route.fulfill({ status: 410, contentType: "application/json", body: JSON.stringify({ code: "erased", message: "x", request_id: "", retryable: false, details: {} }) }) : route.continue());
       await p.reload();
@@ -335,7 +342,7 @@ try {
       await shot(p, "privacy-erased", locale, viewport);
       await p.unroute("**/api/buyer/privacy");
       await p.goto(`${origin}/${locale}/data-deletion`);
-      await expect(p.getByRole("heading", { level: 1 })).toHaveText(privacyCopy[locale].deletionTitle);
+      await expect(p.getByRole("heading", { level: 1 })).toHaveText(privacyFrameCopy[locale].deletionTitle);
       await shot(p, "data-deletion", locale, viewport);
       // the checkout consent block in the locale under test (the language link is a full navigation now: the pinned quote survives it,
       // the unsaved address form does not, so it is filled and confirmed again)

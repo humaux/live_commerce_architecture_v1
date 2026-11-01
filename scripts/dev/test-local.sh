@@ -1644,6 +1644,21 @@ case "$1" in
   node --test --test-reporter=spec --experimental-strip-types tests/admin/parity-shell-browser.mjs
     }
     ;;
+  --browser-buyer-after-parity)
+    lc_build=storefront
+    lc_fixture=none
+    lc_covers=""
+    lc_browsers=chromium
+    lc_prepare() {
+  test -f tests/storefront/buyer-after-parity.mjs
+  test -f output/parity-buyer-after/FRAME-COPY.md
+  mkdir -p output/playwright
+    }
+    lc_run() {
+  # PARITY-BUYER-AFTER (MOCK): real storefront routes vs the signed frames, real clicks, parity/<frame-id>.png sheet; no PG, no provider.
+  node --test --test-reporter=spec --experimental-strip-types tests/storefront/buyer-after-parity.mjs
+    }
+    ;;
   # APPEND MODES HERE
   *) return 1 ;;
 esac

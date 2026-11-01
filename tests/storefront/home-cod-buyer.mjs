@@ -536,7 +536,7 @@ try {
       for (const terminal of Object.keys(terminalTitles[locale])) {
         state = terminal;
         await preview.goto(`${origin}/${locale}/orders/${a.id}`);
-        await expect(preview.locator("#order-title")).toHaveText(copy[locale].orderTitle);
+        await expect(preview.locator("#order-title")).toHaveText(/^(訂單|Order) [0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/); // signed frame heading 訂單 <mail order number> (was 你的訂單)
         await expect(preview.getByTestId("order-cod-state")).toHaveText(terminalTitles[locale][state]);
         await expect(preview.getByTestId("order-cod-amount")).toContainText(copy[locale].recorded); // non-PENDING label (#226 (4))
         await expect(preview.getByTestId("order-cod-carrier")).toContainText(locale === "en" ? "Carrier at checkout · Hsinchu" : "下單時的物流商 · 新竹");
