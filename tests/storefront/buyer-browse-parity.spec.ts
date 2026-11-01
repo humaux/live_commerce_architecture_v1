@@ -69,6 +69,9 @@ const copy = {
     searchEmptyDesc: "請嘗試其他關鍵字",
     search: "搜尋",
     sortBy: "商品排序",
+    sortNote: "只改變顯示順序，不影響購物車。",
+    sortOptions: { newest: "最新上架", price_asc: "價格：低到高", price_desc: "價格：高到低", title: "商品名稱" },
+    cancelSort: "取消",
     priceRange: "價格",
     priceMin: "最低",
     priceMax: "最高",
@@ -89,6 +92,9 @@ const copy = {
     searchEmptyDesc: "请尝试其他关键词",
     search: "搜索",
     sortBy: "商品排序",
+    sortNote: "只改变显示顺序，不影响购物车。",
+    sortOptions: { newest: "最新上架", price_asc: "价格：低到高", price_desc: "价格：高到低", title: "商品名称" },
+    cancelSort: "取消",
     priceRange: "价格",
     priceMin: "最低",
     priceMax: "最高",
@@ -109,6 +115,9 @@ const copy = {
     searchEmptyDesc: "Try other keywords",
     search: "Search",
     sortBy: "Sort by",
+    sortNote: "Only changes the display order, not your cart.",
+    sortOptions: { newest: "Newest", price_asc: "Price: Low to High", price_desc: "Price: High to Low", title: "Alphabetical" },
+    cancelSort: "Cancel",
     priceRange: "Price",
     priceMin: "Min",
     priceMax: "Max",
@@ -168,7 +177,7 @@ export const PARITY_FRAMES: FrameSpec[] = [
   { frameId: "782:4090", name: "Buyer Mobile · 所有商品 · price_asc", bucket: "U:b-product", route: "/[locale]/products?sort=price_asc", viewport: "390x844", screenshotFile: "parity/782-4090.png", deliveryPng: "verified-sort-ascending.png", plan: "assert" },
   { frameId: "782:4143", name: "Buyer Mobile · 所有商品 · price_desc", bucket: "U:b-product", route: "/[locale]/products?sort=price_desc", viewport: "390x844", screenshotFile: "parity/782-4143.png", deliveryPng: "verified-sort-ascending.png", plan: "assert" },
   { frameId: "782:4196", name: "Buyer Mobile · 所有商品 · title", bucket: "U:b-product", route: "/[locale]/products?sort=title", viewport: "390x844", screenshotFile: "parity/782-4196.png", deliveryPng: "verified-sort-menu.png", plan: "assert" },
-  { frameId: "782:4249", name: "Buyer Mobile · 商品排序", bucket: "U:b-product", route: "/[locale]/products", viewport: "390x844", screenshotFile: "parity/782-4249.png", deliveryPng: "verified-sort-menu.png", plan: "NOT_COVERED", reason: "mobile sort sheet reverted (non-modal always-on dialog removed); mobile uses the native sort select" },
+  { frameId: "782:4249", name: "Buyer Mobile · 商品排序", bucket: "U:b-product", route: "/[locale]/products", viewport: "390x844", screenshotFile: "parity/782-4249.png", deliveryPng: "verified-sort-menu.png", plan: "assert" },
   { frameId: "1253:17090", name: "Buyer Desktop · 商品已下架或不存在 · 狀態", bucket: "U:b-product", route: "/[locale]/products/non-existent-product-sku", viewport: "1440x900", screenshotFile: "parity/1253-17090.png", deliveryPng: "after-1253-17090.png", plan: "assert" },
   { frameId: "1253:17114", name: "Buyer Mobile · 商品已下架或不存在 · 狀態", bucket: "U:b-product", route: "/[locale]/products/non-existent-product-sku", viewport: "390x844", screenshotFile: "parity/1253-17114.png", deliveryPng: "after-1253-17114.png", plan: "assert" },
   { frameId: "4:9668", name: "Buyer Desktop · 購物車 · SHOPLINE", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "1440x900", screenshotFile: "parity/4-9668.png", deliveryPng: "verified-desktop-cart-initial.png", plan: "assert" },
@@ -507,6 +516,126 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
           await cartHasLine();
         });
 
+        // ===== 782:4249: full mobile sorting page, reached by real controls, not a native select or bottom sheet =====================
+        // Authority: signed 782:4249 PNG SHA256 19b7f3e19a2ee9889925f0dbeb8906b74dfbce649038be287b8ce96aa204bf56;
+        // existing GET enums and price oracles above. No new API/fixture, and the populated cart above is the mutation baseline.
+        if (isMobile) {
+          const frame = "782:4249";
+          const beforeCart = await page.getByTestId("cart-line").allTextContents();
+          const beforeQty = await page.getByTestId("cart-line-qty").allTextContents();
+          const writes: string[] = [];
+          const observeWrite = (request: import("@playwright/test").Request) => {
+            if (new URL(request.url()).origin === new URL(origin).origin && !["GET", "HEAD", "OPTIONS"].includes(request.method())) {
+              // Record path only: preview credentials and any request body must never enter the ledger.
+              writes.push(`${request.method()} ${new URL(request.url()).pathname}`);
+            }
+          };
+          page.on("request", observeWrite);
+          const entry = () => page.getByRole("button", { name: c.sortBy, exact: true });
+          const option = (value: keyof typeof c.sortOptions) => page.getByRole("button", { name: c.sortOptions[value], exact: true });
+          const cancel = () => page.getByRole("button", { name: c.cancelSort, exact: true });
+          const openPicker = async () => {
+            await entry().click({ timeout: T });
+            await expect(page.getByRole("heading", { name: c.sortBy, exact: true })).toBeVisible({ timeout: T });
+          };
+          let pickerReady = false;
+          try {
+            await page.goto(`${origin}${listRoute}`);
+            await settle();
+            await step(frame, listRoute, "mobile sort contents", "click sort + assert full page", "merchant name, title, explanatory note, four sort buttons and cancel; no visible native sort", async () => {
+              await openPicker(); // Baseline RED must be this absent UI control, not a fixture or order assumption.
+              await expect(page.getByText(c.sortNote, { exact: true })).toBeVisible({ timeout: T });
+              await expect(page.getByText(facts.store_name, { exact: true }).filter({ visible: true }).first()).toBeVisible();
+              await expect(page.locator('select[name="sort"]').filter({ visible: true })).toHaveCount(0);
+              for (const value of Object.keys(c.sortOptions) as (keyof typeof c.sortOptions)[]) await expect(option(value)).toBeVisible();
+              await expect(cancel()).toBeVisible();
+              // Read-only geometry: the full-width title/options start near the top, unlike a bottom sheet.
+              const heading = await page.getByRole("heading", { name: c.sortBy, exact: true }).boundingBox();
+              const first = await option("newest").boundingBox();
+              assert(heading && heading.y < 135 && first && first.y < 220 && first.width >= 340, "sort must use the signed full-page composition at 390x844");
+              await shot(frame, listRoute);
+              await cancel().click({ timeout: T });
+              await expect(entry()).toBeFocused({ timeout: T });
+              await expect(page.locator('select[name="sort"]').filter({ visible: true })).toHaveCount(0);
+              pickerReady = true;
+            });
+            // A missing entry records one causal FAIL per locale. Dependent actions cannot run; the manifest requires every row below.
+            if (pickerReady) {
+              const collection = facts.collections.find((x: any) => x.slug === "tableware");
+              assert(collection, "existing storefront tableware fixture required");
+              const scopes = [
+                { key: "products", route: listRoute, query: "", products: facts.products.filter((x: any) => x.status === "active") },
+                { key: "collection", route: `/${locale}/collections/${collection.slug}`, query: "", products: facts.products.filter((x: any) => x.status === "active" && x.collection === collection.key) },
+                { key: "search", route: searchRoute, query: "Everyday", products: facts.products.filter((x: any) => x.status === "active" && x.title.includes("Everyday")) },
+              ];
+              for (const scope of scopes) {
+                for (const value of Object.keys(c.sortOptions) as (keyof typeof c.sortOptions)[]) {
+                  await step(frame, scope.route, `mobile sort ${scope.key} ${value}`, "click entry + click option + reload", "existing enum/order oracle and card order persist after refresh", async () => {
+                    const params = new URLSearchParams();
+                    if (scope.query) params.set("q", scope.query);
+                    await page.goto(`${origin}${scope.route}?${params}`);
+                    await settle();
+                    await openPicker();
+                    await option(value).click({ timeout: T });
+                    await page.waitForURL((url) => url.pathname === scope.route && url.searchParams.get("sort") === value, { timeout: T });
+                    await settle();
+                    assert.equal(urlParams().get("q"), scope.query || null);
+                    const titles = await page.getByTestId("product-card").locator(".sf-card__title").allTextContents();
+                    const prices = await cardPrices(page);
+                    assert(titles.length >= 3, "existing scope must contain at least three cards");
+                    if (value === "price_asc") assert(ascending(prices), `not ascending: ${prices}`);
+                    if (value === "price_desc") assert(trendsDown(prices), `desc list does not trend down: ${prices}`);
+                    // The Go fixture creates products in facts order; SFR01 uses the same newest-first oracle.
+                    if (value === "newest") assert.equal(titles[0], scope.products.at(-1).title);
+                    // Keep the existing title-sort oracle (URL + populated list); do not invent a browser collation.
+                    await page.reload();
+                    await settle();
+                    assert.equal(urlParams().get("sort"), value);
+                    assert.equal(urlParams().get("q"), scope.query || null);
+                    assert.deepEqual(await page.getByTestId("product-card").locator(".sf-card__title").allTextContents(), titles);
+                    assert.deepEqual(await cardPrices(page), prices);
+                    return `${value}; ${titles.length} cards; order retained after refresh`;
+                  });
+                }
+                await step(frame, scope.route, `mobile sort ${scope.key} cancel and keyboard`, "keyboard activate + cancel; select with active filters", "cancel restores focus and exact URL; selection preserves query/filter/preview", async () => {
+                  assert(facts.preview_token, "existing preview credential required");
+                  const params = new URLSearchParams({ sort: "price_asc", min: "15", max: "20", preview: facts.preview_token });
+                  if (scope.query) params.set("q", scope.query);
+                  await page.goto(`${origin}${scope.route}?${params}`);
+                  await settle();
+                  const before = page.url();
+                  await entry().focus();
+                  await page.keyboard.press("Enter");
+                  await expect(cancel()).toBeVisible({ timeout: T });
+                  await cancel().press("Enter", { timeout: T });
+                  assert.equal(page.url(), before, "cancel must not change any query parameter");
+                  await expect(entry()).toBeFocused({ timeout: T });
+                  await entry().press("Enter", { timeout: T });
+                  await option("price_desc").press("Enter", { timeout: T });
+                  await page.waitForURL((url) => url.searchParams.get("sort") === "price_desc", { timeout: T });
+                  for (const [key, value] of params) if (key !== "sort") assert.equal(urlParams().get(key), value, `${key} must survive sorting`);
+                  await page.reload();
+                  for (const [key, value] of params) assert.equal(urlParams().get(key), key === "sort" ? "price_desc" : value, `${key} must survive refresh`);
+                  return "cancel unchanged; keyboard focus returned; q/min/max/preview retained (credential omitted)";
+                });
+              }
+              await step(frame, cartRoute, "mobile sort cart unchanged", "return to cart + reload", "existing cart line and quantity unchanged; sorting issued no writes", async () => {
+                assert.deepEqual(writes, [], "sorting must issue no write request");
+                await page.goto(`${origin}${cartRoute}`);
+                await cartHasLine();
+                assert.deepEqual(await page.getByTestId("cart-line").allTextContents(), beforeCart);
+                assert.deepEqual(await page.getByTestId("cart-line-qty").allTextContents(), beforeQty);
+                await page.reload();
+                await cartHasLine();
+                assert.deepEqual(await page.getByTestId("cart-line").allTextContents(), beforeCart);
+                return "existing line/quantity unchanged before and after refresh; zero sort writes";
+              });
+            }
+          } finally {
+            page.off("request", observeWrite);
+          }
+        }
+
         // ===== Removed / unknown product ===============================================================================================
         const removedFrame = f("1253:17090", "1253:17114");
         const removedRoute = `/${locale}/products/non-existent-product-sku`;
@@ -527,6 +656,14 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
     const rows = ledger.filter((row) => row.frame === frame.frameId);
     const locales = new Set(rows.filter((row) => row.status === "PASS").map((row) => row.locale));
     const failedRows = rows.filter((row) => row.status === "FAIL");
+    if (frame.frameId === "782:4249") {
+      const required = ["mobile sort contents", "mobile sort cart unchanged", ...["products", "collection", "search"].flatMap((scope) => [
+        ...["newest", "price_asc", "price_desc", "title"].map((sort) => `mobile sort ${scope} ${sort}`),
+        `mobile sort ${scope} cancel and keyboard`,
+      ])];
+      const complete = Object.keys(copy).every((locale) => required.every((control) => rows.some((row) => row.locale === locale && row.control === control && row.status === "PASS")));
+      if (!complete) return { ...frame, status: "NOT_COVERED", reason: failedRows.length ? `assertion failed: ${failedRows[0].error}` : "full mobile sort plan not executed in all three locales" };
+    }
     if (failedRows.length === 0 && locales.size === Object.keys(copy).length) return { ...frame, status: "COVERED", asserted: [...(asserted.get(frame.frameId) ?? [])] };
     return { ...frame, status: "NOT_COVERED", reason: failedRows.length ? `assertion failed: ${failedRows[0].error}` : `no passing assertion in: ${Object.keys(copy).filter((l) => !locales.has(l)).join(", ")}` };
   });
