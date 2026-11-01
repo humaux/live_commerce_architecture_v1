@@ -1,7 +1,7 @@
 // Purpose: real-user cart/checkout setup and expanded-detail paths for browser gates.
 // Depends on: Playwright and the production storefront routes.
 // Used by: storefront browser gates in GitHub CI.
-// Invariants: click/fill only; expanded details never change server money or consent.
+// Invariants: native focus only prepares real clicks; expanded details never change server money or consent.
 import { expect } from "@playwright/test";
 
 // Shared steps for browser gates that used to start on the old single-product page (/{locale}/products/{id} with its SKU radios and
@@ -73,13 +73,14 @@ export async function openCheckoutDetails(page) {
   if (await toggle.isVisible() && await toggle.getAttribute("aria-expanded") === "false") await toggle.click();
 }
 
-// Recovery can appear before load() finishes restoring the quote/review. Wait for
-// that layout, then settle focus scrolling before the caller's one pointer click.
-// This does not replay a request or change the original intent, key or assertion.
-export async function prepareCheckoutRecovery(page) {
+// Recovery can appear while reload is still hydrating the review and fixed bar.
+// Settle its native focus/scroll before the pointer action, as in the order gate's
+// quote-less address and history controls. This does not replay any request itself.
+export async function recoverPurchase(page) {
   await expect(page.locator(".purchase-main")).not.toHaveAttribute("aria-busy", "true");
-  const button = page.getByTestId("recover-purchase");
-  await expect(button).toBeEnabled();
-  await button.focus();
-  await expect(button).toBeFocused();
+  const recovery = page.getByTestId("recover-purchase");
+  await expect(recovery).toBeEnabled();
+  await recovery.focus();
+  await expect(recovery).toBeFocused();
+  await recovery.click();
 }
