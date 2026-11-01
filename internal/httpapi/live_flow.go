@@ -24,6 +24,7 @@ func registerLiveFlowRoutes(mux *http.ServeMux, pool *pgxpool.Pool, enabled bool
 	if !enabled {
 		return
 	}
+	registerLiveReplayRoutes(mux, pool)
 	const base = "/v1/admin/stores/{store_id}/live-sessions"
 
 	mux.HandleFunc("GET "+base+"/results", claimsRoute(http.MethodGet, true, func(w http.ResponseWriter, r *http.Request) {

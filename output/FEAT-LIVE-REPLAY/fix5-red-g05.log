@@ -1,0 +1,2 @@
+gate (shard:g05)	Gate	2026-11-01T05:36:22.5674375Z     published_storefront_test.go:235: function owner/ACL/search_path: <nil>
+gate (shard:g05)	Gate	2026-11-01T05:36:22.5693820Z --- FAIL: TestPublishedStorefrontAuthorityAndConstraints (0.29s)
