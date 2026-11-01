@@ -221,14 +221,14 @@ test("T12 deal loop: wizard store, Studio, claim source, signed Meta comment, pr
   buyer.on("request", (request) => buyerRequests.push(request.url()));
   const opened = await buyer.goto(link);
   expect(opened?.status()).toBe(200);
-  await expect(buyer.getByRole("heading", { level: 1, name: claim.title })).toBeVisible();
+  await expect(buyer.getByRole("heading", { level: 1, name: claim.confirmTitle })).toBeVisible();
   await expect(buyer.getByTestId("claim-line-A1")).toContainText(`${claim.quantity} 2`);
   await expect(buyer.getByTestId("claim-line-A1")).toContainText(fixtures.sku_code);
   expect(new URL(buyer.url()).hash).toBe("");
   await storageScanSelfTest(buyer, token);
   await storageLacks(buyer, [token]);
   await buyerShots(buyer, "buyer-claim");
-  await buyer.getByRole("button", { name: claim.add }).click();
+  await buyer.getByRole("button", { name: /前往結帳（共 \d+ 件）/ }).click() /* signed frame 4:12347: the single checkout action (was claim.add 直接結帳) */;
   await buyer.waitForURL((url) => url.pathname === `/${L}/checkout`);
   await expect(buyer.getByTestId("claim-checkout-notice")).toHaveText(claim.checkoutNotice);
   await expect(buyer.locator(`[data-testid="cart-line"][data-sku="${fixtures.sku_id}"]`)).toBeVisible();
