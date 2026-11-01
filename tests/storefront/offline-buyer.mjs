@@ -96,6 +96,28 @@ async function startNext() {
   });
 }
 const manifest = path.join(evidence, "screenshots.json");
+// Diagnostics name only the route shape; the real path contains an order ID.
+const transferRoute = (url) => {
+  let pathname;
+  try { pathname = new URL(url).pathname; } catch { return null; }
+  if (/^\/api\/buyer\/orders\/[^/]+\/bank-transfer\/proof$/.test(pathname)) return "/api/buyer/orders/:order/bank-transfer/proof";
+  if (/^\/api\/buyer\/orders\/[^/]+\/bank-transfer$/.test(pathname)) return "/api/buyer/orders/:order/bank-transfer";
+  return null;
+};
+const transferStates = new Set(["AWAITING", "SUBMITTED", "REJECTED", "CONFIRMED", "EXPIRED", "REFUNDED_OFFLINE"]);
+const transferErrors = new Set(["bank_transfer_unavailable", "not_bank_transfer", "transfer_not_open", "transfer_window_closed", "invalid_proof"]);
+const safeEnum = (value, allowed) => value == null ? "ABSENT" : allowed.has(value) ? value : "OTHER";
+// The test creates minute-aligned UTC instants. Accept only nearby RFC3339 representations of that shape.
+const safeSyntheticInstant = (value, expected) => {
+  if (value == null) return "ABSENT";
+  if (typeof value !== "string") return "INVALID";
+  const match = /^(\d{4})-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,9})?(?:Z|[+-](?:0\d|1[0-4]):[0-5]\d)$/.exec(value);
+  if (!match || Number(match[3]) > new Date(Date.UTC(Number(match[1]), Number(match[2]), 0)).getUTCDate()) return "INVALID";
+  const instant = Date.parse(value), reference = Date.parse(expected);
+  if (!Number.isFinite(instant) || !Number.isFinite(reference) || Math.abs(instant - reference) > 48 * 60 * 60 * 1000) return "INVALID";
+  const normalized = new Date(instant).toISOString();
+  return normalized.endsWith(":00.000Z") ? normalized : "INVALID";
+};
 async function shot(page, name, locale, viewport) {
   const file = path.join(evidence, `offline-${name}-${locale}-${viewport}.png`);
   await page.screenshot({ path: file, fullPage: true });
@@ -113,7 +135,7 @@ async function newContext(mobile, timezoneId = "America/Los_Angeles") {
   contexts.push(c);
   c.on("page", (p) => {
     p.on("pageerror", (e) => console.log("PAGEERROR", e.message));
-    p.on("response", async (r) => { if (r.url().includes("/api/buyer/") && r.status() >= 400) console.log("HTTP", r.status(), r.request().method(), new URL(r.url()).pathname, (await r.text().catch(() => "")).slice(0, 200)); });
+    p.on("response", async (r) => { if (!transferRoute(r.url()) && r.url().includes("/api/buyer/") && r.status() >= 400) console.log("HTTP", r.status(), r.request().method(), new URL(r.url()).pathname, (await r.text().catch(() => "")).slice(0, 200)); });
   });
   return c;
 }
@@ -159,21 +181,53 @@ async function send(page, last5, minor, minutesAgo = 10) {
     return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
   }, expectedInstant);
   await page.locator('input[name="paid_at"]').fill(localInput);
+  const observed = [];
+  let overflow = false;
+  const captureTransfer = (r) => {
+    const route = transferRoute(r.url()), method = r.request().method();
+    if (!route || (route.endsWith("/proof") ? method !== "PUT" : method !== "GET")) return;
+    if (observed.length >= 16) { overflow = true; return; }
+    observed.push((async () => {
+      const body = await r.json().catch(() => null);
+      let sent = null;
+      if (method === "PUT") { try { sent = r.request().postDataJSON(); } catch { /* diagnostic stays static */ } }
+      const proof = method === "PUT" ? sent : body?.proof;
+      return {
+        route, method, status: r.status(),
+        state: safeEnum(body?.state, transferStates), error_code: safeEnum(body?.code, transferErrors),
+        last5_match: proof?.last5 === last5, amount_match: proof?.amount_minor === minor,
+        expected_at: safeSyntheticInstant(expectedInstant, expectedInstant),
+        actual_at: safeSyntheticInstant(proof?.paid_at, expectedInstant),
+      };
+    })());
+  };
+  page.on("response", captureTransfer);
   const written = page.waitForResponse(r => r.request().method() === "PUT" && new URL(r.url()).pathname.endsWith("/bank-transfer/proof"));
   const updated = page.waitForResponse(async (r) => {
     if (!transferRead(r)) return false;
     const body = await r.json().catch(() => null);
     return body?.state === "SUBMITTED" && body.proof?.last5 === last5 && Date.parse(body.proof.paid_at) === Date.parse(expectedInstant);
   });
-  const [write] = await Promise.all([written, updated, page.getByTestId("transfer-send").click()]);
-  assert.equal(write.status(), 200);
-  assert.equal(write.request().postDataJSON().paid_at, expectedInstant, "real UI serializes the buyer's local wall clock");
-  await expect(view(page)).toHaveAttribute("data-state", "SUBMITTED");
-  await expect(page.getByTestId("transfer-proof")).toContainText(last5);
-  const submitted = await (await updated).json();
-  assert.equal(Date.parse(submitted.proof.paid_at), Date.parse(expectedInstant), "real persisted proof is the same instant");
-  await expect(page.locator('input[name="paid_at"]')).toHaveValue(localInput);
-  return submitted;
+  const clicked = page.getByTestId("transfer-send").click();
+  try {
+    const [write] = await Promise.all([written, updated, clicked]);
+    assert.equal(write.status(), 200);
+    assert.equal(write.request().postDataJSON().paid_at, expectedInstant, "real UI serializes the buyer's local wall clock");
+    await expect(view(page)).toHaveAttribute("data-state", "SUBMITTED");
+    await expect(page.getByTestId("transfer-proof")).toContainText(last5);
+    const submitted = await (await updated).json();
+    assert.equal(Date.parse(submitted.proof.paid_at), Date.parse(expectedInstant), "real persisted proof is the same instant");
+    await expect(page.locator('input[name="paid_at"]')).toHaveValue(localInput);
+    return submitted;
+  } catch (error) {
+    // Original waiters and click keep their deadlines. Report only sanitized receipts, then rethrow the original failure.
+    await Promise.allSettled([written, updated, clicked]);
+    const settled = await Promise.allSettled(observed);
+    console.log("TRANSFER_DIAGNOSTIC", JSON.stringify({ receipts: settled.filter((x) => x.status === "fulfilled").map((x) => x.value), capture_error: settled.some((x) => x.status === "rejected"), overflow }));
+    throw error;
+  } finally {
+    page.off("response", captureTransfer);
+  }
 }
 // Product page -> home delivery quote at the free-shipping boundary -> address -> bank transfer -> order page with the bank details and countdown.
 async function belowThreshold(buyer) {
