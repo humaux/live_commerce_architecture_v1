@@ -356,7 +356,7 @@ test("MIUI history50+1 readonly paging, retry, persistence and source-safe city"
 });
 
 test("MIUI imported-only erasure removes history and tombstone blocks same source ID", async ({ browser }) => {
-  const { page, context } = await signed(browser, "en", 1440), c = importCopy.en;
+  const { page, context } = await signed(browser, "en", 1440);
   try {
     const file = await bootstrap(page, "ERASE");
     const order: FileCase = { prefix: "ERASE-ORDER", buffer: Buffer.from("order_id,customer_id,ordered_at,status,total\nMIUI-ERASE-H,ERASE-A,2026-04-01,paid,100\n"), mapping: { order_id: "order_id", customer_id: "customer_id", ordered_at: "ordered_at", status: "status", total: "total" }, markers: [] };
@@ -381,7 +381,7 @@ test("MIUI imported-only erasure removes history and tombstone blocks same sourc
     await page.goto(`${origin}/en/customers/import?store=${store}`);
     const changed = { ...file, buffer: Buffer.from(file.buffer.toString("utf8").replace("MIUI-NAME-ERASE-A", "MIUI-NAME-ERASE-CHANGED")) };
     await upload(page, changed); await preview(page, changed, { new: 0, update: 0, failed: 1 }); await expect(page.getByTestId("import-erased-count").locator("dd")).toHaveText("1"); await expect(page.getByTestId("import-confirm")).toBeDisabled();
-    const csv = await failureCSV(page, false); expect(csv[1][2]).toBe("erased"); expect((await state()).owners["ERASE-A"]).toBeUndefined(); await expect(wizard(page)).toContainText(c.onlyRowsHint);
+    const csv = await failureCSV(page, false); expect(csv[1][2]).toBe("erased"); expect((await state()).owners["ERASE-A"]).toBeUndefined(); await expect(wizard(page).getByText(dataOpsCopy("en").privateRows, { exact: true })).toBeVisible();
   } finally { await context.close(); }
 });
 
