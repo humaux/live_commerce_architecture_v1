@@ -386,12 +386,12 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
             await controls().getByRole("button", { name: c.sortBy, exact: true }).click({ timeout: T });
             await page.getByRole("button", { name: c.sortOptions[value], exact: true }).click({ timeout: T });
           } else {
-            await controls().getByLabel(c.sortBy).selectOption(value);
+            await controls().locator('select[name="sort"]').selectOption(value);
           }
           await page.waitForURL(new RegExp(`[?&]sort=${value}`), { timeout: T });
           await settle();
           await expect(controls()).toHaveCount(1, { timeout: T });
-          await expect(controls().getByLabel(c.sortBy)).toHaveValue(value);
+          await expect(controls().locator('select[name="sort"]')).toHaveValue(value);
         };
         const ascFrame = f("782:3907", "782:4090");
         await step(ascFrame, `${listRoute}?sort=price_asc`, isMobile ? "mobile sort picker" : "sort select", isMobile ? "click entry + price_asc" : "selectOption price_asc", "URL carries sort=price_asc and card prices ascend", async () => {
@@ -451,7 +451,7 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
           assert.equal(urlParams().get("sort"), "price_desc");
           assert.equal(urlParams().get("min"), "15");
           assert.equal(urlParams().get("max"), "20");
-          await expect(controls().getByLabel(c.sortBy)).toHaveValue("price_desc");
+          await expect(controls().locator('select[name="sort"]')).toHaveValue("price_desc");
           await expect(controls().getByLabel(c.priceMin, { exact: true })).toHaveValue("15");
           await expect(controls().getByLabel(c.priceMax, { exact: true })).toHaveValue("20");
           const prices = await cardPrices(page);

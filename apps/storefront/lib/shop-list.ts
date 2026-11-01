@@ -13,7 +13,7 @@ export type SearchParams = Record<string, string | string[] | undefined>;
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 export type Loaded = {
-  query: ListQuery & { sort: string };
+  query: ReturnType<typeof parseListQuery>;
   list: Fetched<ProductList>;
   form: { sort: string; min: string; max: string; q: string };
   filtered: boolean;
@@ -22,7 +22,7 @@ export type Loaded = {
 export async function loadList(locale: Locale, params: SearchParams, fixed: { collection?: string } = {}): Promise<Loaded> {
   const get = (key: string) => (key === "min" || key === "max" ? null : first(params[key]));
   const base = parseListQuery(get);
-  const query = { ...base, collection: fixed.collection ?? base.collection, min: null, max: null } as Loaded["query"];
+  const query: Loaded["query"] = { ...base, collection: fixed.collection ?? base.collection, min: null, max: null };
   const typedMin = (first(params.min) ?? "").trim();
   const typedMax = (first(params.max) ?? "").trim();
   if (typedMin || typedMax) {
@@ -40,7 +40,7 @@ export async function loadList(locale: Locale, params: SearchParams, fixed: { co
     query,
     list,
     form: {
-      sort: query.sort,
+      sort: query.sort ?? "newest",
       min: query.min != null ? minorToMajor(locale, currency, query.min) : "",
       max: query.max != null ? minorToMajor(locale, currency, query.max) : "",
       q: query.q ?? "",
@@ -49,12 +49,13 @@ export async function loadList(locale: Locale, params: SearchParams, fixed: { co
   };
 }
 
-// Canonical query string for the client "load more" (minor units, no cursor, defaults omitted).
+// Canonical client "load more" query (minor units, no cursor). Preserve every explicit sort:
+// newest overrides a collection default, and Go binds that distinction into the cursor digest.
 export function clientQuery(query: ListQuery): string {
   const params = new URLSearchParams();
   if (query.collection) params.set("collection", query.collection);
   if (query.q) params.set("q", query.q);
-  if (query.sort && query.sort !== "newest") params.set("sort", query.sort);
+  if (query.sort) params.set("sort", query.sort);
   if (query.min != null) params.set("min", String(query.min));
   if (query.max != null) params.set("max", String(query.max));
   if (query.limit) params.set("limit", String(query.limit));
