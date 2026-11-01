@@ -171,3 +171,14 @@ E1 static checks exit0: python3 scripts/check_packet.py (packet structure only),
 Scope extension pre-approved for same storefront module: deletion of apps/storefront/app/[locale]/search/loading.tsx. Generated browser ownership is allowed. Output RVFIX.md/red.log contain preserved earlier relay notes plus this correction. No unrelated module edits. Risk: search waits for the catalog read instead of showing the route skeleton; this deliberately preserves no-JS access. Rollback: revert this implementation commit (restores the tracked loading.tsx and prior summary guard); no DB changes. GREEN, post-merge browser acceptance and independent review NOT_RUN. Integrator relays CI completion; no local process or downloaded artifact retained (old artifact parsed in memory).
 
 STATUS: IMPLEMENTED_E1_PENDING_PUSH_AND_CI
+
+
+## Integrator continuation 2026-11-01: shared observer base integration
+
+- Parent task: 53ea9f21-3f3b-4626-87ab-42dc853507b9; role integrator (Codex root; exact runtime model/effort not exposed).
+- Previous PR head: 56ca96fe0e33df24fc5344d0d2f2d2e18878fad5. Integration base: b209a377e5bf8d26278f5772d82b91b0c7122068, merged PR484 after same-SHA CI and independent cross-family APPROVE.
+- Worktree .worktrees/codex-pr440-base-integration; branch codex/pr440-base-integration. Original parity-buyer-browse worktree and its three dirty evidence files preserved. Old waiting relay stopped before push; exact PID receipt in root output/integrator/tools/logs/pr440-base-integration-relay-stop.json.
+- Merged the approved observer/canary change without conflicts; regenerated browser ownership. No buyer product code or original buyer parity assertions changed. This does not yet establish the cause of the old sweep failures.
+- Static commands: ownership generation and --check, git diff --check; runtime tests remain GitHub-only. New SHA requires all required CI plus renewed independent review. Inspect original sweep 4/7/8 rows and six cursor cases from new artifacts before attributing recovery. No timeout, retries, exemptions, budgets or approval gate changed.
+- NOT_RUN at this checkpoint: new-head GitHub runtime, independent acceptance, LIVE/deploy. No local server, browser or database started.
+STATUS: WAIT_ROOT_GUARD_THEN_PUSH
