@@ -21,6 +21,7 @@ import { AdminForbidden } from "../AdminForbidden";
 import { AdminStateBlock, adminStateCopy } from "../AdminStateBlock";
 import { messageTemplateCopy } from "./MessageTemplateList.copy";
 import s from "./MessageTemplateList.module.css";
+import { useTemplateViewport } from "./useTemplateViewport";
 type Metadata = {
   template_id: string;
   name: string;
@@ -70,6 +71,7 @@ export function MessageTemplateList({
       : null,
     initialError ?? (!allowed ? "forbidden" : null),
   );
+  const page = useTemplateViewport(read.status === "ready");
   useEffect(() => {
     if (
       read.status === "ready" &&
@@ -100,36 +102,14 @@ export function MessageTemplateList({
   const types = (row: Metadata) =>
     row.kinds.map(kind).join(locale === "en" ? ", " : "、");
   return (
-    <section className={s.page} data-figma-node="5:15002 5:15135">
+    <section ref={page} className={`${s.page} ${s.listPage}`} data-figma-node="5:15002 5:15135">
+      <div className={s.listContent}>
       <h1 className={s.desktop}>{c.title}</h1>
       <h1 className={s.mobile}>{c.mobileTitle}</h1>
       <h2>{c.count.replace("{n}", String(rows.length))}</h2>
       <p>{c.disclaimer}</p>
       <p className={s.note}>{c.unreadable}</p>
-      <div className={s.addDock}>
-        <button
-          ref={add}
-          id="message-template-add"
-          className={s.primary}
-          type="button"
-          disabled={!permitted(store, "live:manage")}
-          aria-describedby={
-            !permitted(store, "live:manage")
-              ? "template-manage-required"
-              : undefined
-          }
-          onClick={() =>
-            router.push(
-              `/${locale}/messages/templates/new?${new URLSearchParams({ store: store!.id })}`,
-            )
-          }
-        >
-          {c.add}
-        </button>
-        {!permitted(store, "live:manage") && (
-          <p id="template-manage-required">{c.manageRequired}</p>
-        )}
-      </div>
+      <div className={s.listRows}>
       {rows.length === 0 ? (
         <p>{c.empty}</p>
       ) : (
@@ -176,6 +156,32 @@ export function MessageTemplateList({
           </ul>
         </>
       )}
+      </div>
+      </div>
+      <div className={s.addDock}>
+        <button
+          ref={add}
+          id="message-template-add"
+          className={s.primary}
+          type="button"
+          disabled={!permitted(store, "live:manage")}
+          aria-describedby={
+            !permitted(store, "live:manage")
+              ? "template-manage-required"
+              : undefined
+          }
+          onClick={() =>
+            router.push(
+              `/${locale}/messages/templates/new?${new URLSearchParams({ store: store!.id })}`,
+            )
+          }
+        >
+          {c.add}
+        </button>
+        {!permitted(store, "live:manage") && (
+          <p id="template-manage-required">{c.manageRequired}</p>
+        )}
+      </div>
     </section>
   );
 }

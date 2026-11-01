@@ -15,6 +15,7 @@ import { AdminForbidden } from "../AdminForbidden";
 import { AdminStateBlock, adminStateCopy } from "../AdminStateBlock";
 import { messageTemplateCopy } from "./MessageTemplateList.copy";
 import s from "./MessageTemplateList.module.css";
+import { useTemplateViewport } from "./useTemplateViewport";
 /** Local-only form: a successful check is never represented as a published version. */
 export function MessageTemplateForm({
   locale,
@@ -34,6 +35,7 @@ export function MessageTemplateForm({
     [safe, setSafe] = useState(false),
     [result, setResult] = useState<boolean | null>(null);
   const bodyInput = useRef<HTMLTextAreaElement>(null);
+  const page = useTemplateViewport(!initialError && permitted(store, "live:manage"));
   useEffect(() => {
     const clear = () => {
       if (bodyInput.current) bodyInput.current.value = "";
@@ -91,6 +93,7 @@ export function MessageTemplateForm({
   }
   return (
     <section
+      ref={page}
       className={`${s.page} ${s.formPage}`}
       data-figma-node="673:2847 673:2916"
     >
@@ -101,6 +104,7 @@ export function MessageTemplateForm({
       <h1>{c.formTitle}</h1>
       <p>{c.intro}</p>
       <form onSubmit={check} noValidate className={s.formGrid}>
+        <div className={s.formContent}>
         <div className={s.fields}>
           <label htmlFor="template-name">{c.nameLabel}</label>
           <input
@@ -195,6 +199,7 @@ export function MessageTemplateForm({
             </p>
           )}
         </aside>
+        </div>
         <div className={s.formDock}>
           <button type="button" className={s.secondary} onClick={back}>
             {c.cancel}
