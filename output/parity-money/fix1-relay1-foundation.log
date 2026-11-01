@@ -1,0 +1,21 @@
+1904-foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6764589Z ℹ fail 1
+1905-foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6764809Z ℹ cancelled 0
+1906-foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6765034Z ℹ skipped 0
+1907-foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6765244Z ℹ todo 0
+1908-foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6765492Z ℹ duration_ms 71001.821659
+1909-foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6765668Z
+1910-foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6765792Z ✖ failing tests:
+1911-foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6765928Z
+1912:foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6766139Z test at tests/ci/next-startup.test.mjs:284:1
+1913-foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6767065Z ✖ all eleven gate adapters preserve original assertions, readiness loops and predicates, spawn and environment statements (397.441889ms)
+1914:foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6768601Z   AssertionError [ERR_ASSERTION]: tests/storefront/promotions-gate.mjs: original gate assertions changed (missing: expect(totalRow.getByTestId("finance-transfer-confirmed")).toContainText(amt(total * (index + 1))))
+1915-foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6769870Z
+1916:foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6770076Z   105 !== 112
+1917-foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6770277Z
+1918-foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6771154Z       at assertGateParity (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/ci/next-startup.test.mjs:269:10)
+1919-foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6772545Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/ci/next-startup.test.mjs:289:9)
+1920-foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6773656Z       at async Test.run (node:internal/test_runner/test:1409:7)
+1921-foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6774314Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7) {
+1922-foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6774797Z     generatedMessage: false,
+1923-foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6775089Z     code: 'ERR_ASSERTION',
+1924-foundation	Node unit suites (storefront, i18n)	2026-10-30T17:22:53.6775344Z     actual: 105,

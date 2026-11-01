@@ -1,5 +1,5 @@
 // Purpose: Exercises customer, finance and billing UI with the real harness and MOCK billing provider.
-// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/billing-copy, ../../apps/admin/lib/claims-copy, ../../apps/admin/lib/customers-copy, ../../apps/admin/src/shell-copy; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_CUSTOMER, LC_BROWSER_CUSTOMER_ERASE, LC_BROWSER_ORDER, LC_BROWSER_SESSION, LC_BROWSER_PRICE, LC_BROWSER_CONTROL, LC_BROWSER_CONTROL_KEY, LC_BROWSER_PHONE_TAIL, LC_BROWSER_PHONE_FULL, LC_BROWSER_ACTOR_KEY, LC_BROWSER_RESTRICTED_TOKEN, LC_BROWSER_NOFIN_TOKEN
+// Depends on: @playwright/test, node:crypto, node:fs/promises, node:path, ../../apps/admin/lib/billing-copy, ../../apps/admin/lib/claims-copy, ../../apps/admin/lib/customers-copy, ../../apps/admin/src/shell-copy; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_STORE, LC_BROWSER_CUSTOMER, LC_BROWSER_CUSTOMER_ERASE, LC_BROWSER_ORDER, LC_BROWSER_SESSION, LC_BROWSER_PRICE, LC_BROWSER_CONTROL, LC_BROWSER_CONTROL_KEY, LC_BROWSER_PHONE_TAIL, LC_BROWSER_PHONE_FULL, LC_BROWSER_ACTOR_KEY, LC_BROWSER_RESTRICTED_TOKEN, LC_BROWSER_NOFIN_TOKEN, ./parity-money-support
 // Used by: apps/admin/src/features/customers/routes.ts, apps/admin/src/features/finance/routes.ts, apps/admin/src/features/settings/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_customers_billing_test.go
 // CB11 admin half (contracts/customers-billing-v1.md §5 "Admin screens", §8 CB11; customers-billing-ui.md U1-U6, U9).
 // BFF routes exercised through the UI: GET|POST /api/stores/{store}/customers*, GET finance/summary[.csv],
@@ -18,6 +18,7 @@ import { billingCopy } from "../../apps/admin/lib/billing-copy";
 import { claimsCopy } from "../../apps/admin/lib/claims-copy";
 import { customersCopy } from "../../apps/admin/lib/customers-copy";
 import { shellCopy } from "../../apps/admin/src/shell-copy";
+import { moneyClick, moneyDesign, moneyLocales, moneyOverview, moneyShot, moneyWidths } from "./parity-money-support";
 
 const required = (name: string) => {
   const value = process.env[name];
@@ -88,6 +89,160 @@ async function storageLacks(page: Page, needles: string[]) {
   for (const needle of needles) expect(stored).not.toContain(needle);
 }
 const keyOf = (headers: Record<string, string>) => headers["idempotency-key"] ?? null;
+
+for (const locale of moneyLocales) for (const width of moneyWidths) {
+  test(`PARITY-MONEY finance signed states (${locale}, ${width})`, async ({ page }) => {
+    const c = moneyDesign[locale];
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+    await signedLogin(page);
+    const target = `/${locale}/finance?store=${store}&from=${financeDay(-1)}&to=${financeDay()}`;
+    // Every summary read is recorded as it lands (a later navigation evicts the body): the page re-reads when its server render key
+    // changes, so the shown timestamp must equal the generated_at of one of the server responses, never browser time.
+    const issued: unknown[] = [];
+    page.on("response", response => {
+      if (response.request().method() === "GET" && /\/finance\/summary\?/.test(response.url())) void response.json().then(body => issued.push(body.generated_at), () => undefined);
+    });
+    await page.goto(target);
+    await moneyOverview(page, locale);
+    await expect.poll(() => issued.length, "PARITY-MONEY server summary read").toBeGreaterThan(0);
+    for (const stamp of issued) expect(typeof stamp, "PARITY-MONEY server timestamp required; browser time is not a substitute").toBe("string");
+    await expect.poll(async () => issued.includes(await page.getByTestId("finance-generated-at").getAttribute("datetime")), "PARITY-MONEY shown time is a server time").toBe(true);
+    await moneyShot(page, evidence, "overview", locale, width);
+    await moneyClick(page, evidence, c.daily, "signed daily ledger and return control", async () => {
+      await page.getByRole("button", { name: c.daily, exact: true }).click();
+      await expect(page.getByRole("heading", { level: 1, name: c.dailyTitle, exact: true })).toBeVisible();
+      await expect(page.getByTestId("finance-table")).toBeVisible();
+    });
+    await moneyShot(page, evidence, "daily", locale, width);
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1, name: c.dailyTitle, exact: true })).toBeVisible();
+    await page.getByRole("button", { name: c.backFinance, exact: true }).click();
+    await moneyClick(page, evidence, c.basis, "signed explanation, no financial write", async () => {
+      await page.getByRole("button", { name: c.basis, exact: true }).click();
+      await expect(page.getByRole("heading", { level: 1, name: c.basisTitle, exact: true })).toBeVisible();
+    });
+    await moneyShot(page, evidence, "basis", locale, width);
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1, name: c.basisTitle, exact: true })).toBeVisible();
+    await page.getByRole("button", { name: c.backFinance, exact: true }).click();
+    const before = page.url();
+    await moneyClick(page, evidence, c.financeDates, "draft dates, cancel leaves original range", async () => {
+      await page.getByRole("button", { name: c.financeDates, exact: true }).click();
+      await expect(page.getByRole("heading", { name: c.financeDates, exact: true })).toBeVisible();
+      await page.getByLabel(c.from, { exact: true }).fill(financeDay(-7));
+      await page.getByLabel(c.to, { exact: true }).fill(financeDay());
+      await moneyShot(page, evidence, "financeDates", locale, width);
+      await page.getByRole("button", { name: c.cancel, exact: true }).click();
+      await expect(page).toHaveURL(before);
+    });
+    await moneyClick(page, evidence, c.apply, "applied dates survive refresh", async () => {
+      await page.getByRole("button", { name: c.financeDates, exact: true }).click();
+      await page.getByLabel(c.from, { exact: true }).fill(financeDay(-7));
+      await page.getByLabel(c.to, { exact: true }).fill(financeDay());
+      await page.getByRole("button", { name: c.apply, exact: true }).click();
+      await expect(page).toHaveURL(new RegExp(`from=${financeDay(-7)}`));
+      await moneyOverview(page, locale);
+      await page.reload();
+      await moneyOverview(page, locale);
+      await expect(page).toHaveURL(new RegExp(`from=${financeDay(-7)}`));
+    });
+    await moneyClick(page, evidence, c.apply, "reapplying the same dates closes the editor and survives refresh", async () => {
+      const applied = page.url();
+      await page.getByRole("button", { name: c.financeDates, exact: true }).click();
+      await page.getByRole("button", { name: c.apply, exact: true }).click();
+      await moneyOverview(page, locale);
+      await expect(page).toHaveURL(applied);
+      await page.reload();
+      await moneyOverview(page, locale);
+      await expect(page).toHaveURL(applied);
+    });
+    await moneyClick(page, evidence, c.csv, "export preview then a real audited CSV download", async () => {
+      await page.getByRole("button", { name: c.csv, exact: true }).click();
+      await expect(page.getByRole("heading", { name: c.csvReady, exact: true })).toBeVisible();
+      const preview = page.url();
+      await expect(page).toHaveURL(/view=csv/);
+      await page.reload();
+      await expect(page).toHaveURL(preview);
+      await expect(page.getByRole("heading", { name: c.csvReady, exact: true })).toBeVisible();
+      await expect(page.getByRole("link", { name: c.download, exact: true })).toBeVisible();
+      await moneyShot(page, evidence, "financeCSV", locale, width);
+      const downloading = page.waitForEvent("download");
+      await page.getByRole("link", { name: c.download, exact: true }).click();
+      expect((await downloading).suggestedFilename()).toMatch(/^finance-.*\.csv$/);
+    });
+    // Fixture-only transient response; all recovery actions are real clicks on the real route.
+    await page.route(`**/api/stores/${store}/finance/summary?*`, route => route.fulfill({ status: 503, body: "unavailable" }));
+    await page.goto(target);
+    await expect(page.getByRole("heading", { name: c.financeFailure, exact: true })).toBeVisible();
+    await expect(page.getByText(c.failure, { exact: true })).toBeVisible();
+    await moneyShot(page, evidence, "financeFailure", locale, width);
+    await page.unroute(`**/api/stores/${store}/finance/summary?*`);
+    await moneyClick(page, evidence, c.retry, "finance recovers without a money command", async () => {
+      await page.getByRole("button", { name: c.retry, exact: true }).click();
+      await moneyOverview(page, locale);
+    });
+  });
+
+  test(`PARITY-MONEY billing signed states (${locale}, ${width})`, async ({ page }) => {
+    const c = moneyDesign[locale];
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+    await signedLogin(page);
+    const target = `/${locale}/billing?store=${store}`;
+    try {
+      for (const [standing, frame, label] of [
+        ["good", "billing", c.good], ["unbilled", "unbilled", c.unbilled],
+        ["grace", "overdue", c.overdue], ["restricted", "restricted", c.restricted],
+      ] as const) {
+        await ctl(`standing/${standing}`); // runner-only synthetic webhook setup, never a substitute for UI actions
+        await page.goto(target);
+        await expect(page.getByRole("heading", { level: 1, name: c.billing, exact: true }), "PARITY-MONEY signed billing title").toBeVisible();
+        await expect(page.getByRole("heading", { name: c.payment, exact: true })).toBeVisible();
+        await expect(page.getByRole("heading", { name: c.usage, exact: true })).toBeVisible();
+        await expect(page.getByTestId("billing-standing")).toContainText(label);
+        await expect(page.getByRole("heading", { level: 1, name: c.oldBilling, exact: true })).toHaveCount(0);
+        await moneyShot(page, evidence, frame, locale, width);
+      }
+      await ctl("standing/good");
+      // Existing DTO field only: deterministic cancellation state unreachable through this harness's control endpoint.
+      await page.route(`**/api/stores/${store}/billing`, async route => {
+        const response = await route.fetch();
+        const body = await response.json();
+        for (const sub of body.subscriptions) sub.cancel_at_period_end = true;
+        await route.fulfill({ response, json: body });
+      });
+      await page.goto(target);
+      await expect(page.getByTestId("billing-subscriptions")).toContainText(c.cancellation);
+      await moneyShot(page, evidence, "cancelling", locale, width);
+      await page.unroute(`**/api/stores/${store}/billing`);
+      await page.goto(`${target}&checkout=cancel`);
+      await expect(page.getByTestId("billing-cancelled")).toHaveText(c.cancelled);
+      await moneyShot(page, evidence, "cancelled", locale, width);
+      await ctl("standing/unbilled");
+      await page.goto(`${target}&checkout=done`);
+      await expect(page.getByTestId("billing-updating")).toHaveText(c.updating);
+      await moneyShot(page, evidence, "updating", locale, width);
+      await ctl("standing/good");
+      await page.goto(target);
+      await moneyClick(page, evidence, c.manage, "external billing explanation before leaving; return does not open Stripe", async () => {
+        await page.getByRole("button", { name: c.manage, exact: true }).first().click();
+        await expect(page.getByRole("heading", { level: 1, name: c.manage, exact: true })).toBeVisible();
+        await expect(page.getByText(c.portalIntro, { exact: true })).toBeVisible();
+        await moneyShot(page, evidence, "portal", locale, width);
+        await page.getByRole("button", { name: c.backBilling, exact: true }).click();
+        await expect(page.getByRole("heading", { level: 1, name: c.billing, exact: true })).toBeVisible();
+      });
+      // Permission fixture only; no authorization is changed in the application or database.
+      await page.route(`**/api/stores/${store}/billing`, route => route.fulfill({ status: 403, json: { error: "forbidden" } }));
+      await page.goto(target);
+      await expect(page.getByRole("heading", { level: 1, name: c.billingRefusal, exact: true })).toBeVisible();
+      await expect(page.getByTestId("billing-subscriptions")).toHaveCount(0);
+      await moneyShot(page, evidence, "billingRefusal", locale, width);
+    } finally {
+      await page.unroute(`**/api/stores/${store}/billing`);
+      await ctl("standing/unbilled"); // restore the original CB11 fixture for the existing real-chain scenarios
+    }
+  });
+}
 
 test("CB11 customers list: table, phone last 3 only, search by name and phone digits, no actor or PSP data, nav entries", async ({ page }) => {
   await signedLogin(page);
@@ -263,17 +418,21 @@ test("CB11 finance: native date inputs, the 91-day rule, one summary table, the 
   await signedLogin(page);
   await page.goto(`/en/finance?store=${store}`);
   await expect(page.getByTestId("finance-page")).toBeVisible();
+  await page.getByRole("button", {name: moneyDesign.en.financeDates, exact:true}).click();
   const from = page.getByTestId("finance-from"), to = page.getByTestId("finance-to");
   await expect(from).toHaveAttribute("type", "date");
   await expect(to).toHaveAttribute("type", "date");
   await from.fill(financeDay(-2));
   await to.fill(financeDay(0));
   await page.getByTestId("finance-show").click();
+  await page.getByRole("button", {name: moneyDesign.en.daily, exact:true}).click();
   await expect(page.getByTestId("finance-table")).toBeVisible();
   const day = financeDay(0);
   await expect(page.getByTestId(`finance-row-${day}-TWD`)).toBeVisible();
   await expect(page.getByTestId("finance-total-TWD")).toBeVisible();
-  await expect(page.getByTestId("finance-test-badge")).toHaveText(en.testBadge);
+  await page.getByRole("button", {name: moneyDesign.en.backFinance, exact:true}).click();
+  await expect(page.getByTestId("finance-test-badge")).toContainText("Test payments");
+  await page.getByRole("button", {name: moneyDesign.en.financeDates, exact:true}).click();
   // the range rule (D13): start after end, and more than 91 days, are refused before any request
   const summaries: string[] = [];
   page.on("request", (r) => {
@@ -296,7 +455,10 @@ test("CB11 finance: native date inputs, the 91-day rule, one summary table, the 
   await expect(page.getByTestId("finance-range-invalid")).toHaveCount(0);
   await from.fill(financeDay(-2));
   await page.getByTestId("finance-show").click();
+  await page.getByRole("button", {name: moneyDesign.en.daily, exact:true}).click();
   await expect(page.getByTestId(`finance-row-${day}-TWD`)).toBeVisible();
+  await page.getByRole("button", {name: moneyDesign.en.backFinance, exact:true}).click();
+  await page.getByRole("button", {name: moneyDesign.en.csv, exact:true}).click();
   // the CSV: the link carries the same range, the response is an attachment with the frozen header, integers only
   const link = page.getByTestId("finance-csv");
   const href = (await link.getAttribute("href")) ?? "";
@@ -319,6 +481,31 @@ test("CB11 finance: native date inputs, the 91-day rule, one summary table, the 
   for (const line of csv.slice(1)) expect(line).toMatch(/^\d{4}-\d{2}-\d{2},[A-Z]{3},[A-Z_]+,\d+,\d+,\d+,-?\d+,\d+,\d+,\d+,\d+,\d+,\d+$/);
   const [download] = await Promise.all([page.waitForEvent("download"), link.click()]);
   expect(download.suggestedFilename()).toMatch(/^finance-.*\.csv$/);
+});
+
+test("RVFIX-370 finance: a reversed-range URL keeps the date editor and says the range is invalid, never 'not found'", async ({ page }) => {
+  await signedLogin(page);
+  await page.goto(`/en/finance?store=${store}&from=${financeDay(0)}&to=${financeDay(-5)}`);
+  await expect(page.getByTestId("finance-page")).toBeVisible();
+  await expect(page.getByRole("alert").filter({ hasText: en.rangeInvalid })).toBeVisible();
+  await expect(page.getByTestId("finance-page")).not.toContainText(/not found/i);
+  await expect(page.getByTestId("finance-page")).not.toContainText(en.notFound);
+  await expect(page.getByRole("heading", { name: moneyDesign.en.financeFailure, exact: true })).toHaveCount(0);
+  // the way out is a real click into the editor, which also reports the invalid draft and keeps Apply off
+  await page.getByRole("button", { name: moneyDesign.en.financeDates, exact: true }).click();
+  await expect(page.getByTestId("finance-from")).toBeVisible();
+  await expect(page.getByTestId("finance-to")).toBeVisible();
+  await expect(page.getByTestId("finance-range-invalid")).toHaveText(en.rangeInvalid);
+  await expect(page.getByTestId("finance-show")).toBeDisabled();
+  // fixing the range through the editor applies and persists across a reload
+  await page.getByTestId("finance-from").fill(financeDay(-2));
+  await page.getByTestId("finance-to").fill(financeDay(0));
+  await page.getByTestId("finance-show").click();
+  await expect(page).toHaveURL(new RegExp(`from=${financeDay(-2)}`));
+  await expect(page.getByTestId(`finance-generated-at`)).toBeVisible();
+  await page.reload();
+  await expect(page).toHaveURL(new RegExp(`from=${financeDay(-2)}`));
+  await expect(page.getByTestId("finance-generated-at")).toBeVisible();
 });
 
 test("CB11 billing: standing, subscribe redirects to hosted Checkout (MOCK), the return updates, portal redirect, no URL kept", async ({ page }) => {
@@ -345,7 +532,7 @@ test("CB11 billing: standing, subscribe redirects to hosted Checkout (MOCK), the
   expect(JSON.parse(checkouts[0].body ?? "{}")).toEqual({ price_id: price });
   // the bearer URL is used once and dropped: nothing of it in the admin origin's storage
   await page.goto(`/en/billing?store=${store}&checkout=cancel`);
-  await expect(page.getByTestId("billing-cancelled")).toHaveText(bc.checkoutCancel);
+  await expect(page.getByTestId("billing-cancelled")).toHaveText(moneyDesign.en.cancelled);
   await storageLacks(page, ["checkout.stripe.com", "fakebearer", "cs_test_"]);
   // the customer completes payment at Stripe: the webhook (signed, real handler) mirrors the subscription
   await ctl("checkout-complete");
@@ -353,13 +540,15 @@ test("CB11 billing: standing, subscribe redirects to hosted Checkout (MOCK), the
   await expect(page.getByTestId("billing-updating")).toBeVisible();
   await expect(page.getByTestId("billing-standing")).toHaveAttribute("data-standing", "GOOD", { timeout: 20_000 });
   await expect(page.getByTestId("billing-subscriptions")).toContainText(bc.subStatus.active);
-  await expect(page.getByTestId(`plan-choose-${price}`)).toBeDisabled(); // a live subscription: manage it, do not buy a second (409 rule)
+  await expect(page.getByTestId(`plan-choose-${price}`)).toHaveCount(0);
+  await expect(page.getByTestId("billing-portal-open")).toBeVisible(); // a live subscription: manage it, do not buy a second (409 rule)
   await expect(page).toHaveURL(new RegExp(`/en/billing\\?store=${store}$`)); // the return marker is dropped
   const portals: { key: string | null; body: string | null; status: number }[] = [];
   page.on("response", (r) => {
     if (r.request().method() === "POST" && new URL(r.url()).pathname.endsWith("/billing/portal"))
       portals.push({ key: keyOf(r.request().headers()), body: r.request().postData(), status: r.status() });
   });
+  await page.getByTestId("billing-portal-open").click();
   await page.getByTestId("billing-portal").click();
   await page.waitForURL(/^https:\/\/billing\.stripe\.com\/p\/session\//);
   expect(portals).toHaveLength(1);
@@ -448,7 +637,7 @@ for (const locale of ["en", "zh-TW"] as const) {
         await shot(page, "customer-detail", locale, viewport);
         await page.goto(`/${locale}/finance?store=${store}`);
         await expect(page.getByTestId("finance-page")).toBeVisible();
-        await expect(page.getByRole("heading", { level: 1 })).toHaveText(shellCopy[locale].financePage);
+        await expect(page.getByRole("heading", { level: 1 })).toHaveText(moneyDesign[locale].finance);
         await shot(page, "finance", locale, viewport);
         await page.goto(`/${locale}/billing?store=${store}`);
         await expect(page.getByTestId("billing-standing")).toHaveAttribute("data-standing", "RESTRICTED");

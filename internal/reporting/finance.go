@@ -1,3 +1,7 @@
+// Purpose: Serve the finance summary and audited CSV from server-owned ledger facts.
+// Depends on: pgx, platform scope, command errors, identity finance projections and Go time/CSV/JSON.
+// Used by: internal/httpapi/finance.go and reporting/foundation gates.
+// Invariants: I05 separates currencies/environments; generated_at is observation time, never a ledger update claim.
 // finance.go serves the BD7 finance summary (contracts/customers-billing-v1.md §3.1, §5): strict parsing of the
 // date range, one database call, strict decoding and re-verification of the rows, totals, and the CSV.
 //
@@ -68,11 +72,13 @@ type FinanceRow struct {
 
 // FinanceSummary: Totals hold one row per (currency, environment) with Day == "".
 type FinanceSummary struct {
-	From     string       `json:"from"`
-	To       string       `json:"to"`
-	Timezone string       `json:"timezone"`
-	Rows     []FinanceRow `json:"rows"`
-	Totals   []FinanceRow `json:"totals"`
+	// GeneratedAt is the server observation time, not the last ledger mutation.
+	GeneratedAt string       `json:"generated_at"`
+	From        string       `json:"from"`
+	To          string       `json:"to"`
+	Timezone    string       `json:"timezone"`
+	Rows        []FinanceRow `json:"rows"`
+	Totals      []FinanceRow `json:"totals"`
 }
 
 // ParseRange validates from/to as YYYY-MM-DD calendar dates with 0 <= to-from <= 91 (D13).
@@ -97,7 +103,7 @@ func Finance(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, from, 
 	if err != nil {
 		return FinanceSummary{}, err
 	}
-	return FinanceSummary{From: from, To: to, Timezone: Timezone, Rows: rows, Totals: Totals(rows)}, nil
+	return FinanceSummary{GeneratedAt: time.Now().UTC().Format(time.RFC3339Nano), From: from, To: to, Timezone: Timezone, Rows: rows, Totals: Totals(rows)}, nil
 }
 
 // FinanceCSV returns the same rows as CSV through identity.export_finance_summary (orders:export AND
