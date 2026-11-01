@@ -1,5 +1,38 @@
 # PARITY-TEAM ROUND 3 ruling implementation
 
+## RELAY 1 — current fix batch (2026-11-01)
+
+This section supersedes the CI-pending and unavailable-tool statements below; the original ROUND 3 record is retained as history. Current remote head inspected: `3eb0e63a0d34dd1e351cf2b09961e170e240bb15`. Merged `origin/r3/integration` first, checkpoint `d60545a3870aef3dec814414f2fb2fb2241f72f1`. Existing untracked FIX1, reference PNG and r3-ci-handoff were present on entry and preserved. No delegation or new task claim; this is the integrator's assigned lane.
+
+### CI failures and targeted fixes (attempt 1)
+
+| Exact-head receipt | Root cause / action |
+|---|---|
+| Foundation `41289265756` / `124796913759`; Gates `41289265846` / `124798201506` (bundle:09) | `Team.tsx: format 1 > 0`: use existing `instantToTaipei` from the shared format package and slice its stable wall-clock representation; remove component Intl. No allowance edit. |
+| Gates `41289265846` / `124798201299` (bundle:01) | 13 literal hex colors in new team.css: use existing DS semantic tokens, no literal replacements in another notation, no baseline/token/exemption change. |
+| Gates `41289265846` / `124798201256` (admin parity) | Mobile viewport overflow with long authorized-store names: allow Team's select to shrink below min-content. Keep facts and full option text; no overflow-hiding patch. Role review cancel returns to the role editor with its selection retained. |
+| Gates `41289265846` / `124798201364` (bundle:08) | OC and staff-team browser journeys require invitation issuance/re-auth replay and >=4 SMTP messages. These conflict with the explicit retained pause; no invitation send or test rewrite. |
+
+### Remaining acceptance conflicts — no bypass
+
+1. Deferred invitation sends/acceptances and role-confirm-admin/role-done-admin are still required by unchanged RED assertions. The signed disabled Continue and no-mail rulings remain enforced. Existing OC/staff browser tests also assume the removed always-open invite form/select and a successful send. Changing setup selectors alone cannot satisfy their send/replay/SMTP assertions under the ruling.
+2. `tests/admin/parity-team.mjs:217-224` infers a button for every matching string, even headings: the invite entry's heading `邀請員工`, role editor/review heading `變更角色`, and empty-pending heading `待接受邀請` are required as buttons. The signed frames instead use headings in these states. CI shows the correct heading/form/radios while failing the inferred button locator. No duplicate inert button was added to pass.
+3. `parity-team.mjs:214` requires the old module shell's `設定與員工`, while the owner-approved shared shell uses `設定`. Card common rules explicitly authorize the shared-shell substitution. No shared shell or frozen oracle was edited.
+
+Integrator reconciliation of these assertions is required before this PR can be GREEN. The lane preserves them exactly (SHA-256 `7ff876032ca732452330e152eed4513d45cc7b504eb4920ef9656d7e5e8d18c6` before/after this fix). No new tests, exemptions, fixture changes, skips or threshold changes. `rg -l 'Team\\.tsx' tests/` found only a descriptive comment in staff-team.spec.ts, no component compilation harness needing a new import adapter.
+
+### Static checks and handoff
+
+- E1: `node --check tests/admin/parity-team.mjs`, `python3 scripts/check_packet.py` (structure only), depmap regeneration and browser ownership generation/`--check`: exit 0. Packet check changed only its generated timestamp; restored that unrelated artifact. Depmap and ownership have no new diff after the integration merge.
+- Local tsc NOT_VERIFIED: first compiler launch lacked local node_modules; two dependency-resolution attempts with temporary read-only shared dependency links ended with missing/outdated workspace exports (exit 1). Stopped rather than changing manifests/lockfiles or other modules; both links removed. CI is the type-check authority. No local test/server or app build was run.
+- Humaux search/rules/rejected/map/source lookup and locked subordinate canvas are available in this relay. Stored `[fix] PARITY-TEAM #476 RELAY1 local fix batch; preserved assertion/ruling conflict STOP before push` (recalled id `19bd3769-bec2-4af1-b1e4-1683c7995005`); Team source submitted to code index. No platform/local memory read or write. Runtime model/effort identifiers remain unexposed.
+- Raw CI logs retained locally under ignored `output/parity-team/relay2-failures/`, with authoritative run/job pointers above. No bulk log commit. No local process remains; CI monitoring returns to the integrator via WAIT_RUN.
+- New source changes are only `apps/admin/components/Team.tsx` and `team.css`. Existing shared copy path `packages/i18n/src/team-parity.ts` still needs integrator review as disclosed below. No backend, contract, migration, lockfile, immutable gate file or other-app edit.
+- GREEN, mobile click/persistence confirmation, independent review, density/screenshot comparison, SANDBOX and LIVE remain NOT_RUN for this fix. Own PASS = E0; previous CI failures are E3 evidence of failure only.
+- STOP before another push under the card's gate/scope rule. Local source fix and report are committed for integrator review; remote PR head stays `3eb0e63a`. WAIT_RUN: none (no new CI). Do not repeat the generic relay until the acceptance conflict is reconciled; no request to authorize sending invitations or enabling admin promotion.
+
+---
+
 Date: 2026-11-01. PR #476, `unit/parity-team` → `r3/integration`.
 Role: integrator-dispatched UI implementation worker. Runtime identity: Codex/GPT-6; exact configured model/effort is not exposed. No delegation.
 Worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-team` only.
@@ -84,4 +117,4 @@ The preserved tests `tests/admin/parity-team.mjs` still require invite writes, s
 
 One implementation push follows the already observed tests-only RED; no evidence-only commit after CI. Gates/Foundation run IDs will be recorded in a PR comment once registered, and returned as WAIT_RUN. CI queue ownership returns to the integrator for re-dispatch, with no unattended local process.
 
-STATUS: IMPLEMENTED_E1_CI_PENDING_SCOPE_CONFLICT_RETAINED
+STATUS: BLOCKED_ASSERTION_RULING_CONFLICT_FIX1_LOCAL_NOT_PUSHED

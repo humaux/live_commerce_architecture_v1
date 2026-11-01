@@ -1,11 +1,12 @@
 // Purpose: Owns the signed staff lists, role review, removal and invitation-withdrawal flows.
-// Depends on: react, @live-commerce/i18n, @/lib/model, @/lib/customers-client, @/lib/team-client, @/lib/team-model, @/lib/team-copy, ./WorkspaceFrame, ./team.css
+// Depends on: react, @live-commerce/i18n, @live-commerce/format, @/lib/model, @/lib/customers-client, @/lib/team-client, @/lib/team-model, @/lib/team-copy, ./WorkspaceFrame, ./team.css
 // Used by: apps/admin/app/[locale]/team/page.tsx
 // Invariants: server scopes every read/write; invites remain paused; admin promotion is unavailable; uncertain writes never replay.
 "use client";
 
 import { useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import { instantToTaipei } from "@live-commerce/format";
 import type { Store } from "@/lib/model";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
 import { readTeam, removeMember, revokeInvite, setMemberRole } from "@/lib/team-client";
@@ -23,12 +24,9 @@ const identity = (member: Member, c: TeamParityCopy) => {
   return `${local.charAt(0).toLocaleUpperCase()}${local.slice(1)} · ${member.email}`;
 };
 const date = (value: string, time = false) => {
-  const d = new Date(value);
-  const two = (n: number) => String(n).padStart(2, "0");
-  // The signed example is Taipei time; format the server instant, never a fixture date or browser timezone.
-  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Taipei", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts(d);
-  const part = (key: string) => parts.find(p => p.type === key)?.value ?? two(0);
-  return `${part("month")}/${part("day")}${time ? ` ${part("hour")}:${part("minute")}` : ""}`;
+  // Shared formatter owns the timezone; adapt its ISO wall clock to the signed MM/DD presentation.
+  const wall = instantToTaipei(value);
+  return `${wall.slice(5, 7)}/${wall.slice(8, 10)}${time ? ` ${wall.slice(11, 16)}` : ""}`;
 };
 
 /** Renders only the current server/session-scoped staff state; all detail state unmounts when the read fence closes. */
@@ -167,7 +165,7 @@ function Sections({ team, store, boundary, refresh, locale, c }: {
         <p>{action === "role" ? format(role === "viewer" ? c.viewerReview : c.roleReview, { from: c.roleNames[member!.role], to: c.roleNames[role] }) : action === "remove" ? c.removeWarning : c.withdrawWarning}</p>
         {action === "revoke" && invitation && <p>{c.roleNames[invitation.role]}</p>}
       </section>
-      <div className="team-actions">{button(c.cancel, () => action === "revoke" ? setScreen("pending") : back())}{button(action === "role" ? c.confirmRole : action === "remove" ? c.confirmRemove : c.confirmWithdraw, () => void submit(), true)}</div>
+      <div className="team-actions">{button(c.cancel, () => action === "role" ? setScreen("edit") : action === "revoke" ? setScreen("pending") : back())}{button(action === "role" ? c.confirmRole : action === "remove" ? c.confirmRemove : c.confirmWithdraw, () => void submit(), true)}</div>
     </>}
     {screen === "done" && <>
       <section className="team-card" role="status"><p className="team-person">{person}</p><p>{action === "role" ? c.roleNames[role] : action === "remove" ? c.removedHelp : c.withdrawnHelp}</p></section>

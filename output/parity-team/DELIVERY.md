@@ -1,5 +1,7 @@
 # ROUND 3 — CURRENT implementation handoff (2026-11-01)
 
+RELAY 1: exact-head `3eb0e63a` CI failed; current fix batch and remaining assertion/ruling conflicts are recorded in [RULING.md](RULING.md#relay-1--current-fix-batch-2026-11-01). Reused shared Taipei formatter, existing DS color tokens, constrained long store selector, restored role-review cancel to editor. No RED assertion edit. E1 syntax/packet/generated checks exit 0; local tsc unresolved dependencies (exit 1), CI validation pending. No current runtime PASS. Humaux is available in this relay; older unavailable-tool claims below are historical. UI-process sections and three-language/fact mapping remain applicable; no copy or design source change. Impeccable harden used only for min-content overflow; local skill setup/visual runs omitted under the dispatched static-only rule.
+
 The two integrator rulings are applied; detailed scope/deferrals/evidence are in [RULING.md](RULING.md). Older sections below are historical test-design/blocked-round records, not current status.
 
 Implemented signed member/pending cards, described role choices, review/result and read-only reconciliation. Invitation entry opens an unavailable state without sending; admin Continue stays disabled. Original RED assertions remain verbatim; added ruling tests await CI. E1 static checks passed; runtime parity/GREEN remains NOT_RUN pending the PR CI, with the explicit deferred-scope assertion conflict retained.
