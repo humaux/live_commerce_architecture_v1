@@ -147,6 +147,11 @@ export function proxy(request: NextRequest) {
     }
     return NextResponse.next();
   }
+  // Immutable public CVS snapshots are assets, not locale-prefixed admin pages.
+  // Admit only the packaged filenames and read methods; private API guards above remain unchanged.
+  if ((request.method === "GET" || request.method === "HEAD") &&
+    /^\/cvs\/(?:unimart|unimartfreeze|fami|hilife|okmart)-20261028\.json$/.test(path))
+    return NextResponse.next();
   const locale = resolveLocale({
     pathname: path,
     preference: request.cookies.get("commerce_locale")?.value,

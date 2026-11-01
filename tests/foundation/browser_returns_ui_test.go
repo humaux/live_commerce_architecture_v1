@@ -1,6 +1,6 @@
 //go:build browser
 
-// Purpose: W3-U5 browser gate `TestBrowserReturnsUI` — drives tests/admin/returns-ui.spec.ts (merchant RMA register/receive/inspect/close/
+// Purpose: W3-U5/C5 browser gate `TestBrowserReturnsUI` — drives returns-ui.spec.ts and parity-order-ops.spec.ts (merchant RMA register/receive/inspect/close/
 //   withdraw, merchant cancel refusals, cancel-refund-gaps list, permission gating) against the production admin Next build over a real PG chain.
 // Depends on: tcvEnv (stripe mode: card home orders paid through the real rfx capture path, fake Stripe), the 0155 definers via the real
 //   merchant routes (/orders/{id}/shipment, /orders/{id}/cancel, refund route), brfStartAdmin + brfPlaywright (browser_refund_fulfilment_test.go),
@@ -108,7 +108,7 @@ func TestBrowserReturnsUI(t *testing.T) {
 	before := money()
 	cancels := e.count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='orders.merchant_cancelled'`, e.store())
 
-	brfPlaywright(t, ctx, stack, []string{"returns-ui.spec.ts"}, map[string]string{
+	brfPlaywright(t, ctx, stack, []string{"returns-ui.spec.ts", "parity-order-ops.spec.ts"}, map[string]string{
 		"LC_BROWSER_STORE": e.store(), "LC_BROWSER_ORDER_SHIPPED": seed.shipped, "LC_BROWSER_ORDER_PAID": seed.paid,
 		"LC_BROWSER_ORDER_IN_FLIGHT": seed.inFlight, "LC_BROWSER_GAP_ORDER": seed.gap, "LC_BROWSER_RESTRICTED_TOKEN": restricted})
 
