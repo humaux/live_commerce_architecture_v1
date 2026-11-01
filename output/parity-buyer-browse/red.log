@@ -46,3 +46,39 @@ en 1440x900: cursor-page result summary: locator.click: Timeout 30000ms exceeded
 en 390x844: cursor-page result summary: locator.click: Timeout 30000ms exceeded.; element is not visible
 Targeted harness repair attempt 1: follow the exact href read from the server-rendered noscript link via page.goto, as the card explicitly permits. No fake cursor, removed assertion, forced click, DOM mutation, or product change.
 Next push is tests-only again; accepted assertion RED and implementation/GREEN remain pending.
+
+RVFIX4-440 relay1 corrected RED push: PR440 head fdf688f9947de85d36c69df1abb9d7b3d3d68e75.
+WAIT_RUN Gates: 41278013182 (current head verified; test jobs not yet dispatched).
+WAIT_RUN Foundation: 41278013178, foundation job 124764043038 (in progress).
+Build job 124764159641 is not an assertion witness; plan job 124764043328 is not a test run.
+Prior RED run41275173591/job124756454702 was setup timeout, not count0 failure; causal RED and GREEN still pending. No implementation change.
+Integrator relays CI completion per card; stop this session. No evidence-only commit; these IDs remain local and in PR comment for relay.
+
+RVFIX4-440 relay2 STOP — exact PR head fdf688f9947de85d36c69df1abb9d7b3d3d68e75.
+Gates run 41278013182 completed FAILURE; CI checkout c2ac3ab67f10de7027c916b5d7fb5bbcf913220a.
+bundle:02 job124764810812 / artifact13072786797: six cursor-page cases fail spec:328 product-card visibility (Expected visible, Received hidden, 10000ms), not spec:332 count0. Causal RED NOT_REACHED.
+Artifact path: playwright/run.ZU6jHBgT/storefront/20261101T060601.428026212/parity-buyer-browse-click-ledger.json; 150/156 ledger operations passed.
+bundle:06 job124764810973: TestBrowserInboxUIRealChain INU05 inbox-ui.spec.ts:472:1 failed, 87 passed; outside card, no fix.
+bundle:07 job124764811243: TestBrowserTaiwanCvs/WebKit failed; MOCK passed, SANDBOX skipped; outside card, no fix.
+receipts job124773781334 / required job124774203197 downstream FAILURE.
+Foundation run41278013178 / job124764043038 SUCCESS on the same PR head.
+Fetched/merged integration4b8c04c7213025c173e260db6f9c81cb5b818c61 locally; no push. Current PR head unchanged.
+Product guard and causal RED/GREEN NOT_RUN. STOP per explicit outside-card gate rule. WAIT_RUN: none (all prior runs completed).
+RVFIX4-440 RELAY3 readback (2026-11-01): BLOCKED, no new push.
+PR head fdf688f9947de85d36c69df1abb9d7b3d3d68e75 verified by current PR and both workflow APIs.
+Gates41278013182/job124764810812 artifact13072786797 exact-head ledger: 156 operations, 6 failures, all product-card Expected visible / Received hidden at spec:328, before count0 at :332; NOT causal RED.
+Outside-card failures reconfirmed from raw logs: Inbox INU05 job124764810973, Taiwan CVS WebKit job124764811243. STOP per card, no new repair attempt.
+Foundation41278013178/job124764043038 SUCCESS. GREEN NOT_RUN. WAIT_RUN:none, previous runs completed.
+RVFIX4-440 RELAY4: STOP, same exact PR head fdf688f9947de85d36c69df1abb9d7b3d3d68e75; no new push.
+Gates41278013182/job124764810812 artifact13072786797 re-read: all six cursor cases fail product visibility at spec328; count0 at332 NOT_REACHED, not causal RED.
+Outside-card Inbox INU05 job124764810973 and Taiwan CVS WebKit job124764811243 confirmed from raw logs; receipts124773781334/required124774203197 downstream.
+Foundation41278013178/job124764043038 SUCCESS same head. No product/test change or additional targeted repair attempt.
+Integration fetch/merge exit0 Already up to date; localhead e4b8d4927136104db5b40c86e71ed711610fbec8 unchanged. GREEN NOT_RUN. WAIT_RUN:none(all completed).
+
+CURSOR escalation 2026-11-01: prior invalid-RED claims superseded by dispatched ruling.
+Accepted existing tests-only RED head=fdf688f9947de85d36c69df1abb9d7b3d3d68e75 Gates=41278013182 job=124764810812 artifact=13072786797 tested_merge=c2ac3ab67f10de7027c916b5d7fb5bbcf913220a.
+All six locale/viewport cursor cases fail their own product visibility assertion at buyer-browse-parity.spec.ts:328: li.sf-card[data-testid=product-card] exists but is hidden; count check at332 NOT_REACHED.
+Earlier tests-only click witness: head=bb0dfc2897ca661fd22bfc5eac0a2be0461eccbe Gates=41275173591 job=124756454702: genuine noJS next-link click hidden.
+Merged base c52b65283 (#478) before root repair; pending CI is the first acceptance of that merge plus implementation, not an assumed GREEN.
+Root inference: search/loading.tsx1-6 Suspense boundary leaves streamed products hidden without JS; remove boundary and guard total with !loaded.query.after && !next. Preserve :328/:332, real click and refresh persistence.
+GREEN: NOT_RUN; implementation push/run IDs to follow via PR comment and local append, no evidence-only push.
