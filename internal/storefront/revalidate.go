@@ -93,7 +93,16 @@ func RevalidateQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, quoteID stri
 	}
 	// §F: the quote's own frozen promotion effect is re-applied, so the discount must reproduce exactly. Whether the code is still
 	// redeemable (edited, paused, expired, used up) is promotions.redeem's locked check in the same Begin transaction, not this one.
-	amount, err := pricing.CalculateWith(policy, inputs, out.Promotion)
+	if len(out.Adjustments) > 0 {
+		d, e := manualDiscount(ctx, tx, s, quoteID)
+		if e != nil {
+			return Quote{}, e
+		}
+		if d == nil || len(out.Adjustments) != 1 || out.Adjustments[0].Kind != "manual_discount" || out.Adjustments[0].Currency != out.Currency || out.Adjustments[0].ManualDiscount != *d {
+			return Quote{}, command.ErrConflict
+		}
+	}
+	amount, err := pricing.CalculateAdjusted(policy, inputs, out.Promotion, out.Adjustments)
 	if err != nil {
 		return Quote{}, err
 	}

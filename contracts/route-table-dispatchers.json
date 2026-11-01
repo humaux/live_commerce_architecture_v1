@@ -36,7 +36,7 @@
   },
   {
     "table": "buyerhttp.Routes",
-    "dispatcher_sha256": "31499ffb3ce0f159bcacb0f380bcbfe7fb94c220f5b91231d91e5edd840fbbd7",
+    "dispatcher_sha256": "a816f2699027fc26ca5fa3b7c87258e8b809ebb3c97e24baff797f88b9e9ba30",
     "functions": [
       "RouteTable.HasPrefix",
       "admittedPaymentMethod",
@@ -278,6 +278,6 @@
       "var linkTokenPattern",
       "var v2Slug"
     ],
-    "reviewed": "output/buyer-route-table/FEAT-LIVE-REPLAY-FIX2-pin-candidate.md"
+    "reviewed": "2026-11-01 integrator + independent review (Claude Opus closure read: quote DTO adds adjustments only; output/buyer-route-table/review-manual-discount-pin.md)"
   }
 ]

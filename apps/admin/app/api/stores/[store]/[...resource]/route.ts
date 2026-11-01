@@ -236,7 +236,7 @@ async function route(request: Request, context: Context) {
     )
       return error(422, "invalid_request");
   }
-  // Photo routes take no query; a read carries no body or key; the upload alone is multipart (checked below).
+  // Photo reads allow only exact item width buckets; a read carries no body or key; the upload alone is multipart.
   // store-design: design/media is the same multipart upload / raw-bytes read, with its own query/body rules (design-request.ts).
   if (!validDesignRequest(request, path)) return error(422, "invalid_request");
   const designJson = isDesignJsonPut(request.method, path);
@@ -244,7 +244,8 @@ async function route(request: Request, context: Context) {
   const imageBytes = (request.method === "GET" && (imageItemRoute.test(path) || collectionImageRoute.test(path))) || isDesignImageBytes(request.method, path);
   if (imagesAny.test(path)) {
     const search = request.url.includes("?") ? request.url.slice(request.url.indexOf("?")) : "";
-    if (!validMediaQuery(search, request.method === "POST" && imagesRootRoute.test(path))) return error(422, "invalid_request");
+    const imageWidth = request.method === "GET" && imageItemRoute.test(path) && ["?w=360", "?w=720", "?w=1080"].includes(search);
+    if (!imageWidth && !validMediaQuery(search, request.method === "POST" && imagesRootRoute.test(path))) return error(422, "invalid_request");
     if (
       request.method === "GET" &&
       (request.body !== null || request.headers.has("transfer-encoding") || request.headers.has("idempotency-key") ||
@@ -518,7 +519,7 @@ async function route(request: Request, context: Context) {
       status: 200,
       headers: {
         "Content-Type": type,
-        "Cache-Control": "private, max-age=300",
+        "Cache-Control": /(?:^|,)\s*no-store\s*(?:,|$)/i.test(response.headers.get("cache-control") ?? "") ? "private, no-store" : "private, max-age=300",
         "Content-Security-Policy": "default-src 'none'; sandbox",
         "X-Content-Type-Options": "nosniff",
         "X-Request-ID": response.headers.get("x-request-id") ?? "",

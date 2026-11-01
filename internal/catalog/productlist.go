@@ -32,6 +32,7 @@ type ProductSummary struct {
 	Status           string  `json:"status"`
 	Version          int64   `json:"version"`
 	CoverImageID     *string `json:"cover_image_id"`
+	CoverImageURL    *string `json:"cover_image_url"`
 	PriceMinMinor    *int64  `json:"price_min_minor"`
 	PriceMaxMinor    *int64  `json:"price_max_minor"`
 	Currency         string  `json:"currency"`
@@ -148,6 +149,10 @@ func ListProductSummaries(ctx context.Context, tx pgx.Tx, scope platform.Scope, 
 		var stamp string
 		if err := rows.Scan(&s.ID, &s.Slug, &s.Name, &s.Status, &s.Version, &s.CoverImageID, &s.PriceMinMinor, &s.PriceMaxMinor, &s.Currency, &s.SKUCount, &s.Available, &s.Keyword, &s.InventoryTracked, &s.UpdatedAt, &stamp); err != nil {
 			return out, err
+		}
+		if s.CoverImageID != nil {
+			url := "/api/stores/" + scope.StoreID + "/products/" + s.ID + "/images/" + *s.CoverImageID + "?w=360"
+			s.CoverImageURL = &url
 		}
 		out.Items = append(out.Items, s)
 		stamps = append(stamps, stamp)

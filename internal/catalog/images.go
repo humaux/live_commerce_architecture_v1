@@ -304,6 +304,23 @@ func GetImage(ctx context.Context, tx pgx.Tx, scope platform.Scope, productID, i
 	return out, mapError(err)
 }
 
+// GetImageSize selects the stored width bucket under the original's product/scope custody (0111).
+// Missing historical renditions return the original and false; reads never decode or write bytes.
+func GetImageSize(ctx context.Context, tx pgx.Tx, scope platform.Scope, productID, imageID string, width int) (ImageBytes, bool, error) {
+	var out ImageBytes
+	var rendition bool
+	if !validScope(tx, scope) || !command.ValidID(productID) || !command.ValidID(imageID) || (width != 360 && width != 720 && width != 1080) {
+		return out, false, command.ErrInvalid
+	}
+	err := tx.QueryRow(ctx, `SELECT CASE WHEN z.image_id IS NOT NULL THEN 'image/jpeg' ELSE i.content_type END,
+        COALESCE(z.sha256,i.sha256),COALESCE(z.bytes,i.bytes),z.image_id IS NOT NULL
+        FROM catalog.product_images i
+        LEFT JOIN catalog.product_image_sizes z ON z.tenant_id=i.tenant_id AND z.store_id=i.store_id AND z.image_id=i.id AND z.width=$5
+        WHERE i.tenant_id=$1 AND i.store_id=$2 AND i.product_id=$3 AND i.id=$4`,
+		scope.TenantID, scope.StoreID, productID, imageID, width).Scan(&out.ContentType, &out.SHA256, &out.Bytes, &rendition)
+	return out, rendition, mapError(err)
+}
+
 // DeleteImage removes one photo and closes the gap inside ITS role so positions stay contiguous (main position 0 stays the cover). A
 // linked sku image loses its link with it (FK cascade). Deleting is allowed on an archived product. Returns the remaining list.
 func DeleteImage(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, productID, imageID string) (out ImageList, err error) {

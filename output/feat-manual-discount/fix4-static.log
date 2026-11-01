@@ -1,0 +1,17 @@
+FIX4 static checks only; no local tests or servers
+exit=0 gofmt -w <six changed Go files>
+exit=0 go build ./...
+exit=0 go vet ./internal/buyerhttp ./internal/httperror ./internal/httpapi ./internal/catalog ./internal/merchantorders ./tests/foundation
+exit=0 python3 scripts/check_packet.py
+exit=0 node scripts/dev/derive-browser-ownership.mjs
+exit=0 bash scripts/dev/depmap.sh
+exit=0 git diff --check
+
+SHA-256 of checked source/generated files:
+68d5cd2348fcdacfcec0314fac5698272041cdb17b0511d6030543a09b51e6e1  internal/buyerhttp/projections.go
+0e5c31fb98e930f75f74e178b5592032d7ab0efdbae502c05ef7fb42bb6566e4  internal/httperror/error.go
+2ef26562ec59bdbb21574f15364408c53e8b5ab56fb109bb1a90b1ad0403817e  internal/httpapi/images.go
+b65fc008a6485e3e4c9393f4f1c4c5fb44c3a9970c26328564165bc8bef3f670  internal/catalog/images.go
+64c68ca9d1338b01ae869a0f464a21627f0ebb5a5c42b366ccd79a3d82f717d0  internal/merchantorders/orders.go
+014ff24b3622bf6e81836b6ad3af21fe464bcc0c1eddb1f721e23ab4deede14d  tests/foundation/manual_discount_test.go
+3fe17c24662345cffff2c3a6f9bcf717445d2346dcc1da946d4ef69f4302ab62  output/ci-select-backend-browser/browser-ownership.json

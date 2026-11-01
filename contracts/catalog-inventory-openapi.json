@@ -8364,7 +8364,8 @@
           "price_max_minor",
           "currency",
           "sku_count",
-          "available"
+          "available",
+          "cover_image_url"
         ],
         "properties": {
           "id": {
@@ -8422,6 +8423,13 @@
           "available": {
             "type": "integer",
             "format": "int64"
+          },
+          "cover_image_url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Primary image through authenticated /api/stores/{store}/products/{product}/images/{cover_image_id}?w=360; null without image. media-sizes-v1; no new pipeline."
           }
         }
       },

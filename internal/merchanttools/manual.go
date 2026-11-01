@@ -7,7 +7,7 @@
 // SQL) and writes the audit row order.manual_created.
 //
 // Non-goals: no card (a merchant cannot take a card for a buyer; ListOptions' card mode is dropped and Begin never sees it), no price,
-// discount or shipping override, no stock write of its own, no payment fact, no message to the buyer, no note column (a free-text note would
+// shipping override, no stock write of its own, no payment fact, no message to the buyer, no note column (a free-text note would
 // carry buyer PII outside the erasure paths; see output/merchant-tools/DEVIATIONS.md). The pipeline spans several transactions on three
 // pools, so it is NOT atomic: every step is idempotent by a key derived from the merchant's Idempotency-Key, a retry replays the finished
 // steps, and the order itself is created by exactly one atomic begin_hold.
@@ -109,11 +109,12 @@ type ManualDelivery struct {
 
 // ManualInput is the exact POST orders/manual body (no price, no card).
 type ManualInput struct {
-	Items       []ManualItem   `json:"items"`
-	Customer    ManualCustomer `json:"customer"`
-	Delivery    ManualDelivery `json:"delivery"`
-	PaymentMode string         `json:"payment_mode"`
-	Locale      string         `json:"locale"`
+	Items       []ManualItem            `json:"items"`
+	Customer    ManualCustomer          `json:"customer"`
+	Delivery    ManualDelivery          `json:"delivery"`
+	PaymentMode string                  `json:"payment_mode"`
+	Locale      string                  `json:"locale"`
+	Discount    *pricing.ManualDiscount `json:"discount,omitempty"`
 }
 
 // ManualOption is one delivery choice of GET orders/manual/options (the buyer checkout option, card dropped).
@@ -141,12 +142,13 @@ type ManualOption struct {
 
 // manualReceipt is what the command receipt keeps. It never holds the capability: the link is re-derived from the Idempotency-Key.
 type manualReceipt struct {
-	OrderID         string    `json:"order_id"`
-	CommercialState string    `json:"commercial_state"`
-	PaymentMode     string    `json:"payment_mode"`
-	TotalMinor      int64     `json:"total_minor"`
-	Currency        string    `json:"currency"`
-	ExpiresAt       time.Time `json:"expires_at"`
+	OrderID         string                  `json:"order_id"`
+	CommercialState string                  `json:"commercial_state"`
+	PaymentMode     string                  `json:"payment_mode"`
+	TotalMinor      int64                   `json:"total_minor"`
+	Currency        string                  `json:"currency"`
+	ExpiresAt       time.Time               `json:"expires_at"`
+	Discount        *pricing.ManualDiscount `json:"discount,omitempty"`
 }
 
 // ManualResult is the 201 (or replayed 200) body.
@@ -215,6 +217,14 @@ func ValidateManual(in ManualInput) (ManualInput, error) {
 	bad := &Error{Status: http.StatusUnprocessableEntity, Code: "invalid_request"}
 	if len(in.Items) < 1 || len(in.Items) > maxManualLines {
 		return in, bad
+	}
+	if in.Discount != nil {
+		d := *in.Discount
+		d.Name = strings.TrimSpace(d.Name)
+		if !pricing.ValidManualDiscount(d) {
+			return in, bad
+		}
+		in.Discount = &d
 	}
 	seen := map[string]bool{}
 	for _, it := range in.Items {
@@ -375,7 +385,7 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 	// that the storefront exchanges for a fresh capability of the order's owner (checkout.redeem_order_link); the capability never leaves the server.
 	linkToken := m.capability("link", storeID, key)
 	if !replayed {
-		if receipt, err = m.pipeline(ctx, capability, storeID, key, in); err != nil {
+		if receipt, err = m.pipeline(ctx, token, capability, storeID, key, in); err != nil {
 			return ManualResult{}, false, classifyPipeline(ctx, err)
 		}
 		// One merchant transaction: receipt + source mark + audit. A failure here leaves a placed order with source=storefront until the
@@ -391,6 +401,9 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 					return err
 				}
 				saved = receipt
+				if saved.Discount != nil {
+					return command.AuditDetails(ctx, tx, scope, "order.manual_created", map[string]any{"discount": saved.Discount})
+				}
 				return command.Audit(ctx, tx, scope, "order.manual_created")
 			})
 		})
@@ -489,9 +502,10 @@ func readOrigin(ctx context.Context, tx pgx.Tx, token string, scope platform.Sco
 }
 
 // pipeline runs the buyer path. Every step has its own derived key so a retry replays what already finished.
-func (m *ManualOrders) pipeline(ctx context.Context, capability, storeID, key string, in ManualInput) (manualReceipt, error) {
+func (m *ManualOrders) pipeline(ctx context.Context, token, capability, storeID, key string, in ManualInput) (manualReceipt, error) {
 	var zero manualReceipt
-	if _, err := m.issuer.RegisterForTrustedStore(ctx, storeID, capability); err != nil {
+	registered, err := m.issuer.RegisterForTrustedStore(ctx, storeID, capability)
+	if err != nil {
 		return zero, err
 	}
 	options, err := m.options(ctx, capability, storeID)
@@ -534,13 +548,19 @@ func (m *ManualOrders) pipeline(ctx context.Context, capability, storeID, key st
 	}); err != nil {
 		return zero, err
 	}
+	if err = m.authorizeDiscount(ctx, token, registered.Scope.OwnerID, storeID, in); err != nil {
+		return zero, err
+	}
 	// The quote is the only price: CreateQuote prices every line from the catalog and applies the delivery policy (I05).
 	var quote storefront.Quote
 	if err = buyer.WithScope(ctx, m.buyerPool, capability, storeID, func(c context.Context, tx pgx.Tx, s buyer.Scope) (e error) {
-		quote, e = storefront.CreateQuote(c, tx, s, stepKey(key, "quote"), storefront.QuoteInput{CartVersion: cart.Version, MarketID: option.MarketID,
+		quote, e = storefront.CreateManualQuote(c, tx, s, stepKey(key, "quote"), storefront.QuoteInput{CartVersion: cart.Version, MarketID: option.MarketID,
 			Country: option.Country, Method: method})
 		return e
 	}); err != nil {
+		return zero, err
+	}
+	if err = m.bindDiscount(ctx, token, storeID, quote.ID); err != nil {
 		return zero, err
 	}
 	if hooks != nil && hooks.afterQuote != nil {
@@ -577,17 +597,23 @@ func (m *ManualOrders) pipeline(ctx context.Context, capability, storeID, key st
 		return zero, err
 	}
 	return manualReceipt{OrderID: placed.OrderID, CommercialState: placed.CommercialState, PaymentMode: placed.PaymentMode,
-		TotalMinor: quote.Amount.TotalMinor, Currency: quote.Currency, ExpiresAt: placed.ExpiresAt}, nil
+		TotalMinor: quote.Amount.TotalMinor, Currency: quote.Currency, ExpiresAt: placed.ExpiresAt, Discount: in.Discount}, nil
 }
 
 // classifyPipeline turns any pipeline failure into a coded refusal; nothing from a driver or a buyer-side error text escapes.
 func classifyPipeline(ctx context.Context, err error) error {
 	var coded *Error
 	var cvs *fulfillment.CVSError
+	var discount *pricing.DiscountError
 	switch {
 	case errors.As(err, &coded):
 		return coded
+	case errors.As(err, &discount):
+		return &Error{Status: 422, Code: discount.Code}
 	case errors.As(err, &cvs):
+		if cvs.Code == "cash_on_delivery_amount_exceeds" {
+			return &Error{Status: cvs.Status, Code: "cod_limit"}
+		}
 		return &Error{Status: cvs.Status, Code: cvs.Code}
 	case errors.Is(err, platform.ErrUnauthorized), errors.Is(err, platform.ErrForbidden), errors.Is(err, platform.ErrScopeNotFound):
 		return err
