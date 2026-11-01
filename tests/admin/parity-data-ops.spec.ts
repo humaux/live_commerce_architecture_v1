@@ -127,7 +127,7 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
       await action(page, "A12 / 調整庫存", "click", "selected SKU adjustment opens", async () => {
         await row.getByRole("button", { name: "調整庫存", exact: true }).click(); await heading(page, "調整庫存");
       });
-      await expect(page.getByText("調整原因（必填）", { exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "調整原因（必填）", level: 2, exact: true })).toBeVisible();
       await capture(page, frame("6:19050", "6:19202"));
       await click(page, "增加 3", "preview reflects positive three", () => expect(page.getByText("27", { exact: true }).first()).toBeVisible());
       await click(page, "到貨補錄", "reason selected before review", () => expect(page.getByRole("button", { name: "核對調整", exact: true })).toBeEnabled());

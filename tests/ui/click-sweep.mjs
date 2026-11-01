@@ -423,7 +423,7 @@ async function journeyProduct(state, journeys) {
         await page.getByRole("button", { name: "搜尋貨號", exact: true }).click();
         await page.getByRole("textbox", { name: "貨號或商品名稱", exact: true }).fill(codes[index]);
         await page.getByRole("button", { name: "搜尋", exact: true }).click();
-        await expect(page.locator("tbody tr").filter({has:page.getByText(codes[index],{exact:true})}).locator(".available-value")).toHaveText(String(qty));
+        await expect(page.locator("tbody tr").filter({has:page.getByRole("cell",{name:`${codes[index]} · ${title}`,exact:true})}).locator(".available-value")).toHaveText(String(qty));
       }
       await page.goto(editURL);
     }, page);

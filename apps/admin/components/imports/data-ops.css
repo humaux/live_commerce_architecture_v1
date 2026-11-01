@@ -85,7 +85,8 @@
 @media (max-width: 700px) { .data-ops .ops-collection-heading { display: none; } .data-ops .ops-collection-list button { grid-template-columns: repeat(3, 1fr); } .data-ops .ops-collection-list strong { grid-column: 1 / -1; } }
 
 .data-ops .product-name { padding: 0; border: 0; background: transparent; font-weight: 600; text-align: left; }
-.data-ops .inspector { position: static; width: 100%; max-width: 100%; min-width: 0; }
+.data-ops .inspector { position: relative; width: 100%; max-width: 100%; min-width: 0; }
+.data-ops .inspector .close-details { padding: 7px; }
 .data-ops .inspector .selected-product { display: flex; gap: 16px; flex-wrap: wrap; }
 .data-ops .ops-card > details { margin-top: 16px; }
 .data-ops summary { cursor: pointer; min-height: 44px; padding: 10px 0; }
