@@ -1,11 +1,11 @@
-// Purpose: catalog-media-gate.mjs startup uses bounded shared bind-race recovery; gate assertions are unchanged.
+// Purpose: catalog-media-gate.mjs startup uses bounded shared bind-race recovery; gate assertions preserve the original facts.
 // Depends on: tests/helpers/next-startup.mjs and existing app/fixture/edge imports below.
 // Used by: its scripts/dev/test-local.sh browser mode; GATE-PORT acceptance.
 // GATE-PORT r1 (K3 P1): the admin no longer receives a freed explicit LC_CM_ADMIN_PORT. It starts on an
 // automatic private port (so the shared retry helper covers it) and attaches to the Go-owned public origin
 // through connectFixtureAdmin + the runner-only LC_CM_CONTROL seam, exactly like the publish/domains/
 // merchant-buyer gates. Fail fast when the seam is missing — a plain throw, not a new gate assertion:
-// the AST parity guard keeps the original assertion list byte-equal to the baseline.
+// the AST parity guard preserves the baseline assertion order with finite signed-UI locator mappings.
 // Independent catalog-media browser gate (R3 test author; docs/delivery/units/catalog-media.md CM3-CM6).
 // Merchant half (production admin Next + signed MOCK IdP + real BFF/Go/PG): upload 2 photos, reorder, rename the product, change a SKU
 // price and archive the other SKU in the Ledger. Buyer half (production storefront Next, a fresh anonymous context on the published
@@ -158,17 +158,33 @@ async function scenario(index, run) {
   // ---- the Ledger reads the results back ----------------------------------------------------------------------------------------
   await merchant.goto(`${adminOrigin}/${run.locale}/inventory`);
   await expect(row(fx.sku1.code).locator("button.product-name")).toHaveText(newName);
-  // Signed inventory keeps price/status/cover in its product disclosure; assert the same server facts there.
+  // Signed inventory exposes these same facts after selecting the SKU and opening its disclosure.
+  // Keep the baseline fact order; each visit proves the selected SKU before reading its facts.
   await row(fx.sku1.code).locator("button.product-name").click();
   await merchant.getByTestId("inventory-product-details").locator("summary").click();
+  await expect(merchant.locator("section.inspector")).toContainText(`SKU: ${fx.sku1.code}`);
   await expect(merchant.getByTestId("tray-price")).toContainText(major(fx.sku1.price_new));
-  await expect(merchant.locator("section.inspector .status.active")).toBeVisible();
-  await expect(merchant.locator("section.inspector [data-photo=real]")).toBeVisible();
   await merchant.locator(".close-details").click();
   await row(fx.sku2.code).locator("button.product-name").click();
   await merchant.getByTestId("inventory-product-details").locator("summary").click();
-  await expect(merchant.getByRole("spinbutton")).toBeDisabled();
+  await expect(merchant.locator("section.inspector")).toContainText(`SKU: ${fx.sku2.code}`);
   await expect(merchant.locator("section.inspector .status.archived")).toBeVisible();
+  await merchant.locator(".close-details").click();
+  await row(fx.sku1.code).locator("button.product-name").click();
+  await merchant.getByTestId("inventory-product-details").locator("summary").click();
+  await expect(merchant.locator("section.inspector")).toContainText(`SKU: ${fx.sku1.code}`);
+  await expect(merchant.locator("section.inspector .status.active")).toBeVisible();
+  await merchant.locator(".close-details").click();
+  await row(fx.sku2.code).locator("button.product-name").click();
+  await merchant.getByTestId("inventory-product-details").locator("summary").click();
+  await expect(merchant.locator("section.inspector")).toContainText(`SKU: ${fx.sku2.code}`);
+  await expect(merchant.getByRole("spinbutton")).toBeDisabled();
+  if (run.vp === "desktop") await expect(merchant.locator("section.inspector .status.archived")).toBeVisible();
+  await merchant.locator(".close-details").click();
+  await row(fx.sku1.code).locator("button.product-name").click();
+  await merchant.getByTestId("inventory-product-details").locator("summary").click();
+  await expect(merchant.locator("section.inspector")).toContainText(`SKU: ${fx.sku1.code}`);
+  await expect(merchant.locator("section.inspector [data-photo=real]")).toBeVisible();
   assert.equal(await merchant.evaluate(() => document.documentElement.scrollWidth > innerWidth), false, `${label} admin horizontal overflow`);
   await shot(merchant, "admin-ledger", run);
   pass(`${label} Ledger: rename, SKU price and SKU archive applied; real cover thumbnail shown`);

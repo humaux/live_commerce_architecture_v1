@@ -250,6 +250,49 @@ const SIGNED_FRAME_REWRITES = {
   ],
 };
 
+// PR475 signed inventory: only these complete baseline assertion calls migrate. Reparse a replacement
+// before collecting it so its nested expect is mapped with its matcher, never unrelated row visibility.
+const CATALOG_ASSERTION_REWRITES = {
+  'expect(row(fx.sku1.code)).toContainText(major(fx.sku1.price_new))': 'expect(merchant.getByTestId("tray-price")).toContainText(major(fx.sku1.price_new))',
+  'expect(row(fx.sku2.code).locator(".status-col .status.archived")).toBeAttached()': 'expect(merchant.locator("section.inspector .status.archived")).toBeVisible()',
+  'expect(row(fx.sku1.code).locator(".status-col .status.active")).toBeAttached()': 'expect(merchant.locator("section.inspector .status.active")).toBeVisible()',
+  'expect(merchant.locator("section.inspector").getByRole("spinbutton")).toBeDisabled()': 'expect(merchant.getByRole("spinbutton")).toBeDisabled()',
+  'expect(row(fx.sku2.code).locator(".status-col .status.archived")).toBeVisible()': 'expect(merchant.locator("section.inspector .status.archived")).toBeVisible()',
+  'expect(row(fx.sku1.code).locator("[data-photo=real]")).toBeVisible()': 'expect(merchant.locator("section.inspector [data-photo=real]")).toBeVisible()',
+};
+// These facts now depend on selecting the right SKU. Freeze the real click/readback sequence as well
+// as the assertions: wrong selection, missing disclosure, or disabled-control checks on the active SKU
+// must not satisfy parity. This is one signed UI migration, not a general waiver for reordered assertions.
+const CATALOG_SIGNED_READBACK = `
+  // Signed inventory exposes these same facts after selecting the SKU and opening its disclosure.
+  // Keep the baseline fact order; each visit proves the selected SKU before reading its facts.
+  await row(fx.sku1.code).locator("button.product-name").click();
+  await merchant.getByTestId("inventory-product-details").locator("summary").click();
+  await expect(merchant.locator("section.inspector")).toContainText(\`SKU: \${fx.sku1.code}\`);
+  await expect(merchant.getByTestId("tray-price")).toContainText(major(fx.sku1.price_new));
+  await merchant.locator(".close-details").click();
+  await row(fx.sku2.code).locator("button.product-name").click();
+  await merchant.getByTestId("inventory-product-details").locator("summary").click();
+  await expect(merchant.locator("section.inspector")).toContainText(\`SKU: \${fx.sku2.code}\`);
+  await expect(merchant.locator("section.inspector .status.archived")).toBeVisible();
+  await merchant.locator(".close-details").click();
+  await row(fx.sku1.code).locator("button.product-name").click();
+  await merchant.getByTestId("inventory-product-details").locator("summary").click();
+  await expect(merchant.locator("section.inspector")).toContainText(\`SKU: \${fx.sku1.code}\`);
+  await expect(merchant.locator("section.inspector .status.active")).toBeVisible();
+  await merchant.locator(".close-details").click();
+  await row(fx.sku2.code).locator("button.product-name").click();
+  await merchant.getByTestId("inventory-product-details").locator("summary").click();
+  await expect(merchant.locator("section.inspector")).toContainText(\`SKU: \${fx.sku2.code}\`);
+  await expect(merchant.getByRole("spinbutton")).toBeDisabled();
+  if (run.vp === "desktop") await expect(merchant.locator("section.inspector .status.archived")).toBeVisible();
+  await merchant.locator(".close-details").click();
+  await row(fx.sku1.code).locator("button.product-name").click();
+  await merchant.getByTestId("inventory-product-details").locator("summary").click();
+  await expect(merchant.locator("section.inspector")).toContainText(\`SKU: \${fx.sku1.code}\`);
+  await expect(merchant.locator("section.inspector [data-photo=real]")).toBeVisible();
+`;
+
 /**
  * AST parity of one gate adapter against GATE_BASELINE. Preserved classes: whole-file assertion calls,
  * environment member assignment expression statements (`env.HOSTNAME = "127.0.0.1"; env.PORT = String(port);`),
@@ -264,17 +307,35 @@ function assertGateParity(file, before, currentSource) {
   if (!start) return false;
   const current = ts.createSourceFile(file, currentSource, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   const text = (node, source) => gatePrinter.printNode(ts.EmitHint.Unspecified, node, source);
-  const collect = (source, root, predicate) => {
-    const out = []; const visit = (node) => { if (predicate(node, source)) out.push(text(node, source)); ts.forEachChild(node, visit); }; visit(root); return out;
+  const collect = (source, root, predicate, rewrites = {}) => {
+    const out = [];
+    const visit = (node) => {
+      if (predicate(node, source)) {
+        const call = text(node, source), replacement = rewrites[call];
+        if (replacement) {
+          const parsed = ts.createSourceFile(file, replacement, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+          out.push(...collect(parsed, parsed, predicate));
+          return;
+        }
+        out.push(call);
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(root); return out;
   };
   const now = current.statements.find((n) => ts.isFunctionDeclaration(n) && n.name?.text === start.name.text);
   const assertions = (n, source) => ts.isCallExpression(n) && /^(assert|expect)(?:\.|\(|$)/.test(n.expression.getText(source));
   // Every baseline assertion must survive, in order (no weakening or removal); added assertions are allowed, since a
   // later fix may legitimately strengthen a gate (e.g. waiting for the regenerated link to render).
-  const kept = collect(current, current, assertions), original = collect(old, old, assertions).map((call) => (SIGNED_FRAME_REWRITES[file] ?? []).reduce((s, [from, to]) => s.replaceAll(from, to), call));
+  const kept = collect(current, current, assertions), original = collect(old, old, assertions, file === "tests/storefront/catalog-media-gate.mjs" ? CATALOG_ASSERTION_REWRITES : {}).map((call) => (SIGNED_FRAME_REWRITES[file] ?? []).reduce((s, [from, to]) => s.replaceAll(from, to), call));
   let at = 0;
   for (const call of kept) if (at < original.length && call === original[at]) at++;
   assert.equal(at, original.length, `${file}: original gate assertions changed (missing: ${original[at]})`);
+  if (file === "tests/storefront/catalog-media-gate.mjs") {
+    const scenario = current.statements.find((n) => ts.isFunctionDeclaration(n) && n.name?.text === "scenario");
+    const signed = ts.createSourceFile(file, CATALOG_SIGNED_READBACK, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
+    assert.ok(scenario && scenario.body.statements.map((n) => text(n, current)).join("\n").includes(signed.statements.map((n) => text(n, signed)).join("\n")), `${file}: signed inventory SKU selection/readback changed`);
+  }
   const envAssignment = (n, source) => ts.isExpressionStatement(n) && /^(?:env|childEnv)\./.test(text(n, source));
   assert.deepEqual(collect(current, now, envAssignment), collect(old, start, envAssignment), `${file}: environment assignment statements changed`);
   const readiness = (n, source) => ts.isIfStatement(n) && /\bstatus\b/.test(n.expression.getText(source));
@@ -297,6 +358,32 @@ test("all eleven gate adapters preserve original assertions, readiness loops and
     if (assertGateParity(file, before, await readFile(file, "utf8"))) checked++;
   }
   assert.equal(checked, 11);
+});
+
+test("signed inventory parity rejects missing facts, changed price oracles and wrong SKU interactions", async () => {
+  const file = "tests/storefront/catalog-media-gate.mjs";
+  const before = execFileSync("git", ["show", `${GATE_BASELINE}:${file}`], { encoding: "utf8" });
+  const current = await readFile(file, "utf8");
+  assert.equal(assertGateParity(file, before, current), true);
+  const mutations = [
+    ["delete exact price", 'await expect(merchant.getByTestId("tray-price")).toContainText(major(fx.sku1.price_new));', ""],
+    ["stale price oracle", '.toContainText(major(fx.sku1.price_new))', '.toContainText(major(fx.sku1.price_old))'],
+    ["wrong SKU price oracle", '.toContainText(major(fx.sku1.price_new))', '.toContainText(major(fx.sku2.price))'],
+    ["delete archived state", 'await expect(merchant.locator("section.inspector .status.archived")).toBeVisible();', ""],
+    ["delete active state", 'await expect(merchant.locator("section.inspector .status.active")).toBeVisible();', ""],
+    ["delete archived disabled control", 'await expect(merchant.getByRole("spinbutton")).toBeDisabled();', ""],
+    ["delete real cover", 'await expect(merchant.locator("section.inspector [data-photo=real]")).toBeVisible();', ""],
+    ["wrong SKU selected for price", 'await row(fx.sku1.code).locator("button.product-name").click();', 'await row(fx.sku2.code).locator("button.product-name").click();'],
+    ["delete disclosure click", 'await merchant.getByTestId("inventory-product-details").locator("summary").click();', ""],
+    ["delete SKU identity", 'await expect(merchant.locator("section.inspector")).toContainText(`SKU: ${fx.sku1.code}`);', ""],
+    ["delete original row visibility", 'await expect(row(fx.sku1.code)).toBeVisible();', ""],
+    ["weaken overflow", 'document.documentElement.scrollWidth > innerWidth', 'document.documentElement.scrollWidth > innerWidth + 100'],
+  ];
+  for (const [label, from, to] of mutations) {
+    const mutated = current.replace(from, to);
+    assert.notEqual(mutated, current, `${label}: mutation target missing`);
+    assert.throws(() => assertGateParity(file, before, mutated), /original gate assertions changed|signed inventory SKU selection\/readback changed/, label);
+  }
 });
 
 test("the parity guard rejects a dropped env.PORT and a changed or relocated readiness predicate (red mutations)", async () => {
