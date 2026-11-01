@@ -1257,7 +1257,10 @@ test("MOU05 signed standalone composition at desktop/mobile in three locales and
     await page.getByTestId("order-detail-back").click();
     await revealOrderFilters(page);
     await expect(page.getByTestId("state-filter")).toBeVisible();
+    await expect(page.getByTestId("orders-list")).toBeVisible();
+    await expect(page.getByTestId("orders-refresh")).toBeEnabled();
     await page.getByTestId("state-filter").focus();
+    await expect(page.getByTestId("state-filter")).toBeFocused();
     await page.keyboard.press("Tab");
     await expect(page.getByTestId("orders-refresh")).toBeFocused();
     const targets = await page
