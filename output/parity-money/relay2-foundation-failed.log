@@ -1,0 +1,29 @@
+439-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6622750Z ℹ todo 0
+440-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6623007Z ℹ duration_ms 1320.81153
+441-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6625683Z
+442:foundation	Package docs and gate map are current	2026-10-30T13:39:38.6626005Z ✖ failing tests:
+443-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6626238Z
+444-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6626669Z test at tests/admin/shell-architecture.test.mjs:10:1
+445-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6627504Z ✖ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (1014.681374ms)
+446-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6628244Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+447-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6628684Z   + actual - expected
+448-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6628911Z
+449-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6629328Z   + [
+450-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6629704Z   +   'apps/admin/components/CodSettings.tsx: format 2 > 0',
+451-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6630270Z   +   'apps/admin/components/Finance.tsx: format 1 > 0'
+452-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6630846Z   + ]
+453-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6631167Z   - []
+454-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6631373Z
+455-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6632465Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/shell-architecture.test.mjs:11:10)
+456-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6633687Z       at Test.runInAsyncScope (node:async_hooks:227:14)
+457-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6634260Z       at Test.run (node:internal/test_runner/test:1402:25)
+458-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6634802Z       at Test.start (node:internal/test_runner/test:1262:17)
+459-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6635475Z       at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+460-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6635946Z     generatedMessage: true,
+461-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6636256Z     code: 'ERR_ASSERTION',
+462-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6637038Z     actual: [ 'apps/admin/components/CodSettings.tsx: format 2 > 0', 'apps/admin/components/Finance.tsx: format 1 > 0' ],
+463-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6637616Z     expected: [],
+464-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6637934Z     operator: 'deepStrictEqual',
+465-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6638248Z     diff: 'simple'
+466-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6638458Z   }
+467-foundation	Package docs and gate map are current	2026-10-30T13:39:38.6707173Z ##[error]Process completed with exit code 1.

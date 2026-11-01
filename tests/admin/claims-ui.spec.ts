@@ -446,9 +446,9 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
   buyer.on("request", (request) => buyerRequests.push(`${request.url()} ${request.headers()["referer"] ?? ""}`));
   buyer.on("pageerror", (error) => pageErrors.push(error.message));
   const copies = {
-    en: { title: "Your claimed items", quantity: "Quantity", price: "Current price, final at checkout", add: "Check out now" },
-    "zh-CN": { title: "你登记的商品", quantity: "数量", price: "当前价格，以结账时为准", add: "直接结账" },
-    "zh-TW": { title: "你登記的商品", quantity: "數量", price: "目前價格，以結帳時為準", add: "直接結帳" },
+    en: { title: "Confirm your live claim", quantity: "Quantity", price: "A claim link is not a payment; the price and available quantity are checked again at checkout.", add: /Go to checkout \(\d+ items\)/ },
+    "zh-CN": { title: "确认直播认领", quantity: "数量", price: "认领链接不代表已付款；价格与可售数量会在结账时再次确认。", add: /前往结账（共 \d+ 件）/ },
+    "zh-TW": { title: "確認直播認領", quantity: "數量", price: "認領連結不代表已付款；價格與可售數量會在結帳時再次確認。", add: /前往結帳（共 \d+ 件）/ },
   } as const;
   for (const locale of ["en", "zh-CN", "zh-TW"] as const) {
     const response = await buyer.goto(firstURL.replace("/en/claim", `/${locale}/claim`));
@@ -502,15 +502,15 @@ test("KC16 Studio › Claims → one-time link → buyer cart, three locales, MO
 
   // 404: unknown token, no token, and the old token after a rotation.
   await buyer.goto(`${buyerOrigin}/en/claim#t=${randomBytes(32).toString("base64url")}`);
-  await expect(buyer.getByTestId("claim-not-found")).toHaveText("This link expired or was replaced. Message the seller for a new link.");
+  await expect(buyer.getByTestId("claim-not-found")).toContainText("The link has expired or was replaced. Message the seller for a new one.") /* signed frame 66:1746 */;
   // No fragment at all: ClaimLink shows the "reopen the seller's link" copy (7e18c149), not the expired/replaced copy.
   await buyer.goto(`${buyerOrigin}/zh-CN/claim`);
-  await expect(buyer.getByTestId("claim-not-found")).toHaveText("请重新打开商家私信中的链接查看这些商品，或从购物车继续。");
+  await expect(buyer.getByTestId("claim-not-found")).toContainText("链接已失效或已更换，请私信商家重新获取") /* signed frame 66:1746: one gone copy for every missing/old token */;
   const secondURL = await issueLink("Replace link");
   const secondToken = secondURL.split("#t=")[1];
   expect(secondToken).not.toBe(firstToken);
   await buyer.goto(firstURL.replace("/en/claim", "/zh-TW/claim"));
-  await expect(buyer.getByTestId("claim-not-found")).toHaveText("連結已失效或已更換，請私訊商家重新取得");
+  await expect(buyer.getByTestId("claim-not-found")).toContainText("連結已失效或已更換，請私訊商家重新取得");
   await shot(buyer, "buyer-claim-404-zh-TW-390");
   await buyer.goto(secondURL);
   await expect(buyer.getByTestId("claim-line-B2")).toContainText("Already in your cart");

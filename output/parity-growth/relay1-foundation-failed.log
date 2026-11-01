@@ -1,0 +1,3 @@
+foundation	Package docs and gate map are current	2026-10-30T12:12:09.5391667Z check-gates: tests/admin/parity-growth-marketing.spec.mjs is run by no gate (test-local.sh, tests/foundation, test-node.sh, or a selected playwright suite)
+foundation	Package docs and gate map are current	2026-10-30T12:12:09.5392781Z check-gates: tests/admin/parity-growth.spec.ts is run by no gate (test-local.sh, tests/foundation, test-node.sh, or a selected playwright suite)
+foundation	Package docs and gate map are current	2026-10-30T12:12:09.5495355Z ##[error]Process completed with exit code 1.

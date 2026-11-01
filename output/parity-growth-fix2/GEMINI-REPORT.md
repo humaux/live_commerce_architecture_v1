@@ -1,0 +1,9 @@
+# GEMINI-REPORT — PARITY-GROWTH-FIX2 (PR #366)
+
+| Failing job / test | Class (a/b/c) | What changed (`file:line`) |
+|---|---|---|
+| `124178338229` (`gate (bundle:04)` / `--browser-operations-ads`) → `TestBrowserOperationsAds` (`getByTestId('ads-connections')` expected substring `"9132911371291"` at `tests/admin/operations-ads.spec.ts:189:1`) | **a** | `apps/admin/components/Ads.tsx:362`: Added `data-testid="ads-assets"` to the asset authorization button (`g.assets`). `tests/admin/operations-ads.spec.ts:182-197, 229, 254-265, 279-285`: Updated the older W6-U2 test to navigate via real click `await openAssets(page)` to reach the signed Figma frame `5:17516` Asset Authorization screen where connection details, unbind controls, and feed copy reside, including after page reloads. Regenerated `output/ci-select-backend-browser/browser-ownership.json:137`. Untracked raw CI artifact copies and bulk Figma captures per ADR-20261031 (`git rm -r --cached output/parity-growth/relay2-failures output/parity-growth/figma`). |
+| `124178338822` (`gate (bundle:03)` / `--browser-cvs`) → `TestBrowserTaiwanCvs/WebKit` (`getByTestId('cvs-candidate-2656')` expected visible at `tests/storefront/cvs-picker.mjs:387:34`) | **c** | No code change: Storefront CVS picker is outside PR #366 write paths (PR #366 is strictly `apps/admin` growth lane; zero diff in `apps/storefront/` or `tests/storefront/cvs*`). Identical intermittent WebKit candidate timeout at line 387 of `cvs-picker.mjs` was ruled outside card in PR #362. Furthermore, PR #351 (`37e097399`) on `r3/integration` merged CVS picker alignment, which was merged into this branch in Step 1. |
+| `124214325754` (`receipts`), `124214689095` (`required`) | Consequential | Dependency failures resulting from the browser test failures above; resolve automatically once upstream gates pass. |
+
+STATUS: DONE

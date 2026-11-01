@@ -1,0 +1,8 @@
+browser ownership: wrote /Volumes/data/live_commerce_architecture_v1/.worktrees/parity-order-ops/output/ci-select-backend-browser/browser-ownership.json (54 modes)
+node --check apps/admin/src/features/orders/routes.ts: exit 0
+node --check apps/admin/src/shell-copy.ts: exit 0
+node --check tests/admin/shell-registry.test.ts: exit 0
+git diff --check: exit 0
+node scripts/dev/derive-browser-ownership.mjs: exit 0
+node scripts/dev/derive-browser-ownership.mjs --check: exit 0
+Local tests, servers, browser runtime, builds, containers: NOT_RUN

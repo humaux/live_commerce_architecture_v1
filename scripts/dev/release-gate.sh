@@ -543,6 +543,14 @@ for m in $browser_modes; do
     else
       record "$id" "$tier" FAIL "admin-parity missing the 48 route/locale/viewport cases or 6 shell journeys" "$rc" "$LOG"
     fi
+  elif [[ "$m" == --browser-buyer-after-parity ]]; then
+    # Node + Playwright only (MOCK, no PG): node:test spec reporter; every frame group is one test, zero tests or any failure is never PASS.
+    np=$(awk '/^ℹ pass [0-9]+$/ {n=$3} END {print n+0}' "$LOG")
+    if ((np >= 32)) && grep -qE '^ℹ fail 0$' "$LOG"; then
+      record "$id" "$tier" PASS "$np real-route buyer-after parity tests (MOCK)" "$rc" "$LOG"
+    else
+      record "$id" "$tier" FAIL "buyer-after-parity exit $rc but node pass=$np (expected >= 32) or a failure: zero tests or a failure is never PASS" "$rc" "$LOG"
+    fi
   elif [[ "$m" == --browser-ui-gallery ]]; then
     # DS-1: Node + Playwright only, no go test events. test-local.sh runs the DS node suites with the spec reporter ("ℹ pass N" / "ℹ fail F"),
     # then tests/admin/ui-gallery-runner.mjs prints "PASS DS-1 ui-gallery: M matrix cases ..., K real-click ledger rows". Zero of either, or any failure, is FAIL.

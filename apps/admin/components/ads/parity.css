@@ -1,0 +1,57 @@
+/* Purpose: Signed C3 task panels, responsive columns and fixed action dock.
+ * Depends on: shared admin tokens and .growth-task presentation.
+ * Used by: Ads, Attribution and Promotions.
+ * Invariants: readable source order, scrollable content, no horizontal page overflow. */
+.growth-task { color: var(--ds-text-1); padding: 24px 8px 88px; max-width: 1440px; margin-inline: auto; }
+.growth-task h1 { font-size: 28px; line-height: 1.4; margin: 0 0 14px; }
+.growth-task h2 { font-size: 18px; margin: 0 0 18px; }
+.growth-task h3 { font-size: 16px; margin: 0 0 14px; }
+.growth-task p { line-height: 1.65; }
+.growth-intro { color: var(--ds-button-text-kind); font-size: 13px; margin: 0 0 24px; }
+.growth-columns { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 24px; align-items: start; }
+.growth-stack { display: grid; gap: 16px; min-width: 0; }
+.growth-card { padding: 24px; border: 1px solid var(--ds-border); border-radius: 12px; background: var(--ds-surface); min-width: 0; }
+.growth-note { padding: 16px; border-radius: 8px; background: var(--ds-success-bg); color: var(--ds-button-text-kind); margin: 0 0 16px; }
+.growth-note p { font-size: 13px; margin: 6px 0 0; }
+.growth-warning { background: var(--ds-warn-soft); color: var(--ds-warn-text); }
+.growth-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 16px 0; }
+.growth-task button, .growth-task a.growth-button { min-height: 44px; padding: 10px 18px; border: 1px solid var(--ds-border); border-radius: 6px; background: var(--ds-surface); color: var(--ds-ink); cursor: pointer; font: inherit; font-size: 14px; text-align: center; text-decoration: none; }
+.growth-task button.primary { background: var(--ds-toggle-on); border-color: var(--ds-toggle-on); color: var(--ds-surface); }
+.growth-task button:disabled { cursor: not-allowed; opacity: .5; }
+.growth-task button:focus-visible, .growth-task a:focus-visible { outline: 2px solid var(--ds-toggle-on); outline-offset: 3px; }
+.growth-dock { position: fixed; z-index: 20; bottom: 0; left: var(--ui-rail-width, 240px); right: 0; padding: 12px 16px; display: flex; gap: 12px; background: var(--ds-surface); border: 1px solid var(--ds-border); }
+.growth-dock button { min-width: 160px; }
+.growth-dock button.primary { min-width: 224px; }
+.growth-facts { display: grid; gap: 12px; margin: 16px 0; }
+.growth-facts div { display: flex; justify-content: space-between; gap: 16px; }
+.growth-facts dt { color: var(--ds-text-3); }
+.growth-facts dd { margin: 0; overflow-wrap: anywhere; text-align: right; font-variant-numeric: tabular-nums; }
+.growth-form label { display: grid; gap: 8px; font-size: 14px; }
+.growth-form input, .growth-form select { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid var(--ds-border); border-radius: 6px; color: inherit; background: var(--ds-surface); font: inherit; }
+.growth-form fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+.growth-form small { color: var(--ds-text-3); line-height: 1.6; }
+.growth-row { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; }
+.growth-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.growth-table th, .growth-table td { padding: 16px; text-align: left; border-bottom: 1px solid var(--ds-border); overflow-wrap: anywhere; }
+.growth-table-wrap { overflow: auto; }
+.growth-task details { margin: 16px 0; }
+.growth-task summary { cursor: pointer; min-height: 44px; padding-block: 12px; }
+@media (max-width: 767px) {
+  .growth-task { padding: 24px 0 88px; }
+  .growth-task h1 { font-size: 26px; }
+  .growth-columns { grid-template-columns: minmax(0,1fr); gap: 16px; }
+  .growth-card { padding: 16px; }
+  .growth-dock { left: 0; padding: 12px 16px max(12px,env(safe-area-inset-bottom)); }
+  .growth-dock button { min-width: 0; flex: 1; }
+  .growth-dock button.primary { min-width: 0; flex: 2; }
+  .growth-actions > button { flex: 1; }
+  .growth-facts div { flex-wrap: wrap; }
+  .growth-row { grid-template-columns: minmax(0,1fr); }
+}
+
+.growth-task .ads-detail { padding: 0; border: 0; background: transparent; }
+
+.growth-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 16px; }
+@media (max-width:767px) { .growth-grid { grid-template-columns: minmax(0,1fr); } }
+
+@media (max-width:1023px) { .growth-dock { left: 0; } }

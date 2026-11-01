@@ -1,0 +1,6 @@
+2026-10-30T15:42:31.3827886Z     browser_meta_ads_test.go:271: admin browser gate failed: exit status 1; evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.N12FQzZ3/meta-ads/20261030T154154.693496627
+2026-10-30T15:42:31.4298195Z --- FAIL: TestBrowserMetaAds (38.58s)
+2026-10-30T15:42:39.1507624Z bundle member --browser-meta-ads: failure
+2026-10-30T15:42:39.1894781Z matrix-receipts: {"mode":"--browser-meta-ads","run_id":"41075396782","run_attempt":"1","sha":"9b3ab3af402c500b69add3923c115ac1b524c713","status":"FAIL","test_count":68,"spec_count":27}
+2026-10-30T15:43:31.8133186Z ##[error]Process completed with exit code 1.
+2026-10-30T15:43:31.8260077Z --- FAIL: TestBrowserMetaAds (38.58s)

@@ -238,11 +238,16 @@ func miuiReports(t *testing.T, x *miuiWorld) map[string]string {
 	t.Helper()
 	out := map[string]string{}
 	for _, r := range []string{"finance/summary", "reports/products", "reports/channels", "reports/funnel", "reports/manual-orders"} {
+		started := time.Now().UTC()
 		status, body := miuiCall(x, "GET", r+"?from=2026-03-01&to=2026-04-30", x.token, nil, "")
+		finished := time.Now().UTC()
 		if status != 200 {
 			t.Fatalf("report baseline %s=%d", r, status)
 		}
 		out[r] = string(body)
+		if r == "finance/summary" {
+			out[r] = financeSnapshotFacts(t, body, started, finished)
+		}
 	}
 	return out
 }

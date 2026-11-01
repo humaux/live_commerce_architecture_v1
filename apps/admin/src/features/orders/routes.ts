@@ -46,6 +46,17 @@ export const ordersRoutes = [
     spec: "tests/admin/returns-ui.spec.ts",
   },
   {
+    id: "cvs-match",
+    path: "/orders/cvs-match",
+    group: "orders",
+    labelKey: "cvsMatch",
+    icon: "orders",
+    permission: "orders:read",
+    template: "workspace",
+    nav: false,
+    spec: "tests/admin/parity-order-ops.spec.ts",
+  },
+  {
     id: "shipping-center",
     path: "/orders/shipping",
     group: "orders",

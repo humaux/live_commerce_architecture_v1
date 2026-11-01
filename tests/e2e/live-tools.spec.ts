@@ -237,7 +237,7 @@ for (const cell of cells) {
       buyer.on("request", (request) => buyerRequests.push(request.url()));
       const opened = await buyer.goto(link);
       expect(opened?.status()).toBe(200);
-      await expect(buyer.getByRole("heading", { level: 1, name: claim.title })).toBeVisible();
+      await expect(buyer.getByRole("heading", { level: 1, name: claim.confirmTitle })).toBeVisible();
       const line = buyer.getByTestId(`claim-line-${kw}`);
       await expect(line).toContainText(run.sku_code);
       await expect(line).toContainText(`${claim.quantity} 2`);
