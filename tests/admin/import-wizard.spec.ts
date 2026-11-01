@@ -244,6 +244,7 @@ test("MIUI all-invalid local CSV, duplicate mapping, Unicode/size/line limits an
       await page.getByTestId("import-row-next").click(); await expect(first).toHaveAttribute("data-testid", "import-row-51");
       await page.getByTestId("import-row-previous").click(); await expect(first).toHaveAttribute("data-testid", "import-row-1");
     });
+    await restart(page);
     const overLines = { ...many, prefix: "LINES5001", buffer: lines(5001) };
     expect(overLines.buffer.length).toBeLessThan(2 << 20); await upload(page, overLines); const beforeRefusal = await state();
     await step(page, "5001-line Preview", "actual Go422 too_many_rows stays a confirmed plain-language refusal, with no UNKNOWN or mutation", async () => {
