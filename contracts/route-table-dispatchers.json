@@ -36,7 +36,7 @@
   },
   {
     "table": "buyerhttp.Routes",
-    "dispatcher_sha256": "bfbb4441b77afb0b48f0c3bd0c326b75e276a528fa54e588a645cbe0f814c43a",
+    "dispatcher_sha256": "a8b1feb94a2439eb02b09a2d42e10c0e273abacfd53dc31708725147d9a2590a",
     "functions": [
       "RouteTable.HasPrefix",
       "admittedPaymentMethod",
@@ -274,6 +274,6 @@
       "var linkTokenPattern",
       "var v2Slug"
     ],
-    "reviewed": "2026-10-28 integrator + independent review (Opus, OC-09b quoteWithCodDue + quoteResponse.CodDueMinor; output/buyer-route-table/review-oc09b-pin.md)"
+    "reviewed": "pending independent review (FEAT-MANUAL-DISCOUNT adjustments projection)"
   }
 ]
