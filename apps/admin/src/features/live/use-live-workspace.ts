@@ -52,8 +52,10 @@ export function useLiveRead<T>(scope: string, enabled: boolean, read: (signal: A
         if (!alive || epoch !== current) return;
         const code = error instanceof StudioError ? error.code : "unavailable";
         if (code === "signed-out" || code === "forbidden") { signedOut = true; locked.current.denied = true; }
+        // A missing scoped resource invalidates its snapshot, without latching an authentication denial.
+        const retain = !signedOut && code !== "not-found";
         delay = Math.max(Math.min(30000, 3000 * 2 ** Math.min(failures++, 4)), error instanceof StudioError ? error.retryAfterMs : 0);
-        setView((previous) => ({ scope, data: !signedOut && previous.scope === scope ? previous.data : null, error: code, boundary: !signedOut && previous.scope === scope ? previous.boundary : "" }));
+        setView((previous) => ({ scope, data: retain && previous.scope === scope ? previous.data : null, error: code, boundary: retain && previous.scope === scope ? previous.boundary : "" }));
       } finally {
         if (alive && epoch === current && !signedOut && poll) { notBefore = Date.now() + delay; timer = setTimeout(load, Math.min(delay, 2_147_483_647)); }
       }
