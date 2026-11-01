@@ -747,7 +747,7 @@
     "tests/storefront/media-sizes-perf.mjs": "cda916ddd4385236dffca710f0d22169f91ceaab2e0390dc7d56a809e5d77ac6",
     "tests/storefront/merchant-buyer-gate.mjs": "a217ad228d06445a43f00291b9a68fbcdda835e058bc27e0cc5028dabf54daa0",
     "tests/storefront/merchant-product.mjs": "d9d43b036a6be9e7ab938d5e56ce8e28be2e21301a537c381ff3121d5f8e93b5",
-    "tests/storefront/offline-buyer.mjs": "d702ceb220c02ecf9b8fcb7a0d684c2c1a951f010c990d009ef283a9a5389431",
+    "tests/storefront/offline-buyer.mjs": "29998d0d3132f934c9dfbc1048abd8fb8e1635fb6acd39435533d68dda8f5324",
     "tests/storefront/offline-error.spec.ts": "bf531d759ba26fbb7731aa556a7de6c40a8e1686585e40a8250d62f1abe1969b",
     "tests/storefront/order-gate.mjs": "4a39b31913a2ec4b2aed662594bd95d590e67b484981de21ccb53b6a95fdb6b2",
     "tests/storefront/privacy-buyer.mjs": "1823f85a4bdbe4e38a6f5006d847cbb6f664971503ebf9fdd635f57ab3e28c85",
