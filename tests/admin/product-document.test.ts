@@ -67,6 +67,7 @@ test("PE13 bulk price refuses negative, overflow and currency precision without 
     ["TWD", "10000000000", "add", "1"],
     ["USD", "10000000000.00", "add", "0.01"],
     ["JPY", "999999999999", "add", "2"],
+    ["JPY", "999999999999", "add", "1"], // Existing parser refuses a 13-digit whole part on Save.
     ["TWD", "60", "set", "60.5"],
     ["USD", "60.00", "add", "0.001"],
     ["JPY", "60", "subtract", "0.1"],
@@ -78,14 +79,14 @@ test("PE13 bulk price refuses negative, overflow and currency precision without 
     assert.deepEqual(result, { rows: [row], skipped: 1 }, `${currency} ${base} ${operation} ${value}`);
   }
 });
-test("PE13 bulk price permits zero and the inclusive minor-unit ceiling", () => {
+test("PE13 bulk price permits zero and the largest round-trippable currency amounts", () => {
   for (const [currency, base, operation, value, expected] of [
     ["TWD", "10", "subtract", "10", "0"],
     ["TWD", "60", "add", "0", "60"],
     ["USD", "60.15", "subtract", "0", "60.15"],
     ["TWD", "9999999999", "add", "1", "10000000000"],
     ["USD", "9999999999.99", "add", "0.01", "10000000000.00"],
-    ["JPY", "999999999999", "add", "1", "1000000000000"],
+    ["JPY", "999999999998", "add", "1", "999999999999"],
   ] as const) {
     const row = { ...newRow([]), price: base };
     const result = Reflect.apply(applyBulk, undefined, [[row], "price", value, "all", operation, currency]);
