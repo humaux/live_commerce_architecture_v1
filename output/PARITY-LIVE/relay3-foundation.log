@@ -1,0 +1,49 @@
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:49.7608506Z ✖ PR31 soldout badge en SUCCEEDED reflects confirmed delivery (2.815329ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:49.7633757Z ✖ PR31 soldout badge en ACKNOWLEDGED reflects confirmed delivery (2.11763ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:49.7649845Z ✖ PR31 soldout badge en READY reflects confirmed delivery (2.186638ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:49.7666252Z ✖ PR31 soldout badge en DISPATCHING reflects confirmed delivery (1.862746ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:49.7707541Z ✖ PR31 soldout badge en UNKNOWN reflects confirmed delivery (1.332419ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:49.7725083Z ✖ PR31 soldout badge zh-TW SUCCEEDED reflects confirmed delivery (1.480134ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:49.7740764Z ✖ PR31 soldout badge zh-TW ACKNOWLEDGED reflects confirmed delivery (1.726523ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:49.7756453Z ✖ PR31 soldout badge zh-TW READY reflects confirmed delivery (1.580921ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:49.7773731Z ✖ PR31 soldout badge zh-TW DISPATCHING reflects confirmed delivery (1.614765ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:49.7824463Z ✖ PR31 soldout badge zh-TW UNKNOWN reflects confirmed delivery (1.606499ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:49.7844261Z ✖ PR31 soldout badge zh-CN SUCCEEDED reflects confirmed delivery (2.006704ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:49.7867314Z ✖ PR31 soldout badge zh-CN ACKNOWLEDGED reflects confirmed delivery (1.711655ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:49.7880742Z ✖ PR31 soldout badge zh-CN READY reflects confirmed delivery (1.873937ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:49.7896517Z ✖ PR31 soldout badge zh-CN DISPATCHING reflects confirmed delivery (1.600859ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:49.7944407Z ✖ PR31 soldout badge zh-CN UNKNOWN reflects confirmed delivery (1.324244ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1702460Z ℹ tests 105
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1702908Z ℹ pass 90
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1703123Z ℹ fail 15
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1733246Z ✖ PR31 soldout badge en SUCCEEDED reflects confirmed delivery (2.815329ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1734100Z   AssertionError [ERR_ASSERTION]: the existing delivery-state warning remains visible
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1741094Z ✖ PR31 soldout badge en ACKNOWLEDGED reflects confirmed delivery (2.11763ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1741849Z   AssertionError [ERR_ASSERTION]: the existing delivery-state warning remains visible
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1749958Z ✖ PR31 soldout badge en READY reflects confirmed delivery (2.186638ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1750858Z   AssertionError [ERR_ASSERTION]: the existing delivery-state warning remains visible
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1757801Z ✖ PR31 soldout badge en DISPATCHING reflects confirmed delivery (1.862746ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1758541Z   AssertionError [ERR_ASSERTION]: the existing delivery-state warning remains visible
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1764905Z ✖ PR31 soldout badge en UNKNOWN reflects confirmed delivery (1.332419ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1765623Z   AssertionError [ERR_ASSERTION]: the existing delivery-state warning remains visible
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1773718Z ✖ PR31 soldout badge zh-TW SUCCEEDED reflects confirmed delivery (1.480134ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1774415Z   AssertionError [ERR_ASSERTION]: the existing delivery-state warning remains visible
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1780848Z ✖ PR31 soldout badge zh-TW ACKNOWLEDGED reflects confirmed delivery (1.726523ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1781749Z   AssertionError [ERR_ASSERTION]: the existing delivery-state warning remains visible
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1787850Z ✖ PR31 soldout badge zh-TW READY reflects confirmed delivery (1.580921ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1788540Z   AssertionError [ERR_ASSERTION]: the existing delivery-state warning remains visible
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1794333Z ✖ PR31 soldout badge zh-TW DISPATCHING reflects confirmed delivery (1.614765ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1795020Z   AssertionError [ERR_ASSERTION]: the existing delivery-state warning remains visible
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1801114Z ✖ PR31 soldout badge zh-TW UNKNOWN reflects confirmed delivery (1.606499ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1801817Z   AssertionError [ERR_ASSERTION]: the existing delivery-state warning remains visible
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1808801Z ✖ PR31 soldout badge zh-CN SUCCEEDED reflects confirmed delivery (2.006704ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1809480Z   AssertionError [ERR_ASSERTION]: the existing delivery-state warning remains visible
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1816845Z ✖ PR31 soldout badge zh-CN ACKNOWLEDGED reflects confirmed delivery (1.711655ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1817550Z   AssertionError [ERR_ASSERTION]: the existing delivery-state warning remains visible
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1823401Z ✖ PR31 soldout badge zh-CN READY reflects confirmed delivery (1.873937ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1824070Z   AssertionError [ERR_ASSERTION]: the existing delivery-state warning remains visible
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1830539Z ✖ PR31 soldout badge zh-CN DISPATCHING reflects confirmed delivery (1.600859ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1831239Z   AssertionError [ERR_ASSERTION]: the existing delivery-state warning remains visible
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1837701Z ✖ PR31 soldout badge zh-CN UNKNOWN reflects confirmed delivery (1.324244ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1838399Z   AssertionError [ERR_ASSERTION]: the existing delivery-state warning remains visible
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:25:50.1855294Z ##[error]Process completed with exit code 1.
