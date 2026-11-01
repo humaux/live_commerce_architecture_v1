@@ -176,10 +176,14 @@ if (process.env.LC_BROWSER_PARITY_DENIED !== "1") test.describe("PARITY-LEFTOVER
         await priceInput.fill("10");
         await expect(priceInput).toHaveValue("10");
       });
-      for (const [control, expected] of [["+ 10", "20"], ["− 10", "10"]] as const)
+      for (const [control, expected, minor] of [["+ 10", "20.00", 2000], ["− 10", "10.00", 1000]] as const)
         await action(page, control, "click", `amount becomes ${expected}`, async () => {
           await panel.getByRole("button", { name: control, exact: true }).click();
           await expect(priceInput).toHaveValue(expected);
+          const value = await priceInput.inputValue();
+          expect(value).toMatch(/^\d+\.\d{2}$/);
+          const [whole, fraction] = value.split(".");
+          expect(Number(whole) * 100 + Number(fraction)).toBe(minor);
         });
       for (const mode of ["設為", "增加", "減少", "增加"] as const)
         await action(page, mode, "click", `visible operation summary is ${mode}`, async () => {
