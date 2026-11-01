@@ -1,4 +1,72 @@
-# PARITY-TEAM — ROUND 1 tests-only candidate (current 2026-11-01)
+# ROUND 3 — CURRENT implementation handoff (2026-11-01)
+
+The two integrator rulings are applied; detailed scope/deferrals/evidence are in [RULING.md](RULING.md). Older sections below are historical test-design/blocked-round records, not current status.
+
+Implemented signed member/pending cards, described role choices, review/result and read-only reconciliation. Invitation entry opens an unavailable state without sending; admin Continue stays disabled. Original RED assertions remain verbatim; added ruling tests await CI. E1 static checks passed; runtime parity/GREEN remains NOT_RUN pending the PR CI, with the explicit deferred-scope assertion conflict retained.
+
+## UI process — BOURDIEU (ROUND 3)
+
+Q1 task experience: first-time staff managers see five explained choices; experts have a short list/edit/review path. Q2 desktop/mobile facts stay the same. Q3 no arbitrary permissions matrix or new configuration. Q4 server owner/scope boundary and protected owners remain. Q5 review and receipt are distinct, uncertain results only re-read. Q6 aesthetics UNKNOWN until owner; signed frames are implemented without redesign. Formal Q1–Q6 source wording could not be retrieved without Humaux; these are bounded implementation judgments.
+
+## UI process — PROJECT UNDERSTANDING (ROUND 3)
+
+Read architecture §§0/1/2/26/27 (evidence labels, Go/PG authority, bounded product, isolated lane, independent verification); Q-TEAM in merchant-identity-v1 (pause remains); storefront-v2 §D via the signed handoff and existing DTO/client (five roles, owner management, server facts); ux-team DELIVERY current SPEC and backend-limits list (derived email label, no peer roster for non-owner, protected owner rows); original card/shared-shell exception; current ROUND 3 owner dispatch (no invitation outbox work, no admin result states). No contract was modified.
+
+## UI process — MOBBIN → EAGLE (ROUND 3)
+
+Read the existing Eagle folder `MVQL9YUYU0QJ0` through its existing local API: status success, 10 items, `evidence/r3-eagle.json`. Reused the signed handoff references: Ditto `MVRS62VY7RNF1` = identity before actions; Toggl `MVRS5Z1WG5DZ0` = described role radios; Instacart `MVOVLKC7JVR0I` = members/pending tabs. No new import, copied product imagery or brand. No new Mobbin query needed for this signed implementation.
+
+## UI process — FIGMA OFFICIAL GUIDANCE (ROUND 3)
+
+`output/ux-audit-ref/FIGMA-GUIDE.md` is absent in both this lane and read-only main, also documented by ux-team. Official guides read 2026-11-01: [auto layout](https://help.figma.com/hc/en-us/articles/360040451373-Guide-to-auto-layout-in-Figma) → responsive rows/stacks; [variants](https://help.figma.com/hc/en-us/articles/360056440594-Create-and-use-variants) → shared role/button state rendering; [variables](https://help.figma.com/hc/en-us/articles/15343107263511-Apply-variables-to-designs) → signed token colors/spacing; [reactions](https://developers.figma.com/docs/plugins/api/properties/nodes-reactions/) → no path beyond the disabled Continue. Fleet Bridge status had one connected document; bounded read-only get_design_context for `1468:74324` plus signed desktop list/admin editor/review PNGs informed layout. No Figma node changed; Figma copy lint NOT_RUN/not applicable to unchanged frames. Exact missing local guide conformance remains NOT_RUN.
+
+## Required fact parity (ROUND 3)
+
+| Desktop required field/fact | Mobile and review/result behavior | Evidence |
+|---|---|---|
+| Member email/derived label, role, joined date | Same card component at both widths; named review/result snapshot; latest list after writes | Existing RED real-route assertions + SHA-bound CI screenshots/ledger pending |
+| Null email; owner protection | Localized missing-email label; no remove/demotion for any owner | Existing list-owner-no-email/list-updated-owner cases, CI pending |
+| Five role permission lines, selected role | Same five radios; chosen role in review/result; admin Continue disabled | Existing role cases plus additive viewer→admin refusal, CI pending |
+| Pending email, role, sent and expiry | Same server instants formatted in Taipei; role retained in withdrawal review | Existing pending/revoke cases, CI pending |
+| Removal/access and withdrawal/link consequences | Identity and consequence in separate review/result states | Existing remove/revoke real-click cases, CI pending |
+| Uncertain action/person/selected role | One mutation; only read reconciliation; no repeated submit | Existing checking/unresolved cases, CI pending |
+| Invite email and availability | Typed email retained in unavailable state; zero send calls, no success | Additive R3 test in all three locales/widths, CI pending |
+| Non-owner own role | Own role only; no peer roster invented | Existing non-owner case, CI pending |
+
+Three-language table below retains every signed visible string. New template keys interpolate only role/date facts from the existing DTO; no fixture email/name/date is embedded in product source. Main screen checks cover all three locales; paused-send checks now also cover all three. No completed click/density or independent acceptance is claimed before CI.
+
+Static evidence: `r3-tsc.log`, `r3-check-packet.log`, `r3-depmap.log`, `r3-ownership.log`; allowed static commands only. No local tests/servers. Humaux store/canvas/coord and code index/link NOT_RUN (tools absent). Temporary dependency symlinks will be removed before handoff; existing unrelated evidence is retained.
+
+---
+
+# PARITY-TEAM — ROUND 2 current handoff (2026-11-01)
+
+Current relay `2026-11-01T07:14:22Z`: integration merge already current; exact-head browser/receipts/required logs re-read. The original card's existing-outbox constraint and signed unchanged-role frame conflict remain unresolved. See FIX1.md for the complete failing-case table and root evidence. No source/test edit, repair attempt, commit, push or new CI. Ownership generation/check, retention and diff check exit 0, no generated change. Humaux available after initial tool discovery. E3 RED only; implementation/GREEN NOT_RUN; WAIT_RUN: none.
+
+FIX1 current revalidation `2026-11-01T07:11:13Z`: merge already current; PR #476 remains tests-only head `89452970349f92219e1b1217868611f1a73057fe`. Re-read all three failed-job logs and current card/source/signed DELIVERY. Both transport-scope and four-frame entry-path STOP constraints remain; see FIX1.md. Artifact log/manifest/ledger hashes match. Ownership generation/check, retention and diff checks exit 0. Humaux available; no source/test edits, commit, push or local tests/server. GREEN NOT_RUN; WAIT_RUN: none.
+
+RELAY 4 revalidated at `2026-11-01T06:54:51Z`: fetched/merged integration (already up to date), read exact-head Gates failure and current source/SPEC. RED remains causal; both stop conditions below remain unresolved and PR comments contain no ruling. No implementation, assertion/selector change, commit or push. This session has no Humaux tools; shared store/canvas NOT_RUN. Only local handoff/red-log notes added; no local tests/server or background work. `WAIT_RUN: none`. Integrator must identify the existing invitation outbox or amend transport scope with assigned migration/token policy, and resolve the four no-op-role frames' real-user entry.
+
+Latest revalidation `2026-11-01T06:50:43Z`: Humaux search/get is available in this session; prior relay's unavailable-tools statement below applies only to that relay. Read current PR body/comments (no subsequent ruling), fetched/merged integration (already up to date), and bound both run metadata to exact head `89452970349f92219e1b1217868611f1a73057fe`. Re-read `Staff.Invite`, API sender wiring, migration 0089's explicit non-outbox declaration, migration 0090's mandatory `order_id` and closed mail-kind constraint, and signed SPEC rows for the unchanged-admin-role states. Both STOP conditions remain current; no product/test/selector change, commit, push, local test/server or new CI. Existing working-tree files retained. Source findings E1; RED receipt is E3 evidence of the expected failure only; completed product acceptance is NOT_RUN. WAIT_RUN: none. Integrator must supply the transport/scope and frame-path rulings before re-dispatch.
+
+**BLOCKED; implementation and GREEN NOT_RUN.** PR #476 head `89452970349f92219e1b1217868611f1a73057fe` has causal signed-UI RED: Gates `41279053547`, browser job `124769729983`, missing signed member-tab control at `tests/admin/parity-team.mjs:171`. Build passed; Foundation `41279053499` / `124767027990` passed. These receipts establish RED only, not completed product acceptance. Source findings below are E1; author PASS would be E0.
+
+Relay revalidation `2026-11-01T06:48:11Z`: fetched/merged integration (already up to date), re-read exact-head CI failures and current transport/SPEC sources; both stop conditions below remain. No implementation, assertion change, commit or push. Only this delivery and `red.log` receive this relay's revalidation note; pre-existing working-tree artifacts are retained. Humaux tools are unavailable in this relay, so shared-memory search/store/coord/canvas are NOT_RUN. No local tests/server or new background work; WAIT_RUN remains none.
+
+Fetched integration remains `4b8c04c7213025c173e260db6f9c81cb5b818c61`; merge reported already up to date. No product source, contract, RED assertion, selector, exemption or generated ownership file changed in ROUND 2. No local test/server or new CI started. Existing evidence PNG was present on entry and retained.
+
+## ROUND 2 stop conditions and required integrator rulings
+
+1. **Invitation transport:** the card requires the existing mail outbox, but `internal/identity/staff.go:189` sends directly after commit; `cmd/api/identity.go:316` supplies SMTP. Migration `0089_staff_team.sql:484` explicitly excludes an outbox and stores only token hashes. `notify.outbox` in migration 0090 requires an order and closed order-notification kinds; its worker drains order/meta-health notifications. No invitation enqueue/claim path was found in scoped identity/mail/notify/jobqueue/migrations searches. Required ruling: identify the existing invitation outbox, amend the card to permit the existing single-send adapter, or assign separate migration/contract/worker scope with token-storage policy. No queue, secret payload or cross-module backend change was invented.
+2. **Four unreachable frames:** signed SPEC requires `role-edit-admin` to disable Continue and send no write, yet also requires `role-confirm-admin` (`1468:78293`, `1468:78333`) and `role-done-admin` (`1468:78348`, `1468:78392`). The preserved real-click journey remains on the disabled editor. Required ruling: an approved real-user path or signed scope correction. No assertion was weakened and no frame was unilaterally deferred.
+
+`red.log` records raw CI commands/IDs. Full frame mapping, copy oracle and UI-process sections below remain the ROUND 1 test-design record; execution/coverage claims are not upgraded. Product implementation, runtime parity acceptance, pause-lift/outbox, GREEN, independent review, SANDBOX and LIVE remain NOT_RUN. Integrator owns re-dispatch after the rulings; WAIT_RUN is none.
+
+Humaux targeted search/grep, rejected representative enumeration (3/9, not exhaustive), original development rules and code map were available in ROUND 2. This integrator-dispatched lane does not independently claim work or delegate recursively; shared-state writes use its own subordinate canvas element and lock. Repository/card rules override general workflow defaults. No merge, auto-merge, status posting or production action.
+
+---
+
+# PARITY-TEAM — ROUND 1 tests-only candidate (historical)
 
 E1: static checks only. **RED NOT_RUN; GREEN NOT_RUN; no UI acceptance or completed card is claimed.**
 
@@ -449,3 +517,12 @@ Required integrator resolution: identify an existing invitation-capable outbox i
 ## Additional source discrepancy (not a new blocker)
 
 The referenced FEATURE-GAP.md §15 has K1–K8 rows; A2/A3 elsewhere describe password/code login and A9 lists staff. The dispatched card and signed ux-team delivery explicitly scope staff, so they govern that mapping. Current invitation issuance/acceptance already have live code entry points despite the Q-TEAM contract pause; the eventual RED test must measure the actual behavior, not assume a paused implementation.
+
+## FIX1 directed failure inventory — 2026-11-01
+
+BLOCKED; see `FIX1.md` for all 3 failed jobs and exact 168-case index. Gates 41279053547 / browser 124769729983 is expected tests-only RED (223 total, 55 pass, 168 fail), not a product implementation regression. Receipts 124775330079 and required 124775560803 are downstream. Downloaded artifact `gate-browser-admin-parity` (13072894279) archive digest `126260df4cd64fe05ff0be13935f217dc365540f15b6992e3ccd121df4c77201`; raw files stay ignored. Manifest has 164 unmatched captures; click ledger has zero entries. Base green run did not run this browser mode. Existing-outbox/migration scope and four no-op-role frame entry constraints remain unresolved after direct source reread. Two nav assertions also need reconciliation with the owner-approved shared shell. No product/test/assertion change, new commit or push. Ownership regeneration/check exit 0, no new diff. E3 proves causal RED only; GREEN/implementation/acceptance NOT_RUN. WAIT_RUN: none.
+
+
+## Latest FIX1 session
+
+FIX1 revalidation 2026-11-01T07:17:27Z: fetched and merged origin/r3/integration first; already up to date at 4b8c04c7213025c173e260db6f9c81cb5b818c61. PR #476 head remains 89452970349f92219e1b1217868611f1a73057fe. Fresh failed-job reads confirm expected tests-only RED (Gates 41279053547 / browser 124769729983, missing signed 員工名單); receipts 124775330079 and required 124775560803 are downstream. Original implementation card and signed DELIVERY were read at their authoritative read-only paths; staff.go:189 still sends after commit, 0089 explicitly excludes an outbox, and 0090 requires order_id and order-mail kinds. No permitted invitation enqueue interface found. Signed unchanged-role NOT_SENT/disabled Continue still conflicts with mandatory review/result frame coverage. PR comments contain no ruling. BLOCKED by original card STOP boundaries, not another fix attempt. Ownership generation/check, evidence retention and git diff --check exit 0; no generated diff. Existing ignored artifact log/manifest/ledger hashes match the inventory. No source/test edits, commit, push, local tests or server. E3 proves RED only; GREEN NOT_RUN; WAIT_RUN: none. Humaux tools are not exposed in this runtime: search/coord/store/canvas NOT_RUN; older availability statements below are historical and do not describe this runtime.

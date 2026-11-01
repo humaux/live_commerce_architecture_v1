@@ -157,7 +157,7 @@
     "tests/admin/parity-order-ops.spec.ts": "c2798ff760eb3fc5af1828da20359a3656efab5eec131fdb441352ff36836548",
     "tests/admin/parity-shell-browser.mjs": "d8ad69b11122351eb191146f57cd6b2bb8d74791a5a2f4bc2cbf568780b2330d",
     "tests/admin/parity-team-frames.json": "9fb9c61a026bfaffd81e3232cc625bd798b7c43580c8e03e171d2c150ef35e4b",
-    "tests/admin/parity-team.mjs": "27264713e3d96509096524a3b06733c54b6dcd6d6aac37ee2722d80d8a34faa8",
+    "tests/admin/parity-team.mjs": "7ff876032ca732452330e152eed4513d45cc7b504eb4920ef9656d7e5e8d18c6",
     "tests/admin/password-auth.spec.ts": "6f564f2b66f2b2ed666bac36b1f24a3d26cdabb00a4c59e4ac1e74b8c9dbd33d",
     "tests/admin/password-bff.test.ts": "a0aef82247f79280f4f950dee28cff5116c98be35e1d09898ddfee6d623922a4",
     "tests/admin/password-response-canaries.ts": "19567bd49311a0b0ba1f13923b29c48a4a90fbbc0a224772aacdd7bc3452c9fb",

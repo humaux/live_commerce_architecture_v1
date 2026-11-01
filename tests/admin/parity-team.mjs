@@ -369,6 +369,61 @@ export function registerTeamParity({ session, origin, store, output, sha }) {
     } finally { await context.close(); }
   });
 
+  // ROUND 3 additions only. Original RED journeys and their assertions above remain verbatim.
+  // The legacy send-success/no-op-result expectations remain visible until the integrator reconciles scope.
+  for (const locale of ["zh-TW", "zh-CN", "en"]) for (const viewport of viewports) test(`PARITY-TEAM R3 paused send ${locale} ${viewport.name}`, { timeout: 15000 }, async () => {
+    const { context, page } = await session({ width: viewport.width, height: viewport.height });
+    const f = fixtureState("list", store);
+    const firstClick = clicks.length; let completed = false;
+    try {
+      await f.install(page);
+      await page.goto(`${origin()}/${locale}/team?store=${store}`);
+      await click(page, translate("邀請員工", locale));
+      await page.getByRole("textbox", { name: translate("電子郵件", locale), exact: true }).fill("mei@example.test");
+      await page.getByRole("radio", { name: translate(roleLines[1], locale), exact: true }).check();
+      await click(page, translate("送出邀請", locale));
+      await expect(page.getByRole("heading", { name: translate("邀請郵件未送出", locale), exact: true })).toBeVisible();
+      await expect(page.getByText(translate("郵件服務暫時無法使用，現在無法邀請。", locale), { exact: true })).toBeVisible();
+      await expect(button(page, translate("邀請員工", locale))).toBeDisabled();
+      assert.equal(f.writes.length, 0, "paused send never calls SMTP or manufactures an invitation");
+      await click(page, translate("回到員工", locale));
+      await page.reload();
+      await expect(button(page, translate("員工名單", locale))).toBeVisible();
+      assert.equal(f.writes.length, 0, "refresh cannot submit a paused invitation");
+      completed = true;
+    } finally {
+      for (const row of clicks.slice(firstClick)) if (row.result === "clicked") row.result = completed ? "pass" : "fail";
+      await mkdir(`${output}/parity`, { recursive: true });
+      await writeFile(`${output}/parity/team-click-ledger.json`, JSON.stringify({ tier: "MOCK", sha, clicks }, null, 2) + "\n");
+      await context.close();
+    }
+  });
+
+  for (const viewport of viewports) test(`PARITY-TEAM R3 admin promotion unavailable ${viewport.name}`, { timeout: 15000 }, async () => {
+    const { context, page } = await session({ width: viewport.width, height: viewport.height });
+    const f = fixtureState("list", store);
+    const firstClick = clicks.length; let completed = false;
+    f.team.members[1].role = "viewer"; // SETUP only: existing DTO, another current role; no product state mutation.
+    try {
+      await f.install(page);
+      await page.goto(`${origin()}/zh-TW/team?store=${store}`);
+      await click(page, "變更角色");
+      await selectRole(page, "admin");
+      await expect(button(page, "繼續")).toBeDisabled();
+      assert.equal(f.writes.length, 0, "admin promotion has no submit path");
+      await click(page, "取消");
+      await page.reload();
+      await expect(page.getByText("僅供檢視 · 加入 10/12", { exact: true })).toBeVisible();
+      assert.equal(f.writes.length, 0);
+      completed = true;
+    } finally {
+      for (const row of clicks.slice(firstClick)) if (row.result === "clicked") row.result = completed ? "pass" : "fail";
+      await mkdir(`${output}/parity`, { recursive: true });
+      await writeFile(`${output}/parity/team-click-ledger.json`, JSON.stringify({ tier: "MOCK", sha, clicks }, null, 2) + "\n");
+      await context.close();
+    }
+  });
+
   test("PARITY-TEAM frozen oracle is the signed export, not application copy", () => {
     const source = readFileSync(new URL("../../output/parity-team/FRAME-COPY.md", import.meta.url));
     assert.equal(createHash("sha256").update(source).digest("hex"), oracle.source_sha256);

@@ -1,0 +1,39 @@
+/* Purpose: Match the signed staff content area while inheriting the shared admin shell.
+ * Depends on: shared CSS tokens and Team.tsx semantic controls.
+ * Used by: apps/admin/components/Team.tsx.
+ * Invariants: scoped selectors, 44px controls, responsive fact parity and no horizontal overflow.
+ */
+.team-page { max-width: none; margin: 0; color: var(--color-ink, #1f2937); }
+.team-page h1 { margin: 0 0 16px; font-size: 28px; line-height: 36px; font-weight: 600; }
+.team-page p { margin: 0; overflow-wrap: anywhere; line-height: 24px; }
+.team-page button, .team-page .team-actions a { min-height: 44px; padding: 10px 16px; border: 1px solid var(--color-border, #dfe5ed); border-radius: 8px; background: #fff; color: inherit; font-size: 14px; line-height: 22px; font-weight: 500; cursor: pointer; text-align: center; }
+.team-page button.primary { background: var(--color-primary, #0f766e); border-color: var(--color-primary, #0f766e); color: #fff; }
+.team-page button:disabled { opacity: .55; cursor: default; }
+.team-page button:focus-visible, .team-page input:focus-visible, .team-page a:focus-visible { outline: 2px solid var(--color-primary, #0f766e); outline-offset: 3px; }
+.team-page button:not(:disabled):hover { border-color: var(--color-primary, #0f766e); }
+.team-tabs { display: flex; gap: 12px; margin-bottom: 12px; }
+.team-tabs button { min-width: 160px; }
+.team-list { display: grid; gap: 12px; }
+.team-card { min-width: 0; padding: 16px; background: #fff; border: 1px solid var(--color-border, #dfe5ed); border-radius: 12px; }
+.team-card > * + * { margin-top: 12px; }
+.team-page .team-help { color: var(--color-muted, #596579); font-size: 13px; line-height: 20px; }
+.team-person { font-weight: 500; }
+.team-member-actions { display: flex; gap: 12px; }
+.team-member-actions button:first-child { min-width: 160px; }
+.team-member-actions button { min-width: 120px; }
+.team-actions { display: flex; gap: 12px; margin-top: 12px; }
+.team-actions > * { min-width: 160px; }
+.team-actions > .primary { min-width: 220px; }
+.team-email { display: grid; gap: 8px; font-size: 14px; }
+.team-email input { width: 100%; min-height: 44px; border: 1px solid var(--color-border, #dfe5ed); border-radius: 8px; padding: 10px 12px; font: inherit; }
+.team-roles { display: grid; gap: 12px; margin: 12px 0 0; padding: 0; border: 0; min-width: 0; }
+.team-roles label { display: flex; align-items: center; gap: 16px; min-height: 44px; padding: 6px 12px; font-size: 14px; line-height: 22px; cursor: pointer; }
+.team-roles input { appearance: auto; width: 20px; height: 20px; min-height: 20px; flex: 0 0 20px; margin: 0; padding: 0; accent-color: var(--color-primary, #0f766e); }
+.team-store { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+@media (max-width: 767px) {
+  .team-page h1 { font-size: 24px; line-height: 32px; margin-bottom: 12px; }
+  .team-tabs > button { min-width: 0; flex: 1; }
+  .team-actions { flex-direction: column; }
+  .team-actions > *, .team-actions > .primary { width: 100%; min-width: 0; }
+  .team-member-actions > button { min-width: 0; flex: 1; }
+}
