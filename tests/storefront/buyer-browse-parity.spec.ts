@@ -367,7 +367,7 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
         });
         await shot(emptySearchFrame, searchRoute);
 
-        // ===== Product list: heading, sort (selectOption), price filter (fill + apply), persistence ====================================
+        // ===== Product list: heading, real picker/select sort, price filter (fill + apply), persistence ====================================
         const listFrame = f("6:19772", "6:19859");
         const listRoute = `/${locale}/products`;
         const openList = async (query = "") => {
@@ -381,15 +381,20 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
         });
         await shot(listFrame, listRoute);
 
-        const sortBy = async (value: string) => {
-          await controls().getByLabel(c.sortBy).selectOption(value);
+        const sortBy = async (value: keyof typeof c.sortOptions) => {
+          if (isMobile) {
+            await controls().getByRole("button", { name: c.sortBy, exact: true }).click({ timeout: T });
+            await page.getByRole("button", { name: c.sortOptions[value], exact: true }).click({ timeout: T });
+          } else {
+            await controls().getByLabel(c.sortBy).selectOption(value);
+          }
           await page.waitForURL(new RegExp(`[?&]sort=${value}`), { timeout: T });
           await settle();
           await expect(controls()).toHaveCount(1, { timeout: T });
           await expect(controls().getByLabel(c.sortBy)).toHaveValue(value);
         };
         const ascFrame = f("782:3907", "782:4090");
-        await step(ascFrame, `${listRoute}?sort=price_asc`, "sort select", "selectOption price_asc", "URL carries sort=price_asc and card prices ascend", async () => {
+        await step(ascFrame, `${listRoute}?sort=price_asc`, isMobile ? "mobile sort picker" : "sort select", isMobile ? "click entry + price_asc" : "selectOption price_asc", "URL carries sort=price_asc and card prices ascend", async () => {
           await sortBy("price_asc");
           const prices = await cardPrices(page);
           assert(prices.length >= 3 && ascending(prices), `not ascending: ${prices}`);
@@ -397,7 +402,7 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
         });
         await shot(ascFrame, `${listRoute}?sort=price_asc`);
         const descFrame = f("782:3967", "782:4143");
-        await step(descFrame, `${listRoute}?sort=price_desc`, "sort select", "selectOption price_desc", "URL carries sort=price_desc and the first card's from-price is not below the last card's (sort key is the highest variant price, which the card does not show)", async () => {
+        await step(descFrame, `${listRoute}?sort=price_desc`, isMobile ? "mobile sort picker" : "sort select", isMobile ? "click entry + price_desc" : "selectOption price_desc", "URL carries sort=price_desc and the first card's from-price is not below the last card's (sort key is the highest variant price, which the card does not show)", async () => {
           await sortBy("price_desc");
           const prices = await cardPrices(page);
           assert(trendsDown(prices), `desc list does not trend down: ${prices}`);
@@ -405,7 +410,7 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
         });
         await shot(descFrame, `${listRoute}?sort=price_desc`);
         const titleFrame = f("782:4027", "782:4196");
-        await step(titleFrame, `${listRoute}?sort=title`, "sort select", "selectOption title", "URL carries sort=title and the selection is kept (list order not asserted)", async () => {
+        await step(titleFrame, `${listRoute}?sort=title`, isMobile ? "mobile sort picker" : "sort select", isMobile ? "click entry + title" : "selectOption title", "URL carries sort=title and the selection is kept (list order not asserted)", async () => {
           await sortBy("title");
           const titles = await page.getByTestId("product-card").locator(".sf-card__title").allTextContents();
           assert(titles.length >= 3, `expected a product list, got ${titles.length} cards`);
@@ -428,7 +433,7 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
           assert(prices.length >= 3 && prices.every((n) => n >= 15 && n <= 20), `price filter leaked: ${prices}`);
           return `prices ${prices.join(",")}`;
         });
-        await step(listFrame, listRoute, "sort select with active filter", "selectOption price_desc", "min and max survive the sort change; prices stay in range and trend down", async () => {
+        await step(listFrame, listRoute, "sort control with active filter", isMobile ? "click entry + price_desc" : "selectOption price_desc", "min and max survive the sort change; prices stay in range and trend down", async () => {
           await expect(controls()).toHaveCount(1, { timeout: T });
           await sortBy("price_desc");
           assert.equal(urlParams().get("min"), "15");

@@ -167,7 +167,9 @@ try {
   await p.goto(`${origin}/en/collections/tableware`);
   await expect(p.getByRole("heading", { level: 1 })).toHaveText("Tableware");
   assert.equal(await p.getByTestId("product-card").count(), facts.collections.find((c) => c.slug === "tableware").active_products);
-  await p.getByLabel(COPY.sortBy).selectOption("price_asc");
+  // This is the real phone context: use the mobile ordering page; keep the existing price oracle below.
+  await p.getByRole("button", { name: COPY.sortBy, exact: true }).click();
+  await p.getByRole("button", { name: COPY.sortPriceAsc, exact: true }).click();
   await p.waitForURL(/sort=price_asc/);
   const prices = (await p.getByTestId("product-card").locator(".sf-card__price > span:first-child").allTextContents()).map(num);
   assert(prices.length >= 3 && prices.every((n, i) => i === 0 || n >= prices[i - 1]), `not sorted ascending: ${prices}`);

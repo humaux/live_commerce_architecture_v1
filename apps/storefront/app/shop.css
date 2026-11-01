@@ -188,6 +188,22 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .sf-filter__actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 16px; }
 .sf-sort { order: 2; margin-left: auto; display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--sf-ink-2); }
 .sf-sort select { min-height: 44px; padding: 0 12px; border: 1px solid #cfcbc2; border-radius: var(--sf-radius); background: #fff; color: var(--sf-ink); font-size: 16px; }
+/* ListControls: signed 782:4249 full-page mobile ordering. Existing shell tokens remain unchanged;
+   Figma variable/token equivalence is a separate NOT_RUN check, not a new colour authority here. */
+.sf-sort-trigger { display: none; }
+.sf-mobile-sort { position: fixed; inset: 0; box-sizing: border-box; width: 100%; max-width: none; height: 100dvh; max-height: none; margin: 0; padding: 0; border: 0; border-radius: 0; overflow-y: auto; overscroll-behavior: contain; background: var(--sf-paper); color: var(--sf-ink); font-family: var(--sf-font); }
+.sf-mobile-sort::backdrop { background: var(--sf-paper); }
+.sf-mobile-sort__header { box-sizing: border-box; display: flex; align-items: center; min-height: 64px; padding-inline: var(--sf-gutter); background: #fff; color: var(--sf-ink-2); font-size: 18px; font-weight: 700; overflow-wrap: anywhere; }
+.sf-mobile-sort__body { padding: 24px var(--sf-gutter) max(24px, env(safe-area-inset-bottom)); }
+.sf-mobile-sort__body h2 { margin: 0; font-size: 28px; font-weight: 700; line-height: 44px; }
+.sf-mobile-sort__body > p { margin: 8px 0 16px; color: var(--sf-mute); font-size: 14px; line-height: 24px; }
+.sf-mobile-sort__options { display: flex; flex-direction: column; gap: 16px; }
+.sf-mobile-sort__options button { box-sizing: border-box; width: 100%; min-height: 44px; padding: 10px 14px; border: 1px solid var(--sf-line); border-radius: var(--sf-radius); background: #fff; color: var(--sf-ink-2); font: inherit; font-size: 14px; font-weight: 500; line-height: 22px; }
+.sf-mobile-sort__options button[aria-pressed=true] { border-color: var(--sf-ink-2); }
+@media (max-width: 719px) {
+  .sf-controls--enhanced .sf-sort { display: none; }
+  .sf-controls--enhanced .sf-sort-trigger { display: inline-flex; order: 2; align-items: center; justify-content: center; margin-inline-start: auto; min-height: 44px; padding: 8px 12px; border: 1px solid var(--sf-line); border-radius: var(--sf-radius); background: #fff; color: var(--sf-ink-2); font: inherit; font-size: 14px; }
+}
 
 /* ---- home sections ---- */
 .sf-hero { position: relative; display: flex; align-items: flex-end; min-height: min(74svh, 560px); background: #1b1e24; color: #fff; overflow: hidden; }
