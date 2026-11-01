@@ -148,3 +148,14 @@ relay1_GREEN=PENDING; exact new run ids will be posted in PR comment
 FIX2 directed batch RED authority: run 41111264414 attempt1; head b203046a7d6d4edbf0fcb5025bed628af40cb0ab; tested merge 3e20036a3cbb6c264fa97d04539c6f72230eccb5.
 Jobs 124259888171/124259888281/124259888520 = selected-brand no-effect; 124259889138 = 16 new CSS hex literals; 124259888066 = premature manual placement + 18 exact-address parity failures; 124259888133 = 2 CVS headers; nested product-ledger FAIL is expected negative control (parent PASS).
 Cascade aggregate124287916770/receipts124287916825/required124288056495. Native pointers + SHA256 in FIX2.md; raw downloads are not committed.
+
+# FIX2 Relay 1: new Foundation wait-ownership assertion (native CI RED)
+fix2_relay_head=e90671c378ee84c6d46598ff2178479a1bc004cd
+fix2_relay_tested_merge=dc96a6622931ea36f6da77f1112d7035e0761ea6
+fix2_relay_RED_run=41267274648 job=124732595997 step=Node_unit_suites exit=1
+fix2_relay_RED_assertion=tests/ci/gate-waits.test.mjs:18 browser gate scripts await every started wait before the next await
+fix2_relay_offenders=manual-order-link-gate.mjs:144 placed / :287 codPlaced; both started before awaited Review clicks
+fix2_relay_log_sha256=66c9f5cfd0177c1243e3a22e1ee0958e903de8bdfd7f3f82dad7ebab326a5428
+fix2_relay_fix=arm both response waits after review assertions; retain all assertions in order and existing Promise.all submit clicks
+fix2_relay_historical_Gates=41267274752 required_job=124736914798 success_ON_OLD_HEAD_ONLY
+fix2_relay_GREEN=PENDING; new head and WAIT_RUN ids in PR comment; no local tests

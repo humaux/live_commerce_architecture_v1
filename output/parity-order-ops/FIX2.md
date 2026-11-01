@@ -99,3 +99,25 @@ Hashes identify downloaded job-log bytes and extracted evidence-log bytes, not a
 |41111264414 / gate-browser-returns-ui|playwright.log|`76bbd447d7c227dffa648d787351144dff1493ab2aa1262c8718c15ad3a3eb0c`|
 |Figma 1431:70774, live read 2026-11-01|get_metadata depth4|`0fdd62070d27cf39eae463095b8011c55a90de7d63c3f2de3216691e53634695`|
 |Figma 1431:71469, live read 2026-11-01|get_metadata depth4|`a47765b8f1811fcbc228e8bb059711156a046bec6e17a17b68f16ef488180520`|
+
+## Relay 1 — Foundation wait ownership (2026-11-01)
+
+The relay names head `e90671c378ee84c6d46598ff2178479a1bc004cd`.
+Fresh `gh pr checks 364` and run metadata confirm Gates **41267274752** succeeded
+(required job **124736914798**, aggregate **124736851114**, receipts **124736850955**),
+while Foundation **41267274648** failed. These are historical receipts for that head,
+not acceptance of the following repair. Foundation checked synthetic merge
+`dc96a6622931ea36f6da77f1112d7035e0761ea6` against integration `da2cc7a3f`.
+
+|Failed job|Failing test / exact evidence|Class / root repair|
+|---|---|---|
+|124732595997 `foundation`, Node unit suites|`tests/ci/gate-waits.test.mjs:18`, `browser gate scripts await every started wait before the next await`; actual offenders `manual-order-link-gate.mjs:144 placed` and `:287 codPlaced`, each followed by `await merchant.getByRole("button", {name: "Review order", exact: true}).click()` before awaiting the response promise. Node block: 336 tests, 335 pass, 1 fail, 0 skipped; exit1.|(b) FIX2 added review clicks/assertions after creating the final-placement response wait. Move both response listeners after review assertions, immediately before their existing Promise.all with the submitting real click. This prevents a review failure abandoning a live waiter and masking the original failure. All assertions and their order remain unchanged; no timeout, fixture, guard or product source changes.|
+
+- Before edits: fetched `origin/r3/integration`; merge returned `Already up to date`.
+- This is the first directed fix of the new wait-ownership blocker; the prior manual-order runtime test is GREEN on `e90671c3`. If this exact assertion remains red, stop and report BLOCKED; no third approach.
+- Raw failed-job log SHA-256: `66c9f5cfd0177c1243e3a22e1ee0958e903de8bdfd7f3f82dad7ebab326a5428`; retrieve via `gh run view 41267274648 --job 124732595997 --log-failed`. No raw log/artifact committed.
+- Static receipts: `node --check tests/storefront/manual-order-link-gate.mjs`, browser-ownership generation and `--check` each exit0. Ownership manifest regenerated because the runner content hash changed. No Go dependency changed; depmap regeneration is unnecessary for this relay.
+- Scope: only the existing card runner, generated ownership manifest and `output/parity-order-ops/{FIX2.md,DELIVERY.md,red.log}`. No new additional path beyond the previously declared merchant setup runner.
+- Rollback point before repair: `e90671c378ee84c6d46598ff2178479a1bc004cd`.
+- No local tests/servers/build/browser/PG/container or production action. Humaux store/canvas/coord and code-index tools unavailable; NOT_RUN. New-head GREEN and independent E4 review PENDING. Evidence: historical CI E3, syntax E1, author assessment E0.
+- One repair push; new head and Gates/Foundation WAIT_RUN ids will be posted in a PR comment. Integrator relays conclusions in a fresh session. No evidence-only follow-up push.

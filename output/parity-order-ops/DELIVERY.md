@@ -267,3 +267,17 @@ Humaux search/store/canvas/coord NOT_RUN (tools unavailable). No production/SAND
 acceptance claimed. Same blocker after this batch → BLOCKED; no third approach.
 
 FIX2 static commands: six node --check commands, bash -n and depmap generation exit0; Go dependency map unchanged. Browser-ownership generation/check exit0. Evidence-retention is rerun on committed HEAD before push, with the exact receipt in the PR comment.
+
+### FIX2 Relay 1 — response-wait ownership
+
+Head `e90671c378ee84c6d46598ff2178479a1bc004cd`: Gates run41267274752
+succeeded (required job124736914798); Foundation run41267274648/job124732595997
+failed `tests/ci/gate-waits.test.mjs:18` on the two final-placement response waits
+created before awaited Review clicks. Failed-job log SHA-256:
+`66c9f5cfd0177c1243e3a22e1ee0958e903de8bdfd7f3f82dad7ebab326a5428`.
+The repair moves each listener after the review assertions, immediately before its
+existing Promise.all/submitting click. Assertions and their order are preserved.
+No product UI/copy/design changed; the four FIX2 UI-process sections above still apply.
+Syntax and browser-ownership generation/check exit0 (E1); historical CI is E3,
+new-head GREEN/independent acceptance PENDING, author assessment E0. Full table,
+rollback and NOT_RUN boundaries: FIX2.md, Relay 1. No raw downloaded evidence committed.
