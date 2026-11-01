@@ -145,3 +145,73 @@ COD delegation), `TestReturnRoutesTransportRules`/`TestReturnCodesReachJSONBody`
   every legacy cancelled `READY` row including open-gap ones and spares a `REVIEW_REQUIRED` row and a `CONFIRMED` order's `READY` row, the backfill block refuses a non-bypass role and fails on a
   suppressed delete), `TestBuyerPaymentCaptureACLAndObservationBinding` (only `commerce_checkout_writer` holds `DELETE` on the work-item table, nobody a wider table privilege), R2 migration count
   pin +1 (87 -> 88; PAY-RM1's 0161 is 87).
+
+## Amendment 0210 — buyer after-sales applications (FEAT-BUYER-RMA, 2026-10-31)
+
+Authority: owner card FEAT-BUYER-RMA and integrator ruling 2026-10-31; production Figma page `4:8829`, buyer `26:773/26:1050/26:815/26:1087`, merchant `30:1662/30:1731/30:1757/30:1818`.
+Supersedes: the card's initial proposal to add `requested` to the existing RMA state machine and its tentative delivered+7 default. This amendment is additive; §§1–8 and Amendment 0162 remain unchanged.
+
+### Storage, status and authority
+
+Migration **0217_buyer_return_requests.sql** adds `returns.buyer_requests`, `buyer_request_lines` and actor-scoped `buyer_request_receipts`, all FORCE RLS. No runtime/issuer has direct SELECT/INSERT/UPDATE/DELETE on them. Definers own all access; scope comes from the resolved buyer capability or merchant session, never JSON, Host or a supplied tenant. Existing buyer capability is required (same signed-cookie BFF); guest lookup/view-only sessions are forbidden. Another buyer/store/tenant's ID is indistinguishable from a nonexistent ID (`404 not_found`).
+
+An application has `requested → approved | rejected | withdrawn`, version 1 → 2. These are separate from `returns.rmas` and its unchanged `REGISTERED → RECEIVED → INSPECTED → CLOSED` / cancellation flow. Approval calls **the existing `returns.register_rma`** in the same transaction and stores `return_id`. Existing RMA quantity/state/refund constraints still apply. Any refusal rolls back the request decision, RMA, receipt and legacy audit together. Rejection requires a nonblank bounded merchant reason. Withdrawal is buyer-only and requires requested status. Approval/rejection is merchant-only. Refund initiation, stock decisions, receipt/inspection/close/cancel remain existing merchant endpoints; this card performs no payment, stock or external notification write.
+
+### Endpoints
+
+All paths below are exact (no trailing slash, alias, query or HEAD). Buyer BFF mirrors the four buyer endpoints below under `/api/buyer`; no new UI page. Every success is private/no-store and is returned only after COMMIT.
+
+| Method + path | Authority | Request | Success |
+|---|---|---|---|
+| `POST /v1/buyer/orders/{order_id}/return-requests` | full buyer capability, own order | create JSON below + Idempotency-Key | 201 Request |
+| `GET /v1/buyer/return-requests` | full buyer capability | no body/key | 200 `{items: Request[]}` |
+| `GET /v1/buyer/return-requests/{request_id}` | full buyer capability, own application | no body/key | 200 Request |
+| `POST /v1/buyer/return-requests/{request_id}/withdraw` | full buyer capability, own requested application | `{expected_version:1}` + key | 200 Request |
+| `GET /v1/admin/stores/{store_id}/return-requests` | `orders:read` on server-authorized store | no body/key | 200 `{items: Request[]}` |
+| `GET /v1/admin/stores/{store_id}/return-requests/{request_id}` | `orders:read` | no body/key | 200 Request |
+| `POST /v1/admin/stores/{store_id}/return-requests/{request_id}/approve` | `fulfillment:write` | `{expected_version:1}` + key | 200 Request, approved + RMA link |
+| `POST /v1/admin/stores/{store_id}/return-requests/{request_id}/reject` | `fulfillment:write` | `{expected_version:1,reason:"測試拒絕原因"}` + key | 200 Request, rejected |
+
+List order: newest `(created_at DESC, id)` first, at most 100 applications; exact-ID detail remains available for earlier records. No new OpenAPI/JSON schema file: returns-v1 has no owning module OpenAPI; this amendment and the typed closed Go/TS DTOs specify the interface. Merchant admin UI/BFF adoption belongs to PARITY-NEWFEAT; the four merchant Go endpoints are available for that card.
+
+Create JSON (all synthetic data):
+```json
+{"reason":"damaged","note":"測試商品縫線需要確認","lines":[{"sku_id":"33333333-3333-4333-8333-333333333333","warehouse_id":"44444444-4444-4444-8444-444444444444","quantity":1}]}
+```
+`reason` is the closed enum **`damaged`** (商品有瑕疵, evidenced in the approved frame). Additional dropdown values are UNKNOWN; no speculative choices are added. `note` is optional, default empty, ≤1000 Unicode code points, no control characters. `lines` contains 1–50 unique (warehouse, SKU) selections; integer quantity 1–999999999. Warehouse may be omitted and is server-resolved; ambiguous SKU across warehouses is refused. Unknown or duplicate JSON keys, null values and client `tenant_id/store_id/owner_id/amount_minor/photos` are refused. Photos: **DEFERRED** because the existing buyer media transport is read-only; do not accept a photo URL or an unscoped media ID.
+
+Request JSON:
+```json
+{"id":"11111111-1111-4111-8111-111111111111","number":"R-11111111111141118111111111111111","order_id":"22222222-2222-4222-8222-222222222222","status":"requested","version":1,"reason":"damaged","note":"測試商品縫線需要確認","rejection_reason":null,"return_id":null,"return_state":null,"created_at":"2026-10-30T12:00:00Z","updated_at":"2026-10-30T12:00:00Z","lines":[{"sku_id":"33333333-3333-4333-8333-333333333333","warehouse_id":"44444444-4444-4444-8444-444444444444","quantity":1}],"timeline":[{"status":"requested","at":"2026-10-30T12:00:00Z"}]}
+```
+`number` is a stable `R-` followed by the 32 hex characters of the request UUID, unique per store; the frame's R-1001 is illustrative, not an ID-sequence promise. A terminal transition appends `{status,at}` to the derived chronological timeline. Approved detail reads the linked RMA's **current** `return_state`; command retries replay the original stored snapshot. No authority IDs, buyer contact, tokens or upstream errors are projected.
+
+### Capacity, windows, idempotency and conflicts
+
+All creations and decisions lock the order first, then the application. One **requested** application per order line at a time (even when it requests fewer units). Rejected/withdrawn applications free that slot. Approved applications are terminal; their linked non-CANCELLED RMA consumes quantity through the existing RMA capacity calculation, without double counting. Quantity may not exceed the actual shipped reservation line minus all non-CANCELLED RMAs. A merchant may register an RMA independently; approval rechecks quantity through the existing function and can be refused while leaving the application requested.
+
+Named SQL constants: **`collected_window = 7 days`** from trusted `checkout.orders.collected_at`, otherwise the first server-recorded CVS `PICKED_UP` event's `received_at`; **`manual_shipped_window = 14 days`** from the first merchant-recorded SHIPPED version (`recorded_at`, seven days transit allowance plus seven days cooling-off). Prefer trusted collection/pickup to manual shipment. No trustworthy start fact fails closed with `window_closed`. Check `clock_timestamp() > start + window` after locking. No client clock. Existing merchant RMA creation has no buyer-window restriction. Approval of an already-submitted application has no new deadline.
+
+Every mutation requires one key matching `[A-Za-z0-9_.:-]{8,128}`. Receipts are scoped to tenant/store + `buyer:<owner>` or `merchant:<principal>` + operation. SQL hashes canonical JSON including target ID, lines in supplied order, reason/note or expected version; exact canonical retry returns the stored original body, status and ID even after a terminal transition or window expiry. Changed payload under that key returns `409 conflict`. An actor/key advisory lock plus order lock serializes even the same key used on two different orders. Authorization is checked before replay and again before returning. Mutations never auto-retry. A fresh decision requires the current expected_version; stale version is `409 version_changed`; current terminal version is `409 invalid_state`.
+
+### Refusals and retention
+
+Common sanitized error envelope: `{code,message,request_id,retryable,details:{}}`; no body/notes/driver details are logged or returned as errors.
+
+| HTTP | Codes |
+|---|---|
+| 400 | `invalid_json` (unknown/duplicate/null/invalid-type JSON) |
+| 401 | `unauthorized` (missing BFF credential/capability, expired/revoked session) |
+| 403 | `forbidden` (view-only capability, wrong origin/context authority, missing staff permission) |
+| 404 | `not_found` (unknown/foreign owner/store/tenant ID, disabled surface) |
+| 405 | `method_not_allowed` |
+| 409 | `window_closed`, `request_open`, `version_changed`, `invalid_state`, `not_shipped`, `not_returnable`, `conflict`; BFF `context_changed` |
+| 415 | `json_required` |
+| 422 | `invalid_request`, `unknown_line`, `ambiguous_line`, `exceeds_shipped`, `invalid_quantities` |
+| 503 | `unavailable` (transport/internal failure); existing merchant deadlock handling may return `retry_later` |
+
+Retention: application, selected lines and command receipts persist with the order; no automatic expiry or purge is introduced. Existing privacy/retention policy remains authoritative (`customers-billing-v1` §3/§5); its commercial-record retention period is UNKNOWN and this card invents none. New notes/rejection reasons are transactional records; no analytics/log export, public projection, email or Meta side effect. No delete endpoint or cascade; any approved order-retention purge must include these dependent records and receipts. Customer-erasure integration for these new free-text fields requires a separate privacy review before production rollout; no production acceptance is claimed by this card.
+
+### Gate
+
+CI-only: `TestBuyerReturnRequests` BR01–BR08 + `TestBuyerReturnRequestTableACL` (REAL_PG); `TestBuyerReturnRequestTransport`; `buyer-return-server.test.mjs` (MOCK upstream, actual BFF boundary). Coverage includes lifecycle, scope/permission refusal, validation, replay/drift, CAS/races, capacity, window facts, failed approval atomicity, existing RMA progression and no-money/stock invariants. Causal tests-only RED: Foundation run **41093678360**, job **124193777832**, head `be932cbb` (two new BFF assertions, 404≠201/503). Implementation GREEN/independent review: PENDING until this PR's current-head CI and integrator acceptance. Local tests/servers: NOT_RUN (prohibited). UI: pending PARITY-NEWFEAT.

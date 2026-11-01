@@ -55,3 +55,7 @@ Real Next -> Go -> isolated PostgreSQL, not browser mocks alone:
    accessible list controls, empty/loading/error and navigation back work.
 5. Existing 15-case order gate and 13-case purchase gate remain valid. Independent
    source/test and bounded visual review before declaring this increment accepted.
+
+## Additive after-sales pointer (0210, 2026-10-31)
+
+Owned buyer after-sales applications and linked merchant RMA state use **contracts/returns-v1.md, Amendment 0210**. This does not change history pagination, checkout continuation, money movement or view-only guest capability rights.

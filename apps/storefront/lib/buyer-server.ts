@@ -1,14 +1,8 @@
-// BFF for /api/buyer/* -> Go /v1/buyer/* (internal/buyer, internal/checkout). Payment routes:
-//   GET orders/{id}/payment; POST .../payment/prepare (keyed, body), .../handoff|refresh|cancel
-//   (keyless, nonretryable; Go HostedPaymentStarter Begin/Take/RefreshPayment/CancelPayment).
-// Every success body is re-validated with lib/payment-contract.ts before it reaches the browser.
-// CVS (taiwan-cvs-logistics-v1 §5.2, §16.1): exactly POST cvs-selections (keyed), GET cvs-selections/{id},
-// POST cvs-selections/{id}/verify (keyless, no body) and POST cvs-stores (keyed) -> Go internal/buyerhttp/cvs.go;
-// bodies and answers are re-validated with lib/cvs-contract.ts. No generic proxying.
-// Guest order lookup (storefront-v2 §E5): exactly POST orders/lookup -> Go internal/buyerhttp/lookup.go. It is the one route that needs no
-// cookie: the BFF mints a fresh token like session/prepare, sends it as the bearer and sets the cookie ONLY on a 200 (lookup() below).
-// Bank transfer (storefront-v2 §C): exactly GET orders/{id}/bank-transfer and PUT orders/{id}/bank-transfer/proof (keyed) ->
-// Go internal/buyerhttp/transfer.go; body and answer re-validated with lib/bank-transfer-contract.ts.
+// Purpose: private buyer BFF with closed endpoint/body/response admission, including after-sales requests.
+// Depends on: signed cookie/context helpers, closed contract validators and private Go buyer transport.
+// Used by: /api/buyer catch-all route and CI BFF tests.
+// Invariants: server-resolved scope, no generic proxy, no credential disclosure or mutation retry.
+import * as buyerReturns from "./buyer-returns.ts";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
 import { readAdSignals, readAdTouch } from "./ad-touch.ts";
@@ -93,7 +87,8 @@ type Route = {
     | "cvsStore"
     | "transferProof"
     | "lookup"
-    | "link";
+    | "link"
+    | buyerReturns.BuyerReturnBody;
   query?: "catalog" | "options" | "orders";
   session?: string;
   payment?: "view" | "prepare" | "handoff" | "refresh" | "cancel";
@@ -111,9 +106,10 @@ type Route = {
   lookup?: boolean;
   // Manual-order buyer link exchange (storefront-v2 G3): same cookie-less, mint-a-token handling as the guest lookup, other private path and body.
   link?: boolean;
-};
+} & buyerReturns.BuyerReturnFields;
 
 const messages: Record<string, string> = {
+ ...Object.fromEntries(buyerReturns.RETURN_REQUEST_CODES.map(code=>[code,"Request refused."])),
   unauthorized: "Session unavailable.",
   forbidden: "Request not permitted.",
   not_found: "Resource not found.",
@@ -426,6 +422,8 @@ function route(
       route: selected ? { ...selected, method } : undefined,
     };
   }
+  const returnRoute = buyerReturns.buyerReturnRoute(suffix, method);
+  if (returnRoute) return returnRoute;
   const payment =
     /^orders\/([^/]+)\/payment(?:\/(prepare|handoff|refresh|cancel))?$/.exec(
       suffix,
@@ -632,6 +630,7 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
     expected_cod_surcharge_minor: "integer",
     buyer_email: "string",
   },
+  ...buyerReturns.buyerReturnBodies,
   transferProof: {
     last5: "string",
     amount_minor: "integer",
@@ -697,6 +696,7 @@ function extraShapeOK(shape: Shape, parsed: unknown): boolean {
       (v.payment_mode === undefined || isPaymentMode(v.payment_mode)) &&
       (v.buyer_email === undefined || validBuyerEmail(v.buyer_email))
     );
+  if (!buyerReturns.validBuyerReturnBody(shape, parsed)) return false;
   if (shape === shapes.lookup) return validLookupBody(parsed);
   if (shape === shapes.link) return validLinkBody(parsed);
   if (shape === shapes.transferProof)
@@ -1072,7 +1072,7 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
     request.method === "POST" &&
     /^\/api\/buyer\/session\/(?:prepare|reset)$/.test(pathname);
   const fail = (status: number, code: string) =>
-    failure(status, code, changingCookie || handoff);
+    failure(status, code, changingCookie || handoff || buyerReturns.isBuyerReturnMutation(request));
   let cfg: Config | null;
   try {
     cfg = config();
@@ -1144,7 +1144,7 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
     return fail(409, "context_changed");
   let body: string | undefined;
   if (target.body) {
-    const result = await bodyJSON(request, shapes[target.body], changingCookie);
+    const result = await bodyJSON(request, shapes[target.body], changingCookie || buyerReturns.isBuyerReturnMutation(request));
     if (result.error) return result.error;
     // Go privacyExport takes no body (internal/buyerhttp noBody → 422); the browser hop's {} stops here.
     body = target.privatePath === "privacy/export" ? undefined : result.body;
@@ -1257,10 +1257,11 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
     gone.headers.append("Set-Cookie", revoked["Set-Cookie"]);
     return gone;
   }
-  if (!response.ok) return upstreamError(response, handoff);
-  const data = await upstreamJSON(response, !!target.payment);
+  if (!response.ok) return upstreamError(response, handoff || !!target.returnRequest);
+  const data = await upstreamJSON(response, !!target.payment || !!target.returnRequest);
   if (request.signal.aborted || data === null || typeof data !== "object")
     return fail(503, "unavailable");
+  if (!buyerReturns.validBuyerReturnResponse(target, response.status, data)) return fail(503, "unavailable");
   if (
     target.cvs &&
     (![200, 201].includes(response.status) ||
@@ -1324,5 +1325,6 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
     return success(data, {
       "Content-Disposition": 'attachment; filename="my-data.json"',
     });
+  if (target.returnRequest === "create") return Response.json(data, { status: 201, headers: headers() });
   return success(data);
 }

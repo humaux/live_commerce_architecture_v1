@@ -36,7 +36,7 @@
   },
   {
     "table": "buyerhttp.Routes",
-    "dispatcher_sha256": "bfbb4441b77afb0b48f0c3bd0c326b75e276a528fa54e588a645cbe0f814c43a",
+    "dispatcher_sha256": "aff6d24766226f455bea9be08b2de8abad3643a71951ad05ede717c28c127c05",
     "functions": [
       "RouteTable.HasPrefix",
       "admittedPaymentMethod",
@@ -76,6 +76,7 @@
       "handler.privacyExport",
       "handler.privacyGet",
       "handler.quoteWithCodDue",
+      "handler.returnRequest",
       "handler.storeMedia",
       "handler.transferRequest",
       "handler.viewOnly",
@@ -84,6 +85,7 @@
       "isKeylessPaymentRoute",
       "isPaymentRoute",
       "isPublicRoute",
+      "isReturnRequestRoute",
       "keyFor",
       "keylessPaymentPath",
       "lookupClientIP",
@@ -129,6 +131,7 @@
       "const maxJSON",
       "const orderLinkPath,routeOrderLink",
       "const routeCVSSelectionGet,routeCVSSelectionOpen,routeCVSSelectionVerify,routeCVSStoreEnter",
+      "const routeReturnRequestCreate,routeReturnRequestDetail,routeReturnRequestList,routeReturnRequestWithdraw",
       "const routeTransferGet,routeTransferProof",
       "const v2DefaultLimit,v2MaxLimit,v2MaxMinorMoney,v2MaxOffset,v2MaxQuery,v2Prefix",
       "func RouteTable.HasPrefix",
@@ -169,6 +172,7 @@
       "func handler.privacyExport",
       "func handler.privacyGet",
       "func handler.quoteWithCodDue",
+      "func handler.returnRequest",
       "func handler.storeMedia",
       "func handler.transferRequest",
       "func handler.viewOnly",
@@ -177,6 +181,7 @@
       "func isKeylessPaymentRoute",
       "func isPaymentRoute",
       "func isPublicRoute",
+      "func isReturnRequestRoute",
       "func keyFor",
       "func keylessPaymentPath",
       "func lookupClientIP",
@@ -274,6 +279,6 @@
       "var linkTokenPattern",
       "var v2Slug"
     ],
-    "reviewed": "2026-10-28 integrator + independent review (Opus, OC-09b quoteWithCodDue + quoteResponse.CodDueMinor; output/buyer-route-table/review-oc09b-pin.md)"
+    "reviewed": "pending independent review; output/buyer-route-table/FEAT-BUYER-RMA-FIX2-pin-candidate.md"
   }
 ]

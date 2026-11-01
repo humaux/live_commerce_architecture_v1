@@ -1,0 +1,36 @@
+FEAT-BUYER-RMA causal assertion RED — verified 2026-10-31
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/395
+Tests-only head: be932cbb748c3c88a1044ffcf242c6e04333a8b4
+Foundation run: 41093678360
+Foundation job: 124193777832
+https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41093678360/job/124193777832
+Read command: gh run view 41093678360 --log-failed --job 124193777832 | tail -65
+Job step: Node unit suites (storefront, i18n), exit 1.
+apps/storefront/tests/buyer-return-server.test.mjs:67
+  BR-BFF exact buyer request routes, cookie authority, keyed create/withdraw and safe persisted projections
+  AssertionError [ERR_ASSERTION]: buyer request BFF create must be reachable; actual 404, expected 201.
+apps/storefront/tests/buyer-return-server.test.mjs:141
+  BR-BFF rejects unsafe upstream projection and preserves closed refusal codes without body leakage or retry
+  AssertionError [ERR_ASSERTION]: invalid request projection must fail closed; actual 404, expected 503.
+Node totals: tests 504; pass 502; fail 2; skipped 0; cancelled 0; todo 0.
+Causal new-assertion RED (not compilation/setup failure). No Go/REAL_PG assertion RED inferred.
+Other tests-only Gates workflow: 41093678473; queued at relay inspection; never a GREEN claim.
+Raw filtered tail retained locally: red-foundation.log. No tests ran locally.
+
+Supplemental RELAY1 RED (implementation head, not a new tests-only receipt):
+head 04dd888780f01f14462b6aea166576327ff6225a
+Gates41109119625 plan124246578308: BFF_NO_GO GET return-requests/{}/withdraw and POST return-requests/{}; METHOD_MISMATCH for both paths; errors=4.
+Foundation41109119831 job124246577086: contract-drift repeats those same four errors; exit1.
+Gates41109119625 required124248826936: propagates plan failure; dependent gates/receipts skipped.
+Raw filtered original logs: FIX2-relay1-plan-red.log, FIX2-relay1-foundation-red.log.
+
+FIX5 directed RED — re-read 2026-11-01; no new tests-only push required by card.
+Head: b6fd187b942b72164f6b0d6b5fb187afd8960067.
+Gates run 41275151042 / job 124756434727 (shard:g10): BR01-BR08 fail
+buyer_http_test.go:108's exact safe-header assertion. BR05 logs two header
+failures at buyer_return_requests_test.go:320 before :334 reports 0 created 0 refused.
+Gates run 41275151042 / job 124756434661 (bundle:09): G-UI3/G-UI5 asserts
+apps/storefront/lib/buyer-server.ts: lines 1370 > 1331.
+Read commands: gh run view 41275151042 --log-failed --job <job-id>, filtered
+with rg and tail. Both reads exit 0. Automated failure evidence E3 at that head;
+no current implementation GREEN or independent acceptance inferred.

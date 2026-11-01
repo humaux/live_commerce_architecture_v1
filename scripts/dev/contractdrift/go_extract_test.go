@@ -312,7 +312,7 @@ func TestGoRepositoryInventory(t *testing.T) {
 		file, facade string
 		count        int
 	}{
-		{"internal/buyerhttp/routes.go", "Routes", 46},
+		{"internal/buyerhttp/routes.go", "Routes", 50},
 		{"internal/attribution/feed.go", "FeedRoutes", 2},
 	} {
 		expected := repositoryTableRows(t, root, table.file, table.facade)
