@@ -871,6 +871,9 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
                 await expect(task().getByTestId("buy-now")).toHaveCount(0);
                 await expect(task().getByTestId("add-to-cart")).toHaveCount(1);
                 await expect(task().getByTestId("add-to-cart")).toHaveText(`${c.addToCart} · ${price(selected.price_minor)}`);
+                await page.mouse.move(0, 0);
+                await expect(task().getByTestId("add-to-cart")).toHaveCSS("background-color", "rgb(20, 41, 66)");
+                await expect(task().getByTestId("add-to-cart")).toHaveCSS("color", "rgb(255, 255, 255)");
                 const imageID = selected.image_id ?? detail.images[0]?.id;
                 if (imageID) await expect(summary.locator("img")).toHaveAttribute("src", new RegExp(`/media/p/${detail.id}/${imageID}(?:\\?|$)`));
                 else notRun.push({ frame, locale, subcase: "summary image", reason: "existing real product has no server image" });
