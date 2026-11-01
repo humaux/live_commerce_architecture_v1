@@ -41,7 +41,7 @@ async function login(page: Page) {
   } else await expect(page.getByTestId("nav-orders")).toBeVisible();
 }
 
-test.describe("PARITY-LEFTOVERS signed frames (BROWSER MOCK)", () => {
+if (process.env.LC_BROWSER_PARITY_DENIED !== "1") test.describe("PARITY-LEFTOVERS signed frames (BROWSER MOCK)", () => {
   test.afterEach(async ({ page }, info) => {
     await mkdir(path.join(evidence, "parity"), { recursive: true });
     const file = path.join(evidence, "parity", `clicks-${info.testId.replace(/[^a-z0-9-]/gi, "-")}.json`);
@@ -271,6 +271,31 @@ test.describe("PARITY-LEFTOVERS signed frames (BROWSER MOCK)", () => {
         await expect(page).toHaveURL((url) => url.pathname === "/zh-TW/messages/templates/new" && url.searchParams.get("store") === store);
         await expect(page.getByRole("button", { name: /^(發布|發送|傳送)$/ })).toHaveCount(0);
       });
+      expect(writes).toEqual([]);
+    });
+  }
+});
+
+if (process.env.LC_BROWSER_PARITY_DENIED === "1") test.describe("PARITY-LEFTOVERS denied live management (real signed identity, MOCK read)", () => {
+  for (const mobile of [false, true]) {
+    test(`消息模板 zh-TW ${mobile ? "mobile" : "desktop"}: read allowed, management denied`, async ({ page }) => {
+      await page.setViewportSize({ width: mobile ? 390 : 1440, height: mobile ? 844 : 900 });
+      await login(page);
+      const writes: string[] = [];
+      page.on("request", (request) => { if (!["GET", "HEAD"].includes(request.method())) writes.push(`${request.method()} ${new URL(request.url()).pathname}`); });
+      await page.goto(`${origin}/zh-TW/messages/templates?store=${store}`);
+
+      await expect(page.getByRole("heading", { name: mobile ? "消息模板" : "消息範本", exact: true })).toBeVisible();
+      const add = page.getByRole("button", { name: "＋ 新增自訂範本", exact: true });
+      await expect(add).toBeVisible();
+      await expect(add).toBeDisabled();
+      await expect(add).toHaveAttribute("aria-describedby", "template-manage-required");
+      await expect(page.getByText("需要管理直播的權限才能新增範本。", { exact: true })).toBeVisible();
+
+      await page.goto(`${origin}/zh-TW/messages/templates/new?store=${store}`);
+      await expect(page.getByRole("heading", { name: "目前無法開啟此頁", exact: true })).toBeVisible();
+      await expect(page.getByText("此連結無法開啟，或目前帳號沒有此操作權限。請返回可用的功能。", { exact: true })).toBeVisible();
+      await expect(page.getByRole("textbox", { name: "訊息正文 *" })).toHaveCount(0);
       expect(writes).toEqual([]);
     });
   }

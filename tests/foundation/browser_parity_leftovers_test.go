@@ -33,9 +33,61 @@ func TestBrowserParityLeftovers(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 700*time.Second)
 	defer cancel()
 	f := pwIsolatedFixture(t)
-	for _, permission := range []string{"orders:read", "catalog:read", "inbox:reply"} {
+	for _, permission := range []string{"orders:read", "catalog:read", "inbox:reply", "live:manage"} {
 		mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4)`, f.tenantA, f.storeA1, f.principalA, permission)
 	}
+	// A separate merchant identity keeps the denied path stable while signed frames use live:manage.
+	deniedPrincipal := randomUUID()
+	mustExec(t, f.owner, `INSERT INTO identity.principals(id) VALUES($1)`, deniedPrincipal)
+	mustExec(t, f.owner, `INSERT INTO identity.memberships(tenant_id,principal_id) VALUES($1,$2)`, f.tenantA, deniedPrincipal)
+	for _, permission := range []string{"store:read", "orders:read", "inbox:reply"} {
+		mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4)`, f.tenantA, f.storeA1, deniedPrincipal, permission)
+	}
+	var roleCount, manageCount int
+	if err := f.owner.QueryRow(ctx, `SELECT count(*) FROM identity.store_staff WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3`, f.tenantA, f.storeA1, deniedPrincipal).Scan(&roleCount); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.owner.QueryRow(ctx, `SELECT count(*) FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='live:manage'`, f.tenantA, f.storeA1, deniedPrincipal).Scan(&manageCount); err != nil {
+		t.Fatal(err)
+	}
+	if roleCount != 0 || manageCount != 0 {
+		t.Fatalf("denied identity must have no staff role or live:manage grant: roles=%d grants=%d", roleCount, manageCount)
+	}
+	t.Run("denied", func(t *testing.T) {
+		// The same real store/PG is used, but a distinct signed principal has no owner role or live:manage.
+		e := &rfxEnv{sflEnv: &sflEnv{sstEnv: &sstEnv{f: f}}}
+		root, err := filepath.Abs("../..")
+		if err != nil {
+			t.Fatal(err)
+		}
+		evidence := brfEvidence(t, root, "parity-leftovers-denied")
+		body := bplProjections()["message-templates"]
+		stack := brfStartAdmin(t, ctx, e, deniedPrincipal, evidence, func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodGet || r.URL.Path != "/v1/admin/stores/"+f.storeA1+"/message-templates" {
+					next.ServeHTTP(w, r)
+					return
+				}
+				err := platform.WithScope(r.Context(), f.runtime, strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "), f.storeA1, "inbox:reply", func(_ pgx.Tx, s platform.Scope) error {
+					if s.TenantID != f.tenantA || s.StoreID != f.storeA1 || s.PrincipalID != deniedPrincipal {
+						return platform.ErrForbidden
+					}
+					return nil
+				})
+				if err != nil {
+					consoleJSON(w, http.StatusForbidden, map[string]any{"code": "forbidden"})
+					return
+				}
+				w.Header().Set("Cache-Control", "private, no-store")
+				consoleJSON(w, http.StatusOK, body)
+			})
+		})
+		brfPlaywright(t, ctx, stack, []string{"parity-leftovers.spec.ts"}, map[string]string{"LC_BROWSER_STORE": f.storeA1, "LC_BROWSER_PARITY_DENIED": "1"})
+	})
+	t.Run("signed", func(t *testing.T) { bplSignedFrames(t, ctx, f) })
+}
+
+func bplSignedFrames(t *testing.T, ctx context.Context, f *testFixture) {
 	// brfStartAdmin only needs the fixture and optional refund jobs. No PSP fake or payment facts are needed for GET-only frames.
 	e := &rfxEnv{sflEnv: &sflEnv{sstEnv: &sstEnv{f: f}}}
 	root, err := filepath.Abs("../..")
@@ -127,7 +179,7 @@ console.log('PASS: current product/media/order/template DTO parsers; MOCK projec
 		t.Fatal(err)
 	}
 	t.Logf("MOCK fixture contracts and authenticated GET preflight passed; signed login and original 12 UI assertions follow; evidence=%s", evidence)
-	brfPlaywright(t, ctx, stack, []string{"parity-leftovers.spec.ts"}, map[string]string{"LC_BROWSER_STORE": f.storeA1})
+	brfPlaywright(t, ctx, stack, []string{"parity-leftovers.spec.ts"}, map[string]string{"LC_BROWSER_STORE": f.storeA1, "LC_BROWSER_PARITY_DENIED": "0"})
 }
 
 // bplProjections prepares valid current DTOs. A current order requires a complete frozen destination;
