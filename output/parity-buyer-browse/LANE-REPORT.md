@@ -110,3 +110,16 @@ Actual static commands/results:
 - `git diff --check` exit 0.
 
 E1 syntax/structure only for this UI candidate. New-head GitHub GREEN, actual application screenshot/side-by-side visual QA, keyboard/focus behavior, desktop/no-JS runtime, Code Connect/local links and Figma Variables/token diff=0 are NOT_RUN. Existing shell colour/radius/font tokens are reused without changing their values; they are not demonstrated equivalent to signed Figma variables, and visual parity is not claimed. Full typecheck NOT_RUN. No local app/test/browser/server/build/install was run; no fixture/container/port/background process created. No push/merge/deploy by worker. Root must run the exact-head existing browser mode and independent screenshot comparison before acceptance. Rollback point: base c833. No C7-wide frame exemption.
+
+
+## 2026-11-01 signed mobile-sort token/geometry correction
+
+Task `53ea9f21-sub-c7-mobile-sort`, base `bdc3c80e46a03a82f2a8a89d5895e67ccda4ecdc`. Root independent source review found known colour/radius/geometry differences before push. This correction changes only `apps/storefront/app/shop.css` and this report; no test/assertion/component/desktop rule changes.
+
+Verified `../../../packages/ui/src/tokens.css` resolves from shop.css to the existing shared token file (same import as admin). Entire token sheet has only `:root` and opt-in `[data-ds="2"]` rules declaring custom properties; it contains no element/layout rules or --sf-* redefinitions. Imported at the CSS top without changing shared tokens or adding data-ds attributes.
+
+Static node-to-token mapping (existing values, no new token values): 782:4249 canvas → --ds-sig-page #f6f7f8; heading → --ds-sig-label #1f2937; note → --ds-crumb-text #596579; header/buttons → --ds-ink #142942; white surface → --ds-surface #fff; button border → --ds-button-border #e5e7eb; control corner → --ds-radius-control 6px; 792:4166 horizontal inset/gap → --ds-space-4 16px. Header height uses --ds-topbar-height 64px; body top uses --ds-space-6 24px; button minimum height uses --ds-target 44px.
+
+Geometry from original node: container x16/y88, heading height38, note y54/height22, first button relative y92 with 60px increments. CSS heading line-height38; note margin16px 0 and line-height22; 64+24+38+16+22+16=180 first-button viewport top. Four sort buttons and cancel stay44high with16gap. Removed the unsourced selected-border override while keeping existing aria-pressed semantics. Newly added selectors use token surfaces rather than #fff literals.
+
+Actual `git diff --check` exit0; read-only Python source inspection verifies import target and token-only selectors, unchanged test/component files, exit0. No runtime, browser, tests, install or push. This is E1 static source mapping only. Browser computed values, actual screenshot comparison, and complete Figma Variables/tokenDiff gate remain NOT_RUN; this addendum does not claim full visual acceptance.
