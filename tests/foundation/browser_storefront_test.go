@@ -301,7 +301,7 @@ func TestBrowserStorefront(t *testing.T) {
 	hero, about := upload(40), upload(30)
 	doc := func(heading string) map[string]any {
 		return map[string]any{
-			"profile": map[string]any{"name": "Morning Light Goods", "tagline": "Quiet things for ordinary days", "logo_image_id": nil, "favicon_image_id": nil, "accent_color": "#2f6b5a",
+			"profile": map[string]any{"name": "Morning Light Goods", "tagline": "Quiet things for ordinary days", "logo_image_id": nil, "favicon_image_id": nil, "accent_color": "#f2d049",
 				"announcement": "Free delivery over $200 · live every Thursday 8pm",
 				"contact": map[string]any{"email": "hello@morninglight.example", "phone": "+886 2 2345 6789", "address": "100 Heping East Road, Taipei",
 					"line_url": "https://line.me/R/ti/p/@morninglight", "facebook_url": "https://www.facebook.com/morninglight.example", "instagram_url": "https://www.instagram.com/morninglight.example"}},
@@ -329,7 +329,7 @@ func TestBrowserStorefront(t *testing.T) {
 	}
 	designCall("POST", "/preview-token", struct{}{}, 200, &tk)
 	facts.PreviewToken = tk.Token
-	facts.Design = map[string]any{"hero": "Autumn tables, slowly", "draft_hero": "DRAFT: winter preview", "announcement": "Free delivery over $200 · live every Thursday 8pm", "accent": "#2f6b5a",
+	facts.Design = map[string]any{"hero": "Autumn tables, slowly", "draft_hero": "DRAFT: winter preview", "announcement": "Free delivery over $200 · live every Thursday 8pm", "accent": "#f2d049",
 		"name": "Morning Light Goods", "line_url": "https://line.me/R/ti/p/@morninglight", "about_title": "About us"}
 	facts.StoreName = "Morning Light Goods"
 

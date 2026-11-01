@@ -431,6 +431,24 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
           });
           assert.notEqual(accentRgb, "", "page has no resolved --accent");
           await expect(add).toHaveCSS("background-color", accentRgb);
+          // measurement: the fixture accent is LIGHT, so the label must follow the resolved --on-accent (dark), not a fixed white.
+          // Reading the custom property and resolving it to rgb in-page only gets the expected value.
+          const onAccentRgb = await add.evaluate((el) => {
+            const probe = document.createElement("span");
+            probe.style.color = getComputedStyle(el).getPropertyValue("--on-accent").trim();
+            document.body.appendChild(probe);
+            const rgb = getComputedStyle(probe).color;
+            probe.remove();
+            return rgb;
+          });
+          assert.notEqual(onAccentRgb, "rgb(255, 255, 255)", "fixture accent must be light so on-accent is not white");
+          await expect(add).toHaveCSS("color", onAccentRgb);
+          // real hover; the computed background reads below are measurements: hover must leave the resting accent and not be the fixed navy.
+          await add.hover();
+          await expect.poll(() => add.evaluate((el) => getComputedStyle(el).backgroundColor), { timeout: T }).not.toBe(accentRgb);
+          const hoverBg = await add.evaluate((el) => getComputedStyle(el).backgroundColor);
+          assert.notEqual(hoverBg, "rgb(20, 41, 66)", "primary hover is the fixed navy, not accent-derived");
+          await page.mouse.move(0, 0);
           await expect(page.getByTestId("buy-now")).toHaveText(c.buyNow);
         });
         await shot(productFrame, productRoute);

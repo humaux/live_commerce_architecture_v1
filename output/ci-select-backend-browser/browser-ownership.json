@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registryHash": "196b580890a63075fb77d550a7a4b2290696005b8cea800625f4c17521bfdf26",
+  "registryHash": "bd51ce7b4295117cfaef2e4ee18da8f873321a2be935a53d271f4b17cb3c662f",
   "sources": {
     "tests/admin/ads-model.test.ts": "a89483826fba28e2e86fcc1196475cefe1851cec367e66cfdc7bb69def18f309",
     "tests/admin/ads-request.test.ts": "190103fd72ab76050512616cef988d13d7e3725659883f142710555f36686de5",
@@ -297,7 +297,7 @@
     "tests/foundation/browser_store_domains_test.go": "13ebb75fb6440d6089a6a554a02b94c0779a9b9e6896140ef594055ff3406d53",
     "tests/foundation/browser_storefront_fixture_test.go": "25d96f19df47622f79a19421d6aa2667280c7fc364cb086741e567b37361eb4a",
     "tests/foundation/browser_storefront_publish_test.go": "c5dab984c74291d4670311f2e1d3d465e667aa8f04570044cc826d74d08f5da3",
-    "tests/foundation/browser_storefront_test.go": "8b2505edffbaa3bc9b80e804d3c4abe11ca2ef66752a32d03b98ab166d17d52c",
+    "tests/foundation/browser_storefront_test.go": "6b4139d9df5aec1847ab0c4708ae591fc632a135aa3557c2d9268e4e5dbe59fb",
     "tests/foundation/browser_stripe_pool_lifetime_test.go": "31ee4ac25c34a44086f1afda7734a3d437065dcea180acbe10ac11267e09705a",
     "tests/foundation/browser_stripe_test.go": "608b58ff85ec353298696fd1ab8f14b8faeae3b90c325de9ae361bb6ac6b908e",
     "tests/foundation/browser_studio_bff_test.go": "0a2429916f451d208b0b7a7f69f39cb79d8087f88659b96fe876ba2ae5e41221",
@@ -728,6 +728,7 @@
     "tests/storefront/browser-engine.mjs": "5dec33e55e6a5eb155a2b00fc0ed9c564cebf06c55cb24d5e93ea149b29bb711",
     "tests/storefront/browser-gate.mjs": "a90c0697ce659eb77a572f2517617f447930903f9274e808a9e33be21a744ddb",
     "tests/storefront/buyer-after-parity.mjs": "60186d7dad909f9b61ad9d6401a01f290fc302b794100682c7306d73191c48ff",
+    "tests/storefront/buyer-browse-parity.spec.ts": "9fa1549b715d3b6709e18551f23c78ee1ebade40afad81db922e5508e87a7ff2",
     "tests/storefront/buyer-comms-gate.mjs": "5cca8c34aba74ccc04e2531be4d30f79798b3ebcfe5f47f9d28b87043cadd28a",
     "tests/storefront/catalog-media-gate.mjs": "2a88ccf112a2e945b07e9fbc4a9b78f4934111b4c7cd1317bfe0bb0031eabbca",
     "tests/storefront/checkout-v2.mjs": "84b37bc46423bdeac8ffa6a369dacaf06148c950e3335e1d85b0a5f421f7addb",
@@ -754,7 +755,7 @@
     "tests/storefront/shop-gate.mjs": "fe0f18018ef43ef87347f62ad9b4f185d780bbd9f8609fcfe15548ee59b46077",
     "tests/storefront/shop-helpers.mjs": "87d4a11b6a30c688c40701ea4a71fb311c80b4d9c968f8edd2390e0ae6cd7d20",
     "tests/storefront/shop-r5-checks.mjs": "9837f3874c1ff56322d4df72be3230f304505ca90da2eb5736720ae1b2121b8d",
-    "tests/storefront/shop-real-gate.mjs": "91f6f6f19c5550ff46436835fc55bad4e29aa39990baeea5d756cd929ee1e6d4",
+    "tests/storefront/shop-real-gate.mjs": "6abe6e803a32a75f8e1091221a2a1e613cb0349c89bae2d06768a145c2440bb5",
     "tests/storefront/store-domains-gate.mjs": "94d3d543b931453ce9176b3801161b3aae809796dee0ef7793ff32e951497185",
     "tests/storefront/storefront-publish-gate.mjs": "7f47df8fc3a9ab9f751b0b8eb1cf596b150de32aa3d7b4979b09970144249cf3",
     "tests/storefront/stripe-browser.mjs": "eb067cbf66d65a95f73418bcd1f2d412e50271a1eeddd3973f02f4dfc2359512",
@@ -781,7 +782,7 @@
     "tests/ui/visual-lint-lib.test.mjs": "5e28a7b30ab357bb6bf266c3426d6fbd1122811fc7a156a077b213095086edd0",
     "tests/ui/visual-scroll-capture.mjs": "538525d5cb94cdc26e91954c0589a48372b5d4ce771721dcbbeb76e6b81a0229",
     "tests/ui/visual-scroll-capture.test.mjs": "1cf6d1a8bcb8481c65d19cd69e7bc1e25701067d4041e86f29b9a0a8cc8a58a5",
-    "scripts/dev/test-local.sh": "196b580890a63075fb77d550a7a4b2290696005b8cea800625f4c17521bfdf26",
+    "scripts/dev/test-local.sh": "bd51ce7b4295117cfaef2e4ee18da8f873321a2be935a53d271f4b17cb3c662f",
     "playwright.config.ts": "ad5ff56ccc1c4302c7a9daad01eb9e40c3ba02383e1b8692c9a7cf42f6c47c04",
     "apps/admin/package.json": "8ff4057bb534e821455b9cb47b93429a0d66040faad1d9c25edeabd4864dbbb4",
     "apps/storefront/package.json": "e25eed3dcbc88ef821828200325f2cb7f92934447e1978998efdd4fa58eb8987",
@@ -2433,6 +2434,7 @@
     "--browser-storefront": {
       "specs": [
         "apps/storefront/tests/shop.test.mjs",
+        "tests/storefront/buyer-browse-parity.spec.ts",
         "tests/storefront/offline-error.spec.ts",
         "tests/storefront/shop-real-gate.mjs",
         "tests/storefront/storefront-publish-gate.mjs"
@@ -2441,6 +2443,7 @@
         "apps/storefront/tests/shop.test.mjs",
         "tests/helpers/next-startup.mjs",
         "tests/storefront/browser-engine.mjs",
+        "tests/storefront/buyer-browse-parity.spec.ts",
         "tests/storefront/media-sizes-perf.mjs",
         "tests/storefront/merchant-product.mjs",
         "tests/storefront/offline-error.spec.ts",
@@ -2468,6 +2471,7 @@
         "harness:tests/foundation/browser_storefront_test.go",
         "harness:tests/foundation/storefront_integration_smoke_test.go",
         "registry:--browser-storefront -> apps/storefront/tests/shop.test.mjs",
+        "registry:--browser-storefront -> tests/storefront/buyer-browse-parity.spec.ts",
         "registry:--browser-storefront -> tests/storefront/shop-real-gate.mjs",
         "registry:--browser-storefront:server/import apps/storefront",
         "scripts/dev/test-local.sh:--browser-storefront:lc_build=storefront",

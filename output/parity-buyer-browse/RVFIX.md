@@ -48,3 +48,7 @@ The 22 COVERED in run 41258218002 is the real result of that run; with the fix t
 ## RVFIX2-440 (review of 867f685d6, P1: hard-coded navy overrides tenant accent)
 
 Push 1 is tests only (RED). tests/storefront/buyer-browse-parity.spec.ts product-page step no longer asserts rgb(26, 43, 74); it asserts the add-to-cart background equals the page's resolved `--accent` (read in-page, commented as a measurement). The fixture shop uses a non-navy accent, so this fails on the current `--action: #1a2b4a`. Pending relay push 2: shop.css `--action/--on-action/--action-text` default to `var(--accent)/var(--on-accent)/var(--accent-text)`, primary hover mixes toward `#000` as on base. Unrun locally; CI decides.
+
+## RVFIX3-440 (review of 1146608dd, P1-1: globals.css `body .sf-btn--primary` still forces white text + navy hover)
+
+Push 1 is tests only (RED). Fixture accent changed to light `#f2d049` (tests/foundation/browser_storefront_test.go:304,332; only other reader is shop-real-gate SFR01 via facts.design.accent). buyer-browse-parity.spec.ts product step now also asserts primary `color` equals the resolved `--on-accent` (and is not white), and after a real `hover()` the background differs from the resting accent and is not rgb(20, 41, 66); computed-style reads are commented as measurements. Pending relay push 2: globals.css:777-779 uses `var(--on-action)` and the accent-derived hover (admin app unaffected; check which app loads globals.css first). Unrun locally; CI decides.
