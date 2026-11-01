@@ -774,8 +774,8 @@ h2 {
 body:has(.checkout-surface--review) { background: #f6f7f8; }
 body:has(.checkout-surface--review) .sf-header,
 body:has(.checkout-surface--review) .sf-announce { display: none; }
-body .sf-btn--primary { background: var(--action); color: #fff; border-color: var(--action); }
-body .sf-btn--primary:hover:not(:disabled) { background: var(--navy); }
+body .sf-btn--primary { background: var(--action); color: var(--on-action); border-color: var(--action); }
+body .sf-btn--primary:hover:not(:disabled) { background: color-mix(in srgb, var(--action) 88%, #000); }
 body .sf-btn--primary:disabled { background: var(--action-disabled); color: #46566a; border: 1px solid var(--action-disabled); opacity: 1; }
 .checkout-top { height: 64px; background: #fff; padding: 8px 16px; }
 .checkout-top a { display: inline-flex; align-items: center; justify-content: center; height: 48px; min-width: 88px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); text-decoration: none; }

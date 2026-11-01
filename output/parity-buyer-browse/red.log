@@ -19,3 +19,5 @@ required because the production UI already matches the signed desktop frame.
 Files changed:
 - tests/storefront/buyer-browse-parity.spec.ts:404-436
 - output/ci-select-backend-browser/browser-ownership.json (regenerated)
+
+RVFIX3-440 RED (head 067f3b447, run 41267308313): gate (bundle:02) --browser-storefront FAIL, the only failing member; the new on-accent/hover assertions are the only change in that head, so this is the expected RED. Implementation pushed next.
