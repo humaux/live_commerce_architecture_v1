@@ -268,3 +268,16 @@ repair1=only textarea aria-label={c.text}; all three existing translations; ALL 
 repair1_GREEN=PENDING; causal explanation authorE0 until own CI
 playwright_log_sha256=6264372470713e40ce265d4c0c1d3ca7b27b7fb190b970d3d71f89a7e69b951e
 rollback=7085179ec9af8e8b698972ba767a79e2c2fff69f
+
+CONSOLE-FIX RELAY3 infrastructure comparator (NOT assertion RED)
+head=ecae57fa90e839339e5f9b67655613205b0c240a
+run=41285438087 parity_job=124786481042 FAILURE
+first_shard=21 passed; Go test PASS33.29s
+artifact=13075545605 size1997988 playwright_log_sha256=54d8633aa76b05be97e1f3a0fde8d10980598952a3d5c74b84fe3c71b976e32f
+second_shard=fixture initialization FAIL0.23s before browser execution
+error=browser_live_console_test.go:370 create runtime login: ERROR: role "foundation_api" already exists (SQLSTATE 42710)
+root=#355 parity arm launches eight Go test processes against one cluster; newFixture creates cluster role per process
+repair=reuse existing fresh_pg before shards2-8; assertions/timeouts/thresholds unchanged
+foundation=41285438042/job124785656569 SUCCESS console=124786480696 SUCCESS bundle07=124786481003 SUCCESS
+receipts=124789810057 FAILURE required=124789866407 FAILURE downstream
+GREEN=PENDING; shards2-8 browser assertions NOT_RUN at comparator

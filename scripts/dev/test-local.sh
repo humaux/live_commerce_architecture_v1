@@ -547,6 +547,8 @@ case "$1" in
     }
     lc_run() {
   for shard in 1/8 2/8 3/8 4/8 5/8 6/8 7/8 8/8; do
+    # Each go test process creates cluster-scoped fixture roles; later shards need their own fresh cluster.
+    if [[ "$shard" != 1/8 ]]; then fresh_pg; fi
     LC_CONSOLE_PARITY_SHARD=$shard LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.3 go test -race -tags browser -count=1 -timeout=780s -run '^TestBrowserLiveConsoleParityRealChain$' -v ./tests/foundation
   done
   printf 'PASS: PARITY-LIVE signed Figma frames, real clicks on the Console route; MOCK business upstream, no LIVE provider acceptance.\n'

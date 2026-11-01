@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registryHash": "c2c30b13e2cd649d9ac5b2eb1a5c17b30632490ecdabfc49decd438b09d1fd63",
+  "registryHash": "543cf4d1708c7bd5ef26da171b048a8f42954e07b9069758759aec73e7c4a8a8",
   "sources": {
     "tests/admin/ads-model.test.ts": "a89483826fba28e2e86fcc1196475cefe1851cec367e66cfdc7bb69def18f309",
     "tests/admin/ads-request.test.ts": "190103fd72ab76050512616cef988d13d7e3725659883f142710555f36686de5",
@@ -783,7 +783,7 @@
     "tests/ui/visual-lint-lib.test.mjs": "5e28a7b30ab357bb6bf266c3426d6fbd1122811fc7a156a077b213095086edd0",
     "tests/ui/visual-scroll-capture.mjs": "538525d5cb94cdc26e91954c0589a48372b5d4ce771721dcbbeb76e6b81a0229",
     "tests/ui/visual-scroll-capture.test.mjs": "1cf6d1a8bcb8481c65d19cd69e7bc1e25701067d4041e86f29b9a0a8cc8a58a5",
-    "scripts/dev/test-local.sh": "c2c30b13e2cd649d9ac5b2eb1a5c17b30632490ecdabfc49decd438b09d1fd63",
+    "scripts/dev/test-local.sh": "543cf4d1708c7bd5ef26da171b048a8f42954e07b9069758759aec73e7c4a8a8",
     "playwright.config.ts": "ad5ff56ccc1c4302c7a9daad01eb9e40c3ba02383e1b8692c9a7cf42f6c47c04",
     "apps/admin/package.json": "8ff4057bb534e821455b9cb47b93429a0d66040faad1d9c25edeabd4864dbbb4",
     "apps/storefront/package.json": "e25eed3dcbc88ef821828200325f2cb7f92934447e1978998efdd4fa58eb8987",
