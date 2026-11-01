@@ -32,7 +32,7 @@ async function screenshot(page: Page, frame: string) {
 }
 async function login(page: Page) {
   await page.goto(`${origin}/zh-TW`);
-  await page.getByRole("button", { name: "使用身分識別服務登入", exact: true }).click();
+  await page.getByRole("button", { name: "透過身分服務登入", exact: true }).click();
   await expect(page.getByTestId("dashboard-page")).toBeVisible();
   if ((page.viewportSize()?.width ?? 1440) <= 900) {
     await page.locator('button[aria-controls="workspace-navigation"]').click();

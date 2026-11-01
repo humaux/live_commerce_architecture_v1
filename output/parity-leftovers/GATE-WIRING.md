@@ -1,5 +1,15 @@
 # PR473 runnable gate wiring handoff
 
+## Current: exact signed-login copy alignment (2026-11-01)
+
+Root independently viewed the first failed page from Gates `41299965337`, bundle:01 job `124829907993`, artifact `13081188396`, execution SHA `eb517642430c18e945945be7d48cbf7f1f6e8f20` for PR head `1f30c879c8cc1c7861df0069555a257bc2df9cf0`. DTO parser preflight and all nine authenticated GETs passed. Playwright enumerated twelve cases, but reported five failed and seven not run after the login wait and outer termination; these were not twelve product assertion failures.
+
+The first screenshot and error-context show the zh-TW page heading `登入商家工作區` and actual button `透過身分服務登入`; the test awaited the obsolete exact label `使用身分識別服務登入`. Current product authority `apps/admin/lib/entry-copy.ts` agrees with the screenshot. Only that exact test selector is updated. The original twelve cases, signed OIDC flow, dashboard/navigation assertions, deadlines, projections and product assertions remain unchanged. Login success and later UI results still require new GitHub CI; no product GREEN is claimed.
+
+Retained primary evidence under root `output/integrator/tools/logs/pr473-login-1f30/`: `artifact.zip` SHA256 `8f5d6fc6123905ff6f28b19638e54d0d7de53dbff0a9caeb77a95aa4951e36a8`; `test-failed-1.png` SHA256 `052dead5dce356e5a9d0996871b4e580480b2940a1d9f1911bdf9497be0b803e`; `error-context.md` SHA256 `4f83dfc2abf21456e6daf383257846f6e993c7b7c4365092f42cf121fdf9514e`. Humaux `995c6bb5-3080-4f83-b925-0df540970ace` links the acquisition. No local runtime test or auth implementation change. The shared identity bundle:07 failure at settings-v2.spec.ts:1085 remains a separate UNKNOWN cause, and the missing order/media DTO contracts remain BLOCKED.
+
+This is one bounded selector repair after the prior fixture correction. Any subsequent failure must be classified from its own receipt; do not blindly retry or weaken assertions. The historical sections below describe earlier snapshots; their byte-unchanged claims are not claims about this selector update.
+
 - task_id: `53ea9f21-3f3b-4626-87ab-42dc853507b9-sub-leftovers-gate`
 - parent_coord: `53ea9f21-3f3b-4626-87ab-42dc853507b9`
 - role / dispatch model / reasoning: `test_worker / gpt-6.1-sol / high`; no delegated agents or external model calls.
