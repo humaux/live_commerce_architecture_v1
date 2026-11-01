@@ -246,6 +246,7 @@ try {
   await p.getByRole("button", { name: "選擇配送" }).click();
   await expect(p.getByLabel("配送方式")).toBeVisible();
   await p.getByRole("button", { name: "取得目前總額" }).click();
+  await p.getByTestId("checkout-details-toggle").click();
   await expect(p.locator(".quotation")).toBeVisible();
   await shot(p, "m-checkout");
   await d.goto(`${origin}/zh-TW`); await reachCheckout(d, origin, "zh-TW", "ceramic-dripper-set", { quantity: 2 }); // the helper other gates use instead of the old product page
@@ -326,7 +327,7 @@ try {
   const checkoutStep = async (pg) => { // cart -> delivery -> quotation, the same clicks as SF05
     await pg.goto(`${origin}/zh-TW/checkout`);
     await pg.getByRole("button", { name: "選擇配送" }).click(); await expect(pg.getByLabel("配送方式")).toBeVisible();
-    await pg.getByRole("button", { name: "取得目前總額" }).click(); await expect(pg.locator(".quotation")).toBeVisible();
+    await pg.getByRole("button", { name: "取得目前總額" }).click(); await pg.getByTestId("checkout-details-toggle").click(); await expect(pg.locator(".quotation")).toBeVisible();
     await expect(pg.getByTestId("create-order")).toBeVisible();
   };
   const moneyTexts = (pg) => pg.evaluate(() => [...document.querySelectorAll(".sf-line__total, .sf-line__unit, [data-testid=cart-subtotal], .purchase-footer strong, .quotation li span:last-child, .quotation dd, .sf-summary__row strong")].map((e) => e.textContent.trim()).filter((t) => /\d/.test(t)));

@@ -297,7 +297,9 @@ for (const locale of locales) for (const mobile of [false, true]) {
       await expect(page.getByTestId("design-domains")).toContainText(customAddress);
       await expect(page.getByTestId("design-domain-platform")).toHaveAttribute("data-state", "ACTIVE");
       await expect(page.getByTestId("design-domain-custom")).toHaveAttribute("data-state", "OWNERSHIP_PENDING");
-      await expect(page.getByTestId("design-domain-settings")).toHaveAttribute("href", new RegExp(`/${locale}/settings\\?store=${store}`));
+      // PARITY-DOMAINS: the signed domain workspace replaces the old detour to Settings.
+      await expect(page.getByTestId("design-domain-settings")).toHaveCount(0);
+      await expect(page.getByTestId("design-domains").getByRole("heading", { name: { 'zh-TW': '網域設定', 'zh-CN': '域名设置', en: 'Domain settings' }[locale], exact: true }).last()).toBeVisible();
     });
     await back(page, locale);
     await task(page, locale, "profile");
@@ -589,7 +591,8 @@ for (const mobile of [false, true]) {
     await page.getByRole("button", { name: ui[locale].domains, exact: true }).click();
     await expect(page.getByTestId("design-domain-platform")).toContainText(address);
     await expect(page.getByTestId("design-domain-custom")).toContainText(customAddress);
-    await shot("1429:66030", "1429:66073");
+    // Domain content now follows the dedicated signed 14-frame family.
+    await shot("5:16526", "5:16621");
     await back(page, locale);
     const popupPromise = page.waitForEvent("popup");
     await page.getByRole("button", { name: signedEditor[locale].preview, exact: true }).click();

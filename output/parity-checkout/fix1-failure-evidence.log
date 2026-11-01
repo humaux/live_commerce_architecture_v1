@@ -1,0 +1,182 @@
+Native CI evidence: Gates 41063668416; head 44a9e2eb3e456fd2ade2abab52950f14f396cf4a; merge b10a8cdda646783a5d30f7c856baa49d9767e975.
+Downloaded via gh run download; no local browser/tests executed.
+
+gate-browser-claim-checkout/playwright/run.ANQFxLBe/claim-checkout/20261030T141954.605418094/browser.log
+sha256=d85b88d243dc88b2a6d725d3a515dea48b3317359184c0972cca7da6b03ad13c
+7: FAIL CDC locator.click: Timeout 30000ms exceeded.
+9:   - waiting for getByRole('link', { name: '返回購物車', exact: true })
+
+gate-browser-click-sweep_4_10/playwright/run.iyZLnFzj/click-sweep/20261030T142442.576012125/click-sweep.mjs.log
+sha256=ea84b9b2d0978e77ccac03ef5298c0e0588ea648c4ad66a52317ae7ba3e00ce0
+28: NEW FAIL storefront /(storefront) mobile/zh-TW [page] "(sweep)" sweep-error: locator.click: Timeout 30000ms exceeded.
+30:   - waiting for getByTestId('create-order')
+33:     2 × waiting for element to be visible, enabled and stable
+38: NEW FAIL storefront / mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+39: NEW FAIL storefront /products mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+40: NEW FAIL storefront /collections mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+41: NEW FAIL storefront /collections/[slug] mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+42: NEW FAIL storefront /products/[slug] mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+43: NEW FAIL storefront /search mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+44: NEW FAIL storefront /orders/lookup mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+45: NEW FAIL storefront /orders/[orderID] mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+46: NEW FAIL storefront /order-link mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+47: NEW FAIL storefront /claim mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+48: NEW FAIL storefront /legal/anti-fraud mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+49: NEW FAIL storefront /legal/[slug] mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+50: NEW FAIL storefront /privacy mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+51: NEW FAIL storefront /data-deletion mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+52: NEW FAIL storefront /pages/[slug] mobile/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+
+gate-browser-click-sweep_7_10/playwright/run.4ErYKmyP/click-sweep/20261030T140710.046746114/click-sweep.mjs.log
+sha256=286c2a3952ca356a636156c18e2d7e4e684e75dc54fb07ab5da2dcc19bc7b60c
+29: NEW FAIL storefront /(storefront) desktop/en [page] "(sweep)" sweep-error: locator.click: Timeout 30000ms exceeded.
+31:   - waiting for getByTestId('create-order')
+34:     2 × waiting for element to be visible, enabled and stable
+38: NEW FAIL storefront / desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+39: NEW FAIL storefront /products desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+40: NEW FAIL storefront /collections desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+41: NEW FAIL storefront /collections/[slug] desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+42: NEW FAIL storefront /products/[slug] desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+43: NEW FAIL storefront /search desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+44: NEW FAIL storefront /orders/lookup desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+45: NEW FAIL storefront /orders/[orderID] desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+46: NEW FAIL storefront /order-link desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+47: NEW FAIL storefront /claim desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+48: NEW FAIL storefront /legal/anti-fraud desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+49: NEW FAIL storefront /legal/[slug] desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+50: NEW FAIL storefront /privacy desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+51: NEW FAIL storefront /data-deletion desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+52: NEW FAIL storefront /pages/[slug] desktop/en [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+
+gate-browser-click-sweep_8_10/playwright/run.fMUjervN/click-sweep/20261030T141011.583793431/click-sweep.mjs.log
+sha256=6759375a081b26cc5b06a9e812aaa9a62c773ea92e44ad31e0c083946654aff2
+25: NEW FAIL storefront /(storefront) desktop/zh-TW [page] "(sweep)" sweep-error: locator.click: Timeout 30000ms exceeded.
+27:   - waiting for getByTestId('create-order')
+30:     2 × waiting for element to be visible, enabled and stable
+35: NEW FAIL journey J2/J3 admin orders desktop/zh-TW [journey] "(no order)" journey-step: the storefront journey did not place the COD order
+36: NEW FAIL storefront / desktop/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+37: NEW FAIL storefront /products desktop/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+38: NEW FAIL storefront /collections desktop/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+39: NEW FAIL storefront /collections/[slug] desktop/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+40: NEW FAIL storefront /products/[slug] desktop/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+41: NEW FAIL storefront /search desktop/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+42: NEW FAIL storefront /orders/lookup desktop/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+43: NEW FAIL storefront /orders/[orderID] desktop/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+44: NEW FAIL storefront /order-link desktop/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+45: NEW FAIL storefront /claim desktop/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+46: NEW FAIL storefront /legal/anti-fraud desktop/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+47: NEW FAIL storefront /legal/[slug] desktop/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+48: NEW FAIL storefront /privacy desktop/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+49: NEW FAIL storefront /data-deletion desktop/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+50: NEW FAIL storefront /pages/[slug] desktop/zh-TW [page] "(coverage)" coverage-missing: no page-load row was written for this route/variant
+
+gate-browser-cvs/playwright/run.miU4o9HT/taiwan-cvs/20261030T141702.366387344/cvs-buyer.mjs.log
+sha256=ec91fc99efc1a40272c92e27f5bff1c06faa7d2dbff9c112871ec0e2c74d4a6b
+12: locator.inputValue: Timeout 30000ms exceeded.
+14:   - waiting for locator('#delivery')
+16:     at exerciseCvsPicker (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/cvs-picker.mjs:107:57)
+18:   log: [ "  - waiting for locator('#delivery')" ],
+19:   name: 'TimeoutError'
+
+gate-browser-cvs/playwright/run.miU4o9HT/taiwan-cvs/20261030T141756.538647664/cvs-buyer.mjs.log
+sha256=c6511b7fcc10965ecded320d8f17539339054971e585d7b2962cee83eaf0c3ce
+12: locator.inputValue: Timeout 30000ms exceeded.
+14:   - waiting for locator('#delivery')
+16:     at exerciseCvsPicker (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/cvs-picker.mjs:107:57)
+18:   log: [ "  - waiting for locator('#delivery')" ],
+19:   name: 'TimeoutError'
+
+gate-browser-e2e/playwright/run.ZtDhqw3R/e2e/20261030T143029.752792871/playwright.log
+sha256=3f2d72fb83d8799171ccb71c8c3ec3b4b9f4188badc0fc43fc3cec5c7f943b22
+17:     Expected: "rgb(36, 121, 101)"
+18:     Received: "rgb(20, 41, 66)"
+19:     Timeout:  15000ms
+23:       - waiting for getByTestId('create-order')
+35:         at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/e2e/deal-loop.spec.ts:256:51
+
+gate-browser-e2e/playwright/run.ZtDhqw3R/live-tools/20261030T143108.003818361/playwright.log
+sha256=1aa470b477f770356117502a80e167f89f866be546de207340c774109ca9b719
+12:     TimeoutError: locator.selectOption: Timeout 20000ms exceeded.
+14:       - waiting for locator('#delivery')
+17:         2 × waiting for element to be visible and enabled
+21:         2 × waiting for element to be visible and enabled
+25:         39 × waiting for element to be visible and enabled
+38:         at checkoutPayAtPickup (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/e2e/live-tools.spec.ts:92:35)
+39:         at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/e2e/live-tools.spec.ts:274:26
+53:     TimeoutError: locator.selectOption: Timeout 20000ms exceeded.
+55:       - waiting for locator('#delivery')
+58:         2 × waiting for element to be visible and enabled
+62:         2 × waiting for element to be visible and enabled
+66:         39 × waiting for element to be visible and enabled
+79:         at checkoutPayAtPickup (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/e2e/live-tools.spec.ts:92:35)
+80:         at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/e2e/live-tools.spec.ts:274:26
+94:     TimeoutError: locator.selectOption: Timeout 20000ms exceeded.
+96:       - waiting for locator('#delivery')
+99:         2 × waiting for element to be visible and enabled
+103:         2 × waiting for element to be visible and enabled
+107:         40 × waiting for element to be visible and enabled
+120:         at checkoutPayAtPickup (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/e2e/live-tools.spec.ts:92:35)
+121:         at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/e2e/live-tools.spec.ts:274:26
+135:     TimeoutError: locator.selectOption: Timeout 20000ms exceeded.
+137:       - waiting for locator('#delivery')
+140:         2 × waiting for element to be visible and enabled
+144:         2 × waiting for element to be visible and enabled
+148:         40 × waiting for element to be visible and enabled
+161:         at checkoutPayAtPickup (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/e2e/live-tools.spec.ts:92:35)
+162:         at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/e2e/live-tools.spec.ts:274:26
+
+gate-browser-order/playwright/buyer-order-1839257567/browser.log
+sha256=dc4bb39dda5ffd9312f6cca202aa27616f6b258fab864a83dc1e8364e01c2b91
+32: page.waitForResponse: Timeout 30000ms exceeded while waiting for event "response"
+33:     at historyRead (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/order-gate.mjs:102:26)
+34:     at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/order-gate.mjs:782:25 {
+36:   name: 'TimeoutError'
+
+gate-browser-storefront/playwright/run.N1CWr7ev/storefront/20261030T143003.848444413/shop-real-gate.log
+sha256=e4484ccfcddab1556ddca0f0922136a2e1911b6b27d8c1d7a144cd214f147f58
+13: Expected: visible
+14: Received: hidden
+15: Timeout:  5000ms
+19:   - waiting for locator('.quotation')
+26:     at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/shop-real-gate.mjs:267:41 {
+31:       'Expected: visible\n' +
+32:       'Received: hidden\n' +
+33:       'Timeout:  5000ms\n' +
+37:       "  - waiting for locator('.quotation')\n" +
+46:       "  - waiting for locator('.quotation')",
+
+gate-browser-webkit/playwright/buyer-order-3979241523/browser.log
+sha256=aea17a39d5e3597d247ca42dad8fc1fe21d9f0cbf2112217ecd6d42d59b754c4
+32: page.waitForResponse: Timeout 30000ms exceeded while waiting for event "response"
+33:     at historyRead (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/order-gate.mjs:102:26)
+34:     at /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/order-gate.mjs:782:25 {
+36:   name: 'TimeoutError'
+
+gate-browser-webkit/playwright/run.NYSv0CCd/claim-checkout/20261030T142551.220190167/browser.log
+sha256=5cda4ca43d0f957b4614c755aa4583e012731cf15e8d47fa841c54d2530b554b
+7: FAIL CDC locator.click: Timeout 30000ms exceeded.
+9:   - waiting for getByRole('link', { name: '返回購物車', exact: true })
+
+gate-browser-webkit/playwright/run.NYSv0CCd/taiwan-cvs/20261030T142251.095706200/cvs-buyer.mjs.log
+sha256=c6511b7fcc10965ecded320d8f17539339054971e585d7b2962cee83eaf0c3ce
+12: locator.inputValue: Timeout 30000ms exceeded.
+14:   - waiting for locator('#delivery')
+16:     at exerciseCvsPicker (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/storefront/cvs-picker.mjs:107:57)
+18:   log: [ "  - waiting for locator('#delivery')" ],
+19:   name: 'TimeoutError'
+
+gate-browser-visual-lint_1_4/run.ydRaFdny/ui-visual-audit/20261030T142326Z/lint.json
+sha256=abeb81b23fa52b8c23088431c3f1ae8e006302423cdec368bb9f146fd56149b7
+{"missing": ["storefront|orders-orderid|zh-TW|1586x992", "storefront|orders-orderid|en|1586x992"], "blockingInstances": 0, "verdict": {"exit": 1, "reasons": ["2 enumerated shots missing"]}}
+
+gate-browser-visual-lint_2_4/run.xlkKKIgz/ui-visual-audit/20261030T140958Z/lint.json
+sha256=e2610063406da43d27e2c7167a57c0de39721cfd1cb08e3aedb584549d217ddf
+{"missing": ["storefront|orders-orderid|zh-TW|390x844", "storefront|orders-orderid|en|390x844"], "blockingInstances": 0, "verdict": {"exit": 1, "reasons": ["2 enumerated shots missing"]}}
+
+gate-browser-visual-lint_3_4/run.G4nNizJ7/ui-visual-audit/20261030T141156Z/lint.json
+sha256=05a4c003103e3c6d0a7609c9eb286d4a08d07c1e3ba8ba541c52063661f10fcb
+{"missing": ["storefront|orders-orderid|zh-CN|1586x992"], "blockingInstances": 0, "verdict": {"exit": 1, "reasons": ["1 enumerated shots missing"]}}
+
+gate-browser-visual-lint_4_4/run.yUIDhmR1/ui-visual-audit/20261030T141409Z/lint.json
+sha256=24888a47e771d8669c958fb61322482f48e05ccdad439b631a7efbf03fc37278
+{"missing": ["storefront|orders-orderid|zh-CN|390x844"], "blockingInstances": 0, "verdict": {"exit": 1, "reasons": ["1 enumerated shots missing"]}}

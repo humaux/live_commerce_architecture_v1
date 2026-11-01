@@ -1,0 +1,116 @@
+{
+  "observed_at": "2026-10-30T13:29:06.933544+00:00",
+  "mode": "STATIC_ONLY",
+  "evidence": "E1; not CI acceptance",
+  "checks": [
+    {
+      "command": [
+        "/Volumes/data/live_commerce_architecture_v1/node_modules/.bin/tsc",
+        "--project",
+        "output/parity-money/tsconfig.static.json"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "go",
+        "build",
+        "./internal/reporting"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "gofmt",
+        "-l",
+        "internal/reporting/finance.go",
+        "tests/foundation/customers_billing_http_test.go"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/customers-billing.spec.ts"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/reports.spec.ts"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/settlements.spec.ts"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/card-payments.spec.ts"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/home-cod.spec.ts"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/ops-polish.spec.ts"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/checkout-offline.spec.ts"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/oc/reauth.spec.ts"
+      ],
+      "exit_code": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/reports-render.test.mjs"
+      ],
+      "exit_code": 0,
+      "output": ""
+    }
+  ]
+}

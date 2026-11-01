@@ -1,0 +1,763 @@
+diff --git a/apps/admin/components/CatalogSimplifiedEditor.tsx b/apps/admin/components/CatalogSimplifiedEditor.tsx
+index daf2d599d..71d2e71ad 100644
+--- a/apps/admin/components/CatalogSimplifiedEditor.tsx
++++ b/apps/admin/components/CatalogSimplifiedEditor.tsx
+@@ -16,6 +16,7 @@ import { draftFromDetail, editDocument, type DraftRow } from '@/lib/product-docu
+ import { productEditorCopy } from '@/lib/product-editor-copy';
+ import type { ProductNavigationState } from '@/lib/use-product-leave-guard';
+ import { ProductMediaManager } from './ProductMediaManager';
++import "./catalog/parity.css";
+ type Screen = 'edit' | 'variants' | 'stock' | 'media' | 'review' | 'saved';
+ /** Compose bounded task screens over the incumbent catalog write and media lifecycles. */
+ export function CatalogSimplifiedEditor({ locale, store, detail, boundary, onNavigationChange }: {
+@@ -24,13 +25,14 @@ export function CatalogSimplifiedEditor({ locale, store, detail, boundary, onNav
+ }) {
+   const c = catalogTaskCopy[locale], pc = productEditorCopy[locale];
+   const [baseline, setBaseline] = useState(detail), [draft, setDraft] = useState(() => draftFromDetail(detail));
++  const [status, setStatus] = useState<'active' | 'draft' | 'archived'>(detail.status);
+   const [screen, setScreen] = useState<Screen>('edit'), [stockIndex, setStockIndex] = useState(0);
+   const [stockDraft, setStockDraft] = useState<DraftRow | null>(null), [stockError, setStockError] = useState('');
+   const [media, setMedia] = useState<ProductImageList | null>(null), [mediaBusy, setMediaBusy] = useState(false);
+   const trigger = useRef<HTMLButtonElement | null>(null), title = useRef<HTMLHeadingElement>(null), returningToStock = useRef(false);
+   const write = useWrite(store.id, boundary, code => code in pc ? pc[code as keyof typeof pc] : pc.failed, pc.uncertain, pc.recoveryRequired);
+   const locked = mediaBusy || write.busy || write.message?.kind === 'uncertain';
+-  const dirty = JSON.stringify(draft) !== JSON.stringify(draftFromDetail(baseline));
++  const dirty = status !== baseline.status || JSON.stringify(draft) !== JSON.stringify(draftFromDetail(baseline));
+   useEffect(() => { onNavigationChange({ dirty, locked }); return () => onNavigationChange({ dirty: false, locked: false }); }, [dirty, locked, onNavigationChange]);
+   useEffect(() => {
+     if (screen === 'variants' && returningToStock.current) { returningToStock.current = false; trigger.current?.focus(); }
+@@ -64,17 +66,17 @@ export function CatalogSimplifiedEditor({ locale, store, detail, boundary, onNav
+   }
+   function review() {
+     if (locked) return;
+-    try { editDocument(draft, baseline, store.currency); write.notice(''); setScreen('review'); }
++    try { editDocument(draft, baseline, store.currency, status === 'archived' ? undefined : status); write.notice(''); setScreen('review'); }
+     catch (error) { write.fail(error instanceof Error && error.message in pc ? pc[error.message as keyof typeof pc] : pc.failed); }
+   }
+   async function save() {
+     if (locked) return;
+     try {
+-      const patch = editDocument(draft, baseline, store.currency);
++      const patch = editDocument(draft, baseline, store.currency, status === 'archived' ? undefined : status);
+       if (Object.keys(patch).length === 1) { write.notice(pc.noChanges); return; }
+       await write.run(command('PUT', `products/${baseline.id}/document`, patch), parseCreated, async () => {
+         const fresh = await readProduct(store.id, baseline.id, new AbortController().signal);
+-        setBaseline(fresh); setDraft(draftFromDetail(fresh)); setScreen('saved');
++        setBaseline(fresh); setDraft(draftFromDetail(fresh)); setStatus(fresh.status); setScreen('saved');
+       }, c.saved);
+     } catch (error) { write.fail(error instanceof Error && error.message in pc ? pc[error.message as keyof typeof pc] : pc.failed); }
+   }
+@@ -88,7 +90,7 @@ export function CatalogSimplifiedEditor({ locale, store, detail, boundary, onNav
+     const quantity = Number(row.quantity), committed = sku?.committed ?? 0;
+     return `${text(c.onHand, { n: quantity })} · ${text(c.committed, { n: committed })} · ${quantity - committed > 0 ? text(c.available, { n: quantity - committed }) : c.soldOut}`;
+   };
+-  const summaries = <><p>{draft.name}</p><p>{draft.description}</p><p>{c[baseline.status]}</p>
++  const summaries = <><p>{draft.name}</p><p>{draft.description}</p><p>{c[status]}</p>
+     <ul className="cat-sku-summary">{draft.rows.map((r, i) => <li key={r.id}><p>{skuFacts(i)} · {money(locale, store.currency, toMinor(r.price, store.currency) ?? 0)} · {rowStock(i)}</p></li>)}</ul>
+     <p>{imageSummary}</p></>;
+   return <div className="cat-task-editor" data-testid="catalog-task-editor" onKeyDown={e => { if (e.key === 'Escape' && screen === 'stock' && !locked) { e.preventDefault(); returnToVariants(); } }}>
+@@ -99,10 +101,11 @@ export function CatalogSimplifiedEditor({ locale, store, detail, boundary, onNav
+         <label>{text(draft.rows.length === 2 ? c.price : draft.rows.length > 2 ? c.multiPrice : c.onePrice, { currency: store.currency, n: draft.rows.length })}<input data-testid="catalog-common-price" inputMode="decimal" value={commonPrice}
+           onChange={e => setDraft({ ...draft, rows: draft.rows.map(row => ({ ...row, price: e.target.value })) })} /></label>
+         {!commonPrice && draft.rows.length > 1 && <p>{c.noPriceChange}</p>}
+-        <div className="cat-actions"><button type="button" onClick={() => setScreen('variants')}>{c.variants}</button>
+-          <button type="button" onClick={() => setScreen('media')}>{media ? media.items.length ? c.media : c.mediaNone : pc.loading}</button></div>
++        <label className="cat-status-radio"><input type="radio" name="catalog-status" aria-label={c[status]} checked readOnly />{c[status]}</label>
+       </fieldset>
+-      <div className="cat-actions"><Link role="button" href={`/${locale}/products?store=${store.id}`}>{c.cancel}</Link>
++      <div className="cat-editor-links"><button type="button" disabled={locked} onClick={() => setScreen('variants')}>{c.variants}</button>
++        <button type="button" disabled={locked} onClick={() => setScreen('media')}>{media ? media.items.length ? c.media : c.mediaNone : pc.loading}</button></div>
++      <div className="cat-actions cat-save-bar" data-testid="catalog-save-bar"><Link role="button" href={`/${locale}/products?store=${store.id}`}>{c.cancel}</Link>
+         <button className="product-primary" type="submit" disabled={locked}>{c.review}</button></div>
+     </form> : screen === 'variants' ? <section>
+       <h2 ref={title} tabIndex={-1}>{c.variants}</h2>
+@@ -115,16 +118,15 @@ export function CatalogSimplifiedEditor({ locale, store, detail, boundary, onNav
+       <button type="button" disabled={locked} onClick={() => setScreen('edit')}>{c.backEditor}</button>
+     </section> : screen === 'stock' && stockDraft ? <section>
+       <h2 ref={title} tabIndex={-1}>{c.stock}</h2>
+-      <p>{skuFacts(stockIndex)} · {rowStock(stockIndex)}</p>
++      <p>{skuFacts(stockIndex)}</p><p>{rowStock(stockIndex)}</p>
+       <fieldset className="cat-task-fields" disabled={locked}>
+-        <label><input data-testid="catalog-stock-tracked" type="checkbox" checked={stockDraft.tracked} onChange={e => setStockDraft({ ...stockDraft, tracked: e.target.checked })} />{c.tracked}</label>
+         {stockDraft.tracked ? <><label>{c.total}<input data-testid="catalog-stock-total" inputMode="numeric" value={stockDraft.quantity} onChange={e => setStockDraft({ ...stockDraft, quantity: e.target.value })} /></label>
+-          <label>{c.delta}<input data-testid="catalog-stock-delta" inputMode="numeric" value={Number(stockDraft.quantity) - (baseline.skus[stockIndex]?.on_hand ?? 0)} onChange={e => { if (/^[-+]?\d+$/.test(e.target.value)) setStockDraft({ ...stockDraft, quantity: String((baseline.skus[stockIndex]?.on_hand ?? 0) + Number(e.target.value)) }); }} /></label></> :
++</>  :
+           <label>{pc.max}<input data-testid="catalog-stock-max" inputMode="numeric" value={stockDraft.max} onChange={e => setStockDraft({ ...stockDraft, max: e.target.value })} /></label>}
+-        <p>{c.reason}</p>
++        {stockDraft.tracked && <p className="cat-stock-floor">{text(c.stockFloor, { n: baseline.skus[stockIndex]?.committed ?? 0 })}</p>}
+       </fieldset>
+       {stockError && <p role="alert">{stockError}</p>}
+-      <div className="cat-actions"><button type="button" disabled={locked} onClick={returnToVariants}>{c.keep}</button>
++      <div className="cat-actions cat-save-bar"><button type="button" disabled={locked} onClick={returnToVariants}>{stockError ? c.keep : c.backVariants}</button>
+         <button type="button" disabled={locked} onClick={checkStock}>{c.checkStock}</button></div>
+     </section> : screen === 'media' ? <section>
+       <h2 ref={title} tabIndex={-1}>{c.media}</h2>
+diff --git a/apps/admin/components/CustomerDetail.tsx b/apps/admin/components/CustomerDetail.tsx
+index 1b6b9322e..5e438e571 100644
+--- a/apps/admin/components/CustomerDetail.tsx
++++ b/apps/admin/components/CustomerDetail.tsx
+@@ -37,6 +37,7 @@ import { CustomerHistoricalOrders } from "./CustomerHistoricalOrders";
+ import "./orders.css";
+ import "./order-actions.css";
+ import "./customers.css";
++import "./customers/parity.css";
+ 
+ type Notice = { tone: "ok" | "bad"; text: string } | null;
+ const errorText = (c: CustomersCopy, code: string) => c.errors[code] ?? c.errors.default;
+@@ -131,10 +132,13 @@ function Body({
+   const [busy, setBusy] = useState("");
+   const [notice, setNotice] = useState<Notice>(null);
+   const p = c.people;
++  const [permissionDenied, setPermissionDenied] = useState(false);
+   const [exportOpen, setExportOpen] = useState(false);
+   const [pendingKind, setPendingKind] = useState("");
+   const [storageReady, setStorageReady] = useState(false);
+-  const [screen, setScreen] = useState<"profile" | "submitted" | "pending">("profile");
++  const [resultText, setResultText] = useState("");
++  const [checking, setChecking] = useState(false);
++  const [screen, setScreen] = useState<"profile" | "submitted" | "pending" | "downloaded" | "erased" | "limit" | "blocked">("profile");
+   const markerKey = useRef("");
+   const writing = useRef(false);
+   // Store only a command kind under an opaque session/store/customer digest. No PII, payload or key is cached.
+@@ -157,7 +161,7 @@ function Body({
+     })();
+     return () => { cancelled = true; };
+   }, [boundary, store, detail.customer_id]);
+-  const locked = !storageReady || pendingKind !== "";
++  const locked = !storageReady || pendingKind !== "" || permissionDenied;
+   function mark(kind: string) {
+     if (!markerKey.current) return false;
+     try { sessionStorage.setItem(markerKey.current, kind); setPendingKind(kind); return true; }
+@@ -178,7 +182,7 @@ function Body({
+     writing.current = false;
+     setBusy("");
+     if (result.ok) {
+-      if (privacy) { clearMarker(); setExportOpen(false); }
++      if (privacy) { clearMarker(); setExportOpen(false); setScreen("downloaded"); }
+       setNotice({ tone: "ok", text: next.done });
+       void refresh();
+     } else if (result.uncertain) {
+@@ -188,6 +192,8 @@ function Body({
+     } else {
+       if (privacy) clearMarker();
+       setNotice({ tone: "bad", text: errorText(c, result.code) });
++      if (privacy && result.code === "export_too_large") { setExportOpen(false); setScreen("limit"); }
++      if (result.code === "forbidden") { setExportOpen(false); setPermissionDenied(true); }
+     }
+   }
+   const withdraw = (purpose: string, channel: string) =>
+@@ -197,14 +203,30 @@ function Body({
+     run: (key) => postExport(store, detail.customer_id, key, boundary) });
+   const identity = <p className="people-identity">{storeInfo.name} · {detail.display_name ?? c.noName}<br />
+     {p.customerID} {detail.customer_id.slice(0, 8)}{detail.phone_last3 && <> · {p.phone} {detail.phone_last3}</>}</p>;
+-  if (screen !== "profile") return <section className="customers-section people-result" role="status">
+-    <h2>{pendingKind === "unknown" ? p.unconfirmed : screen === "submitted" ? (pendingKind === "erase" ? p.eraseSubmitted : p.exportSubmitted) : (pendingKind === "erase" ? p.erasePending : p.exportPending)}</h2>
+-    {identity}
+-    <p>{screen === "submitted" ? p.unconfirmed : p.paused}</p>
+-    <button type="button" onClick={() => setScreen(screen === "submitted" ? "pending" : "profile")}>
+-      {screen === "submitted" ? p.pending : p.viewData}
+-    </button>
+-  </section>;
++  async function inspectPending() {
++    if (checking) return;
++    setChecking(true);
++    // Existing synchronous contract has no request-status API. A fresh customer
++    // read is the only available reconciliation evidence; a failed read retains
++    // the authorized snapshot and the persistent command fence.
++    try { await readCustomer(store, detail.customer_id, new AbortController().signal); }
++    catch { /* Never clear the marker or replay an uncertain command. */ }
++    finally { setChecking(false); setScreen("pending"); }
++  }
++  if (screen !== "profile") {
++    const outcome = screen === "downloaded" || screen === "erased" || screen === "limit" || screen === "blocked";
++    const heading = screen === "downloaded" ? p.downloaded : screen === "erased" ? p.erased : screen === "limit" ? p.limit : screen === "blocked" ? p.blocked :
++      screen === "submitted" ? (pendingKind === "erase" ? p.eraseSubmitted : p.exportSubmitted) : (pendingKind === "erase" ? p.erasePending : p.exportPending);
++    return <section className="customers-section people-result" role="status">
++      <h2>{heading}</h2>{identity}
++      <p>{screen === "submitted" ? p.unconfirmed : screen === "pending" ? p.paused : screen === "limit" ? p.limitBody : screen === "blocked" ? p.blockedBody : screen === "downloaded" ? p.downloadedBody(detail.orders_count, detail.consent_history.length) : resultText}</p>
++      {screen === "downloaded" && <p>{p.fileSafety}</p>}
++      {screen === "erased" && <p data-testid="customer-erased">{c.erasedState}</p>}
++      <button type="button" disabled={checking} onClick={() => { if (screen === "submitted") void inspectPending(); else setScreen("profile"); }}>
++        {screen === "submitted" ? p.pending : outcome ? p.backCustomer : p.viewData}
++      </button>
++    </section>;
++  }
+ 
+   const label = (purpose: string) => (purpose === "marketing_messages" ? p.marketing : p.ads);
+   const source = (value: string) => value === "buyer_settings" ? p.settings : c.sources[value] ?? (value === "merchant_recorded" ? c.sources.merchant : "—");
+@@ -213,78 +235,28 @@ function Body({
+       <nav className="people-tabs" aria-label={p.title}>
+         <a href="#people-orders">{p.orders}</a><a href="#people-consent">{p.consent}</a><a href="#people-privacy">{p.privacy}</a>
+       </nav>
++      {permissionDenied && <section className="customers-section" role="status"><h2>{p.forbiddenTitle}</h2><p>{p.forbiddenBody}</p></section>}
+       {pendingKind && <section className="customers-section people-pending"><p>{p.paused}</p>{identity}
+         <button type="button" onClick={() => setScreen("pending")}>{p.pendingBack}</button></section>}
+       <div className="people-profile">
+       <aside className="people-side">
+       {detail.active && !!detail.tags?.length && <p className="customers-section">{detail.tags.map((tag) => tag.name).join(" · ")}</p>}
+       {detail.active && !!detail.notes?.length && <p className="customers-section">{detail.notes[0].body}</p>}
+-      <details className="people-advanced" data-testid="people-customer-tools"><summary>{p.advanced}</summary>{detail.active && <CustomerTags key={`${store}|${detail.customer_id}|${boundary}`} locale={locale} store={storeInfo}
+-        detail={detail} boundary={boundary} onChanged={refresh} onScopeLost={onScopeLost} />}
+-        <h3>{c.consentHistory}</h3>
+-        <p className="orders-hint">{c.withdrawHint}</p>
+-        {detail.consent_history.length === 0 ? (
+-          <p className="orders-empty">{c.consentHistoryNone}</p>
+-        ) : (
+-          <TableFrame label={c.consentSection} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
+-            <table className="orders-actions-table" data-testid="consent-history">
+-              <thead>
+-                <tr><th>{c.when}</th><th>{c.consentSection}</th><th>{c.source}</th><th>{c.policy}</th></tr>
+-              </thead>
+-              <tbody>
+-                {detail.consent_history.map((event, index) => (
+-                  <tr key={`${event.occurred_at}-${index}`}>
+-                    <td>{displayTime(locale, event.occurred_at)}</td>
+-                    <td>
+-                      {label(event.purpose)}:{" "}
+-                      <Badge tone={event.granted ? "success" : "neutral"}>
+-                        {event.granted ? p.granted : p.withdrawn}
+-                      </Badge>
+-                    </td>
+-                    <td>{source(event.source)}</td>
+-                    <td>{event.policy_version}</td>
+-                  </tr>
+-                ))}
+-              </tbody>
+-            </table>
+-          </TableFrame>
+-        )}
+-
+-        <h3>{c.actionsSection}</h3>
+-        {detail.privacy_actions.length === 0 ? (
+-          <p className="orders-empty">{c.actionsNone}</p>
+-        ) : (
+-          <TableFrame label={c.privacySection} scrollHint={presentationCopy[locale].scroll} scrollClassName="orders-actions-scroll">
+-            <table className="orders-actions-table" data-testid="privacy-actions">
+-              <thead><tr><th>{c.when}</th><th>{c.actionCol}</th><th>{c.source}</th></tr></thead>
+-              <tbody>
+-                {detail.privacy_actions.map((action, index) => (
+-                  <tr key={`${action.completed_at}-${index}`}>
+-                    <td>{displayTime(locale, action.completed_at)}</td>
+-                    <td>{c.kinds[action.kind.toLowerCase()] ?? action.kind}</td>
+-                    <td>{c.via[action.via] ?? action.via}</td>
+-                  </tr>
+-                ))}
+-              </tbody>
+-            </table>
+-          </TableFrame>
+-        )}
+-
+-      </details>
+       {detail.active && detail.imported && <>
+         <Badge tone="neutral">{c.imported}</Badge>
+         <CustomerHistoricalOrders key={`history|${store}|${detail.customer_id}|${boundary}`} locale={locale}
+           store={store} customer={detail.customer_id} boundary={boundary} />
+       </>}
+       <section id="people-privacy" className="customers-section people-privacy" aria-label={p.privacy} data-testid="customer-privacy">
+-        <h2>{c.privacySection}</h2>
++        <h2>{p.customerPrivacy}</h2>
+ 
+         <div className="customers-actions">
+           <button type="button" data-testid="customer-download" disabled={busy !== "" || locked} onClick={() => setExportOpen(true)}>
+             {busy === "export" ? c.downloading : p.download}
+           </button>
+           {detail.active && <EraseDialog detail={detail} store={store} boundary={boundary} c={c} busy={busy !== "" || locked} identity={identity} beforeSend={() => mark("erase")} clearMarker={clearMarker}
+-            onUncertain={() => setScreen("submitted")} onDone={(text) => { setNotice({ tone: "ok", text }); void refresh(); }} />}
++            onUncertain={() => setScreen("submitted")} onDenied={() => setPermissionDenied(true)} onBlocked={() => setScreen("blocked")}
++            onDone={(text) => { setResultText(text); setScreen("erased"); void refresh(); }} />}
+         </div>
+         {notice && (
+           <p className={notice.tone === "ok" ? "orders-notice" : "orders-bad"} role={notice.tone === "ok" ? "status" : "alert"}
+@@ -361,14 +333,13 @@ function Body({
+         <ul className="customers-consent">
+           {consentPairs.map(({ purpose, channel }) => {
+             const on = detail.consents[purpose];
++            const event = detail.consent_history.filter(item => item.purpose === purpose).sort((a, b) => b.occurred_at.localeCompare(a.occurred_at))[0];
+             return (
+               <li key={purpose} data-testid={`consent-${purpose}`}>
+-                <span>{label(purpose)}{detail.consent_history.find((event) => event.purpose === purpose) && <small className="people-event">
+-                  {(() => { const event = detail.consent_history.find((item) => item.purpose === purpose)!; return `${source(event.source)} · ${date(event.occurred_at)}`; })()}
+-                </small>}</span>
+-                <Badge tone={on ? "success" : "neutral"}>
+-                  {on ? p.granted : detail.consent_history.some((event) => event.purpose === purpose && !event.granted) ? p.withdrawn : c.consentNone}
+-                </Badge>
++                <span>{label(purpose)}<small className="people-event">
++                  {on ? p.granted : detail.consent_state?.[purpose] === "withdrawn" || event && !event.granted ? p.withdrawn : p.never}
++                  {event && <> · {source(event.source)} · {date(event.occurred_at)}</>}
++                </small></span>
+                 {on && detail.active && (
+                   <button type="button" data-testid={`withdraw-${purpose}`} disabled={busy !== "" || locked}
+                     onClick={() => void withdraw(purpose, channel)}>
+@@ -382,6 +353,11 @@ function Body({
+ 
+       </section>
+ 
++      {detail.privacy_actions.length > 0 && <section className="customers-section" aria-label={c.actionsSection}>
++        <h2>{c.actionsSection}</h2><table className="orders-actions-table" data-testid="privacy-actions"><tbody>
++          {detail.privacy_actions.map((action, index) => <tr key={index}><td>{displayTime(locale, action.completed_at)}</td><td>{c.kinds[action.kind.toLowerCase()] ?? "—"}</td></tr>)}
++        </tbody></table>
++      </section>}
+       </div>
+ 
+       </div>
+@@ -390,9 +366,9 @@ function Body({
+ }
+ 
+ // Native dialogs preserve keyboard dismissal and focus; only the signed name + scope checkbox enables erasure.
+-function EraseDialog({ detail, store, boundary, c, busy: otherBusy, identity, beforeSend, clearMarker, onUncertain, onDone }: {
++function EraseDialog({ detail, store, boundary, c, busy: otherBusy, identity, beforeSend, clearMarker, onUncertain, onDenied, onBlocked, onDone }: {
+   detail: Detail; store: string; boundary: string; c: CustomersCopy; busy: boolean; identity: ReactNode;
+-  beforeSend: () => boolean; clearMarker: () => void; onUncertain: () => void; onDone: (text: string) => void;
++  beforeSend: () => boolean; clearMarker: () => void; onUncertain: () => void; onDenied: () => void; onBlocked: () => void; onDone: (text: string) => void;
+ }) {
+   const dialog = useRef<HTMLDialogElement>(null);
+   const typedInput = useRef<HTMLInputElement>(null);
+@@ -429,6 +405,8 @@ function EraseDialog({ detail, store, boundary, c, busy: otherBusy, identity, be
+       setOpen(false); onUncertain();
+     } else {
+       clearMarker(); key.current = newKey("erase"); setProblem(errorText(c, result.code));
++      if (result.code === "erasure_blocked") { setOpen(false); onBlocked(); }
++      if (result.code === "forbidden") { setOpen(false); onDenied(); }
+     }
+   }
+   return <>
+diff --git a/apps/admin/components/Customers.tsx b/apps/admin/components/Customers.tsx
+index 10bdd6715..9bcf097fb 100644
+--- a/apps/admin/components/Customers.tsx
++++ b/apps/admin/components/Customers.tsx
+@@ -29,6 +29,7 @@ import { Icon } from "./Icon";
+ import "./orders.css";
+ import "./order-actions.css";
+ import "./customers.css";
++import "./customers/parity.css";
+ 
+ function url(locale: Locale, store: string, q: string, after: string, tag = "") {
+   const params = new URLSearchParams();
+@@ -126,7 +127,7 @@ export function Customers({
+           )}
+         </form>
+         </div>
+-        <details className="people-advanced" data-testid="people-list-tools"><summary>{p.advanced}</summary>
++        {tag && <section className="people-tools" data-testid="people-list-tools" aria-label={tc.manage}>
+           <div className="orders-controls">
+           <button type="button" data-testid="customers-refresh" disabled={read.status === "loading"} onClick={read.reload}>
+             <Icon name="refresh" size={18} />
+@@ -149,7 +150,7 @@ export function Customers({
+           {store && canSeeReports(store) && <Link className="orders-export" href={`/${locale}/finance/reports?store=${store.id}`} data-testid="customers-reports">{c.reportsLink}</Link>}
+           {store?.permissions?.includes("customers:privacy") && <Link className="orders-export" href={`/${locale}/customers/import?store=${store.id}`} data-testid="customers-import">{c.importLink}</Link>}
+           </div>
+-        </details>
++        </section>}
+         {(read.status === "loading" || read.status === "hidden") && (
+           <AdminStateBlock variant="loading" title={c.loading} />
+         )}
+@@ -239,7 +240,7 @@ function CustomerRow({ row, c, locale, store, q = "", tag = "" }: { row: Custome
+       </td>
+       <td data-label={c.orders}>{row.orders_count}<span className="people-mobile-label"> {p.orders}</span></td>
+       <td data-label={p.net}><span className="people-mobile-label">{p.net} </span>{row.currency ? m(row.captured_minor - row.refunded_minor) : "—"}</td>
+-      <td data-label={p.consent}><span>{c.marketing}: {row.consents.marketing_messages ? c.consentGranted : c.consentNone}</span></td>
++      <td data-label={p.consent}><span>{p.marketingShort}{p.colon}{row.consent_state?.marketing_messages === "withdrawn" ? p.withdrawn : row.consents.marketing_messages ? p.granted : p.never}</span></td>
+     </tr>
+   );
+ }
+diff --git a/apps/admin/components/ProductList.tsx b/apps/admin/components/ProductList.tsx
+index dac0aaf77..def7f4f9c 100644
+--- a/apps/admin/components/ProductList.tsx
++++ b/apps/admin/components/ProductList.tsx
+@@ -3,17 +3,16 @@
+ // Used by: apps/admin/app/[locale]/products/page.tsx
+ // Invariants: product facts require a ready guarded read; selection replaces browse chrome; one Edit action per row; commands are fenced; archive preserves history; no inline editors.
+ "use client";
+-import { useEffect, useRef, useState, type FormEvent } from "react";
++import { useEffect, useRef, useState } from "react";
+ import Link from "next/link";
+ import { useRouter } from "next/navigation";
+ import { catalogTaskCopy, catalogText, type Locale } from "@live-commerce/i18n";
+-import { TabStrip } from "@live-commerce/ui";
+ import type { Store } from "@/lib/model";
+ import { money } from "@/lib/client";
+ import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
+ import { command, readProducts } from "@/lib/catalog-v2-client";
+-import { parseCreated, type ProductStatus, type ProductSummary } from "@/lib/catalog-v2-model";
+-import { catalogCopy, catalogPresentationCopy } from "@/lib/catalog-v2-copy";
++import { type ProductStatus, type ProductSummary } from "@/lib/catalog-v2-model";
++import { catalogCopy } from "@/lib/catalog-v2-copy";
+ import { productEditorCopy } from "@/lib/product-editor-copy";
+ import { parseBulk, type BulkResult } from "@/lib/product-document";
+ import { useWrite } from "@/lib/catalog-v2-write";
+@@ -25,6 +24,7 @@ import { ProductPhoto } from "./ProductPhoto";
+ import "./orders.css";
+ import "./ProductAdmin.css";
+ import "./ProductDocument.css";
++import "./catalog/parity.css";
+ const href = (locale: Locale, store: string, q: string, status: string, after: string) => {
+   const p = new URLSearchParams();
+   if (store) p.set('store', store);
+@@ -43,7 +43,7 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
+ }) {
+   const c = catalogTaskCopy[locale], pc = productEditorCopy[locale], legacy = catalogCopy[locale].list;
+   const router = useRouter(), sid = store?.id ?? '';
+-  const [draft, setDraft] = useState(q), [selected, setSelected] = useState<string[]>([]);
++  const [selected, setSelected] = useState<string[]>([]);
+   const [review, setReview] = useState<ProductSummary[] | null>(null), [results, setResults] = useState<BulkResult[]>([]);
+   const [resultRows, setResultRows] = useState<ProductSummary[]>([]);
+   const previous = useRef<string[]>([]);
+@@ -64,7 +64,6 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
+     setSelected([]); setResults([]); setReview(null);
+     router.push(href(locale, sid, nextQ, nextStatus, nextAfter));
+   };
+-  const search = (event: FormEvent) => { event.preventDefault(); previous.current = []; go(status, draft.trim()); };
+   const failure = read.status === 'signed-out' ? legacy.signedOut : read.status === 'forbidden' ? legacy.forbidden :
+     read.status === 'not-found' ? legacy.noStore : read.status === 'unavailable' ? legacy.unavailable : '';
+   const price = (r: ProductSummary) => r.price_min_minor === null ? legacy.noVariants :
+@@ -77,12 +76,6 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
+     await write.run(command('POST', 'products/bulk-status', { ids: items.map(r => r.id), status: target }), parseBulk,
+       async value => { setResultRows(items); setResults(value); setSelected([]); setReview(null); await read.refresh(); }, pc.success);
+   }
+-  async function copySelected() {
+-    const row = rows.find(r => selected.includes(r.id));
+-    if (read.status !== 'ready' || locked || selected.length !== 1 || !row) return;
+-    await write.run(command('POST', `products/${row.id}/copy`, { expected_version: row.version }), parseCreated,
+-      async value => { setResultRows([row]); setResults([{ id: value.id, status: 'draft' }]); setSelected([]); await read.refresh(); }, pc.success);
+-  }
+   const archiveResult = results.length > 0 && results.every(r => r.status === 'archived' || !!r.error);
+   return <WorkspaceFrame locale={locale} storeName={store?.name ?? legacy.noStore} active="products" locked={locked}>
+     <div className="orders-page product-admin pe-catalog cat-task-list" data-testid="products-page">
+@@ -105,48 +98,32 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
+         })}</ul>
+         <button type="button" onClick={() => setResults([])}>{c.view}</button>
+       </section> : <>
+-        {!selected.length && <>
+-        <TabStrip label={legacy.status} previousLabel={catalogPresentationCopy[locale].previousTabs} nextLabel={catalogPresentationCopy[locale].nextTabs}>
++        <nav className="cat-chip-tabs" aria-label={legacy.status}>
+           {(['all', 'active', 'draft', 'archived'] as const).map(s => <button type="button" key={s} disabled={locked}
+             data-testid={`products-tab-${s}`} aria-pressed={status === s} onClick={() => { previous.current = []; go(s); }}>
+             {c[s]} {page ? s === 'all' ? page.total : page.status_counts[s] : ''}</button>)}
+-        </TabStrip>
+-        <form className="cat-search" role="search" onSubmit={search}>
+-          <input type="search" aria-label={legacy.search} data-testid="products-search" placeholder={legacy.search} value={draft} maxLength={120} onChange={e => setDraft(e.target.value)} />
+-          <button type="submit" aria-label={legacy.searchButton} data-testid="products-search-submit" disabled={locked || !store}><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg></button>
+-        </form>
+-        </>}
++        </nav>
+         {(read.status === 'loading' || read.status === 'hidden') && <p role="status">{legacy.loading}</p>}
+         {failure && <div role="alert"><p>{failure}</p><button type="button" onClick={read.reload}>{legacy.retry}</button></div>}
+         {read.status === 'ready' && page && <>
+           <div className="cat-list-tools">
+-            <label className="pe-select"><input type="checkbox" data-testid="products-select-all" aria-label={catalogText(c.select, { n: rows.length })}
+-              checked={!!rows.length && rows.every(r => selected.includes(r.id))} disabled={locked || !rows.length}
+-              onChange={e => setSelected(e.target.checked ? rows.slice(0, 100).map(r => r.id) : [])} /></label>
+-            <div data-testid="product-batch" className="cat-actions">
+-              {selected.length > 0 && <strong>{catalogText(c.selected, { n: selected.length })}</strong>}
+-              {(selected.length > 0 || locked) && <button type="button" disabled={locked} onClick={() => setReview(rows.filter(r => selected.includes(r.id)))}>{c.archive}</button>}
+-              <details><summary data-testid="products-advanced">{c.advanced}</summary><div className="cat-actions">
+-                <Link data-testid="products-ledger-link" href={`/${locale}/inventory?store=${sid}`}>{legacy.inventory}</Link>
+-                {(selected.length > 0 || locked) && <>
+-                <button type="button" disabled={locked} onClick={() => void bulk('active')}>{pc.publishSelected}</button>
+-                <button type="button" disabled={locked} onClick={() => void bulk('draft')}>{pc.unpublish}</button>
+-                <button type="button" data-testid="products-copy-selected" disabled={locked || selected.length !== 1} onClick={() => void copySelected()}>{pc.copy}</button>
+-                </>}
+-              </div></details>
+-            </div>
++            <label className="cat-select-all"><input type="checkbox" data-testid="products-select-all" aria-label={catalogText(c.select, { n: Math.min(rows.length, 100) })}
++              checked={!!rows.length && rows.slice(0, 100).every(r => selected.includes(r.id))} disabled={locked || !rows.length}
++              onChange={e => setSelected(e.target.checked ? rows.slice(0, 100).map(r => r.id) : [])} />
++              <span>{catalogText(selected.length ? c.selected : c.select, { n: selected.length || Math.min(rows.length, 100) })}</span>
++            </label>
++            {(selected.length > 0 || locked) && <div data-testid="product-batch" className="cat-save-bar cat-actions">
++              <button className="product-primary" type="button" disabled={locked} onClick={() => setReview(rows.filter(r => selected.includes(r.id)))}>{c.archive}</button>
++            </div>}
+           </div>
+           {rows.length ? <table data-testid="products-table" aria-label={c.title} className="cat-products-table"><thead className="cat-sr-only"><tr>
+-            <th scope="col" aria-label={pc.select} /><th scope="col" aria-label={legacy.product} /><th scope="col" aria-label={legacy.status} />
+-            <th scope="col" aria-label={`${legacy.price} · ${legacy.stock}`} /><th scope="col" aria-label={c.edit} />
++            <th scope="col" aria-label={pc.select} /><th scope="col" aria-label={legacy.product} /><th scope="col" aria-label={c.edit} />
+           </tr></thead><tbody>{rows.map(row => <tr data-testid={`product-row-${row.id}`} key={row.id}>
+             <td className="pe-selection-cell"><label className="pe-select"><input type="checkbox" aria-label={`${pc.select}: ${row.name}`} checked={selected.includes(row.id)} disabled={locked}
+               onChange={() => setSelected(now => now.includes(row.id) ? now.filter(id => id !== row.id) : [...now, row.id].slice(0, 100))} /></label></td>
+             <td className="pe-product-cell"><div className="product-cell">
+               <ProductPhoto code="" name={row.name} demo={false} imageSrc={row.cover_image_id ? imageURL(sid, row.id, row.cover_image_id) : undefined} />
+-              <span className="pe-product-identity"><strong>{row.name}</strong></span></div></td>
+-            <td className="pe-status-cell"><span className="product-status">{c[row.status]}</span></td>
+-            <td className="pe-price-cell pe-stock-cell"><span>{price(row)} · {stock(row)}</span></td>
++              <span className="pe-product-identity"><strong>{row.name}</strong><span className="cat-row-price">{price(row)}</span><span className="cat-row-state">{c[row.status]} · {stock(row)}</span></span></div></td>
+             <td className="pe-actions-cell"><div className="pe-row-actions"><Link href={editHref(locale, sid, row.id)}>{c.edit}</Link></div></td>
+           </tr>)}</tbody></table> : <p role="status">{status === 'archived' ? c.empty : q || status !== 'all' ? legacy.emptySearch : legacy.empty}</p>}
+           {(after || page.next_cursor) && <footer className="orders-pager">
+diff --git a/apps/admin/lib/customers-model.ts b/apps/admin/lib/customers-model.ts
+index 0fd92962b..fa5744ddc 100644
+--- a/apps/admin/lib/customers-model.ts
++++ b/apps/admin/lib/customers-model.ts
+@@ -11,6 +11,7 @@ export const consentPairs: readonly { purpose: ConsentPurpose; channel: ConsentC
+   { purpose: "marketing_messages", channel: "meta_dm" },
+   { purpose: "ads_personalization", channel: "meta_ads" },
+ ];
++export type ConsentState = Record<ConsentPurpose, "granted" | "withdrawn" | "never">;
+ export type Consents = { marketing_messages: boolean; ads_personalization: boolean };
+ // W6-01B (customers-billing-v1 Amendment): merchant-typed tags and private notes. Parsers only; rendering is W6-U1.
+ export const tagColors = ["gray", "red", "orange", "yellow", "green", "teal", "blue", "purple"] as const;
+@@ -31,6 +32,7 @@ export type Customer = {
+   claims_count: number;
+   platforms: string[];
+   consents: Consents;
++  consent_state?: ConsentState;
+   active: boolean;
+   imported: boolean; // W5-02B: created by a customer import (migration 0152); consent is never imported
+   tags: Tag[];
+@@ -154,10 +156,21 @@ function customerFrom(v: Record<string, unknown>): Customer {
+   // An erased owner (active=false) never shows a granted consent: consent_allows is false for it (CD4/CD7).
+   const consents = parseConsents(v.consents);
+   if (!v.active && (consents.marketing_messages || consents.ads_personalization)) throw new Error("unavailable");
++  // Additive rollout: an old read may omit this field, but false never implies withdrawal.
++  if (v.consent_state !== undefined) {
++    const state = object(v.consent_state, ["marketing_messages", "ads_personalization"]);
++    for (const { purpose } of consentPairs) {
++      if (!["granted", "withdrawn", "never"].includes(String(state[purpose])) ||
++        (state[purpose] === "granted") !== consents[purpose]) throw new Error("unavailable");
++    }
++  }
+   return { ...(v as Omit<Customer, "consents" | "tags">), consents, tags: parseTags(v.tags) };
+ }
++function customerReadKeys(value: unknown): string[] {
++  return value && typeof value === "object" && Object.hasOwn(value, "consent_state") ? [...customerKeys, "consent_state"] : customerKeys;
++}
+ export function parseCustomer(value: unknown): Customer {
+-  return customerFrom(object(value, customerKeys));
++  return customerFrom(object(value, customerReadKeys(value)));
+ }
+ 
+ export function parseCustomerList(value: unknown): CustomerList {
+@@ -193,8 +206,8 @@ function parsePrivacyAction(value: unknown): PrivacyAction {
+ }
+ 
+ export function parseCustomerDetail(value: unknown, requestedID: string): CustomerDetail {
+-  const v = object(value, [...customerKeys, "orders", "claims", "consent_history", "privacy_actions", "tags_revision", "notes"]);
+-  const head = customerFrom(Object.fromEntries(customerKeys.map((key) => [key, v[key]])));
++  const v = object(value, [...customerReadKeys(value), "orders", "claims", "consent_history", "privacy_actions", "tags_revision", "notes"]);
++  const head = customerFrom(Object.fromEntries(customerReadKeys(value).map((key) => [key, v[key]])));
+   // Bounds: newest 50 orders (§7); the other lists are bounded by what one owner can hold in v1.
+   if (head.customer_id !== requestedID || !Array.isArray(v.orders) || v.orders.length > 50 ||
+     !Array.isArray(v.claims) || v.claims.length > 500 || !Array.isArray(v.consent_history) ||
+diff --git a/internal/customers/read.go b/internal/customers/read.go
+index 70ca07202..c4390007f 100644
+--- a/internal/customers/read.go
++++ b/internal/customers/read.go
+@@ -78,6 +78,14 @@ func List(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, in
+ 		if err != nil {
+ 			return empty, err
+ 		}
++		// The existing customers:read definer already scopes and validates the
++		// append-only history. Reuse it rather than adding a SQL grant/migration
++		// or guessing withdrawal from the list's false boolean. Page size is bounded.
++		detail, _, err := loadDetail(ctx, tx, scope, token, c.CustomerID)
++		if err != nil {
++			return empty, err
++		}
++		c.ConsentState = detail.ConsentState
+ 		empty.Items = append(empty.Items, c)
+ 	}
+ 	if len(empty.Items) > limit {
+diff --git a/internal/customers/types.go b/internal/customers/types.go
+index b51481344..536ffce73 100644
+--- a/internal/customers/types.go
++++ b/internal/customers/types.go
+@@ -82,6 +82,37 @@ type Consents struct {
+ 	AdsPersonalization bool `json:"ads_personalization"`
+ }
+ 
++// ConsentState distinguishes an absent decision from a recorded withdrawal. It is
++// a read projection only; Consents remains the authorization result (CD4).
++type ConsentState struct {
++	MarketingMessages  string `json:"marketing_messages"`
++	AdsPersonalization string `json:"ads_personalization"`
++}
++
++func consentState(history []ConsentEvent) ConsentState {
++	out := ConsentState{MarketingMessages: "never", AdsPersonalization: "never"}
++	latest := map[string]string{}
++	for _, event := range history {
++		if !ValidPair(event.Purpose, event.Channel) {
++			continue
++		}
++		if seen, ok := latest[event.Purpose]; ok && event.OccurredAt <= seen {
++			continue
++		}
++		latest[event.Purpose] = event.OccurredAt
++		state := "withdrawn"
++		if event.Granted {
++			state = "granted"
++		}
++		if event.Purpose == PurposeMarketingMessages {
++			out.MarketingMessages = state
++		} else {
++			out.AdsPersonalization = state
++		}
++	}
++	return out
++}
++
+ // Customer is one list row (contract §5). CustomerID is the buyer.owners id (C-1, D1): it is not a credential.
+ type Customer struct {
+ 	CustomerID      string   `json:"customer_id"`
+@@ -97,6 +128,7 @@ type Customer struct {
+ 	ClaimsCount     int64    `json:"claims_count"`
+ 	Platforms       []string `json:"platforms"`
+ 	Consents        Consents `json:"consents"`
++	ConsentState    ConsentState `json:"consent_state"`
+ 	Active          bool     `json:"active"`
+ 	// Imported is true for a customer created by the CSV import (W5-02B): it has an import profile instead of orders or bundles.
+ 	Imported bool `json:"imported"`
+@@ -428,6 +460,7 @@ func decodeDetail(raw json.RawMessage) (detailWire, error) {
+ 	if CurrentConsents(d.ConsentHistory) != d.Consents {
+ 		return detailWire{}, ErrUnavailable
+ 	}
++	d.ConsentState = consentState(d.ConsentHistory)
+ 	return d, nil
+ }
+ 
+diff --git a/packages/i18n/src/catalog.ts b/packages/i18n/src/catalog.ts
+index efb722dc3..259d68be0 100644
+--- a/packages/i18n/src/catalog.ts
++++ b/packages/i18n/src/catalog.ts
+@@ -18,14 +18,15 @@ const en = {
+   advanced: 'Advanced', standard: 'Back to product editor', reason: 'Reason: Admin edit', tracked: 'Track stock',
+   imagesSummary: 'Main {main}/4 · Variant {sku}/{variants} · Detail {detail}/20',
+   uploadHelp: 'JPG, PNG, WebP; max 2 MB each; detail height up to six times width.',
++  stockFloor: 'Count at least {n} units.',
+   noPriceChange: 'Prices differ; edit each variant.', unchangedOrders: 'Existing orders keep their price.',
+ };
+ type Copy = { [K in keyof typeof en]: string };
+ const tw: Copy = {
+-  title:'商品',editorTitle:'編輯商品',edit:'編輯',all:'全部',active:'在售',draft:'草稿',archived:'已歸檔',empty:'尚無已歸檔商品',select:'選取 {n} 件',selected:'已選 {n} 件',archive:'歸檔商品',archiveTitle:'確認歸檔 {n} 件',archivePolicy:'歸檔後停止接單；舊訂單保留。',confirmArchive:'確認歸檔',backSelection:'返回選取',result:'{saved} 件已歸檔，{failed} 件未變更',live:'直播接單中，結束後再歸檔。',view:'查看商品列表',name:'商品名稱',desc:'商品說明',price:'兩款售價 · {currency}',onePrice:'售價 · {currency}',multiPrice:'{n} 款售價 · {currency}',variants:'規格與庫存',stock:'調整庫存',total:'調整後現有',delta:'調整數量',checkStock:'核對庫存',keep:'保留目前庫存',backVariants:'返回規格',backEditor:'返回商品編輯',review:'檢查變更',reviewTitle:'核對變更',confirm:'確認儲存',continueEdit:'繼續編輯',saved:'商品已儲存',mediaNone:'商品圖片 · 未加入',media:'商品圖片',choose:'選擇圖片',chooseVariant:'選擇{value}圖片',main:'主圖 {n}/4 · 上架必填',detail:'詳情圖 {n}/20',variantImages:'規格圖',stockError:'未儲存：{target} 件少於占用的 {committed} 件；全部變更未送出。',cancel:'取消變更',soldOut:'售罄',available:'可售 {n}',onHand:'現有 {n}',committed:'已占用 {n}',advanced:'進階',standard:'返回商品編輯',reason:'調整原因：後台編輯',tracked:'追蹤庫存',imagesSummary:'主圖 {main}/4 · 規格圖 {sku}/{variants} · 詳情圖 {detail}/20',uploadHelp:'JPG、PNG、WebP；每張最多 2 MB；詳情圖高度最多寬度六倍。',noPriceChange:'各規格售價不同，請分別編輯。',unchangedOrders:'舊訂單售價不變。',
++  title:'商品',editorTitle:'編輯商品',edit:'編輯',all:'全部',active:'在售',draft:'草稿',archived:'已歸檔',empty:'尚無已歸檔商品',select:'選取 {n} 件',selected:'已選 {n} 件',archive:'歸檔商品',archiveTitle:'確認歸檔 {n} 件',archivePolicy:'歸檔後停止接單；舊訂單保留。',confirmArchive:'確認歸檔',backSelection:'返回選取',result:'{saved} 件已歸檔，{failed} 件未變更',live:'直播接單中，結束後再歸檔。',view:'查看商品列表',name:'商品名稱',desc:'商品說明',price:'兩款售價 · {currency}',onePrice:'售價 · {currency}',multiPrice:'{n} 款售價 · {currency}',variants:'規格與庫存',stock:'調整庫存',total:'調整後現有',delta:'調整數量',checkStock:'核對庫存',keep:'保留目前庫存',backVariants:'返回規格',backEditor:'返回商品編輯',review:'檢查變更',reviewTitle:'核對變更',confirm:'確認儲存',continueEdit:'繼續編輯',saved:'商品已儲存',mediaNone:'商品圖片 · 未加入',media:'商品圖片',choose:'選擇圖片',chooseVariant:'選擇{value}圖片',main:'主圖 {n}/4 · 上架必填',detail:'詳情圖 {n}/20',variantImages:'規格圖',stockError:'未儲存：{target} 件少於占用的 {committed} 件；全部變更未送出。',cancel:'取消變更',soldOut:'售罄',available:'可售 {n}',onHand:'現有 {n}',committed:'已占用 {n}',advanced:'進階',standard:'返回商品編輯',reason:'調整原因：後台編輯',tracked:'追蹤庫存',imagesSummary:'主圖 {main}/4 · 規格圖 {sku}/{variants} · 詳情圖 {detail}/20',uploadHelp:'JPG、PNG、WebP；每張最多 2 MB；詳情圖高度最多寬度六倍。',stockFloor:'盤點總量至少 {n} 件。',noPriceChange:'各規格售價不同，請分別編輯。',unchangedOrders:'舊訂單售價不變。',
+ };
+ const cn: Copy = {
+-  title:'商品',editorTitle:'编辑商品',edit:'编辑',all:'全部',active:'在售',draft:'草稿',archived:'已归档',empty:'暂无已归档商品',select:'选择 {n} 件',selected:'已选 {n} 件',archive:'归档商品',archiveTitle:'确认归档 {n} 件',archivePolicy:'归档后停止接单；保留原订单。',confirmArchive:'确认归档',backSelection:'返回选择',result:'{saved} 件已归档，{failed} 件未更改',live:'直播接单中，结束后再归档。',view:'查看商品列表',name:'商品名称',desc:'商品说明',price:'两款售价 · {currency}',onePrice:'售价 · {currency}',multiPrice:'{n} 款售价 · {currency}',variants:'规格与库存',stock:'调整库存',total:'调整后现有',delta:'调整数量',checkStock:'核对库存',keep:'保留当前库存',backVariants:'返回规格',backEditor:'返回商品编辑',review:'检查更改',reviewTitle:'核对更改',confirm:'确认保存',continueEdit:'继续编辑',saved:'商品已保存',mediaNone:'商品图片 · 未添加',media:'商品图片',choose:'选择图片',chooseVariant:'选择{value}图片',main:'主图 {n}/4 · 上架必填',detail:'详情图 {n}/20',variantImages:'规格图',stockError:'未保存：{target} 件少于占用的 {committed} 件；全部更改未提交。',cancel:'取消更改',soldOut:'售罄',available:'可售 {n}',onHand:'现有 {n}',committed:'已占用 {n}',advanced:'进阶',standard:'返回商品编辑',reason:'调整原因：后台编辑',tracked:'跟踪库存',imagesSummary:'主图 {main}/4 · 规格图 {sku}/{variants} · 详情图 {detail}/20',uploadHelp:'JPG、PNG、WebP；每张最多 2 MB；详情图高度不超过宽度六倍。',noPriceChange:'各规格售价不同，请分别编辑。',unchangedOrders:'原订单价格不变。',
++  title:'商品',editorTitle:'编辑商品',edit:'编辑',all:'全部',active:'在售',draft:'草稿',archived:'已归档',empty:'暂无已归档商品',select:'选择 {n} 件',selected:'已选 {n} 件',archive:'归档商品',archiveTitle:'确认归档 {n} 件',archivePolicy:'归档后停止接单；保留原订单。',confirmArchive:'确认归档',backSelection:'返回选择',result:'{saved} 件已归档，{failed} 件未更改',live:'直播接单中，结束后再归档。',view:'查看商品列表',name:'商品名称',desc:'商品说明',price:'两款售价 · {currency}',onePrice:'售价 · {currency}',multiPrice:'{n} 款售价 · {currency}',variants:'规格与库存',stock:'调整库存',total:'调整后现有',delta:'调整数量',checkStock:'核对库存',keep:'保留当前库存',backVariants:'返回规格',backEditor:'返回商品编辑',review:'检查更改',reviewTitle:'核对更改',confirm:'确认保存',continueEdit:'继续编辑',saved:'商品已保存',mediaNone:'商品图片 · 未添加',media:'商品图片',choose:'选择图片',chooseVariant:'选择{value}图片',main:'主图 {n}/4 · 上架必填',detail:'详情图 {n}/20',variantImages:'规格图',stockError:'未保存：{target} 件少于占用的 {committed} 件；全部更改未提交。',cancel:'取消更改',soldOut:'售罄',available:'可售 {n}',onHand:'现有 {n}',committed:'已占用 {n}',advanced:'进阶',standard:'返回商品编辑',reason:'调整原因：后台编辑',tracked:'跟踪库存',imagesSummary:'主图 {main}/4 · 规格图 {sku}/{variants} · 详情图 {detail}/20',uploadHelp:'JPG、PNG、WebP；每张最多 2 MB；详情图高度不超过宽度六倍。',stockFloor:'盘点总量至少 {n} 件。',noPriceChange:'各规格售价不同，请分别编辑。',unchangedOrders:'原订单价格不变。',
+ };
+ export const catalogTaskCopy = { 'zh-TW': tw, 'zh-CN': cn, en } as const;
+ /** Fill a localized template with values, without HTML interpretation. */
+diff --git a/packages/i18n/src/people.ts b/packages/i18n/src/people.ts
+index 702867957..99e9fecf1 100644
+--- a/packages/i18n/src/people.ts
++++ b/packages/i18n/src/people.ts
+@@ -25,6 +25,13 @@ const en = {
+   unconfirmed: "The outcome has not been confirmed. Do not submit again.",
+   storeCount: (n: number) => `Store customers · ${n}`, found: (n: number) => `${n} customer${n === 1 ? "" : "s"} found`,
+   marketing: "Marketing messages · Messenger / IG DM", ads: "Personalized ads · Meta", settings: "Customer settings",
++  downloaded: "Data downloaded", erased: "Customer erased", limit: "Download limit exceeded", blocked: "Cannot erase right now",
++  downloadedBody: (orders: number, history: number) => `JSON · ${orders} orders · ${history} consent records. Customer data file created with your permissions.`,
++  limitBody: "More than 200 orders or 1 MiB. No download file was created. Follow your store's privacy procedure.",
++  blockedBody: "An order, payment or refund is still open. Resolve the transaction before checking erasure again.",
++  fileSafety: "The file may contain protected order delivery details. Keep it secure.",
++  customerPrivacy: "Customer privacy", forbiddenTitle: "Privacy permission required", forbiddenBody: "You can view this customer and their orders. Ask the store owner for privacy permission to download or erase data.",
++  marketingShort: "Marketing messages", colon: ": ", never: "Not granted",
+   advanced: "Advanced", granted: "Consent given", withdrawn: "Consent withdrawn",
+ };
+ type PeopleCopy = typeof en;
+@@ -46,6 +53,13 @@ export const peopleCopy: Record<Locale, PeopleCopy> = {
+     exportPending: "已有下載要求待處理", erasePending: "已有抹除要求待處理", paused: "暫停下載與抹除，請先查看顧客。",
+     unconfirmed: "尚未確認處理結果，請勿重複操作。", storeCount: (n) => `本店顧客 · ${n} 位`, found: (n) => `找到 ${n} 位顧客`,
+     marketing: "行銷訊息 · Messenger / IG DM", ads: "個人化廣告 · Meta", settings: "顧客設定",
++    downloaded: "資料已下載", erased: "顧客已抹除", limit: "資料超出下載上限", blocked: "目前無法抹除",
++    downloadedBody: (orders, history) => `JSON · ${orders} 筆訂單 · 同意歷史 ${history} 筆。已依權限產生顧客資料檔。`,
++    limitBody: "超過 200 筆訂單或 1 MiB；沒有產生下載檔。請依店內隱私處理程序處理。",
++    blockedBody: "尚有未完成訂單、付款或退款。先處理既有交易，再核對是否可以抹除。",
++    fileSafety: "受保護的訂單收件資料可能包含於檔案；請妥善保管。",
++    customerPrivacy: "顧客隱私", forbiddenTitle: "需要隱私權限", forbiddenBody: "仍可查看此顧客與訂單；請向店主申請隱私權限，再下載或抹除資料。",
++    marketingShort: "行銷訊息", colon: "：", never: "未同意",
+     advanced: "進階", granted: "已同意", withdrawn: "已撤回",
+   },
+   "zh-CN": {
+@@ -63,6 +77,13 @@ export const peopleCopy: Record<Locale, PeopleCopy> = {
+     exportPending: "已有下载申请待处理", erasePending: "已有资料清除申请待处理", paused: "暂时不能下载或清除资料，请先查看客户记录。",
+     unconfirmed: "尚未确认处理结果，请勿重复提交。", storeCount: (n) => `本店客户 · ${n} 位`, found: (n) => `找到 ${n} 位客户`,
+     marketing: "营销消息 · Messenger / IG DM", ads: "个性化广告 · Meta", settings: "客户设置",
++    downloaded: "资料已下载", erased: "客户资料已清除", limit: "资料超出下载上限", blocked: "目前无法清除",
++    downloadedBody: (orders, history) => `JSON · ${orders} 笔订单 · ${history} 条授权记录。已按权限生成客户资料文件。`,
++    limitBody: "超过 200 笔订单或 1 MiB，未生成下载文件。请按店内隐私处理流程处理。",
++    blockedBody: "尚有未完成的订单、支付或退款。请先处理现有交易，再核对是否可以清除资料。",
++    fileSafety: "文件可能包含受保护的订单收件信息，请妥善保管。",
++    customerPrivacy: "客户隐私", forbiddenTitle: "需要隐私操作权限", forbiddenBody: "仍可查看此客户及订单。请向店主申请隐私操作权限后，再下载或清除资料。",
++    marketingShort: "营销消息", colon: "：", never: "未同意",
+     advanced: "高级", granted: "已同意", withdrawn: "已撤回授权",
+   },
+ };
+diff --git a/apps/admin/components/catalog/parity.css b/apps/admin/components/catalog/parity.css
+new file mode 100644
+index 000000000..3c8cf7e5e
+--- /dev/null
++++ b/apps/admin/components/catalog/parity.css
+@@ -0,0 +1,43 @@
++/* Purpose: signed catalog chips, compact product rows and persistent task actions.
++ * Depends on: ProductDocument.css and the shared admin semantic tokens.
++ * Used by: ProductList and CatalogSimplifiedEditor.
++ * Invariants: 44px controls, bounded mobile width, no global shell overrides. */
++.cat-chip-tabs { display:flex; gap:4px; overflow-x:auto; margin-bottom:16px; padding:0 0 1px; }
++.cat-chip-tabs button { flex:0 0 auto; min-height:44px; padding:10px 24px; border:1px solid var(--ui-border); border-radius:5px; background:var(--ui-surface); color:var(--ui-text); font:inherit; }
++.cat-chip-tabs button[aria-pressed="true"] { background:var(--ui-primary-subtle, #eaf6f4); }
++.cat-task-list .cat-list-tools { margin-bottom:16px; padding:0 12px; background:var(--ui-surface); min-height:44px; }
++.cat-select-all { display:flex; gap:20px; align-items:center; min-height:44px; cursor:pointer; }
++.cat-select-all input { width:20px; height:20px; margin:0; accent-color:var(--ui-primary); }
++.cat-task-list .cat-products-table { border:1px solid var(--ui-border); }
++.cat-products-table .pe-product-identity { display:grid; gap:6px; }
++.cat-products-table .cat-row-price { font-weight:600; font-variant-numeric:tabular-nums; }
++.cat-products-table .cat-row-state { color:var(--ui-muted); font-size:13px; }
++.cat-products-table .pe-product-cell { width:100%; }
++.cat-products-table .pe-actions-cell { padding-right:12px; }
++.cat-products-table .product-photo { width:48px; height:48px; flex:0 0 48px; }
++.cat-products-table .pe-row-actions a { border:1px solid var(--ui-border); border-radius:5px; padding:0 12px; text-decoration:none; color:var(--ui-text); }
++.cat-save-bar { position:sticky; bottom:0; z-index:3; display:flex; gap:8px; padding:12px 16px; border-top:1px solid var(--ui-border); background:var(--ui-surface); }
++.cat-task-list .cat-save-bar { position:fixed; left:var(--admin-sidebar-width, 216px); right:0; bottom:0; }
++.cat-task-list:has(.cat-save-bar) { padding-bottom:84px; }
++.cat-task-editor { max-width:760px; border:0; padding:0; background:transparent; }
++.cat-task-editor > form { display:flex; flex-direction:column; min-height:calc(100dvh - 160px); }
++.cat-task-fields { padding:20px 16px; margin:0 0 16px; background:var(--ui-surface); }
++.cat-task-editor .cat-status-radio { display:flex; align-items:center; gap:16px; min-height:44px; font-weight:400; }
++.cat-task-editor .cat-status-radio input { width:20px; height:20px; min-height:20px; accent-color:var(--ui-primary); }
++.cat-editor-links { display:grid; gap:16px; margin-bottom:24px; }
++.cat-editor-links button { width:100%; min-height:44px; background:var(--ui-surface); border:1px solid var(--ui-border); border-radius:5px; color:var(--ui-text); font:inherit; font-weight:600; }
++.cat-task-editor > form > .cat-save-bar { margin-top:auto; }
++.cat-save-bar > :is(button,a) { display:grid; place-items:center; flex:1; min-height:44px; box-sizing:border-box; text-decoration:none; }
++.cat-task-editor > section { padding:20px 16px; background:var(--ui-surface); }
++.cat-stock-floor { color:var(--ui-muted); font-size:13px; margin:0; }
++@media(max-width:680px) {
++  .cat-chip-tabs button { padding:10px 20px; }
++  .cat-task-list .cat-save-bar { left:0; }
++  .cat-products-table tr { grid-template-columns:44px minmax(0,1fr) auto; padding:12px 0; }
++  .cat-products-table .pe-product-cell { grid-column:2; grid-row:1; }
++  .cat-products-table .pe-actions-cell { grid-column:3; grid-row:1; }
++  .cat-task-editor { padding:0; }
++  .cat-task-editor > form { min-height:calc(100dvh - 120px); }
++  .cat-save-bar { margin-left:-16px; margin-right:-16px; }
++  .cat-task-editor .cat-save-bar { margin-left:0; margin-right:0; }
++}
+diff --git a/apps/admin/components/customers/parity.css b/apps/admin/components/customers/parity.css
+new file mode 100644
+index 000000000..216ff1de0
+--- /dev/null
++++ b/apps/admin/components/customers/parity.css
+@@ -0,0 +1,23 @@
++/* Purpose: signed customer profile and privacy task/result layouts.
++ * Depends on: customers.css and shared admin semantic tokens.
++ * Used by: Customers and CustomerDetail.
++ * Invariants: module scoped, 44px targets, readable identities at 390px. */
++.people-v2 .people-result { max-width:736px; margin:24px 0; padding:24px 16px; }
++.people-v2 .people-result > h2 { font-size:24px; margin-bottom:24px; }
++.people-v2 .people-result > p { line-height:1.65; margin-bottom:20px; }
++.people-v2 .people-result > button { display:block; width:100%; }
++.people-v2 .customers-consent { margin:0; gap:0; }
++.people-v2 .customers-consent li { padding:16px 0; border-bottom:1px solid var(--ui-border); }
++.people-v2 .customers-consent li:first-child { padding-top:0; }
++.people-v2 .customers-consent li:last-child { padding-bottom:0; border:0; }
++.people-v2 .people-event { color:var(--ui-text); }
++.people-v2 .customers-actions button { width:100%; }
++.people-v2 .customers-back { min-height:44px; min-width:180px; padding:0 16px; border:1px solid var(--ui-border); border-radius:8px; background:var(--ui-surface); justify-content:center; text-decoration:none; color:var(--ui-text); }
++.people-v2 .people-dialog { position:relative; margin:24px 0; inset:auto; max-width:736px; width:100%; padding:24px 16px; border:1px solid var(--ui-border); border-radius:12px; background:var(--ui-surface); color:var(--ui-text); }
++.people-v2 .people-dialog h2 { margin:0 0 20px; }
++.people-v2 .people-dialog label { display:grid; gap:8px; margin:16px 0; }
++.people-v2 .people-dialog input:not([type="checkbox"]) { min-height:44px; padding:10px 12px; border:1px solid var(--ui-border); border-radius:8px; }
++.people-v2 .people-dialog .people-check { display:flex; }
++.people-v2 .people-dialog .orders-dialog-actions { display:flex; gap:8px; margin-top:20px; }
++.people-v2 .people-dialog .orders-dialog-actions > button { flex:1; min-height:44px; padding:8px 16px; }
++@media(max-width:680px) { .people-v2 .people-result { margin:16px 0; } .people-v2 .people-dialog { margin:16px 0; } }

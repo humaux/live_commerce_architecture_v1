@@ -1,0 +1,2 @@
+foundation	Package docs and gate map are current	2026-10-30T12:08:41.8508181Z check-gates: tests/admin/parity-order-ops.spec.ts is run by no gate (test-local.sh, tests/foundation, test-node.sh, or a selected playwright suite)
+foundation	Package docs and gate map are current	2026-10-30T12:08:41.8604927Z ##[error]Process completed with exit code 1.

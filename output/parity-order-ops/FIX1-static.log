@@ -1,0 +1,12 @@
+node --check tests/admin/parity-order-ops.spec.ts EXIT0
+node --check tests/admin/returns-ui.spec.ts EXIT0
+node --check tests/admin/catalog-v2-simplified.acceptance.ts EXIT0
+node --check tests/admin/timezone-ui.test.mjs EXIT0
+node --check tests/storefront/manual-order-link-gate.mjs EXIT0
+node --check packages/i18n/src/order-ops.ts EXIT0
+node --check apps/admin/lib/cvs-directory-client.ts EXIT0
+node --check apps/admin/proxy.ts EXIT0
+tsc --project apps/admin/tsconfig.json --noEmit --incremental false EXIT1
+TS2307 Cannot find module next/next-navigation/react/@live-commerce workspace declarations.
+TS2875 react/jsx-runtime unavailable; no successful typecheck claim. Full log retained locally as FIX1-tsc.log.
+No local tests, browser, server, build or container run.

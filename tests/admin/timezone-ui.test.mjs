@@ -69,7 +69,7 @@ test("TSX seam refuses an unlisted import", () => {
 test("Ads merchant timestamp uses Taipei at the year boundary", () => {
   const { __testWhen } = compile("apps/admin/components/Ads.tsx", {
     "next/navigation": {}, "@/lib/ads-client": {}, "@/lib/ads-model": {}, "@/lib/ads-copy": {},
-    "./Icon": {}, "./AdsConnection": {}, "./AdsDraft": {}, "./AdsResults": {}, "@/lib/attribution-copy": {}, "./ads.css": {},
+    "./Icon": {}, "./AdsConnection": {}, "./AdsDraft": {}, "./AdsResults": {}, "@/lib/attribution-copy": {}, "./ads.css": {}, "./ads/parity.css": {}, "@live-commerce/i18n": {},
   }, "\nexport { when as __testWhen };\n");
   assert.match(__testWhen("zh-TW", instant, "empty"), expected);
   assert.equal(__testWhen("zh-TW", null, "empty"), "empty");
@@ -110,7 +110,9 @@ test("ManualOrder bank-transfer expiry uses Taipei at the year boundary", () => 
     "@/lib/client": { money: () => "NT$100" },
     "./OperationalForms.module.css": { page: "page" },
     "next/link": { default: passthrough }, "@/lib/catalog-v2-client": {}, "@/lib/merchant-tools-client": {}, "@/lib/cod-copy": {},
-    "./customers.css": {}, "./merchant-tools.css": {},
+    "./customers.css": {}, "./merchant-tools.css": {}, "./order-ops.css": {},
+    "./CvsLookup": { CvsLookup: passthrough },
+    "@live-commerce/i18n": { orderOpsCopy: compile("packages/i18n/src/order-ops.ts", {}).orderOpsCopy },
   });
   // Compile uses the actual component; only hook state and surrounding presentation are fixtures.
   const tree = ManualOrder({ locale: "zh-TW", stores: [], store: { id: "store", name: "store" },

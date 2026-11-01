@@ -1,3 +1,8 @@
+// Purpose: Single-use buyer link exchange and signed generic refusal.
+// Depends on: order-link-contract and order-link-copy.
+// Used by: localized order-link route.
+// Frames: 26:746 / 26:1028 (expired link page).
+// Invariants: tokens stay in memory, never logged/stored; recovery never creates an order.
 "use client";
 
 // Manual-order buyer link page (/{locale}/order-link, contracts/storefront-v2.md section G3): read `#o=<order>&t=<token>` from the fragment, remove it
@@ -74,13 +79,13 @@ export default function OrderLink({ locale }: { locale: Locale }) {
 
   return (
     <main className="purchase-main claim-main order-section" data-testid="order-link" data-view={view}>
-      <h1>{copy.title}</h1>
+      <h1>{view === "refused" ? copy.refusedTitle : copy.title}</h1>
       {view === "opening" && <p role="status">{copy.opening}</p>}
       {view === "refused" && (
-        <div role="alert" data-testid="order-link-refused">
-          <p>{copy.refused}</p>
-          <p className="order-note">{copy.refusedHelp}</p>
-          <p><a className="tap-link" href={`/${locale}/orders/lookup`}>{copy.lookup}</a></p>
+        <div data-testid="order-link-refused">
+          <h2>{copy.refusedSub}</h2>
+          <p>{copy.refusedBody}</p>
+          <a className="button" href={`/${locale}/orders/lookup`}>{copy.refusedGo}</a>
         </div>
       )}
       {view === "unavailable" && (

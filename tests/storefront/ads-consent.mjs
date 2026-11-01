@@ -20,6 +20,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { chromium, expect } from "@playwright/test";
 import { privacyCopy } from "../../apps/storefront/lib/privacy-copy.ts";
+import { privacyFrameCopy } from "../../apps/storefront/components/privacy/copy.ts";
 import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 
 const env = (name) => {
@@ -147,13 +148,22 @@ try {
   const puts1 = putsOf(p1);
   await p1.goto(`${origin}/en/privacy`);
   await expect(p1.getByTestId("privacy-choices")).toBeVisible();
-  const disclosure = await p1.getByTestId("privacy-choices").innerText();
+  // PARITY-BUYER-AFTER: choices are changed on the signed 隱私與同意設定 screen; the O6 disclosure sits beside the ads checkbox there.
+  const fr = privacyFrameCopy.en;
+  const toggle = async (page, purpose) => {
+    await page.getByTestId("privacy-manage").click();
+    await page.getByTestId(`privacy-check-${purpose}`).click();
+    await page.getByTestId("privacy-save").click();
+  };
+  await p1.getByTestId("privacy-manage").click();
+  const disclosure = await p1.getByTestId("privacy-settings").innerText();
+  await p1.getByRole("button", { name: fr.cancel, exact: true }).click();
   assert.match(disclosure, /purchase/i, "O6: the ads consent names sending purchase events");
   assert.match(disclosure, /Meta/, "O6: ... to Meta");
   assert.match(disclosure, /measurement|advertis|ads/i, "O6: ... for ad measurement");
-  await expect(p1.getByTestId("privacy-ads_personalization")).toContainText(en.notGranted); // unchecked by default
-  await p1.getByTestId("privacy-toggle-ads_personalization").click();
-  await expect(p1.getByTestId("privacy-ads_personalization")).toContainText(en.granted);
+  await expect(p1.getByTestId("privacy-ads_personalization")).toContainText(fr.off); // unchecked by default
+  await toggle(p1, "ads_personalization");
+  await expect(p1.getByTestId("privacy-ads_personalization")).toContainText(fr.on);
   assert.equal(puts1.length, 1);
   assert.deepEqual(JSON.parse(puts1[0].body), { purpose: "ads_personalization", channel: "meta_ads", granted: true, context: "settings" });
   const ctx1 = await ctl("context/one");
@@ -167,14 +177,14 @@ try {
   const p2 = await c2.newPage();
   await p2.goto(`${origin}/en/privacy`);
   await expect(p2.getByTestId("privacy-choices")).toBeVisible();
-  await p2.getByTestId("privacy-toggle-marketing_messages").click();
-  await expect(p2.getByTestId("privacy-marketing_messages")).toContainText(en.granted);
+  await toggle(p2, "marketing_messages");
+  await expect(p2.getByTestId("privacy-marketing_messages")).toContainText(fr.on);
   await ctl("context/one"); // still only the first buyer's row
   pass("marketing_messages granted by another buyer creates no CAPI context");
 
   // 3) withdrawal: consent_allows turns false; the sweeper deletes the context; nothing is planned
-  await p1.getByTestId("privacy-toggle-ads_personalization").click();
-  await expect(p1.getByTestId("privacy-ads_personalization")).toContainText(en.notGranted);
+  await toggle(p1, "ads_personalization");
+  await expect(p1.getByTestId("privacy-ads_personalization")).toContainText(fr.off);
   assert.equal(puts1.length, 2);
   assert.deepEqual(JSON.parse(puts1[1].body), { purpose: "ads_personalization", channel: "meta_ads", granted: false, context: "settings" });
   await ctl("sweep");
@@ -186,8 +196,8 @@ try {
   const c3 = await browser.newContext({ ignoreHTTPSErrors: true, userAgent: ua2 });
   contexts.push(c3);
   await p1.reload();
-  await p1.getByTestId("privacy-toggle-ads_personalization").click();
-  await expect(p1.getByTestId("privacy-ads_personalization")).toContainText(en.granted);
+  await toggle(p1, "ads_personalization");
+  await expect(p1.getByTestId("privacy-ads_personalization")).toContainText(fr.on);
   assert.equal((await ctl("context/one")).user_agent, ua1);
   pass("re-grant stores a fresh CAPI context");
 

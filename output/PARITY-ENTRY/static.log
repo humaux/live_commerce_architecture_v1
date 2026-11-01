@@ -1,0 +1,10 @@
+PARITY-ENTRY implementation: E1 only
+strict admin TS: tsc -p output/PARITY-ENTRY/typecheck.json --noEmit --incremental false => exit 0
+strict browser TS: tsc -p output/PARITY-ENTRY/spec-typecheck.json => exit 0
+node --check: parity-entry.spec.ts, parity-entry-dashboard.ts, password-auth.spec.ts, staff-team.spec.ts, oc/reauth.spec.ts, platform-brand-browser.mjs, auth-real.spec.ts, entry.spec.ts => exit 0
+gofmt tests/foundation/browser_password_auth_test.go => exit 0
+node scripts/dev/derive-browser-ownership.mjs; --check => exit 0
+bash scripts/dev/depmap.sh => exit 0; generated map unchanged
+python3 scripts/check_packet.py => exit 0 PASS_PACKET_STRUCTURE_ONLY; timestamp-only generated diff restored
+No local tests/servers. No Next build. No assertions run locally.
+Source hashes: implementation-hashes.json
