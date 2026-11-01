@@ -974,6 +974,8 @@ test.describe("PARITY-LIVE current Figma route parity (MOCK)", () => {
       await login(page); await page.goto(route(locale, comments.session));
       await expect(page.getByRole("heading", { name: c.session, exact: true })).toBeVisible();
       await expect(page.getByRole("button", { name: c.pause, exact: true })).toBeEnabled();
+      await expect(page.getByTestId("live-primary-action")).toBeVisible();
+      await expect(page.getByTestId("live-primary-action")).toBeEnabled();
       await page.getByRole("button", { name: c.pause, exact: true }).click();
       await expect.poll(() => mock.windowRequests.length).toBe(1);
       const first = mock.windowRequests[0]!;
@@ -981,6 +983,7 @@ test.describe("PARITY-LIVE current Figma route parity (MOCK)", () => {
       expect(first.key).not.toBe(""); expect(JSON.parse(first.body)).toEqual({ expected_version: 1, state: "CLOSED", match_mode: "KEYWORD_QTY_ONLY" });
       await expect(page.getByTestId("live-console")).toContainText(copy.uncertain);
       await expect(page.getByRole("button", { name: c.resume, exact: true })).toBeDisabled();
+      await expect(page.getByTestId("live-primary-action")).toBeDisabled();
       const pendingJournal = await journal(); expect(pendingJournal.some(Boolean)).toBe(true);
       // Observe another real A1 read: polling must not turn UNKNOWN into an automatic second POST or clear its fence.
       const before = mock.consoleReads(); await expect.poll(mock.consoleReads, { timeout: 8000 }).toBeGreaterThan(before);
@@ -988,10 +991,11 @@ test.describe("PARITY-LIVE current Figma route parity (MOCK)", () => {
       page.on("dialog", dialog => dialog.accept());
       await page.reload();
       await expect(page.getByRole("button", { name: c.resume, exact: true })).toBeDisabled();
+      await expect(page.getByTestId("live-primary-action")).toBeDisabled();
       await expect(page.getByTestId("live-console")).toContainText(copy.uncertain);
       const reloadedReads = mock.consoleReads(); await expect.poll(mock.consoleReads, { timeout: 8000 }).toBeGreaterThan(reloadedReads);
       expect(mock.windowRequests).toHaveLength(1); expect(await journal()).toEqual(pendingJournal);
-      // Baseline 7be has only the legacy bool fence: this actual recovery control is missing, so this must be RED.
+      // Baseline 7be can fail first at the shared-write fence above; it also lacks this original-command recovery control.
       await expect(page.getByTestId("live-command-retry")).toBeVisible();
       await page.getByTestId("live-command-retry").click();
       await expect.poll(() => mock.windowRequests.length).toBe(2);
