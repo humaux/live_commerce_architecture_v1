@@ -457,7 +457,7 @@
     "tests/foundation/local_recovery_negative_test.go": "c6a41346f7dd3d966e64f4554000931e3d8fd2886d29d46b385e7e4121acb312",
     "tests/foundation/local_recovery_test.go": "a3f564962691f259d1d979b55dfa0f46a721acbb46a7dd2a0f2d6aa7c071aef9",
     "tests/foundation/mail_probe_test.go": "736b213ac9cb5520f91a70b22b66d3a8c500ff34b4442a4c930fa05301863765",
-    "tests/foundation/manual_discount_test.go": "313afccb11a807bde55870febd2d277ca9ea4fc65b3f483551505d97536d8c69",
+    "tests/foundation/manual_discount_test.go": "014ff24b3622bf6e81836b6ad3af21fe464bcc0c1eddb1f721e23ab4deede14d",
     "tests/foundation/manual_fulfilment_env_test.go": "23e55258f4f444d1012cff934a72b671fca7e1514be7e603a1a9a0f0211d62c0",
     "tests/foundation/manual_fulfilment_flow_test.go": "70b75d281ab13f75e208552b30de788a91b56cb55170c7957818603756bc8b14",
     "tests/foundation/manual_fulfilment_guards_test.go": "aa799ee4c0a21efe8c763a8a2a00380de96af90dd20901e52fd7c6c31c4174fc",

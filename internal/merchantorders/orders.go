@@ -215,6 +215,11 @@ func Get(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, orderID st
 		return Detail{}, err
 	}
 	item.Summary = one[0]
+	// Only merchant-created orders can carry the named manual adjustment.
+	// Storefront orders retain their existing projection and authorization reads.
+	if item.Source != "merchant_manual" {
+		return item, nil
+	}
 	hash := sha256.Sum256([]byte(token))
 	var adjustments []byte
 	if err = tx.QueryRow(ctx, `SELECT identity.read_order_adjustments($1,$2::uuid,$3::uuid)`, hash[:], scope.StoreID, orderID).Scan(&adjustments); err != nil {

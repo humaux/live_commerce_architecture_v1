@@ -1,0 +1,206 @@
+card: FEAT-MANUAL-DISCOUNT
+stage: NODE_RED_CONFIRMED_BLOCKED_SCOPE — E3 negative Node evidence; implementation/GREEN NOT_RUN
+branch: unit/feat-manual-discount
+base_sha: 2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f
+head_sha: fc28de173547886f74900c5caf4ab1f7a675b451
+pr: https://github.com/humaux/live_commerce_architecture_v1/pull/394
+target: r3/integration
+WAIT_RUN: 41093578464 — Gates (GitHub runners)
+run_url: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41093578464
+WAIT_RUN: 41093578253 — Foundation checks
+run_url: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41093578253
+first_observed_status: both queued; conclusion empty; feature test jobs not complete
+red_job_ids: 124193423117 (Foundation run 41093578253)
+foundation_job_id: 124193423117 — failure on three NEW executed Node assertions, 501/504 passed
+gates_feature_jobs: PENDING; see relay readbacks below (plan/build are not feature acceptance)
+red_assertions: thumbnail preservation, named discount BFF grammar, named discount response parser
+expected_red: TestManualDiscountValidation; named-discount BFF grammar/response/thumbnail model;
+expected_red: TestMerchantToolsManualOrder/FEAT-MANUAL-DISCOUNT;
+expected_red: TestLiveConsoleOrderForBuyerLivePrice/FEAT-MANUAL-DISCOUNT;
+expected_red: TestCatalogV2Smoke/FEAT-MANUAL-DISCOUNT_picker_thumbnail
+static_evidence: E1 — go vet ./internal/merchanttools ./tests/foundation exit 0
+static_evidence: node --check tests/admin/merchant-tools-model.test.ts exit 0
+static_evidence: node scripts/dev/derive-browser-ownership.mjs exit 0; --check exit 0
+not_run: all local tests/servers, implementation GREEN, independent review, live providers, deployment
+wakeup: integrator relays this exact SHA's Gates/Foundation conclusion into a fresh session per card
+next: gh pr checks 394; gh run view <run> --log-failed filtered to these assertions
+stop: unrelated gate failure or two unsuccessful targeted fixes of one blocker; never weaken assertions
+
+RELAY_1_READBACK (2026-10-31 Asia/Shanghai)
+verified_head: fc28de173547886f74900c5caf4ab1f7a675b451
+command: gh pr checks 394
+command: gh run view 41093578253 --json headSha,jobs,conclusion
+command: gh run view 41093578253 --log-failed --job 124193423117
+foundation_run: 41093578253
+foundation_job: 124193423117
+foundation_conclusion: failure
+failed_step: Node unit suites (storefront, i18n)
+node_summary: 504 tests; 501 pass; 3 fail; cancelled/skipped/todo 0
+accepted_red: E3 negative evidence ONLY for the three NEW Node assertions below, bound to verified_head
+assertion_1: tests/admin/merchant-tools-model.test.ts:21 — picker thumbnail actual undefined, expected authenticated w=360 path
+assertion_2: tests/admin/merchant-tools-model.test.ts:30 — named discount BFF grammar actual false, expected true (zh-TW)
+assertion_3: tests/admin/merchant-tools-model.test.ts:49 — parseManualResult rejects additive discount with Error: unavailable
+not_compile_failure: the Node tests executed their assertions; no compilation error in this failed step
+green: NOT_RUN
+gates_run: 41093578464 — same verified_head, queued/in_progress; no conclusion observed
+gates_build_job: 124194687182 — success (NOT feature acceptance)
+gates_unit_job: 124197225702 — queued; Go validation RED NOT_YET_OBSERVED
+gates_pg_jobs: pending; REAL_PG discount/thumbnail assertions NOT_YET_OBSERVED
+wakeup: integrator relay remains responsible for Gates 41093578464; no background polling process started
+
+SCOPE_HANDOFF
+status: BLOCKED_SCOPE; implementation not started; no implementation commit or push
+reason: card limits Go/SQL to owning module and says STOP for unowned backend packages, but named quote adjustments require shared storefront quote/revalidation changes
+source: internal/storefront/quote.go Quote has no adjustments field and readQuote decodes into that typed structure
+source: internal/storefront/revalidate.go RevalidateQuote recomputes only pricing.CalculateWith(policy, inputs, out.Promotion)
+source: internal/checkout/checkout.go Begin invokes RevalidateQuote and marshals typed Snapshot{Quote: quote}
+source: migrations/post_river/0021_product_core_begin_hold.sql rejects any p_snapshot quote differing from storefront.quotes.snapshot
+consequence: a merchanttools-only total patch either loses the named line or conflicts at checkout; changing money after Begin violates the card
+scope_question: integrator must explicitly assign necessary shared storefront/pricing/catalog/checkout/read-projection changes before implementation
+humaux: unavailable in exposed tools; no memory_store, canvas update, claim or shared-state write performed or claimed
+local_tests_or_servers: NOT_RUN (owner rule)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6367680Z ✖ failing tests:
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6367759Z
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6367909Z test at tests/admin/merchant-tools-model.test.ts:13:1
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6368350Z ✖ picker product model keeps the additive authenticated thumbnail and null without an image (1.993118ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6368765Z   AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6369004Z   + actual - expected
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6369142Z
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6369262Z   + undefined
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6369675Z   - '/api/stores/22222222-2222-4222-8222-222222222222/products/11111111-1111-4111-8111-111111111111/images/44444444-4444-4444-8444-444444444444?w=360'
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6370028Z
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6370559Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/merchant-tools-model.test.ts:21:10)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6371043Z       at Test.runInAsyncScope (node:async_hooks:227:14)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6371319Z       at Test.run (node:internal/test_runner/test:1402:25)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6371604Z       at Test.start (node:internal/test_runner/test:1262:17)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6371956Z       at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6372215Z     generatedMessage: true,
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6372385Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6372541Z     actual: undefined,
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6373019Z     expected: '/api/stores/22222222-2222-4222-8222-222222222222/products/11111111-1111-4111-8111-111111111111/images/44444444-4444-4444-8444-444444444444?w=360',
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6373556Z     operator: 'strictEqual',
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6373719Z     diff: 'simple'
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6373843Z   }
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6373908Z
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6374070Z test at tests/admin/merchant-tools-model.test.ts:27:1
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6374492Z ✖ named manual discount passes BFF grammar in every locale without opening price overrides (0.466326ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6374868Z   AssertionError [ERR_ASSERTION]: zh-TW: named discount must reach Go
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6375078Z
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6375197Z   false !== true
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6375319Z
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6375864Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/merchant-tools-model.test.ts:30:12)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6376361Z       at Test.runInAsyncScope (node:async_hooks:227:14)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6376635Z       at Test.run (node:internal/test_runner/test:1402:25)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6376989Z       at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6377336Z       at Test.postRun (node:internal/test_runner/test:1542:19)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6377640Z       at Test.run (node:internal/test_runner/test:1467:12)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6378039Z       at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6378325Z     generatedMessage: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6378497Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6378670Z     actual: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6378824Z     expected: true,
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6378982Z     operator: 'strictEqual',
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6379283Z     diff: 'simple'
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6379425Z   }
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6379489Z
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6379640Z test at tests/admin/merchant-tools-model.test.ts:47:1
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6380031Z ✖ named discount survives the strict manual-order response parser (0.240139ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6380311Z   Error: unavailable
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6380822Z       at object (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/admin/lib/customers-model.ts:94:82)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6381708Z       at parseManualResult (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/admin/lib/merchant-tools-model.ts:138:13)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6382537Z       at TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/tests/admin/merchant-tools-model.test.ts:49:18)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6383081Z       at Test.runInAsyncScope (node:async_hooks:227:14)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6383527Z       at Test.run (node:internal/test_runner/test:1402:25)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6383877Z       at Test.processPendingSubtests (node:internal/test_runner/test:974:18)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6384239Z       at Test.postRun (node:internal/test_runner/test:1542:19)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6384540Z       at Test.run (node:internal/test_runner/test:1467:12)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6384904Z       at async Test.processPendingSubtests (node:internal/test_runner/test:974:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6435159Z ## matrix-receipts node-test end
+foundation	Node unit suites (storefront, i18n)	2026-10-30T16:57:16.6451366Z ##[error]Process completed with exit code 1.
+
+RELAY_2_READBACK (2026-10-31 Asia/Shanghai)
+verified_head: fc28de173547886f74900c5caf4ab1f7a675b451
+foundation_run: 41093578253; attempt: 1; event: pull_request; conclusion: failure
+foundation_job: 124193423117; E3 negative evidence for the three new Node assertions above
+commands: gh pr checks 394; gh run view 41093578253 --log-failed --job 124193423117 (filtered); gh run view 41093578464 --json status,conclusion,headSha,jobs
+same_head_gates: 41093578464; no conclusion; shard:g01 and shard:g04 in_progress, remaining feature jobs queued at readback
+ownership_readback: PR #394 comments empty; latest relay does not assign shared backend packages; BLOCKED_SCOPE remains
+source: internal/storefront/quote.go:50 typed Quote lacks adjustments; internal/storefront/revalidate.go:96 recalculates existing promotion only
+source: internal/checkout/checkout.go:280 revalidates; :353 and :358 marshal typed quote; migrations/post_river/0021_product_core_begin_hold.sql:72 rejects stored/supplied quote inequality
+required_scope_ruling: assign storefront quote creation/revalidation, pricing allocation, catalog thumbnail projection and merchantorders detail projection; confirm checkout/buyer additive readers as needed
+fix_attempts_this_relay: 0; implementation commit/push: NONE; production source changes: NONE
+files_written_this_relay: output/feat-manual-discount/red.log (local evidence only, untracked)
+not_run: all local tests/servers; implementation; migration 0215; GREEN; independent review; SANDBOX/LIVE; deployment
+humaux: unavailable; memory_store/canvas/coord NOT_RUN; no shared-state completion claimed
+WAIT_RUN: 41093578464
+wakeup: integrator relay, per card; no background process or polling loop started
+
+RELAY_3_READBACK (2026-10-31 Asia/Shanghai)
+verified_head: fc28de173547886f74900c5caf4ab1f7a675b451
+pr: 394; base: r3/integration; comments: []
+commands: gh pr checks 394; gh run view 41093578253 --log-failed --job 124193423117 (tail-filtered); gh run view 41093578464 --json headSha,status,conclusion,jobs; gh pr view 394 --json headRefOid,baseRefName,comments
+RED: E3 negative evidence, Foundation run 41093578253 / job 124193423117; exactly three new Node assertions failed, 501/504 passed
+failed_assertions: picker thumbnail preservation; named manual-discount BFF grammar; named-discount response parser
+GREEN: NOT_RUN; no implementation exists at this HEAD
+current_source: internal/storefront/quote.go:50-65 has no quote adjustment line; :127 calculates with the existing promotion only
+current_source: internal/storefront/revalidate.go:96 recomputes pricing.CalculateWith(policy, inputs, out.Promotion)
+current_source: internal/checkout/checkout.go:280 invokes storefront.RevalidateQuote before durable checkout writes
+current_source: migrations/post_river/0021_product_core_begin_hold.sql:72 rejects a supplied quote snapshot distinct from the stored immutable quote
+scope_authority: current card requires owning-module Go/SQL changes and STOP for unowned backend packages; relay supplies no new shared-package assignment
+status: BLOCKED_SCOPE; integrator must assign storefront quote creation/revalidation and any required shared pricing/catalog/order-reader changes before implementation
+production_edits: NONE; commits: NONE; pushes: NONE; fix_attempts: 0
+files_written: output/feat-manual-discount/red.log only (existing untracked task evidence)
+gates_run: 41093578464; same verified_head; conclusion empty; feature jobs queued/in_progress at readback
+WAIT_RUN: 41093578464
+not_run: all local tests/servers; implementation/migration 0215; GREEN; independent review; SANDBOX/LIVE; deployment; Humaux store/canvas/coord (tools unavailable)
+wakeup: integrator relay per card; no background polling process started
+
+RELAY_4_READBACK (2026-10-31 Asia/Shanghai)
+verified_head: fc28de173547886f74900c5caf4ab1f7a675b451
+pr: 394; branch: unit/feat-manual-discount; base: r3/integration
+commands: gh pr checks 394; gh run view 41093578253 --log-failed --job 124193423117 (tail-filtered); gh run view 41093578253 --json headSha,status,conclusion; gh run view 41093578464 --json headSha,status,conclusion,jobs; gh api repos/humaux/live_commerce_architecture_v1/issues/394/comments
+RED: E3 negative evidence; Foundation run 41093578253 / job 124193423117; current head matches; exactly three new Node assertions failed, 501/504 passed
+failed_assertions: picker thumbnail preservation; named manual-discount BFF grammar; named-discount response parser
+GREEN: NOT_RUN; implementation absent at verified head
+current_authority: card says unowned backend packages require STOP; no new shared-package ownership in RELAY 4; PR comments API returned no comments
+current_source: internal/merchanttools/manual.go:540 uses storefront.CreateQuote; :573 uses checkout.Service.Begin
+current_source: internal/storefront/quote.go:50-65 typed Quote has no adjustment field
+current_source: internal/storefront/revalidate.go:96 recomputes pricing.CalculateWith(policy, inputs, out.Promotion), then requires equal allocations
+current_source: internal/checkout/checkout.go:280 revalidates; :353 and :358 marshal typed quote into checkout snapshots
+current_source: migrations/post_river/0021_product_core_begin_hold.sql:72 enforces stored/supplied quote snapshot equality
+status: BLOCKED_SCOPE; require integrator assignment of storefront quote creation/revalidation and shared pricing/catalog/merchantorders changes, with checkout/buyer additive readers as needed
+production_edits: NONE; commits: NONE; pushes: NONE; targeted_fix_attempts: 0
+files_written_this_relay: output/feat-manual-discount/red.log only (existing untracked task evidence)
+gates_run: 41093578464; exact verified_head; no conclusion; shard:unit,g02,g01,g04 in_progress; other gate jobs queued at readback
+WAIT_RUN: 41093578464
+not_run: all local tests/servers; implementation/migration 0215; GREEN; independent review; SANDBOX/LIVE; deployment; Humaux store/canvas/coord (tools unavailable)
+wakeup: integrator relay per card; no background polling process or local service started
+
+
+FIX1_READBACK (2026-10-31 Asia/Shanghai)
+status: BLOCKED_SCOPE; no implementation or push; detailed table output/feat-manual-discount/FIX1.md
+pr_head: fc28de173547886f74900c5caf4ab1f7a675b451
+local_merge_head: 5e1b019d7e8c445521637572218f7a5023d46da3
+merged_base: f59e5c5402a26021ca498d8323bc0e7ee8693c36
+correction: listed failing Gates jobs belong to run 41093578464, not Foundation run 41093578253
+E3_RED: unit124197225702; bundle124197225711; g05 124197225869; g06 124197225752; g10 124197225919; Foundation124193423117
+classification: feature RED from absent implementation; no obsolete UI assertions; receipts124214127123/required124214304243 downstream
+historical_policy: expected failing shallow child exit1; parent TestProductEditorMatrixEvidenceShallowClone PASS; not a blocker
+base_run: 41098492538 queued on readback; no base GREEN or class-c claim
+scope_needed: shared storefront/pricing/catalog/merchantorders, checkout/buyer review; existing dispatch still says STOP unowned backend
+static: ownership generation and --check exit0, no new generated diff
+not_run: all local tests/servers; implementation; new merge CI/GREEN; independent review; providers; deploy
+WAIT_RUN: NONE (no push)
+wakeup: integrator scope ruling/revised card, not another unchanged RED relay
+
+
+FIX1_CURRENT_DISPATCH_READBACK
+pr_head: fc28de173547886f74900c5caf4ab1f7a675b451
+local_head: 5e1b019d7e8c445521637572218f7a5023d46da3
+merge_origin_r3_integration: exit0 Already up to date
+base41098492538: no conclusion; overall queued; gate jobs in_progress
+raw_unit_and_required: reverified; required read HTTP502 retried once successfully
+ownership_generate_and_check: exit0; no tracked diff
+status: BLOCKED_SCOPE; unowned storefront/pricing/catalog/merchantorders changes still required
+fix_attempts: 0; source_edits: NONE; push: NONE; WAIT_RUN: NONE
+NOT_RUN: local tests/servers; implementation; GREEN; independent acceptance; SANDBOX/LIVE; deployment; Humaux memory/coord/canvas

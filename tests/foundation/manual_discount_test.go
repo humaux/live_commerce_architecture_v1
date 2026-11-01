@@ -30,7 +30,7 @@ func mdBody(sku string, qty int, option, mode string, delivery map[string]any, a
 }
 
 var mdHome = map[string]any{"home_address": map[string]any{"region": "測試區", "city": "測試市", "postal_code": "100", "line1": "測試地址一號", "line2": ""}}
-var mdCVS = map[string]any{"cvs": map[string]any{"store_code": "123456", "store_name": "測試門市", "store_address": "測試地址一號"}}
+var mdCVS = map[string]any{"cvs": map[string]any{"store_code": "110035", "store_name": "一勝", "store_address": "台中市大肚區福山村沙田路一段432-1號"}}
 
 func mdObject(t *testing.T, v any) map[string]any {
 	t.Helper()
