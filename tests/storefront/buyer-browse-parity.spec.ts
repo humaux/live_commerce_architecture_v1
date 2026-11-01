@@ -674,7 +674,10 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
               await step(frame, collectionRoute, "mobile collection newest nonempty clear", "click newest + fill price + apply + click Clear + reload", "Clear removes price bounds, keeps explicit newest and preview, and restores newest-first cards", async () => {
                 await openFilteredCollection(true, "15", "20");
                 await expect(page.getByTestId("product-card").first()).toBeVisible({ timeout: T });
-                await controls().getByRole("link", { name: c.clear, exact: true }).click({ timeout: T });
+                await Promise.all([
+                  page.waitForURL((url) => url.pathname === collectionRoute && !url.searchParams.has("min") && !url.searchParams.has("max"), { timeout: T }),
+                  controls().getByRole("link", { name: c.clear, exact: true }).click({ timeout: T }),
+                ]);
                 await settle();
                 await checkClearedCollection("newest");
                 return "explicit newest, preview and newest-first card retained after clear and reload";
@@ -683,14 +686,20 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
                 await openFilteredCollection(true, "99999", "100000");
                 await expect(page.getByTestId("list-empty")).toBeVisible({ timeout: T });
                 await expect(page.getByTestId("product-card")).toHaveCount(0);
-                await page.getByTestId("list-empty").getByRole("link", { name: c.clear, exact: true }).click({ timeout: T });
+                await Promise.all([
+                  page.waitForURL((url) => url.pathname === collectionRoute && !url.searchParams.has("min") && !url.searchParams.has("max"), { timeout: T }),
+                  page.getByTestId("list-empty").getByRole("link", { name: c.clear, exact: true }).click({ timeout: T }),
+                ]);
                 await settle();
                 await checkClearedCollection("newest");
                 return "empty-state clear retained explicit newest and preview after reload";
               });
               await step(frame, collectionRoute, "mobile collection absent sort clear", "open filtered collection without sort + click Clear + reload", "Clear leaves absent sort absent and restores the collection's manual first card", async () => {
                 await openFilteredCollection(false, "15", "20");
-                await controls().getByRole("link", { name: c.clear, exact: true }).click({ timeout: T });
+                await Promise.all([
+                  page.waitForURL((url) => url.pathname === collectionRoute && !url.searchParams.has("min") && !url.searchParams.has("max"), { timeout: T }),
+                  controls().getByRole("link", { name: c.clear, exact: true }).click({ timeout: T }),
+                ]);
                 await settle();
                 await checkClearedCollection(null);
                 return "absent sort stayed absent; manual first card and preview retained after reload";
@@ -701,7 +710,10 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
                 await page.goto(`${origin}${searchRoute}?${params}`);
                 await settle();
                 await expect(page.getByTestId("product-card").first()).toBeVisible({ timeout: T });
-                await controls().getByRole("link", { name: c.clear, exact: true }).click({ timeout: T });
+                await Promise.all([
+                  page.waitForURL((url) => url.pathname === searchRoute && !url.searchParams.has("min") && !url.searchParams.has("max"), { timeout: T }),
+                  controls().getByRole("link", { name: c.clear, exact: true }).click({ timeout: T }),
+                ]);
                 await settle();
                 const check = async () => {
                   assert.equal(new URL(page.url()).pathname, searchRoute);
