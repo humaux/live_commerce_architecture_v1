@@ -1307,7 +1307,9 @@ publication/read only; OC-Q9 text remains unchanged. UI: pending PARITY-NEWFEAT.
 BFF mirrors these paths under `/api/stores/{store}/live-sessions/{session}/replay`, using
 signed merchant session/store grants, same-origin and CSRF for writes. All responses
 `Cache-Control: private, no-store`; no UI page. Server-authenticated tenant/store/principal
-only; body tenant_id/store_id and unknown/null/missing keys are refused, not trusted.
+only; body tenant_id/store_id and other unknown keys return `400 invalid_json` under
+DisallowUnknownFields; null/missing keys are refused, not trusted. Rejected spoofed
+scope leaves replay publication and replay_version unchanged.
 Both operations require a canonical session UUID. Both toggle directions require ENDED;
 publication additionally requires a stored valid Facebook permalink joined to the session's
 active Facebook source by exact tenant/store/binding/post. Instagram/old-session absence

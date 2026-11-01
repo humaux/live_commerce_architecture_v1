@@ -145,7 +145,19 @@ func TestLiveReplayPublicationAndBuyerReads(t *testing.T) {
 		otherPath := strings.Replace(path, e.store, e.bare, 1)
 		call(t, "PUT", otherPath, e.token, t04Key("replay-store"), body(true, 1), 404, "not_found")
 		spoof := strings.TrimSuffix(body(true, 1), "}") + fmt.Sprintf(`,"tenant_id":%q,"store_id":%q}`, f.tenantB, f.storeB)
-		call(t, "PUT", path, e.token, t04Key("replay-spoof"), spoof, 422, "invalid_request")
+		var beforePublic, afterPublic bool
+		var beforeVersion, afterVersion int64
+		const publication = `SELECT replay_public,replay_version FROM live.sessions WHERE tenant_id=$1 AND store_id=$2 AND id=$3`
+		if err := f.owner.QueryRow(e.ctx, publication, f.tenantA, e.store, session).Scan(&beforePublic, &beforeVersion); err != nil {
+			t.Fatal(err)
+		}
+		call(t, "PUT", path, e.token, t04Key("replay-spoof"), spoof, 400, "invalid_json")
+		if err := f.owner.QueryRow(e.ctx, publication, f.tenantA, e.store, session).Scan(&afterPublic, &afterVersion); err != nil {
+			t.Fatal(err)
+		}
+		if afterPublic != beforePublic || afterVersion != beforeVersion {
+			t.Fatalf("spoofed scope changed publication: public %t -> %t, replay_version %d -> %d", beforePublic, afterPublic, beforeVersion, afterVersion)
+		}
 	})
 	// Owner writes below prepare synthetic fixture state only; replay assertions use the actual HTTP handlers.
 	sku := lcSKUs(t, f, f.tenantA, e.store, "USD", 1)[0]

@@ -1,5 +1,7 @@
 FEAT-LIVE-REPLAY causal CI RED — verified from raw job log, 2026-10-31
 
+FIX7 2026-11-01: fresh GitHub readback of Gates41281668151 at head b63aa7436fb6f26d817c908182c2b7ce29c053ed. g08/job124775984368 live_claims_schema_test.go:459 rejects commerce_replay_reader/live.offers; g10/job124775984253 live_replay_test.go:138 invalid_transition rewritten internal, :148 spoof returns400 invalid_json vs expected422, :169 no_official_video rewritten internal. HistoricalPolicy parent PASS, no edit. Integrator FIX7 expressly accepts existing RED; one implementation push only. E3 failures only; GREEN pending PR CI.
+
 FIX1 latest readback (2026-10-31): remote head remains b78ca35aaf41dfb978040edb1a148774f6f69049.
 Fresh unit job 124202749403 and direct g10 job 124202749598 logs reproduce the same new assertions;
 filtered evidence: fix1-current-unit.log and fix1-current-g10.log. Base Gates 41098492538

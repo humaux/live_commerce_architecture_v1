@@ -449,10 +449,18 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		}
 		// No other commerce_* role (nor PUBLIC) holds any privilege on the six tables; the
 		// buyer runtime has none on any claims.* or live.* table (§3.2).
+		// FEAT-LIVE-REPLAY FIX7 ruling (b): only this role/table's six exact SELECT columns are exempt;
+		// table-level rights and any INSERT/UPDATE/REFERENCES column rights remain forbidden.
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||c.oid::regclass::text FROM pg_roles r CROSS JOIN pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
 			WHERE r.rolname LIKE 'commerce\_%' AND r.rolname NOT IN ('commerce_runtime','commerce_claims_writer','commerce_claims_intake','commerce_retention_writer') -- retention_writer: §4 rows asserted above
 			  AND NOT (r.rolname='commerce_integration_writer' AND c.oid::regclass::text IN ('claims.events','claims.bundles','claims.links','live.offers','live.claim_windows')) -- §4.3 / LC-B4 (0128) + W3-03B (0144) column grants, asserted above
 			  AND NOT (r.rolname IN ('commerce_auth','commerce_privacy_writer') AND c.oid::regclass::text='claims.bundles') -- 0078 column grants, asserted above
+			  AND NOT (r.rolname='commerce_replay_reader' AND c.oid::regclass::text='live.offers'
+			    AND NOT has_table_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')
+			    AND NOT has_any_column_privilege(r.oid,c.oid,'INSERT,UPDATE,REFERENCES')
+			    AND ARRAY(SELECT a.attname::text FROM pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped
+			      AND has_column_privilege(r.oid,c.oid,a.attnum,'SELECT') ORDER BY a.attname::text)
+			      = ARRAY['created_at','id','session_id','sku_id','store_id','tenant_id']::text[])
 			  AND c.relkind IN ('r','p','v','m') AND (c.oid::regclass::text=ANY($1) OR (r.rolname='commerce_buyer_runtime' AND n.nspname IN ('claims','live')))
 			  AND (has_table_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') OR has_any_column_privilege(r.oid,c.oid,'SELECT,INSERT,UPDATE,REFERENCES'))`, lcTables)
 		if len(denied) != 0 {
