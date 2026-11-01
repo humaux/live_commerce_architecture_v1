@@ -516,6 +516,8 @@ GREEN and independent acceptance remain pending until the implementation head is
 
 Supersedes: §G3's prohibition on a discount **only** for the bounded named adjustment below. It does not supersede the no-item-price, tenant/store authority, payment/stock, messaging or permission boundaries. Migration **0216** is assigned by the integrator's 2026-11-01 FIX3 revision; 0215 belongs to customer consent and is untouched. Quote/refund allocation authority: [cart-quote-v1 amendment](cart-quote-v1.md#amendment-2026-11-01--feat-manual-discount-0216).
 
+Canonical shared-pipeline endpoint: `POST /v1/admin/stores/{store_id}/orders/for-buyer` (existing route; additive discount grammar below).
+
 | Existing endpoint (prefix `/v1/admin/stores/{store_id}`) | Additive request/response | Authority/result |
 | --- | --- | --- |
 | `POST /orders/manual` | Optional non-null `discount:{name,amount_minor}`; all existing body keys remain required. Success adds the normalized `discount` when supplied. | `inventory:reserve` AND `catalog:read`; 201 new / 200 exact replay |
