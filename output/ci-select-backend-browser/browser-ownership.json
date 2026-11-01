@@ -288,7 +288,7 @@
     "tests/foundation/browser_operations_ads_test.go": "1d25eb9632f10dbef68a6b155046da4d4c2438f3a020819539df7303b14ca7d1",
     "tests/foundation/browser_ops_polish_test.go": "1bd05c73623b63c399f63dd801e8c3c5af2a16c53cf23816cc30074c9b386692",
     "tests/foundation/browser_order_chain_test.go": "008b21e7e0972486567b7bc10f1160a673f89b174b2f641dc874aa11d6980a29",
-    "tests/foundation/browser_parity_leftovers_test.go": "afd371a28d3a5bae0d2e8216fa0c87fa6fd8eac8b599197710a1d52b48d4f084",
+    "tests/foundation/browser_parity_leftovers_test.go": "1665e35583719aa5222453c528ccb0dba9e7fbe81e81093c1a590cd6140c959d",
     "tests/foundation/browser_password_auth_test.go": "3a986cf4a303e715cf73547e726f1e850d70124b5c2f11e29a1951d6c593e09d",
     "tests/foundation/browser_pool_capacity_test.go": "4d17106dc62339b8b380692ce440b5b414184f7f0bdda2dd70e81c2855d15814",
     "tests/foundation/browser_product_media_v2_fixture_test.go": "44ae8540fa92d78e66d48e4f694cbe469f64773d2d53aab7d1097ffddea76454",
