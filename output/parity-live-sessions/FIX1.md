@@ -1,6 +1,6 @@
 # PARITY-LIVE-SESSIONS-FIX1 · 2026-11-01
 
-Status: Relay 1 second directed fix authored (two test-helper lines plus generated ownership); E0 author assessment. GitHub GREEN and independent E4 review PENDING. No local tests, servers, browsers, containers, PG or LIVE operations.
+Status: **BLOCKED after Relay 2**. The two previously repaired test groups are still RED after directed attempt 2. The current card explicitly forbids a third approach when the same test remains red. See the Relay 2 inventory below. E3 failure evidence only; no implementation acceptance. No local tests, servers, browsers, containers, PG or LIVE operations.
 
 Authority: integrator FIX1 card in this session; AGENTS.md; 架构.md §§0/1/2/26/27; frozen studio-v1 and existing claims/console CAS contracts; signed frame identities in frames.json. Current source is integration `da2cc7a3fc1e6eac11de727b158412ae9aff8ba9` merged as `ee8748534`. Original implementation head: `85bad87abae9eac6c26ad62bed3e7564c340feb0`.
 
@@ -129,3 +129,32 @@ Relay artifact archive digests (GitHub Actions API, run 41267520139):
 | gate-browser-e2e | 13067808862 | abe1535528848e59fe59176e1fec0aff22446632cc747d599103cb47bc7ca365 |
 | gate-browser-meta-health-ui | 13068661896 | 4488e1fee07decf5637b9cb92b8e5675d71965e738c6ed53b512a30678991326 |
 | gate-browser-customers-billing | 13069050216 | 61fc3cf77ce1186fda0a0f05bbcc895490a41d89826ca0f5af2c3aaef767c371 |
+
+## Relay 2: BLOCKED — directed attempt 2 remains RED
+
+Read on 2026-11-01 from `gh pr checks 365`, `gh run view 41270522783 --job <id> --log-failed`, and the two downloaded browser artifacts. This is the latest PR-head run, not the original card's older run:
+
+- PR head: `16b22886b98bf815163c349425e2672f1993e8f7`.
+- Gates: **41270522783**, attempt 1, **failure**, tested synthetic merge `a9fef606eb427242aa5d4c8111ebc619d70915a7`.
+- Foundation: **41270522825**, job **124742178049**, **success** on that PR head.
+- First required action: fetched and merged integration `fde11c1310fce20b576fc98023bd3003c66c205b`; local merge commit `e42a91e1b`. The merge includes the required Codex co-author trailer. These four directly implicated files are unchanged by that merge: `StudioClaims.tsx`, `parity-live-sessions.ts`, `live-tools.spec.ts`, `customers-billing.spec.ts`.
+
+| Every latest-head failing job | Failing test / exact assertion | Evidence | Class / disposition |
+|---|---|---|---|
+| bundle:05 **124742946382** | `TestBrowserLiveTools`: all four zh-TW/en × desktop/mobile cases at `live-tools.spec.ts:193:56`; `TimeoutError: locator.selectOption: Timeout 20000ms exceeded`, waiting for `#claims-prompt-keyword`, `element is not visible` | Artifact `gate-browser-e2e` **13068854843**, `live-tools/20261101T035501.628981733/playwright.log:10–143`; all cases pass the old shared-helper assertion and reach the later reload/prompt step. `TestBrowserE2EDealLoop` now passes (its playwright.log:17). | **(a)** Test still assumes the advanced prompt is exposed after reload. Current `StudioClaims.tsx:498` wraps it in the signed Advanced disclosure, opened only for `task=advanced`; the prompt is at lines 539–541. No test rewrite attempted: the same live-tools tests remain RED after attempt 2, triggering this card's stop condition. |
+| bundle:07 **124742946232** | `TestBrowserCustomersBilling`, CB11 at `customers-billing.spec.ts:606:23`; `expect(locator).toBeVisible()` fails: billing-restriction alert locator `resolved to 2 elements` | Artifact `gate-browser-customers-billing` **13069431882**, `customers-billing/20261101T035840.351936627/playwright.log:97–119`; matches the Comment source section and Claim window complementary region; 85 pass, 1 fail, 5 do not run. | **(b)** Product renders the same window error twice: `alert("window")` in the new signed section (`StudioClaims.tsx:495`) and advanced rail (`:522`). Alert helper (`:277–280`) also repeats the billing-link test ID. Do not change locator strictness or choose the first match. No product fix attempted: CB11 remains RED after attempt 2, triggering the card's stop condition. |
+| receipts **124746757956** | `matrix-receipts: RED (2 problem(s))` | Its raw failed-step log lists only `--browser-customers-billing: status FAIL` and `--browser-e2e: status FAIL`, run 41270522783/1, merge SHA above. | Derived from the two failures above; no receipt/workflow/status edits. |
+| required **124746824968** | Required result is failure | PR checks link to run 41270522783; failed gate/receipts dependencies above. | Derived; no workflow/status edits. |
+
+All ten click-sweep jobs, live-console **124742946132**, Studio bundle:04 **124742946050**, Meta-health bundle:06 **124742946084**, aggregate **124746757918**, and Foundation are green **on `16b22886` only**. This is partial E3 evidence, not whole-PR GREEN or acceptance of the unpushed integration merge. No class (c) exception is claimed; the two failures have PR-source causes. Known inbox files remain untouched.
+
+The prior summary strict-mode assertion is fixed; these are later assertions in the **same tests**. The current FIX1 card says: “If the same test is still red after this, do not try a third approach.” This stricter stop condition applies even though the assertions have advanced. **BLOCKED** pending integrator disposition; no third repair, new RED cycle, implementation push, merge to integration, auto-merge, deployment or status posting. The integration merge and this evidence remain local; the PR comment supplies the remotely visible handoff without starting another CI fleet.
+
+| Downloaded artifact | ID | GitHub archive SHA-256 |
+|---|---|---|
+| gate-browser-e2e | 13068854843 | aa7a940955f43c867e792436845f242623604b785f1c44541e941b08f57aa617 |
+| gate-browser-customers-billing | 13069431882 | 2d34dc5c4b8ff8a48dcb5dfda8588e19deaefd4a48b0af2f9be31512fa7a27f2 |
+
+Downloaded `playwright.log` SHA-256: live-tools `73e39213d76d8344f89253f8881ff7d6902011a700a2e80f0544ef3ce7f09c98`; customers-billing `8d635caa04be32632e79a82564cecdb80075f988bf724d622b92ab38cde93905`. Raw captures stay ignored under `fix1-artifacts/relay2/`; none are added to Git. No local test/server/fixture/process was started. No authored source or outside-card file change in Relay 2; imported upstream files belong to the required integration merge. The official ownership generator/check is run after merging, with its result recorded in the handoff.
+
+NOT_RUN: browser/functional tests locally (prohibited), CI on the unpushed local merge/evidence, independent review/E4, provider SANDBOX/LIVE, production acceptance. WAIT_RUN: none; run **41270522783** is completed failure, not a pending run. Humaux/coord/canvas are unavailable; shared store/update cannot be claimed.

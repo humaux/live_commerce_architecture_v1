@@ -38,3 +38,18 @@ assertion_meta=meta-health-ui.spec.ts:148 metaconnect-token data-state active ab
 base_run=41266607808 base_head=da2cc7a3fc1e6eac11de727b158412ae9aff8ba9 base_conclusion=success
 classification=E3_FAILURE_EVIDENCE_ONLY; current GREEN pending
 stop_condition=same_assertion_RED_after_this_second_directed_fix=>BLOCKED_no_third_approach
+
+phase=FIX1_RELAY2_BLOCKED_AFTER_SECOND_DIRECTED_FIX
+head=16b22886b98bf815163c349425e2672f1993e8f7
+tested_merge=a9fef606eb427242aa5d4c8111ebc619d70915a7
+gates_run=41270522783 gates_conclusion=failure
+gates_jobs=124742946382,124742946232
+assertion_live_tools=live-tools.spec.ts:193:56 selectOption #claims-prompt-keyword timed out 20000ms element is not visible; all four locale/viewport cases
+assertion_billing=customers-billing.spec.ts:606:23 billing restriction alert strict violation resolved to 2 elements
+receipts_job=124746757956 required_job=124746824968
+foundation_run=41270522825 foundation_job=124742178049 foundation_conclusion=success
+classification=E3_FAILURE_EVIDENCE_ONLY; original helper assertion passed but same live-tools/CB11 tests remain RED after attempt 2
+disposition=BLOCKED_current_card_same_test_stop_condition_no_third_approach
+integration=fde11c1310fce20b576fc98023bd3003c66c205b local_merge=e42a91e1b
+push=NOT_RUN_BLOCKED; integration merge and evidence retained locally
+WAIT_RUN=NONE; latest Gates run is already completed failure
