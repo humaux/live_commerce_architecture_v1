@@ -104,3 +104,4 @@ Expected failures on the current implementation (record the real run/job ids her
 - tests/admin/settlements.spec.ts STL1 (settlements-legend / settlements-formula) and STL2 (settlement-detail settlements-formula): restored verbatim from origin/r3/integration, Legend is a null stub [P2-3]
 - tests/admin/customers-model.test.ts "finance summary without generated_at parses ...": parseFinanceSummary throws unavailable on a summary without generated_at [P2-7]
 GREEN=NOT_RUN; product implementation intentionally unchanged in this commit
+RVFIX-370 relay1: CI on head e3a7cd77 (tests-only RED) FAILED n=45 (foundation, gate bundle:06/07, receipts, required) = the new RVFIX assertions above. Run/job ids not read by this lane (gh not run); integrator to attach. Implementation is in the next commit.

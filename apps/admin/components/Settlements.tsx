@@ -144,7 +144,14 @@ function List({
 }
 
 /** The sign legend and the net formula, including SA-0 returned funds; shown under every statement table and detail. */
-function Legend({ c: _c }: { c: CardPaymentsSettlementsCopy }) { return null; }
+function Legend({ c }: { c: CardPaymentsSettlementsCopy }) {
+  return (
+    <div data-testid="settlements-legend">
+      <p>{c.legend}</p>
+      <p data-testid="settlements-formula">{c.formula}</p>
+    </div>
+  );
+}
 
 function Detail({ statement: s, locale, c }: { statement: SettlementStatement; locale: Locale; c: CardPaymentsSettlementsCopy }) {
   const cells = statementCells(locale, s);
@@ -224,6 +231,7 @@ function Detail({ statement: s, locale, c }: { statement: SettlementStatement; l
         </table>
       </TableFrame>
       </section>
+      <Legend c={c} />
     </section>
   );
 }

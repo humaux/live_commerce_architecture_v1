@@ -60,7 +60,7 @@ export function Finance({ locale, stores: _stores, store, from, to, today, initi
       router.push(`/${locale}/finance?${new URLSearchParams({ store: store.id, from: draftFrom, to: draftTo })}`);
     }
   }
-  const failure = read.status === "signed-out" ? c.financeSignedOut : read.status === "forbidden" ? c.financeForbidden : read.status === "not-found" ? (store ? c.notFound : c.noStore) : read.status === "unavailable" ? c.financeUnavailable : "";
+  const failure = !validQuery ? "" : read.status === "signed-out" ? c.financeSignedOut : read.status === "forbidden" ? c.financeForbidden : read.status === "not-found" ? (store ? c.notFound : c.noStore) : read.status === "unavailable" ? c.financeUnavailable : "";
   const summary = read.status === "ready" ? read.data : null;
   const title = failure ? p.financeFailure : view === "daily" ? p.dailyTitle : view === "basis" ? p.basisTitle : view === "dates" ? p.financeDates : view === "csv" ? p.csvReady : p.finance;
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="finance">

@@ -78,7 +78,7 @@ export type FinanceRow = {
   cod_collected_count: number;
   cod_collected_minor: number;
 };
-export type FinanceSummary = { generated_at: string; from: string; to: string; timezone: string; rows: FinanceRow[]; totals: FinanceRow[] };
+export type FinanceSummary = { generated_at?: string; from: string; to: string; timezone: string; rows: FinanceRow[]; totals: FinanceRow[] };
 export type ErasureSummary = {
   consents_withdrawn: number;
   sessions_revoked: number;
@@ -265,14 +265,16 @@ function parseFinanceRow(value: unknown, total: boolean): FinanceRow {
   return v as FinanceRow;
 }
 export function parseFinanceSummary(value: unknown): FinanceSummary {
-  const v = object(value, ["generated_at", "from", "to", "timezone", "rows", "totals"]);
-  if (!isInstant(v.generated_at) || typeof v.from !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v.from) ||
+  // generated_at is optional so a deploy that lands before the server field cannot break the finance page.
+  const hasStamp = !!value && typeof value === "object" && "generated_at" in value;
+  const v = object(value, [...(hasStamp ? ["generated_at"] : []), "from", "to", "timezone", "rows", "totals"]);
+  if ((v.generated_at !== undefined && !isInstant(v.generated_at)) || typeof v.from !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v.from) ||
     typeof v.to !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v.to) ||
     typeof v.timezone !== "string" || !short(v.timezone, 64) || v.timezone === "" ||
     !Array.isArray(v.rows) || v.rows.length > 2000 || !Array.isArray(v.totals) || v.totals.length > 20)
     throw new Error("unavailable");
   return {
-    generated_at: v.generated_at as string,
+    ...(v.generated_at === undefined ? {} : { generated_at: v.generated_at as string }),
     from: v.from,
     to: v.to,
     timezone: v.timezone,

@@ -13,3 +13,9 @@ Other P2s (4, 5, 6, 8, 9, 10) go to an issue per the ruling; untouched.
 
 No test deleted or weakened; no `force`/`dispatchEvent`/`evaluate`; money values untouched (server-owned).
 Evidence label: all rows NOT_RUN locally (owner rule: tests run only in CI).
+
+## Implementation (relay 1) — RED run: e3a7cd77 CI red (ids: integrator); GREEN run: PENDING (CI)
+- P1-1: CardPayments.tsx:167-216 state/platform badges, not-open, blocked, saved/conflict/error notes and Enable/Disable moved outside the disclosure; Advanced keeps descriptor preview + limits.
+- P1-2: Finance.tsx:71 `failure` is empty when `!validQuery`; range button, range-invalid alert and date editor stay reachable.
+- P2-3: Settlements.tsx:146 `Legend` restored (legend + formula), also rendered in `Detail`.
+- P2-7: customers-model.ts:81,268-276 `generated_at` optional; a present value must still be an instant.

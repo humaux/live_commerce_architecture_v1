@@ -165,7 +165,6 @@ function Sections({
         <section className="money-card"><h2>{p.unified}</h2><Badge tone="success">{p.ready}</Badge><div className="money-flow">{[[p.buyerPays,p.buyerPaysHint],[p.platformCollects,p.platformCollectsHint],[p.storePayout,p.storePayoutHint]].map(([heading,text]) => <div key={heading}><strong>{heading}</strong><p>{text}</p></div>)}</div><h2>{p.cardBasis}</h2><p>{p.cardBasisHint}</p></section>
         <section className="money-card"><h2>{p.fees}</h2><dl><div><dt>{p.weekly}</dt><dd>{p.weekly}</dd></div><div><dt>{p.platformFee}</dt><dd>{p.feePending}</dd></div></dl><p className="money-note">{p.feeHint}</p></section>
       </>}
-      <details className="money-card" data-testid="card-advanced"><summary>{p.advanced}</summary>
       <section data-testid="card-state">
         <p>
           {c.stateLabel}{" "}
@@ -181,14 +180,34 @@ function Sections({
             </Badge>
           </p>
         )}
+      </section>
+      {notOpen && <p className="orders-message" data-testid="card-not-open">{c.notOpen}</p>}
+      {blocked && <p className="orders-message" data-testid="card-blocked-note">{c.blockedNote}</p>}
+      {note?.kind === "saved" && <p className="orders-message" role="status" data-testid="card-saved">{c.saved}</p>}
+      {note?.kind === "conflict" && <p className="orders-message" role="alert" data-testid="card-conflict">{c.conflict}</p>}
+      {note?.kind === "error" && (
+        <p className="orders-message" role="alert" data-testid="card-write-error">{c.errors[note.code ?? ""] ?? c.errors.default}</p>
+      )}
+      {dialog === null && (
+        <div>
+          {canEnable && (
+            <button type="button" data-testid="card-enable-open" onClick={() => { setNote(null); setDialog("enable"); }}>
+              {c.enable}
+            </button>
+          )}
+          {canDisable && (
+            <button type="button" data-testid="card-disable-open" onClick={() => { setNote(null); setDialog("disable"); }}>
+              {c.disable}
+            </button>
+          )}
+        </div>
+      )}
+      <details className="money-card" data-testid="card-advanced"><summary>{p.advanced}</summary>
         {summary.descriptor_preview && (
           <p data-testid="card-descriptor-preview">
             {c.previewLabel}: {summary.descriptor_preview}
           </p>
         )}
-      </section>
-      {notOpen && <p className="orders-message" data-testid="card-not-open">{c.notOpen}</p>}
-      {blocked && <p className="orders-message" data-testid="card-blocked-note">{c.blockedNote}</p>}
       {(summary.currency || summary.min_minor !== null || summary.max_minor !== null) && (
         <section data-testid="card-limits">
           <h2>{c.limitsTitle}</h2>
@@ -211,25 +230,6 @@ function Sections({
             </div>
           </dl>
         </section>
-      )}
-      {note?.kind === "saved" && <p className="orders-message" role="status" data-testid="card-saved">{c.saved}</p>}
-      {note?.kind === "conflict" && <p className="orders-message" role="alert" data-testid="card-conflict">{c.conflict}</p>}
-      {note?.kind === "error" && (
-        <p className="orders-message" role="alert" data-testid="card-write-error">{c.errors[note.code ?? ""] ?? c.errors.default}</p>
-      )}
-      {dialog === null && (
-        <div>
-          {canEnable && (
-            <button type="button" data-testid="card-enable-open" onClick={() => { setNote(null); setDialog("enable"); }}>
-              {c.enable}
-            </button>
-          )}
-          {canDisable && (
-            <button type="button" data-testid="card-disable-open" onClick={() => { setNote(null); setDialog("disable"); }}>
-              {c.disable}
-            </button>
-          )}
-        </div>
       )}
       </details>
       {/* the settlement statements have no nav entry (nav:false); billing:manage holders reach them from here */}
