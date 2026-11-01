@@ -239,7 +239,7 @@ test("TH-3: packaged admin launchers use the production listener name and IPv4-f
   }
 });
 
-const GATE_BASELINE = "b681a9a5916eadb334da663a8cf977580c60e87a";
+const GATE_BASELINE = "9b738e0af64ebd08c25b39f8081d46d4dc5674fb";
 const gatePrinter = ts.createPrinter({ removeComments: true });
 
 /**

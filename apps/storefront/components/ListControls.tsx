@@ -31,7 +31,6 @@ export default function ListControls({
     { value: "price_desc", label: copy.sortPriceDesc },
     { value: "title", label: copy.sortTitle },
   ];
-  const activeSort = sortOptions.find((o) => o.value === values.sort)?.label ?? copy.sortNewest;
   return (
     <form className="sf-controls" method="get" action={action} data-testid="list-controls">
       {Object.entries(hidden).map(([name, value]) => (
@@ -69,7 +68,6 @@ export default function ListControls({
         <select
           name="sort"
           defaultValue={values.sort}
-          data-sort={values.sort}
           onChange={(event) => event.currentTarget.form?.requestSubmit()}
         >
           {sortOptions.map((o) => (
@@ -79,30 +77,6 @@ export default function ListControls({
           ))}
         </select>
       </label>
-      {/* Mobile sort sheet: shown when a sort other than newest is active so the signed frame can be captured. */}
-      {values.sort !== "newest" && (
-        <div className="sf-sort-sheet" role="dialog" aria-label={copy.sortBy}>
-          <div className="sf-sort-sheet__panel">
-            <p className="sf-sort-sheet__active">
-              {copy.sortBy}: <strong>{activeSort}</strong>
-            </p>
-            <ul className="sf-sort-sheet__options">
-              {sortOptions.map((o) => (
-                <li key={o.value}>
-                  <a
-                    className={`sf-sort-sheet__option${o.value === values.sort ? " is-active" : ""}`}
-                    data-sort={o.value}
-                    href={`${action}?sort=${o.value}${hidden.q ? `&q=${encodeURIComponent(hidden.q)}` : ""}${hidden.preview ? `&preview=${encodeURIComponent(hidden.preview)}` : ""}`}
-                    aria-current={o.value === values.sort ? "true" : undefined}
-                  >
-                    {o.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
     </form>
   );
 }

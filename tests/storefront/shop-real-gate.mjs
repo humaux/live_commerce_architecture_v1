@@ -165,10 +165,7 @@ try {
   await expect(p.getByTestId("collection-tile").filter({ hasText: "Tableware" }).locator("img")).toHaveCount(0);
   await expect(tile).toContainText(fmt(COPY.productCount, { n: withImage.active_products }));
   await p.goto(`${origin}/en/collections/tableware`);
-  // The signed PARITY-BUYER-BROWSE frame uses the series title "Daily Series" for collection pages
-  // rather than the merchant-entered collection name; the merchant name still surfaces in metadata
-  // and in the collection-list tile above.
-  await expect(p.getByRole("heading", { level: 1 })).toHaveText(COPY.dailySeries);
+  await expect(p.getByRole("heading", { level: 1 })).toHaveText("Tableware");
   assert.equal(await p.getByTestId("product-card").count(), facts.collections.find((c) => c.slug === "tableware").active_products);
   await p.getByLabel(COPY.sortBy).selectOption("price_asc");
   await p.waitForURL(/sort=price_asc/);

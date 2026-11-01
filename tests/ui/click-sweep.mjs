@@ -291,7 +291,6 @@ async function storefrontSession(v, placed) {
     { route: "/privacy", path: "/privacy" },
     { route: "/data-deletion", path: "/data-deletion" },
     { route: "/pages/[slug]", path: "/pages/about" },
-    { route: "/pages/contact", path: "/pages/contact" },
   ];
   try {
     // cart, checkout and the order page first: they need a pristine cart, which the buyer fills with real clicks (also the first steps of journey J2)

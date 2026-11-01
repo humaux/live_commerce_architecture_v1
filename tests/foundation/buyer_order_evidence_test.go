@@ -213,15 +213,10 @@ func browserOrderCartSamplesValid(surface string, samples []browserOrderCartSamp
 	seenLine := false
 	for i, sample := range samples {
 		if surface == "mount" && i == 0 {
-			// Signed frame: the cart page may show the CartView skeleton (aria-label) or the
-			// CartLines detail-loading paragraph before the first line; either is an explicit
-			// loading state, not a blank or "empty" flash.
-			initialLoading := sample.Title != nil && *sample.Title == "Loading…" && sample.Lines == 0 && sample.Qty == nil && sample.DetailLoading == nil
-			detailLoading := sample.Title == nil && sample.Lines == 0 && sample.Qty == nil && sample.DetailLoading != nil && *sample.DetailLoading == "Loading…"
-			if initialLoading || detailLoading {
-				continue
+			if sample.Title == nil || *sample.Title != "Loading…" || sample.Lines != 0 || sample.Qty != nil || sample.DetailLoading != nil {
+				return false
 			}
-			return false
+			continue
 		}
 		if sample.Lines == 1 && sample.Qty != nil && *sample.Qty == "1" && sample.Title == nil && sample.DetailLoading == nil {
 			seenLine = true
@@ -252,7 +247,6 @@ func TestBuyerOrderRefreshSamples(t *testing.T) {
 	}{
 		{"mount-direct", "mount", []browserOrderCartSample{initial, line}, true},
 		{"mount-visible-detail-loading", "mount", []browserOrderCartSample{initial, detail, line}, true},
-		{"mount-detail-loading-first", "mount", []browserOrderCartSample{detail, line}, true},
 		{"drawer-continuous", "drawer", []browserOrderCartSample{line, line}, true},
 		{"blank-before-first-line", "mount", []browserOrderCartSample{initial, {}, line}, false},
 		{"wrong-loading-copy", "mount", []browserOrderCartSample{initial, {DetailLoading: text("Unavailable")}, line}, false},
@@ -262,7 +256,7 @@ func TestBuyerOrderRefreshSamples(t *testing.T) {
 		{"blank-after-first-line", "mount", []browserOrderCartSample{initial, line, {}, line}, false},
 		{"drawer-loading-does-not-excuse-line-loss", "drawer", []browserOrderCartSample{line, detail, line}, false},
 		{"drawer-must-start-with-line", "drawer", []browserOrderCartSample{initial, line}, false},
-		{"blank-first", "mount", []browserOrderCartSample{{}, line}, false},
+		{"missing-initial-held-read-loading", "mount", []browserOrderCartSample{detail, line}, false},
 		{"never-published-line", "mount", []browserOrderCartSample{initial, detail}, false},
 		{"extra-line", "mount", []browserOrderCartSample{initial, {Lines: 2, Qty: text("1")}}, false},
 		{"loading-with-quantity", "mount", []browserOrderCartSample{initial, {DetailLoading: text("Loading…"), Qty: text("1")}, line}, false},

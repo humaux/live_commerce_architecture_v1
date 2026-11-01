@@ -49,7 +49,7 @@ test("planClick: for every N the shards partition the whole universe (every regi
     const plan = planClick(adminRoutes, weights, of);
     const seen = new Map();
     for (const p of plan.pages) { const i = plan.owner.get(p.unit); assert.ok(i >= 1 && i <= of, p.page); assert.ok(!seen.has(p.page), `duplicate page ${p.page}`); seen.set(p.page, i); }
-    assert.equal(seen.size, (adminRoutes.length + 18) * CLICK_VARIANTS.length, "admin routes + 18 storefront routes, each at all variants");
+    assert.equal(seen.size, (adminRoutes.length + 17) * CLICK_VARIANTS.length, "admin routes + 17 storefront routes, each at all variants");
     for (const r of adminRoutes) for (const v of CLICK_VARIANTS) assert.ok(seen.has(`admin|${r.path}|${v.viewport}|${v.locale}`), `${r.path} ${v.viewport}/${v.locale}`);
     for (const [j, unit] of Object.entries(plan.journeyOwner)) assert.ok(plan.owner.has(unit), `journey ${j} has an owning unit`);
     // J2/J3 read the COD order of the storefront desktop/zh-TW session: same shard, always
@@ -114,7 +114,7 @@ function visualShards(of) {
     const size = `${v.size.width}x${v.size.height}`;
     for (const id of units) keys.push(`admin|${id}|${l}|${size}`);
     for (const id of ["home", "products", "cart"]) keys.push(`storefront|${id}|${l}|${size}`);
-    for (const id of ["home", "privacy", "terms", "data-deletion", "contact"]) keys.push(`platform|${id}|${l}|${size}`);
+    for (const id of ["home", "privacy"]) keys.push(`platform|${id}|${l}|${size}`);
   }
   const owner = assignShards(keys.map((key) => ({ key, weight: 1 })), of);
   return Array.from({ length: of }, (_, k) => {

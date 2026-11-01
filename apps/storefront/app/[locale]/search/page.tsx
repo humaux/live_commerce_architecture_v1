@@ -27,9 +27,8 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   const raw = Array.isArray(query.q) ? query.q[0] : query.q;
   const q = (raw ?? "").trim();
   const loaded = q ? await loadList(locale, query) : null;
-  // Signed PARITY-BUYER-BROWSE frames use a fixed demo result count for the canonical query.
-  const signedDemoQuery = q === copy.searchQuery;
-  const resultCount = loaded?.list.state === "ok" ? (signedDemoQuery ? 3 : loaded.list.value.products.length) : 0;
+  // The count is real data; with more pages behind `next` the number on screen would undercount, so then it is not shown.
+  const results = loaded?.list.state === "ok" && !loaded.list.value.next ? loaded.list.value.products.length : null;
   return (
     <main className="sf-wrap">
       <PageHead crumbs={[{ href: withPreview(`/${locale}`, preview), label: copy.home }]} label={copy.breadcrumb} title={q ? fmt(copy.resultsFor, { q }) : copy.searchTitle} />
@@ -45,9 +44,9 @@ export default async function Page({ params, searchParams }: { params: Promise<{
       </form>
       {loaded ? (
         <>
-          {loaded.list.state === "ok" && (
+          {results !== null && (
             <p className="sf-search__results" aria-live="polite">
-              {fmt(copy.searchResults, { q, n: resultCount })}
+              {fmt(copy.searchResults, { q, n: results })}
             </p>
           )}
           <ListBody locale={locale} preview={preview} path={`/${locale}/search`} params={query} loaded={loaded} searching />

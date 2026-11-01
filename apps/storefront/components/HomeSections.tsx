@@ -98,27 +98,11 @@ async function FeaturedSection({ section, locale, preview }: { section: Extract<
   );
 }
 
-function SignedHero({ locale, preview }: { locale: Locale; preview: string | null }) {
-  const copy = shopCopy[locale];
-  return (
-    <section className="sf-hero sf-hero--signed" data-testid="section-signed-hero">
-      <div className="sf-hero__copy">
-        <h2>{copy.homeHero}</h2>
-        <p>{copy.homeSubtitle}</p>
-        <Link className="sf-btn sf-btn--primary" href={withPreview(`/${locale}/products`, preview)}>
-          {copy.homeCta}
-        </Link>
-      </div>
-    </section>
-  );
-}
-
 export default async function HomeSections({ sections, locale, preview, name }: { sections: Section[]; locale: Locale; preview: string | null; name: string }) {
   const firstIsHeroWithHeading = sections[0]?.type === "hero" && !!sections[0].heading;
   return (
     <>
       {!firstIsHeroWithHeading && <h1 className="sr-only">{name}</h1>}
-      <SignedHero locale={locale} preview={preview} />
       {sections.map((section, index) => {
         const key = `${index}:${section.type}`;
         switch (section.type) {

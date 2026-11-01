@@ -17,7 +17,6 @@ import {createWriteStream} from "node:fs";
 import {tmpdir} from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
-import { shopCopy } from "../../apps/storefront/lib/shop-copy.ts";
 import { reachCheckout, switchLocale, confirmCheckoutAddress, openCheckoutDetails } from "./shop-helpers.mjs";
 import { isWebkitCancelledFetch, launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 import { displayTime } from "../../packages/format/src/index.ts";
@@ -285,18 +284,16 @@ async function measureCart(p,surface) {
       const host=document.querySelector(`[data-testid="${surface}"]`);
       if(!host||!host.getClientRects().length)return;
       const lines=host.querySelectorAll('[data-testid="cart-line"]');
-      const emptyPanel=host.querySelector('[data-variant="empty"]');
-      const title=emptyPanel?.querySelector('h2')?.textContent ?? null;
-      const empty=title!=null;
+      const title=host.querySelector('.sf-empty__title')?.textContent;
+      const empty=title==="Your cart is empty";
       if(empty)state.empty++;
       if(state.seen_line&&!lines.length)state.line_loss++;
       if(lines.length)state.seen_line=true;
-      // CartView renders a skeleton (aria-busy) while the session/cart read is still pending;
-      // once the cart is non-empty, CartLines renders a role="status" loading paragraph until
-      // detail hydration finishes. Both are explicit signed-frame loading states; a blank grid is not.
-      const emptyLoading=host.querySelector('[data-testid="cart-empty"] [aria-busy="true"]');
-      const linesLoading=host.querySelector('[data-testid="cart-page"] p[role="status"]');
-      const detailLoading=(emptyLoading?.getAttribute('aria-label'))||(linesLoading?.textContent)||null;
+      // CartLines renders this specific visible status while actual cartDetails hydrates.
+      // A blank cart grid is never interchangeable with that explicit loading state.
+      const detailsStatus=host.querySelector('.sf-cartpage__grid > p.sf-muted[role="status"]');
+      const box=detailsStatus?.getBoundingClientRect();
+      const detailLoading=detailsStatus&&box.width>0&&box.height>0&&getComputedStyle(detailsStatus).visibility==="visible"&&detailsStatus.textContent==="Loading…"?detailsStatus.textContent:null;
       const row={title:title||null,lines:lines.length,qty:host.querySelector('[data-testid="cart-line-qty"]')?.textContent||null,detail_loading:detailLoading};
       if(JSON.stringify(row)!==JSON.stringify(state.samples.at(-1)))state.samples.push(row);
     };
@@ -353,8 +350,7 @@ async function cartRefreshRace() {
         held=arm("cart",{method:"GET",after:true});
         await p.goto(`${origin}/en/cart`);
         await measureCart(p,"cart-page");
-        // Signed frame: pending cart shows a skeleton, not a visible "Loading…" string.
-        await expect(p.getByTestId("cart-empty").locator('[aria-busy="true"]')).toHaveAttribute("aria-label", shopCopy.en.loading);
+        await expect(p.getByTestId("cart-empty")).toContainText("Loading…");
         await focusFixture(p,"cart-page");
       }
       phase.held_status=await held.result.promise;
@@ -364,7 +360,7 @@ async function cartRefreshRace() {
       const failedStart=calls.length;
       const failed=arm("session",{method:"GET",session503:true});
       const reply=p.waitForResponse(r=>requestIs(r,"session","GET")&&r.status()===503);
-      await nativeFocus(p,caseID,`${surface} failed`,surface==="drawer"?p.getByTestId("cart-drawer").getByTestId("cart-line-qty"):p.getByTestId("cart-empty").locator('[aria-busy="true"]'));await reply;
+      await nativeFocus(p,caseID,`${surface} failed`,surface==="drawer"?p.getByTestId("cart-drawer").getByTestId("cart-line-qty"):p.getByTestId("cart-empty").locator(".sf-empty__title"));await reply;
       phase.session_status=await failed.result.promise;
       phase.session_failures=calls.slice(failedStart).filter(x=>x.path==="/api/buyer/session"&&x.method==="GET"&&x.status===503).length;
       // Headers/edge completion are insufficient: wait for the actual native fetch AND native
@@ -388,7 +384,7 @@ async function cartRefreshRace() {
       assert.equal(phase.session_status,503,"one later native-focus session request fails");
       assert.equal(phase.measurement.empty,0,`BC02 ${surface}: visible cart must NEVER render empty while valid cart is held`);
       if(surface==="drawer")assert.equal(phase.measurement.line_loss,0,"rendered line stays continuous throughout the failed refresh");
-      else await expect(p.getByTestId("cart-empty").locator('[aria-busy="true"]')).toHaveAttribute("aria-label", shopCopy.en.loading);
+      else await expect(p.getByTestId("cart-empty")).toContainText("Loading…");
       held.release.resolve();
       const host=p.getByTestId(surface==="drawer"?"cart-drawer":"cart-page");
       await expect(host.getByTestId("cart-line-qty")).toHaveText("1");
