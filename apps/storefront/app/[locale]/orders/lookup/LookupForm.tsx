@@ -1,3 +1,8 @@
+// Purpose: Buyer order lookup form and signed in-place errors.
+// Depends on: lookup-copy, lookup-contract and state/StorefrontState.
+// Used by: localized order lookup route.
+// Frames: 26:708 / 26:995 default, 1253:17225 / 1253:17256 not found.
+// Invariants: no persisted lookup credentials; refusals never reveal which field matched.
 "use client";
 
 // Guest order lookup form: order number + (email or phone) -> BFF POST /api/buyer/orders/lookup -> Go POST /v1/buyer/orders/lookup
@@ -6,6 +11,7 @@
 // half was wrong. Nothing is stored in the browser and the values are never logged.
 import { useState, type FormEvent } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import { StorefrontReadFailure } from "../../../../components/state/StorefrontState";
 import { lookupCopy } from "../../../../lib/lookup-copy";
 import { validContact, validOrderRef, validLookupResult } from "../../../../lib/lookup-contract";
 
@@ -48,10 +54,13 @@ export default function LookupForm({ locale }: { locale: Locale }) {
     }
   }
 
+  // 1253:17225: a not-found answer keeps the typed values and switches to the "values kept" state; every other problem keeps the default frame.
+  const miss = problem === "noMatch";
   return (
-    <main className="purchase-main claim-main order-section" data-testid="order-lookup">
+    <main className="purchase-main claim-main order-section" data-testid="order-lookup" data-state={miss ? "not-found" : "default"}>
       <h1>{copy.title}</h1>
-      <p>{copy.intro}</p>
+      {!miss && <h2>{copy.heading}</h2>}
+      <p>{miss ? copy.intro : copy.introDefault}</p>
       <form className="lookup-form" onSubmit={(event) => void submit(event)} noValidate>
         <label>
           {copy.orderRef}
@@ -65,11 +74,11 @@ export default function LookupForm({ locale }: { locale: Locale }) {
             spellCheck={false}
             inputMode="text"
             disabled={busy}
-            aria-describedby="lookup-ref-hint"
+            aria-describedby={miss ? "lookup-ref-hint" : undefined}
             onChange={(event) => setRef(event.target.value)}
           />
         </label>
-        <p id="lookup-ref-hint" className="order-note">{copy.orderRefHint}</p>
+        {miss && <p id="lookup-ref-hint" className="order-note">{copy.orderRefHint}</p>}
         <label>
           {copy.contact}
           <input
@@ -80,21 +89,21 @@ export default function LookupForm({ locale }: { locale: Locale }) {
             autoComplete="email"
             spellCheck={false}
             disabled={busy}
-            aria-describedby="lookup-contact-hint"
+            aria-describedby={miss ? "lookup-contact-hint" : undefined}
             onChange={(event) => setContact(event.target.value)}
           />
         </label>
-        <p id="lookup-contact-hint" className="order-note">{copy.contactHint}</p>
+        {miss && <p id="lookup-contact-hint" className="order-note">{copy.contactHint}</p>}
+        {problem && (
+          <div data-testid="lookup-problem" data-problem={problem}>
+            <StorefrontReadFailure message={copy[problem]} />
+          </div>
+        )}
         <button type="submit" data-testid="lookup-submit" disabled={busy}>
-          {busy ? copy.submitting : copy.submit}
+          {busy ? copy.submitting : miss ? copy.submitMiss : copy.submit}
         </button>
       </form>
-      {problem && (
-        <p role="alert" data-testid="lookup-problem" data-problem={problem}>
-          {copy[problem]}
-        </p>
-      )}
-      <p className="order-note">{copy.sessionNote}</p>
+      <p className="order-note">{miss ? copy.kept : copy.footNote}</p>
     </main>
   );
 }

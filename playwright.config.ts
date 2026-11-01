@@ -16,7 +16,7 @@ const suites: Record<string, string[]> = {
   "entry-mock": ["entry.spec.ts"],
   "identity-real": ["auth-real.spec.ts"],
   // PA11 (merchant-password-auth-v1): started by tests/foundation/browser_password_auth_test.go.
-  "password-auth": ["password-auth.spec.ts"],
+  "password-auth": ["password-auth.spec.ts", "parity-entry.spec.ts"],
   // staff-team (R4 independent gate): started by tests/foundation/browser_staff_team_test.go in the same mode.
   "staff-team": ["staff-team.spec.ts"],
   // OC-04 re-auth dialog and reauth_required handling: started by tests/foundation/browser_oc_test.go in the same mode.
@@ -26,7 +26,7 @@ const suites: Record<string, string[]> = {
   // files in the selected suite so the gate registry can verify reachability.
   "settings-real": ["settings-real.spec.ts", "settings-v2.spec.ts"],
   "merchant-orders-bff": ["orders-bff.spec.ts"],
-  "merchant-orders-ui": ["orders-ui.spec.ts"],
+  "merchant-orders-ui": ["orders-ui.spec.ts", "shipping-center.spec.ts"],
   "parcel-merge-ui": ["parcel-merge.spec.ts"],
   "inbox": ["inbox-ui.spec.ts", "inbox-bundle-ui.spec.ts", "inbox-customer-ui.spec.ts", "inbox-v2-ui.spec.ts"],
   "studio-ui": ["studio-ui.spec.ts"],
@@ -36,7 +36,7 @@ const suites: Record<string, string[]> = {
   "live-console": ["live-console.spec.ts", "comment-label-print.spec.ts"],
   "live-settings": ["live-settings.spec.ts"],
   // SDB (unit store-design): started by tests/foundation/browser_store_design_test.go.
-  "store-design": ["design.spec.ts", "oc/design-publish-pending.spec.ts", "editor-v2.spec.ts"],
+  "store-design": ["design.spec.ts", "oc/design-publish-pending.spec.ts", "editor-v2.spec.ts", "domains-parity.spec.ts"],
   "product-media-v2": ["product-media-v2.spec.ts"],
 };
 if (!Object.hasOwn(suites, suite)) throw new Error("Invalid LC_BROWSER_SUITE");

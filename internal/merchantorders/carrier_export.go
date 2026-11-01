@@ -4,6 +4,7 @@
 //   the reader's collect_minor (= total + cod_surcharge, never recomputed here).
 // Depends on: fulfillment.read_pick_list (0130; parcel group ids via readPickListJSON, 0146), identity.resolve_access (orders:read + orders:export),
 //   ops.audit_events (orders.carrier_export), platform.WithScope, shared writeCSVLine/guardFormula.
+//   identity.authorize_carrier_export (0214) enforces §16 before reading PII or writing an audit row.
 // Used by: internal/httpapi/picklist.go (export route). Tests: TestCarrierExport.
 // Invariants: collect_minor = total_minor + coalesce(cod_surcharge_minor,0); formula guard on a leading
 //   =+-@; no carrier API call (a file for the merchant to upload); templates provisional (PL-OPEN-2).
@@ -13,6 +14,7 @@ package merchantorders
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"strconv"
 	"strings"
 
@@ -48,6 +50,10 @@ func CarrierExport(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, 
 	}
 	if err := validSelection(in); err != nil {
 		return CarrierExportFile{}, err
+	}
+	hash := sha256.Sum256([]byte(token))
+	if _, err := tx.Exec(ctx, `SELECT identity.authorize_carrier_export($1,$2::uuid)`, hash[:], scope.StoreID); err != nil {
+		return CarrierExportFile{}, mapPickListError(err)
 	}
 	raw, err := readPickListJSON(ctx, tx, scope, token, in, true)
 	if err != nil {

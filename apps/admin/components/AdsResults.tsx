@@ -1,6 +1,7 @@
 // Purpose: Renders aggregate ads reports and CAPI configuration controls.
 // Depends on: @live-commerce/ui, @/lib/presentation-copy, react, @live-commerce/i18n, @live-commerce/format, @/lib/model, @/lib/ads-client, @/lib/ads-model, @/lib/ads-copy
-// Used by: apps/admin/components/Ads.tsx
+// Used by: apps/admin/components/Ads.tsx and Attribution.tsx
+// Invariants: report groups retain their own window and source; null receipts stay unavailable.
 "use client";
 import { DateControl } from "@live-commerce/ui";
 import { presentationCopy } from "@/lib/presentation-copy";

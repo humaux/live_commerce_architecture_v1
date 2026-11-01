@@ -1,5 +1,5 @@
 // Purpose: Owns the paginated merchant customer search page.
-// Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/customers-copy, ./CustomerTags, ./AdminStateBlock, ./AdminForbidden, @/lib/customer-tags-client, @/lib/customer-tags-copy, ./WorkspaceFrame, ./AdminPageHeader, ./Icon, ./orders.css, ./order-actions.css, ./customers.css
+// Depends on: react, next/link, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/customers-model, @/lib/customers-copy, ./CustomerTags, ./AdminStateBlock, ./AdminForbidden, @/lib/customer-tags-client, @/lib/customer-tags-copy, ./WorkspaceFrame, ./AdminPageHeader, ./Icon, ./orders.css, ./order-actions.css, ./customers.css, ./customers/parity.css
 // Invariants: server-scoped reads; signed simple search; optional existing tools stay collapsed.
 // Used by: apps/admin/app/[locale]/customers/page.tsx
 "use client";
@@ -29,6 +29,7 @@ import { Icon } from "./Icon";
 import "./orders.css";
 import "./order-actions.css";
 import "./customers.css";
+import "./customers/parity.css";
 
 function url(locale: Locale, store: string, q: string, after: string, tag = "") {
   const params = new URLSearchParams();
@@ -126,7 +127,7 @@ export function Customers({
           )}
         </form>
         </div>
-        <details className="people-advanced" data-testid="people-list-tools"><summary>{p.advanced}</summary>
+        <details className="people-advanced" data-testid="people-list-tools"><summary>{p.records}</summary>
           <div className="orders-controls">
           <button type="button" data-testid="customers-refresh" disabled={read.status === "loading"} onClick={read.reload}>
             <Icon name="refresh" size={18} />
@@ -239,7 +240,7 @@ function CustomerRow({ row, c, locale, store, q = "", tag = "" }: { row: Custome
       </td>
       <td data-label={c.orders}>{row.orders_count}<span className="people-mobile-label"> {p.orders}</span></td>
       <td data-label={p.net}><span className="people-mobile-label">{p.net} </span>{row.currency ? m(row.captured_minor - row.refunded_minor) : "—"}</td>
-      <td data-label={p.consent}><span>{c.marketing}: {row.consents.marketing_messages ? c.consentGranted : c.consentNone}</span></td>
+      <td data-label={p.consent}><span>{p.marketingShort}{p.colon}{row.consent_state?.marketing_messages === "withdrawn" ? p.withdrawn : row.consents.marketing_messages ? p.granted : p.never}</span></td>
     </tr>
   );
 }

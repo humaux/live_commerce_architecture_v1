@@ -69,7 +69,7 @@ test("TSX seam refuses an unlisted import", () => {
 test("Ads merchant timestamp uses Taipei at the year boundary", () => {
   const { __testWhen } = compile("apps/admin/components/Ads.tsx", {
     "next/navigation": {}, "@/lib/ads-client": {}, "@/lib/ads-model": {}, "@/lib/ads-copy": {},
-    "./Icon": {}, "./AdsConnection": {}, "./AdsDraft": {}, "./AdsResults": {}, "@/lib/attribution-copy": {}, "./ads.css": {},
+    "./Icon": {}, "./AdsConnection": {}, "./AdsDraft": {}, "./AdsResults": {}, "@/lib/attribution-copy": {}, "./ads.css": {}, "./ads/parity.css": {}, "@live-commerce/i18n": {},
   }, "\nexport { when as __testWhen };\n");
   assert.match(__testWhen("zh-TW", instant, "empty"), expected);
   assert.equal(__testWhen("zh-TW", null, "empty"), "empty");

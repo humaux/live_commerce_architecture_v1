@@ -1,0 +1,51 @@
+{
+  "head": "5ef4cc44857ff92e40e551edf484e851d136c182",
+  "tested_merge": "9b3ab3af402c500b69add3923c115ac1b524c713",
+  "run": 41075396782,
+  "job": 124143813883,
+  "artifact": 12989464352,
+  "result": "15 passed, 2 failed: route.continue: Route is already handled!",
+  "trace_events": [
+    {
+      "type": "before",
+      "callId": "call@1244",
+      "startTime": 20794.223,
+      "class": "Page",
+      "method": "setNetworkInterceptionPatterns"
+    },
+    {
+      "type": "before",
+      "callId": "call@1246",
+      "startTime": 20794.537,
+      "class": "Route",
+      "method": "continue"
+    },
+    {
+      "type": "after",
+      "callId": "call@1246",
+      "endTime": 20794.812,
+      "error": "Route is already handled!"
+    },
+    {
+      "type": "after",
+      "callId": "call@1244",
+      "endTime": 20798.186
+    }
+  ],
+  "fix_attempt": 1,
+  "fix": "Release and await every route.continue promise before removing interception; assert ready refresh control before installing delay.",
+  "checks": {
+    "node --check tests/admin/ads.spec.ts": 0,
+    "node scripts/dev/derive-browser-ownership.mjs": 0,
+    "node scripts/dev/derive-browser-ownership.mjs --check": 0,
+    "git diff --check": 0,
+    "python3 scripts/check_packet.py": 0
+  },
+  "hashes": {
+    "tests/admin/ads.spec.ts": "4dc104efe198929e527691b00b61e79d5bea66acc09e9a7af25ae8783e65669b",
+    "output/ci-select-backend-browser/browser-ownership.json": "1b6787101b7c60bc72c1ed4080598a9a5682b9afedf6dc919019bca95fcdf823"
+  },
+  "evidence": "E1 static; GitHub regression verification PENDING; no local tests/servers",
+  "wake": "Integrator relays a fresh session after WAIT_RUN concludes",
+  "humaux": "Unavailable; no store/canvas/coord action claimed"
+}

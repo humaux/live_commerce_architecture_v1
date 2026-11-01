@@ -284,6 +284,7 @@ export async function pickFixture() {
             cod_surcharge_minor: null,
             cod_collect_minor: null,
             recipient_masked: "—",
+            item_summary:{items:[{product_name:line.title,variant_label:line.option_label,quantity:line.qty}],total_item_count:line.qty},
             delivery_kind: n % 2 ? "cvs_711" : "home",
             live_sessions: [{ id: sessionID, name: "合成場次 Synthetic live" }],
           };

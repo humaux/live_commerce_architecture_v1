@@ -2,6 +2,10 @@
 
 package foundation_test
 
+// Purpose: Run the password-auth chain and signed PARITY-ENTRY suite on packaged Next + Go + real PG fixtures.
+// Depends on: isolated password/SMTP fixture, Playwright and the existing browser environment.
+// Used by: CI --browser-password-auth and --browser-webkit password-auth steps.
+// Invariants: actual browser registration includes both specs; no real mailbox or secret logging.
 // PA11 TestBrowserPasswordAuth (BROWSER) — contracts/merchant-password-auth-v1.md §7.2/§7.3/§9 PA11.
 // Real chain: Chromium (Playwright, tests/admin/password-auth.spec.ts) -> packaged Next admin BFF -> in-process
 // Go api (identityhttp.NewPasswordHandler + the existing identity/http handlers) -> real PG, with the REAL
@@ -161,7 +165,7 @@ func TestBrowserPasswordAuth(t *testing.T) {
 		t.Fatalf("Next readiness failed; local evidence: %s", evidence)
 	}
 	browserLogFile := browserLog(t, filepath.Join(evidence, "playwright.log"))
-	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/password-auth.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
+	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/password-auth.spec.ts", "tests/admin/parity-entry.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
 	browser.Dir = root
 	browser.Env = browserEnvironment(map[string]string{
 		"LC_BROWSER_SUITE":         "password-auth",

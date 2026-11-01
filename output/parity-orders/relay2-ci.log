@@ -1,0 +1,12 @@
+PARITY-ORDERS RELAY2 implementation failure — targeted fix attempt 1
+Head: 4ecb4558472f43c6771b7d8a1a7785c57e31091b
+Run: 41058276947
+Job: 124071219917
+Source: gh run view 41058276947 --log-failed --job 124071219917; gh api repos/humaux/live_commerce_architecture_v1/actions/jobs/124071219917/logs
+2026-10-30T13:17:29.3391274Z test at tests/ui/ds-hex-ratchet.test.mjs:87:1
+2026-10-30T13:17:29.3394204Z   +   'total hex colours 410 > baseline 386',
+2026-10-30T13:17:29.3395398Z   +   'apps/admin/components/orders/parity.css: 24 hex colours > baseline 0 (use a --ds-* token from packages/ui/src/tokens.css)'
+2026-10-30T13:17:29.3408833Z     actual: [ 'total hex colours 410 > baseline 386', 'apps/admin/components/orders/parity.css: 24 hex colours > baseline 0 (use a --ds-* token from packages/ui/src/tokens.css)' ],
+2026-10-30T13:17:29.3469710Z ##[error]Process completed with exit code 1.
+Fix: reuse existing shared color tokens in orders/parity.css; all tests/baselines unchanged.
+Local tests NOT_RUN; GREEN pending new-head CI.

@@ -1,0 +1,14 @@
+{
+  "apps/admin/app/[locale]/finance/page.tsx": "cd19a28733e35f4e56a5595e8e69092ea3f977f69feec8a8aac52a69149f3cc7",
+  "apps/admin/app/[locale]/settings/settlements/page.tsx": "73423f5c12a98d76e3cbdc718b1cf34fadf132830cf43dcc635f54f10e22532a",
+  "apps/admin/components/Finance.tsx": "c4f7b895c674d7ae670dfa44f146d03ee32b2ec4e3dca6b74993340748915e33",
+  "apps/admin/components/Reports.tsx": "118703790291cbf2594aaf820ec88b84cf2e99c5dd5f4562d860ec11c7a9df3d",
+  "tests/admin/customers-billing.spec.ts": "d8dea9f87d18c8a7ac6101f5da4d7a497098584e154161d1223ba579f53edcd4",
+  "tests/admin/reports-render.test.mjs": "82e0c983679eb34574b2bc6bf7b46ed02f02078b7e237b418d2cf174e7be2584",
+  "tests/admin/reports.spec.ts": "b73f22e70a634db42ace09e98101180bfde2c8a4e6eaffbe1711423e0e7aecfa",
+  "tests/admin/settlements.spec.ts": "3c4f1d753c91e6a452a9f8dbef09e0cce20e4364c04121a6ca9a9e37323fa3ee",
+  "tests/foundation/browser_migration_import_ui_test.go": "3d74670f4513e99a8ad42ba19d442c56a1aea6f26d6a0034aaf0032e729cd853",
+  "tests/foundation/order_history_import_test.go": "687e3b06ac2867ec077aa2defea5a28e5a9c353de805b905e811594b5a73cc45",
+  "tests/storefront/promotions-gate.mjs": "4a3dbd3c31df07666bdcef64cca4e1586dd30ff19ba3b04e7723c429508ef59f",
+  "output/ci-select-backend-browser/browser-ownership.json": "41060a03394c0825f2c7e75e2a52992e0535bae6871675cdddbad6a0b3514f5b"
+}

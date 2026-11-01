@@ -29,7 +29,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
 import { engine, launch, ctxOpts, phone, iosZoomOffenders } from "./browser-engine.mjs";
-import { reachCheckout, switchLocale } from "./shop-helpers.mjs";
+import { reachCheckout, switchLocale, confirmCheckoutAddress } from "./shop-helpers.mjs";
 import { displayTime } from "../../packages/format/src/index.ts";
 import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 
@@ -206,7 +206,7 @@ async function place(buyer, store) {
   await expect(page.getByTestId("address-section")).toBeVisible();
   for (const [key, value] of Object.entries(pii)) await page.locator(`input[name="${key}"]`).fill(value);
   await page.getByRole("radio", { name: c.bank }).check(); // choosing the mode resets the confirmed address: confirm after it
-  await page.getByTestId("confirm-address").click();
+  await confirmCheckoutAddress(page);
   await expect(page.getByTestId("create-order")).toBeEnabled();
   await expect(page.getByTestId("create-order")).toHaveText(c.create);
   await expect(page.locator(".order-note").filter({ hasText: c.note })).toBeVisible(); // the merchant's 6 hour window reaches the buyer

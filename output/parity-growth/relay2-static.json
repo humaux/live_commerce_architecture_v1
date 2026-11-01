@@ -1,0 +1,62 @@
+{
+  "evidence": "E1 static only; not browser or product acceptance",
+  "date_utc": "2026-10-30T13:40:30.124266+00:00",
+  "checks": [
+    {
+      "command": "node /Volumes/data/live_commerce_architecture_v1/node_modules/typescript/bin/tsc -p output/parity-growth/tsconfig-static.json --pretty false",
+      "exit_code": 0,
+      "scope": "admin TypeScript strict, worktree source paths; existing read-only installed dependencies"
+    },
+    {
+      "command": "node --check <changed browser specs and imported harnesses>",
+      "exit_code": 0,
+      "files": [
+        "tests/admin/ads.spec.ts",
+        "tests/admin/attribution.spec.ts",
+        "tests/admin/attribution-checkout.spec.ts",
+        "tests/admin/attribution.test.ts",
+        "tests/admin/timezone-ui.test.mjs",
+        "tests/storefront/promotions-gate.mjs"
+      ]
+    },
+    {
+      "command": "python3 scripts/check_packet.py",
+      "exit_code": 0,
+      "meaning": "PASS_PACKET_STRUCTURE_ONLY",
+      "receipt": "relay2-packet-check.json"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    },
+    {
+      "command": "node scripts/dev/derive-browser-ownership.mjs && node scripts/dev/derive-browser-ownership.mjs --check",
+      "exit_code": 0,
+      "meaning": "owner-authorized generated registration; 53 modes, no hand edit"
+    }
+  ],
+  "source_sha256": {
+    "apps/admin/components/Ads.tsx": "277ef4f7a76e81b3f2eaa9a421a4634f5612726babbeee39a8f3efbf3ebe468b",
+    "apps/admin/components/AdsDraft.tsx": "6dc9d4a98d0c27e847036f526f8d334c92296455f03795428ce431409a90afdc",
+    "apps/admin/components/AdsResults.tsx": "985c722fceff28a566aa36043557776c4c114eea80ec311a5569ca48eec3a0cf",
+    "apps/admin/components/Attribution.tsx": "871fa1bccb96041775666e4b939c819d3dd0e07fe899dcf816a1bb8110070b39",
+    "apps/admin/components/AttributionPanels.tsx": "e84b9da4857e16244f800034e3ae108da5f30718671de70adafc2128a70d9061",
+    "apps/admin/components/Promotions.tsx": "6de52c7c9341ba3ebfec3334a3c6ff13c8f5dc99d9630522f4b137964ca51202",
+    "apps/admin/components/ads/parity.css": "1b35b76112c2e3413bea12a52610f4dd7f6333b3d88313963e05039d3b642013",
+    "packages/i18n/src/index.ts": "eecf0809734dac8744b90ea1e9715a5a36a606a4a2e3067a390bc95ceeee04b8",
+    "packages/i18n/src/growth.ts": "3b0da7aa6ac12f5194d8da2ed7fa92000e11825a623a0dd799760f5dd3311730",
+    "tests/admin/ads.spec.ts": "08d419e0fcef7784926857db9210e42566269594d0bc90dc126ed9a764c2d9b3",
+    "tests/admin/attribution.spec.ts": "a53fabb6ed27c5f44520d4e2e195b7797b781aacb76f44e446296584f5f6971f",
+    "tests/admin/attribution-checkout.spec.ts": "1f42c6aaaab3fde22097a7babbbb98b5a3f19c70d337ed7cc704bf91e17dd0dc",
+    "tests/admin/attribution.test.ts": "3cd4919e2ae06a018a4e5cd8fcd950d8a60fdebf17f8da089f20265ca503279e",
+    "tests/admin/timezone-ui.test.mjs": "5564b216ae95058186b81fe5392d4c68adec8f5c1442fc2074ff09a5bff88307",
+    "tests/storefront/promotions-gate.mjs": "9bb4903e375561547b3e41223bfcb47ee32c54b3a700890351a92904247161b0"
+  },
+  "NOT_RUN": [
+    "local tests, PG, browser, servers, model experiments (owner prohibition)",
+    "implementation-head GitHub gates (not pushed yet at receipt creation)",
+    "independent visual review, viewport density and persistence",
+    "LIVE Meta/ad spend/customer upload/production deploy",
+    "Figma copy lint and Figma density execution (no design write authorized)"
+  ]
+}
