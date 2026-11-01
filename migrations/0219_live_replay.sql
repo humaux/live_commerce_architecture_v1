@@ -51,7 +51,9 @@ COMMENT ON FUNCTION live.persist_replay_videos() IS '0219: only future successfu
 
 CREATE ROLE commerce_replay_reader NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION;
 GRANT USAGE ON SCHEMA live,buyer,control,catalog TO commerce_replay_reader;
-GRANT SELECT ON live.replay_videos TO commerce_replay_reader;
+-- Only join, permalink and newest-observation columns are read by the two replay
+-- definers; requested_at is exclusively a completion-write fence, never public-read authority.
+GRANT SELECT(tenant_id,store_id,binding_id,video_id,post_id,permalink_url,observed_at) ON live.replay_videos TO commerce_replay_reader;
 GRANT SELECT(tenant_id,store_id,id,title,lifecycle,lifecycle_at,replay_public) ON live.sessions TO commerce_replay_reader;
 GRANT SELECT(tenant_id,store_id,session_id,platform,binding_id,source_object_id,active) ON live.claim_sources TO commerce_replay_reader;
 GRANT SELECT(tenant_id,store_id,id,session_id,sku_id,created_at) ON live.offers TO commerce_replay_reader;

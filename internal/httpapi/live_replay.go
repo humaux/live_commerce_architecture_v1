@@ -7,6 +7,7 @@ package httpapi
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 
 	"github.com/jackc/pgx/v5"
@@ -17,7 +18,7 @@ import (
 
 func registerLiveReplayRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 	const path = "/v1/admin/stores/{store_id}/live-sessions/{session_id}/replay"
-	mux.HandleFunc("GET "+path, claimsRoute(http.MethodGet, false, claimsScoped(pool, "live:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+	mux.HandleFunc("GET "+path, replayReadRoute(claimsScoped(pool, "live:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
 		return live.GetReplay(ctx, tx, s, bearerToken(r), r.PathValue("session_id"))
 	})))
 	mux.HandleFunc("PUT "+path, claimsRoute(http.MethodPut, false, func(w http.ResponseWriter, r *http.Request) {
@@ -30,6 +31,26 @@ func registerLiveReplayRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 		})(w, r)
 	}))
 	mux.HandleFunc(path, studioRoute("", false, nil))
+}
+
+// replayReadRoute accepts an empty reader as an absent body, including in-process
+// callers. Prove EOF with a bounded read; never infer emptiness from ContentLength.
+// The existing claims guard still owns query, framing, key and UUID validation.
+func replayReadRoute(next http.HandlerFunc) http.HandlerFunc {
+	read := claimsRoute(http.MethodGet, false, next)
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "private, no-store")
+		if r.ContentLength == 0 && len(r.TransferEncoding) == 0 && r.Body != nil && r.Body != http.NoBody {
+			body, err := io.ReadAll(io.LimitReader(r.Body, 1))
+			if err != nil || len(body) != 0 {
+				respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+				return
+			}
+			_ = r.Body.Close()
+			r.Body = http.NoBody
+		}
+		read(w, r)
+	}
 }
 
 func replayClassify(err error) (int, string) {

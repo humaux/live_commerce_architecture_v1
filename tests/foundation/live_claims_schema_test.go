@@ -213,6 +213,16 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			}
 		}
 		const rt, wr = "commerce_runtime", "commerce_claims_writer"
+		// 0219 buyer_replays: tenant_id/store_id fence the offer join to the resolved storefront.
+		add("commerce_replay_reader", "live.offers", "SELECT", "tenant_id", "store_id")
+		// 0219 buyer_replays: id is the public offer identifier, never its historical price.
+		add("commerce_replay_reader", "live.offers", "SELECT", "id")
+		// 0219 buyer_replays: session_id restricts offers to the requested ended session.
+		add("commerce_replay_reader", "live.offers", "SELECT", "session_id")
+		// 0219 buyer_replays: sku_id joins catalog.skus to resolve current catalog product authority.
+		add("commerce_replay_reader", "live.offers", "SELECT", "sku_id")
+		// 0219 buyer_replays: created_at supplies the stable display order (then id).
+		add("commerce_replay_reader", "live.offers", "SELECT", "created_at")
 		add(rt, "live.offers", "SELECT", cols("live.offers")...)
 		add(rt, "live.offers", "INSERT", cols("live.offers")...)
 		// live-tools 0092 ("Live tools (R4)" amendment): live_price_minor joins the merchant-writable offer columns.
