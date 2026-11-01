@@ -210,14 +210,15 @@ async function send(page, last5, minor, minutesAgo = 10) {
     })());
   };
   page.on("response", captureTransfer);
-  const written = page.waitForResponse(r => r.request().method() === "PUT" && new URL(r.url()).pathname.endsWith("/bank-transfer/proof"));
-  const updated = page.waitForResponse(async (r) => {
-    if (!transferRead(r)) return false;
-    const body = await r.json().catch(() => null);
-    return body?.state === "SUBMITTED" && body.proof?.last5 === last5 && Date.parse(body.proof.paid_at) === Date.parse(expectedInstant);
-  });
-  const clicked = page.getByTestId("transfer-send").click();
+  let written, updated, clicked;
   try {
+    written = page.waitForResponse(r => r.request().method() === "PUT" && new URL(r.url()).pathname.endsWith("/bank-transfer/proof"));
+    updated = page.waitForResponse(async (r) => {
+      if (!transferRead(r)) return false;
+      const body = await r.json().catch(() => null);
+      return body?.state === "SUBMITTED" && body.proof?.last5 === last5 && Date.parse(body.proof.paid_at) === Date.parse(expectedInstant);
+    });
+    clicked = page.getByTestId("transfer-send").click();
     const [write] = await Promise.all([written, updated, clicked]);
     assert.equal(write.status(), 200);
     assert.equal(write.request().postDataJSON().paid_at, expectedInstant, "real UI serializes the buyer's local wall clock");
