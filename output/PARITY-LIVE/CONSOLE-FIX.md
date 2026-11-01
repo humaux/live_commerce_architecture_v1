@@ -131,3 +131,18 @@ Acceptance: own repair-head Foundation/Gates GREEN, all8 shards/161 cases and sa
 NOT_RUN: repair-head CI GREEN/full161; independent E4 / visual/density and complete actual click ledger; local runtime tests/servers/tsc; provider SANDBOX/LIVE/deployment; Humaux shared reads/writes/index. No completion claim.
 
 STATUS: WAIT_PUSH — RELAY4 signed-copy repair prepared; authorE0/staticE1, CI acceptance pending.
+
+
+## D2 / PR355 public sold draft repair — 2026-11-01
+
+Task: 53ea9f21-3f3b-4626-87ab-42dc853507b9 / sub live-sold. Role ui_worker; actual model gpt-6.1-sol / high. Base_commit `5b7a57587c606bb942d814d46284a6279889ec32`; branch `codex/pr355-sold-template`, isolated worktree `.worktrees/codex-pr355-sold-template` (already prepared by parent; verified clean at base). Allowed product paths: LiveConsole.tsx, CommentReply.tsx, src/features/live/**; actual product change only CommentReply.tsx. Existing concurrent/original worktrees untouched.
+
+Root cause: private `draftText()` already respects server `offer.sold_out`; `remember()` seeded the public channel with `questionDraft` and `switchMode()` used that same unconditional fallback. Therefore a public-channel click replaced the correct sold-out notice with generic product-information copy. One derived `publicDraft` now supplies both defaults from the server sold-out flag. Per-buyer/channel custom drafts, unknown-outcome fences, authorization, text validation and accessibility stay intact. No new backend state, stock calculation, dependency or API.
+
+Raw RED: Gates [41289871867](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41289871867), job124799737520, artifact13076679502. `gh run view 41289871867 --job 124799737520 --log-failed` exit0 read back the failing foundation browser harness exit1. `gh api repos/humaux/live_commerce_architecture_v1/actions/artifacts/13076679502/zip` exit0 read the archive in memory (no downloaded file retained). Both error-context.md entries under `playwright/run.tNbjoDbH/live-console-523277039/results/` identify frames1429:48239 D|sold|buyer|public|A|全部 and1429:48573 M|sold|buyer|public|A|全部 at spec951:41: expected「這款已賣完，我再幫你確認補貨時間。」, received「我再幫你確認商品資訊。」. These are existing exact UI regression cases; tests, fixture, timeout, retry and thresholds are unchanged.
+
+Signed design: ux-live/output/ux-live/DELIVERY.md:264; v3/exports.json maps the public-sold desktop to `shots-v3/get_screenshot-1429-48239-1793181730490-0.png`. Visually inspected that original PNG: public reply selected and the same sold-out notice displayed. No redesign. Frozen authority: contracts/live-console-v1.md §7.1 ConsoleOffer.sold_out; invariants I01/I06/I07/I11/I18/I19/I21.
+
+Checks: `node scripts/dev/derive-browser-ownership.mjs` exit0 (56 modes; no generated diff); `node scripts/dev/derive-browser-ownership.mjs --check` exit0; `git diff --check` exit0. These are static E1 only. Source SHA256 CommentReply.tsx `526ba12b096b037467143412249dfff02adfb679c618fffb0737c6964cb1c9bb`; unchanged live-console.spec.ts `1d7fae39d1f3d6f64b461bf36bcf56098c767e2b1c245beba099b9fbdccbff00`.
+
+Author E0 / static E1; new browser GREEN and independent acceptance NOT_RUN. Affected CI: Foundation/Console, browser-live-console-parity and derived browser owners; original full PR gate requirements remain. All tests, browsers and servers GitHub-only. Local tests/typecheck/build, SANDBOX, LIVE, production and deploy NOT_RUN. No push/PR/merge/status/issue write, no local process or fixture remains. Parent owns guard/diff review and pushing the original PR after verifying its remote head. Risks: this fixes default public sold notices; arbitrary edited drafts remain operator-owned and are deliberately not overwritten.

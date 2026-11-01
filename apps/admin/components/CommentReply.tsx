@@ -48,9 +48,11 @@ export function CommentReply({
     if (!offer) return c.questionDraft;
     return (kind === "stock" ? c.stockDraft : c.draft).replace("{product}", offer.product_name).replace("{quantity}", String(comment.marks.claim?.quantity ?? "—")).replace("{stock}", offer.stock.tracked ? String(offer.stock.sellable) : "—");
   };
+  // Both audiences use the server-observed sold-out notice; edited drafts stay channel-scoped.
+  const publicDraft = offer?.sold_out ? c.soldDraft : c.questionDraft;
   const remember = (value: string, channel: "private" | "public") => {
     if (!drafts) return;
-    const prior = drafts.get(comment.ref) ?? { private: draftText(), public: c.questionDraft };
+    const prior = drafts.get(comment.ref) ?? { private: draftText(), public: publicDraft };
     drafts.set(comment.ref, { ...prior, [channel]: value });
   };
   const [mode, setMode] = useState<"private" | "public">("private"),
@@ -264,7 +266,7 @@ export function CommentReply({
     if (busy || terminalUnknown) return;
     remember(text, mode);
     setMode(next);
-    setText(drafts ? drafts.get(comment.ref)?.[next] ?? (next === "private" ? draftText() : c.questionDraft) : "");
+    setText(drafts ? drafts.get(comment.ref)?.[next] ?? (next === "private" ? draftText() : publicDraft) : "");
     setTemplate("");
     setError("");
     setState(null);
