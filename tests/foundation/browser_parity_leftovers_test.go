@@ -178,6 +178,34 @@ console.log('PASS: current product/media/order/template DTO parsers; MOCK projec
 	if err = os.WriteFile(filepath.Join(evidence, "mock-get-receipts.json"), receipt, 0600); err != nil {
 		t.Fatal(err)
 	}
+	// catalog-inventory-v1.md:62 binds every SKU currency to the same real scoped store, not a UI default.
+	var storeCurrency string
+	if err := f.owner.QueryRow(ctx, `SELECT currency FROM control.stores WHERE tenant_id=$1 AND id=$2`, f.tenantA, f.storeA1).Scan(&storeCurrency); err != nil {
+		t.Fatalf("real store currency preflight failed: %v", err)
+	}
+	skuCurrencies := []map[string]string{}
+	mismatches := []string{}
+	for _, value := range projections["products/"+bplProduct].(map[string]any)["skus"].([]any) {
+		sku := value.(map[string]any)
+		code, currency := sku["code"].(string), sku["currency"].(string)
+		skuCurrencies = append(skuCurrencies, map[string]string{"code": code, "currency": currency})
+		if currency != storeCurrency {
+			mismatches = append(mismatches, fmt.Sprintf("code=%s SKU=%s store=%s", code, currency, storeCurrency))
+		}
+	}
+	receipt, err = json.MarshalIndent(map[string]any{"store_currency": storeCurrency, "skus": skuCurrencies}, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(evidence, "mock-currency-receipt.json"), receipt, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if len(skuCurrencies) == 0 {
+		t.Fatal("MOCK SKU currency contract preflight requires at least one SKU")
+	}
+	if len(mismatches) != 0 {
+		t.Fatalf("MOCK SKU currency contract mismatch: %s; evidence=%s", strings.Join(mismatches, "; "), evidence)
+	}
 	t.Logf("MOCK fixture contracts and authenticated GET preflight passed; signed login and original 12 UI assertions follow; evidence=%s", evidence)
 	brfPlaywright(t, ctx, stack, []string{"parity-leftovers.spec.ts"}, map[string]string{"LC_BROWSER_STORE": f.storeA1, "LC_BROWSER_PARITY_DENIED": "0"})
 }
