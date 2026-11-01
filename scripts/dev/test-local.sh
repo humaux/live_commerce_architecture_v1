@@ -546,7 +546,9 @@ case "$1" in
   mkdir -p output/playwright
     }
     lc_run() {
-  LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.3 go test -race -tags browser -count=1 -timeout=780s -run '^TestBrowserLiveConsoleParityRealChain$' -v ./tests/foundation
+  for shard in 1/3 2/3 3/3; do
+    LC_CONSOLE_PARITY_SHARD=$shard LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.3 go test -race -tags browser -count=1 -timeout=780s -run '^TestBrowserLiveConsoleParityRealChain$' -v ./tests/foundation
+  done
   printf 'PASS: PARITY-LIVE signed Figma frames, real clicks on the Console route; MOCK business upstream, no LIVE provider acceptance.\n'
     }
     ;;
