@@ -1,5 +1,5 @@
 // Purpose: LC-U1 real-click workspace contract gate in three locales and two viewport sizes.
-// Depends on: @playwright/test, node:fs/promises, node:crypto; signed OIDC/Next/PG harness env LC_BROWSER_CONSOLE_*.; ./parity-live-sessions (C4 independent oracle)
+// Depends on: @playwright/test, node:fs/promises, node:crypto; signed OIDC/Next/PG harness env LC_BROWSER_CONSOLE_*.; ./parity-live-sessions (C4 independent oracle); read-only React host fibers for CONSOLE diagnostics.
 // Used by: browser_live_console_test.go and test-local.sh --browser-live-console.
 // Invariants: I01/I02/I06/I10/I11/I14/I18; Console upstream/receipts are explicitly MOCK, never SQL/provider acceptance.
 import { parityWords, parityViewports, parityClick, parityShot } from "./parity-live-sessions";
@@ -55,6 +55,105 @@ async function fault(request: APIRequestContext, scene: string, mode: string) {
   // G-UI8 audit [FIXTURE/SETUP]: loopback-only fault control never patches product DOM/API responses in the browser.
   const response = await request.post(`${api}/__test/live-console/fault`, { headers: { "X-Console-Control": control }, data: { scene, mode } });
   expect(response.status()).toBe(200);
+}
+
+/** CONSOLE diagnostics only: observe real events and allowlisted primitives; never change product state. */
+async function observeStockDispatch(page: Page, offer: string, name: string) {
+  const network: { event: string; pathname: string; status: number | null; delta?: number; expected_version?: number }[] = [];
+  const inventoryPost = (request: { method(): string; url(): string }) => request.method() === "POST" &&
+    new URL(request.url()).pathname === `/api/stores/${store}/inventory/adjustments`;
+  const onRequest = (request: Awaited<ReturnType<Page["waitForRequest"]>>) => {
+    // Body parsing stays in memory; only the two numeric stock fields may enter the artifact.
+    if (!inventoryPost(request)) return;
+    let body: Record<string, unknown> = {};
+    try { body = request.postDataJSON() ?? {}; } catch { /* No raw body/error logging. */ }
+    network.push({ event: "request", pathname: new URL(request.url()).pathname, status: null,
+      ...(typeof body.delta === "number" && Number.isFinite(body.delta) ? { delta: body.delta } : {}),
+      ...(typeof body.expected_version === "number" && Number.isSafeInteger(body.expected_version) ? { expected_version: body.expected_version } : {}) });
+  };
+  const onResponse = (response: Awaited<ReturnType<Page["waitForResponse"]>>) => {
+    if (inventoryPost(response.request())) network.push({ event: "response", pathname: new URL(response.url()).pathname, status: response.status() });
+  };
+  page.on("request", onRequest);
+  page.on("response", onResponse);
+  // READ-ONLY MEASUREMENT: native event listeners + current React state. No DOM writes,
+  // synthetic events, handler replacement, credentials, journal values or free-form text.
+  await page.evaluate((offer) => {
+    const rows: Record<string, unknown>[] = [];
+    const ids = new WeakMap<Element, number>(); let nextID = 0;
+    const nodeID = (node: Element | null) => { if (!node) return null; if (!ids.has(node)) ids.set(node, ++nextID); return ids.get(node); };
+    const number = (value: unknown) => typeof value === "number" && Number.isFinite(value) ? value : null;
+    const snapshot = (event: string, native?: Event) => {
+      if (rows.length >= 64) return;
+      const row = document.querySelector(`[data-testid="live-offer-${offer}"]`);
+      const consoleNode = document.querySelector('[data-testid="live-console"]');
+      const input = row?.querySelector<HTMLInputElement>(`[data-testid="live-stock-${offer}"]`);
+      const save = row?.querySelector<HTMLButtonElement>(`[data-testid="live-stock-save-${offer}"]`);
+      const confirm = row?.querySelector(`[data-testid="live-stock-confirm-${offer}"]`);
+      // React's DOM pointer can reference an old alternate. Search the committed root
+      // for these exact host nodes, then read only their owning function's hook values.
+      const key = consoleNode && Object.keys(consoleNode).find(key => key.startsWith("__reactFiber$"));
+      let root = key ? (consoleNode as any)[key] : null;
+      for (let depth = 0; root?.return && depth < 100; depth++) root = root.return;
+      const stack = root?.stateNode?.current ? [root.stateNode.current] : [];
+      let rowOwner: any = null, consoleOwner: any = null;
+      for (let visited = 0; stack.length && visited < 10000; visited++) {
+        const fiber = stack.pop();
+        if (row && fiber.stateNode === row || consoleNode && fiber.stateNode === consoleNode) {
+          let owner = fiber.return;
+          while (owner && typeof owner.type !== "function") owner = owner.return;
+          if (row && fiber.stateNode === row) rowOwner = owner;
+          if (consoleNode && fiber.stateNode === consoleNode) consoleOwner = owner;
+        }
+        if (rowOwner && consoleOwner) break;
+        if (fiber.sibling) stack.push(fiber.sibling);
+        if (fiber.child) stack.push(fiber.child);
+      }
+      const values: any[] = [];
+      for (let hook = consoleOwner?.memoizedState; hook && values.length < 64; hook = hook.next) values.push(hook.memoizedState);
+      // Source-bound useLiveCommand signature: busy/error/fenced/reason, pending ref,
+      // lifetime ref, callback/effect, active ref, identity ref. Fail UNKNOWN on drift.
+      const at = values.findIndex((value, i) => typeof value === "boolean" && typeof values[i + 1] === "string" &&
+        typeof values[i + 2] === "boolean" && typeof values[i + 3] === "string" &&
+        values[i + 4] && Object.hasOwn(values[i + 4], "current") && typeof values[i + 5]?.current === "number" &&
+        typeof values[i + 8]?.current === "boolean" && typeof values[i + 9]?.current === "string");
+      const read = values.find(value => value && typeof value === "object" && Object.hasOwn(value, "scope") && Object.hasOwn(value, "boundary") && Object.hasOwn(value, "data"));
+      const edit = rowOwner?.memoizedState?.memoizedState;
+      const stock = rowOwner?.memoizedProps?.offer?.stock;
+      const baseline = edit?.stock ?? stock;
+      const target = native?.target instanceof Element ? native.target : null;
+      const rect = save?.getBoundingClientRect();
+      const hit = rect ? document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2) : null;
+      rows.push({ event, at_ms: Math.round(performance.now()), row_mount: nodeID(row), console_mount: nodeID(consoleNode),
+        target: target === save || !!target && !!save?.contains(target) ? "save" : target === confirm || !!target && !!confirm?.contains(target) ? "confirm" : target === input ? "stock-input" : "other",
+        submit_reached: native?.type === "submit", default_prevented: native?.defaultPrevented ?? null,
+        draft: input && /^-?\d{1,9}$/.test(input.value) ? Number(input.value) : null,
+        draft_version: number(edit?.stock?.balance_version), baseline_version: number(baseline?.balance_version),
+        server_version: number(stock?.balance_version), baseline_sellable: number(baseline?.sellable), server_sellable: number(stock?.sellable),
+        save_disabled: save?.disabled ?? null, save_center_hits_save: !!save && !!hit && (hit === save || save.contains(hit)), confirm_present: !!confirm,
+        hook_shape_found: at >= 0, busy: at < 0 ? null : values[at], fenced: at < 0 ? null : values[at + 2],
+        pending: at < 0 ? null : !!values[at + 4].current, active: at < 0 ? null : values[at + 8].current,
+        blocked: at < 0 ? null : values[at] || values[at + 2] || !!values[at + 4].current || ["forbidden", "signed-out"].includes(values[at + 1]),
+        boundary_present: read ? !!read.boundary && !values.some(value => value?.error === "signed-out") : null });
+    };
+    const capture = (event: Event) => snapshot(`${event.type}:capture`, event);
+    const bubble = (event: Event) => snapshot(`${event.type}:after-react`, event);
+    for (const type of ["pointerdown", "pointerup", "click", "submit"]) document.addEventListener(type, capture, true);
+    for (const type of ["click", "submit"]) document.addEventListener(type, bubble);
+    snapshot("installed");
+    (window as any).__stockDispatchDiagnostics = () => {
+      snapshot("finished");
+      for (const type of ["pointerdown", "pointerup", "click", "submit"]) document.removeEventListener(type, capture, true);
+      for (const type of ["click", "submit"]) document.removeEventListener(type, bubble);
+      return rows;
+    };
+  }, offer);
+  return async () => {
+    let browser: unknown = { observer_unavailable: true };
+    try { browser = await page.evaluate(() => (window as any).__stockDispatchDiagnostics?.() ?? { observer_unavailable: true }); } catch { /* Preserve the original assertion on page loss. */ }
+    page.off("request", onRequest); page.off("response", onResponse);
+    await writeFile(`${evidence}/${name}-stock-dispatch.json`, JSON.stringify({ class: "MOCK", network, browser }, null, 2));
+  };
 }
 async function refreshList(page: Page, status: number) {
   // Match the list's exact GET path, not A1 or an implicit background poll.
@@ -374,6 +473,8 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     // Idle rows follow polled stock without any refresh button.
     await externalStock(1, 2);
     const stockInput = page.getByTestId(`live-stock-${offer}`);
+    const finishStockDiagnostics = await observeStockDispatch(page, offer, name);
+    try {
     await expect(stockInput).toHaveValue("18");
     await stockInput.fill("23");
     const changedPoll = page.waitForResponse(async (response) =>
@@ -396,6 +497,9 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await page.getByTestId(`live-stock-save-${offer}`).click();
     await expect.poll(async () => (await facts(request)).scenes[scene]!.Stock).toBe(23);
     expect((await facts(request)).receipts.at(-1)!.input).toMatchObject({ delta: 3, expected_version: 4, reason: "live_console_edit" });
+    } finally {
+      await finishStockDiagnostics();
+    }
     await page.reload();
     await expect(stockInput).toHaveValue("23");
     const beforeCancel = (await facts(request)).receipts.length;
