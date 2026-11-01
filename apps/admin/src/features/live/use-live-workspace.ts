@@ -1,6 +1,7 @@
 // Purpose: Bound visible-only polling and single-command receipt fencing for LC-U1.
 // Depends on: React, StudioError/session authority and closed command journal/clients; sessionStorage never stores credentials.
 // Used by: LiveWorkspace, LiveConsole and session-result UI; never calls a provider directly.
+// Invariants: only explicit same-scope refresh retains a verified snapshot; privacy and identity changes conceal it.
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { csrfCookie, sessionBoundary } from "@/lib/settings-client";
@@ -14,11 +15,17 @@ export function useLiveRead<T>(scope: string, enabled: boolean, read: (signal: A
   const [revision, bump] = useState(0);
   const readRef = useRef(read); readRef.current = read;
   const cookie = useRef("");
+  const cycle = useRef({ scope, enabled, poll, revision });
   const locked = useRef({ scope, denied: false });
   if (locked.current.scope !== scope) locked.current = { scope, denied: false };
   useEffect(() => {
     let alive = true, request: AbortController | null = null, timer: ReturnType<typeof setTimeout> | undefined;
     let epoch = 0, signedOut = locked.current.denied, failures = 0, notBefore = 0;
+    const previous = cycle.current;
+    cycle.current = { scope, enabled, poll, revision };
+    const retaining = enabled && previous.enabled === enabled && previous.scope === scope && previous.poll === poll && previous.revision !== revision &&
+      document.visibilityState === "visible" && view.scope === scope && !!view.boundary && !!cookie.current && cookie.current === csrfCookie();
+    let retainedBoundary = retaining ? view.boundary : "";
     const clear = (error = "") => { ++epoch; request?.abort(); clearTimeout(timer); cookie.current = ""; setView((previous) => ({ scope, data: null, error, boundary: !error && previous.scope === scope ? previous.boundary : "" })); };
     const load = async () => {
       if (!alive || !enabled || signedOut || document.visibilityState !== "visible") return;
@@ -29,6 +36,12 @@ export function useLiveRead<T>(scope: string, enabled: boolean, read: (signal: A
       let delay = 5000;
       try {
         const boundary = await sessionBoundary().catch(() => { throw new StudioError("signed-out"); });
+        if (!alive || epoch !== current) return;
+        // A changed identity cannot borrow the previous snapshot while its new read is pending.
+        if (retainedBoundary && retainedBoundary !== boundary) {
+          cookie.current = ""; retainedBoundary = "";
+          setView({ scope, data: null, error: "", boundary: "" });
+        }
         const data = await readRef.current(request.signal);
         if (!alive || epoch !== current) return;
         if (boundary !== await sessionBoundary().catch(() => "")) throw new StudioError("signed-out");
@@ -51,11 +64,11 @@ export function useLiveRead<T>(scope: string, enabled: boolean, read: (signal: A
     if (channel) channel.onmessage = (event) => { if (event.data?.type === "logout") logout(); };
     document.addEventListener("visibilitychange", visibility);
     window.addEventListener("commerce-session-logout", logout); window.addEventListener("storage", storage); window.addEventListener("focus", focus);
-    if (!signedOut) { clear(); void load(); }
+    if (!signedOut) { if (!retaining) clear(); void load(); }
     return () => { alive = false; ++epoch; request?.abort(); clearTimeout(timer); channel?.close(); document.removeEventListener("visibilitychange", visibility); window.removeEventListener("commerce-session-logout", logout); window.removeEventListener("storage", storage); window.removeEventListener("focus", focus); };
   }, [scope, enabled, revision, poll]);
   const refresh = useCallback(() => bump((n) => n + 1), []);
-  const current = view.scope === scope && (!cookie.current || cookie.current === csrfCookie()) ? view : { scope, data: null, error: "", boundary: "" };
+  const current = enabled && view.scope === scope && (!cookie.current || cookie.current === csrfCookie()) ? view : { scope, data: null, error: "", boundary: "" };
   return { ...current, refresh };
 }
 

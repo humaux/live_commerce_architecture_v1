@@ -121,7 +121,7 @@
     "tests/admin/live-settings-hooks.test.ts": "46cc13b98bdca7ee3e59bc1d3feea6abfba26512f05fdacafbfdbc0b4433cbfe",
     "tests/admin/live-settings-model.test.ts": "34ed269a867bd76bd746b8d7515c8c8f2bb45dfafc3a757417a825f85ac3591d",
     "tests/admin/live-settings.spec.ts": "73003210ee8eb5a9800e61716b15cc5402ec9187b2b8d0ff939741382688305f",
-    "tests/admin/live-workspace-hooks.test.ts": "acbe7feb525f0c1e1d4a732b3c120901d14880d1c438d3cc18177c2f2e7cff46",
+    "tests/admin/live-workspace-hooks.test.ts": "1d06a21720b52e55dd9f1178f150449a93a6a781411835c311bdafc5578a8932",
     "tests/admin/live-workspace.test.ts": "3b4fb838e4280f8b28eb4e8712a6a386168a92cca75e4ffbe2a33371a7b2d8be",
     "tests/admin/logistics-model.test.ts": "3f3404de07ecdabb0c8724fbc11bcd43705f3dab8519856e08d27024290486b1",
     "tests/admin/logistics-request.test.ts": "01dea5be1b52e6380af48d717a536b0fd440116fb089b562af835abe8cbe36c5",

@@ -65,7 +65,7 @@ function fixture() {
     mounted = { get view() { return view; }, render, stop: () => { alive = false; for (const e of effects) e?.cleanup?.(); } };
     return mounted;
   }
-  return { hooks, studio, load, document, window, saved, calls, mount, stop: () => mounted?.stop(), setExecute: (fn: typeof execute) => { execute = fn; } };
+  return { hooks, studio, load, document, window, saved, calls, mount, stop: () => mounted?.stop(), setBoundary: (fn: () => Promise<string>) => { settings.sessionBoundary = fn; }, setExecute: (fn: typeof execute) => { execute = fn; } };
 }
 
 test("A1 failures back off 3/6/12/24/30 seconds and success resets to five seconds", async (t) => {
@@ -99,6 +99,81 @@ test("secondary reads are mount/refresh only, independent from A1 and non-fatal"
   const h = f.mount(() => f.hooks.useLiveRead(`${scope}:secondary`, true, async () => { reads++; throw new f.studio.StudioError("unavailable"); }));
   t.after(f.stop); await flush(); t.mock.timers.tick(60000); await flush(); assert.equal(reads, 1);
   h.view.refresh(); await flush(); assert.equal(reads, 2);
+});
+
+test("explicit same-scope refresh keeps the owner mounted while its verified read is pending", async (t) => {
+  const f = fixture(); t.after(f.stop);
+  const original = { title: "PRIVATE" }; let reads = 0, finish!: (value: unknown) => void, owners = 0, present = false;
+  const h = f.mount(() => {
+    const view = f.hooks.useLiveRead(scope, true, async () => ++reads === 1 ? original : new Promise(resolve => { finish = resolve; }), true);
+    if (view.data && !present) owners++;
+    present = !!view.data;
+    return view;
+  });
+  await flush(); assert.equal(h.view.data, original); assert.equal(owners, 1);
+  h.view.refresh(); await flush(); assert.equal(reads, 2); assert.equal(h.view.data, original);
+  finish({ title: "UPDATED" }); await flush(); assert.equal(h.view.data.title, "UPDATED"); assert.equal(owners, 1);
+});
+
+test("refresh cannot retain across scope, enabled, polling policy or CSRF changes", async () => {
+  for (const change of ["scope", "enabled", "poll", "csrf"] as const) {
+    const f = fixture(); let activeScope = scope, enabled = true, poll = true, reads = 0;
+    const h = f.mount(() => f.hooks.useLiveRead(activeScope, enabled, async () => ++reads === 1 ? { title: "PRIVATE" } : new Promise(() => {}), poll));
+    try {
+      await flush(); assert.equal(h.view.data.title, "PRIVATE");
+      if (change === "scope") activeScope += ":other";
+      if (change === "enabled") enabled = false;
+      if (change === "poll") poll = false;
+      if (change === "csrf") f.document.cookie = "different-csrf";
+      h.render();
+      if (change !== "poll") assert.equal(h.view.data, null, `${change} conceals on the changed render`);
+      await flush(); h.view.refresh(); await flush(); assert.equal(h.view.data, null, change);
+    } finally { f.stop(); }
+  }
+});
+
+test("a changed pre-read session boundary conceals the old identity before the new read", async (t) => {
+  const f = fixture(); t.after(f.stop); let reads = 0, finish!: (value: unknown) => void;
+  const h = f.mount(() => f.hooks.useLiveRead(scope, true, async () => {
+    if (++reads === 1) return { title: "OLD IDENTITY" };
+    return new Promise(resolve => { finish = resolve; });
+  }));
+  await flush(); assert.equal(h.view.data.title, "OLD IDENTITY");
+  f.setBoundary(async () => "session-two"); h.view.refresh(); await flush();
+  assert.equal(reads, 2); assert.equal(h.view.data, null); assert.equal(h.view.boundary, "");
+  finish({ title: "NEW IDENTITY" }); await flush(); assert.equal(h.view.data.title, "NEW IDENTITY"); assert.equal(h.view.boundary, "session-two");
+});
+
+test("refresh keeps unavailable semantics but forbidden and session changes stay fail-closed", async () => {
+  for (const refusal of ["unavailable", "forbidden", "session"] as const) {
+    const f = fixture(); let reads = 0, finish!: (value: unknown) => void;
+    const original = { title: "PRIVATE" };
+    const h = f.mount(() => f.hooks.useLiveRead(scope, true, async () => {
+      if (++reads === 1) return original;
+      if (refusal !== "session") throw new f.studio.StudioError(refusal);
+      return new Promise(resolve => { finish = resolve; });
+    }, true));
+    try {
+      await flush(); h.view.refresh(); await flush();
+      if (refusal === "session") { f.setBoundary(async () => "session-two"); finish({ title: "STALE" }); await flush(); }
+      assert.equal(h.view.error, refusal === "session" ? "signed-out" : refusal);
+      assert.equal(h.view.data, refusal === "unavailable" ? original : null);
+      if (refusal !== "unavailable") { h.view.refresh(); await flush(); assert.equal(h.view.data, null); assert.equal(reads, 2); }
+    } finally { f.stop(); }
+  }
+});
+
+test("hide or logout during a retained refresh conceals and rejects late success", async () => {
+  for (const action of ["hide", "logout"] as const) {
+    const f = fixture(); let reads = 0, finish!: (value: unknown) => void;
+    const h = f.mount(() => f.hooks.useLiveRead(scope, true, async () => ++reads === 1 ? { title: "PRIVATE" } : new Promise(resolve => { finish = resolve; }), true));
+    try {
+      await flush(); h.view.refresh(); await flush(); assert.equal(h.view.data.title, "PRIVATE");
+      if (action === "hide") { f.document.visibilityState = "hidden"; f.document.dispatchEvent(new Event("visibilitychange")); }
+      else f.window.dispatchEvent(new Event("commerce-session-logout"));
+      await flush(); assert.equal(h.view.data, null); finish({ title: "STALE" }); await flush(); assert.equal(h.view.data, null);
+    } finally { f.stop(); }
+  }
 });
 
 test("UNKNOWN journal restores the exact key/method/path/body and explicit retry after reload", async (t) => {
