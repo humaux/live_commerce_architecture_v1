@@ -332,9 +332,6 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	selected := matchRoute(r.URL.Path)
-	if isReturnRequestRoute(selected.kind) {
-		w.Header().Set("Cache-Control", "private, no-store")
-	}
 	if selected.kind == unknownRoute {
 		fail(http.StatusNotFound, "not_found")
 		return

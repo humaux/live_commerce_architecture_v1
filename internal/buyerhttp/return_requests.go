@@ -22,9 +22,6 @@ const (
 	routeReturnRequestWithdraw
 )
 
-func isReturnRequestRoute(k routeKind) bool {
-	return k >= routeReturnRequestCreate && k <= routeReturnRequestWithdraw
-}
 func (h *handler) returnRequest(ctx context.Context, r *http.Request, selected route, store, token, key string) (any, error) {
 	var in returns.RequestInput
 	var decision struct {
