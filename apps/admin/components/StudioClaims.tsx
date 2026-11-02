@@ -1,7 +1,13 @@
 // Purpose: Owns studio claim controls, source binding and one-time cart-link presentation.
-// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/settings-client, @/lib/studio-client, @/lib/studio-model, @/lib/client, @/lib/claims-client, @/lib/claim-source-model, @/lib/claims-request, @/lib/claims-model, @/lib/catalog-v2-model, @/lib/orders-model, @/lib/claims-copy, @/lib/studio-copy, @/lib/meta-connect-copy, @/lib/meta-connect-client, @/lib/orders-client, @/lib/meta-page-source, ./WorkspaceFrame, ./AdminPageHeader, ./claims.css
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/settings-client, @/lib/studio-client, @/lib/studio-model, @/lib/client, @/lib/claims-client, @/lib/claim-source-model, @/lib/claims-request, @/lib/claims-model, @/lib/catalog-v2-model, @/lib/orders-model, @/lib/claims-copy, @/lib/studio-copy, @/lib/meta-connect-copy, @/lib/meta-connect-client, @/lib/orders-client, @/lib/meta-page-source, ./WorkspaceFrame, ./AdminPageHeader, ./claims.css, ./live-sessions/{claim-fields,SessionTasks,SessionProducts,session-tasks.module.css}
 // Used by: apps/admin/app/[locale]/studio/claims/page.tsx
+// Invariants: Go owns matching, source eligibility and versions; private links remain memory-only.
 "use client";
+import { Field, sourceFormOf } from "./live-sessions/claim-fields";
+import { useSessionTask } from "./live-sessions/SessionTasks";
+import { SessionProducts } from "./live-sessions/SessionProducts";
+import taskStyle from "./live-sessions/session-tasks.module.css";
+import { liveSessionsCopy } from "@live-commerce/i18n";
 
 // Owns the Studio › Claims panel (contracts/live-keyword-claims-v1.md §11.1, T10b): claim
 // window badge and Open/Close, quantity-rule selector (CLOSED only), offers table and
@@ -24,9 +30,9 @@
 // plus studio-copy.ts (shared Studio words), WorkspaceFrame (shared admin shell) and
 // claims.css (surface-local layout only).
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { locales, localeNames, type Locale } from "@live-commerce/i18n";
-import { Badge, Field as SharedField, FormRow, TableFrame } from "@live-commerce/ui";
+import { Badge, FormRow, TableFrame } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { sessionBoundary } from "@/lib/settings-client";
 import { readStudioDetail, readStudioPage, StudioError, type StudioErrorCode } from "@/lib/studio-client";
@@ -64,24 +70,16 @@ type Pending = { action: Action; key: string; run: (key: string, boundary: strin
 type Facts = { detail: StudioDetail; board: Board; bundles: Bundle[]; next: string; source: ClaimSource | null; platforms: SourcePlatform[]; sourceError: StudioErrorCode | null; library: LibraryEntry[] | null; meta: ConnectStatus | null };
 type Issued = { ref: string; origin: string; token: string | null; generation: number; expiresAt: string; released: boolean; replayed: boolean };
 
-// A label beside (not around) its control keeps the accessible name exactly the label
-// text, so a select's option text never leaks into it.
-function Field({ id, label, hint, children }: { id: string; label: string; hint?: string; children: ReactNode }) {
-  return <SharedField id={id} label={label} hint={hint} width="full" className="claims-field">{children}</SharedField>;
-}
 const codeOf = (error: unknown): StudioErrorCode => error instanceof StudioError ? error.code : "unavailable";
-// The form the saved source (or the defaults of a first bind: collecting, reply off) would produce.
-// Private reply defaults to off: it messages real buyers, so the merchant opts in (ruling t).
-// Re-saving keeps the saved source's platform (ruling p), so its own id never becomes ambiguous.
-const sourceFormOf = (source: ClaimSource | null, locale: Locale): ClaimSourceForm => source
-  ? { input: source.source_object_id, private_reply: source.private_reply, reply_locale: source.reply_locale, active: source.active, platform: source.platform }
-  : { input: "", private_reply: false, reply_locale: locale, active: true, platform: "" };
 const utf8Bytes = (value: string) => new TextEncoder().encode(value).length;
 
 /** Owns studio claim controls, source binding and one-time cart-link presentation. User actions submit claim and source-binding commands through claims-client. */
 export function StudioClaims({ locale, store, scene, initialError }: {
   locale: Locale; store: Store | null; scene: string; initialError: StudioErrorCode | null;
 }) {
+  const p = liveSessionsCopy[locale], task = useSessionTask();
+  const [keywordSKU, setKeywordSKU] = useState(""), [keywordDraft, setKeywordDraft] = useState("");
+  const [keywordPreview, setKeywordPreview] = useState<"save" | "remove" | null>(null);
   const c = claimsCopy[locale];
   const shared = studioCopy[locale];
   const storeID = store?.id ?? "";
@@ -465,17 +463,38 @@ export function StudioClaims({ locale, store, scene, initialError }: {
   const masked = issued ? `${issued.origin}/${buyerLocale}/claim#t=••••••••` : "";
   const expiresText = issued ? displayTime(locale, issued.expiresAt) : "";
 
+  if (task === "products" || task.startsWith("stock-")) return <WorkspaceFrame locale={locale} storeName={store?.name ?? shared.noStore} active="live"><div data-testid="merchant-claims"><SessionProducts key={`${storeID}:${scene}`} locale={locale} store={storeID} scene={scene} /></div></WorkspaceFrame>;
+  const keywordEntries = [...(facts?.library ?? []), ...(board?.offers ?? []).filter(offer => !facts?.library?.some(entry => entry.sku_id === offer.sku_id)).map(offer => ({ sku_id: offer.sku_id, product_name: offer.product_name, keyword: "", version: 0 }))];
+  const keywordEntry = keywordEntries.find(entry => entry.sku_id === keywordSKU);
+  if (task === "library") return <WorkspaceFrame locale={locale} storeName={store?.name ?? shared.noStore} active="live"><section className={taskStyle.page} data-testid="merchant-claims">
+    <h1>{keywordEntry ? p.keyword : p.library}</h1>
+    {keywordEntry ? <div className={taskStyle.card}><h2>{keywordEntry.product_name}</h2><p>{p.currentKeyword}</p><p>{keywordEntry.keyword || "—"}</p>
+      <label>{p.keywordInput}<input value={keywordDraft} disabled={blocked} maxLength={16} onChange={event => { setKeywordDraft(event.target.value); setKeywordPreview(null); }} /></label>
+      <p className={taskStyle.muted}>{p.keywordHelp}</p>
+      <div className={taskStyle.footer}><button type="button" disabled={blocked || !/^[A-Za-z0-9０-９Ａ-Ｚａ-ｚ]{1,16}$/.test(keywordDraft)} onClick={() => setKeywordPreview("save")}>{p.preview}</button><button type="button" disabled={blocked || keywordEntry.version === 0} onClick={() => setKeywordPreview("remove")}>{p.remove}</button></div>
+      {keywordPreview && <div className={taskStyle.note}><p>{keywordPreview === "save" ? keywordDraft : p.keywordRemoved}</p><button className="primary" type="button" disabled={blocked} onClick={() => { const entry = keywordEntry; const keyword = keywordPreview === "remove" ? "" : keywordDraft; void perform("library", async (key, current) => { await setLibraryKeyword(storeID, scene, entry.sku_id, { keyword, expected_version: entry.version }, key, current); setKeywordSKU(""); setKeywordPreview(null); }); }}>{p.save}</button></div>}
+      {alert("library")}<button type="button" disabled={!!busy || pending.current !== null} onClick={() => { setKeywordSKU(""); setKeywordPreview(null); }}>{p.libraryBack}</button>
+    </div> : keywordEntries.map(entry => <article className={taskStyle.card} key={entry.sku_id}><h2>{entry.product_name}</h2><p>{entry.keyword || "—"}</p><button type="button" disabled={blocked} onClick={() => { setKeywordSKU(entry.sku_id); setKeywordDraft(entry.keyword); setKeywordPreview(null); }}>{p.keyword}</button></article>)}
+    {!keywordEntry && <button type="button" onClick={() => { window.location.hash = "preflight"; }}>{p.preflight}</button>}
+  </section></WorkspaceFrame>;
+
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? shared.noStore} active="live" onBeforeNavigate={() => { setIssued(null); return true; }}>
     <div className="studio-page claims-page" data-testid="merchant-claims">
-      <AdminPageHeader locale={locale} description={facts ? `${c.scene}: ${facts.detail.draft.title}` : undefined} actions={<>
+      <AdminPageHeader locale={locale} title={p.preflight} description={facts ? `${c.scene}: ${facts.detail.draft.title}` : undefined} actions={<>
           {refreshedAt !== null && !refreshing && <span className="claims-refreshed" role="status">{c.refreshedAt(displayClock(locale, refreshedAt))}</span>}
           <button type="button" className="studio-refresh" disabled={!!busy || refreshing} aria-busy={refreshing} onClick={() => void refreshFacts()}>
             {refreshing ? c.refreshing : shared.refresh}
           </button>
         </>} />
-      <div className="claims-mock" role="note">{feed && <strong data-testid="claims-feed">{feed}</strong>}<p>{c.mockDetail}</p></div>
+
       {status !== "ready" || !facts || !board || !claimWindow ? <p className="claims-status" role={status === "loading" ? "status" : "alert"}>{statusText(status === "ready" ? "loading" : status)}</p> : <>
         {!canManage && <p className="studio-note">{c.readOnly}</p>}
+        <section className={taskStyle.page}>
+          <div className={taskStyle.grid}><div className={taskStyle.card}><h2>{c.source}</h2>{feed && <p data-testid="claims-feed">{feed}</p>}<p>{source ? `${c.sourcePlatform[source.platform]} · ${source.source_object_id}` : p.noSource}</p><button type="button" onClick={() => { window.location.hash = "advanced"; }}>{p.settings}</button></div>
+          <div className={taskStyle.card}><h2>{p.products}</h2><p>{board.offers.map(offer => offer.keyword).join(" / ") || c.noOffers}</p><button type="button" onClick={() => { window.location.hash = "library"; }}>{p.libraryOpen}</button><a href={`/${locale}/studio/claims?store=${storeID}&scene=${scene}#products`}>{p.products}</a></div></div>
+          <div className={taskStyle.card}><h2>{p.matchQuestion}</h2><div className={taskStyle.row}>{(["EXACT", "KEYWORD_QTY_ONLY", "KEYWORD_QTY_CONTAINS"] as MatchMode[]).map(mode => <button key={mode} type="button" aria-pressed={modeDraft === mode} disabled={blocked || claimWindow.state !== "CLOSED" || modeDraft === mode} onClick={() => changeMode(mode)}>{mode === "EXACT" ? c.modeExact : mode === "KEYWORD_QTY_ONLY" ? c.modeQty : c.modeContains}</button>)}</div>{alert("window")}</div>
+          <p className={`${taskStyle.note} ${taskStyle.muted}`}>{p.localBoundary}</p><div className={taskStyle.footer}><a href={`/${locale}/studio?store=${storeID}`}>{p.back}</a><a href={`/${locale}/studio/console?store=${storeID}&scene=${scene}`}>{p.console}</a></div>
+        </section>
         <div className="claims-surface">
           <aside className="claims-rail" aria-labelledby="claims-window-title">
             <div className="claims-window-head">
@@ -495,11 +514,11 @@ export function StudioClaims({ locale, store, scene, initialError }: {
             {claimWindow.state === "OPEN" && <p className="claims-muted">{c.modeLocked}</p>}
             <button type="button" className="primary claims-window-action" disabled={blocked} onClick={toggleWindow}>
               {busy === "window" ? c.working : claimWindow.state === "OPEN" ? c.closeWindow : c.openWindow}</button>
+            <details open={task === "advanced"}><summary>{p.advanced}</summary>
             <dl className="claims-facts">
               <div><dt>{c.round}</dt><dd>{claimWindow.generation}</dd></div>
               {claimWindow.state === "OPEN" && claimWindow.opened_at && <div><dt>{c.openedAt}</dt><dd>{displayTime(locale, claimWindow.opened_at)}</dd></div>}
             </dl>
-            {alert("window")}
             <details className="claims-stats" open={board.stats.accepted > 0 || persistedReasons.some((reason) => board.stats.rejected[reason] > 0)}>
               <summary id="claims-stats-title">{c.stats}</summary>
               <dl className="claims-facts">
@@ -508,6 +527,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
                   <dd data-testid={`claims-rejected-${reason}`}>{board.stats.rejected[reason]}</dd></div>)}
               </dl>
               {board.stats.rejected.NO_MATCH > 0 && <p className="claims-hint" role="status">{c.notUnderstood(board.stats.rejected.NO_MATCH)}</p>}
+            </details>
             </details>
             {prompt && <section className="claims-prompt" aria-labelledby="claims-prompt-title">
               <h3 id="claims-prompt-title">{c.prompt}</h3>
@@ -700,7 +720,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
               {alert("library")}
             </section>
             <section className="claims-section" aria-labelledby="claims-manual-title">
-              <h2 id="claims-manual-title">{c.manual}</h2>
+              <h2 id="claims-manual-title">{c.bundles}</h2>
               <form className="claims-form claims-manual-form" onSubmit={(event) => { event.preventDefault(); record(); }}>
                 <FormRow>
                 <Field id="claims-manual-buyer" label={c.buyer}>

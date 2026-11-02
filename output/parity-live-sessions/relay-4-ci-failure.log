@@ -1,0 +1,16 @@
+incoming_head=5a09fc681c16e5eabcd967519a2fc97bd07dd3c1
+gates_run=41075087278
+gates_job=124140079544
+tested_merge=b77dd88b4588f53c678848a745de2cb993f73b88
+artifact=12989710718
+2026-10-30T15:21:44.5685649Z === RUN   TestBrowserStudioUIRealChain
+2026-10-30T15:22:48.1685027Z     browser_studio_ui_test.go:252: real chain counters calls=183 authority=0 lost_ack=1 starts=0 stops=0 evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/studio-ui-20261030T152146.982180967
+2026-10-30T15:22:48.1710209Z     browser_studio_ui_test.go:258: lost-ACK retry changed command key: requests=4 evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/studio-ui-20261030T152146.982180967
+2026-10-30T15:22:48.1718964Z     browser_studio_ui_test.go:262: lost-ACK effect count=0 err=<nil> evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/studio-ui-20261030T152146.982180967
+2026-10-30T15:22:48.1725641Z     browser_studio_ui_test.go:265: swapped-login effect count=0 err=<nil> evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/studio-ui-20261030T152146.982180967
+2026-10-30T15:22:48.1734593Z     browser_studio_ui_test.go:274: UTC schedule shifted on title edit: instant=0001-01-01T00:00:00Z err=no rows in result set evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/studio-ui-20261030T152146.982180967
+2026-10-30T15:22:48.1749960Z     browser_studio_ui_test.go:278: signed browser login count=7 err=<nil> evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/studio-ui-20261030T152146.982180967
+2026-10-30T15:22:48.1766762Z     browser_studio_ui_test.go:282: worker terminal readback="" err=no rows in result set evidence=/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/studio-ui-20261030T152146.982180967
+2026-10-30T15:22:48.2514182Z --- FAIL: TestBrowserStudioUIRealChain (63.68s)
+2026-10-30T15:22:48.5878265Z matrix-receipts: {"mode":"--browser-studio-ui","run_id":"41075087278","run_attempt":"1","sha":"b77dd88b4588f53c678848a745de2cb993f73b88","status":"FAIL","test_count":11,"spec_count":10}
+2026-10-30T15:26:46.6486401Z --- FAIL: TestBrowserStudioUIRealChain (63.68s)

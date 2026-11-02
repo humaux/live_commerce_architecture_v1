@@ -1,0 +1,77 @@
+PARITY-LIVE-SESSIONS · causal RED receipt
+phase=TESTS_ONLY_RED
+head=395209e39d97c7a5a84373e114879e86f549416c
+tested_merge=073f5a477f1137ab3ee55bf0da0971fb6e5aa4b4
+base=3ea359f796d36153bb4b8aa7259e4e0c27676b86
+branch=unit/parity-live-sessions
+pr=https://github.com/humaux/live_commerce_architecture_v1/pull/365
+status=CAUSAL_ASSERTION_RED
+evidence=E3_EXPECTED_FAILURE_ONLY; MOCK browser, isolated REAL_PG; not implementation acceptance
+gates_run=41052979614
+gates_job=124055728603
+gates_url=https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41052979614/job/124055728603
+artifact=12976886467 gate-browser-live-console
+workspace=4 new C4 failures; 23 existing cases passed
+labels=PASS
+assertion_1=live-console.spec.ts:660 missing exact heading 直播準備; 1440x900 and 390x844
+assertion_2=live-console.spec.ts:684 missing exact heading 本場商品; 1440x900 and 390x844
+failure_kind=expect(locator).toBeVisible; element(s) not found; 10000ms assertion timeout
+raw_failure_evidence=red-evidence/live-console-C4-*.md
+raw_runner_log=red-evidence/playwright.log
+raw_go_gate_log=red-evidence/gate.log
+foundation_run=41052983503
+foundation_job=124053372712
+foundation_result=PASS_ON_TESTS_ONLY_HEAD; not current implementation GREEN
+implementation=SOURCE_AUTHORED; one implementation push follows this verified RED
+GREEN=PENDING_PR_OWN_CI
+local_tests=NOT_RUN_OWNER_PROHIBITED
+wake_owner=integrator; relay a fresh session after the implementation Gates/Foundation run concludes
+
+phase=FIX1_RELAY1_SECOND_DIRECTED_FIX
+head=1d77b89cd4775db6fc9a8bc19627e04af8ae27d5
+tested_merge=5b30adce3cab5d42a650a464cb9580c54f92e724
+foundation_run=41267520054 foundation_job=124733309565 failure=browser_ownership_drift
+gates_run=41267520139
+gates_jobs=124734313790,124734313755,124734313470
+assertion_shared=parity-live-sessions.ts:95 summary strict violation (2 elements); deal-loop/live-tools/CB11
+assertion_meta=meta-health-ui.spec.ts:148 metaconnect-token data-state active absent after reload of collapsed settings
+base_run=41266607808 base_head=da2cc7a3fc1e6eac11de727b158412ae9aff8ba9 base_conclusion=success
+classification=E3_FAILURE_EVIDENCE_ONLY; current GREEN pending
+stop_condition=same_assertion_RED_after_this_second_directed_fix=>BLOCKED_no_third_approach
+
+phase=FIX1_RELAY2_BLOCKED_AFTER_SECOND_DIRECTED_FIX
+head=16b22886b98bf815163c349425e2672f1993e8f7
+tested_merge=a9fef606eb427242aa5d4c8111ebc619d70915a7
+gates_run=41270522783 gates_conclusion=failure
+gates_jobs=124742946382,124742946232
+assertion_live_tools=live-tools.spec.ts:193:56 selectOption #claims-prompt-keyword timed out 20000ms element is not visible; all four locale/viewport cases
+assertion_billing=customers-billing.spec.ts:606:23 billing restriction alert strict violation resolved to 2 elements
+receipts_job=124746757956 required_job=124746824968
+foundation_run=41270522825 foundation_job=124742178049 foundation_conclusion=success
+classification=E3_FAILURE_EVIDENCE_ONLY; original helper assertion passed but same live-tools/CB11 tests remain RED after attempt 2
+disposition=BLOCKED_current_card_same_test_stop_condition_no_third_approach
+integration=fde11c1310fce20b576fc98023bd3003c66c205b local_merge=e42a91e1b
+push=NOT_RUN_BLOCKED; integration merge and evidence retained locally
+WAIT_RUN=NONE; latest Gates run is already completed failure
+
+phase=CONSOLE_DIAGNOSTICS_ONLY_2026_11_01
+before_head=26826d389edcb2f96f97bf72ea91850bc1b2add4
+original_red_run=41273619268 original_red_attempt=1 original_red_job=124751957935
+original_assertion=LC-U1_en-390_Stock_20_expected_23_after_confirm_and_Save;no_+3_expected_version_4_receipt
+same_run_attempt_2_console_job=124760549136 conclusion=success workspace=PASS labels=PASS
+same_run_attempt_2_tested_merge=c990cdfc755af0590816a5e2caed948dbf5bea07 receipt_status=PASS test_count=38 spec_count=37
+premise_correction=two_same_SHA_Console_failures_NOT_ESTABLISHED;do_not_infer_flakiness_or_root_cause
+authorization=CONSOLE_card_tests_only_privacy_safe_diagnostic_fallback;all_assertions_unchanged
+implementation=NOT_RUN_root_cause_UNKNOWN;no_LiveConsole_or_shared_hook_edits
+diagnostic_run=PENDING_PUSH;head_and_WAIT_RUN_follow_in_PR_comment_without_evidence_only_push
+wake_owner=integrator;relay_after_diagnostic_Gates_Foundation_completion
+
+phase=CONSOLE_DIAGNOSTICS_POST_PUSH_LOCAL_HANDOFF
+head=3433eeea14387b05b56e78b89686bf9ea5d0f5b1
+gates_run=41278031103 gates_status=in_progress console_job=PENDING_ALLOCATION
+foundation_run=41278031111 foundation_job=124764095697 foundation_status=in_progress
+WAIT_RUN=41278031103,41278031111
+new_RED_GREEN=PENDING;no_product_fix;no_assertion_changes;no_evidence_only_push
+STATUS=DONE_diagnostics_pushed;wake_owner=integrator
+
+Relay 2026-11-01: head3433eeea1 Gates41278031103 Console124764728535 FAIL at first Save spec455 zh-CN-390: expected17 got12, before observer476; not a new-assertion RED. Artifact13073236725. Five observed +3/v4 requests including en-390 returned200. Foundation41278031111/job124764095697 SUCCESS only. Product root cause UNKNOWN; no implementation push or GREEN.

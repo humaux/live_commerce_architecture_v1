@@ -530,7 +530,7 @@ case "$1" in
   mkdir -p output/playwright
     }
     lc_run() {
-  LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.3 go test -race -tags browser -count=1 -timeout=780s -run '^TestBrowserLiveConsoleRealChain$' -v ./tests/foundation
+  LC_BROWSER_LIVE_CONSOLE_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.3 go test -race -tags browser -count=1 -timeout=780s -run '^TestBrowserLiveConsole(RealChain|MockBalance)$' -v ./tests/foundation
   printf 'PASS: LC-U1 MOCK Console and LC-U2a REAL_PG comment/inbox plus W3-U3 real print facts/browser CSS; MOCK Graph only, no physical-printer or LIVE provider acceptance.\n'
     }
     ;;

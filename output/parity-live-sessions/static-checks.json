@@ -1,0 +1,122 @@
+{
+  "recorded_at": "2026-10-30T13:31:25.401684+00:00",
+  "checks": [
+    {
+      "command": [
+        "node",
+        "node_modules/typescript/bin/tsc",
+        "-p",
+        "output/parity-live-sessions/tsconfig.static.json",
+        "--noEmit",
+        "--incremental",
+        "false"
+      ],
+      "exit_code": 0,
+      "log": "tsc.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/studio-ui.spec.ts"
+      ],
+      "exit_code": 0,
+      "log": "syntax-studio-ui-spec-ts.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/claims-ui.spec.ts"
+      ],
+      "exit_code": 0,
+      "log": "syntax-claims-ui-spec-ts.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/live-console.spec.ts"
+      ],
+      "exit_code": 0,
+      "log": "syntax-live-console-spec-ts.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/meta-connect.spec.ts"
+      ],
+      "exit_code": 0,
+      "log": "syntax-meta-connect-spec-ts.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/meta-health-ui.spec.ts"
+      ],
+      "exit_code": 0,
+      "log": "syntax-meta-health-ui-spec-ts.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/meta-health-model.test.ts"
+      ],
+      "exit_code": 0,
+      "log": "syntax-meta-health-model-test-ts.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/attribution.spec.ts"
+      ],
+      "exit_code": 0,
+      "log": "syntax-attribution-spec-ts.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/parity-live-sessions.ts"
+      ],
+      "exit_code": 0,
+      "log": "syntax-parity-live-sessions.ts.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/check_packet.py"
+      ],
+      "exit_code": 0,
+      "log": "check-packet.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "scripts/dev/derive-browser-ownership.mjs",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "ownership-check.log",
+      "evidence": "E1_STATIC_ONLY"
+    }
+  ],
+  "depmap": "bash scripts/dev/depmap.sh exited 0 earlier; regenerated output unchanged; no Go behavior change",
+  "tests": "NOT_RUN_OWNER_PROHIBITED",
+  "GREEN": "PENDING_PR_OWN_CI",
+  "dependency_setup": "tsc used task-local symlinks to the read-only main checkout dependency caches; task symlinks are removed at handoff; CI installs its own pinned dependencies"
+}

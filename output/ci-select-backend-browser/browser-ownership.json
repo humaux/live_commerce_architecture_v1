@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registryHash": "543cf4d1708c7bd5ef26da171b048a8f42954e07b9069758759aec73e7c4a8a8",
+  "registryHash": "c70e99780fe21a33ce8ab921238ab6c3d06569ef415f5a47785d27b6f2e38f5f",
   "sources": {
     "tests/admin/ads-model.test.ts": "a89483826fba28e2e86fcc1196475cefe1851cec367e66cfdc7bb69def18f309",
     "tests/admin/ads-request.test.ts": "190103fd72ab76050512616cef988d13d7e3725659883f142710555f36686de5",
@@ -9,7 +9,7 @@
     "tests/admin/attribution-checkout.spec.ts": "1f42c6aaaab3fde22097a7babbbb98b5a3f19c70d337ed7cc704bf91e17dd0dc",
     "tests/admin/attribution-format.test.ts": "662fc1de39ba699c1e3ded9f7bd1c91d00caf1abedb24efaabfe14277fab8e36",
     "tests/admin/attribution.fixture.ts": "853a63334321e6f0719b8817ae48cf8e7260e9b14b30143e93faf303a131ab0c",
-    "tests/admin/attribution.spec.ts": "42b554c99c5f55c14112cca1eee9c98928f113700e0f2fd97a645545b33f244a",
+    "tests/admin/attribution.spec.ts": "1ab133aacb7c6883d94f310fcfc83d5efc37cf54d8d940c5a24d3235e601d08d",
     "tests/admin/attribution.test.ts": "3cd4919e2ae06a018a4e5cd8fcd950d8a60fdebf17f8da089f20265ca503279e",
     "tests/admin/auth-real.spec.ts": "13919e68208d764a2f3921a533221363bd14a4d415584c206ec85dcb385f7898",
     "tests/admin/auth.spec.ts": "c439fcf73df35f36d05be70cb5909126bc8bad1fec3cd1a049318a1bf27a138e",
@@ -32,7 +32,7 @@
     "tests/admin/claims-backend-parity.test.ts": "93784882a486c2be5a1cf945437dd818c5a93d290aac7d2140e5ee55dffb0335",
     "tests/admin/claims-model.test.ts": "2472e57eec9d86f4f9ae4ff32acd274b998c35d5a10c2bfd8251e34bc21e3a19",
     "tests/admin/claims-request.test.ts": "0812f41b5df04ce7eaa8d0d7885d887a5a024469e824a865ddcb7d0aafd6f391",
-    "tests/admin/claims-ui.spec.ts": "dbd5592652832116b4b3cb2e38cbb4b3fa2824b21108d48aba33f47fb919fbf6",
+    "tests/admin/claims-ui.spec.ts": "21ba06ef60e1db76209ca6a74e10fa907d56ef7dad1c09eebf67238ea1194a53",
     "tests/admin/code-alignment-admin-state.test.mjs": "0244c547a57cb9945201f6448ff377a8cfe25f209bc20ba998a756deef2da965",
     "tests/admin/comment-label-print.spec.ts": "daf089ec93a495f25697230778add4d299f66efb90babf4e483004e390cb9e24",
     "tests/admin/comment-label-print.test.ts": "1156d8f68891fe3ac8186a154dda09ecf3b17f370f43a60567187e7a402aa126",
@@ -49,7 +49,7 @@
     "tests/admin/customer-tags-write.test.mjs": "e7814246a33ae277ffb7a8e74fff7c4e3d0454c4b0780868fc42503ced02c023",
     "tests/admin/customer-tags.spec.ts": "a1ddf6018f77ad48860c313ca66f60e4e9952238b529f5cb1879020d06524cfa",
     "tests/admin/customers-bff.test.ts": "a913617de0a090f099a87f0aa42c30cd60fe0f35399ea6f26e35881f950387de",
-    "tests/admin/customers-billing.spec.ts": "b84b420b24fb227f02172ecd69387a6c533d5ce0b3b8477cbbe492af726209e2",
+    "tests/admin/customers-billing.spec.ts": "21a107146ba31acd65d0a34d6db2b62cc0d15c2bf71ba735d7fe0f0509ea17b5",
     "tests/admin/customers-model.test.ts": "c9e93b883d8be5089bb42aa656922b6276b29f07024a579e990a1ebabae061b1",
     "tests/admin/customers-request.test.ts": "2412516dded13d742b82cc205d8ae7d6a69ae66a9f82489f1021ada81cb8b920",
     "tests/admin/design-gate.test.ts": "d2f5fe2e7bf54f05035d55d7fd242c096a158ca09ddf6c04779ae0024e31c726",
@@ -116,7 +116,7 @@
     "tests/admin/live-console-bff.test.ts": "a20322ab400e8b94fce460d800affbe69cdd2c2a15d8ef03956403c97168606f",
     "tests/admin/live-console-model.test.ts": "9c070a0bf6db86d83fe6e2c7473b30b902aead66c31ad7ce24ce7edb1369d998",
     "tests/admin/live-console-render.test.ts": "1a1734c4668bfe368227ab8318f17517d49621df38285756b6ba5162996b5421",
-    "tests/admin/live-console.spec.ts": "6d9541ef1062d974e3036108572675b90fda57b0d3df4740e501ae769fb1ddf1",
+    "tests/admin/live-console.spec.ts": "6f8d8260158f26a5077ebdc578402770f41bcca70490dc2ca6e488e0129f77f8",
     "tests/admin/live-settings-bff.test.ts": "1386b69cdd713cb8ad1c4ed20db139a3db4e7383257e7d575013695978515a98",
     "tests/admin/live-settings-hooks.test.ts": "46cc13b98bdca7ee3e59bc1d3feea6abfba26512f05fdacafbfdbc0b4433cbfe",
     "tests/admin/live-settings-model.test.ts": "34ed269a867bd76bd746b8d7515c8c8f2bb45dfafc3a757417a825f85ac3591d",
@@ -127,12 +127,12 @@
     "tests/admin/logistics-request.test.ts": "01dea5be1b52e6380af48d717a536b0fd440116fb089b562af835abe8cbe36c5",
     "tests/admin/manual-fulfilment.spec.ts": "76745d29bd4fd71f395822db298fdd18f64796390757182f23c6734057131514",
     "tests/admin/merchant-tools-model.test.ts": "7de87f27cd2dcd6022cceb80e792b450bc131338621d1c4100aa602c8856a47f",
-    "tests/admin/meta-connect-gate.spec.ts": "3fa511c75c636bc5aa5cd63c8850b2f4d8c5b87fe935f0f284053baa44629c81",
+    "tests/admin/meta-connect-gate.spec.ts": "6bdeef95c3ffd99ededb8c919f9c91705fee3e4c782ce42b4d4667b92896b4f2",
     "tests/admin/meta-connect-gate.test.ts": "62de61dd8a92551cbc7a8478a3f7e0476f41bca03bfb23088b1388660fde9deb",
     "tests/admin/meta-connect-model.test.ts": "a8a880eb75887b271084bb1aa2336202bdc3414234a76bc2a5724df90cf394c8",
-    "tests/admin/meta-connect.spec.ts": "65529bf121123d6ebe1961b71b22c602266ae59144d4c402f42ab8472b26967f",
-    "tests/admin/meta-health-model.test.ts": "214f5bc2bcd50a0ed4f1894d104fb893c20151ea43a5c8c6fa5e56d63a7f010c",
-    "tests/admin/meta-health-ui.spec.ts": "761fd2671c190a31bb97aab9d3d913f8493ce88d9377ada10c9971a9f0c32622",
+    "tests/admin/meta-connect.spec.ts": "b0cac22a546e2af72129bd7489d38d6ace21bc4af1f74d318d1fde22d437e7af",
+    "tests/admin/meta-health-model.test.ts": "2683c8510a81335a4696eb8c169c8c338903c88278db728223d4bef6d39f7887",
+    "tests/admin/meta-health-ui.spec.ts": "b1feee2c6e0fb43a395db3a75ba66027cd2ce6f4b0b3b074bd0cadf0768fce42",
     "tests/admin/money-time-model.test.ts": "e74353a55056e559e07607dc584fbe91b46ad5e16b65f6258241282c17a908d4",
     "tests/admin/notify-model.test.ts": "5421dd95172a3941e06c330509b0a94e330f686c7d4abcea4461eea7dfe3c8d8",
     "tests/admin/oc/design-publish-pending.spec.ts": "841849e0e4d5f1bb55e750f88d82f040b138a57e98a2d7e5e85dec65fdb3f97d",
@@ -154,6 +154,7 @@
     "tests/admin/parcels-scope.test.ts": "01a84682b27f95d14665813cbb8c0b1189bbdd8cb2f3d26fa5939fdec71a0257",
     "tests/admin/parity-entry-dashboard.ts": "f099136e2273212106002fc8a6d1cf4f366d32b925f79f0cbd901384b9b1075d",
     "tests/admin/parity-entry.spec.ts": "6b11d4a2c5796aab411121d42509c69cf991505d7665bef5eaa64cfcaffab2b3",
+    "tests/admin/parity-live-sessions.ts": "0e6b0e68ae44c283af2db4efef29fbfc573a16cba0c1972f39daee7e049cb0f0",
     "tests/admin/parity-money-support.ts": "b6fbedd1dfb167be5821ef89e025a10ed09401113c7864a8779b10581fd7dad7",
     "tests/admin/parity-order-ops.spec.ts": "c2798ff760eb3fc5af1828da20359a3656efab5eec131fdb441352ff36836548",
     "tests/admin/parity-shell-browser.mjs": "397492363afff6832aa910d2e27a17e7f7bde8e51aba85a44c57f3b76adf4deb",
@@ -210,7 +211,7 @@
     "tests/admin/studio-input-client.test.ts": "1ee8cdc63dd5e75edab220d878112bc5b6fb9fcc817ca560376a940ca72f074f",
     "tests/admin/studio-input.test.ts": "6fbfa353cfe6be733fcf44de842246af8af464ad7f532e72478e3ac11123d27e",
     "tests/admin/studio-request.test.ts": "5fa7349f872b332e92816bc0bf9f9c5e7523e57c9a18107f0ae9f21c77a0a045",
-    "tests/admin/studio-ui.spec.ts": "c6e8d2aac1f40eda620f9fdc4d072f8f60a7152d9508fc56477f6b0881c4c0a9",
+    "tests/admin/studio-ui.spec.ts": "c53bd85544b1541f3bb259aab084ab0a39a12fa13acd94d1099de48bddee5217",
     "tests/admin/taiwan-cvs.spec.ts": "589cc5eed65fb8b8830ca15e6007606ce06a1f81e9bee7a0c66234316b2c697d",
     "tests/admin/team-bff.test.ts": "b8d7bde20c6743018f4e0b528733d87edcf00b13383d9a4560fe854f3e74a9e1",
     "tests/admin/team-model.test.ts": "d11c2e907da6ed6079e83394dbe28c88d5552d353650b290d488ce1eff51a5d0",
@@ -227,8 +228,8 @@
     "tests/admin/w6-real-route-loader.mjs": "64c32f6e3c9088d1395c5fc8cb5aeaa2b62c635e37f41558daef4932af4ccc73",
     "tests/admin/w6-route-seam.test.mjs": "8e2254dcb729b718a962dd849e2ec119a1ec9dafc6ff07990d205f85582fee87",
     "tests/browser-evidence.mjs": "37fca6070130b26a900e723a767c6d3034c6e721a43fdf3e188a7b9e91fd829a",
-    "tests/e2e/deal-loop.spec.ts": "850b944bbda2c478af2f8e86a1612423ad188e768feb8caa254cb0cab08c7d8a",
-    "tests/e2e/live-tools.spec.ts": "18993a23161dbd4cb2d7e4ba15f280e1c71d88af195aef2c7e5ff373b1c89b20",
+    "tests/e2e/deal-loop.spec.ts": "070afc2c1ab9d815c1e7e6b5e18abbe7289ad2ec64b93d4168ad05453366de5a",
+    "tests/e2e/live-tools.spec.ts": "71b8ca6cfeb2a186eb6f78f820670c2fd7300fb2a9fbb90ea1e49e5f65adb16c",
     "tests/foundation/acceptance_test.go": "6ed85632c5029cfa218c3ea7ac32ccf69d361c71a5ac9d673663250d9b8688e4",
     "tests/foundation/account_onboarding_test.go": "e573d6f56f0eabe35231d87f21335463d1790801ca09a52d3e81f973941fcade",
     "tests/foundation/account_process_test.go": "213c2801cee78b59821a8fd7e8721cf3099cc5d57dfa1f9aadb45fdf41ed5ede",
@@ -249,7 +250,7 @@
     "tests/foundation/browser_admin_legacy_test.go": "b8cf053044f00e7e1c0c6a8594dc5f05ad46480d6f1ba453e715ba0016290a60",
     "tests/foundation/browser_admin_relay_test.go": "91396089f26ced835186ef839212e9d906d5d52a0731aadd23554ae24879aa4b",
     "tests/foundation/browser_admin_relay_waitid_linux_test.go": "dfae35bb186f5746ba774c343bd77115d8a4cfbd5b71202e8af6c9b17e97d6a5",
-    "tests/foundation/browser_ads_attribution_test.go": "4dc9f0c67a491f057e7fd337bd43c71a04c9ec3a862d5fafd4d5383359fc14b8",
+    "tests/foundation/browser_ads_attribution_test.go": "a7510c5a4d24646d98edcf2ce8db7f85b92e0bc6f1b28dbf4d9c2e926aeeeed4",
     "tests/foundation/browser_buyer_chain_test.go": "a7bdee104acee6ed6fc32594e6a33abae0f2a6a5b1b724054620c787c44aa8ed",
     "tests/foundation/browser_buyer_comms_test.go": "4e7ab136ef2e5ac637e487e853fd6285301c190a57d3036c6ca26430b2908e61",
     "tests/foundation/browser_card_payments_test.go": "6904038cf08495111a962d1a22b60db5c4cfc06085ba4b808930548264d67b68",
@@ -268,9 +269,10 @@
     "tests/foundation/browser_inbox_ui_test.go": "e34e5eafaedede39f5fe3b740e7fbd87c6c49daa8ed425502331fa9dbb21274b",
     "tests/foundation/browser_input_delivery_test.go": "4ec09dda599c9a0c2f4d7f6bfaeebcd6103ad683ec5c5bb532377c28693c7d63",
     "tests/foundation/browser_live_claims_test.go": "cb4a217ced49ab1dc30c2597a62ef5ceb11713528c74f0296941ec9c377db513",
+    "tests/foundation/browser_live_console_balance_test.go": "698ff1629d077ecea328ede78d8a6e1e118547e794861356844b0404b2f7dc67",
     "tests/foundation/browser_live_console_comments_fixture_test.go": "30afeb5745b665957624fd2dbe0ce04eb20c636ac231846f42ddc0ff23d7ac39",
     "tests/foundation/browser_live_console_diagnostics_test.go": "aff7fb01466f32317503a57f58ac976d88bb6483eaafa3614181d08eb403bc29",
-    "tests/foundation/browser_live_console_test.go": "12a08781a89c04c6200c7ffd7c140c1701471aa1778f6fa0186f818d443ffe30",
+    "tests/foundation/browser_live_console_test.go": "530cdef17dc86912b9133fefe0c095660ea119129ed51d77815bbaa79ced6859",
     "tests/foundation/browser_live_settings_fixture_test.go": "898d27f641f35dfacf6e64ec7c12784329be629d17293c800c7fb2158b9177ab",
     "tests/foundation/browser_live_settings_test.go": "82940e2343aea47e6fd2dab88aaf0cc8f52c20e5107481270a7009151c1fe176",
     "tests/foundation/browser_live_tools_test.go": "a2338a21eac70e1738c5786e87b23dfb2e32371e91c00f81635d2ba42284145b",
@@ -784,7 +786,7 @@
     "tests/ui/visual-lint-lib.test.mjs": "5e28a7b30ab357bb6bf266c3426d6fbd1122811fc7a156a077b213095086edd0",
     "tests/ui/visual-scroll-capture.mjs": "538525d5cb94cdc26e91954c0589a48372b5d4ce771721dcbbeb76e6b81a0229",
     "tests/ui/visual-scroll-capture.test.mjs": "1cf6d1a8bcb8481c65d19cd69e7bc1e25701067d4041e86f29b9a0a8cc8a58a5",
-    "scripts/dev/test-local.sh": "543cf4d1708c7bd5ef26da171b048a8f42954e07b9069758759aec73e7c4a8a8",
+    "scripts/dev/test-local.sh": "c70e99780fe21a33ce8ab921238ab6c3d06569ef415f5a47785d27b6f2e38f5f",
     "playwright.config.ts": "ad5ff56ccc1c4302c7a9daad01eb9e40c3ba02383e1b8692c9a7cf42f6c47c04",
     "apps/admin/package.json": "8ff4057bb534e821455b9cb47b93429a0d66040faad1d9c25edeabd4864dbbb4",
     "apps/storefront/package.json": "e25eed3dcbc88ef821828200325f2cb7f92934447e1978998efdd4fa58eb8987",
@@ -837,7 +839,8 @@
         "tests/admin/meta-health-ui.spec.ts"
       ],
       "inputs": [
-        "tests/admin/meta-health-ui.spec.ts"
+        "tests/admin/meta-health-ui.spec.ts",
+        "tests/admin/parity-live-sessions.ts"
       ],
       "apps": [
         "admin"
@@ -1691,6 +1694,7 @@
       ],
       "inputs": [
         "tests/admin/fixtures/native-device.ts",
+        "tests/admin/parity-live-sessions.ts",
         "tests/admin/studio-ui.spec.ts"
       ],
       "apps": [
@@ -1722,7 +1726,8 @@
         "tests/admin/fixtures/live-console-controls.ts",
         "tests/admin/fixtures/native-device.ts",
         "tests/admin/inbox-private-evidence.ts",
-        "tests/admin/live-console.spec.ts"
+        "tests/admin/live-console.spec.ts",
+        "tests/admin/parity-live-sessions.ts"
       ],
       "apps": [
         "admin"
@@ -1731,6 +1736,7 @@
       "foundationInputs": [],
       "foundationUnresolvedInputs": [],
       "evidence": [
+        "harness:tests/foundation/browser_live_console_balance_test.go",
         "harness:tests/foundation/browser_live_console_comments_fixture_test.go",
         "harness:tests/foundation/browser_live_console_diagnostics_test.go",
         "harness:tests/foundation/browser_live_console_test.go",
@@ -1765,7 +1771,8 @@
         "tests/admin/fixtures/live-console-controls.ts",
         "tests/admin/fixtures/native-device.ts",
         "tests/admin/inbox-private-evidence.ts",
-        "tests/admin/live-console.spec.ts"
+        "tests/admin/live-console.spec.ts",
+        "tests/admin/parity-live-sessions.ts"
       ],
       "apps": [
         "admin"
@@ -1831,7 +1838,8 @@
         "tests/admin/claim-source.test.ts",
         "tests/admin/claims-model.test.ts",
         "tests/admin/claims-request.test.ts",
-        "tests/admin/claims-ui.spec.ts"
+        "tests/admin/claims-ui.spec.ts",
+        "tests/admin/parity-live-sessions.ts"
       ],
       "apps": [
         "admin",
@@ -2005,6 +2013,7 @@
         "tests/admin/customers-billing.spec.ts",
         "tests/admin/customers-model.test.ts",
         "tests/admin/customers-request.test.ts",
+        "tests/admin/parity-live-sessions.ts",
         "tests/admin/parity-money-support.ts",
         "tests/admin/people-v2.spec.ts",
         "tests/admin/reports.spec.ts",
@@ -2257,6 +2266,7 @@
         "tests/admin/attribution.fixture.ts",
         "tests/admin/attribution.spec.ts",
         "tests/admin/attribution.test.ts",
+        "tests/admin/parity-live-sessions.ts",
         "tests/helpers/next-startup.mjs",
         "tests/storefront/ads-attribution.mjs",
         "tests/storefront/browser-engine.mjs",
@@ -2620,6 +2630,7 @@
         "tests/e2e/live-tools.spec.ts"
       ],
       "inputs": [
+        "tests/admin/parity-live-sessions.ts",
         "tests/e2e/deal-loop.spec.ts",
         "tests/e2e/live-tools.spec.ts"
       ],
@@ -2643,7 +2654,6 @@
         "tests/e2e/deal-loop.spec.ts:server/import apps/admin",
         "tests/e2e/deal-loop.spec.ts:server/import apps/storefront",
         "tests/e2e/live-tools.spec.ts:import apps/admin/lib/claims-copy.ts",
-        "tests/e2e/live-tools.spec.ts:import apps/admin/lib/studio-copy.ts",
         "tests/e2e/live-tools.spec.ts:import apps/storefront/lib/claim-copy.ts",
         "tests/e2e/live-tools.spec.ts:import apps/storefront/lib/cvs-copy.ts",
         "tests/e2e/live-tools.spec.ts:import apps/storefront/lib/purchase-copy.ts",
@@ -2799,7 +2809,8 @@
         "tests/admin/meta-connect-gate.spec.ts",
         "tests/admin/meta-connect-gate.test.ts",
         "tests/admin/meta-connect-model.test.ts",
-        "tests/admin/meta-connect.spec.ts"
+        "tests/admin/meta-connect.spec.ts",
+        "tests/admin/parity-live-sessions.ts"
       ],
       "apps": [
         "admin"
