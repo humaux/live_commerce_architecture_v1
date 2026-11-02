@@ -60,6 +60,9 @@ if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") for (const entry of ["new", "
     const clicks: Array<{ control: string; actual: "clicked" | "disabled" | "absent" }> = [];
     const extraWrites: Array<{ method: string; path: string }> = [];
     const retry = page.getByRole("button", { name: copy.edit.retry, exact: true });
+    const canRetry = async () => await retry.isVisible() && await retry.isEnabled();
+    let pendingPosts = 0;
+    let settledPosts = 0;
     let committedID = "";
     let rowID = "";
     const isCreation = (response: { url(): string; request(): { method(): string } }) => new URL(response.url()).pathname === endpoint && response.request().method() === "POST";
@@ -85,6 +88,17 @@ if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") for (const entry of ["new", "
       expect.soft(shopper.status, `${phase}: genuine shopper catalog read`).toBe(200);
       expect.soft(shopper.ids, `${phase}: one shopper-visible collection, including suffix variants`).toEqual([committedID]);
     };
+    const settleProbe = async () => {
+      // READ/MEASURE: observe the next rendered state after the click, not an old alert from before React's event commit.
+      await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
+      await expect.poll(async () => {
+        const manualBusy = await page.locator("#collection-save-reason").count() > 0;
+        const terminal = await page.getByTestId("collection-message").isVisible()
+          || await page.getByTestId("collection-members").isVisible()
+          || await page.locator("#collections-quick-create").getByRole("alert").isVisible();
+        return !manualBusy && pendingPosts === 0 && settledPosts === commands.length && terminal;
+      }, { message: "clicked writer is guarded or all genuinely dispatched POSTs and rendered results have settled" }).toBe(true);
+    };
     // Probe only an actually accessible writer. A pending guard may safely decline the click without sending a POST.
     const probeManual = async () => {
       const input = page.getByTestId("collection-title");
@@ -93,7 +107,7 @@ if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") for (const entry of ["new", "
       if (await save.isVisible() && await save.isEnabled()) {
         await save.click();
         clicks.push({ control: "collection-save", actual: "clicked" });
-        await expect(page.getByTestId("collection-message").or(page.getByTestId("collection-members")).first()).toBeVisible();
+        await settleProbe();
       } else clicks.push({ control: "collection-save", actual: await save.isVisible() ? "disabled" : "absent" });
     };
     const probeQuick = async () => {
@@ -105,7 +119,7 @@ if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") for (const entry of ["new", "
         await input.fill(title);
         await create.click();
         clicks.push({ control: "collection-new:quick-submit", actual: "clicked" });
-        await expect(page.getByTestId("collection-editor").or(quick.getByRole("alert"))).toBeVisible();
+        await settleProbe();
       } else clicks.push({ control: "collection-new:quick-submit", actual: "disabled" });
     };
 
@@ -133,15 +147,19 @@ if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") for (const entry of ["new", "
         if (route.request().method() !== "POST") return route.continue();
         commands.push({ key: route.request().headers()["idempotency-key"] ?? null, body: route.request().postData() });
         const first = commands.length === 1;
-        const response = await route.fetch();
-        const receipt = await response.json();
-        receipts.push({ status: response.status(), id: typeof receipt.id === "string" ? receipt.id : null });
-        if (first) {
-          expect(response.status(), "genuine manual POST committed before losing only its ACK").toBe(200);
-          expect(receipt.id).toMatch(/^[0-9a-f-]{36}$/);
-          committedID = receipt.id;
-          await route.abort("connectionreset");
-        } else await route.fulfill({ response }); // Forward the genuine server receipt; never synthesize success.
+        pendingPosts++;
+        try {
+          const response = await route.fetch();
+          const receipt = await response.json();
+          receipts.push({ status: response.status(), id: typeof receipt.id === "string" ? receipt.id : null });
+          if (first) {
+            expect(response.status(), "genuine manual POST committed before losing only its ACK").toBe(200);
+            expect(receipt.id).toMatch(/^[0-9a-f-]{36}$/);
+            committedID = receipt.id;
+            await route.abort("connectionreset");
+          } else await route.fulfill({ response }); // Forward the genuine server receipt; never synthesize success.
+          settledPosts++;
+        } finally { pendingPosts--; }
       });
       await page.getByTestId("collection-save").click();
       clicks.push({ control: "collection-save:initial-manual", actual: "clicked" });
@@ -160,7 +178,7 @@ if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") for (const entry of ["new", "
       } else if (entry === "row") {
         await clickEnabled(`collection-item-${rowID}`);
         await expect(page.getByTestId("collection-editor").or(retry).first()).toBeVisible();
-        if (!await retry.isVisible() && await clickEnabled("collection-manage-new")) {
+        if (!await canRetry() && await clickEnabled("collection-manage-new")) {
           await expect(page.getByTestId("collection-title")).toHaveValue("");
           await probeManual();
         }
@@ -175,13 +193,14 @@ if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") for (const entry of ["new", "
         await page.reload();
         await expect(page.getByTestId("collections-list")).toBeVisible();
         await probeQuick();
-        if (commands.length === 1 && !await retry.isVisible() && await clickEnabled("collection-manage-new")) {
+        if (commands.length === 1 && !await canRetry() && await clickEnabled("collection-manage-new")) {
           await expect(page.getByTestId("collection-title")).toBeVisible();
           await probeManual();
         }
       }
 
       // Preserve causal evidence before a missing original Retry fails: the real second POST and GET can prove two objects.
+      await settleProbe();
       await observe(`after-${entry}`);
       expect.soft(commands, "UNKNOWN entry must not send an additional creation before explicit original Retry").toHaveLength(1);
       expect.soft(new Set(commands.map(command => command.key)).size, "UNKNOWN must not replace the unresolved idempotency key").toBe(1);
@@ -189,7 +208,7 @@ if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") for (const entry of ["new", "
       expect.soft(extraWrites, "navigation/recovery must not cause any other store mutation").toEqual([]);
       for (const receipt of receipts) expect.soft(receipt.status, "all observed creation receipts come from the genuine server").toBe(200);
 
-      if (entry === "reload" && !(await retry.isVisible() && await retry.isEnabled())) {
+      if (entry === "reload" && !await canRetry()) {
         // The existing recovery contract permits explicit fail-closed reconciliation; it does not promise automatic command recovery.
         const recovery = page.getByRole("alert");
         expect.soft(await recovery.count(), "reload must visibly retain the unconfirmed/reconciliation state").toBeGreaterThan(0);
