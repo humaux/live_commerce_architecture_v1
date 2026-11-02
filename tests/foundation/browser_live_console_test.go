@@ -200,7 +200,7 @@ func (m *consoleMock) serve(w http.ResponseWriter, r *http.Request, store string
 	}
 	if action == "adjustments" {
 		for _, candidate := range m.scenes {
-			if candidate.Store == store && candidate.SKU == body["sku_id"] {
+			if candidate.Store == store && candidate.Warehouse == body["warehouse_id"] && candidate.SKU == body["sku_id"] {
 				s = candidate
 				break
 			}
@@ -282,6 +282,13 @@ func (m *consoleMock) serve(w http.ResponseWriter, r *http.Request, store string
 		}
 		s.Stock += int64(delta)
 		s.StockVersion++
+		// Copies are Console projections of one balance, not separate inventory.
+		// Assign the final value under m.mu so the command has only one effect.
+		for _, scene := range m.scenes {
+			if scene.Store == store && scene.Warehouse == s.Warehouse && scene.SKU == s.SKU {
+				scene.Stock, scene.StockVersion = s.Stock, s.StockVersion
+			}
+		}
 		out = map[string]any{"sku_id": s.SKU, "warehouse_id": s.Warehouse, "on_hand": s.Stock, "reserved": 0, "allocated": 0, "version": s.StockVersion}
 	case "copy":
 		if int64(expected) != 1 {
