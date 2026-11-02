@@ -1435,6 +1435,8 @@ type C4PhaseProjection = {
   response_status?: number; source_id?: string | null; selected_id?: string | null; copied_id?: string | null; detail_id?: string | null;
   detail_version?: number; window_state?: "CLOSED" | "OPEN" | "INVALID"; window_generation?: number; window_opened_at?: string | null;
   receipts?: C4PhaseReceipt[]; receipt_count?: number; write_count?: number; oracle?: "passed" | "failed" | "not_run"; phase_at_failure?: string;
+  pathname?: "STUDIO" | "CLAIMS" | "OTHER"; hash?: "NONE" | "PREPARATION" | "EDIT" | "PREFLIGHT" | "OTHER";
+  sameStore?: boolean; sameScene?: boolean; multipleFragments?: boolean;
 };
 const c4DiagnosticID = (value: unknown): string | null => typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(value) ? value : null;
 const c4DiagnosticHash = (value: unknown): string | null => typeof value === "string" && /^[0-9a-f]{16,64}$/.test(value) ? value : null;
@@ -1462,6 +1464,10 @@ function c4MetadataJournal(caseID: string) {
     if (projection.receipts) safe.receipts = projection.receipts.slice(0, 8);
     if (projection.oracle === "passed" || projection.oracle === "failed" || projection.oracle === "not_run") safe.oracle = projection.oracle;
     if (projection.phase_at_failure && /^[a-z0-9-]{1,64}$/.test(projection.phase_at_failure)) safe.phase_at_failure = projection.phase_at_failure;
+    if (projection.pathname !== undefined) safe.pathname = projection.pathname === "STUDIO" || projection.pathname === "CLAIMS" ? projection.pathname : "OTHER";
+    if (projection.hash !== undefined) safe.hash = ["NONE", "PREPARATION", "EDIT", "PREFLIGHT"].includes(projection.hash) ? projection.hash : "OTHER";
+    for (const key of ["sameStore", "sameScene", "multipleFragments"] as const)
+      if (typeof projection[key] === "boolean") safe[key] = projection[key];
     entries.push({ phase, elapsed_ms: Date.now() - started, ...safe });
     writeFileSync(file, JSON.stringify({ class: "MOCK", case_id: caseID, entries }), { encoding: "utf8", mode: 0o600, flush: true });
   };
@@ -1482,6 +1488,22 @@ async function c4MetadataClick(page: Page, name: string) { await c4MetadataClick
 for (const viewport of parityViewports) test(`C4 metadata preparation native Edit and original settings ${viewport.width}`, async ({ page, request }) => {
   const locale = "zh-TW", c = parityWords[locale], m = c4MetadataWords[locale], scene = scenes[0]!;
   const diagnostic = c4MetadataJournal(`prep-${locale}-${viewport.width}`);
+  const noteRoute = (phase: string, value: string) => {
+    const url = new URL(value);
+    diagnostic.note(phase, {
+      pathname: url.pathname === `/${locale}/studio` ? "STUDIO" : url.pathname === `/${locale}/studio/claims` ? "CLAIMS" : "OTHER",
+      hash: url.hash === "" ? "NONE" : url.hash === "#preparation" ? "PREPARATION" : url.hash === "#edit" ? "EDIT" : url.hash === "#preflight" ? "PREFLIGHT" : "OTHER",
+      sameStore: url.searchParams.get("store") === store, sameScene: url.searchParams.get("scene") === scene,
+      multipleFragments: url.hash.indexOf("#", 1) !== -1,
+    });
+  };
+  let navigationNotes = 0;
+  const onNavigation = (frame: ReturnType<Page["mainFrame"]>) => {
+    if (frame !== page.mainFrame() || navigationNotes >= 8) return;
+    navigationNotes++;
+    // Passive event diagnostics cannot replace a failure from the original test path.
+    try { noteRoute("mainframe-navigation", frame.url()); } catch { /* Original assertions remain authoritative. */ }
+  };
   let before: number | undefined, primaryError = false;
   let detail: { draft: { session_id: string; title: string; scheduled_at: string | null; aspect_ratio: string; version: number }; can_manage: boolean };
   const writes: string[] = [];
@@ -1490,6 +1512,7 @@ for (const viewport of parityViewports) test(`C4 metadata preparation native Edi
     before = (await facts(request)).receipts.length;
     diagnostic.note("login-start");
     await page.setViewportSize(viewport); await login(page);
+    page.on("framenavigated", onNavigation);
     page.on("request", wire => { if (new URL(wire.url()).pathname.startsWith("/api/stores/") && !["GET", "HEAD"].includes(wire.method())) writes.push(wire.method()); });
     await test.step("SETUP: real list card loads the existing scene and GET detail", async () => {
       diagnostic.note("list-route-start");
@@ -1510,8 +1533,10 @@ for (const viewport of parityViewports) test(`C4 metadata preparation native Edi
     });
     await test.step("REGRESSION: View settings still opens the real same-scene preflight", async () => {
       diagnostic.note("view-settings-click-start");
+      noteRoute("before-settings-route", page.url());
       await c4MetadataClick(page, c.settings);
       await expect(page.getByRole("heading", { name: c.preflight, exact: true })).toBeVisible();
+      noteRoute("after-settings-route", page.url());
       const url = new URL(page.url());
       expect(url.pathname).toBe(`/${locale}/studio/claims`);
       expect(url.searchParams.get("store")).toBe(store);
@@ -1520,10 +1545,13 @@ for (const viewport of parityViewports) test(`C4 metadata preparation native Edi
       diagnostic.note("preflight-back-start", { selected_id: url.searchParams.get("scene") });
       await page.goBack({ timeout: 15000 });
       await expect(page.getByRole("heading", { name: c.prepare, exact: true })).toBeVisible();
+      noteRoute("after-back-route", page.url());
     });
     await test.step("EXPECTED_RED_ENTRY: real Edit click, never goto/hash assignment", async () => {
       diagnostic.note("edit-click-start");
+      noteRoute("before-edit-route", page.url());
       await c4MetadataClick(page, m.edit);
+      noteRoute("after-edit-click-route", page.url());
       await expect(page).toHaveURL(`${origin}/${locale}/studio?store=${store}&scene=${scene}#edit`);
       expect(detail.can_manage).toBe(true);
       expect(detail.draft.session_id).toBe(scene);
@@ -1534,8 +1562,11 @@ for (const viewport of parityViewports) test(`C4 metadata preparation native Edi
       diagnostic.note("edit-fields-matched", { selected_id: detail.draft.session_id });
     });
   } catch (error) {
-    primaryError = true; diagnostic.preserveFailure("primary-error"); throw error;
+    primaryError = true;
+    try { noteRoute("failed-route", page.url()); } catch { /* Preserve the original thrown failure. */ }
+    diagnostic.preserveFailure("primary-error"); throw error;
   } finally {
+    page.off("framenavigated", onNavigation);
     const alreadyFailed = primaryError || test.info().errors.length > 0;
     let readCompleted = false;
     if (before !== undefined) {
@@ -1573,11 +1604,16 @@ for (const [locale, viewport] of [["en", parityViewports[0]], ["zh-TW", parityVi
     const title = `C4 metadata copy ${locale} ${viewport.width}`;
     await page.getByLabel(c.copyName, { exact: true }).fill(title, { timeout: 15000 });
     await expect(page.getByText(m.success, { exact: true })).toHaveCount(0);
-    const copiedRead = page.waitForResponse(async response => {
-      if (response.request().method() !== "GET" || response.status() !== 200 || !new URL(response.url()).pathname.startsWith(`${c4MetadataPath("")}`)) return false;
-      if (!/\/live-sessions\/[0-9a-f-]{36}$/.test(new URL(response.url()).pathname)) return false;
-      const value = await response.json() as { draft?: { session_id: string } };
-      return !!value.draft && value.draft.session_id !== scene;
+    type CopiedDetail = { draft: { session_id: string; title: string; version: number } };
+    const copiedDetailCapture: { body?: Promise<{ ok: true; detail: CopiedDetail } | { ok: false; error: unknown }> } = {};
+    const copiedRead = page.waitForResponse(response => {
+      const url = new URL(response.url()), prefix = c4MetadataPath("");
+      // Exclude obsolete source reads synchronously, before acquiring any response body.
+      if (response.request().method() !== "GET" || response.status() !== 200 || url.origin !== new URL(origin).origin || !url.pathname.startsWith(prefix) || url.pathname === c4MetadataPath(scene)) return false;
+      if (!c4DiagnosticID(url.pathname.slice(prefix.length)) || copiedDetailCapture.body) return false;
+      // Start body acquisition at arrival; retain its sole outcome and rethrow any body error below.
+      copiedDetailCapture.body = (response.json() as Promise<CopiedDetail>).then(detail => ({ ok: true as const, detail }), error => ({ ok: false as const, error }));
+      return true;
     }, { timeout: 15000 });
     // Observe both outcomes immediately so an early native-click failure cannot create an unhandled waiter rejection.
     const copiedReadOutcome = copiedRead.then(response => ({ ok: true as const, response }), error => ({ ok: false as const, error }));
@@ -1596,8 +1632,12 @@ for (const [locale, viewport] of [["en", parityViewports[0]], ["zh-TW", parityVi
     const readOutcome = await copiedReadOutcome;
     if (!readOutcome.ok) throw readOutcome.error;
     const detailResponse = readOutcome.response;
+    expect(new URL(detailResponse.url()).pathname).toBe(c4MetadataPath(newID));
     diagnostic.note("copied-detail-status", { response_status: detailResponse.status(), copied_id: newID });
-    const detail = await detailResponse.json() as { draft: { session_id: string; title: string; version: number } };
+    if (!copiedDetailCapture.body) throw new Error("copied browser detail body was not captured");
+    const detailOutcome = await copiedDetailCapture.body;
+    if (!detailOutcome.ok) throw detailOutcome.error;
+    const detail = detailOutcome.detail;
     diagnostic.note("copied-detail-response", { response_status: detailResponse.status(), copied_id: newID, detail_id: detail.draft.session_id, detail_version: detail.draft.version });
     expect(detail.draft).toMatchObject({ session_id: newID, title });
     await expect(page.getByRole("heading", { name: c.copied, exact: true })).toBeVisible();
@@ -1720,6 +1760,10 @@ for (const [locale, viewport] of [["en", parityViewports[0]], ["zh-TW", parityVi
     });
     // If departure wrongly unmounts the operation, the guard assertions above remain failures.
     // A correct guard must also permit the existing original-key Retry, never a new copy.
+    if (locale === "zh-CN") {
+      await page.keyboard.press("Escape");
+      await expect(page.locator('button[aria-controls="workspace-navigation"]')).toHaveAttribute("aria-expanded", "false");
+    }
     diagnostic.note("original-retry-click-start");
     await c4MetadataClick(page, m.retry);
     await expect(page.getByRole("heading", { name: c.copied, exact: true })).toBeVisible();
