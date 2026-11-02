@@ -29,8 +29,8 @@ func (m *ManualOrders) authorizeDiscount(ctx context.Context, token, ownerID, st
 		if in.Discount != nil {
 			name, amount = in.Discount.Name, in.Discount.AmountMinor
 		}
-		if _, err := tx.Exec(ctx, `INSERT INTO storefront.manual_order_discounts(tenant_id,store_id,owner_id,principal_id,request_hash,name,amount_minor)
-   VALUES($1,$2,$3,$4,$5,$6,$7) ON CONFLICT(tenant_id,store_id,owner_id) DO NOTHING`, s.TenantID, s.StoreID, ownerID, s.PrincipalID, hash[:], name, amount); err != nil {
+		bearerHash := sha256.Sum256([]byte(token))
+		if _, err := tx.Exec(ctx, `SELECT fulfillment.authorize_manual_order_discount($1,$2::uuid,$3::uuid,$4,$5::text,$6::bigint)`, bearerHash[:], s.StoreID, ownerID, hash[:], name, amount); err != nil {
 			return err
 		}
 		var saved []byte
