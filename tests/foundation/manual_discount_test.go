@@ -21,6 +21,7 @@ import (
 	"livecommerce/internal/buyer"
 	"livecommerce/internal/checkout"
 	"livecommerce/internal/command"
+	"livecommerce/internal/merchanttools"
 	"livecommerce/internal/platform"
 	"livecommerce/internal/pricing"
 	"livecommerce/internal/reporting"
@@ -80,7 +81,123 @@ func mdAdjustment(t *testing.T, q map[string]any, discount int64) {
 	}
 }
 
+// mdPartialErrorContract exercises an unfinished real HTTP pipeline, not a seeded error or a revoked caller.
+// Each leaf owns its environment; both merchants share the existing handler and its capability issuer/secret.
+func mdPartialErrorContract(t *testing.T, changedCart bool) {
+	t.Helper()
+	e, a, _ := mtOrderEnv(t)
+	tokenA, principalA := e.member("inventory:reserve", "catalog:read")
+	tokenB, principalB := e.member("inventory:reserve", "catalog:read")
+	if principalA == principalB {
+		t.Fatal("fixture must provide two different merchant principals")
+	}
+	a = a.with(tokenA)
+	b := a.with(tokenB)
+	sku := e.p.stock.skus[0].ID
+	var home string
+	for _, option := range a.options() {
+		if option.DeliveryKind == "home" && strings.Contains(strings.Join(option.PaymentModes, ","), "bank_transfer") {
+			home = option.OptionKey
+		}
+	}
+	if home == "" {
+		t.Fatal("bank-transfer home option missing")
+	}
+	// Positive authority control: B can use the same route before any refused write.
+	if w := b.call("GET", "/orders/manual/options", "", "", nil); w.Code != 200 {
+		t.Fatalf("second merchant options authority: HTTP %d", w.Code)
+	}
+	body := mdBody(sku, 2, home, "bank_transfer", mdHome, 2501)
+	key := t04Key("md-partial")
+	if code, out := a.place(key, body); code != 422 || out["code"] != "discount_exceeds_subtotal" {
+		t.Fatalf("real 2500 subtotal must reject discount 2501: HTTP %d code=%v", code, out["code"])
+	}
+	// The fixture is already normalized. Encode its typed wire shape independently of ValidateManual.
+	raw, err := json.Marshal(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var normalized merchanttools.ManualInput
+	if err := json.Unmarshal(raw, &normalized); err != nil {
+		t.Fatal(err)
+	}
+	raw, err = json.Marshal(normalized)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hash := sha256.Sum256(raw)
+	ctx := context.Background()
+	var owner string
+	if err := e.p.f.owner.QueryRow(ctx, `SELECT owner_id::text FROM storefront.manual_order_discounts
+ WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND request_hash=$4
+ AND name='直播優惠' AND amount_minor=2501 AND quote_id IS NULL`, e.tenant(), e.store(), principalA, hash[:]).Scan(&owner); err != nil {
+		t.Fatal("partial pipeline must retain A's normalized authorization with no quote: ", err)
+	}
+	if e.count(`SELECT count(*) FROM storefront.manual_order_discounts WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store()) != 1 ||
+		e.count(`SELECT count(*) FROM buyer.command_results WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3 AND operation='cart.set'`, e.tenant(), e.store(), owner) != 1 ||
+		e.count(`SELECT count(*) FROM storefront.cart_lines WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3 AND sku_id=$4 AND quantity=2`, e.tenant(), e.store(), owner, sku) != 1 {
+		t.Fatal("partial pipeline must have exactly one authorization and the original owner's quantity-2 cart receipt")
+	}
+	for _, table := range []string{"storefront.quotes", "checkout.orders", "inventory.reservations"} {
+		if e.count("SELECT count(*) FROM "+table+" WHERE tenant_id=$1 AND store_id=$2", e.tenant(), e.store()) != 0 {
+			t.Fatalf("partial rejection wrote %s", table)
+		}
+	}
+	if e.count(`SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation='merchanttools.order.manual'`, e.tenant(), e.store()) != 0 ||
+		e.count(`SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='order.manual_created'`, e.tenant(), e.store()) != 0 {
+		t.Fatal("partial rejection completed a merchant receipt or order audit")
+	}
+	if _, held, allocated := e.cofBalance(sku); held != 0 || allocated != 0 {
+		t.Fatal("partial rejection reserved or allocated stock")
+	}
+	t.Log("initial partial pipeline state verified")
+	readState := func() []byte {
+		t.Helper()
+		state := map[string]json.RawMessage{}
+		// Closed table list; owner reads witness full tuples, including authorization created_at/hash/quote binding.
+		for _, table := range []string{"buyer.owners", "buyer.capability_sessions", "storefront.manual_order_discounts", "buyer.command_results", "storefront.carts", "storefront.cart_lines", "storefront.quotes", "ops.command_results", "inventory.reservations", "inventory.reservation_lines", "inventory.balances", "checkout.orders", "ops.audit_events"} {
+			var rows []byte
+			if err := e.p.f.owner.QueryRow(ctx, "SELECT coalesce(jsonb_agg(to_jsonb(w) ORDER BY to_jsonb(w)::text),'[]'::jsonb) FROM "+table+" w WHERE tenant_id=$1 AND store_id=$2", e.tenant(), e.store()).Scan(&rows); err != nil {
+				t.Fatal(err)
+			}
+			state[table] = rows
+		}
+		out, err := json.Marshal(state)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	caller, retryBody, wantCode := b, body, "conflict"
+	if changedCart {
+		caller, retryBody, wantCode = a, mdBody(sku, 3, home, "bank_transfer", mdHome, 100), "idempotency_conflict"
+	}
+	before := readState()
+	code, out := caller.place(key, retryBody)
+	if !bytes.Equal(before, readState()) {
+		t.Fatal("refused resume changed authorization/cart/quote/receipt/hold/order/audit tuples")
+	}
+	t.Log("refused resume retained all witnessed tuples")
+	if replayCode, replay := a.place(key, body); replayCode != 422 || replay["code"] != "discount_exceeds_subtotal" {
+		t.Fatalf("original body must still reach the original discount refusal: HTTP %d code=%v", replayCode, replay["code"])
+	}
+	if !bytes.Equal(before, readState()) {
+		t.Fatal("original-body replay changed partial pipeline state")
+	}
+	t.Log("original-body replay retained the original partial state")
+	// Run the successful write before the exact error assertion, so expected RED cannot skip this control.
+	if freshCode, fresh := caller.place(t04Key("md-partial-fresh"), mdBody(sku, 3, home, "bank_transfer", mdHome, 100)); freshCode != 201 || fresh["total_minor"] != float64(3650) {
+		t.Fatalf("fresh key positive control: HTTP %d code=%v total=%v", freshCode, fresh["code"], fresh["total_minor"])
+	}
+	t.Log("fresh-key same-handler authority and valid-discount positive control reached HTTP 201")
+	if code != 409 || out["code"] != wantCode {
+		t.Fatalf("unfinished pipeline error contract: HTTP %d code=%v, want 409 %s", code, out["code"], wantCode)
+	}
+}
+
 func mdManualContract(t *testing.T) {
+	t.Run("partial authorization principal conflict", func(t *testing.T) { mdPartialErrorContract(t, false) })
+	t.Run("partial changed cart and discount idempotency conflict", func(t *testing.T) { mdPartialErrorContract(t, true) })
 	t.Run("runtime database boundary", mdDBBoundaryContract)
 	e, a, cvsCode := mtOrderEnv(t)
 	sku := e.p.stock.skus[0].ID
