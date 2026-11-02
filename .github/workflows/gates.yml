@@ -304,9 +304,18 @@ jobs:
           done
           # Explicit dispatch only: inject a real source fault before native PG
           # setup. The ordinary gate keeps its verdict and must go red.
+          # Reject a combined fault before either injector can modify source.
+          if [[ -n "${LC_OA_MUTATION:-}" && -n "${LC_IMPORT_FIELD_MUTATION:-}" ]]; then
+            echo "refusing simultaneous OA and import field mutations" >&2
+            exit 2
+          fi
           if [[ -n "${LC_OA_MUTATION:-}" ]]; then
             [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]] || exit 2
             python3 tests/foundation/order_attempt_mutation.py
+          fi
+          if [[ -n "${LC_IMPORT_FIELD_MUTATION:-}" ]]; then
+            [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]] || exit 2
+            python3 tests/foundation/import_field_mutation.py
           fi
           # One planned mode: the per-mode dispatch every leg ran before CI-SPEED-2 (a solo job runs it once, a bundle job once per member).
           # A member runs in a child `bash -eo pipefail` (the step's own -e + pipefail), so its exports (LC_BROWSER_EVIDENCE_ROOT) never reach the next member.
