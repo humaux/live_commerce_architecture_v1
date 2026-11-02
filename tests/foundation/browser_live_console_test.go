@@ -349,6 +349,7 @@ func (m *consoleMock) serve(w http.ResponseWriter, r *http.Request, store string
 // TestBrowserLiveConsoleRealChain runs signed MOCK OIDC, Next and Go with LC-U1 MOCK scenes
 // and LC-U2a real PG comments/inbox services. No LIVE Graph or production acceptance.
 func TestBrowserLiveConsoleRealChain(t *testing.T) {
+	t.Run("pagination-contract", testConsoleMockPaginationContract)
 	t.Run("workspace", func(t *testing.T) { runBrowserLiveConsole(t, false, "--grep-invert") })
 	t.Run("labels", func(t *testing.T) { runBrowserLiveConsole(t, true, "--grep-invert") })
 }
