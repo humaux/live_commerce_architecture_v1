@@ -116,7 +116,7 @@
     "tests/admin/live-console-bff.test.ts": "a20322ab400e8b94fce460d800affbe69cdd2c2a15d8ef03956403c97168606f",
     "tests/admin/live-console-model.test.ts": "9c070a0bf6db86d83fe6e2c7473b30b902aead66c31ad7ce24ce7edb1369d998",
     "tests/admin/live-console-render.test.ts": "1a1734c4668bfe368227ab8318f17517d49621df38285756b6ba5162996b5421",
-    "tests/admin/live-console.spec.ts": "acfd218f18ceebe6d0abef74ded4a3f4ed658d1066d473251ac9a76fc9ec44d4",
+    "tests/admin/live-console.spec.ts": "8e6f88ee72c59931d117107082e852ed03732f4bb8130cf0b6f7d7a575958db2",
     "tests/admin/live-settings-bff.test.ts": "1386b69cdd713cb8ad1c4ed20db139a3db4e7383257e7d575013695978515a98",
     "tests/admin/live-settings-hooks.test.ts": "46cc13b98bdca7ee3e59bc1d3feea6abfba26512f05fdacafbfdbc0b4433cbfe",
     "tests/admin/live-settings-model.test.ts": "34ed269a867bd76bd746b8d7515c8c8f2bb45dfafc3a757417a825f85ac3591d",
@@ -211,7 +211,8 @@
     "tests/admin/studio-input-client.test.ts": "1ee8cdc63dd5e75edab220d878112bc5b6fb9fcc817ca560376a940ca72f074f",
     "tests/admin/studio-input.test.ts": "6fbfa353cfe6be733fcf44de842246af8af464ad7f532e72478e3ac11123d27e",
     "tests/admin/studio-request.test.ts": "5fa7349f872b332e92816bc0bf9f9c5e7523e57c9a18107f0ae9f21c77a0a045",
-    "tests/admin/studio-ui.spec.ts": "18d17e5d86dcb6041cca8ab2a81cf9c2986b64b67508e87a1efd05222c402658",
+    "tests/admin/studio-ui.spec.ts": "c53bd85544b1541f3bb259aab084ab0a39a12fa13acd94d1099de48bddee5217",
+    "tests/admin/studio-ui2-c4-metadata.spec.ts": "a2bc6644926549e9cc1b555d9f4389baf044d65249add15ba53187033302df38",
     "tests/admin/taiwan-cvs.spec.ts": "589cc5eed65fb8b8830ca15e6007606ce06a1f81e9bee7a0c66234316b2c697d",
     "tests/admin/team-bff.test.ts": "b8d7bde20c6743018f4e0b528733d87edcf00b13383d9a4560fe854f3e74a9e1",
     "tests/admin/team-model.test.ts": "d11c2e907da6ed6079e83394dbe28c88d5552d353650b290d488ce1eff51a5d0",
@@ -305,7 +306,7 @@
     "tests/foundation/browser_stripe_pool_lifetime_test.go": "31ee4ac25c34a44086f1afda7734a3d437065dcea180acbe10ac11267e09705a",
     "tests/foundation/browser_stripe_test.go": "608b58ff85ec353298696fd1ab8f14b8faeae3b90c325de9ae361bb6ac6b908e",
     "tests/foundation/browser_studio_bff_test.go": "0a2429916f451d208b0b7a7f69f39cb79d8087f88659b96fe876ba2ae5e41221",
-    "tests/foundation/browser_studio_ui_test.go": "16af0bfdbdef86247cbab83968dbcb0b455170a6243fc2ef5cbf0916dd5b1adf",
+    "tests/foundation/browser_studio_ui_test.go": "97683286c4f1fd407c7eb9b8969975fd736bc9299238f59fd8d7d3ded0058332",
     "tests/foundation/browser_taiwan_cvs_test.go": "2c6123a688dd251201e84de16532fa2e0fbdafaa6702a652d4a508ded39a71b3",
     "tests/foundation/browser_tracking_backfill_test.go": "bb4f4bf70d21361403bc4fcda5d41b813b99645f24919129c03d75ffc4557443",
     "tests/foundation/browser_w6_customers_reports_test.go": "46fb92b7b2bb36e91b924522537bd26e53404e5f68d690fe6640b132b4870df2",
@@ -787,7 +788,7 @@
     "tests/ui/visual-scroll-capture.mjs": "538525d5cb94cdc26e91954c0589a48372b5d4ce771721dcbbeb76e6b81a0229",
     "tests/ui/visual-scroll-capture.test.mjs": "1cf6d1a8bcb8481c65d19cd69e7bc1e25701067d4041e86f29b9a0a8cc8a58a5",
     "scripts/dev/test-local.sh": "c70e99780fe21a33ce8ab921238ab6c3d06569ef415f5a47785d27b6f2e38f5f",
-    "playwright.config.ts": "ad5ff56ccc1c4302c7a9daad01eb9e40c3ba02383e1b8692c9a7cf42f6c47c04",
+    "playwright.config.ts": "7d22a5cfb63aab68d206d0162a40dfdac3f63256ece1ef222f9f3351e4378c04",
     "apps/admin/package.json": "8ff4057bb534e821455b9cb47b93429a0d66040faad1d9c25edeabd4864dbbb4",
     "apps/storefront/package.json": "e25eed3dcbc88ef821828200325f2cb7f92934447e1978998efdd4fa58eb8987",
     "package.json": "dfa3b54b5ffe4382bd9ec06971526e0e82c33e4303e916d50a85c121196bfca0",
@@ -1690,13 +1691,15 @@
     },
     "--browser-studio-ui": {
       "specs": [
-        "tests/admin/studio-ui.spec.ts"
+        "tests/admin/studio-ui.spec.ts",
+        "tests/admin/studio-ui2-c4-metadata.spec.ts"
       ],
       "inputs": [
         "tests/admin/fixtures/native-device.ts",
         "tests/admin/inbox-private-evidence.ts",
         "tests/admin/parity-live-sessions.ts",
-        "tests/admin/studio-ui.spec.ts"
+        "tests/admin/studio-ui.spec.ts",
+        "tests/admin/studio-ui2-c4-metadata.spec.ts"
       ],
       "apps": [
         "admin"
@@ -1712,8 +1715,10 @@
         "tests/admin/studio-ui.spec.ts:import apps/admin/src/shell-copy.ts",
         "tests/admin/studio-ui.spec.ts:server/import apps/admin",
         "tests/foundation/browser_studio_ui_test.go -> tests/admin/studio-ui.spec.ts",
+        "tests/foundation/browser_studio_ui_test.go -> tests/admin/studio-ui2-c4-metadata.spec.ts",
         "tests/foundation/browser_studio_ui_test.go:server/import apps/admin",
-        "tests/foundation/browser_studio_ui_test.go:suite=studio-ui -> tests/admin/studio-ui.spec.ts"
+        "tests/foundation/browser_studio_ui_test.go:suite=studio-ui -> tests/admin/studio-ui.spec.ts",
+        "tests/foundation/browser_studio_ui_test.go:suite=studio-ui -> tests/admin/studio-ui2-c4-metadata.spec.ts"
       ]
     },
     "--browser-live-console": {
