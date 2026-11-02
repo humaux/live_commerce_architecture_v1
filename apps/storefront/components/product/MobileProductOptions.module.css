@@ -48,7 +48,8 @@
 .content :global(.sf-stepper input) { width: var(--ui-target); color: var(--ds-ink); font-size: var(--ds-text-xl); }
 .limit { margin: var(--ds-space-4) 0; color: var(--ds-sig-muted); font-size: var(--ds-text-xs); }
 .pickup { margin: 0; padding: var(--ds-space-3); background: var(--ds-sig-go-soft); color: var(--ds-sig-go-text); border-radius: var(--ds-radius-lg); font-size: var(--ds-text-xs); }
-.dock { padding: var(--ds-space-4); border-block-start: 1px solid var(--ds-sig-line); background: var(--ds-surface); }
+/* The signed C7 task uses the DS Primary pair within its dock. */
+.dock { --action: var(--ds-ink); --on-action: var(--ds-on-primary); padding: var(--ds-space-4); border-block-start: 1px solid var(--ds-sig-line); background: var(--ds-surface); }
 .dock :global(.sf-btn) { min-height: var(--ui-target); height: auto; border-radius: var(--ds-radius-control); font-size: var(--ds-text-md); }
 .taskEntry { display: none; }
 .entryDock { display: none; }
