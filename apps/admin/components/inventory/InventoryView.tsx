@@ -44,7 +44,7 @@ export function InventoryView({ locale, initial, state, setState, selected, sele
       {initial.rows.next_cursor && <button disabled={locked} onClick={() => navigate({ cursor: initial.rows.next_cursor })}>{c.allStock}</button>}
     </> : state === "search" ? <section className="ops-card"><form onSubmit={event => { event.preventDefault(); navigate({ q: query }); setState("list"); }}>
       <label>{c.skuOrName}<input type="text" value={query} onChange={event => setQuery(event.target.value)} maxLength={120} /></label>
-      <div className="ops-actions"><button className="primary" type="submit">{c.search}</button><button type="button" onClick={() => setState("list")}>{c.cancel}</button></div>
+      <div className="ops-actions"><button className="primary ops-inventory-search-submit" type="submit">{c.search}</button><button type="button" onClick={() => setState("list")}>{c.cancel}</button></div>
     </form></section> : <>
       {selected && <><h2>{selected.code} · {selected.product_name}</h2><p className="ops-note">{warehouse?.name}</p></>}
       {state === "edit" && selected && <div className="ops-columns"><section className="ops-card">
