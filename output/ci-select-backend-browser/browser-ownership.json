@@ -272,7 +272,7 @@
     "tests/foundation/browser_live_console_balance_test.go": "698ff1629d077ecea328ede78d8a6e1e118547e794861356844b0404b2f7dc67",
     "tests/foundation/browser_live_console_comments_fixture_test.go": "30afeb5745b665957624fd2dbe0ce04eb20c636ac231846f42ddc0ff23d7ac39",
     "tests/foundation/browser_live_console_diagnostics_test.go": "aff7fb01466f32317503a57f58ac976d88bb6483eaafa3614181d08eb403bc29",
-    "tests/foundation/browser_live_console_test.go": "7e1a2aed4c07fdf44139c5fbe38a04dfb940cbe158c93b1cba7f8b98994fa4b5",
+    "tests/foundation/browser_live_console_test.go": "530cdef17dc86912b9133fefe0c095660ea119129ed51d77815bbaa79ced6859",
     "tests/foundation/browser_live_settings_fixture_test.go": "898d27f641f35dfacf6e64ec7c12784329be629d17293c800c7fb2158b9177ab",
     "tests/foundation/browser_live_settings_test.go": "82940e2343aea47e6fd2dab88aaf0cc8f52c20e5107481270a7009151c1fe176",
     "tests/foundation/browser_live_tools_test.go": "a2338a21eac70e1738c5786e87b23dfb2e32371e91c00f81635d2ba42284145b",
