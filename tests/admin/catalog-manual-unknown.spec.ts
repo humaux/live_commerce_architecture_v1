@@ -332,7 +332,7 @@ if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") {
       await page.evaluate(({ key, value }) => sessionStorage.setItem(key, value), { key: journalKey, value: alteredBytes });
       await page.reload();
       await expect(page.getByTestId("collections-list")).toBeVisible();
-      await expect(page.getByRole("alert")).toContainText(copy.collections.uncertain);
+      await expect(page.getByTestId("collections-page").getByRole("alert")).toContainText(copy.collections.uncertain);
       expect(await page.locator("body").innerText(), "invalid or foreign journal must not expose its draft description").not.toContain(description);
       await expect(page.getByTestId("collection-manage-new")).toBeDisabled();
       await expect(page.getByTestId("collection-new")).toBeDisabled();
@@ -392,8 +392,8 @@ if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") {
     expect(evidence.otherWrites).toEqual([]);
   });
 
-  test("same-turn duplicate manual submit cannot mint a second creation", async ({ page }) => {
-    const title = `${tag} duplicate manual click`;
+  test("rapid manual doubleclick cannot mint a second creation", async ({ page }) => {
+    const title = `${tag} rapid doubleclick`;
     const commands: Captured[] = [];
     const receipts: string[] = [];
     await signedLogin(page);
@@ -409,11 +409,10 @@ if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") {
     });
     await page.getByTestId("collection-manage-new").click();
     await page.getByTestId("collection-title").fill(title);
-    // Two normal DOM click events in one browser task exercise the synchronous latch before React rerenders.
-    await page.getByTestId("collection-save").evaluate(button => {
-      (button as HTMLButtonElement).click();
-      (button as HTMLButtonElement).click();
-    });
+    // Use the actionable user control; Playwright emits a real browser doubleclick without force.
+    const save = page.getByTestId("collection-save");
+    await expect(save).toBeEnabled();
+    await save.dblclick();
     await expect(page.getByTestId("collection-message")).toBeVisible();
     expect(commands.length, "both click events may produce at most one duplicate replay").toBeGreaterThanOrEqual(1);
     expect(commands.length).toBeLessThanOrEqual(2);
@@ -463,7 +462,7 @@ if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") {
       expect(changed, "fixture browser must allow an actual CSRF session-boundary change").toBe(true);
     } finally { release(); }
     await retryResponse;
-    await expect(page.getByRole("alert")).toContainText(copy.collections.uncertain);
+    await expect(page.getByTestId("collections-page").getByRole("alert")).toContainText(copy.collections.uncertain);
     await expect.poll(() => page.evaluate(key => sessionStorage.getItem(key), journalKey)).toBe(evidence.originalJournal);
     await expect(page.getByTestId("collection-manage-new")).toBeDisabled();
     expect(await page.locator("body").innerText()).not.toContain(description);
