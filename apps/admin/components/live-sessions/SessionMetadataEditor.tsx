@@ -5,7 +5,8 @@
 "use client";
 import type { ReactNode } from "react";
 import { liveSessionsCopy, type Locale } from "@live-commerce/i18n";
-import { ConfirmDialog, DateControl, Field, FormRow } from "@live-commerce/ui";
+import { DateControl, Field, FormRow } from "@live-commerce/ui";
+import { ConfirmDialog } from "@live-commerce/ui/ds";
 import { presentationCopy } from "@/lib/presentation-copy";
 import { studioCopy } from "@/lib/studio-copy";
 import type { AspectRatio, StudioDetail } from "@/lib/studio-model";
