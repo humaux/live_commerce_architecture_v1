@@ -237,3 +237,238 @@ if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") for (const entry of ["new", "
     }
   });
 }
+
+// New recovery cases are separate from the frozen four entry probes above. In particular, a
+// disabled fresh writer after reload is insufficient: the original command must be recoverable.
+if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") {
+  const journalKey = `catalog-collection-create:${store}`;
+  type Captured = { key: string | null; body: string | null };
+  const isCreate = (url: string, method: string) => new URL(url).pathname === endpoint && method === "POST";
+
+  async function committedUnknown(page: Page, title: string, description: string, second: "real" | "forbidden" = "real") {
+    const commands: Captured[] = [];
+    const receipts: Array<{ status: number; id: string | null }> = [];
+    const otherWrites: string[] = [];
+    let originalID = "";
+    page.on("request", request => {
+      const path = new URL(request.url()).pathname;
+      if (new URL(request.url()).origin === origin && path.startsWith(`/api/stores/${store}/`) &&
+        !["GET", "HEAD"].includes(request.method()) && !isCreate(request.url(), request.method()))
+        otherWrites.push(`${request.method()} ${path}`);
+    });
+    await page.route(`**${endpoint}`, async route => {
+      if (route.request().method() !== "POST") return route.continue();
+      commands.push({ key: route.request().headers()["idempotency-key"] ?? null, body: route.request().postData() });
+      if (commands.length > 1 && second === "forbidden") {
+        await route.fulfill({ status: 403, contentType: "application/json", body: JSON.stringify({ code: "forbidden", message: "Forbidden" }) });
+        receipts.push({ status: 403, id: null });
+        return;
+      }
+      const response = await route.fetch();
+      const body = await response.json();
+      receipts.push({ status: response.status(), id: typeof body.id === "string" ? body.id : null });
+      if (commands.length === 1) {
+        expect(response.status(), "first POST must really commit before ACK loss").toBe(200);
+        expect(body.id).toMatch(/^[0-9a-f-]{36}$/);
+        originalID = body.id;
+        await route.abort("connectionreset");
+      } else await route.fulfill({ response });
+    });
+    await signedLogin(page);
+    await page.getByTestId("collection-manage-new").click();
+    await expect(page.getByTestId("collection-title")).toBeVisible();
+    await page.getByTestId("collection-title").fill(title);
+    await page.getByTestId("collection-description").fill(description);
+    await page.getByTestId("collection-save").click();
+    await expect(page.getByTestId("collection-message")).toContainText(copy.collections.uncertain);
+    expect(commands, "one genuinely committed creation before recovery probes").toHaveLength(1);
+    expect(commands[0].key).toMatch(/^[0-9a-f-]{36}$/);
+    expect(JSON.parse(commands[0].body!)).toMatchObject({ title, description, sort_mode: "manual", status: "active" });
+    expect(otherWrites).toEqual([]);
+    const originalJournal = await page.evaluate(key => sessionStorage.getItem(key), journalKey);
+    expect(originalJournal, "durable record exists after lost ACK").not.toBeNull();
+    const record = JSON.parse(originalJournal!);
+    expect(record).toMatchObject({ version: 1, store, command: { key: commands[0].key, method: "POST", resource: "collections", body: commands[0].body } });
+    expect(record.boundary).toMatch(/^[0-9a-f]{64}$/);
+    return { commands, receipts, otherWrites, originalID, originalJournal: originalJournal! };
+  }
+
+  test("valid manual journal reload restores original Retry and real Go/PG receipt", async ({ page }, testInfo) => {
+    const title = `${tag} durable manual reload`;
+    const description = `${tag} durable description`;
+    const evidence = await committedUnknown(page, title, description);
+    try {
+      await page.reload();
+      await expect(page.getByTestId("collections-list")).toBeVisible();
+      await expect(page.getByTestId("collection-title"), "valid manual payload must reappear in its editor").toHaveValue(title);
+      await expect(page.getByTestId("collection-description")).toHaveValue(description);
+      const retry = page.getByRole("button", { name: copy.edit.retry, exact: true });
+      await expect(retry, "fail-closed alert alone does not satisfy durable recovery").toBeVisible();
+      await expect(retry).toBeEnabled();
+      expect(evidence.commands).toHaveLength(1);
+      const [response] = await Promise.all([page.waitForResponse(r => isCreate(r.url(), r.request().method())), retry.click()]);
+      expect(response.status(), "explicit retry reaches the real BFF/Go/PG path").toBe(200);
+      expect(evidence.commands).toHaveLength(2);
+      expect(evidence.commands[1], "original key and body bytes survive reload").toEqual(evidence.commands[0]);
+      expect(evidence.receipts).toEqual([{ status: 200, id: evidence.originalID }, { status: 200, id: evidence.originalID }]);
+      expect(await matching(page, title)).toEqual({ status: 200, ids: [evidence.originalID] });
+      expect(await shopperMatching(title)).toEqual({ status: 200, ids: [evidence.originalID] });
+      expect(evidence.otherWrites).toEqual([]);
+      await expect.poll(() => page.evaluate(key => sessionStorage.getItem(key), journalKey)).toBeNull();
+    } finally {
+      await testInfo.attach("durable-manual-reload", { contentType: "application/json", body: Buffer.from(JSON.stringify({ commands: evidence.commands, receipts: evidence.receipts, originalID: evidence.originalID, otherWrites: evidence.otherWrites })) });
+    }
+  });
+
+  for (const bad of ["malformed-body", "foreign-boundary"] as const) {
+    test(`${bad} journal reload never renders private draft or dispatches a writer`, async ({ page }) => {
+      const title = `${tag} bad journal ${bad.replace("-", " ")}`;
+      const description = `${tag} private draft ${bad}`;
+      const evidence = await committedUnknown(page, title, description);
+      const altered = JSON.parse(evidence.originalJournal);
+      if (bad === "malformed-body") altered.command.body = JSON.stringify({ title, description, sort_mode: "automatic", status: "active", rules: { match: "all", conditions: [] } });
+      else altered.boundary = "0".repeat(64) === altered.boundary ? "1".repeat(64) : "0".repeat(64);
+      const alteredBytes = JSON.stringify(altered);
+      await page.evaluate(({ key, value }) => sessionStorage.setItem(key, value), { key: journalKey, value: alteredBytes });
+      await page.reload();
+      await expect(page.getByTestId("collections-list")).toBeVisible();
+      await expect(page.getByRole("alert")).toContainText(copy.collections.uncertain);
+      expect(await page.locator("body").innerText(), "invalid or foreign journal must not expose its draft description").not.toContain(description);
+      await expect(page.getByTestId("collection-manage-new")).toBeDisabled();
+      await expect(page.getByTestId("collection-new")).toBeDisabled();
+      expect(evidence.commands, "reload must not auto-replay or mint a fresh key").toHaveLength(1);
+      expect(await page.evaluate(key => sessionStorage.getItem(key), journalKey), "bad record remains for reconciliation").toBe(alteredBytes);
+      expect(await matching(page, title)).toEqual({ status: 200, ids: [evidence.originalID] });
+      expect(evidence.otherWrites).toEqual([]);
+    });
+  }
+
+  test("session storage write denial before send leaves zero creation POSTs", async ({ page }) => {
+    const title = `${tag} storage denial`;
+    const creates: Captured[] = [];
+    await signedLogin(page);
+    await page.route(`**${endpoint}`, async route => {
+      if (route.request().method() === "POST") {
+        creates.push({ key: route.request().headers()["idempotency-key"] ?? null, body: route.request().postData() });
+        await route.abort("blockedbyclient");
+        return;
+      }
+      await route.continue();
+    });
+    await page.getByTestId("collection-manage-new").click();
+    await page.getByTestId("collection-title").fill(title);
+    await page.evaluate(key => {
+      const original = Storage.prototype.setItem;
+      Storage.prototype.setItem = function (name, value) {
+        if (this === sessionStorage && name === key) throw new DOMException("storage denied", "QuotaExceededError");
+        return original.call(this, name, value);
+      };
+    }, journalKey);
+    await page.getByTestId("collection-save").click();
+    await expect(page.getByTestId("collection-message")).toContainText(copy.collections.uncertain);
+    expect(creates, "failure to persist before send must never create remotely").toEqual([]);
+    expect(await page.evaluate(key => sessionStorage.getItem(key), journalKey)).toBeNull();
+    await expect(page.getByTestId("collection-save")).toBeDisabled();
+    expect(await matching(page, title)).toEqual({ status: 200, ids: [] });
+  });
+
+  test("retry auth denial retains UNKNOWN journal and prevents a fresh creation", async ({ page }) => {
+    const title = `${tag} retry forbidden`;
+    const evidence = await committedUnknown(page, title, `${tag} forbidden draft`, "forbidden");
+    const retry = page.getByRole("button", { name: copy.edit.retry, exact: true });
+    await expect(retry).toBeEnabled();
+    await retry.click();
+    await expect.poll(() => evidence.commands.length).toBe(2);
+    await expect(page.getByTestId("collection-message")).toContainText(copy.collections.uncertain);
+    expect(evidence.commands[1]).toEqual(evidence.commands[0]);
+    expect(evidence.receipts).toEqual([{ status: 200, id: evidence.originalID }, { status: 403, id: null }]);
+    expect(await page.evaluate(key => sessionStorage.getItem(key), journalKey)).toBe(evidence.originalJournal);
+    await expect(page.getByTestId("collection-manage-new")).toBeDisabled();
+    await expect(page.getByTestId("collection-new")).toBeDisabled();
+    await page.reload();
+    await expect(page.getByTestId("collections-list")).toBeVisible();
+    expect(evidence.commands, "reload must not issue a new command after 403").toHaveLength(2);
+    expect(await matching(page, title)).toEqual({ status: 200, ids: [evidence.originalID] });
+    expect(evidence.otherWrites).toEqual([]);
+  });
+
+  test("same-turn duplicate manual submit cannot mint a second creation", async ({ page }) => {
+    const title = `${tag} duplicate manual click`;
+    const commands: Captured[] = [];
+    const receipts: string[] = [];
+    await signedLogin(page);
+    await page.route(`**${endpoint}`, async route => {
+      if (route.request().method() !== "POST") return route.continue();
+      commands.push({ key: route.request().headers()["idempotency-key"] ?? null, body: route.request().postData() });
+      const response = await route.fetch();
+      const body = await response.json();
+      expect(response.status()).toBe(200);
+      receipts.push(body.id);
+      if (commands.length === 1) await route.abort("connectionreset");
+      else await route.fulfill({ response });
+    });
+    await page.getByTestId("collection-manage-new").click();
+    await page.getByTestId("collection-title").fill(title);
+    // Two normal DOM click events in one browser task exercise the synchronous latch before React rerenders.
+    await page.getByTestId("collection-save").evaluate(button => {
+      (button as HTMLButtonElement).click();
+      (button as HTMLButtonElement).click();
+    });
+    await expect(page.getByTestId("collection-message")).toBeVisible();
+    expect(commands.length, "both click events may produce at most one duplicate replay").toBeGreaterThanOrEqual(1);
+    expect(commands.length).toBeLessThanOrEqual(2);
+    expect(commands[0].key).toMatch(/^[0-9a-f-]{36}$/);
+    expect(JSON.parse(commands[0].body!)).toMatchObject({ title, sort_mode: "manual" });
+    for (const command of commands) expect(command, "duplicate click must retain one command").toEqual(commands[0]);
+    expect(receipts).toHaveLength(commands.length);
+    expect(new Set(receipts).size).toBe(1);
+    expect(await matching(page, title)).toEqual({ status: 200, ids: [receipts[0]] });
+    expect(await shopperMatching(title)).toEqual({ status: 200, ids: [receipts[0]] });
+  });
+
+  test("late real retry receipt after session change cannot clear journal or expose prior draft", async ({ page }) => {
+    const title = `${tag} late session result`;
+    const description = `${tag} prior session private draft`;
+    const evidence = await committedUnknown(page, title, description);
+    let release!: () => void;
+    let markStarted!: () => void;
+    const permit = new Promise<void>(resolve => { release = resolve; });
+    const started = new Promise<void>(resolve => { markStarted = resolve; });
+    // The newer route holds only the retry ACK; the first request has already really committed.
+    await page.route(`**${endpoint}`, async route => {
+      if (route.request().method() !== "POST") return route.continue();
+      evidence.commands.push({ key: route.request().headers()["idempotency-key"] ?? null, body: route.request().postData() });
+      const response = await route.fetch();
+      const body = await response.json();
+      evidence.receipts.push({ status: response.status(), id: body.id });
+      markStarted();
+      await permit;
+      await route.fulfill({ response });
+    });
+    const retry = page.getByRole("button", { name: copy.edit.retry, exact: true });
+    await expect(retry).toBeEnabled();
+    const retryResponse = page.waitForResponse(r => isCreate(r.url(), r.request().method()) && r.status() === 200);
+    try {
+      await retry.click();
+      await started;
+      expect(evidence.receipts[1], "server replay must be a real receipt before delaying its ACK").toEqual({ status: 200, id: evidence.originalID });
+      expect(evidence.commands[1]).toEqual(evidence.commands[0]);
+      const changed = await page.evaluate(() => {
+        const original = document.cookie.split(";").map(part => part.trim()).find(part => part.startsWith("__Host-commerce_csrf="));
+        const replacement = original === `__Host-commerce_csrf=${"A".repeat(43)}` ? "B".repeat(43) : "A".repeat(43);
+        document.cookie = `__Host-commerce_csrf=${replacement}; Path=/; Secure; SameSite=Lax`;
+        const current = document.cookie.split(";").map(part => part.trim()).find(part => part.startsWith("__Host-commerce_csrf="));
+        return !!original && current === `__Host-commerce_csrf=${replacement}` && current !== original;
+      });
+      expect(changed, "fixture browser must allow an actual CSRF session-boundary change").toBe(true);
+    } finally { release(); }
+    await retryResponse;
+    await expect(page.getByRole("alert")).toContainText(copy.collections.uncertain);
+    await expect.poll(() => page.evaluate(key => sessionStorage.getItem(key), journalKey)).toBe(evidence.originalJournal);
+    await expect(page.getByTestId("collection-manage-new")).toBeDisabled();
+    expect(await page.locator("body").innerText()).not.toContain(description);
+    expect(await page.getByTestId("collection-description").count()).toBe(0);
+    expect(evidence.commands).toHaveLength(2);
+    expect(evidence.otherWrites).toEqual([]);
+  });
+}
