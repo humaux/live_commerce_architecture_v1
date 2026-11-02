@@ -277,7 +277,9 @@ try {
   const pickerLedger = [], pickerDensities = [];
   for (const [locale, mobile] of [["zh-TW", true], ["zh-CN", false], ["en", true]]) {
     const ctx = await newContext(mobile), page = await ctx.newPage();
-    await exerciseCvsPicker({ page, locale, mobile, openCheckout: () => toQuote(page, stores.entered, locale, "cvs_711"), ledger: pickerLedger, densities: pickerDensities });
+    await exerciseCvsPicker({ page, locale, mobile, openCheckout: () => toQuote(page, stores.entered, locale, "cvs_711"), ledger: pickerLedger, densities: pickerDensities,
+      onDiagnostic: value => writeFile(path.join(evidence, `cvs-picker-diagnostic-${locale}-${mobile ? "mobile" : "desktop"}.json`), JSON.stringify(value)),
+    });
     await exerciseCvsPaste({ page, locale, openCheckout: () => toQuote(page, stores.entered, locale, "cvs_familymart"), ledger: pickerLedger });
     await shot(page, "picker", locale, mobile ? "mobile" : "desktop");
     await ctx.close();

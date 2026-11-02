@@ -1,0 +1,7 @@
+/* Purpose: merchant title/description typography for the 51:1381 description-only partial unit.
+ * Depends on: shared DS tokens and accepted MobileProductOptions chrome; no global overrides.
+ * Used by: MobileProductDescription.
+ * Invariants: merchant whitespace is preserved, long text wraps, and only the body scrolls. */
+.body { display: flex; flex-direction: column; gap: var(--ds-space-4); }
+.title { margin: 0; font-size: var(--ds-text-2xl); line-height: var(--ds-leading); font-weight: 500; overflow-wrap: anywhere; }
+.description { margin: 0; font-size: var(--ds-text-lg); line-height: var(--ds-leading); color: var(--ds-sig-label); white-space: pre-wrap; overflow-wrap: anywhere; }

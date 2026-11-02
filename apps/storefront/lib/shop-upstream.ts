@@ -126,11 +126,12 @@ export type ListQuery = {
 };
 
 // Same canonical query the Go parser accepts (parseV2Query: known keys only, one value each, no empty value).
+// Explicit newest must reach Go: omitting it would restore a collection's configured sort instead.
 export function listPath(query: ListQuery): string {
   const params = new URLSearchParams();
   if (query.collection) params.set("collection", query.collection);
   if (query.q) params.set("q", query.q);
-  if (query.sort && query.sort !== "newest") params.set("sort", query.sort);
+  if (query.sort) params.set("sort", query.sort);
   if (query.min != null) params.set("min", String(query.min));
   if (query.max != null) params.set("max", String(query.max));
   if (query.after) params.set("after", query.after);

@@ -128,6 +128,18 @@ test("list query: only whitelisted, canonical values survive", () => {
   assert.equal(q({ after: "../x" }).after, null);
 });
 
+test("list query: omitted sort preserves the server collection default, explicit newest overrides it", () => {
+  const q = (o) => parseListQuery((k) => o[k]);
+  assert.equal(q({}).sort, undefined);
+  assert.equal(q({ sort: null }).sort, undefined);
+  assert.equal(q({ sort: undefined }).sort, undefined);
+  assert.equal(q({ collection: "tableware" }).sort, undefined, "leave the configured manual order to Go");
+  assert.equal(q({ sort: "newest" }).sort, "newest");
+  assert.equal(q({ collection: "tableware", sort: "newest" }).sort, "newest", "explicit newest is not the collection default");
+  assert.equal(q({ sort: "" }).sort, "newest", "preserve the existing empty-string fallback");
+  assert.equal(q({ sort: "drop table" }).sort, "newest", "preserve the existing invalid nonempty fallback");
+});
+
 test("seo: JSON-LD cannot break out of its script tag; offers reflect stock and price range", () => {
   const detail = { id: U(6), slug: "p", title: "</script><b>x", description: "d", seo: { title: "", description: "" }, images: [{ id: U(7), width: 1, height: 1 }], options, variants, collections: [] };
   const json = productJsonLd({ origin: "https://s.example", locale: "zh-TW", product: detail, currency: "TWD", name: "Shop" });
