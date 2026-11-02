@@ -173,6 +173,30 @@ func mdPartialErrorContract(t *testing.T, changedCart bool) {
 		caller, retryBody, wantCode = a, mdBody(sku, 3, home, "bank_transfer", mdHome, 100), "idempotency_conflict"
 	}
 	before := readState()
+	if !changedCart {
+		var probeTx pgx.Tx
+		targetEntered := false
+		err := platform.WithScope(ctx, e.p.f.runtime, tokenB, e.store(), "inventory:reserve", func(tx pgx.Tx, scope platform.Scope) error {
+			probeTx = tx
+			if scope.TenantID != e.tenant() || scope.StoreID != e.store() || scope.PrincipalID != principalB {
+				return errors.New("principal-conflict witness opened the wrong merchant scope")
+			}
+			if err := platform.RequirePermission(ctx, tx, scope, tokenB, "catalog:read"); err != nil {
+				return err
+			}
+			targetEntered = true
+			_, err := tx.Exec(ctx, `SELECT fulfillment.authorize_manual_order_discount($1,$2::uuid,$3::uuid,$4,$5::text,$6::bigint)`, tokenHash(tokenB), e.store(), owner, hash[:], "直播優惠", int64(2501))
+			return err
+		})
+		// sqlState extracts an actual *pgconn.PgError with errors.As; no message matching or synthetic error.
+		if !targetEntered || sqlState(err) != "PT409" {
+			t.Fatalf("runtime principal-conflict witness: target_entered=%t SQLSTATE=%s", targetEntered, sqlState(err))
+		}
+		if !errors.Is(probeTx.Rollback(ctx), pgx.ErrTxClosed) || !bytes.Equal(before, readState()) {
+			t.Fatal("principal-conflict witness must leave a closed rolled-back transaction and unchanged state")
+		}
+		t.Log("real runtime B reached authorization target, received PT409 and rolled back without state changes")
+	}
 	code, out := caller.place(key, retryBody)
 	if !bytes.Equal(before, readState()) {
 		t.Fatal("refused resume changed authorization/cart/quote/receipt/hold/order/audit tuples")

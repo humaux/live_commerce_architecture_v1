@@ -25,6 +25,8 @@ Both leaves first submit quantity 2, discount 2501 through real merchant HTTP. T
 
 Before/after byte equality covers full tuples from buyer owners/sessions, authorization, buyer and merchant receipts, carts/lines, quotes, reservations/lines, balances, orders and audit. The table identifiers are a closed literal list, tenant/store values are bound parameters, and tuple contents are never printed. This also guards reuse of the same synthetic owner and cart receipt.
 
+Case 1 additionally calls the same authorization SQL using B through the real `commerce_runtime` pool and `platform.WithScope`, with the saved owner/hash. It checks the callback scope tuple and both permissions before setting the target-entry witness. Existing `sqlState` uses `errors.As` to extract an actual `*pgconn.PgError`; the witness requires exactly PT409. Returning that error makes `WithScope` roll back; a subsequent rollback must return `pgx.ErrTxClosed`, and all witnessed state must remain byte-identical. This source-classification control does not replace the merchant HTTP assertion and is itself runtime NOT_RUN. No owner-role impersonation or permission revocation is used.
+
 Each leaf then replays A's original body and requires the same 422 and unchanged state. A fresh key with quantity 3/discount 100 must return 201 with total 3650 through the same caller/handler. **The exact error status/code assertion runs last**, after these controls, with milestone logs showing which assertions were reached. Setup/state failures still stop the affected leaf; no later assertion is claimed to have run. No blanket reinterpretation of `command.ErrConflict`, production seam, SQL change, fixture error injection, permission revocation, gate change or deletion was made.
 
 ## Actual static commands and exit codes
@@ -37,9 +39,14 @@ Commands ran in the worktree above. No runtime test command was invoked.
 | `gofmt -w tests/foundation/manual_discount_test.go` | 0 | formatted; Go parser accepts syntax |
 | `git diff --check` | 0 | no whitespace errors |
 | first inline Python reverse-byte verifier | 1 | checker regex required comma/count; Git emitted `@@ -23,0 +24 @@ import (`. Preserved failure: `AssertionError` at checker line 12. No test oracle changed. |
-| corrected inline Python reverse-byte verifier below | 0 | all 1258 old lines recovered byte-for-byte; exactly 117 added lines, zero deletions; both new leaves and positive-control order present |
-| `git diff --numstat` | 0 | `117 0 tests/foundation/manual_discount_test.go` before report addition |
+| corrected inline Python reverse-byte verifier below | 0 | all 1258 old lines recovered byte-for-byte; exactly 141 added lines, zero deletions; both new leaves and positive-control order present |
+| `git diff --numstat` | 0 | `117 0 tests/foundation/manual_discount_test.go` at initial checkpoint; final base diff is `141 0` |
 | `gofmt -l tests/foundation/manual_discount_test.go` | 0 | empty output |
+| `git add -- tests/foundation/manual_discount_test.go output/feat-manual-discount/ERROR-CONTRACT-RED.md` | 0 | initial local staging |
+| `git commit -m 'test(manual-discount): pin unfinished pipeline error contracts'` | 0 | initial static commit `247d08d56ce2693810d5651d2b89f4a58c97b261` |
+| `git diff --check HEAD^ HEAD` | 0 | initial committed diff; clean status verified |
+| `gofmt -w tests/foundation/manual_discount_test.go` after runtime-SQL witness addition | 0 | additive 24-line control; no runtime invoked |
+| corrected reverse-byte verifier after runtime-SQL witness addition | 0 | final base diff: 141 added lines; all 1258 original lines exact |
 
 The first checker used `r'@@ -(\d+),(\d+) \+(\d+),(\d+) @@'`; the corrected checker accepts omitted single-line counts. Reproduce the corrected check before committing (or compare this commit's diff against the same base):
 
@@ -80,9 +87,9 @@ PY
 Actual verifier output:
 
 ```text
-STATIC_ONLY old_bytes_exact=true old_lines=1258 inserted_lines=117
+STATIC_ONLY old_bytes_exact=true old_lines=1258 inserted_lines=141
 base_test_sha256=82fc3e623a43f865605c88c09fe1c31dcca5e0de4750993e559e481fe48aa256
-current_test_sha256=9a3f390e827e37574af0074a286916b57387fe8684384595a001c11449b15d61
+current_test_sha256=ac91916e36668cc79d723d219511fad5cbd46a9d62f7a676183dff63fbc972b0
 Runtime Go/PG/HTTP/browser=NOT_RUN; no typecheck/compilation claimed
 ```
 
