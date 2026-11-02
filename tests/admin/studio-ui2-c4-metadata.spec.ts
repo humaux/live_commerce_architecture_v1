@@ -82,6 +82,49 @@ async function c4OwnedDraft(page: Page, locale: keyof typeof c4EditorWords, titl
   return draft;
 }
 
+// C4 dirty186 projection begin (card c879): failure-only, one read, no retry or product writes.
+async function c4Dirty186Projection(page: Page, locale: keyof typeof c4EditorWords, scene: string) {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    const sample = page.evaluate(({ locale, store, scene, words }) => {
+      const url = new URL(location.href);
+      const count = (nodes: Element[]) => Math.min(nodes.length, 16);
+      const headings = Array.from(document.querySelectorAll("h1,h2,h3"));
+      const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>("button"));
+      const enabled = (label: string) => {
+        const matches = buttons.filter(node => node.textContent?.trim() === label);
+        return matches.length === 1 ? !matches[0]!.disabled : null;
+      };
+      const tag = document.activeElement?.tagName;
+      const scroll = (value: number) => Number.isFinite(value) ? Math.max(-1_000_000, Math.min(1_000_000, Math.round(value))) : null;
+      // READ/MEASURE: only these fixed enums, booleans and bounded numbers leave the page.
+      // Never return raw URL/DOM/text, field values, credentials, or router/history state.
+      return {
+        pathname: url.pathname === `/${locale}/studio` ? "STUDIO" : url.pathname === `/${locale}/studio/claims` ? "CLAIMS" : "OTHER",
+        hash: url.hash === "#edit" ? "EDIT" : url.hash === "#preparation" ? "PREPARATION" : "OTHER",
+        fragmentCount: Math.min(url.hash.split("#").length - 1, 8),
+        sameStore: url.searchParams.get("store") === store, sameScene: url.searchParams.get("scene") === scene,
+        preparationHeadingCount: count(headings.filter(node => node.textContent?.trim() === words.prepare)),
+        editorHeadingCount: count(Array.from(document.querySelectorAll(".studio-editor h2"))),
+        dialogCount: count(Array.from(document.querySelectorAll('[role="dialog"]'))),
+        dirtyMarkerCount: count(Array.from(document.querySelectorAll(".studio-dirty"))),
+        cancelEnabled: enabled(words.cancel), editEnabled: enabled(words.edit), saveEnabled: enabled(words.save),
+        activeElement: tag && ["INPUT", "SELECT", "BUTTON", "A", "BODY"].includes(tag) ? tag : tag ? "OTHER" : "NONE",
+        scrollX: scroll(window.scrollX), scrollY: scroll(window.scrollY),
+      };
+    }, { locale, store, scene, words: c4EditorWords[locale] }).then(
+      value => ({ status: "OK" as const, ...value }), () => ({ status: "UNAVAILABLE" as const }));
+    const result = await Promise.race([sample, new Promise<{ status: "TIMEOUT" }>(resolve => {
+      timer = setTimeout(() => resolve({ status: "TIMEOUT" }), 100);
+    })]);
+    // Synchronous reporter annotation avoids extending the 100ms read budget for artifact I/O.
+    // Both sample outcomes are consumed; a late resolution cannot annotate or perform another read.
+    c4PrivateTest.info().annotations.push({ type: "C4-dirty186-projection", description: JSON.stringify(result) });
+  } catch { /* Diagnostic errors must not replace the original assertion error. */ }
+  finally { if (timer !== undefined) clearTimeout(timer); }
+}
+// C4 dirty186 projection end.
+
 c4PrivateTest.describe("C4 metadata independent REAL PG contracts", () => {
   // New C4 artifacts contain synthetic IDs/counts only; no credentials, raw DOM or headers.
 
@@ -183,7 +226,14 @@ c4PrivateTest.describe("C4 metadata independent REAL PG contracts", () => {
       await expect(name).toHaveValue(title); // Re-entered persisted value, never discarded dirty input saved.
       await page.reload(); await expect(name).toHaveValue(title);
       await c4EditorAction(page, c.cancel).click({ timeout: 15000 });
+      // C4 dirty186 wrapper begin: original assertion below is byte-preserved.
+      try {
       await expect(page.getByRole("heading", { name: c.prepare, exact: true })).toBeVisible();
+      } catch (error) {
+        await c4Dirty186Projection(page, locale, draft.session_id);
+        throw error;
+      }
+      // C4 dirty186 wrapper end.
       await expect(dialog).toHaveCount(0); // Clean Cancel requires no confirmation.
       expect(writes).toHaveLength(0);
       await c4PrivateTest.info().attach("C4-dirty-zero-write", { body: JSON.stringify({ class: "REAL_PG", locale, width, exitKind, writes: writes.length, restoredPersistedTitle: true }), contentType: "application/json" });
