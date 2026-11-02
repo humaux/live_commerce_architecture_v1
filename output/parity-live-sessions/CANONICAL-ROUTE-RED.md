@@ -16,7 +16,7 @@ Fixed original SOURCE input under root `output/integrator/tools/logs/ci-evidence
 
 Only changed paths:
 
-1. `tests/admin/studio-ui2-c4-metadata.spec.ts`: +54/-0 lines.
+1. `tests/admin/studio-ui2-c4-metadata.spec.ts`: +55/-0 lines.
 2. `output/parity-live-sessions/CANONICAL-ROUTE-RED.md`: this report.
 
 No product, fixture, Go counter, shared gate, ownership generator, dependency, legacy Studio104 or Console case change. No push/dispatch/provider/network/browser/Go/PG/test runtime. No subprocess, fixture, container, port or temporary file was left running/created for this candidate.
@@ -27,7 +27,7 @@ The original dirty clean Cancel click (base185) remains untouched. Only the foll
 
 One read-only page.evaluate samples fixed route/DOM projection only after that assertion throws. One 100ms asynchronous read budget; no retry or extra click/read. Promise.race consumes both late success and rejection and clears its timer. Exactly one synchronous private JSON evidence write follows the read, using the existing live-console writeFileSync/mode0600/flush pattern. The write is explicitly outside the 100ms read budget and may add filesystem latency; the original assertion still keeps its original10s budget. No extra timeout or sleep; JS timers are not hard real-time guarantees. Late evaluation completion cannot write evidence.
 
-Allowlist: pathname STUDIO/CLAIMS/OTHER; hash EDIT/PREPARATION/OTHER; fragmentCount capped8; sameStore/sameScene booleans; preparation/editor heading, dialog and dirty-marker counts capped16; cancel/edit/save enabled boolean or null when missing/ambiguous; activeElement INPUT/SELECT/BUTTON/A/BODY/OTHER/NONE; rounded finite scrollX/Y clamped to +/-1000000, else null. Counts describe matched DOM nodes, not a new visibility oracle. Editor heading uses the existing .studio-editor h2; no new product selector. Button enabled reads disabled only, not successful navigation/guard execution.
+Allowlist: pathname STUDIO/CLAIMS/OTHER; hash EDIT/PREPARATION/OTHER; fragmentCount capped8; fragmentKinds is [] when hash absent, otherwise up to8 EDIT/PREPARATION/OTHER enums in fragment order; sameStore/sameScene booleans; preparation/editor heading, dialog and dirty-marker counts capped16; cancel/edit/save enabled boolean or null when missing/ambiguous; activeElement INPUT/SELECT/BUTTON/A/BODY/OTHER/NONE; rounded finite scrollX/Y clamped to +/-1000000, else null. Counts describe matched DOM nodes, not a new visibility oracle. Editor heading uses the existing .studio-editor h2; no new product selector. Button enabled reads disabled only, not successful navigation/guard execution.
 
 No raw URL, title/text, field value, DOM snapshot, credential, request header, history/Next/React private state leaves the page. URL parsing and fixed-label comparisons stay inside page.evaluate. No app/history/cache/listener/DOM mutation. File c4-dirty186-<locale>.json holds class REAL_PG, readBudgetMs100, and read.status OK/TIMEOUT/UNAVAILABLE with only allowlisted primitives. Existing private-evidence guards remain unchanged.
 
@@ -91,7 +91,7 @@ SHA256/bytes:
 
 - Base spec: `da2d9489e579cb882b7b1d3c96a4196432cb84e89ea2207f5cc96d9198f20056` /15414.
 - Inverse spec: same hash/bytes, exact byte equality.
-- Candidate spec: `713662e935d4f5c638cee07fa4ab61cbe924bc2e33950d3db80ae8cf56c49446` /19043.
+- Candidate spec: `5accc81b37aaafb60e4d1955251eac7a1facac9d3a3f3547ccdb27f019411bb5` /19225.
 
 Rollback: restore only the assigned spec from the base object; this report was absent at base. No rollback executed. Original failing samples remain.
 
@@ -120,3 +120,7 @@ The following installed sources were read without execution; they are not tracke
 - Installed Playwright1.63.0 `package.json` SHA256 `8bc2ddebe8d9b051b9ecb87d62c6c63877e59d08617f32c3215681ca8bb70998` /1359B.
 - Installed Playwright1.63.0 `lib/common/index.js` SHA256 `f4a6b14f5ba21a118b58a6a25eb0b281a3acc4157023b014e0197145056124a4` /115517B.
 - Installed Playwright1.63.0 `lib/runner/index.js` SHA256 `7a2e4e1114d3237d61b87723b4d86a37944c9143f3ce2fb0b2e8867e0c612a5e` /315445B.
+
+## Root-frozen fragmentKinds addendum
+
+After root admitted the 3cac B file-based diagnostic, root explicitly froze one additional safe field: fragmentKinds, at most8 EDIT/PREPARATION/OTHER enums, preserving fragment order; absent hash yields []. This permits distinguishing EDIT then PREPARATION without exposing original fragment strings. Existing hash/fragmentCount remain. Only this field was added to the same page.evaluate, with the same100ms read budget and original throw; no extra browser action/read, product/gate/fixture/counter change. This addendum is not a runtime observation. Delta syntax, git diff --check and original-byte inverse were rerun exit0; no unrelated static/runtime suite was repeated. A and all NOT_RUN/UNKNOWN boundaries above remain.

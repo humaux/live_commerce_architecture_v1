@@ -104,6 +104,7 @@ async function c4Dirty186Projection(page: Page, locale: keyof typeof c4EditorWor
         pathname: url.pathname === `/${locale}/studio` ? "STUDIO" : url.pathname === `/${locale}/studio/claims` ? "CLAIMS" : "OTHER",
         hash: url.hash === "#edit" ? "EDIT" : url.hash === "#preparation" ? "PREPARATION" : "OTHER",
         fragmentCount: Math.min(url.hash.split("#").length - 1, 8),
+        fragmentKinds: url.hash ? url.hash.slice(1).split("#").slice(0, 8).map(fragment => fragment === "edit" ? "EDIT" : fragment === "preparation" ? "PREPARATION" : "OTHER") : [],
         sameStore: url.searchParams.get("store") === store, sameScene: url.searchParams.get("scene") === scene,
         preparationHeadingCount: count(headings.filter(node => node.textContent?.trim() === words.prepare)),
         editorHeadingCount: count(Array.from(document.querySelectorAll(".studio-editor h2"))),
