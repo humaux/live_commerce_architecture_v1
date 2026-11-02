@@ -61,3 +61,50 @@ Root must independently execute existing CI g05 at the new exact commit and insp
 Minimal permission-fence witness for a separately frozen controlled CI mutation: **only within authorize**, remove `catalog:read` from both calls to `merchant_access_denied`, retaining the existing inventory resolve, table ACL, RLS, Go permission guards and all tests. The new `missing_catalog_read` leaf should enter SQL, insert one row and fail its exact PT403/zero-row oracle; old direct INSERT/HTTP negatives alone would not detect this. Restore exact production source and obtain GREEN at a restored exact head. This mutation was neither applied nor run here. Failure to turn this target RED is a gate failure, never grounds to weaken assertions.
 
 Independent review, runtime compilation/type checking, the controlled RED→restore→GREEN witness and #505 lock-wait revocation remain **NOT_RUN**. #504/#505 are not closed by this source-only handoff. No ordinary HTTP exploit, production grant/state, global PR approval or product completion is asserted. No authority/gate was relaxed to claim completion.
+
+
+## Frozen CI-only mutation harness source handoff (2026-11-02)
+
+- task_id: `db8ec69c-cde6-4dbd-bc56-fd926ca739fb`; root claimed; child `/root/authorize_matrix_1048`, own canvas `db8ec69c-sub-1`; no separate claim/delegation.
+- base_commit: `0b6de820d17971b2eb0e3d4237e4e72275ea14df`; same worktree/branch and root-owned author lock.
+- write_paths: `tests/foundation/manual_discount_mutation.py`, additive five-line stanza in `.github/workflows/gates.yml`, this report. Original Go test and every production SQL/Go file remain byte-identical to base.
+- evidence level: **E1 / SOURCE only**; injector, Go/PG/browser/CI/provider/network/push/dispatch are **NOT_RUN**. Requested Sol/high; actual model/provider ID **UNKNOWN**.
+- authority: root task card plus Humaux human-source freeze `74e9c85e-04de-4600-9c12-a9605277707f` read in full; existing OA injector, gates shell, ci-plan and test-focused source read. Existing 475 import-field injector read as a pattern only; no recipe or closed list was expanded or moved. Ponytail skill applied: stdlib, one source path, one recipe, no generic patch API.
+
+The only accepted fault is `LC_MANUAL_DISCOUNT_MUTATION=drop-catalog-fence`. The source recipe requires exactly two whole `merchant_access_denied` call anchors **inside authorize's single CREATE FUNCTION body** and removes only `catalog:read` from their arrays. It preserves the initial inventory resolve, binder, ACL/RLS, Go guards, immutable tests and every surrounding source byte. It does not modify a live database; the changed SQL will be applied only by the existing disposable PG fixture in CI.
+
+Before any source/evidence write, the injector requires `GITHUB_ACTIONS=true`, `CI=true`, `GITHUB_EVENT_NAME=workflow_dispatch`, exact MODE `focused:^TestMerchantToolsManualOrder$/^FEAT-MANUAL-DISCOUNT$/^runtime_database_boundary$/^authorize$`, `BUNDLE=false`, absent prebuilt directory, EXTRA_ENV exactly the single accepted key/value, no simultaneous OA/import-field mutation, GitHub workspace matching git root, all tracked files clean, a regular nonsymlink fixed allowlisted path equal to HEAD, one function anchor and two matching fences in that body, and safe unused evidence destinations. Unknown input/mode, dirty source, path escape/symlink, missing anchor or existing receipt fails before writing. The fixed target is written once with a same-directory temporary file and `os.replace`; no production/source write was executed locally.
+
+Receipt paths follow the existing gate output/upload tree:
+
+- `output/ci-gates/manual-discount-mutation.json`: source HEAD, exact mode/fault/path, expected match count 2, source before/after SHA256 and SQL patch SHA256.
+- `output/ci-gates/manual-discount-mutation.patch`: actual `git diff --no-ext-diff --no-textconv -- migrations/0220_manual_order_discount.sql`, also printed in raw CI log.
+- existing gate log for this exact mode: `output/ci-gates/focused__TestMerchantToolsManualOrder___FEAT-MANUAL-DISCOUNT___runtime_database_boundary___authorize_.log`. Existing workflow uploads `output/ci-gates/` with its matrix artifact; no artifact name is invented here.
+
+The workflow invokes the script only when the new variable is nonempty and explicitly checks dispatch. Subtracting those five added lines reproduces the complete base workflow byte for byte. Its existing `set -o pipefail`, ordinary commands, verdict propagation, per-mode logging, receipts, calibration prebuilt skip and artifact upload remain unchanged. The script does not catch a test exit or turn expected RED into a successful job.
+
+Actual additional static commands: inline Python source creation and `ast.parse`/literal anchor checks/test byte comparison/workflow subtraction checks all **exit 0**; extracted Gate shell `bash -n` **exit 0**; `git diff --check` **exit 0**. Initial read command ended **1** on the intentionally absent new injector and a nonexistent nested `.worktrees` search; corrected root absolute 475 path read succeeded **0**. No injector import/main or runtime self-test was executed; runtime rejection/atomic-write behavior is source-reviewed only.
+
+### Reviewed dispatch text — NOT EXECUTED
+
+`REVIEWED_REF` below must be set by root to the reviewed branch/tag whose head is the final harness commit, then source SHA in the actual receipt must equal that reviewed head. Both runs use the same ref/head and exact mode; root registers run IDs, deadlines and logs.
+
+```sh
+gh workflow run gates.yml --ref "$REVIEWED_REF" \
+  -f modes='["focused:^TestMerchantToolsManualOrder$/^FEAT-MANUAL-DISCOUNT$/^runtime_database_boundary$/^authorize$"]' \
+  -f full_browser_universe=false \
+  -f extra_env='LC_MANUAL_DISCOUNT_MUTATION=drop-catalog-fence'
+```
+
+Expected mutant oracle: `missing_catalog_read` callback and direct SQL execute are reached, the function actually inserts the authorization, then the unchanged assertion observes empty SQLSTATE plus one row and fails the native PG gate. Root must inspect that exact failure and receipt patch; generic CI/setup failure is insufficient.
+
+After that RED is terminal, run the identical harness source head without injection:
+
+```sh
+gh workflow run gates.yml --ref "$REVIEWED_REF" \
+  -f modes='["focused:^TestMerchantToolsManualOrder$/^FEAT-MANUAL-DISCOUNT$/^runtime_database_boundary$/^authorize$"]' \
+  -f full_browser_universe=false \
+  -f extra_env=''
+```
+
+Require actual PASS for all 10 authorize leaves, no skips, the same original source/test hashes and successful ordinary gate exit. Full existing CI and independent review still apply to the final head. Neither source handoff nor expected fault behavior constitutes a measured RED→GREEN witness; both runs and review remain **NOT_RUN**. No active process/container/port/fixture or temporary source file was created by this authoring task.
