@@ -857,6 +857,7 @@ for (const viewport of parityViewports) test(`C4 session products stock and end 
   await parityClick(page,c.confirmEnd,()=>expect(page.getByRole("heading",{name:c.after,exact:true})).toBeVisible());
   expect((await facts(request)).scenes[scene]!.Phase).toBe("ended");
   await page.reload();await expect(page.getByRole("heading",{name:c.after,exact:true})).toBeVisible();
+});
 
 // PARITY-LIVE: v3 is the current DELIVERY section; its 37 predecessor roots are explicitly superseded.
 // All responses below are MOCK fixtures for EXISTING DTOs. Authentication stays real. No provider send escapes.
