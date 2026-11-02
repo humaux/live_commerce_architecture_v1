@@ -1440,7 +1440,7 @@ for (const viewport of parityViewports) test(`C4 metadata preparation native Edi
       const card = page.locator(".studio-scene-list .studio-scene").filter({ has: page.locator("strong", { hasText: title }) });
       await expect(card).toHaveCount(1);
       const [response] = await Promise.all([
-        page.waitForResponse(response => new URL(response.url()).pathname === c4MetadataPath(scene) && response.request().method() === "GET" && response.status() === 200),
+        page.waitForResponse(response => new URL(response.url()).pathname === c4MetadataPath(scene) && response.request().method() === "GET" && response.status() === 200, { timeout: 15000 }),
         card.click(),
       ]);
       detail = await response.json();
@@ -1493,8 +1493,8 @@ for (const [locale, viewport] of [["en", parityViewports[0]], ["zh-TW", parityVi
       if (!/\/live-sessions\/[0-9a-f-]{36}$/.test(new URL(response.url()).pathname)) return false;
       const value = await response.json() as { draft?: { session_id: string } };
       return !!value.draft && value.draft.session_id !== scene;
-    });
-    const submitted = page.waitForResponse(response => new URL(response.url()).pathname === `${c4MetadataPath(scene)}/copy` && response.request().method() === "POST");
+    }, { timeout: 15000 });
+    const submitted = page.waitForResponse(response => new URL(response.url()).pathname === `${c4MetadataPath(scene)}/copy` && response.request().method() === "POST", { timeout: 15000 });
     await c4MetadataControl(page, c.copyReview).click();
     const response = await submitted;
     expect(response.status()).toBe(200);

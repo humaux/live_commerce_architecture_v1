@@ -92,3 +92,16 @@ Existing UI architecture800-line ratchet scans only apps/admin, apps/storefront,
 Evidence path: this report; future runtime attachments C4-owned-draft / C4-copy-real-response / C4-UNKNOWN-precondition / C4-UNKNOWN-retry / C4-metadata-zero-write / C4-dirty-zero-write are specifications only until executed. Test-run evidence does not yet exist. Local commit SHA is supplied in the handoff and must bind these exact spec hashes.
 
 Parent must independently review/run foundation, browser-live-console, browser-live-console-parity and browser-studio-ui at a fixed execution SHA with its exact cohort adaptation. Preserve raw failures, distinguish setup from EXPECTED_RED stages, and only then authorize a separate production UI fix. No gate was weakened. Old type errors and all runtime gaps remain unresolved. No process, server, browser, port, container, fixture or temporary file was started/created by this author; cleanup NOT_APPLICABLE. No other task paths were removed.
+
+
+## Follow-up ec81e27e — explicit waiter budget, first source repair 1/2
+
+task_id: ec81e27e-f342-444c-996c-eeb795c511bf / ec81e27e-sub-1.
+base_commit: 533ab5b8b6b64f19e5287df95bbaae8ce0ca0aa9.
+Only this report and tests/admin/live-console.spec.ts changed; no other collaborator edits were reverted.
+
+Original failure evidence: Foundation run41432000696/job125232584505, execution8ae34aff3da07ab6562639818a8e88bde4293056, 27/28 Node cases passed and the waiter-budget case failed. Raw source: output/integrator/tools/logs/ci-evidence-1238/365-c4-foundation-1105/foundation-job-125232584505.raw.log, SHA256371da4c7f1ce37ce1192ffdd4f4425c4affd39a607ac965203a62ff38dc84bea (parent-provided raw receipt; no rerun here).
+
+Root cause: the three new C4 waitForResponse calls omitted the explicit second argument required by unchanged tests/admin/live-console-render.test.ts108-126. That guard requires a literal object with numeric timeout >0 and <=15000. Repair adds exactly { timeout: 15000 } at the preparation GET waiter1443, copied-detail waiter1491 (options on closing line1496), and copy POST waiter1497. No callback, predicate, genuine POST/new-ID assertion, key/body, privacy boundary, old-prefix byte or gate was changed.
+
+Actual static commands: Python exact three replacements plus reverse-comparison against533ab5b8 and byte-prefix comparison against5c4f3a5: exit0. git diff --check: exit0. No test/runtime, browser, Go/PG, ownership generation, push, rerun or background work. All post-fix runtime/gate outcomes remain NOT_RUN; this is E1 source repair only, not a claimed green Foundation run. The historical initial handoff and hashes above remain unchanged as prior-candidate evidence.
