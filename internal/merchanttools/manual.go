@@ -541,14 +541,16 @@ func (m *ManualOrders) pipeline(ctx context.Context, token, capability, storeID,
 	if hooks != nil {
 		cartInput.Origins = hooks.origins // for-buyer only: server-derived claim origins; the Quote below still decides every price
 	}
+	// Freeze the full normalized request before the cart's narrower replay hash can
+	// classify a changed discount plus items as an ordinary cart conflict.
+	if err = m.authorizeDiscount(ctx, token, registered.Scope.OwnerID, storeID, in); err != nil {
+		return zero, err
+	}
 	var cart storefront.Cart
 	if err = buyer.WithScope(ctx, m.buyerPool, capability, storeID, func(c context.Context, tx pgx.Tx, s buyer.Scope) (e error) {
 		cart, e = storefront.SetCart(c, tx, s, stepKey(key, "cart"), cartInput)
 		return e
 	}); err != nil {
-		return zero, err
-	}
-	if err = m.authorizeDiscount(ctx, token, registered.Scope.OwnerID, storeID, in); err != nil {
 		return zero, err
 	}
 	// The quote is the only price: CreateQuote prices every line from the catalog and applies the delivery policy (I05).

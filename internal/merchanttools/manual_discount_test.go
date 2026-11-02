@@ -1,15 +1,76 @@
-// Purpose: FEAT-MANUAL-DISCOUNT validation and canonical replay inputs before database work.
-// Depends on: the public ManualInput JSON boundary and ValidateManual; synthetic fixtures only.
+// Purpose: FEAT-MANUAL-DISCOUNT validation, canonical replay inputs and closed SQL error normalization.
+// Depends on: ManualInput, ValidateManual and the post-scope discount error boundary; synthetic fixtures only.
 // Used by: CI unit gate; no provider, database or local test server.
 // Invariants: only a named positive integer discount is accepted; no item price override.
 package merchanttools
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
+
+	"github.com/jackc/pgx/v5/pgconn"
+	"livecommerce/internal/command"
+	"livecommerce/internal/platform"
+	"livecommerce/internal/pricing"
 )
+
+func TestManualDiscountBoundaryErrors(t *testing.T) {
+	for _, tc := range []struct {
+		sqlCode string
+		want    error
+	}{
+		{"PT401", platform.ErrUnauthorized},
+		{"PT403", platform.ErrForbidden},
+		{"PT404", platform.ErrScopeNotFound},
+		{"PT409", &Error{Status: 409, Code: "conflict"}},
+	} {
+		t.Run(tc.sqlCode, func(t *testing.T) {
+			ctx := context.Background()
+			err := fmt.Errorf("discount SQL: %w", &pgconn.PgError{Code: tc.sqlCode, Message: "private driver detail"})
+			got := discountBoundaryError(ctx, err)
+			if want, ok := tc.want.(*Error); ok {
+				var coded *Error
+				if !errors.As(got, &coded) || *coded != *want {
+					t.Fatalf("closed SQL refusal: got %v, want %v", got, want)
+				}
+			} else if got != tc.want {
+				t.Fatalf("closed SQL refusal: got %v, want %v", got, tc.want)
+			}
+			if strings.Contains(classifyPipeline(ctx, got).Error(), "private driver detail") {
+				t.Fatal("pipeline exposed SQL driver detail")
+			}
+		})
+	}
+}
+
+func TestManualDiscountBoundaryPreservesOtherErrors(t *testing.T) {
+	for _, err := range []error{
+		nil,
+		&pgconn.PgError{Code: "PT400"},
+		&pgconn.PgError{Code: "23505"},
+		fmt.Errorf("wrapped: %w", &Error{Status: 409, Code: "idempotency_conflict"}),
+		fmt.Errorf("wrapped: %w", &pricing.DiscountError{Code: "discount_exceeds_subtotal"}),
+		platform.ErrScopeNotFound,
+		command.ErrConflict,
+		fmt.Errorf("wrapped: %w", context.Canceled),
+		fmt.Errorf("wrapped: %w", context.DeadlineExceeded),
+		errors.New("uncertain transport outcome"),
+	} {
+		if got := discountBoundaryError(context.Background(), err); got != err {
+			t.Fatalf("non-SQL-refusal changed: got %v, want original %v", got, err)
+		}
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	err := &pgconn.PgError{Code: "PT409"}
+	if got := discountBoundaryError(ctx, err); got != err || classifyPipeline(ctx, got) != ErrUnavailable {
+		t.Fatalf("canceled pipeline lost uncertainty: %v", got)
+	}
+}
 
 func TestManualDiscountValidation(t *testing.T) {
 	for _, tc := range []struct {

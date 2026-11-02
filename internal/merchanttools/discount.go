@@ -10,8 +10,10 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/json"
+	"errors"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"livecommerce/internal/platform"
 )
 
@@ -21,7 +23,7 @@ func (m *ManualOrders) authorizeDiscount(ctx context.Context, token, ownerID, st
 		return err
 	}
 	hash := sha256.Sum256(raw)
-	return platform.WithScope(ctx, m.pool, token, storeID, manualPermission, func(tx pgx.Tx, s platform.Scope) error {
+	err = platform.WithScope(ctx, m.pool, token, storeID, manualPermission, func(tx pgx.Tx, s platform.Scope) error {
 		if err := requireCatalog(ctx, tx, s, token); err != nil {
 			return err
 		}
@@ -42,10 +44,11 @@ func (m *ManualOrders) authorizeDiscount(ctx context.Context, token, ownerID, st
 		}
 		return nil
 	})
+	return discountBoundaryError(ctx, err)
 }
 
 func (m *ManualOrders) bindDiscount(ctx context.Context, token, storeID, quoteID string) error {
-	return platform.WithScope(ctx, m.pool, token, storeID, manualPermission, func(tx pgx.Tx, s platform.Scope) error {
+	err := platform.WithScope(ctx, m.pool, token, storeID, manualPermission, func(tx pgx.Tx, s platform.Scope) error {
 		if err := requireCatalog(ctx, tx, s, token); err != nil {
 			return err
 		}
@@ -55,4 +58,27 @@ func (m *ManualOrders) bindDiscount(ctx context.Context, token, storeID, quoteID
 		_, err := tx.Exec(ctx, `SELECT fulfillment.bind_manual_order_discount($1,$2::uuid,$3::uuid)`, hash[:], storeID, quoteID)
 		return err
 	})
+	return discountBoundaryError(ctx, err)
+}
+
+// discountBoundaryError runs after WithScope's opaque store-visibility recheck. Only
+// closed SQL refusals are normalized; uncertain and already typed errors keep their meaning.
+func discountBoundaryError(ctx context.Context, err error) error {
+	if ctx.Err() != nil || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return err
+	}
+	var pg *pgconn.PgError
+	if errors.As(err, &pg) {
+		switch pg.Code {
+		case "PT401":
+			return platform.ErrUnauthorized
+		case "PT403":
+			return platform.ErrForbidden
+		case "PT404":
+			return platform.ErrScopeNotFound
+		case "PT409":
+			return &Error{Status: 409, Code: "conflict"}
+		}
+	}
+	return err
 }
