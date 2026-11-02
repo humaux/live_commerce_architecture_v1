@@ -262,6 +262,45 @@ Navigation: `GET /v1/admin/stores` items also carry the caller's `role` and effe
 - Limits: 20 live invitations and 50 creations per 24 h per store (PT429 `too_many_invitations`). Mail: one send after commit, outcome in `mail_state`, a resend is a new invitation that revokes the old one.
 - Evidence tier: REAL_PG author smoke `tests/foundation/staff_team_smoke_test.go` (4 tests, one red run each for email binding and owner floor); browser/E2E and mail over real SMTP: NOT_RUN.
 
+<a id="d-i11-staff-invitation-link-exception"></a>
+
+### D. I11 staff invitation link exception (owner approval 2026-11-01)
+
+Authority: the owner answered **「批准受限邀请链接例外（推荐）」** in the current task conversation,
+to the explicit question permitting the existing one-time invitation URL while prohibiting full-link/token logging,
+caching and Referrer leakage. Humaux `42086c79-d536-4769-990f-417115a458a0` indexes the recorded question and reply;
+the conversation approval is the authority. This section is the sole detailed definition of the I11 exception.
+
+- The exception permits only the existing staff invitation link on the configured HTTPS public admin origin,
+  `/{zh-CN|zh-TW|en}/invite/{token}`. The 256-bit random invitation token is single-use, expires after **72 hours**,
+  is bound to the invitation's store, role and email, and grants nothing until a signed-in principal with the matching
+  **verified email** accepts it. Expired, revoked, consumed and wrong-account invitations remain invalid.
+- Only the invitation token may occupy that path segment. Merchant/buyer session tokens, API/BFF keys, provider access
+  or refresh tokens, addresses and chat bodies retain I11's prohibition. This amendment does not authorize any other
+  URL token, including storefront preview tokens; their presence elsewhere is not an extension of this exception.
+- Acceptance carries the token in the authenticated POST JSON body, never an API query string. Existing exact Origin,
+  CSRF, server-derived scope and generic refusal checks remain. Sign-in return paths use the existing validated fragment
+  carrier; the invitation URL must not be copied into a login query string, error, analytics event or trace attribute.
+- The invitation response requires real `Referrer-Policy: no-referrer` and `Cache-Control: no-store` headers, including
+  signed-out/error responses. No shared or private cache may retain the token or full link. The token and full link must
+  not enter application, proxy/CDN/access logs, telemetry or Referrer headers; deployment must omit or redact the secret
+  path segment before logging. A meta tag alone does not establish this boundary.
+- This is URL classification only: it does not authorize production email or deployment, change the post-commit mail
+  behavior above, freeze an outbox design, or lift the current PARITY-TEAM invitation pause. Staff product inclusion
+  does not waive the separate backend and UI rollout gates. The UI/BFF/server refusal requirements in
+  [merchant-identity-v1 CF-TEAM](merchant-identity-v1.md#amendment-2026-10-28-cf-team) are not proof that those entry points
+  currently enforce a pause; report implementation and runtime evidence separately. Reopening remains a separate card.
+
+Acceptance (no implied PASS): `tests/admin/team-bff.test.ts` **I11-SI** binds this exception to the unchanged general P0
+prohibition and rejects invitation/session/provider/API credentials in API URLs, cacheable responses and echoed secrets;
+`tests/admin/invite-next.test.ts` checks the allowed relative invite shape and hostile return paths. Existing
+`tests/foundation/staff_team_gate_test.go` **SG01/SG06** cover expiry, email/store binding, single-use and secret exclusion
+from SQL/API URLs/logs; `tests/admin/staff-team.spec.ts` checks real browser Referrer behavior through
+`TestBrowserStaffTeam`. These tests must continue to pass on the delivery SHA; I11-SI is not browser or edge-log evidence.
+Before enabling delivery, obtain synthetic-link evidence that the served invitation response is no-store/no-referrer and
+that application plus deployed proxy/CDN logs and caches contain neither the full link nor token. Missing deployment or
+browser evidence is **NOT_RUN**, and blocks enabling this path; document-only or BFF success cannot substitute for it.
+
 ## F. Promotions (producer: unit promotions, migration 0091; amendment written before code, R4 wave 2)
 
 Discount codes. The server quote stays the only price authority (cart-quote-v1, checkout-quote-validation-v1): a code is validated
@@ -511,3 +550,73 @@ Acceptance: PR's own CI runs `TestCatalogCoreAutomaticCollections` plus existing
 upgrade and public-route gates. RED head `7cdb89bd`, Gates run `41055677410`, job `124069013163`
 failed all five new subtests on missing HTTP rule/mode behavior (400 versus expected 200).
 GREEN and independent acceptance remain pending until the implementation head is tested.
+
+## Amendment FEAT-LIVE-REPLAY — buyer replay read (2026-10-31)
+
+Authority: owner 2026-10-30 ruling 「补后端一起做」; integrator 2026-10-31 authorizes
+extending the existing official LiveVideo read only. **Supersedes OC-Q9** in
+`owner-choices-20261026-v1.md` (no live-replay storefront entry; stays planned) for
+this backend capability. The original OC-Q9 text remains historical and unchanged.
+UI: pending PARITY-NEWFEAT. This amendment adds API/BFF only; no production release.
+
+Official sources read on 2026-10-31, Graph API **v26.0**:
+- https://developers.facebook.com/docs/graph-api/reference/live-video/ — `permalink_url`
+  is the official Facebook video permalink; the field entry adds no separate permission.
+- https://developers.facebook.com/docs/graph-api/reference/page/live_videos/ — owned/
+  moderated Page read requires Page token, MODERATE task, `pages_read_engagement`,
+  `pages_show_list` and Live Video API feature. The existing connection requests both
+  scopes; this card adds no scope or credential path. App grants/feature access remain
+  subject to the existing dispatcher policy checks; documentation is not LIVE proof.
+- https://developers.facebook.com/docs/plugins/embedded-video-player/ — use Facebook's
+  official player only: `https://www.facebook.com/plugins/video.php?href=<encoded permalink>`.
+  No private API, scraping, stream URL, media download, re-hosting or old-session backfill.
+
+The existing future `GET /{page}/live_videos` now requests
+`id,post_id,title,status,creation_time,permalink_url`. A successful lease-fenced completion
+persists a per-binding/per-video row in `live.replay_videos` (migration **0219**), in the
+same transaction as its existing bounded snapshot. Latest requested_at wins. Invalid or
+missing optional links normalize to empty without breaking the existing picker. Accept
+only HTTPS facebook.com/www.facebook.com video permalinks with an optional single Page
+path segment, `videos/{numeric_video_id}`, optional trailing slash, no query, fragment,
+credentials, non-default port, encoded path or controls. Refuse plugin/player inputs.
+A missing/unsupported permalink, including old polls and Instagram, cannot be published:
+`409 no_official_video`. No URL is inferred from a post/video ID.
+
+| Endpoint | Authority | Request | Result |
+| --- | --- | --- | --- |
+| `GET /v1/buyer/replays` | BFF key + verified published origin; no buyer credentials | no query/body/key | `200 {"items":[{"session_id":"uuid","title":"測試回放","ended_at":"2026-10-30T12:00:00Z","permalink_url":"https://www.facebook.com/synthetic.page/videos/777/"}]}` |
+| `GET /v1/buyer/replays/{session_id}` | same | canonical UUID, no query/body/key | `200 {"session_id":"uuid","title":"測試回放","ended_at":"2026-10-30T12:00:00Z","permalink_url":"https://www.facebook.com/synthetic.page/videos/777/","embed_url":"https://www.facebook.com/plugins/video.php?href=...","offers":[{"offer_id":"uuid","sku_id":"uuid","product":<exact current catalog-v2 detail>}]}` |
+
+BFF: `GET /api/shop/replays` and `GET /api/shop/replays/{session_id}`. Host-derived
+origin uses the existing public upstream resolver; no client tenant/store header or body
+is forwarded. No buyer login or bearer is needed; the private Go boundary refuses buyer
+bearers/cookies. All replies are no-store. Wrong method is 405; malformed IDs/body/query/
+Idempotency-Key are 422 invalid_request; bad BFF credentials/buyer credentials are 403
+forbidden; invalid origin is 422 invalid_request; missing/unpublished origin or foreign,
+hidden, non-ENDED/no-video detail is 404 not_found; transient failure is 503 unavailable.
+Private transport auth/header errors retain the shared buyer transport contract. Public
+BFF upstream unavailability is 503 unavailable, malformed detail path is 404 not_found.
+
+Lists contain at most the 50 latest public ENDED sessions, ordered by persisted
+`lifecycle_at DESC, session_id`; this API has no pagination in this card. ended_at is
+that persisted end transition, never an inferred Graph creation time. Detail reads are
+available for any qualifying session, including those older than the latest 50.
+Products are the offers recorded in that session, ordered by offer creation/id (both
+currently active and inactive offers, because ending a session can deactivate offers).
+Each offer carries the existing catalog-v2 detail including current SKU price, stock hint,
+images and publication/currency rules. Omit unpublished/missing products and offers whose
+SKU is absent from current visible variants. Sold-out variants keep the shop's `out`
+state; no historical offer price or client amount can become a purchase price. Checkout
+continues to use the existing quote/stock authority. Empty offers/items are `[]`.
+
+Retention: publication state/version lives with its session; official video metadata with
+its binding. No new personal data is collected. No automatic purge, no deletion endpoint,
+no old-row backfill, no customer/channel messages and no new external side effect. Hiding
+a replay takes effect on subsequent reads; cached/old write receipts do not republish it.
+The existing session/binding deletion policy is unchanged; FK references fail closed.
+
+Acceptance: CI-only `TestLiveReplayOfficialPermalinkRead`,
+`TestLiveReplayPermalinkTrustBoundary`, `TestLiveReplayOfficialReadPersistsVideo`,
+`TestLiveReplayPublicationAndBuyerReads` bind to the PR head/tested merge SHA. MOCK Graph
+and REAL_PG cover persistence/RLS/publication/permissions/scope/idempotency/CAS/current
+catalog parity. SANDBOX/LIVE/browser UI/independent review remain NOT_RUN until evidenced.

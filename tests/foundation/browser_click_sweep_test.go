@@ -121,6 +121,21 @@ func TestBrowserClickSweep(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	// The real-browser observer canary runs before PG/Next setup. Ordinary Node tests
+	// remain browser-free; visual lint does not consume the click observer.
+	if os.Getenv("LC_SWEEP_ONLY") != "visual-audit" {
+		canaryCtx, canaryCancel := context.WithTimeout(ctx, time.Minute)
+		defer canaryCancel()
+		canary := exec.CommandContext(canaryCtx, "node", "--test", "tests/ui/click-sweep-lib.test.mjs")
+		canary.Dir = root
+		canary.Env = append(browserEnvironment(nil), "LC_SWEEP_NAVIGATION_CANARY=1")
+		canaryLog := browserLog(t, filepath.Join(evidence, "navigation-canary.log"))
+		canary.Stdout, canary.Stderr = canaryLog, canaryLog
+		if err := canary.Run(); err != nil {
+			t.Fatalf("click observer navigation canary: %v (see navigation-canary.log)", err)
+		}
+	}
+
 	e := tcvNew(t, tcvOpts{origin: csOrigin})
 	f := e.p.f
 	owner := f.owner

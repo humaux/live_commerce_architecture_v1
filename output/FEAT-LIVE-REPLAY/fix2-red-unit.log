@@ -1,0 +1,20 @@
+5297-gate (shard:unit)	Gate	2026-10-30T17:23:05.3485568Z === RUN   TestRegisterPageTokenValidatesBeforeSQL
+5298-gate (shard:unit)	Gate	2026-10-30T17:23:05.3487045Z --- PASS: TestRegisterPageTokenValidatesBeforeSQL (0.00s)
+5299-gate (shard:unit)	Gate	2026-10-30T17:23:05.3487916Z === RUN   TestLiveReplayOfficialPermalinkRead
+5300:gate (shard:unit)	Gate	2026-10-30T17:23:05.3497246Z     live_replay_test.go:42: FEAT-LIVE-REPLAY: existing official live_videos read must request permalink_url
+5301:gate (shard:unit)	Gate	2026-10-30T17:23:05.3499241Z --- FAIL: TestLiveReplayOfficialPermalinkRead (0.00s)
+5302-gate (shard:unit)	Gate	2026-10-30T17:23:05.3500097Z === RUN   TestLiveReplayPermalinkTrustBoundary
+5303-gate (shard:unit)	Gate	2026-10-30T17:23:05.3501010Z === RUN   TestLiveReplayPermalinkTrustBoundary/official
+5304:gate (shard:unit)	Gate	2026-10-30T17:23:05.3503633Z     live_replay_test.go:79: safe permalink="" want="https://www.facebook.com/synthetic.page/videos/777/"
+5305-gate (shard:unit)	Gate	2026-10-30T17:23:05.3504416Z === RUN   TestLiveReplayPermalinkTrustBoundary/absent
+5306-gate (shard:unit)	Gate	2026-10-30T17:23:05.3506351Z === RUN   TestLiveReplayPermalinkTrustBoundary/not_https
+5307-gate (shard:unit)	Gate	2026-10-30T17:23:05.3509093Z === RUN   TestLiveReplayPermalinkTrustBoundary/foreign_host
+--
+5310-gate (shard:unit)	Gate	2026-10-30T17:23:05.3515821Z === RUN   TestLiveReplayPermalinkTrustBoundary/token_query
+5311-gate (shard:unit)	Gate	2026-10-30T17:23:05.3518358Z === RUN   TestLiveReplayPermalinkTrustBoundary/script
+5312-gate (shard:unit)	Gate	2026-10-30T17:23:05.3520750Z === RUN   TestLiveReplayPermalinkTrustBoundary/embedded_player_input
+5313:gate (shard:unit)	Gate	2026-10-30T17:23:05.3522860Z --- FAIL: TestLiveReplayPermalinkTrustBoundary (0.00s)
+5314:gate (shard:unit)	Gate	2026-10-30T17:23:05.3523673Z     --- FAIL: TestLiveReplayPermalinkTrustBoundary/official (0.00s)
+5315-gate (shard:unit)	Gate	2026-10-30T17:23:05.3524502Z     --- PASS: TestLiveReplayPermalinkTrustBoundary/absent (0.00s)
+5316-gate (shard:unit)	Gate	2026-10-30T17:23:05.3525307Z     --- PASS: TestLiveReplayPermalinkTrustBoundary/not_https (0.00s)
+5317-gate (shard:unit)	Gate	2026-10-30T17:23:05.3525952Z     --- PASS: TestLiveReplayPermalinkTrustBoundary/foreign_host (0.00s)

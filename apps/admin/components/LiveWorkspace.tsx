@@ -1,5 +1,5 @@
 // Purpose: LC-U1 session selection inside the existing authenticated W0 shell.
-// Depends on: Studio private reads, workspace hooks/copy, WorkspaceFrame and Next navigation.
+// Depends on: Studio private reads, workspace hooks/copy, WorkspaceFrame, studio/live-console.css and Next navigation.
 // Used by: /[locale]/studio/console; data and writes remain scoped by the existing BFF and Go authorization.
 // Invariants: session-owned UNKNOWN commands survive list refreshes; the Sessions action opens the list.
 "use client";
@@ -14,6 +14,7 @@ import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
 import { LiveConsole } from "./LiveConsole";
 import "@/src/features/live/workspace.css";
+import "./studio/live-console.css";
 
 /** Renders the current store's scene picker; a shell store change remounts all scene-owned data. */
 export function LiveWorkspace({ locale, store, scene, initialError, commentCalibration=false }: {
@@ -31,7 +32,7 @@ export function LiveWorkspace({ locale, store, scene, initialError, commentCalib
   const denied = !!initialError || error === "signed-out" || error === "forbidden";
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? ""} active="live" onBeforeNavigate={() => beforeLeave.current()}>
     <div className="live-workspace" data-testid="live-workspace">
-      <AdminPageHeader locale={locale} description={c.lifecycleHint} />
+      <AdminPageHeader locale={locale} />
       {denied ? <p role="alert">{error === "signed-out" ? c.signedOut : error === "forbidden" ? c.forbidden : c.unavailable}</p> : <>
         {error && <p role="alert">{c.unavailable}</p>}
         <div className="live-workspace-toolbar">
