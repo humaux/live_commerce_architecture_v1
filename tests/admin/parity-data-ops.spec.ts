@@ -188,7 +188,18 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         await page.getByRole("textbox", { name: "貨號或商品名稱", exact: true }).fill("C08");
         await expect(page.getByRole("textbox", { name: "貨號或商品名稱", exact: true })).toHaveValue("C08");
       });
+      const search = page.getByRole("button", { name: "搜尋", exact: true });
+      await expect(search).toBeEnabled();
+      await page.mouse.move(0, 0);
+      // READ/MEASURE only: enabled, non-hover control; never mutate DOM/style or replace the original click.
+      const searchColors = await search.evaluate(button => {
+        const style = getComputedStyle(button);
+        return { backgroundColor: style.backgroundColor, color: style.color };
+      });
       await capture(page, frame("840:5254", "840:5255"));
+      // Signed enabled source is navy/white; soft assertions retain the real filter/reload path on visual RED.
+      expect.soft(searchColors.backgroundColor).toBe("rgb(20, 41, 66)");
+      expect.soft(searchColors.color).toBe("rgb(255, 255, 255)");
       await click(page, "搜尋", "only selected SKU remains after reload", async () => {
         await expect(page).toHaveURL(url => url.searchParams.get("q") === "C08");
         await expect(page.getByText("C08 · 帆布收納袋", { exact: true })).toBeVisible();

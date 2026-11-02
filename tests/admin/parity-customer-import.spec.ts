@@ -23,10 +23,10 @@ test.describe("PARITY-DATA-OPS C6 customer import", () => {
     const frame = (desktop: string, phone: string) => mobile ? phone : desktop;
     for (const locale of ["zh-TW", "zh-CN", "en"]) test(`customer import ${locale} ${viewport.width}: signed entry replaces old step picker`, async ({ page }) => {
       await page.setViewportSize(viewport); await owner(); await login(page); await page.goto(href(locale));
-      if (locale === "zh-TW") await capture(page, frame("6:18298", "6:18486"));
       if (locale === "zh-TW") {
         await heading(page, "匯入顧客");
         await expect(page.getByRole("button", { name: "預覽可套用資料", exact: true })).toBeVisible();
+        await capture(page, frame("6:18298", "6:18486"));
       } else {
         // FRAME-COPY contains no signed translation table for this module. Do not invent translations.
         // Exact zh-CN/en copy parity is explicitly DEFERRED in the handoff; main screens still run in all three locales.
