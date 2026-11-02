@@ -9,7 +9,7 @@
 // SKU). Add = merge into the shared multi-SKU cart (CartProvider.add, journalled + CAS); Buy now = add, then go to checkout.
 // A sold-out variant cannot be added (button disabled); a combination that has no in-stock variant is disabled in the chips.
 // The phone dock opens the local options task; only its successful add goes to the cart. Base/desktop actions retain their drawer/checkout behavior.
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
 import { formatMoney } from "../lib/money";
@@ -25,9 +25,10 @@ import { CartNotice } from "./CartLines";
 import { CheckIcon, MinusIcon, PlusIcon } from "./icons";
 
 /** Render controlled variant choices and initiate the existing journalled cart add/checkout actions. */
-export default function ProductBuy({ locale, product, currency, chosen, onChoose }: {
+export default function ProductBuy({ locale, product, currency, chosen, onChoose, descriptionEntry }: {
   locale: Locale; product: ProductDetail; currency: string;
   chosen: (string | null)[]; onChoose: (values: string[]) => void;
+  descriptionEntry?: ReactNode;
 }) {
   const copy = shopCopy[locale];
   const optionsCopy = browseCopy[locale].productOptions;
@@ -168,6 +169,7 @@ export default function ProductBuy({ locale, product, currency, chosen, onChoose
           <i aria-hidden="true">›</i>
         </button>
       </div>
+      {descriptionEntry}
       {!optionsOpen && <>
       {optionControls}
       <p className={`sf-stock sf-stock--${variant?.stock ?? "none"}`} data-testid="stock-hint" role="status">
