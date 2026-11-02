@@ -85,6 +85,8 @@ const copy = {
     browseProducts: "瀏覽商品",
     chooseSpec: "選擇規格",
     specBack: "返回商品",
+    descriptionEntry: "商品說明與配送",
+    descriptionTitle: "商品說明",
     quantity: "數量",
     decrease: "減少數量",
     increase: "增加數量",
@@ -116,6 +118,8 @@ const copy = {
     browseProducts: "浏览商品",
     chooseSpec: "选择规格",
     specBack: "返回商品",
+    descriptionEntry: "商品说明与配送",
+    descriptionTitle: "商品说明",
     quantity: "数量",
     decrease: "减少数量",
     increase: "增加数量",
@@ -147,6 +151,8 @@ const copy = {
     browseProducts: "Browse products",
     chooseSpec: "Choose options",
     specBack: "Back to product",
+    descriptionEntry: "Product description & delivery",
+    descriptionTitle: "Description",
     quantity: "Quantity",
     decrease: "Decrease quantity",
     increase: "Increase quantity",
@@ -994,6 +1000,190 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
             }
           } finally {
             page.off("request", observeWrite);
+          }
+        }
+
+        // ===== 51:1381 PARTIAL: description entry/content/return only; delivery and whole-frame parity remain NOT_COVERED ==============
+        // Root freeze fcb50a14; original source 06f274c4. No full-frame screenshot or delivery/fee/guest claim belongs to this unit.
+        if (isMobile) {
+          const frame = "51:1381";
+          const params = new URLSearchParams();
+          if (facts.preview_token) params.set("preview", facts.preview_token);
+          const productURL = `${origin}${productRoute}${params.size ? `?${params}` : ""}`;
+          let originalURL = "";
+          let buyerContext = "";
+          let baseline: unknown;
+          let detail: {
+            title: string; description: string;
+            options: { name: string; values: string[] }[];
+            variants: { sku_id: string; option_values: string[]; stock: string }[];
+          } | undefined;
+          let alternative: NonNullable<typeof detail>["variants"][number] | undefined;
+          const task = () => page.getByTestId("product-description-task");
+          const entry = () => page.getByTestId("product-description-task-entry").getByRole("button", { name: c.descriptionEntry, exact: true });
+          const options = () => page.getByTestId("product-options-task");
+          const optionsEntry = () => page.getByTestId("product-options-task-entry").getByRole("button", { name: c.chooseSpec, exact: true });
+          const readCart = () => context.request.get(`${origin}/api/buyer/cart`, { headers: { "X-Buyer-Context": buyerContext }, timeout: T });
+          // Reuse the ledger, but never serialize raw Playwright/request/assertion errors (which can include preview/session data).
+          const descriptionStep = (control: string, operation: string, expected: string, perform: () => Promise<string | void>) =>
+            step(frame, productRoute, control, operation, expected, async () => {
+              try { return await perform(); }
+              catch { throw new Error(`${control} failed; raw browser/request details withheld`); }
+            });
+          let setup = false;
+          await descriptionStep("description setup", "GET existing product/session/cart + fresh product navigation", "real nonempty merchant description, active session, readable cart and a real available alternative SKU; setup failure is not a missing-entry RED", async () => {
+            const response = await context.request.get(`${origin}/api/shop/product/${candle.slug}`, { timeout: T });
+            assert(response.ok(), "product read setup failed");
+            detail = await response.json();
+            assert(detail && typeof detail.title === "string" && detail.title.trim().length > 0, "merchant title setup missing");
+            assert(typeof detail.description === "string" && detail.description.trim().length > 0, "merchant description setup missing");
+            const sessionResponse = await context.request.get(`${origin}/api/buyer/session`, { timeout: T });
+            assert(sessionResponse.ok(), "session read setup failed");
+            const session = await sessionResponse.json() as { state?: unknown; context?: unknown };
+            assert(session.state === "active" && typeof session.context === "string" && session.context.length > 0, "active session setup missing");
+            buyerContext = session.context;
+            const cart = await readCart();
+            assert(cart.ok(), "cart read setup failed");
+            baseline = await cart.json();
+            await page.goto(productURL, { timeout: T });
+            originalURL = page.url();
+            assert(new URL(originalURL).pathname === productRoute, "product route setup failed");
+            for (const [key, value] of params) assert(urlParams().get(key) === value, "preview setup failed");
+            const base = page.getByTestId("product-buy");
+            await expect(base).toBeVisible({ timeout: T });
+            const initial = await base.getAttribute("data-sku", { timeout: T });
+            assert(detail.options.length > 0 && detail.variants.some((v) => v.sku_id === initial), "real option setup missing");
+            alternative = detail.variants.find((v) => ["in", "low"].includes(v.stock) && v.sku_id !== initial && v.option_values.length === detail!.options.length);
+            assert(alternative, "real available alternative SKU setup missing");
+            setup = true;
+            return "existing real product/session/cart and alternative SKU preflight passed; no fixture writes";
+          });
+          if (!setup) {
+            notRun.push({ frame, locale, subcase: "description entry/content/returns/draft/zero-write", reason: "description setup FAIL; missing product/session/cart/merchant description/alternative SKU is not causal missing-entry evidence" });
+          } else {
+            // Fresh observer and post-options-add baseline: never inherit the earlier legitimate add request or cart snapshot.
+            const writes: { method: string; pathname: string }[] = [];
+            const observeWrite = (request: import("@playwright/test").Request) => {
+              const url = new URL(request.url());
+              if (url.origin === new URL(origin).origin && !["GET", "HEAD", "OPTIONS"].includes(request.method())) {
+                writes.push({ method: request.method(), pathname: url.pathname });
+              }
+            };
+            const unchanged = async () => {
+              assert(page.url() === originalURL, "description must preserve the complete original URL");
+              assert(new URL(page.url()).pathname === productRoute, "description must preserve the locale product path");
+              for (const [key, value] of params) assert(urlParams().get(key) === value, "description must preserve preview");
+              assert.equal(writes.length, 0, "description and local draft actions must issue zero nonread requests");
+              const response = await readCart();
+              assert(response.ok(), "description cart readback failed");
+              assert.deepEqual(await response.json(), baseline, "description must preserve the exact server cart");
+            };
+            const open = async () => {
+              await entry().click({ timeout: T });
+              await expect(task()).toBeVisible({ timeout: T });
+              await expect(task().getByRole("heading", { name: c.descriptionTitle, exact: true })).toBeVisible({ timeout: T });
+              await unchanged();
+            };
+            const close = async (method: "header" | "dock" | "Escape") => {
+              if (method === "Escape") await page.keyboard.press("Escape");
+              else await task().getByTestId(`product-description-${method}`).getByRole("button", { name: c.specBack, exact: true }).click({ timeout: T });
+              await expect(task()).toHaveCount(0, { timeout: T });
+              await expect(entry()).toBeFocused({ timeout: T });
+              await unchanged();
+            };
+            let reachable = false;
+            page.on("request", observeWrite);
+            try {
+              await descriptionStep("description task entry", "inspect exact entry + real click", `exact button "${c.descriptionEntry}" opens description on the same route; first causal product RED follows successful setup`, async () => {
+                await expect(entry()).toBeVisible({ timeout: T });
+                await open();
+                reachable = true;
+                return "real description entry reached its task; URL/preview/cart unchanged";
+              });
+              if (!reachable) {
+                notRun.push({ frame, locale, subcase: "description content/layout/header/dock/Escape/draft/zero-write", reason: "description entry/open acceptance failed; dependent behavior NOT_RUN, see causal description task entry FAIL" });
+              } else {
+                await descriptionStep("description partial composition", "inspect visible merchant text + task bounds", "merchant title/description remain unchanged in each locale; task 390x844, header64 and dock84; no delivery promise asserted", async () => {
+                  assert(detail);
+                  await expect(task().getByRole("heading", { name: detail.title, exact: true })).toBeVisible({ timeout: T });
+                  // Playwright exact text normalizes whitespace, including the real merchant description's paragraph breaks.
+                  await expect(task().getByText(detail.description, { exact: true })).toBeVisible({ timeout: T });
+                  const body = await task().boundingBox({ timeout: T });
+                  const header = await task().getByTestId("product-description-header").boundingBox({ timeout: T });
+                  const dock = await task().getByTestId("product-description-dock").boundingBox({ timeout: T });
+                  assert(body && header && dock, "description regions must be visible");
+                  assert(Math.abs(body.x) <= 1 && Math.abs(body.y) <= 1 && Math.abs(body.width - 390) <= 1 && Math.abs(body.height - 844) <= 1, "description task fills viewport");
+                  assert(Math.abs(header.y) <= 1 && Math.abs(header.height - 64) <= 1, "description header occupies y=0..64");
+                  assert(Math.abs(dock.y - 760) <= 1 && Math.abs(dock.height - 84) <= 1, "description dock occupies y=760..844");
+                  await unchanged();
+                });
+                let returned = true;
+                for (const method of ["header", "dock", "Escape"] as const) {
+                  if (!returned) {
+                    notRun.push({ frame, locale, subcase: `description ${method} return`, reason: "previous description return failed; dependent reopening NOT_RUN" });
+                    continue;
+                  }
+                  returned = false;
+                  await descriptionStep(`description ${method} return`, `real ${method} return + focus/readback`, "close restores invoking entry focus and exact locale/preview URL; zero writes and unchanged server cart", async () => {
+                    if (method !== "header") await open();
+                    await close(method);
+                    returned = true;
+                  });
+                }
+                if (!returned) {
+                  notRun.push({ frame, locale, subcase: "description selected draft preservation", reason: "description return failed; options preparation and dependent description reopen NOT_RUN" });
+                } else {
+                  let draftReady = false;
+                  await descriptionStep("description draft setup", "real options entry/radios/quantity/back clicks", "select a real alternative SKU and quantity2 through accepted options controls without adding", async () => {
+                    assert(alternative);
+                    await optionsEntry().click({ timeout: T });
+                    await expect(options().getByRole("heading", { name: c.chooseSpec, exact: true })).toBeVisible({ timeout: T });
+                    for (const value of alternative.option_values) {
+                      const radio = options().getByRole("radio", { name: value, exact: true });
+                      await radio.locator("..").click({ timeout: T });
+                      await expect(radio).toBeChecked({ timeout: T });
+                    }
+                    await expect(options().getByTestId("product-buy")).toHaveAttribute("data-sku", alternative.sku_id, { timeout: T });
+                    await expect(options().getByTestId("qty-input")).toHaveValue("1", { timeout: T });
+                    await options().getByRole("button", { name: c.increase, exact: true }).click({ timeout: T });
+                    await expect(options().getByTestId("qty-input")).toHaveValue("2", { timeout: T });
+                    await options().getByRole("button", { name: c.specBack, exact: true }).click({ timeout: T });
+                    await expect(options()).toHaveCount(0, { timeout: T });
+                    await expect(optionsEntry()).toBeFocused({ timeout: T });
+                    await unchanged();
+                    draftReady = true;
+                  });
+                  for (const method of ["header", "dock", "Escape"] as const) {
+                    if (!draftReady) {
+                      notRun.push({ frame, locale, subcase: `description ${method} selected draft preservation`, reason: "real options draft preparation or prior preservation failed; dependent case NOT_RUN" });
+                      continue;
+                    }
+                    draftReady = false;
+                    await descriptionStep(`description ${method} selected draft preservation`, "open description + close + reopen options", "base and reopened options retain real chosen SKU, exact selected radios and quantity2; zero cart/session writes", async () => {
+                      assert(alternative);
+                      const base = page.getByTestId("product-buy");
+                      await expect(base).toHaveAttribute("data-sku", alternative.sku_id, { timeout: T });
+                      await expect(base.getByTestId("qty-input")).toHaveValue("2", { timeout: T });
+                      await open();
+                      await close(method);
+                      await expect(base).toHaveAttribute("data-sku", alternative.sku_id, { timeout: T });
+                      await expect(base.getByTestId("qty-input")).toHaveValue("2", { timeout: T });
+                      await optionsEntry().click({ timeout: T });
+                      await expect(options().getByTestId("product-buy")).toHaveAttribute("data-sku", alternative.sku_id, { timeout: T });
+                      await expect(options().getByTestId("qty-input")).toHaveValue("2", { timeout: T });
+                      for (const value of alternative.option_values) await expect(options().getByRole("radio", { name: value, exact: true })).toBeChecked({ timeout: T });
+                      await options().getByRole("button", { name: c.specBack, exact: true }).click({ timeout: T });
+                      await expect(options()).toHaveCount(0, { timeout: T });
+                      await expect(optionsEntry()).toBeFocused({ timeout: T });
+                      await unchanged();
+                      draftReady = true;
+                    });
+                  }
+                }
+              }
+            } finally {
+              page.off("request", observeWrite);
+            }
           }
         }
 
