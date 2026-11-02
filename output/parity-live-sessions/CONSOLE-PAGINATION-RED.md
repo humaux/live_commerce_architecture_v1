@@ -1,3 +1,72 @@
+# PR365 Console pagination Phase B static candidate — 2026-11-02
+
+- task_id: `e660e095-83c9-48b7-8747-d39001632d9e` (claimed by root); own canvas `e660e095-sub-1`.
+- base_commit: `a8ee67632a2c82b14267b743481067d25f7e3d40`; branch `codex/pr365-mock-balance`.
+- worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/codex-pr365-mock-balance`.
+- role: test worker `/root/console_pagination_red_1359`, assigned Sol/high; independent runtime model/reasoning telemetry UNKNOWN.
+- allowed/changed paths: `tests/foundation/browser_live_console_test.go`, `tests/foundation/browser_live_console_pagination_test.go`, `tests/admin/live-console.spec.ts`, this report. No other paths.
+- Evidence: **E1 static candidate**. Existing Phase A assertion RED is **E3 MOCK** at base; Phase B GREEN, full browser/PG modes and independent acceptance remain **NOT_RUN**. No product-complete or whole-PR claim.
+
+## Authority and real RED
+
+Re-read Humaux `af5add0f-0865-47de-80d1-a4cba6d9480e` in full, the original root SOURCE card `output/integrator/tools/logs/ci-evidence-1238/365-pagination-source-1346.md` (SHA256 `f40523f96274a7753b26041db9e051d40589afc0f16d3b8b766a360f2d3e7212`), `contracts/studio-v1.md`, `internal/live/studio.go:ListDrafts`, `internal/httpapi/studio.go:studioPage`, and `internal/pagination/pagination.go`. Existing project instructions/rejected results from Phase A remain applicable; no architecture or acceptance standard changed.
+
+The child directly read raw root evidence `output/integrator/tools/logs/ci-evidence-1238/365-pagination-ci-1418/job-125325479105.raw.log`, SHA256 `af1c3b80de6a20717114f7fcf0175575090b1fc61dad15a8de0e31e5c1282124`, lines1107–1117. Focused run41459673388/job125325479105 selected the exact parent/child at head `a8ee67632a2c82b14267b743481067d25f7e3d40` and failed both original assertions: returned26 instead of20; empty next_cursor. Log reports test-focused PASS0/FAIL1/SKIP0 exit1. This is a compiled handler assertion RED, not a compiler failure. It is MOCK evidence only.
+
+## Implementation and preservation
+
+The existing MOCK collection handler now validates the same canonical limit/cursor query grammar, accepts exactly one typed trusted `platform.Scope` whose StoreID matches both the existing store argument and route store, and reuses `pagination.Decode/Encode` bound to trusted tenant/store/collection `live-sessions`. Query tenant/offset/unknown/duplicate/noncanonical parameters return422. It sorts immutable `(created_at,id)` descending, applies strict keyset comparison, and uses limit+1 lookahead with a cursor from the last returned row. Empty page items remain an array. No OFFSET or new cursor format, no parser change, and no mutation/removal of fixture rows.
+
+The original WithScope callback now captures the returned Scope; the unchanged narrow `inventory:live_adjust` fallback captures its own successful scope too. The wrapper only calls the MOCK after the original authorization error handling, passing this authenticated scope. No default tenant, headers or query-derived tenant is introduced. Other non-list MOCK permission boundaries remain in the original wrapper.
+
+Callsite audit: the only old `consoleMock.serve` callers are (1) this signed wrapper, (2) the Phase A Recorder test, now receiving the literal typed scope adapter, and (3) `consoleBalanceRequest` in `browser_live_console_balance_test.go:96-119`. Its complete callsites are POST `/inventory/adjustments` at28, POST `/<session>/copy` at33, and GET `/<session>/console` at123. It never requests collection. The variadic typed scope therefore preserves its existing non-list calls without changing that file. Other `.serve` hits belong to unrelated fixture types. No old collection caller is silently assigned a tenant.
+
+Owned browser seeds are still created by every original `h.draft` call, then their actual `live.sessions.created_at/updated_at` are observed through the existing fixture owner pool. Main browser seeds no longer use future2030 creation dates. A first copy from these dated scenes saves exactly one `time.Now().UTC().Truncate(time.Microsecond)` value for CreatedAt/UpdatedAt under the existing lock; original replay paths return the already stored response before re-entering copy. Legacy non-list fixtures with zero timestamps keep zero timestamps in source/copy and retain their original2030 projection, avoiding a future-source/current-copy mixture in those old helpers. No source+1 clock or fake counter. Recommended2030, offer/window/stats timestamps remain unchanged.
+
+The original Phase A response/status/pagination/foreign/uniqueness assertions remain byte-identical; only its serve call gets scope. Its original full-state deferred snapshot still covers all26 same-store rows plus1 foreign row, receipts, replay responses and authority counter. New subtests add20+6 complete literal descending IDs with all timestamps tied across row20/21, terminal empty page, microsecond timestamp primary ordering before UUID, cursor last-returned position, wrong tenant/store/collection, canonical JSON/query rejection, missing/duplicate/invalid/mismatched trusted scopes, default/max limits, ListUnavailable503 with restoration, and current-time copy/same-key replay with one effect. No test reimplements pagination as the subject under test.
+
+The entire old TS file is preserved byte-for-byte except one new native setup call before the existing C4 preparation card assertion. Its first109092 bytes SHA256 remain `07e3bd132fa3ee1152a0d21e91a8d1dd7aeba253b3c844b48dd5062502da7dc1`. New tail helpers bound preparation traversal by the observed same-store scene count divided by20, detect repeated URL cursors and disabled Next through assertions, and navigate only by native clicks. The old card/settings/Back/Edit/hash/zero-write assertions, original successful-copy Back/title assertion, old helper613 and old prefix remain untouched. The known permissions/double-hash issue is not repaired here.
+
+Two tail-only nonmutating cases (1440/390) require the existing full-suite26-row store, read facts only as ID/Store oracle, then click the real Next/Previous controls and assert20+6 unique complete same-store IDs, foreign exclusion, terminal Next disabled, Previous disabled on return, identical first-page order, copied title visible on page1, no business request and unchanged receipts/scene IDs. No extra copy, reset, reduced seed set, direct API browser navigation, forced click, evaluate script or goto(cursor). A focused run without the original producers fails the hard26-row precondition and cannot claim full-state coverage. The old Facts/Scene type declarations were not expanded.
+
+## Actual commands, exits and preservation checks
+
+| Actual command/check | Exit/result |
+| --- | --- |
+| `git status --short`, `git rev-parse HEAD`, targeted source/contract/RED raw log reads and SHA256 | 0; initially tracked clean at a8ee |
+| `gofmt -w tests/foundation/browser_live_console_test.go tests/foundation/browser_live_console_pagination_test.go` | 0 |
+| `git diff --check` | 0 |
+| `GOTOOLCHAIN=go1.27.3 go vet -tags browser ./tests/foundation` | 0; first2.990s, final after final Go edit2.866s; static only |
+| `node --experimental-strip-types --check tests/admin/live-console.spec.ts` | 0; syntax only, no module/test execution |
+| strict tsc with initially incomplete standalone options | 1; missing allowImportingTsExtensions/Node types plus original public_unknown errors; no source edit to hide them |
+| Corrected standalone strict tsc, exact command below | **1**, only TS2339 at old lines312:66 and312:110; full typecheck is FAIL |
+| Python compare TS first109092 bytes with a8ee | 0/PASS |
+| Python remove single new setup call and compare entire original TS prefix through old EOF with a8ee | 0/PASS |
+| Python compare Phase A original status/response/assertion block with a8ee | 0/PASS |
+| Python compare old balance file, offer/window/stats/recommend/adjustment blocks, key/body hash/replay/UNKNOWN ACK/old return paths | 0/PASS |
+
+```sh
+/Volumes/data/live_commerce_architecture_v1/node_modules/.bin/tsc --noEmit --strict --skipLibCheck --target ES2023 --module esnext --moduleResolution bundler --jsx react-jsx --allowImportingTsExtensions --types node --typeRoots /Volumes/data/live_commerce_architecture_v1/node_modules/.pnpm/@types+node@24.13.6/node_modules/@types tests/admin/live-console.spec.ts
+```
+
+Unresolved static diagnostics retained verbatim in meaning: `tests/admin/live-console.spec.ts(312,66)` and `(312,110)`, TS2339, property `public_unknown` does not exist on the existing `Facts.comments` type. Both use sites and the type are inside the verified unchanged109092-byte prefix. No diagnostic was emitted for new code by that command; this does not make the overall command PASS. Root explicitly directed preserving this outside-card issue.
+
+| Changed code file | SHA256 |
+| --- | --- |
+| tests/foundation/browser_live_console_test.go | ce2c10c2739fb8d8f94bcdc7160dc9a1aaf52884d900844459e4be4144bc680d |
+| tests/foundation/browser_live_console_pagination_test.go | 47f8efcaa34485dd0fd43b516893abb6840794082cb5201c5fa1e274e16de7de |
+| tests/admin/live-console.spec.ts | 34a1f6d4a784d53787e993cee8f3e26f938f6d40a73c1a448fc174698f2edf90 |
+
+## Remaining acceptance and handoff
+
+Root must independently review this diff, derive approved ownership evidence and run the frozen focused pure-Go contract command, the existing full `--browser-live-console` workspace+labels+MockBalance mode, `--browser-live-console-parity`, and the affected existing Studio cursor/backend gate through their approved runners. The focused command remains `GOTOOLCHAIN=go1.27.3 go test -race -tags browser -count=1 -run '^TestBrowserLiveConsoleRealChain/pagination-contract$' -v ./tests/foundation`. These are future required commands, **NOT_RUN by this child**. The full26 native observation requires the unfiltered original producers. Green cannot be inferred from source/vet or the prior RED. UI date display/default-created-date differences, navigation/history interactions and future screenshots remain UNKNOWN until actual gates.
+
+No product/SQL migration/API/DTO/parser/gate/global/ownership metadata changed. The only SQL text added observes actual owned test seed times. No runtime go test, server, PG, OIDC, Next, browser, provider, push, dispatch, rerun or cancellation was executed. Bounded static vet processes exited normally; no ports/containers/fixture files were created. Existing failed samples and original Phase A report text below are retained. All author CI/push and final independent acceptance are reserved for root. Local commit is hooks-disabled; its returned head is delivered to root separately.
+
+---
+
+# Historical Phase A record (retained; NOT_RUN statements describe that earlier author turn)
+
 # PR365 Console pagination Phase A candidate
 
 - task_id: `3a83424d-2e69-4dcf-acfe-9328c2c9941d`; own canvas `3a83424d-sub-1`.

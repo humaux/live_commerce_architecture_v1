@@ -17,9 +17,12 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -32,10 +35,12 @@ import (
 	"livecommerce/internal/metaconnect"
 	"livecommerce/internal/msgtemplates"
 	"livecommerce/internal/oidclogin"
+	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
 )
 
 type consoleMockScene struct {
+	CreatedAt, UpdatedAt                           time.Time
 	ID, Store, Title, Phase, Offer, SKU, Warehouse string
 	Platform                                       string
 	Version, OfferVersion, Stock, StockVersion     int64
@@ -73,8 +78,20 @@ func consoleJSON(w http.ResponseWriter, status int, value any) {
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)
 }
+
+// createdAt preserves the legacy zero-time fixtures; owned browser seeds use real PG times.
+func (s *consoleMockScene) createdAt() time.Time {
+	if s.CreatedAt.IsZero() {
+		return time.Date(2030, 1, 1, 0, 0, 0, 0, time.UTC)
+	}
+	return s.CreatedAt.UTC().Truncate(time.Microsecond)
+}
 func (s *consoleMockScene) draft() map[string]any {
-	return map[string]any{"session_id": s.ID, "program_id": s.SKU, "title": s.Title, "scheduled_at": nil, "aspect_ratio": "9:16", "state": "DRAFT", "version": int64(1), "created_at": "2030-01-01T00:00:00Z", "updated_at": "2030-01-01T00:00:00Z"}
+	updated := s.UpdatedAt
+	if updated.IsZero() {
+		updated = s.createdAt()
+	}
+	return map[string]any{"session_id": s.ID, "program_id": s.SKU, "title": s.Title, "scheduled_at": nil, "aspect_ratio": "9:16", "state": "DRAFT", "version": int64(1), "created_at": s.createdAt().Format(time.RFC3339Nano), "updated_at": updated.UTC().Format(time.RFC3339Nano)}
 }
 func (s *consoleMockScene) offerReceipt() map[string]any {
 	return map[string]any{"offer_id": s.Offer, "session_id": s.ID, "keyword": "A1", "sku_id": s.SKU, "sku_code": "MOCK-TEA", "product_name": "MOCK Console Tea", "max_quantity_per_claim": 10, "active": s.Active, "version": s.OfferVersion, "activated_at": "2030-01-01T00:00:00Z", "updated_at": "2030-01-01T00:00:00Z", "sku_price_minor": 30000, "currency": "TWD", "live_price_minor": 20000}
@@ -105,7 +122,9 @@ func (s *consoleMockScene) read() map[string]any {
 }
 
 // serve handles only the declared MOCK contract; identity and scope are checked by the caller.
-func (m *consoleMock) serve(w http.ResponseWriter, r *http.Request, store string) bool {
+// The optional scope keeps legacy non-list helpers unchanged; collection reads require the
+// exact scope returned by WithScope, never a tenant from query parameters or forwarding headers.
+func (m *consoleMock) serve(w http.ResponseWriter, r *http.Request, store string, trusted ...platform.Scope) bool {
 	parts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 	if len(parts) < 5 {
 		return false
@@ -113,17 +132,88 @@ func (m *consoleMock) serve(w http.ResponseWriter, r *http.Request, store string
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if parts[4] == "live-sessions" && len(parts) == 5 && r.Method == http.MethodGet {
-		items := []any{}
-		for _, s := range m.scenes {
-			if s.Store == store {
-				if s.ListUnavailable {
-					consoleJSON(w, 503, map[string]any{"code": "unavailable"})
-					return true
+		invalid := func() bool { consoleJSON(w, 422, map[string]any{"code": "invalid_request"}); return true }
+		if len(trusted) != 1 || trusted[0].StoreID != store || trusted[0].StoreID != parts[3] || r.URL.ForceQuery || len(r.URL.RawQuery) > 4096 {
+			return invalid()
+		}
+		page := pagination.Request{}
+		if r.URL.RawQuery != "" {
+			for _, field := range strings.Split(r.URL.RawQuery, "&") {
+				name, value, ok := strings.Cut(field, "=")
+				if !ok || value == "" || (name != "limit" && name != "cursor") || strings.ContainsAny(value, "%+=") {
+					return invalid()
 				}
-				items = append(items, s.draft())
 			}
 		}
-		consoleJSON(w, 200, map[string]any{"items": items, "next_cursor": ""})
+		query, err := url.ParseQuery(r.URL.RawQuery)
+		if err != nil {
+			return invalid()
+		}
+		for name, values := range query {
+			if len(values) != 1 {
+				return invalid()
+			}
+			switch name {
+			case "limit":
+				limit, err := strconv.Atoi(values[0])
+				if err != nil || limit < 1 || limit > 100 || strconv.Itoa(limit) != values[0] {
+					return invalid()
+				}
+				page.Limit = limit
+			case "cursor":
+				page.Cursor = values[0]
+			default:
+				return invalid()
+			}
+		}
+		binding := pagination.Binding{TenantID: trusted[0].TenantID, StoreID: trusted[0].StoreID, Collection: "live-sessions"}
+		limit, keys, err := pagination.Decode(page, binding, 2)
+		if err != nil {
+			return invalid()
+		}
+		var after time.Time
+		if len(keys) > 0 {
+			after, _ = time.Parse("2006-01-02T15:04:05.000000Z", keys[0])
+		}
+		rows := []*consoleMockScene{}
+		for _, scene := range m.scenes {
+			if scene.Store != store {
+				continue
+			}
+			if scene.ListUnavailable {
+				consoleJSON(w, 503, map[string]any{"code": "unavailable"})
+				return true
+			}
+			created := scene.createdAt()
+			if len(keys) == 0 || created.Before(after) || (created.Equal(after) && scene.ID < keys[1]) {
+				rows = append(rows, scene)
+			}
+		}
+		sort.Slice(rows, func(i, j int) bool {
+			a, b := rows[i].createdAt(), rows[j].createdAt()
+			if a.Equal(b) {
+				return rows[i].ID > rows[j].ID
+			}
+			return a.After(b)
+		})
+		// Match ListDrafts' limit+1 lookahead; keep all fixture storage intact.
+		if len(rows) > limit+1 {
+			rows = rows[:limit+1]
+		}
+		cursor := ""
+		if len(rows) > limit {
+			rows = rows[:limit]
+			last := rows[len(rows)-1]
+			cursor, err = pagination.Encode(binding, []string{last.createdAt().Format("2006-01-02T15:04:05.000000Z"), last.ID})
+			if err != nil {
+				return invalid()
+			}
+		}
+		items := make([]any, 0, len(rows))
+		for _, scene := range rows {
+			items = append(items, scene.draft())
+		}
+		consoleJSON(w, 200, map[string]any{"items": items, "next_cursor": cursor})
 		return true
 	}
 	if parts[4] == "live-sessions" && len(parts) == 6 && parts[5] == "results" && r.Method == http.MethodGet {
@@ -296,6 +386,12 @@ func (m *consoleMock) serve(w http.ResponseWriter, r *http.Request, store string
 			return true
 		}
 		copy := *s
+		// Browser scenes have observed PG timestamps. Legacy non-list helpers
+		// keep zero-time compatibility for both source and copy projections.
+		if !s.CreatedAt.IsZero() {
+			copy.CreatedAt = time.Now().UTC().Truncate(time.Microsecond)
+			copy.UpdatedAt = copy.CreatedAt
+		}
 		copy.ID = randomUUID()
 		copy.Offer = randomUUID()
 		copy.Phase = "draft"
@@ -454,6 +550,13 @@ func runBrowserLiveConsole(t *testing.T, labels bool, titleFlag string) {
 	}
 	other := h.draft(t, h.f.storeA2)
 	mock.scenes[other] = &consoleMockScene{ID: other, Store: h.f.storeA2, Title: "LC-U1 MOCK other store", Platform: "facebook", Phase: "draft", Version: 1, Offer: randomUUID(), SKU: randomUUID(), Warehouse: randomUUID(), OfferVersion: 1, Stock: 9, StockVersion: 1, Active: true}
+	// Use the dates of the actual h.draft rows, not future synthetic seeds.
+	// This is fixture observation through the existing owner pool, not a product write.
+	for _, scene := range mock.scenes {
+		if err := h.f.owner.QueryRow(ctx, `SELECT created_at,updated_at FROM live.sessions WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, h.f.tenantA, scene.Store, scene.ID).Scan(&scene.CreatedAt, &scene.UpdatedAt); err != nil {
+			t.Fatalf("read owned Console seed timestamps: %v", err)
+		}
+	}
 	controlKey := randomToken()
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.HasPrefix(r.URL.Path, "/__test/live-console/") {
@@ -560,10 +663,12 @@ func runBrowserLiveConsole(t *testing.T, labels bool, titleFlag string) {
 			if parts[4] == "inventory" {
 				permission = "inventory:write"
 			}
-			err := platform.WithScope(r.Context(), h.f.runtime, token, parts[3], permission, func(pgx.Tx, platform.Scope) error { return nil })
+			var trustedScope platform.Scope
+			captureScope := func(_ pgx.Tx, scope platform.Scope) error { trustedScope = scope; return nil }
+			err := platform.WithScope(r.Context(), h.f.runtime, token, parts[3], permission, captureScope)
 			if parts[4] == "inventory" && errors.Is(err, platform.ErrForbidden) {
 				// Mirror LC-B7's second, narrow grant. The MOCK write checks its fixed reason and bounds.
-				err = platform.WithScope(r.Context(), h.f.runtime, token, parts[3], "inventory:live_adjust", func(pgx.Tx, platform.Scope) error { return nil })
+				err = platform.WithScope(r.Context(), h.f.runtime, token, parts[3], "inventory:live_adjust", captureScope)
 			}
 			if err != nil {
 				status, code := http.StatusServiceUnavailable, "unavailable"
@@ -578,7 +683,7 @@ func runBrowserLiveConsole(t *testing.T, labels bool, titleFlag string) {
 				consoleJSON(w, status, map[string]any{"code": code})
 				return
 			}
-			if mock.serve(w, r, parts[3]) {
+			if mock.serve(w, r, trustedScope.StoreID, trustedScope) {
 				return
 			}
 		}

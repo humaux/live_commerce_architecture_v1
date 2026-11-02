@@ -8,11 +8,16 @@ package foundation_test
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"livecommerce/internal/pagination"
+	"livecommerce/internal/platform"
 )
 
 func testConsoleMockPaginationContract(t *testing.T) {
@@ -75,7 +80,7 @@ func testConsoleMockPaginationContract(t *testing.T) {
 	// OIDC, PostgreSQL, Next, a browser, or a replacement pagination algorithm.
 	request := httptest.NewRequest(http.MethodGet, "/v1/admin/stores/"+store+"/live-sessions?limit=20", nil)
 	recorder := httptest.NewRecorder()
-	if !mock.serve(recorder, request, store) {
+	if !mock.serve(recorder, request, store, platform.Scope{TenantID: "00000000-0000-4000-8000-000000000010", StoreID: store}) {
 		t.Fatal("existing Console MOCK handler did not handle collection GET")
 	}
 	if recorder.Code != http.StatusOK {
@@ -109,4 +114,177 @@ func testConsoleMockPaginationContract(t *testing.T) {
 		}
 		seen[item.SessionID] = true
 	}
+
+	// Phase B extends the original RED assertions above without replacing them.
+	scope := platform.Scope{TenantID: "00000000-0000-4000-8000-000000000010", StoreID: store}
+	base := "/v1/admin/stores/" + store + "/live-sessions"
+	fetch := func(t *testing.T, target string, scopes ...platform.Scope) (int, []string, string) {
+		t.Helper()
+		recorder := httptest.NewRecorder()
+		if !mock.serve(recorder, httptest.NewRequest(http.MethodGet, target, nil), store, scopes...) {
+			t.Fatal("collection request unhandled")
+		}
+		var response struct {
+			Items []struct {
+				SessionID string `json:"session_id"`
+			} `json:"items"`
+			NextCursor string `json:"next_cursor"`
+		}
+		if err := json.Unmarshal(recorder.Body.Bytes(), &response); err != nil {
+			t.Fatal(err)
+		}
+		ids := []string{}
+		for _, item := range response.Items {
+			ids = append(ids, item.SessionID)
+		}
+		return recorder.Code, ids, response.NextCursor
+	}
+	t.Run("complete_26_with_timestamp_tie_at_page_boundary", func(t *testing.T) {
+		if len(page.Items) != 20 || page.NextCursor == "" {
+			t.Fatal("first page contract must hold before traversal")
+		}
+		all := []string{}
+		for _, item := range page.Items {
+			all = append(all, item.SessionID)
+		}
+		status, second, cursor := fetch(t, base+"?limit=20&cursor="+page.NextCursor, scope)
+		if status != 200 || len(second) != 6 || cursor != "" {
+			t.Fatalf("second page status/count/cursor=%d/%d/%q; want 200/6/empty", status, len(second), cursor)
+		}
+		all = append(all, second...)
+		// All original zero-time fixtures share one timestamp. Literal ID order
+		// independently pins the strict tie break, including rows20 and21.
+		if len(all) != 26 {
+			t.Fatalf("complete traversal has %d rows; want26", len(all))
+		}
+		for i, id := range all {
+			want := fmt.Sprintf("00000000-0000-4000-8000-%012d", 126-i)
+			if id != want {
+				t.Errorf("descending row%d=%s; want%s", i+1, id, want)
+			}
+		}
+		binding := pagination.Binding{TenantID: scope.TenantID, StoreID: store, Collection: "live-sessions"}
+		terminal, err := pagination.Encode(binding, []string{"2030-01-01T00:00:00.000000Z", all[len(all)-1]})
+		if err != nil {
+			t.Fatal(err)
+		}
+		status, empty, cursor := fetch(t, base+"?limit=20&cursor="+terminal, scope)
+		if status != 200 || len(empty) != 0 || cursor != "" {
+			t.Errorf("terminal page=%d/%v/%q", status, empty, cursor)
+		}
+	})
+	t.Run("canonical_queries_and_trusted_scope_only", func(t *testing.T) {
+		for _, query := range []string{"?", "?limit", "?limit=", "?limit=020", "?limit=0", "?limit=-1", "?limit=101", "?limit=20&limit=20", "?limit=%32%30", "?limit=+20", "?limit=20=", "?limit=20&", "?cursor=", "?cursor=not_a_cursor", "?cursor=abc==", "?tenant_id=" + scope.TenantID, "?offset=20", "?limit=20&unknown=x"} {
+			status, _, _ := fetch(t, base+query, scope)
+			if status != 422 {
+				t.Errorf("query %q status=%d; want422", query, status)
+			}
+		}
+		for _, scopes := range [][]platform.Scope{nil, {scope, scope}, {{TenantID: scope.TenantID, StoreID: foreignStore}}, {{TenantID: "invalid", StoreID: store}}} {
+			status, _, _ := fetch(t, base+"?limit=20", scopes...)
+			if status != 422 {
+				t.Errorf("invalid/missing trusted scope status=%d; want422", status)
+			}
+		}
+		status, _, _ := fetch(t, "/v1/admin/stores/"+foreignStore+"/live-sessions?limit=20", scope)
+		if status != 422 {
+			t.Errorf("trusted scope did not match route store: status=%d; want422", status)
+		}
+		for _, query := range []string{"", "?limit=100"} {
+			status, ids, cursor := fetch(t, base+query, scope)
+			if status != 200 || len(ids) != 26 || cursor != "" {
+				t.Errorf("default/max page status/count/cursor=%d/%d/%q", status, len(ids), cursor)
+			}
+		}
+	})
+	t.Run("cursor_binds_tenant_store_collection_and_canonical_json", func(t *testing.T) {
+		for _, binding := range []pagination.Binding{
+			{TenantID: "00000000-0000-4000-8000-000000000011", StoreID: store, Collection: "live-sessions"},
+			{TenantID: scope.TenantID, StoreID: foreignStore, Collection: "live-sessions"},
+			{TenantID: scope.TenantID, StoreID: store, Collection: "products"},
+		} {
+			keys := []string{"2030-01-01T00:00:00.000000Z", "00000000-0000-4000-8000-000000000107"}
+			if binding.Collection == "products" {
+				keys = keys[1:]
+			}
+			cursor, err := pagination.Encode(binding, keys)
+			if err != nil {
+				t.Fatal(err)
+			}
+			status, _, _ := fetch(t, base+"?limit=20&cursor="+cursor, scope)
+			if status != 422 {
+				t.Errorf("foreign binding %v status=%d; want422", binding, status)
+			}
+		}
+		raw, err := base64.RawURLEncoding.DecodeString(page.NextCursor)
+		if err != nil {
+			t.Fatal(err)
+		}
+		noncanonical := base64.RawURLEncoding.EncodeToString(append([]byte(" "), raw...))
+		status, _, _ := fetch(t, base+"?limit=20&cursor="+noncanonical, scope)
+		if status != 422 {
+			t.Errorf("noncanonical cursor status=%d; want422", status)
+		}
+	})
+	t.Run("unavailable_collection_stays_503_without_state_effect", func(t *testing.T) {
+		scene := mock.scenes["00000000-0000-4000-8000-000000000101"]
+		scene.ListUnavailable = true
+		defer func() { scene.ListUnavailable = false }()
+		status, _, _ := fetch(t, base+"?limit=20", scope)
+		if status != 503 {
+			t.Errorf("unavailable collection status=%d; want503", status)
+		}
+	})
+	t.Run("created_time_precedes_id_and_cursor_keeps_microseconds", func(t *testing.T) {
+		oldRows := mock.scenes
+		defer func() { mock.scenes = oldRows }()
+		newest := "00000000-0000-4000-8000-000000000001"
+		tied := "00000000-0000-4000-8000-000000000002"
+		oldest := "00000000-0000-4000-8000-000000000999"
+		at := time.Date(2020, 1, 1, 0, 0, 0, 123456000, time.UTC)
+		mock.scenes = map[string]*consoleMockScene{
+			newest: {ID: newest, Store: store, CreatedAt: at},
+			tied:   {ID: tied, Store: store, CreatedAt: at},
+			oldest: {ID: oldest, Store: store, CreatedAt: at.Add(-time.Microsecond)},
+		}
+		status, first, cursor := fetch(t, base+"?limit=1", scope)
+		if status != 200 || len(first) != 1 || first[0] != tied || cursor == "" {
+			t.Fatalf("timestamp-tie first page=%d/%v/%q", status, first, cursor)
+		}
+		binding := pagination.Binding{TenantID: scope.TenantID, StoreID: store, Collection: "live-sessions"}
+		_, keys, err := pagination.Decode(pagination.Request{Limit: 1, Cursor: cursor}, binding, 2)
+		if err != nil || len(keys) != 2 || keys[0] != "2020-01-01T00:00:00.123456Z" || keys[1] != tied {
+			t.Fatalf("cursor must identify last returned microsecond row: keys=%v err=%v", keys, err)
+		}
+		status, rest, cursor := fetch(t, base+"?limit=20&cursor="+cursor, scope)
+		if status != 200 || len(rest) != 2 || rest[0] != newest || rest[1] != oldest || cursor != "" {
+			t.Errorf("time primary/id secondary page=%d/%v/%q", status, rest, cursor)
+		}
+	})
+	t.Run("copy_sets_current_time_once_and_replay_keeps_it", func(t *testing.T) {
+		source := &consoleMockScene{ID: "00000000-0000-4000-8000-000000000201", Store: store, Title: "MOCK dated source", Phase: "draft", Version: 1, OfferVersion: 1, CreatedAt: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC), UpdatedAt: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)}
+		isolated := &consoleMock{scenes: map[string]*consoleMockScene{source.ID: source}, responses: map[string]any{}}
+		body := map[string]any{"title": "MOCK dated copy", "scheduled_at": nil, "expected_version": 1}
+		path := base + "/" + source.ID + "/copy"
+		started := time.Now().UTC().Truncate(time.Microsecond)
+		first := consoleBalanceRequest(t, isolated, store, http.MethodPost, path, "pagination-copy-once", body, 200)
+		copiedID := first["session"].(map[string]any)["session_id"].(string)
+		copied := isolated.scenes[copiedID]
+		if copied.CreatedAt.Before(started) || copied.CreatedAt.After(time.Now().UTC()) || !copied.CreatedAt.Equal(copied.UpdatedAt) || copied.CreatedAt.Nanosecond()%1000 != 0 {
+			t.Errorf("copy time is not one current UTC microsecond observation: %v/%v", copied.CreatedAt, copied.UpdatedAt)
+		}
+		stamp := copied.CreatedAt
+		replay := consoleBalanceRequest(t, isolated, store, http.MethodPost, path, "pagination-copy-once", body, 200)
+		firstJSON, _ := json.Marshal(first)
+		replayJSON, _ := json.Marshal(replay)
+		if !bytes.Equal(firstJSON, replayJSON) || !copied.CreatedAt.Equal(stamp) {
+			t.Error("same-key replay changed copied timestamps or response")
+		}
+		if len(isolated.scenes) != 2 || len(isolated.receipts) != 2 || !isolated.receipts[0].Effect || isolated.receipts[1].Effect {
+			t.Error("copy replay duplicated business effect")
+		}
+		if source.CreatedAt.Year() != 2020 || source.UpdatedAt.Year() != 2020 {
+			t.Error("copy changed source timestamps")
+		}
+	})
 }

@@ -1519,6 +1519,7 @@ for (const viewport of parityViewports) test(`C4 metadata preparation native Edi
       await page.goto(`${origin}/${locale}/studio?store=${store}`);
       const title = (await facts(request)).scenes[scene]!.Title;
       const card = page.locator(".studio-scene-list .studio-scene").filter({ has: page.locator("strong", { hasText: title }) });
+      await c4FindExistingSceneByNativePages(page, request, card);
       await expect(card).toHaveCount(1);
       diagnostic.note("list-card-click-start");
       const [response] = await Promise.all([
@@ -1779,3 +1780,85 @@ for (const [locale, viewport] of [["en", parityViewports[0]], ["zh-TW", parityVi
     await test.info().attach("C4-UNKNOWN-retry", { body: JSON.stringify({ class: "MOCK", attempts: commands.length, sameKey: commands[1]!.key === commands[0]!.key, sameBody: commands[1]!.body === commands[0]!.body, singleEffect: receipts.filter(receipt => receipt.effect).length === 1 }), contentType: "application/json" });
   });
 }
+
+
+// Pagination setup/observation only: facts supplies existing IDs, never a browser
+// response or a replacement list. Navigation always clicks the shipped controls.
+async function c4RenderedPageIDs(page: Page): Promise<string[]> {
+  const markers = page.locator('.studio-scene-list [data-testid^="live-session-results-"]');
+  const ids: string[] = [];
+  for (let i = 0; i < await markers.count(); i++) {
+    const marker = await markers.nth(i).getAttribute("data-testid");
+    if (!marker?.startsWith("live-session-results-")) throw new Error("missing rendered scene identity");
+    ids.push(marker.slice("live-session-results-".length));
+  }
+  return ids;
+}
+async function c4NativePageTransition(page: Page, direction: "next" | "previous") {
+  const beforeCursor = new URL(page.url()).searchParams.get("cursor") ?? "";
+  const beforeIDs = JSON.stringify(await c4RenderedPageIDs(page));
+  // Independent literal UI vocabulary; no product dictionary as the test oracle.
+  const button = page.locator(".studio-pager").getByRole("button", { name: direction === "next" ? "下一頁" : "上一頁", exact: true });
+  await expect(button).toBeEnabled();
+  await button.click({ timeout: 15000 });
+  await expect.poll(() => new URL(page.url()).searchParams.get("cursor") ?? "").not.toBe(beforeCursor);
+  await expect.poll(async () => JSON.stringify(await c4RenderedPageIDs(page))).not.toBe(beforeIDs);
+  await expect(page.locator(".studio-scene-list .studio-scene").first()).toBeVisible();
+}
+async function c4FindExistingSceneByNativePages(page: Page, request: APIRequestContext, card: ReturnType<Page["locator"]>) {
+  const observed = await facts(request);
+  // Store is an existing fixture field. The prefix Scene/DTO declaration stays frozen.
+  const rows = Object.values(observed.scenes) as (Scene & { Store: string })[];
+  const pages = Math.ceil(rows.filter(row => row.Store === store).length / 20);
+  expect(pages).toBeGreaterThan(0);
+  await expect(page.locator(".studio-scene-list .studio-scene").first()).toBeVisible();
+  const visited = new Set<string>();
+  for (let i = 0; i < pages; i++) {
+    const cursor = new URL(page.url()).searchParams.get("cursor") ?? "";
+    expect(visited.has(cursor), "native list traversal repeated a cursor").toBe(false);
+    visited.add(cursor);
+    if (await card.count() === 1) return;
+    if (i + 1 < pages) await c4NativePageTransition(page, "next");
+  }
+  throw new Error("existing scene was absent after bounded native page traversal");
+}
+
+// Run after all existing producers, retaining the original 26-row store. A
+// focused run without those producers must fail rather than claim this coverage.
+for (const viewport of parityViewports) test(`C4 metadata native all26 pagination ${viewport.width}`, async ({ page, request }) => {
+  await page.setViewportSize(viewport); await login(page);
+  const before = await facts(request);
+  const rows = Object.values(before.scenes) as (Scene & { Store: string })[];
+  const expectedIDs = rows.filter(row => row.Store === store).map(row => row.ID).sort();
+  const foreignIDs = rows.filter(row => row.Store !== store).map(row => row.ID);
+  expect(expectedIDs).toHaveLength(26);
+  const copiedTitle = "C4 metadata copy zh-CN 390";
+  expect(rows.some(row => row.Store === store && row.Copied && row.Title === copiedTitle)).toBe(true);
+  const writes: string[] = [];
+  page.on("request", wire => { if (new URL(wire.url()).pathname.startsWith("/api/stores/") && !["GET", "HEAD"].includes(wire.method())) writes.push(wire.method()); });
+  await page.goto(`${origin}/zh-TW/studio?store=${store}`);
+  await expect.poll(async () => (await c4RenderedPageIDs(page)).length).toBe(20);
+  const first = await c4RenderedPageIDs(page);
+  const pager = page.locator(".studio-pager");
+  await expect(pager.getByRole("button", { name: "上一頁", exact: true })).toBeDisabled();
+  await expect(pager.getByRole("button", { name: "下一頁", exact: true })).toBeEnabled();
+  await expect(page.locator(".studio-scene-list").getByText(copiedTitle, { exact: true })).toBeVisible();
+  await c4NativePageTransition(page, "next");
+  await expect.poll(async () => (await c4RenderedPageIDs(page)).length).toBe(6);
+  const second = await c4RenderedPageIDs(page);
+  await expect(pager.getByRole("button", { name: "下一頁", exact: true })).toBeDisabled();
+  await expect(pager.getByRole("button", { name: "上一頁", exact: true })).toBeEnabled();
+  const all = [...first, ...second];
+  expect(new Set(all).size).toBe(26);
+  expect([...all].sort()).toEqual(expectedIDs);
+  expect(all.some(id => foreignIDs.includes(id))).toBe(false);
+  await c4NativePageTransition(page, "previous");
+  await expect.poll(async () => await c4RenderedPageIDs(page)).toEqual(first);
+  await expect(pager.getByRole("button", { name: "上一頁", exact: true })).toBeDisabled();
+  await expect(page.locator(".studio-scene-list").getByText(copiedTitle, { exact: true })).toBeVisible();
+  const after = await facts(request);
+  expect(after.receipts).toEqual(before.receipts);
+  expect(Object.keys(after.scenes).sort()).toEqual(Object.keys(before.scenes).sort());
+  expect(writes).toEqual([]);
+  await test.info().attach("click-ledger-pagination", { body: JSON.stringify({ class: "MOCK", viewport: viewport.width, controls: ["Next page", "Previous page"], expected: [20, 6, 20], actual: [first.length, second.length, (await c4RenderedPageIDs(page)).length], unique: new Set(all).size, writes: writes.length, receiptDelta: after.receipts.length - before.receipts.length }), contentType: "application/json" });
+});
