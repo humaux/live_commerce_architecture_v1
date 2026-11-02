@@ -6,7 +6,9 @@
 package foundation_test
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"image"
@@ -16,10 +18,13 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"livecommerce/internal/buyer"
 	"livecommerce/internal/checkout"
 	"livecommerce/internal/command"
 	"livecommerce/internal/platform"
+	"livecommerce/internal/pricing"
 	"livecommerce/internal/reporting"
+	"livecommerce/internal/storefront"
 )
 
 func mdBody(sku string, qty int, option, mode string, delivery map[string]any, amount int64) map[string]any {
@@ -76,6 +81,7 @@ func mdAdjustment(t *testing.T, q map[string]any, discount int64) {
 }
 
 func mdManualContract(t *testing.T) {
+	t.Run("runtime database boundary", mdDBBoundaryContract)
 	e, a, cvsCode := mtOrderEnv(t)
 	sku := e.p.stock.skus[0].ID
 	var home, cvs string
@@ -423,6 +429,277 @@ func mdManualContract(t *testing.T) {
 		}
 		mdAdjustment(t, mdQuote(t, e, order), 100)
 	})
+}
+
+// mdDBBoundaryContract tests the granted database boundary, not an HTTP injection path.
+// Owner-pool writes below only create isolated synthetic authorization/quote fixtures;
+// no grant, trigger, existing authorization or existing frozen snapshot is changed.
+// Every attempted authorization INSERT/bind uses the actual restricted f.runtime login.
+func mdDBBoundaryContract(t *testing.T) {
+	e, a, _ := mtOrderEnv(t)
+	ctx := context.Background()
+	f := e.p.f
+	var home, deliveryCode string
+	for _, o := range a.options() {
+		if o.DeliveryKind == "home" && strings.Contains(strings.Join(o.PaymentModes, ","), "bank_transfer") {
+			home, deliveryCode = o.OptionKey, o.DeliveryCode
+			break
+		}
+	}
+	if home == "" {
+		t.Fatal("DB boundary fixture missing home/bank-transfer option")
+	}
+	var sameLogin, runtimeRole, privileged bool
+	if err := f.runtime.QueryRow(ctx, `SELECT current_user=session_user,
+  pg_has_role(current_user,'commerce_runtime','USAGE'),
+  r.rolsuper OR r.rolbypassrls OR pg_has_role(current_user,'commerce_auth','USAGE')
+  FROM pg_roles r WHERE r.rolname=current_user`).Scan(&sameLogin, &runtimeRole, &privileged); err != nil {
+		t.Fatal(err)
+	}
+	if !sameLogin || !runtimeRole || privileged {
+		t.Fatal("DB boundary must run as the genuine unprivileged commerce_runtime login")
+	}
+
+	// This existing route is the positive control for the real merchant pipeline.
+	if status, out := a.place(t04Key("md-db-control"), mdBody(e.p.stock.skus[0].ID, 2, home, "bank_transfer", mdHome, 100)); status != 201 || out["total_minor"] != float64(2400) {
+		t.Fatalf("DB boundary HTTP positive control: status=%d total=%v", status, out["total_minor"])
+	}
+
+	// A callback-entry witness prevents an invalid session/scope from passing a negative.
+	scoped := func(t *testing.T, token, principal, permission string, fn func(pgx.Tx, platform.Scope) error) error {
+		t.Helper()
+		reached := false
+		err := platform.WithScope(ctx, f.runtime, token, e.store(), permission, func(tx pgx.Tx, s platform.Scope) error {
+			if s.TenantID != e.tenant() || s.StoreID != e.store() || s.PrincipalID != principal {
+				t.Fatal("unexpected server-resolved runtime scope")
+			}
+			reached = true
+			return fn(tx, s)
+		})
+		if !reached {
+			t.Fatalf("DB target never reached; scope setup failed: SQLSTATE=%s", sqlState(err))
+		}
+		return err
+	}
+	quote := func(t *testing.T, b *tcvBuyer, manual bool) storefront.Quote {
+		t.Helper()
+		q, err := cqBuyer(b.h.a.runtime, b.cap, func(c context.Context, tx pgx.Tx, s buyer.Scope) (storefront.Quote, error) {
+			in := storefront.QuoteInput{CartVersion: b.cartVersion(), MarketID: e.p.market.ID, Country: "TW", Method: "delivery:" + deliveryCode}
+			if manual {
+				return storefront.CreateManualQuote(c, tx, s, t04Key("md-db-quote"), in)
+			}
+			return storefront.CreateQuote(c, tx, s, t04Key("md-db-quote"), in)
+		})
+		if err != nil || q.ID == "" || q.Amount.SubtotalMinor != 2500 {
+			t.Fatalf("real same-owner quote setup failed: SQLSTATE=%s subtotal=%d", sqlState(err), q.Amount.SubtotalMinor)
+		}
+		return q
+	}
+	seed := func(t *testing.T, owner, principal string, d *pricing.ManualDiscount) {
+		t.Helper()
+		var name, amount any
+		if d != nil {
+			name, amount = d.Name, d.AmountMinor
+		}
+		hash := sha256.Sum256([]byte("synthetic DB-boundary authorization " + owner))
+		mustExec(t, f.owner, `INSERT INTO storefront.manual_order_discounts
+  (tenant_id,store_id,owner_id,principal_id,request_hash,name,amount_minor)
+  VALUES($1,$2,$3,$4,$5,$6,$7)`, e.tenant(), e.store(), owner, principal, hash[:], name, amount)
+	}
+	readAuth := func(t *testing.T, owner string) []byte {
+		t.Helper()
+		var raw []byte
+		if err := f.owner.QueryRow(ctx, `SELECT to_jsonb(d) FROM storefront.manual_order_discounts d
+  WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3`, e.tenant(), e.store(), owner).Scan(&raw); err != nil {
+			t.Fatal(err)
+		}
+		return raw
+	}
+	bind := func(t *testing.T, token, principal, id string) error {
+		t.Helper()
+		return scoped(t, token, principal, "inventory:reserve", func(tx pgx.Tx, s platform.Scope) error {
+			if err := platform.RequirePermission(ctx, tx, s, token, "catalog:read"); err != nil {
+				t.Fatalf("binder caller must have both permissions: SQLSTATE=%s", sqlState(err))
+			}
+			hash := sha256.Sum256([]byte(token))
+			_, err := tx.Exec(ctx, `SELECT fulfillment.bind_manual_order_discount($1,$2::uuid,$3::uuid)`, hash[:], e.store(), id)
+			return err
+		})
+	}
+
+	controlledQuote := func(t *testing.T, b *tcvBuyer, d *pricing.ManualDiscount) storefront.Quote {
+		t.Helper()
+		owner := b.cap.Scope.OwnerID
+		candidate := quote(t, b, false)
+		if d == nil {
+			return candidate
+		}
+		// Controlled DB-boundary fixture, not an HTTP-produced mismatch:
+		// insert a NEW same-owner quote from the real cart/session/header.
+		// Standard pricing supplies consistent line/tax/total allocations;
+		// every FK/check/trigger remains enabled. Existing snapshots stay frozen.
+		baseID := candidate.ID
+		candidate.ID = randomUUID()
+		candidate.Adjustments = []pricing.Adjustment{{Kind: "manual_discount", Currency: candidate.Currency, ManualDiscount: *d}}
+		inputs := make([]pricing.AmountLine, len(candidate.Lines))
+		for i, line := range candidate.Lines {
+			inputs[i] = pricing.AmountLine{UnitPriceMinor: line.UnitPriceMinor, Quantity: line.Quantity}
+		}
+		var err error
+		candidate.Amount, err = pricing.CalculateAdjusted(candidate.Policy, inputs, nil, candidate.Adjustments)
+		if err != nil {
+			t.Fatal("controlled adjusted quote pricing failed")
+		}
+		for i := range candidate.Lines {
+			candidate.Lines[i].Amount = candidate.Amount.Lines[i]
+		}
+		raw, err := json.Marshal(candidate)
+		if err != nil {
+			t.Fatal(err)
+		}
+		mustExec(t, f.owner, `INSERT INTO storefront.quotes
+  (tenant_id,store_id,owner_id,id,cart_id,creator_session_id,cart_version,market_id,market_version,country,method,policy_version,currency,created_at,expires_at,snapshot,creator_kind,create_attempt_id)
+  SELECT tenant_id,store_id,owner_id,$4,cart_id,creator_session_id,cart_version,market_id,market_version,country,method,policy_version,currency,created_at,expires_at,$5,creator_kind,create_attempt_id
+  FROM storefront.quotes WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3 AND id=$6`, e.tenant(), e.store(), owner, candidate.ID, raw, baseID)
+		return candidate
+	}
+
+	for _, tc := range []struct {
+		name  string
+		perms []string
+	}{
+		{"neither permission", nil},
+		{"missing inventory reserve", []string{"catalog:read"}},
+		{"missing catalog read", []string{"inventory:reserve"}},
+		{"both permissions cannot preset binding", []string{"inventory:reserve", "catalog:read"}},
+	} {
+		for _, preset := range []bool{false, true} {
+			if len(tc.perms) == 2 && !preset {
+				continue
+			}
+			name := tc.name + "/unbound"
+			if preset {
+				name = tc.name + "/preset quote"
+			}
+			t.Run("direct INSERT/"+name, func(t *testing.T) {
+				token, principal := e.member(tc.perms...)
+				b := e.newBuyer()
+				q := quote(t, b, false) // Real FK target, never an arbitrary UUID.
+				owner := b.cap.Scope.OwnerID
+				if n := e.count(`SELECT count(*) FROM storefront.manual_order_discounts WHERE owner_id=$1`, owner); n != 0 {
+					t.Fatal("negative INSERT fixture must start with no authorization")
+				}
+				var quoteID any
+				if preset {
+					quoteID = q.ID
+				}
+				hash := sha256.Sum256([]byte("synthetic direct INSERT " + owner))
+				err := scoped(t, token, principal, "store:read", func(tx pgx.Tx, s platform.Scope) error {
+					for _, permission := range []string{"inventory:reserve", "catalog:read"} {
+						want := false
+						for _, granted := range tc.perms {
+							want = want || granted == permission
+						}
+						got := platform.RequirePermission(ctx, tx, s, token, permission)
+						if (want && got != nil) || (!want && !errors.Is(got, platform.ErrForbidden)) {
+							t.Fatalf("permission fixture differs from intended %s=%t", permission, want)
+						}
+					}
+					_, err := tx.Exec(ctx, `INSERT INTO storefront.manual_order_discounts
+  (tenant_id,store_id,owner_id,principal_id,request_hash,name,amount_minor,quote_id)
+  VALUES($1,$2,$3,$4,$5,$6,$7,$8)`, s.TenantID, s.StoreID, owner, s.PrincipalID, hash[:], "直播優惠", int64(100), quoteID)
+					return err
+				})
+				n := e.count(`SELECT count(*) FROM storefront.manual_order_discounts WHERE owner_id=$1`, owner)
+				if err == nil || (sqlState(err) != "42501" && sqlState(err) != "PT403") || n != 0 {
+					t.Fatalf("unauthorized or preset-binding runtime INSERT must be denied and leave zero rows: SQLSTATE=%s rows=%d preset=%t", sqlState(err), n, preset)
+				}
+			})
+		}
+	}
+
+	aToken, aPrincipal := e.member("inventory:reserve", "catalog:read")
+	bToken, bPrincipal := e.member("inventory:reserve", "catalog:read")
+	if aPrincipal == bPrincipal {
+		t.Fatal("binder requires distinct merchant principals")
+	}
+	discount := &pricing.ManualDiscount{Name: "直播優惠", AmountMinor: 100}
+	for _, tc := range []struct {
+		name           string
+		auth           *pricing.ManualDiscount
+		frozen         *pricing.ManualDiscount
+		otherPrincipal bool
+	}{
+		{"another merchant principal", discount, discount, true},
+		{"missing frozen adjustment", discount, nil, false},
+		{"different frozen name", discount, &pricing.ManualDiscount{Name: "另一優惠", AmountMinor: 100}, false},
+		{"different frozen amount", discount, &pricing.ManualDiscount{Name: "直播優惠", AmountMinor: 200}, false},
+		{"no discount tombstone with adjusted quote", nil, discount, false},
+	} {
+		t.Run("bind/"+tc.name, func(t *testing.T) {
+			// Independent valid control first: same principal, matching authorization,
+			// same quote builder as the negative, including the no-discount tombstone.
+			// The HTTP 201 control above independently covers genuine CreateManualQuote.
+			control := e.newBuyer()
+			seed(t, control.cap.Scope.OwnerID, aPrincipal, tc.auth)
+			var valid storefront.Quote
+			if tc.otherPrincipal {
+				valid = quote(t, control, true)
+			} else {
+				valid = controlledQuote(t, control, tc.auth)
+			}
+			if err := bind(t, aToken, aPrincipal, valid.ID); err != nil {
+				t.Fatalf("matching binder control refused: SQLSTATE=%s", sqlState(err))
+			}
+			if n := e.count(`SELECT count(*) FROM storefront.manual_order_discounts WHERE owner_id=$1 AND quote_id=$2`, control.cap.Scope.OwnerID, valid.ID); n != 1 {
+				t.Fatal("matching control did not bind exactly one real quote")
+			}
+
+			b := e.newBuyer()
+			owner := b.cap.Scope.OwnerID
+			seed(t, owner, aPrincipal, tc.auth)
+			var candidate storefront.Quote
+			if tc.otherPrincipal {
+				candidate = quote(t, b, true)
+			} else {
+				candidate = controlledQuote(t, b, tc.frozen)
+			}
+
+			var frozen []byte
+			if err := f.owner.QueryRow(ctx, `SELECT snapshot FROM storefront.quotes WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3 AND id=$4`, e.tenant(), e.store(), owner, candidate.ID).Scan(&frozen); err != nil {
+				t.Fatal(err)
+			}
+			var saved storefront.Quote
+			if err := json.Unmarshal(frozen, &saved); err != nil || saved.ID != candidate.ID || saved.CartID != candidate.CartID || saved.Amount.DiscountMinor != candidate.Amount.DiscountMinor || saved.Amount.TotalMinor != candidate.Amount.TotalMinor || len(saved.Adjustments) != len(candidate.Adjustments) {
+				t.Fatal("candidate quote fixture was not inserted for this owner")
+			}
+			for i, adjustment := range saved.Adjustments {
+				if adjustment != candidate.Adjustments[i] {
+					t.Fatal("candidate frozen adjustment readback differs from setup")
+				}
+			}
+			before := readAuth(t, owner)
+			if n := e.count(`SELECT count(*) FROM storefront.manual_order_discounts WHERE owner_id=$1 AND quote_id IS NULL`, owner); n != 1 {
+				t.Fatal("negative binding fixture must start unbound")
+			}
+			token, principal := aToken, aPrincipal
+			if tc.otherPrincipal {
+				token, principal = bToken, bPrincipal
+			}
+			err := bind(t, token, principal, candidate.ID)
+			after := readAuth(t, owner)
+			var afterQuote []byte
+			if readErr := f.owner.QueryRow(ctx, `SELECT snapshot FROM storefront.quotes WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3 AND id=$4`, e.tenant(), e.store(), owner, candidate.ID).Scan(&afterQuote); readErr != nil {
+				t.Fatal(readErr)
+			}
+			if !bytes.Equal(frozen, afterQuote) {
+				t.Fatal("binder changed the frozen quote snapshot")
+			}
+			if err == nil || (sqlState(err) != "PT403" && sqlState(err) != "PT409") || !bytes.Equal(before, after) {
+				t.Fatalf("binder must refuse principal/adjustment mismatch without changing authorization: SQLSTATE=%s unchanged=%t", sqlState(err), bytes.Equal(before, after))
+			}
+		})
+	}
 }
 
 func mdForBuyerContract(t *testing.T) {
