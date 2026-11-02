@@ -602,10 +602,16 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await expect(page.getByTestId(`live-session-results-${scene}`)).toContainText(workspaceCopy[locale].paidOrders);
     // Cover the separate A5 list-copy surface once; every locale/size still exercises console copy below.
     if (index === 0) {
+      // Own this case's source scene; the unordered MOCK list may otherwise select a later case's lane.
+      const sourceRow = page.getByTestId(`live-session-results-${scene}`).locator("xpath=ancestor::button");
+      await sourceRow.click();
+      await expect(sourceRow).toHaveAttribute("aria-current", "true");
+      await expect.poll(() => new URL(page.url()).searchParams.get("scene")).toBe(scene);
       await page.getByRole("button", { name: parityWords[locale].copyLast, exact: true }).click();
       await page.getByLabel(parityWords[locale].copyName, { exact: true }).fill("LC-U1 copied from session list");
       await page.getByRole("button", { name: parityWords[locale].copyReview, exact: true }).click();
       await expect(page.getByRole("heading", { name: parityWords[locale].copied, exact: true })).toBeVisible();
+      expect((await facts(request)).receipts.at(-1)).toMatchObject({ scene, action: "copy", status: 200, effect: true });
       const listCopy = new URL(page.url()).searchParams.get("scene");
       expect(listCopy).not.toBe(scene);
       expect((await facts(request)).scenes[listCopy!]!.Title).toBe("LC-U1 copied from session list");
