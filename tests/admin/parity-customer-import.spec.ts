@@ -283,9 +283,9 @@ test.describe("PARITY-DATA-OPS C6 F03 independent preview layout", () => {
       const before = await f03State();
       expect(before.owners[`${prefix}-A`]).toBeUndefined(); expect(before.owners[`${prefix}-B`]).toBeUndefined();
       await action(page, d.changeFile, "click + native filechooser", "synthetic three-row file is selected without seeding a customer", async () => {
-        const chooser = page.waitForEvent("filechooser");
-        await page.getByRole("button", { name: d.changeFile, exact: true }).click();
-        await (await chooser).setFiles({ name: "f03-customers.csv", mimeType: "text/csv", buffer: Buffer.from(`source_id,name,phone\n${prefix}-A,${privateNameA},\n${prefix}-B,${privateNameB},\n,Synthetic F03 invalid,\n`) });
+        const chooser = page.waitForEvent("filechooser", { timeout: 15000 });
+        const [selected] = await Promise.all([chooser, page.getByRole("button", { name: d.changeFile, exact: true }).click({ timeout: 15000 })]);
+        await selected.setFiles({ name: "f03-customers.csv", mimeType: "text/csv", buffer: Buffer.from(`source_id,name,phone\n${prefix}-A,${privateNameA},\n${prefix}-B,${privateNameB},\n,Synthetic F03 invalid,\n`) });
         await expect(page.getByText("f03-customers.csv", { exact: true })).toBeVisible();
       });
       for (const [field, header] of [["external_id", "source_id"], ["name", "name"], ["phone", "phone"]])
@@ -293,9 +293,9 @@ test.describe("PARITY-DATA-OPS C6 F03 independent preview layout", () => {
           await page.getByTestId(`import-map-${field}`).selectOption(header);
           await expect(page.getByTestId(`import-map-${field}`)).toHaveValue(header);
         });
-      const response = page.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${store}/imports/customers/preview`);
-      await click(page, d.previewCustomers, "actual unseeded preview reports 2 new, 0 update, 1 failed and renders three safe rows", async () => {
-        const actual = await response;
+      await action(page, d.previewCustomers, "click", "actual unseeded preview reports 2 new, 0 update, 1 failed and renders three safe rows", async () => {
+        const response = page.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${store}/imports/customers/preview`, { timeout: 15000 });
+        const [actual] = await Promise.all([response, page.getByRole("button", { name: d.previewCustomers, exact: true }).click({ timeout: 15000 })]);
         expect(actual.status()).toBe(200);
         const preview = await actual.json();
         expect(preview).toMatchObject({ rows_total: 3, new_rows: 2, update_rows: 0, apply_rows: 2, failed_rows: 1 });

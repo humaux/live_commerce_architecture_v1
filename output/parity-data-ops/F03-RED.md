@@ -18,7 +18,7 @@ The unseeded input keeps the old synthetic three-row CSV shape: distinct valid p
 
 - Six independent tests: en/zh-TW/zh-CN ×1440/390. Each uses existing MOCK owner/OIDC sign-in, native filechooser, three native selectOption controls and actual Preview button. No direct import seed/commit or handler change.
 - A local helper checks three rows, exact safe localized composite summaries plus independent nonempty text, stable row IDs/order, original html lang and horizontal-overflow<=1. It reads each composite cell/row edge and requires both absolute deltas<=2CSSpx. A separate step soft-asserts each pager's actual visibility equals false. Immediate boolean visibility checks ensure a geometry RED cannot consume retry time and prevent observing the pager RED.
-- Native wheel movement uses read-only table coordinates to reach the row card. DOM evaluation only reads geometry/attributes. No force click, dispatchEvent, DOM write, swallowed failure, skip, expected-failure, timeout change or shared-helper change.
+- Native wheel movement uses read-only table coordinates to reach the row card. DOM evaluation only reads geometry/attributes. No force click, dispatchEvent, DOM write, swallowed failure, skip, expected-failure, old-timeout change or shared-helper change. New F03 chooser/response listeners and their native clicks have explicit15000ms bounds after root review.
 - Existing zh-TW preview and stale cases at both widths call the helper only **after their original captures**. Seed count, stale MOCK409 body/single attempt, request hash/UNKNOWN/privacy/amount/capture/wait assertions remain intact. Other existing outcome cases receive no new helper call.
 - Each new test records zero commit requests across the flow and compares existing readonly state before/after: owners/profiles/history/batches/consents/receipts/audits counts, complete owner map and batch array. It checks all synthetic private markers absent from main. Existing `action`/`click` support writes the actual click ledger at runtime; new attachment contains only safe row IDs, edge deltas and pager booleans.
 - Exact en/zh-CN signed pixel/copy approval remains UNKNOWN; existing copy only supplies functional control/summary labels. Mobile below-fold visual approval and full44-frame/tokenDiff gate remain unresolved.
@@ -39,8 +39,8 @@ All commands ran in the assigned tree unless the SOURCE card path is named. No s
 |Humaux own-element canvas update|ok; dispatch lock acquired=true, finally released; parent element/author lease untouched|
 |Browser/CI/Go/PG/platform/provider/push/dispatch|NOT_RUN; explicitly outside this card|
 
-Spec SHA256: `359e317b7a8b82769c551d5d0548c70380ad69179d266a35204b4ec1bb7172ae`.
-Exact spec diff SHA256 (`git diff <base> -- tests/admin/parity-customer-import.spec.ts` before commit): `118c5343596f4411021bd3666d2c54ec55816d9ee5ce755402dd45e25554fd53`.
+Spec SHA256 after root-review closure: `2d211e2ec4a6963f0148ea9826c0988e3ec004a1c073c3183cb7a039e2b74805`.
+Exact spec diff SHA256 (`git diff <base> -- tests/admin/parity-customer-import.spec.ts` before commit): `373a69430c39acfe5393e6b65fbe17ea5bfcc9021c859f3526736159b9fdedb3`.
 Original spec SHA256: `b68817c2d7e419804a622fe0645728624fcd77dec21c71b77e6e978d07d19b22`.
 Readonly `tests/admin/import-wizard.spec.ts` SHA256 unchanged: `393c865133fd11672c478d94709cd8c163e1fc9d4463e06fedca960645387bf7`; original5000-row Next/Previous50→51→1 and1280/PII oracles unchanged.
 
@@ -72,6 +72,14 @@ Original five untracked KEEP SHA256, independently checked before/after:
 |13081974565-error-context.md|075ff7e721d9a30d00aefc226d25a50d10e563b0d46a5912a1a3d0e327eda8ac|
 |13081974565-test-failed-1.png|99abbbe83f2acba27798441a58ae136db54fece4d29b2cb5ae40e08cbea2085a|
 |trace-summary.json|8169a244667615572954faf70421f3b5c8f0043348c019a667d8478ba606f25e|
+
+## Root-review closure (2026-11-02 16:28UTC)
+
+Root independently read the first candidate diff/report and reproduced the15940-byte inverse gate. Root identified that the newly added chooser wait and preview-response wait could reject after a separately awaited trigger failed, masking the first error. Read current `tests/ci/gate-waits-source.mjs` original rationale/rules and counterexamples in `gate-waits.test.mjs`; source blob `e072fc1818dd521d6f0015dc7a55a7e270c2a281`, SHA256 `cd2edcfa04c2b7ea7119a9ea5cce323c240ff315d13a3fe7003f5a6340b32a2e`. The scanner currently selects `.mjs` gates, so this `.spec.ts` correction applies the same source-backed failure-lifecycle rule; no claim that its existing file scan covered this spec.
+
+Only these two newly added F03 paths changed: register each listener before dispatch, then immediately `await Promise.all([wait, nativeClick])`; bound listeners and native clicks to15000ms. Preview uses existing `action(..., "click", ...)` to keep its genuine click and all response/visible DTO, zero-effect, privacy, geometry and pager assertions within the same recorded action. Shared `action`/`click`, old fixture and every original spec byte remain untouched. No swallowed rejection or timer extension.
+
+Parent reports prepush1632 exit1 **only generated ownership drift**, which root will handle; writer did not run prepush/generators or treat that failure as PASS. This follow-up is one local append commit over `3af2c9624100ed7a3f2fc72b32ffc70d7e20291d`, same task/two paths. Node syntax and inverse byte/KEEP/readonly-old-spec checks are each run once for the closure; runtime and typecheck remain NOT_RUN. No push, dispatch, installation or background process was started.
 
 ## Required next evidence / unresolved
 
