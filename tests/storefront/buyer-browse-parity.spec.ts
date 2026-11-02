@@ -1024,35 +1024,50 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
           const options = () => page.getByTestId("product-options-task");
           const optionsEntry = () => page.getByTestId("product-options-task-entry").getByRole("button", { name: c.chooseSpec, exact: true });
           const readCart = () => context.request.get(`${origin}/api/buyer/cart`, { headers: { "X-Buyer-Context": buyerContext }, timeout: T });
+          let phase: "setup-product-get" | "setup-merchant-data" | "setup-session-get" | "setup-session-data" | "setup-cart-get" | "setup-cart-data"
+            | "setup-navigation" | "setup-base" | "setup-alternative" | "entry-visible" | "entry-click" | "dialog-visible" | "heading"
+            | "url-preservation" | "zero-writes" | "readback-get" | "readback-data" | "merchant-content" | "layout"
+            | "header-return" | "dock-return" | "escape-return" | "dialog-closed" | "entry-focus"
+            | "options-entry" | "options-heading" | "options-selection" | "options-quantity" | "options-return" | "options-closed" | "options-focus"
+            | "draft-base" | "draft-reopened" = "setup-product-get";
           // Reuse the ledger, but never serialize raw Playwright/request/assertion errors (which can include preview/session data).
           const descriptionStep = (control: string, operation: string, expected: string, perform: () => Promise<string | void>) =>
             step(frame, productRoute, control, operation, expected, async () => {
               try { return await perform(); }
-              catch { throw new Error(`${control} failed; raw browser/request details withheld`); }
+              catch { throw new Error(`${control} failed at ${phase}; raw browser/request details withheld`); }
             });
           let setup = false;
           await descriptionStep("description setup", "GET existing product/session/cart + fresh product navigation", "real nonempty merchant description, active session, readable cart and a real available alternative SKU; setup failure is not a missing-entry RED", async () => {
+            phase = "setup-product-get";
             const response = await context.request.get(`${origin}/api/shop/product/${candle.slug}`, { timeout: T });
             assert(response.ok(), "product read setup failed");
+            phase = "setup-merchant-data";
             detail = await response.json();
             assert(detail && typeof detail.title === "string" && detail.title.trim().length > 0, "merchant title setup missing");
             assert(typeof detail.description === "string" && detail.description.trim().length > 0, "merchant description setup missing");
+            phase = "setup-session-get";
             const sessionResponse = await context.request.get(`${origin}/api/buyer/session`, { timeout: T });
             assert(sessionResponse.ok(), "session read setup failed");
+            phase = "setup-session-data";
             const session = await sessionResponse.json() as { state?: unknown; context?: unknown };
             assert(session.state === "active" && typeof session.context === "string" && session.context.length > 0, "active session setup missing");
             buyerContext = session.context;
+            phase = "setup-cart-get";
             const cart = await readCart();
             assert(cart.ok(), "cart read setup failed");
+            phase = "setup-cart-data";
             baseline = await cart.json();
+            phase = "setup-navigation";
             await page.goto(productURL, { timeout: T });
             originalURL = page.url();
             assert(new URL(originalURL).pathname === productRoute, "product route setup failed");
             for (const [key, value] of params) assert(urlParams().get(key) === value, "preview setup failed");
+            phase = "setup-base";
             const base = page.getByTestId("product-buy");
             await expect(base).toBeVisible({ timeout: T });
             const initial = await base.getAttribute("data-sku", { timeout: T });
             assert(detail.options.length > 0 && detail.variants.some((v) => v.sku_id === initial), "real option setup missing");
+            phase = "setup-alternative";
             alternative = detail.variants.find((v) => ["in", "low"].includes(v.stock) && v.sku_id !== initial && v.option_values.length === detail!.options.length);
             assert(alternative, "real available alternative SKU setup missing");
             setup = true;
@@ -1070,24 +1085,34 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
               }
             };
             const unchanged = async () => {
+              phase = "url-preservation";
               assert(page.url() === originalURL, "description must preserve the complete original URL");
               assert(new URL(page.url()).pathname === productRoute, "description must preserve the locale product path");
               for (const [key, value] of params) assert(urlParams().get(key) === value, "description must preserve preview");
+              phase = "zero-writes";
               assert.equal(writes.length, 0, "description and local draft actions must issue zero nonread requests");
+              phase = "readback-get";
               const response = await readCart();
               assert(response.ok(), "description cart readback failed");
+              phase = "readback-data";
               assert.deepEqual(await response.json(), baseline, "description must preserve the exact server cart");
             };
             const open = async () => {
+              phase = "entry-click";
               await entry().click({ timeout: T });
+              phase = "dialog-visible";
               await expect(task()).toBeVisible({ timeout: T });
+              phase = "heading";
               await expect(task().getByRole("heading", { name: c.descriptionTitle, exact: true })).toBeVisible({ timeout: T });
               await unchanged();
             };
             const close = async (method: "header" | "dock" | "Escape") => {
+              phase = method === "Escape" ? "escape-return" : method === "header" ? "header-return" : "dock-return";
               if (method === "Escape") await page.keyboard.press("Escape");
               else await task().getByTestId(`product-description-${method}`).getByRole("button", { name: c.specBack, exact: true }).click({ timeout: T });
+              phase = "dialog-closed";
               await expect(task()).toHaveCount(0, { timeout: T });
+              phase = "entry-focus";
               await expect(entry()).toBeFocused({ timeout: T });
               await unchanged();
             };
@@ -1095,6 +1120,7 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
             page.on("request", observeWrite);
             try {
               await descriptionStep("description task entry", "inspect exact entry + real click", `exact button "${c.descriptionEntry}" opens description on the same route; first causal product RED follows successful setup`, async () => {
+                phase = "entry-visible";
                 await expect(entry()).toBeVisible({ timeout: T });
                 await open();
                 reachable = true;
@@ -1104,10 +1130,12 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
                 notRun.push({ frame, locale, subcase: "description content/layout/header/dock/Escape/draft/zero-write", reason: "description entry/open acceptance failed; dependent behavior NOT_RUN, see causal description task entry FAIL" });
               } else {
                 await descriptionStep("description partial composition", "inspect visible merchant text + task bounds", "merchant title/description remain unchanged in each locale; task 390x844, header64 and dock84; no delivery promise asserted", async () => {
+                  phase = "merchant-content";
                   assert(detail);
                   await expect(task().getByRole("heading", { name: detail.title, exact: true })).toBeVisible({ timeout: T });
                   // Playwright exact text normalizes whitespace, including the real merchant description's paragraph breaks.
                   await expect(task().getByText(detail.description, { exact: true })).toBeVisible({ timeout: T });
+                  phase = "layout";
                   const body = await task().boundingBox({ timeout: T });
                   const header = await task().getByTestId("product-description-header").boundingBox({ timeout: T });
                   const dock = await task().getByTestId("product-description-dock").boundingBox({ timeout: T });
@@ -1135,20 +1163,28 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
                 } else {
                   let draftReady = false;
                   await descriptionStep("description draft setup", "real options entry/radios/quantity/back clicks", "select a real alternative SKU and quantity2 through accepted options controls without adding", async () => {
+                    phase = "setup-alternative";
                     assert(alternative);
+                    phase = "options-entry";
                     await optionsEntry().click({ timeout: T });
+                    phase = "options-heading";
                     await expect(options().getByRole("heading", { name: c.chooseSpec, exact: true })).toBeVisible({ timeout: T });
+                    phase = "options-selection";
                     for (const value of alternative.option_values) {
                       const radio = options().getByRole("radio", { name: value, exact: true });
                       await radio.locator("..").click({ timeout: T });
                       await expect(radio).toBeChecked({ timeout: T });
                     }
                     await expect(options().getByTestId("product-buy")).toHaveAttribute("data-sku", alternative.sku_id, { timeout: T });
+                    phase = "options-quantity";
                     await expect(options().getByTestId("qty-input")).toHaveValue("1", { timeout: T });
                     await options().getByRole("button", { name: c.increase, exact: true }).click({ timeout: T });
                     await expect(options().getByTestId("qty-input")).toHaveValue("2", { timeout: T });
+                    phase = "options-return";
                     await options().getByRole("button", { name: c.specBack, exact: true }).click({ timeout: T });
+                    phase = "options-closed";
                     await expect(options()).toHaveCount(0, { timeout: T });
+                    phase = "options-focus";
                     await expect(optionsEntry()).toBeFocused({ timeout: T });
                     await unchanged();
                     draftReady = true;
@@ -1160,20 +1196,27 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
                     }
                     draftReady = false;
                     await descriptionStep(`description ${method} selected draft preservation`, "open description + close + reopen options", "base and reopened options retain real chosen SKU, exact selected radios and quantity2; zero cart/session writes", async () => {
+                      phase = "draft-base";
                       assert(alternative);
                       const base = page.getByTestId("product-buy");
                       await expect(base).toHaveAttribute("data-sku", alternative.sku_id, { timeout: T });
                       await expect(base.getByTestId("qty-input")).toHaveValue("2", { timeout: T });
                       await open();
                       await close(method);
+                      phase = "draft-base";
                       await expect(base).toHaveAttribute("data-sku", alternative.sku_id, { timeout: T });
                       await expect(base.getByTestId("qty-input")).toHaveValue("2", { timeout: T });
+                      phase = "options-entry";
                       await optionsEntry().click({ timeout: T });
+                      phase = "draft-reopened";
                       await expect(options().getByTestId("product-buy")).toHaveAttribute("data-sku", alternative.sku_id, { timeout: T });
                       await expect(options().getByTestId("qty-input")).toHaveValue("2", { timeout: T });
                       for (const value of alternative.option_values) await expect(options().getByRole("radio", { name: value, exact: true })).toBeChecked({ timeout: T });
+                      phase = "options-return";
                       await options().getByRole("button", { name: c.specBack, exact: true }).click({ timeout: T });
+                      phase = "options-closed";
                       await expect(options()).toHaveCount(0, { timeout: T });
+                      phase = "options-focus";
                       await expect(optionsEntry()).toBeFocused({ timeout: T });
                       await unchanged();
                       draftReady = true;
