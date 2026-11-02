@@ -1,6 +1,6 @@
-# Purpose: inject the one frozen manual-discount permission fault in CI only.
+# Purpose: inject the three frozen manual-discount permission faults in CI only.
 # Depends on: Python stdlib, git and a disposable workflow_dispatch checkout.
-# Used by: gates.yml with LC_MANUAL_DISCOUNT_MUTATION=drop-catalog-fence.
+# Used by: gates.yml with one closed LC_MANUAL_DISCOUNT_MUTATION enum.
 # Invariants: validate all inputs/anchors before one atomic source replacement;
 # retain source SHA/hashes/SQL diff and let the unchanged PG gate report RED.
 
@@ -22,16 +22,36 @@ BEFORE = b"v_auth_error:=identity.merchant_access_denied(p_hash,p_store,ARRAY['i
 AFTER = b"v_auth_error:=identity.merchant_access_denied(p_hash,p_store,ARRAY['inventory:reserve'],s.tenant_id,s.principal_id,s.authz_revision);"
 
 
+# Closed plans only: each enum has one exact focused mode and function body.
+PLANS = {
+    MUTATION: (MODE, START, ((BEFORE, AFTER, 2),)),
+    "drop-bind-catalog-fence": (
+        "focused:^TestMerchantToolsManualOrder$/^FEAT-MANUAL-DISCOUNT$/^runtime_database_boundary$/^bind_authority$",
+        b"CREATE FUNCTION fulfillment.bind_manual_order_discount(",
+        ((BEFORE, AFTER, 2),)),
+    "drop-adjustment-orders-fence": (
+        "focused:^TestMerchantToolsManualOrder$/^FEAT-MANUAL-DISCOUNT$/^runtime_database_boundary$/^read_adjustments_authority$",
+        b"CREATE FUNCTION identity.read_order_adjustments(",
+        ((b"SELECT * INTO s FROM identity.resolve_access(p_hash,p_store,'orders:read');",
+          b"SELECT * INTO s FROM identity.resolve_access(p_hash,p_store,'store:read');", 1),
+         (b"v_auth_error:=identity.merchant_access_denied(p_hash,p_store,ARRAY['orders:read'],s.tenant_id,s.principal_id,s.authz_revision);",
+          b"v_auth_error:=identity.merchant_access_denied(p_hash,p_store,ARRAY['store:read'],s.tenant_id,s.principal_id,s.authz_revision);", 1))),
+}
+
+
 def main():
+    mutation = os.environ.get("LC_MANUAL_DISCOUNT_MUTATION")
+    if mutation not in PLANS:
+        raise SystemExit("unknown or combined manual discount mutation input")
+    mode, function_start, replacements = PLANS[mutation]
     if (os.environ.get("GITHUB_ACTIONS") != "true"
             or os.environ.get("CI") != "true"
             or os.environ.get("GITHUB_EVENT_NAME") != "workflow_dispatch"
-            or os.environ.get("MODE") != MODE
+            or os.environ.get("MODE") != mode
             or os.environ.get("BUNDLE") != "false"
             or os.environ.get("LC_PREBUILT_DIR")):
         raise SystemExit("manual discount mutation requires its exact disposable CI dispatch mode, without prebuilt")
-    if (os.environ.get("LC_MANUAL_DISCOUNT_MUTATION") != MUTATION
-            or os.environ.get("EXTRA_ENV") != "LC_MANUAL_DISCOUNT_MUTATION=" + MUTATION
+    if (os.environ.get("EXTRA_ENV") != "LC_MANUAL_DISCOUNT_MUTATION=" + mutation
             or os.environ.get("LC_OA_MUTATION")
             or os.environ.get("LC_IMPORT_FIELD_MUTATION")):
         raise SystemExit("unknown or combined manual discount mutation input")
@@ -49,19 +69,25 @@ def main():
     original = target.read_bytes()
     if original != subprocess.check_output(["git", "show", "HEAD:" + SOURCE]):
         raise SystemExit("mutation source differs from HEAD")
-    if original.count(START) != 1:
-        raise SystemExit("authorize function anchor must occur exactly once")
-    start = original.index(START)
+    if original.count(function_start) != 1:
+        raise SystemExit("selected function anchor must occur exactly once")
+    start = original.index(function_start)
     end = original.find(END, start)
     if end < 0:
-        raise SystemExit("authorize function end anchor missing")
+        raise SystemExit("selected function end anchor missing")
     end += len(END)
     body = original[start:end]
-    if body.count(BEFORE) != 2 or AFTER in body:
-        raise SystemExit("authorize catalog fence must match exactly twice")
-    changed = original[:start] + body.replace(BEFORE, AFTER) + original[end:]
-    if changed[:start] != original[:start] or changed[end - 2 * (len(BEFORE) - len(AFTER)):] != original[end:]:
-        raise SystemExit("mutation escaped authorize function")
+    # Validate every original anchor before constructing or writing a mutation.
+    for before, after, matches in replacements:
+        if body.count(before) != matches or after in body:
+            raise SystemExit("selected permission fence anchor count differs")
+    changed_body = body
+    for before, after, matches in replacements:
+        changed_body = changed_body.replace(before, after)
+    changed = original[:start] + changed_body + original[end:]
+    changed_end = start + len(changed_body)
+    if changed[:start] != original[:start] or changed[changed_end:] != original[end:]:
+        raise SystemExit("mutation escaped selected function")
     evidence = root / "output/ci-gates"
     receipt_path = evidence / "manual-discount-mutation.json"
     patch_path = evidence / "manual-discount-mutation.patch"
@@ -84,11 +110,20 @@ def main():
             os.unlink(temp_name)
     patch = subprocess.check_output(["git", "diff", "--no-ext-diff", "--no-textconv", "--", SOURCE])
     receipt = {
-        "mutation": MUTATION, "source_sha": source_sha, "mode": MODE,
-        "changes": [{"path": SOURCE, "matches": 2,
+        "mutation": mutation, "source_sha": source_sha, "mode": mode,
+        "changes": [{"path": SOURCE, "matches": sum(n for _, _, n in replacements),
                      "before_sha256": hashlib.sha256(original).hexdigest(),
                      "after_sha256": hashlib.sha256(changed).hexdigest()}],
         "patch_sha256": hashlib.sha256(patch).hexdigest(),
+        "function_start": function_start.decode(),
+        "replacements": [{"matches": n,
+                          "before_anchor_sha256": hashlib.sha256(before).hexdigest(),
+                          "after_anchor_sha256": hashlib.sha256(after).hexdigest()}
+                         for before, after, n in replacements],
+        "prefix_unchanged": changed[:start] == original[:start],
+        "suffix_unchanged": changed[changed_end:] == original[end:],
+        "prefix_sha256": hashlib.sha256(original[:start]).hexdigest(),
+        "suffix_sha256": hashlib.sha256(original[end:]).hexdigest(),
     }
     evidence.mkdir(parents=True, exist_ok=True)
     receipt_path.write_text(json.dumps(receipt, indent=2) + "\n")

@@ -564,6 +564,305 @@ func mdDBBoundaryContract(t *testing.T) {
 		return candidate
 	}
 
+	// The two direct matrices use store:read only for scope entry. Target SQLSTATE
+	// is captured separately, so neither a Go guard nor scope setup can satisfy it.
+	t.Run("bind_authority", func(t *testing.T) {
+		const targetSQL = `SELECT fulfillment.bind_manual_order_discount($1::bytea,$2::uuid,$3::uuid)`
+		const signature = "fulfillment.bind_manual_order_discount(bytea,uuid,uuid)"
+		var functionOID uint32
+		if err := f.owner.QueryRow(ctx, `SELECT $1::regprocedure::oid`, signature).Scan(&functionOID); err != nil {
+			t.Fatal(err)
+		}
+		d := &pricing.ManualDiscount{Name: "直播優惠", AmountMinor: 100}
+		fixture := func(t *testing.T, principal string) (string, storefront.Quote, []byte, []byte) {
+			t.Helper()
+			b := e.newBuyer()
+			owner := b.cap.Scope.OwnerID
+			seed(t, owner, principal, d)
+			q := quote(t, b, true) // Real CreateManualQuote, matching this authorization.
+			var frozen []byte
+			if err := f.owner.QueryRow(ctx, `SELECT snapshot FROM storefront.quotes WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3 AND id=$4`, e.tenant(), e.store(), owner, q.ID).Scan(&frozen); err != nil {
+				t.Fatal(err)
+			}
+			var saved storefront.Quote
+			if err := json.Unmarshal(frozen, &saved); err != nil || saved.ID != q.ID || saved.Currency != "TWD" || len(saved.Adjustments) != 1 || saved.Adjustments[0].Kind != "manual_discount" || saved.Adjustments[0].Currency != "TWD" || saved.Adjustments[0].Name != d.Name || saved.Adjustments[0].AmountMinor != d.AmountMinor {
+				t.Fatal("binder authority fixture must have the exact real frozen adjustment")
+			}
+			hash := sha256.Sum256([]byte("synthetic DB-boundary authorization " + owner))
+			if e.count(`SELECT count(*) FROM storefront.manual_order_discounts WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3 AND principal_id=$4 AND request_hash=$5 AND name=$6 AND amount_minor=$7 AND quote_id IS NULL`, e.tenant(), e.store(), owner, principal, hash[:], d.Name, d.AmountMinor) != 1 {
+				t.Fatal("binder authority fixture must have the complete matching unbound tuple")
+			}
+			return owner, q, readAuth(t, owner), frozen
+		}
+		unchanged := func(t *testing.T, owner string, q storefront.Quote, before, frozen []byte) {
+			t.Helper()
+			var afterQuote []byte
+			if err := f.owner.QueryRow(ctx, `SELECT snapshot FROM storefront.quotes WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3 AND id=$4`, e.tenant(), e.store(), owner, q.ID).Scan(&afterQuote); err != nil {
+				t.Fatal(err)
+			}
+			if !bytes.Equal(before, readAuth(t, owner)) || !bytes.Equal(frozen, afterQuote) || e.count(`SELECT count(*) FROM storefront.manual_order_discounts WHERE owner_id=$1 AND quote_id IS NULL`, owner) != 1 {
+				t.Fatal("rejected binder must preserve the full authorization tuple, NULL binding and frozen quote bytes")
+			}
+		}
+		positive := func(t *testing.T, token, principal string) {
+			t.Helper()
+			owner, q, before, frozen := fixture(t, principal)
+			hash := sha256.Sum256([]byte(token))
+			entered := false
+			var targetErr error
+			err := scoped(t, token, principal, "store:read", func(tx pgx.Tx, _ platform.Scope) error {
+				entered = true
+				_, targetErr = tx.Exec(ctx, targetSQL, hash[:], e.store(), q.ID)
+				return targetErr
+			})
+			if !entered || err != nil || targetErr != nil {
+				t.Fatalf("direct binder positive target: entered=%t SQLSTATE=%s wrapper=%s", entered, sqlState(targetErr), sqlState(err))
+			}
+			var old, saved map[string]any
+			if json.Unmarshal(before, &old) != nil || json.Unmarshal(readAuth(t, owner), &saved) != nil {
+				t.Fatal("binder positive tuple decode")
+			}
+			old["quote_id"] = q.ID
+			want, _ := json.Marshal(old)
+			got, _ := json.Marshal(saved)
+			var afterQuote []byte
+			if err := f.owner.QueryRow(ctx, `SELECT snapshot FROM storefront.quotes WHERE id=$1`, q.ID).Scan(&afterQuote); err != nil || !bytes.Equal(want, got) || !bytes.Equal(frozen, afterQuote) {
+				t.Fatal("binder positive must change only the exact quote binding")
+			}
+			t.Log("bind_authority positive target entered and exact tuple bound")
+		}
+		for _, tc := range []struct {
+			name, guc string
+			perms     []string
+		}{
+			{"both permissions", "", []string{"inventory:reserve", "catalog:read"}},
+			{"missing catalog read", "", []string{"inventory:reserve"}},
+			{"missing inventory reserve", "", []string{"catalog:read"}},
+			{"neither permission", "", nil},
+			{"tenant GUC mismatch", "app.tenant_id", []string{"inventory:reserve", "catalog:read"}},
+			{"store GUC mismatch", "app.store_id", []string{"inventory:reserve", "catalog:read"}},
+			{"principal GUC mismatch", "app.principal_id", []string{"inventory:reserve", "catalog:read"}},
+			{"mixed buyer GUC", "app.buyer_id", []string{"inventory:reserve", "catalog:read"}},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				token, principal := e.member(tc.perms...)
+				if len(tc.perms) == 2 {
+					positive(t, token, principal)
+				} else {
+					controlToken, controlPrincipal := e.member("inventory:reserve", "catalog:read")
+					positive(t, controlToken, controlPrincipal) // Same constructor, both permissions, matching principal.
+				}
+				if tc.name == "both permissions" {
+					return
+				}
+				owner, q, before, frozen := fixture(t, principal)
+				_, otherPrincipal := e.member("inventory:reserve", "catalog:read")
+				values := map[string]string{"app.tenant_id": f.tenantB, "app.store_id": f.storeA2, "app.principal_id": otherPrincipal, "app.buyer_id": owner}
+				hash := sha256.Sum256([]byte(token))
+				entered := false
+				var targetErr error
+				err := scoped(t, token, principal, "store:read", func(tx pgx.Tx, s platform.Scope) error {
+					for _, permission := range []string{"inventory:reserve", "catalog:read"} {
+						want := 0
+						for _, granted := range tc.perms {
+							if granted == permission {
+								want = 1
+							}
+						}
+						if e.count(`SELECT count(*) FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission=$4`, s.TenantID, s.StoreID, s.PrincipalID, permission) != want {
+							t.Fatal("binder authority actual permission fixture differs")
+						}
+					}
+					if tc.guc != "" {
+						var saved string
+						if err := tx.QueryRow(ctx, `SELECT set_config($1,$2,true)`, tc.guc, values[tc.guc]).Scan(&saved); err != nil || saved != values[tc.guc] {
+							t.Fatal("binder GUC setup failed before target")
+						}
+					}
+					entered = true
+					_, targetErr = tx.Exec(ctx, targetSQL, hash[:], e.store(), q.ID)
+					return targetErr
+				})
+				if !entered || sqlState(targetErr) != "PT403" || sqlState(err) != "PT403" {
+					t.Fatalf("direct binder authority must deny: entered=%t target SQLSTATE=%s wrapper=%s", entered, sqlState(targetErr), sqlState(err))
+				}
+				unchanged(t, owner, q, before, frozen)
+				t.Log("bind_authority negative target entered: PT403 and unchanged full tuple/quote")
+			})
+		}
+		for _, role := range []string{"commerce_buyer_runtime", "commerce_checkout_runtime"} {
+			t.Run(role+" EXECUTE denied", func(t *testing.T) {
+				token, principal := e.member("inventory:reserve", "catalog:read")
+				positive(t, token, principal)
+				owner, q, before, frozen := fixture(t, principal)
+				pool := e.p.a.runtime
+				if role == "commerce_checkout_runtime" {
+					pool = e.p.pool
+				}
+				tx, err := pool.Begin(ctx)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer tx.Rollback(ctx)
+				mdRestrictedDefinerLogin(t, tx, role, "fulfillment", functionOID, true)
+				hash := sha256.Sum256([]byte(token))
+				_, targetErr := tx.Exec(ctx, targetSQL, hash[:], e.store(), q.ID)
+				if err := tx.Rollback(ctx); err != nil {
+					t.Fatal(err)
+				}
+				if sqlState(targetErr) != "42501" {
+					t.Fatalf("actual role binder EXECUTE: SQLSTATE=%s", sqlState(targetErr))
+				}
+				unchanged(t, owner, q, before, frozen)
+				t.Log("bind_authority actual-login target entered: 42501 and unchanged full tuple/quote")
+			})
+		}
+	})
+
+	t.Run("read_adjustments_authority", func(t *testing.T) {
+		const targetSQL = `SELECT identity.read_order_adjustments($1::bytea,$2::uuid,$3::uuid)`
+		const signature = "identity.read_order_adjustments(bytea,uuid,uuid)"
+		var functionOID uint32
+		if err := f.owner.QueryRow(ctx, `SELECT $1::regprocedure::oid`, signature).Scan(&functionOID); err != nil {
+			t.Fatal(err)
+		}
+		place := func(t *testing.T, discounted bool) (string, []byte) {
+			t.Helper()
+			body := mdBody(e.p.stock.skus[0].ID, 2, home, "bank_transfer", mdHome, 100)
+			if !discounted {
+				delete(body, "discount")
+			}
+			status, out := a.place(t04Key("md-reader-order"), body)
+			order, ok := out["order_id"].(string)
+			wantTotal := float64(2500)
+			if discounted {
+				wantTotal = 2400
+			}
+			if status != 201 || !ok || order == "" || out["total_minor"] != wantTotal {
+				t.Fatalf("reader real manual-order fixture: HTTP=%d total=%v", status, out["total_minor"])
+			}
+			var frozen []byte
+			if err := f.owner.QueryRow(ctx, `SELECT coalesce(snapshot#>'{quote,adjustments}','[]'::jsonb) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2 AND id=$3 AND source='merchant_manual'`, e.tenant(), e.store(), order).Scan(&frozen); err != nil {
+				t.Fatal(err)
+			}
+			mdExactAdjustments(t, frozen, discounted)
+			return order, frozen
+		}
+		positive := func(t *testing.T, token, principal, order string, discounted bool, frozen []byte) {
+			t.Helper()
+			hash := sha256.Sum256([]byte(token))
+			entered := false
+			var raw []byte
+			var targetErr error
+			err := scoped(t, token, principal, "store:read", func(tx pgx.Tx, _ platform.Scope) error {
+				entered = true
+				targetErr = tx.QueryRow(ctx, targetSQL, hash[:], e.store(), order).Scan(&raw)
+				return targetErr
+			})
+			if !entered || err != nil || targetErr != nil || !bytes.Equal(frozen, raw) {
+				t.Fatalf("direct reader positive target: entered=%t target SQLSTATE=%s wrapper=%s exact=%t", entered, sqlState(targetErr), sqlState(err), bytes.Equal(frozen, raw))
+			}
+			mdExactAdjustments(t, raw, discounted)
+			t.Log("read_adjustments_authority positive target entered with exact frozen JSON")
+		}
+		for _, discounted := range []bool{true, false} {
+			name := "exact named adjustment"
+			if !discounted {
+				name = "no discount empty array"
+			}
+			t.Run(name, func(t *testing.T) {
+				token, principal := e.member("orders:read")
+				order, frozen := place(t, discounted)
+				positive(t, token, principal, order, discounted, frozen)
+			})
+		}
+		for _, tc := range []struct {
+			name, guc string
+			missing   bool
+		}{
+			{"missing orders read", "", true},
+			{"tenant GUC mismatch", "app.tenant_id", false},
+			{"store GUC mismatch", "app.store_id", false},
+			{"principal GUC mismatch", "app.principal_id", false},
+			{"same tenant foreign store order", "", false},
+			{"cross tenant order", "", false},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				controlToken, controlPrincipal := e.member("orders:read")
+				order, frozen := place(t, true)
+				positive(t, controlToken, controlPrincipal, order, true, frozen)
+				token, principal := controlToken, controlPrincipal
+				if tc.missing {
+					token, principal = e.member()
+				}
+				wantState := "PT403"
+				if tc.name == "same tenant foreign store order" || tc.name == "cross tenant order" {
+					foreignStore, foreignOrder := moBeginInOtherStore(t, f, tc.name == "same tenant foreign store order")
+					var tenant, store string
+					if err := f.owner.QueryRow(ctx, `SELECT tenant_id::text,store_id::text FROM checkout.orders WHERE id=$1`, foreignOrder).Scan(&tenant, &store); err != nil || store != foreignStore || store == e.store() || (tenant == e.tenant()) != (tc.name == "same tenant foreign store order") {
+						t.Fatal("reader foreign order must be a real checkout order in the intended tenant/store")
+					}
+					order, wantState = foreignOrder, "PT404"
+				}
+				_, otherPrincipal := e.member("orders:read")
+				values := map[string]string{"app.tenant_id": f.tenantB, "app.store_id": f.storeA2, "app.principal_id": otherPrincipal}
+				hash := sha256.Sum256([]byte(token))
+				entered := false
+				var raw []byte
+				var targetErr error
+				err := scoped(t, token, principal, "store:read", func(tx pgx.Tx, s platform.Scope) error {
+					want := 1
+					if tc.missing {
+						want = 0
+					}
+					if e.count(`SELECT count(*) FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='orders:read'`, s.TenantID, s.StoreID, s.PrincipalID) != want {
+						t.Fatal("reader authority actual permission fixture differs")
+					}
+					if tc.guc != "" {
+						var saved string
+						if err := tx.QueryRow(ctx, `SELECT set_config($1,$2,true)`, tc.guc, values[tc.guc]).Scan(&saved); err != nil || saved != values[tc.guc] {
+							t.Fatal("reader GUC setup failed before target")
+						}
+					}
+					entered = true
+					targetErr = tx.QueryRow(ctx, targetSQL, hash[:], e.store(), order).Scan(&raw)
+					return targetErr
+				})
+				if !entered || sqlState(targetErr) != wantState || sqlState(err) != wantState || len(raw) != 0 {
+					t.Fatalf("direct reader authority must deny without data: entered=%t target SQLSTATE=%s wrapper=%s bytes=%d want=%s", entered, sqlState(targetErr), sqlState(err), len(raw), wantState)
+				}
+				t.Logf("read_adjustments_authority negative target entered: %s and no data", wantState)
+			})
+		}
+		for _, role := range []string{"commerce_buyer_runtime", "commerce_checkout_runtime"} {
+			t.Run(role+" schema-or-function access denied", func(t *testing.T) {
+				token, principal := e.member("orders:read")
+				order, frozen := place(t, true)
+				positive(t, token, principal, order, true, frozen)
+				pool := e.p.a.runtime
+				if role == "commerce_checkout_runtime" {
+					pool = e.p.pool
+				}
+				tx, err := pool.Begin(ctx)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer tx.Rollback(ctx)
+				mdRestrictedDefinerLogin(t, tx, role, "identity", functionOID, false)
+				hash := sha256.Sum256([]byte(token))
+				var raw []byte
+				targetErr := tx.QueryRow(ctx, targetSQL, hash[:], e.store(), order).Scan(&raw)
+				if err := tx.Rollback(ctx); err != nil {
+					t.Fatal(err)
+				}
+				if sqlState(targetErr) != "42501" || len(raw) != 0 {
+					t.Fatalf("actual role reader schema-or-function access: SQLSTATE=%s bytes=%d", sqlState(targetErr), len(raw))
+				}
+				t.Log("read_adjustments_authority actual-login call attempted: schema-or-function 42501/no data; function EXECUTE independently false by OID")
+			})
+		}
+	})
+
 	// Exercise the replacement SECURITY DEFINER itself: store:read opens the
 	// callback even when either write permission is absent. No Go write guard
 	// can supply the expected database error on behalf of the target function.
@@ -920,5 +1219,40 @@ func mdPickerContract(t *testing.T, a v2Admin, product, query string) {
 	}
 	if !pictured || !without {
 		t.Fatalf("fixture must cover pictured and image-less products: %v/%v", pictured, without)
+	}
+}
+
+// mdRestrictedDefinerLogin verifies a genuine login, including SET-reachable
+// privileged membership; an owner transaction with SET ROLE cannot pass.
+func mdRestrictedDefinerLogin(t *testing.T, tx pgx.Tx, role, schema string, functionOID uint32, wantUsage bool) {
+	t.Helper()
+	var sameLogin, intended, privileged, usage, execute bool
+	if err := tx.QueryRow(context.Background(), `SELECT current_user=session_user,
+ pg_has_role(current_user,$1,'USAGE'),
+ EXISTS(SELECT 1 FROM pg_roles r WHERE (r.rolsuper OR r.rolbypassrls OR r.rolcreaterole OR r.rolcreatedb OR r.rolreplication OR r.rolname IN ('commerce_auth','commerce_runtime')) AND pg_has_role(current_user,r.oid,'MEMBER')),
+ has_schema_privilege(current_user,$2,'USAGE'),has_function_privilege(current_user,$3::oid,'EXECUTE')`, role, schema, functionOID).Scan(&sameLogin, &intended, &privileged, &usage, &execute); err != nil {
+		t.Fatal(err)
+	}
+	if !sameLogin || !intended || privileged || usage != wantUsage || execute {
+		t.Fatalf("definer ACL login/schema/function mismatch: sameLogin=%t intended=%t privileged=%t schemaUsage=%t want=%t execute=%t", sameLogin, intended, privileged, usage, wantUsage, execute)
+	}
+	t.Logf("actual restricted login: schema=%s USAGE=%t functionOID=%d EXECUTE=%t", schema, usage, functionOID, execute)
+}
+
+// mdExactAdjustments independently fixes every allowed JSON field and value.
+func mdExactAdjustments(t *testing.T, raw []byte, discounted bool) {
+	t.Helper()
+	var lines []map[string]any
+	if err := json.Unmarshal(raw, &lines); err != nil || lines == nil {
+		t.Fatal("adjustment reader must return a JSON array, never null")
+	}
+	if !discounted {
+		if len(lines) != 0 || string(raw) != "[]" {
+			t.Fatal("no-discount reader must return exactly []")
+		}
+		return
+	}
+	if len(lines) != 1 || len(lines[0]) != 4 || lines[0]["kind"] != "manual_discount" || lines[0]["name"] != "直播優惠" || lines[0]["currency"] != "TWD" || lines[0]["amount_minor"] != float64(100) {
+		t.Fatal("reader must return only the exact frozen kind/name/currency/amount")
 	}
 }
