@@ -605,6 +605,12 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
       // Own this case's source scene; the unordered MOCK list may otherwise select a later case's lane.
       const sourceRow = page.getByTestId(`live-session-results-${scene}`).locator("xpath=ancestor::button");
       await sourceRow.click();
+      await expect.poll(() => new URL(page.url()).searchParams.get("scene")).toBe(scene);
+      await expect(page.getByRole("heading", { name: parityWords[locale].prepare, exact: true })).toBeVisible();
+      await expect(page.getByTestId("merchant-studio").getByRole("link", { name: parityWords[locale].console, exact: true }))
+        .toHaveAttribute("href", `/${locale}/studio/console?store=${store}&scene=${scene}`);
+      // Selection opens preparation and unmounts the list. Exercise its existing same-scene edit route for list-copy.
+      await page.goto(`${origin}/${locale}/studio?store=${store}&scene=${scene}#edit`);
       await expect(sourceRow).toHaveAttribute("aria-current", "true");
       await expect.poll(() => new URL(page.url()).searchParams.get("scene")).toBe(scene);
       await page.getByRole("button", { name: parityWords[locale].copyLast, exact: true }).click();
