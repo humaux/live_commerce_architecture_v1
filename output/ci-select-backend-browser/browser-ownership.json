@@ -212,7 +212,7 @@
     "tests/admin/studio-input.test.ts": "6fbfa353cfe6be733fcf44de842246af8af464ad7f532e72478e3ac11123d27e",
     "tests/admin/studio-request.test.ts": "5fa7349f872b332e92816bc0bf9f9c5e7523e57c9a18107f0ae9f21c77a0a045",
     "tests/admin/studio-ui.spec.ts": "c53bd85544b1541f3bb259aab084ab0a39a12fa13acd94d1099de48bddee5217",
-    "tests/admin/studio-ui2-c4-metadata.spec.ts": "da2d9489e579cb882b7b1d3c96a4196432cb84e89ea2207f5cc96d9198f20056",
+    "tests/admin/studio-ui2-c4-metadata.spec.ts": "5accc81b37aaafb60e4d1955251eac7a1facac9d3a3f3547ccdb27f019411bb5",
     "tests/admin/taiwan-cvs.spec.ts": "589cc5eed65fb8b8830ca15e6007606ce06a1f81e9bee7a0c66234316b2c697d",
     "tests/admin/team-bff.test.ts": "b8d7bde20c6743018f4e0b528733d87edcf00b13383d9a4560fe854f3e74a9e1",
     "tests/admin/team-model.test.ts": "d11c2e907da6ed6079e83394dbe28c88d5552d353650b290d488ce1eff51a5d0",
