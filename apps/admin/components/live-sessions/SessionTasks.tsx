@@ -3,7 +3,7 @@
 // Used by: Studio; SessionReview owns report-only states.
 // Invariants: lifecycle and copy CAS remain server-owned; durable UNKNOWN keys are never replaced.
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { liveSessionsCopy, type Locale } from "@live-commerce/i18n";
 import { money } from "@live-commerce/format";
@@ -25,8 +25,9 @@ export function useSessionTask() {
 }
 
 /** Uses the original command journal for copies and lifecycle changes. */
-export function SessionTasks({ locale, store, detail, task, refresh, copyResult, onCopy }: {
+export function SessionTasks({ locale, store, detail, task, refresh, copyResult, onCopy, registerNavigationGuard, onEdit, onBack }: {
   locale: Locale; store: string; detail: StudioDetail; task: string; refresh: () => void; copyResult: CopyResult | null; onCopy: (value: CopyResult) => void;
+  registerNavigationGuard: (guard: () => boolean) => () => void; onEdit: () => void; onBack: () => void;
 }) {
   const c = liveSessionsCopy[locale], router = useRouter(), scene = detail.draft.session_id;
   const base = `/${locale}/studio?store=${store}&scene=${scene}`;
@@ -38,15 +39,23 @@ export function SessionTasks({ locale, store, detail, task, refresh, copyResult,
     if (request.path.endsWith("/copy")) copied(value as CopyResult);
     else window.location.hash = "post-live";
   });
+  // Bridge the original journal's current fence; navigation never clears or replaces it.
+  const navigationBlocked = useRef(true);
+  navigationBlocked.current = command.blocked || !authority.boundary;
+  useLayoutEffect(() => registerNavigationGuard(() => !navigationBlocked.current), [registerNavigationGuard]);
   function copied(value: CopyResult) { onCopy(value); router.push(`/${locale}/studio?store=${store}&scene=${value.session.session_id}#next-draft`); }
   const phase = task === "next-draft" ? "next" : task === "copy" || copying ? "copy" : task === "end" ? "end" : task === "post-live" ? "after" : "prepare";
   const titleKey = phase === "next" ? c.copied : phase === "copy" ? c.copy : phase === "end" ? c.end : phase === "after" ? c.after : c.prepare;
+  const copiedDetail = copyResult?.session.session_id === scene && authority.data?.draft.session_id === scene && !!authority.boundary && !command.blocked;
+  const canEdit = detail.can_manage && detail.draft.state === "DRAFT" && !navigationBlocked.current;
   const error = command.error || snapshot.error;
   return <section className={s.page} aria-busy={command.busy}>
     <h1>{titleKey}</h1><p>{detail.draft.title}</p>
-    {error && <p role="alert">{command.canRetry ? c.uncertain : c.unavailable}</p>}
+    {error && <p role="alert">{command.canRetry ? c.copyUnconfirmed : c.unavailable}</p>}
+    {command.canRetry && <p>{c.copyUnconfirmedHelp}</p>}
     {command.canRetry && <button type="button" onClick={() => void command.retry()}>{c.retry}</button>}
     {phase === "prepare" && <>
+      <div className={s.footer}><button type="button" disabled={!canEdit} onClick={onEdit}>{c.editDraft}</button></div>
       <div className={s.card}><h2>{c.source}</h2><p>{c.sourceHelp}</p><div className={s.row}><a href={`/${locale}/studio/console?store=${store}&scene=${scene}`}>{c.console}</a><a href={`/${locale}/settings?store=${store}#facebook-instagram`}>{c.connections}</a></div></div>
       <div className={s.card}><h2>{c.device}</h2><p>{c.deviceHelp}</p><p className={s.note}>{c.deviceDisclaimer}</p></div>
       <div className={s.card}><h2>{c.productsCheck}</h2><p>{c.productsHelp}</p><div className={s.row}><a href={`${claims}#preflight`}>{c.settings}</a><a href={`/${locale}/studio/settings?store=${store}&scene=${scene}`}>{c.templates}</a></div></div>
@@ -62,12 +71,12 @@ export function SessionTasks({ locale, store, detail, task, refresh, copyResult,
       <label>{c.copyName}<input value={title} maxLength={200} onChange={event => setTitle(event.target.value)} disabled={command.blocked} /></label>
       <p>{c.copyIncludes}</p><p>{c.copyExcludes}</p><div className={s.footer}><button type="button" disabled={command.busy || command.canRetry} onClick={() => { setCopying(false); window.location.hash = "post-live"; }}>{c.cancel}</button><button className="primary" type="submit" disabled={!detail.can_manage || command.blocked || !title.trim()}>{c.copyReview}</button></div>
     </form>}
-    {phase === "next" && <div className={s.card}><p>{c.copyIncludes}</p>{snapshot.data?.offers.map(offer => <p key={offer.offer_id}>{offer.product_name} · {offer.keyword} · {money(locale, snapshot.data!.stats.currency, offer.live_price_minor ?? offer.sku_price_minor)}</p>)}<p>{c.copyExcludes}</p>{copyResult?.session.session_id === scene && copyResult.conflicts.length > 0 && <div role="alert"><p>{c.conflicts}</p>{copyResult.conflicts.map(conflict => <p key={`${conflict.sku_id}:${conflict.keyword}`}>{conflict.keyword}</p>)}</div>}<button type="button" onClick={() => router.push(`${claims}#preflight`)}>{c.openPrep}</button></div>}
+    {phase === "next" && <div className={s.card}>{copiedDetail && <><p>{c.copySuccess}</p><p>{c.copySuccessNotice}</p><button type="button" disabled={!canEdit} onClick={onEdit}>{c.editDraft}</button></>}<p>{c.copyIncludes}</p>{snapshot.data?.offers.map(offer => <p key={offer.offer_id}>{offer.product_name} · {offer.keyword} · {money(locale, snapshot.data!.stats.currency, offer.live_price_minor ?? offer.sku_price_minor)}</p>)}<p>{c.copyExcludes}</p>{copyResult?.session.session_id === scene && copyResult.conflicts.length > 0 && <div role="alert"><p>{c.conflicts}</p>{copyResult.conflicts.map(conflict => <p key={`${conflict.sku_id}:${conflict.keyword}`}>{conflict.keyword}</p>)}</div>}<button type="button" onClick={() => router.push(`${claims}#preflight`)}>{c.openPrep}</button></div>}
     {phase === "end" && <div className={s.card}><p>{c.endHelp}</p><p>{c.endFacts}</p><div className={s.footer}>
       <button type="button" disabled={command.busy || command.canRetry} onClick={() => { window.location.hash = "preparation"; }}>{c.continue}</button>
       <button type="button" className="primary" disabled={!detail.can_manage || command.blocked || snapshot.data?.session.lifecycle !== "live"} onClick={() => { if (snapshot.data) void command.run(liveRequest(store, scene, "lifecycle", "POST", { action: "end", expected_version: snapshot.data.session.version }), () => { window.location.hash = "post-live"; }); }}>{c.confirmEnd}</button>
     </div></div>}
     {phase === "prepare" && <p className={`${s.note} ${s.muted}`}>{c.localBoundary}</p>}
-    <div className={s.footer}><a href={`/${locale}/studio?store=${store}`}>{c.back}</a></div>
+    <div className={s.footer}><button type="button" onClick={onBack}>{c.back}</button></div>
   </section>;
 }

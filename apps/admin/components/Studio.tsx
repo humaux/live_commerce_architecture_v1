@@ -153,6 +153,8 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   const explicitDeparture = useRef(false);
   const previous = useRef<string[]>([]);
   const copyNavigationGuard = useRef<() => boolean>(() => true);
+  const registerCopyNavigationGuard = useCallback((guard: () => boolean) => {
+    copyNavigationGuard.current = guard; return () => { if (copyNavigationGuard.current === guard) copyNavigationGuard.current = () => true; }; }, []);
   const currentPage = page.scope === scope && (!cookie.current || csrfCookie() === cookie.current)
     ? page : { scope, status: "initial" as Status, data: null };
   // A visible shell is not an authenticated Studio read. Creation must wait
@@ -636,7 +638,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   if ((!task || ["preparation", "post-live", "copy", "next-draft", "end", "review", "timeline", "audience"].includes(task)) && scene && !newMode) return <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="live" onBeforeNavigate={() => mayLeave(true)}>
     <div data-testid="merchant-studio">{shown ? ["review", "timeline", "audience"].includes(task)
       ? <SessionReview key={shown.draft.session_id} locale={locale} store={storeID} draft={shown.draft} task={task} />
-      : <SessionTasks key={shown.draft.session_id} locale={locale} store={storeID} detail={shown} task={task || "preparation"} refresh={refresh} copyResult={copyResult} onCopy={setCopyResult} />
+      : <SessionTasks key={shown.draft.session_id} locale={locale} store={storeID} detail={shown} task={task || "preparation"} refresh={refresh} copyResult={copyResult} onCopy={setCopyResult} registerNavigationGuard={registerCopyNavigationGuard} onEdit={() => navigate(storeID, cursor, shown.draft.session_id)} onBack={() => navigate(storeID, "", "")} />
       : <p role={currentDetail.status === "loading" ? "status" : "alert"}>{statusText(currentDetail.status)}</p>}</div>
   </WorkspaceFrame>;
 
