@@ -4,7 +4,7 @@ Status: **SOURCE/E1, runtime NOT_RUN; PR394 remains HOLD.** This is a tests-only
 
 - task_id: `70bf282d-2a00-4a82-8db7-2905b4a05f27` (root owns coord; author did not claim again).
 - author: `/root/manual_discount_db_red_0917`; role: independent tests-only author, not product implementer or final acceptor.
-- requested model/reasoning: `gpt-6-sol` / high; actual provider/model ID: **UNKNOWN**.
+- requested model/reasoning: `gpt-6.1-sol` / high (root spawn receipt); actual provider/model ID: **UNKNOWN**.
 - date: 2026-11-02 UTC; worktree: `/Volumes/data/live_commerce_architecture_v1/.worktrees/codex-pr394-offline-diagnostic`; branch: `codex/pr394-offline-diagnostic`.
 - base_commit: `1f3bf3d66bc893afd43fa0031503dd2ca142f477`, initially clean. No rebase/base movement.
 - write_paths: `tests/foundation/manual_discount_test.go`, this report only. Local commit allowed; push/CI dispatch not performed.
