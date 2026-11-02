@@ -1,9 +1,13 @@
 # PR394 unfinished manual-discount error contracts
 
-Status: **E1 / STATIC_ONLY / structure ready. Runtime RED is NOT_RUN.**
+Status: **E1 / STATIC_ONLY / first harness correction (1/2). Target product RED is NOT_RUN.**
 
-- task_id: `94e28b6b-f3ed-4bc5-9372-ef7167a491f7`; sub-element: `94e28b6b-sub-1`.
-- base_commit: `42548b76e1367c3b7474f4ee1dfd133761b58146` (clean on entry).
+- current task_id: `5a778f90-bd8e-443b-91fa-1498434dd622`; own canvas: `5a778-sub-1`; assigned role/route: test_worker / Sol high (runtime actual identifier remains UNKNOWN).
+- current base_commit: `7591a8abd73db3066d8f1f3617c89a749c8ef9ce` (clean on entry); only the two paths below are authorized.
+- The original author card/command record below is retained as history. The current correction changes only the added helper and this report.
+
+- original author task_id: `94e28b6b-f3ed-4bc5-9372-ef7167a491f7`; sub-element: `94e28b6b-sub-1`.
+- original preserved-test base_commit: `42548b76e1367c3b7474f4ee1dfd133761b58146` (clean on entry).
 - branch: `codex/pr394-offline-diagnostic`.
 - worktree: `.worktrees/codex-pr394-offline-diagnostic`.
 - role: tests-only author; runtime does not expose an authoritative actual model/reasoning identifier: **UNKNOWN**.
@@ -16,7 +20,7 @@ Read `AGENTS.md`, architecture sections 0/1/2/26/27, task DAG and P0 invariants 
 
 Two additive `t.Run` leaves hang from existing `mdManualContract`, already selected by `TestMerchantToolsManualOrder/FEAT-MANUAL-DISCOUNT`. Each owns a separate `mtOrderEnv`. Both principals are created through `e.member` with `inventory:reserve` and `catalog:read`; changing only `mtAdmin.token` retains the same handler, issuer and deployment secret. B's real options GET must return 200.
 
-Both leaves first submit quantity 2, discount 2501 through real merchant HTTP. The fixture SKU is 1250, so the required response is 422 `discount_exceeds_subtotal`. Owner-pool **read-only** witnesses require exactly one A authorization with the independently encoded normalized request hash and NULL quote, one same-owner cart receipt, and quantity 2. There must be no quote, manual receipt, order, reservation, order audit or held/allocated inventory.
+Both leaves first submit quantity 2, discount 2501 through real merchant HTTP. The fixture SKU is 1250, so the required response is 422 `discount_exceeds_subtotal`. Owner-pool **read-only** witnesses require exactly one A authorization with the independently encoded normalized request hash and NULL quote, one same-owner cart receipt, and quantity 2. There must be no quote/order/reservation for the new manual owner, no manual receipt/order audit, and no change to the pre-existing quote/order/hold/stock/ledger fixture tuples. Held and allocated quantities must equal their pre-POST baseline; the fixture already owns a legitimate quote and hold.
 
 | Leaf | Refused resume | Required response | Base source predicts (not observed) |
 |---|---|---|---|
@@ -28,6 +32,28 @@ Before/after byte equality covers full tuples from buyer owners/sessions, author
 Case 1 additionally calls the same authorization SQL using B through the real `commerce_runtime` pool and `platform.WithScope`, with the saved owner/hash. It checks the callback scope tuple and both permissions before setting the target-entry witness. Existing `sqlState` uses `errors.As` to extract an actual `*pgconn.PgError`; the witness requires exactly PT409. Returning that error makes `WithScope` roll back; a subsequent rollback must return `pgx.ErrTxClosed`, and all witnessed state must remain byte-identical. This source-classification control does not replace the merchant HTTP assertion and is itself runtime NOT_RUN. No owner-role impersonation or permission revocation is used.
 
 Each leaf then replays A's original body and requires the same 422 and unchanged state. A fresh key with quantity 3/discount 100 must return 201 with total 3650 through the same caller/handler. **The exact error status/code assertion runs last**, after these controls, with milestone logs showing which assertions were reached. Setup/state failures still stop the affected leaf; no later assertion is claimed to have run. No blanket reinterpretation of `command.ErrConflict`, production seam, SQL change, fixture error injection, permission revocation, gate change or deletion was made.
+
+## First harness correction 1/2 — current card
+
+The prior controlled CI is retained: Gates `41479280477`, job `125395614907`, execution `5bbbe1094b30af938c34656dcc90d8e22e91a9e0`, with raw log `output/integrator/tools/logs/ci-evidence-1238/394-error-red-1630/job-125395614907.raw.log` SHA256 `03dce8e9fa3fffc0fbf576ab5e66e746b55b11864a4e3ab461f478dad093fcbc`. Both new leaves stopped at the old helper line 143 (`partial rejection wrote storefront.quotes`). They passed earlier options/422/auth/cart checks by code order, but **did not reach** runtime B/PT409, refused resume, replay, fresh-key 201 or the final 409 assertions. That failed run is setup RED, not target product RED.
+
+Root accepted SOURCE diagnosis `output/integrator/tools/logs/ci-evidence-1238/394-error-setup-source-1639.md` SHA256 `adea4a85f4afbe555dcbf7c118a7188a1b45dd95bea33e974ddb671ef1c2692d`. Authority is the pinned fixture chain: `mtOrderEnv → tcvNew → psSetup → psSetupItemsOn → b.prepare/CreateQuote`, then `b.begin`; the checkout fixture intentionally retains the original quote/order/hold. The new test's whole-store absolute-zero precondition was wrong. No fixture is cleared or modified to make it empty.
+
+The authorized correction reuses one small reader with two **closed literal** table sets. Immediately before the first tested POST it captures full tenant/store tuples for quotes, orders, reservations, reservation lines, balances and ledger. After the initial real 422 those six tables must be byte-identical, and the new manual owner must separately have zero quotes/orders (`owner_id`) and zero reservations (`buyer_owner_id`). Original manual receipt/audit zero and A principal/hash/NULL quote/cart assertions remain. Held/allocated equal their captured baseline, while full balance tuples also protect on-hand/version. Added milestone logs expose reaching these checks without printing tuples, tokens or bodies.
+
+The same reader's other literal set is the unchanged later 13-table set. All subsequent SQL/HTTP refusal, rollback, replay, fresh-key and exact final error assertions remain byte-identical to 7591, as do body construction/normalization/hash/key code and everything outside the added helper. No product SQL, fixture, gate, source-hash registry, generator or legacy bundle/reader case is edited. Root must independently review and refresh its existing source-hash ownership evidence before controlled CI; this card does not alter that registry.
+
+Actual current-card commands: inline Python helper-only refactor exit 0; `gofmt -w tests/foundation/manual_discount_test.go` exit 0; `git diff --check` exit 0; inline Python inverse/oracle-preservation verification exit 0; `shasum -a 256 tests/foundation/manual_discount_test.go` exit 0. No runtime or typecheck was invoked. Verifier output:
+
+```text
+STATIC_ONLY original_lines=1258 inverse_exact=true inserted_lines=153
+outside_helper_exact=true postinitial_tail_exact=true body_hash_key_exact=true baseline_order=true
+base_test_sha256=82fc3e623a43f865605c88c09fe1c31dcca5e0de4750993e559e481fe48aa256
+current_test_sha256=289348f1b1b042717cc2ac33120434b1955c80eb5849c2d19fcacfbb05163da9
+new_runtime=NOT_RUN; typecheck=NOT_RUN; CI_target_RED=NOT_RUN
+```
+
+Relative to current base 7591, test diff is +35/-23 within the added helper (net +12); relative to original 42548, all 1258 original lines remain exact and only 153 lines are added. Runtime gate remains: first prove both new baseline/owner checks and all subsequent applicable controls actually execute, then obtain the exact two target HTTP/code failures on unchanged product code. Any earlier failure remains harness/environment RED. No product fix or integration acceptance is claimed.
 
 ## Actual static commands and exit codes
 
@@ -84,7 +110,7 @@ print('Runtime Go/PG/HTTP/browser=NOT_RUN; no typecheck/compilation claimed')
 PY
 ```
 
-Actual verifier output:
+Historical author-card verifier output (retained; current output is above):
 
 ```text
 STATIC_ONLY old_bytes_exact=true old_lines=1258 inserted_lines=141
@@ -95,6 +121,6 @@ Runtime Go/PG/HTTP/browser=NOT_RUN; no typecheck/compilation claimed
 
 ## Acceptance boundary and handoff
 
-NOT_RUN: Go compilation/typecheck, `go test`, real PG/HTTP execution, browser, Foundation/Gates CI, actual RED, provider sandbox/live, mutation gate, independent acceptance. No dependency install, push, dispatch, runtime server, container or background job was started. Existing 20-case authorization matrix, fixtures, thresholds, old oracles and all other old lines remain byte-identical after stripping additions. The initial static checker failure is retained above.
+NOT_RUN for this correction: Go compilation/typecheck, `go test`, new real PG/HTTP execution, browser, new Foundation/Gates CI, target product RED, provider sandbox/live, mutation gate, independent acceptance. The prior setup-failing CI is preserved above. No dependency install, push, dispatch, runtime server, container or background job was started. Existing 20-case authorization matrix, fixtures, thresholds, old oracles and all other old lines remain byte-identical after stripping additions. The initial static checker failure is retained above.
 
 Unresolved P1 candidates remain product defects until current-SHA CI establishes behavior and a later product-only fix receives independent acceptance. Root must inspect the full diff, control push/CI, verify both new leaves reach the controls and expected precise error assertions, retain actual failure logs, then commission the bounded product correction. Existing cart/service/allocation/policy 409 `conflict` semantics remain mandatory. Source predictions are not actual runtime failures and this document does not claim E3/E4 or integration completion.

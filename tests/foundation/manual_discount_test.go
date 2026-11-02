@@ -94,6 +94,28 @@ func mdPartialErrorContract(t *testing.T, changedCart bool) {
 	a = a.with(tokenA)
 	b := a.with(tokenB)
 	sku := e.p.stock.skus[0].ID
+	ctx := context.Background()
+	readTuples := func(protectedOnly bool) []byte {
+		t.Helper()
+		state := map[string]json.RawMessage{}
+		// Closed table list; owner reads witness full tuples, including authorization created_at/hash/quote binding.
+		tables := []string{"buyer.owners", "buyer.capability_sessions", "storefront.manual_order_discounts", "buyer.command_results", "storefront.carts", "storefront.cart_lines", "storefront.quotes", "ops.command_results", "inventory.reservations", "inventory.reservation_lines", "inventory.balances", "checkout.orders", "ops.audit_events"}
+		if protectedOnly {
+			tables = []string{"storefront.quotes", "checkout.orders", "inventory.reservations", "inventory.reservation_lines", "inventory.balances", "inventory.ledger"}
+		}
+		for _, table := range tables {
+			var rows []byte
+			if err := e.p.f.owner.QueryRow(ctx, "SELECT coalesce(jsonb_agg(to_jsonb(w) ORDER BY to_jsonb(w)::text),'[]'::jsonb) FROM "+table+" w WHERE tenant_id=$1 AND store_id=$2", e.tenant(), e.store()).Scan(&rows); err != nil {
+				t.Fatal(err)
+			}
+			state[table] = rows
+		}
+		out, err := json.Marshal(state)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
 	var home string
 	for _, option := range a.options() {
 		if option.DeliveryKind == "home" && strings.Contains(strings.Join(option.PaymentModes, ","), "bank_transfer") {
@@ -107,6 +129,9 @@ func mdPartialErrorContract(t *testing.T, changedCart bool) {
 	if w := b.call("GET", "/orders/manual/options", "", "", nil); w.Code != 200 {
 		t.Fatalf("second merchant options authority: HTTP %d", w.Code)
 	}
+	protectedBefore := readTuples(true)
+	_, heldBefore, allocatedBefore := e.cofBalance(sku)
+	t.Log("pre-POST six-table fixture baseline captured")
 	body := mdBody(sku, 2, home, "bank_transfer", mdHome, 2501)
 	key := t04Key("md-partial")
 	if code, out := a.place(key, body); code != 422 || out["code"] != "discount_exceeds_subtotal" {
@@ -126,7 +151,6 @@ func mdPartialErrorContract(t *testing.T, changedCart bool) {
 		t.Fatal(err)
 	}
 	hash := sha256.Sum256(raw)
-	ctx := context.Background()
 	var owner string
 	if err := e.p.f.owner.QueryRow(ctx, `SELECT owner_id::text FROM storefront.manual_order_discounts
  WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND request_hash=$4
@@ -138,36 +162,24 @@ func mdPartialErrorContract(t *testing.T, changedCart bool) {
 		e.count(`SELECT count(*) FROM storefront.cart_lines WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3 AND sku_id=$4 AND quantity=2`, e.tenant(), e.store(), owner, sku) != 1 {
 		t.Fatal("partial pipeline must have exactly one authorization and the original owner's quantity-2 cart receipt")
 	}
-	for _, table := range []string{"storefront.quotes", "checkout.orders", "inventory.reservations"} {
-		if e.count("SELECT count(*) FROM "+table+" WHERE tenant_id=$1 AND store_id=$2", e.tenant(), e.store()) != 0 {
-			t.Fatalf("partial rejection wrote %s", table)
-		}
+	if !bytes.Equal(protectedBefore, readTuples(true)) {
+		t.Fatal("initial rejection changed protected quote/order/hold/stock/ledger fixture tuples")
 	}
+	if e.count(`SELECT count(*) FROM storefront.quotes WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3`, e.tenant(), e.store(), owner) != 0 ||
+		e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3`, e.tenant(), e.store(), owner) != 0 ||
+		e.count(`SELECT count(*) FROM inventory.reservations WHERE tenant_id=$1 AND store_id=$2 AND buyer_owner_id=$3`, e.tenant(), e.store(), owner) != 0 {
+		t.Fatal("initial rejection wrote a quote, order or reservation for the manual owner")
+	}
+	t.Log("initial rejection preserved all six fixture tables and the manual owner has no quote/order/hold")
 	if e.count(`SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND operation='merchanttools.order.manual'`, e.tenant(), e.store()) != 0 ||
 		e.count(`SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='order.manual_created'`, e.tenant(), e.store()) != 0 {
 		t.Fatal("partial rejection completed a merchant receipt or order audit")
 	}
-	if _, held, allocated := e.cofBalance(sku); held != 0 || allocated != 0 {
+	if _, held, allocated := e.cofBalance(sku); held != heldBefore || allocated != allocatedBefore {
 		t.Fatal("partial rejection reserved or allocated stock")
 	}
 	t.Log("initial partial pipeline state verified")
-	readState := func() []byte {
-		t.Helper()
-		state := map[string]json.RawMessage{}
-		// Closed table list; owner reads witness full tuples, including authorization created_at/hash/quote binding.
-		for _, table := range []string{"buyer.owners", "buyer.capability_sessions", "storefront.manual_order_discounts", "buyer.command_results", "storefront.carts", "storefront.cart_lines", "storefront.quotes", "ops.command_results", "inventory.reservations", "inventory.reservation_lines", "inventory.balances", "checkout.orders", "ops.audit_events"} {
-			var rows []byte
-			if err := e.p.f.owner.QueryRow(ctx, "SELECT coalesce(jsonb_agg(to_jsonb(w) ORDER BY to_jsonb(w)::text),'[]'::jsonb) FROM "+table+" w WHERE tenant_id=$1 AND store_id=$2", e.tenant(), e.store()).Scan(&rows); err != nil {
-				t.Fatal(err)
-			}
-			state[table] = rows
-		}
-		out, err := json.Marshal(state)
-		if err != nil {
-			t.Fatal(err)
-		}
-		return out
-	}
+	readState := func() []byte { return readTuples(false) }
 	caller, retryBody, wantCode := b, body, "conflict"
 	if changedCart {
 		caller, retryBody, wantCode = a, mdBody(sku, 3, home, "bank_transfer", mdHome, 100), "idempotency_conflict"
