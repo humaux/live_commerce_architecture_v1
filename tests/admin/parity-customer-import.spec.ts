@@ -4,6 +4,10 @@
 // Invariants: synthetic CSV only, no cross-store lists or automatic UNKNOWN replay; mock faults never count as LIVE evidence.
 import { expect, test, type Page } from "@playwright/test";
 import { action, capture, click, heading, login, origin, recordEvidence } from "./parity-data-ops-support";
+// F03-BEGIN imports: existing copy is a locator/text source, not new signed translation authority.
+import { dataOpsCopy, dataOpsText } from "../../packages/i18n/src/data-ops";
+import { importCopy } from "../../apps/admin/lib/import-copy";
+// F03-END imports
 
 const store = process.env.LC_MIUI_STORE!;
 const control = process.env.LC_MIUI_CONTROL_URL!;
@@ -133,6 +137,9 @@ test.describe("PARITY-DATA-OPS C6 customer import", () => {
         await capture(page, frame("1028:6685", "1028:6763"));
       });
       if (outcome === "preview") {
+        // F03-BEGIN preview-check: after the original capture; keep its viewport and all old actions intact.
+        await f03SignedRows(page, "zh-TW", [{ row: 3, outcome: "failed", code: "required" }, { row: 1, outcome: "created" }, { row: 2, outcome: "updated" }]);
+        // F03-END preview-check
         await action(page, "返回調整欄位", "click", "column choices are retained", async () => {
           await page.locator(".ops-card").filter({ has: page.getByTestId("import-back") }).getByRole("button", { name: "返回調整欄位", exact: true }).click();
           await expect(page.getByRole("combobox", { name: "電話 · 選填", exact: true })).toHaveValue("phone");
@@ -175,6 +182,9 @@ test.describe("PARITY-DATA-OPS C6 customer import", () => {
       if (outcome === "stale") {
         await expect(page.getByText("預覽已變更，請檢查最新數量後再次確認。", { exact: true })).toBeVisible();
         await capture(page, frame("1198:10518", "1198:10588"));
+        // F03-BEGIN stale-check: the existing single MOCK409 attempt and screenshot remain unchanged.
+        await f03SignedRows(page, "zh-TW", [{ row: 2, outcome: "failed", code: "erased" }, { row: 3, outcome: "failed", code: "required" }, { row: 1, outcome: "created" }]);
+        // F03-END stale-check
         expect(requests).toHaveLength(1);
         await expect(page.getByRole("button", { name: "確認", exact: true })).toBeVisible();
         return;
@@ -206,3 +216,101 @@ test.describe("PARITY-DATA-OPS C6 customer import", () => {
     });
   }
 });
+
+// F03-BEGIN tests
+// Purpose: independent presentation counterexamples using existing native import controls and readonly measurements.
+// Depends on: local copy, existing MOCK OIDC/real preview fixture; called by the registered C6 browser suite.
+// Invariants: no seed/commit, no uploaded values in evidence, failures-first/source row IDs; geometry cannot swallow pager RED.
+type F03Locale = "en" | "zh-TW" | "zh-CN";
+type F03Row = { row: number; outcome: "created" | "updated" | "failed"; code?: string };
+type F03State = { counts: Record<string, number>; owners: Record<string, string>; batches: unknown[] };
+
+async function f03State(): Promise<F03State> {
+  // Readonly fixture snapshot, matching the existing import-wizard rollback oracle; not an import acceptance action.
+  const response = await fetch(`${control}/state`, { method: "POST", headers: { "X-MIUI-Gate-Key": controlKey, "Content-Type": "application/json" }, body: JSON.stringify({ mode: "" }) });
+  expect(response.status).toBe(200);
+  return response.json() as Promise<F03State>;
+}
+
+async function f03SignedRows(page: Page, locale: F03Locale, expected: readonly F03Row[]) {
+  const table = page.getByTestId("import-rows"), rows = table.locator("tbody tr");
+  await expect(table).toBeVisible();
+  await expect(rows).toHaveCount(3);
+  // Native scrolling only, after old captures when called by old cases; evaluate below only reads DOM geometry.
+  const scroll = await table.evaluate(element => element.getBoundingClientRect().top - Math.max(24, (innerHeight - element.getBoundingClientRect().height) / 2));
+  await page.mouse.wheel(0, scroll);
+  const d = dataOpsCopy(locale), c = importCopy[locale];
+  expect.soft(await rows.evaluateAll(elements => elements.map(row => row.getAttribute("data-testid"))), "F03 source row IDs and failures-first order").toEqual(expected.map(row => `import-row-${row.row}`));
+  for (const row of expected) {
+    const summary = page.getByTestId(`import-row-${row.row}`).locator("td").first();
+    const text = dataOpsText(row.outcome === "created" ? d.willCreate : row.outcome === "updated" ? d.willUpdate : d.willSkip, { n: row.row, reason: c.errors[row.code ?? ""] ?? c.unavailable });
+    await expect.soft(summary, `F03 nonempty safe summary for source row ${row.row}`).toHaveText(text);
+    expect.soft((await summary.innerText()).trim(), `F03 source row ${row.row} summary is nonempty`).not.toBe("");
+  }
+  // READ/MEASURE only: compare each composite summary cell's edges with its actual row, in CSS pixels.
+  const geometry = await rows.evaluateAll(elements => elements.map(row => {
+    const bounds = row.getBoundingClientRect(), cell = row.querySelector("td")!.getBoundingClientRect();
+    return { id: row.getAttribute("data-testid"), left: Math.abs(cell.left - bounds.left), right: Math.abs(cell.right - bounds.right) };
+  }));
+  await test.step("F03 full-row composite summary geometry", async () => {
+    for (const row of geometry) {
+      expect.soft(row.left, `F03 ${row.id} summary left edge <=2 CSSpx`).toBeLessThanOrEqual(2);
+      expect.soft(row.right, `F03 ${row.id} summary right edge <=2 CSSpx`).toBeLessThanOrEqual(2);
+    }
+  });
+  await test.step("F03 three-row preview has no visible pager", async () => {
+    expect.soft(await page.getByTestId("import-row-previous").isVisible(), "F03 previous hidden for three rows").toBe(false);
+    expect.soft(await page.getByTestId("import-row-next").isVisible(), "F03 next hidden for three rows").toBe(false);
+  });
+  await expect.soft(page.locator("html")).toHaveAttribute("lang", locale);
+  expect.soft(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), "F03 no document horizontal overflow").toBeLessThanOrEqual(1);
+  await test.info().attach("F03 safe geometry and pager observations", { contentType: "application/json", body: JSON.stringify({ geometry, previousVisible: await page.getByTestId("import-row-previous").isVisible(), nextVisible: await page.getByTestId("import-row-next").isVisible() }) });
+}
+
+test.describe("PARITY-DATA-OPS C6 F03 independent preview layout", () => {
+  for (const locale of ["en", "zh-TW", "zh-CN"] as const) for (const width of [1440, 390])
+    test(`F03 customer preview ${locale} ${width}: full-row summaries and hidden pager`, async ({ page }) => {
+      await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+      await owner(); await login(page); await page.goto(href(locale));
+      const d = dataOpsCopy(locale);
+      const prefix = `F03-${test.info().testId.replace(/[^a-z0-9]/gi, "").slice(-16)}`;
+      const privateNameA = `Synthetic ${prefix} A`, privateNameB = `Synthetic ${prefix} B`;
+      const markers = [prefix, privateNameA, privateNameB, "Synthetic F03 invalid"];
+      let commits = 0;
+      page.on("request", request => {
+        if (request.method() === "POST" && new URL(request.url()).pathname === `/api/stores/${store}/imports/customers/commit`) commits++;
+      });
+      const before = await f03State();
+      expect(before.owners[`${prefix}-A`]).toBeUndefined(); expect(before.owners[`${prefix}-B`]).toBeUndefined();
+      await action(page, d.changeFile, "click + native filechooser", "synthetic three-row file is selected without seeding a customer", async () => {
+        const chooser = page.waitForEvent("filechooser");
+        await page.getByRole("button", { name: d.changeFile, exact: true }).click();
+        await (await chooser).setFiles({ name: "f03-customers.csv", mimeType: "text/csv", buffer: Buffer.from(`source_id,name,phone\n${prefix}-A,${privateNameA},\n${prefix}-B,${privateNameB},\n,Synthetic F03 invalid,\n`) });
+        await expect(page.getByText("f03-customers.csv", { exact: true })).toBeVisible();
+      });
+      for (const [field, header] of [["external_id", "source_id"], ["name", "name"], ["phone", "phone"]])
+        await action(page, `import-map-${field}`, "selectOption", `native mapping retains ${header}`, async () => {
+          await page.getByTestId(`import-map-${field}`).selectOption(header);
+          await expect(page.getByTestId(`import-map-${field}`)).toHaveValue(header);
+        });
+      const response = page.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${store}/imports/customers/preview`);
+      await click(page, d.previewCustomers, "actual unseeded preview reports 2 new, 0 update, 1 failed and renders three safe rows", async () => {
+        const actual = await response;
+        expect(actual.status()).toBe(200);
+        const preview = await actual.json();
+        expect(preview).toMatchObject({ rows_total: 3, new_rows: 2, update_rows: 0, apply_rows: 2, failed_rows: 1 });
+        expect(preview.rows.map((row: F03Row) => ({ row: row.row, outcome: row.outcome, ...(row.code ? { code: row.code } : {}) }))).toEqual([{ row: 1, outcome: "created" }, { row: 2, outcome: "created" }, { row: 3, outcome: "failed", code: "required" }]);
+        await expect(page.getByTestId("import-rows").locator("tbody tr")).toHaveCount(3);
+        await expect(page.getByText(dataOpsText(d.customerTotals, { new: 2, updated: 0, failed: 1 }), { exact: true })).toBeVisible();
+      });
+      await f03SignedRows(page, locale, [{ row: 3, outcome: "failed", code: "required" }, { row: 1, outcome: "created" }, { row: 2, outcome: "created" }]);
+      for (const marker of markers) await expect.soft(page.locator("main")).not.toContainText(marker);
+      const after = await f03State();
+      for (const key of ["owners", "profiles", "history", "batches", "consents", "receipts", "audits"])
+        expect.soft(after.counts[key], `F03 preview rollback ${key}`).toBe(before.counts[key]);
+      expect.soft(after.owners, "F03 no owner identity changes").toEqual(before.owners);
+      expect.soft(after.batches, "F03 no batch/receipt change").toEqual(before.batches);
+      expect.soft(commits, "F03 preview-only flow sends zero commit requests").toBe(0);
+    });
+});
+// F03-END tests
