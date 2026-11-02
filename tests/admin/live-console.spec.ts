@@ -1431,7 +1431,15 @@ const c4MetadataPath = (scene: string) => `/api/stores/${store}/live-sessions/${
 // A fixed filename and <=32 bounded entries survive a closed browser/request fixture.
 import { writeFileSync } from "node:fs";
 type C4PhaseReceipt = { scene: string | null; action: "copy" | "other"; key_hash: string | null; body_hash: string | null; status: number; effect: boolean };
-type C4PhaseProjection = {
+// C4 document projection begin (card1426): closed artifact fields only; timeOrigin never enters this type.
+type C4DocumentProjection = {
+  docRead?: "OK" | "UNAVAILABLE" | "TIMEOUT"; docOrdinal?: number;
+  navigationType?: "navigate" | "reload" | "back_forward" | "prerender" | "unknown";
+  observerInstall?: "INIT" | "LATE" | "UNKNOWN"; pageshowObserved?: boolean; pageshowPersisted?: boolean;
+  pageshowCount?: number; pageshowOverflow?: boolean;
+};
+// C4 document projection end.
+type C4PhaseProjection = C4DocumentProjection & {
   response_status?: number; source_id?: string | null; selected_id?: string | null; copied_id?: string | null; detail_id?: string | null;
   detail_version?: number; window_state?: "CLOSED" | "OPEN" | "INVALID"; window_generation?: number; window_opened_at?: string | null;
   receipts?: C4PhaseReceipt[]; receipt_count?: number; write_count?: number; oracle?: "passed" | "failed" | "not_run"; phase_at_failure?: string;
@@ -1468,6 +1476,22 @@ function c4MetadataJournal(caseID: string) {
     if (projection.hash !== undefined) safe.hash = ["NONE", "PREPARATION", "EDIT", "PREFLIGHT"].includes(projection.hash) ? projection.hash : "OTHER";
     for (const key of ["sameStore", "sameScene", "multipleFragments"] as const)
       if (typeof projection[key] === "boolean") safe[key] = projection[key];
+    // C4 document whitelist begin: revalidate the Node projection independently before persistence.
+    if (projection.docRead !== undefined) {
+      const valid = Number.isInteger(projection.docOrdinal) && projection.docOrdinal! >= 1 && projection.docOrdinal! <= 4 &&
+        projection.navigationType !== undefined && ["navigate", "reload", "back_forward", "prerender", "unknown"].includes(projection.navigationType) &&
+        (projection.observerInstall === "INIT" || projection.observerInstall === "LATE" || projection.observerInstall === "UNKNOWN") &&
+        typeof projection.pageshowObserved === "boolean" && Number.isInteger(projection.pageshowCount) && projection.pageshowCount! >= 0 && projection.pageshowCount! <= 4 &&
+        projection.pageshowObserved === (projection.pageshowCount! > 0) && typeof projection.pageshowOverflow === "boolean" &&
+        (projection.pageshowObserved ? typeof projection.pageshowPersisted === "boolean" : projection.pageshowPersisted === undefined);
+      safe.docRead = projection.docRead === "TIMEOUT" ? "TIMEOUT" : projection.docRead === "OK" && valid ? "OK" : "UNAVAILABLE";
+      if (safe.docRead === "OK") {
+        safe.docOrdinal = projection.docOrdinal; safe.navigationType = projection.navigationType; safe.observerInstall = projection.observerInstall;
+        safe.pageshowObserved = projection.pageshowObserved; safe.pageshowCount = projection.pageshowCount; safe.pageshowOverflow = projection.pageshowOverflow;
+        if (projection.pageshowObserved === true) safe.pageshowPersisted = projection.pageshowPersisted;
+      }
+    }
+    // C4 document whitelist end.
     entries.push({ phase, elapsed_ms: Date.now() - started, ...safe });
     writeFileSync(file, JSON.stringify({ class: "MOCK", case_id: caseID, entries }), { encoding: "utf8", mode: 0o600, flush: true });
   };
@@ -1479,6 +1503,92 @@ function c4MetadataJournal(caseID: string) {
   note("created");
   return { note, preserveFailure };
 }
+// C4 document probe begin (card1426). Observation only: no router/cache/history/DOM or application calls.
+// The only browser bookkeeping is this private property and one trusted-pageshow listener on the owned Page.
+function c4InstallDocumentProbe({ key, mode }: { key: string; mode: "INIT" | "LATE" }) {
+  if (window !== window.top) return false;
+  const existing = Object.getOwnPropertyDescriptor(window, key);
+  if (existing) return existing.value?.owner === key && typeof existing.value.sample === "function" && typeof existing.value.stop === "function";
+  let count = 0, overflow = false, persisted: boolean | null = null;
+  const onPageShow = (event: PageTransitionEvent) => {
+    if (!event.isTrusted) return;
+    persisted = event.persisted;
+    if (count < 4) count++; else overflow = true;
+  };
+  const probe = {
+    owner: key,
+    sample: () => {
+      try {
+        const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+        return { origin: performance.timeOrigin, type: navigation?.type, mode, observed: count > 0, count, overflow, persisted };
+      } catch { return null; }
+    },
+    stop: () => {
+      window.removeEventListener("pageshow", onPageShow);
+      if (Object.getOwnPropertyDescriptor(window, key)?.value === probe) delete (window as unknown as Record<string, unknown>)[key];
+    },
+  };
+  Object.defineProperty(window, key, { value: probe, enumerable: false, configurable: true });
+  window.addEventListener("pageshow", onPageShow);
+  return true;
+}
+type C4BoundedRead<T> = { status: "OK"; value: T } | { status: "UNAVAILABLE" | "TIMEOUT" };
+async function c4BoundedDocumentCall<T>(call: () => Promise<T>): Promise<C4BoundedRead<T>> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    // Observe both resolutions. Late completion never assigns an ordinal or writes a journal.
+    const observed: Promise<C4BoundedRead<T>> = Promise.resolve().then(call).then(
+      value => ({ status: "OK" as const, value }), () => ({ status: "UNAVAILABLE" as const }));
+    return await Promise.race([observed, new Promise<C4BoundedRead<T>>(resolve => {
+      timer = setTimeout(() => resolve({ status: "TIMEOUT" }), 100);
+    })]);
+  } catch { return { status: "UNAVAILABLE" }; }
+  finally { if (timer !== undefined) clearTimeout(timer); }
+}
+function c4DocumentProbe(page: Page) {
+  const key = "__liveCommerceC4PassiveDocument1426";
+  const origins = new Map<number, number>();
+  let installed = false;
+  return {
+    install: async () => {
+      const init = await c4BoundedDocumentCall(() => page.addInitScript(c4InstallDocumentProbe, { key, mode: "INIT" }));
+      const current = await c4BoundedDocumentCall(() => page.evaluate(c4InstallDocumentProbe, { key, mode: "LATE" }));
+      installed = init.status === "OK" && current.status === "OK" && current.value === true;
+    },
+    capture: async (): Promise<C4DocumentProjection> => {
+      const result = await c4BoundedDocumentCall(() => page.evaluate(probeKey => {
+        const probe = Object.getOwnPropertyDescriptor(window, probeKey)?.value;
+        return probe?.owner === probeKey && typeof probe.sample === "function" ? probe.sample() as unknown : null;
+      }, key));
+      if (result.status !== "OK") return { docRead: result.status };
+      // Raw timeOrigin lives only in this protocol result and the case-local map; never spread it into artifacts.
+      const raw = result.value as { origin?: unknown; type?: unknown; mode?: unknown; observed?: unknown; count?: unknown; overflow?: unknown; persisted?: unknown } | null;
+      if (!raw || typeof raw.origin !== "number" || !Number.isFinite(raw.origin) || raw.origin <= 0 ||
+        typeof raw.observed !== "boolean" || typeof raw.count !== "number" || !Number.isInteger(raw.count) || raw.count < 0 || raw.count > 4 ||
+        raw.observed !== (raw.count > 0) || typeof raw.overflow !== "boolean" || (raw.mode !== "INIT" && raw.mode !== "LATE") ||
+        (raw.observed ? typeof raw.persisted !== "boolean" : raw.persisted !== null)) return { docRead: "UNAVAILABLE" };
+      let ordinal = origins.get(raw.origin);
+      if (ordinal === undefined) {
+        if (origins.size >= 4) return { docRead: "UNAVAILABLE" };
+        ordinal = origins.size + 1; origins.set(raw.origin, ordinal);
+      }
+      const navigationType = raw.type === "navigate" || raw.type === "reload" || raw.type === "back_forward" || raw.type === "prerender" ? raw.type : "unknown";
+      return { docRead: "OK", docOrdinal: ordinal, navigationType,
+        observerInstall: installed && (raw.mode === "INIT" || raw.mode === "LATE") ? raw.mode : "UNKNOWN",
+        pageshowObserved: raw.observed, pageshowCount: raw.count, pageshowOverflow: raw.overflow,
+        ...(raw.observed ? { pageshowPersisted: raw.persisted as boolean } : {}) };
+    },
+    stop: async () => {
+      try {
+        await c4BoundedDocumentCall(() => page.evaluate(probeKey => {
+          const probe = Object.getOwnPropertyDescriptor(window, probeKey)?.value;
+          if (probe?.owner === probeKey && typeof probe.stop === "function") probe.stop();
+        }, key));
+      } finally { origins.clear(); }
+    },
+  };
+}
+// C4 document probe end.
 async function c4MetadataClickLocator(control: ReturnType<typeof c4MetadataControl>) {
   await expect(control).toBeVisible({ timeout: 10000 });
   await control.click({ timeout: 15000 });
@@ -1488,13 +1598,15 @@ async function c4MetadataClick(page: Page, name: string) { await c4MetadataClick
 for (const viewport of parityViewports) test(`C4 metadata preparation native Edit and original settings ${viewport.width}`, async ({ page, request }) => {
   const locale = "zh-TW", c = parityWords[locale], m = c4MetadataWords[locale], scene = scenes[0]!;
   const diagnostic = c4MetadataJournal(`prep-${locale}-${viewport.width}`);
-  const noteRoute = (phase: string, value: string) => {
+  const documentProbe = c4DocumentProbe(page); // C4 document setup owner.
+  const noteRoute = (phase: string, value: string, document: C4DocumentProjection = {}) => {
     const url = new URL(value);
     diagnostic.note(phase, {
       pathname: url.pathname === `/${locale}/studio` ? "STUDIO" : url.pathname === `/${locale}/studio/claims` ? "CLAIMS" : "OTHER",
       hash: url.hash === "" ? "NONE" : url.hash === "#preparation" ? "PREPARATION" : url.hash === "#edit" ? "EDIT" : url.hash === "#preflight" ? "PREFLIGHT" : "OTHER",
       sameStore: url.searchParams.get("store") === store, sameScene: url.searchParams.get("scene") === scene,
       multipleFragments: url.hash.indexOf("#", 1) !== -1,
+      ...document, // C4 document projection is validated again by the serializer.
     });
   };
   let navigationNotes = 0;
@@ -1512,6 +1624,7 @@ for (const viewport of parityViewports) test(`C4 metadata preparation native Edi
     before = (await facts(request)).receipts.length;
     diagnostic.note("login-start");
     await page.setViewportSize(viewport); await login(page);
+    await documentProbe.install(); // C4 document setup: two bounded calls, never retried.
     page.on("framenavigated", onNavigation);
     page.on("request", wire => { if (new URL(wire.url()).pathname.startsWith("/api/stores/") && !["GET", "HEAD"].includes(wire.method())) writes.push(wire.method()); });
     await test.step("SETUP: real list card loads the existing scene and GET detail", async () => {
@@ -1534,7 +1647,7 @@ for (const viewport of parityViewports) test(`C4 metadata preparation native Edi
     });
     await test.step("REGRESSION: View settings still opens the real same-scene preflight", async () => {
       diagnostic.note("view-settings-click-start");
-      noteRoute("before-settings-route", page.url());
+      noteRoute("before-settings-route", page.url(), await documentProbe.capture());
       await c4MetadataClick(page, c.settings);
       await expect(page.getByRole("heading", { name: c.preflight, exact: true })).toBeVisible();
       noteRoute("after-settings-route", page.url());
@@ -1543,14 +1656,14 @@ for (const viewport of parityViewports) test(`C4 metadata preparation native Edi
       expect(url.searchParams.get("store")).toBe(store);
       expect(url.searchParams.get("scene")).toBe(scene);
       expect(url.hash).toBe("#preflight");
-      diagnostic.note("preflight-back-start", { selected_id: url.searchParams.get("scene") });
+      diagnostic.note("preflight-back-start", { selected_id: url.searchParams.get("scene"), ...await documentProbe.capture() });
       await page.goBack({ timeout: 15000 });
       await expect(page.getByRole("heading", { name: c.prepare, exact: true })).toBeVisible();
-      noteRoute("after-back-route", page.url());
+      noteRoute("after-back-route", page.url(), await documentProbe.capture());
     });
     await test.step("EXPECTED_RED_ENTRY: real Edit click, never goto/hash assignment", async () => {
       diagnostic.note("edit-click-start");
-      noteRoute("before-edit-route", page.url());
+      noteRoute("before-edit-route", page.url(), await documentProbe.capture());
       await c4MetadataClick(page, m.edit);
       noteRoute("after-edit-click-route", page.url());
       await expect(page).toHaveURL(`${origin}/${locale}/studio?store=${store}&scene=${scene}#edit`);
@@ -1564,10 +1677,11 @@ for (const viewport of parityViewports) test(`C4 metadata preparation native Edi
     });
   } catch (error) {
     primaryError = true;
-    try { noteRoute("failed-route", page.url()); } catch { /* Preserve the original thrown failure. */ }
+    try { noteRoute("failed-route", page.url(), await documentProbe.capture()); } catch { /* Preserve the original thrown failure. */ }
     diagnostic.preserveFailure("primary-error"); throw error;
   } finally {
     page.off("framenavigated", onNavigation);
+    await documentProbe.stop(); // C4 document cleanup: one bounded call; fixture owns historical documents.
     const alreadyFailed = primaryError || test.info().errors.length > 0;
     let readCompleted = false;
     if (before !== undefined) {
