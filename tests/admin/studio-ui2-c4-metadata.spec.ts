@@ -83,6 +83,7 @@ async function c4OwnedDraft(page: Page, locale: keyof typeof c4EditorWords, titl
 }
 
 // C4 dirty186 projection begin (card c879): failure-only, one read, no retry or product writes.
+import { writeFileSync } from "node:fs";
 async function c4Dirty186Projection(page: Page, locale: keyof typeof c4EditorWords, scene: string) {
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -117,9 +118,12 @@ async function c4Dirty186Projection(page: Page, locale: keyof typeof c4EditorWor
     const result = await Promise.race([sample, new Promise<{ status: "TIMEOUT" }>(resolve => {
       timer = setTimeout(() => resolve({ status: "TIMEOUT" }), 100);
     })]);
-    // Synchronous reporter annotation avoids extending the 100ms read budget for artifact I/O.
-    // Both sample outcomes are consumed; a late resolution cannot annotate or perform another read.
-    c4PrivateTest.info().annotations.push({ type: "C4-dirty186-projection", description: JSON.stringify(result) });
+    // The 100ms budget covers the read only; this one synchronous evidence write follows it.
+    // CLI --reporter=list suppresses config JSON output, so reuse the existing private JSON-file pattern.
+    // Both sample outcomes are consumed; late completion cannot write or perform another read.
+    writeFileSync(`${required("LC_BROWSER_EVIDENCE")}/c4-dirty186-${locale}.json`,
+      JSON.stringify({ class: "REAL_PG", readBudgetMs: 100, read: result }),
+      { encoding: "utf8", mode: 0o600, flush: true });
   } catch { /* Diagnostic errors must not replace the original assertion error. */ }
   finally { if (timer !== undefined) clearTimeout(timer); }
 }

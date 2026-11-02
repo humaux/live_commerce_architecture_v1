@@ -1,6 +1,6 @@
 # PR365 canonical route tests-only candidate
 
-Task `c8794bdb-cfc2-4560-a621-156d01bf4600`, child `c879-sub-1`; base_commit `dafd21b72d9d500db9fc893602b291c8abdaba16`. Author task specified Sol high; actual model/reasoning UNKNOWN without independent receipt. Worktree `.worktrees/codex-pr365-mock-balance`, branch `codex/pr365-mock-balance`, initial HEAD=base and status clean. Root owns task/author lease; child did not claim or delegate. Deadline 2026-11-02T17:06Z; one bounded static candidate only.
+Task `c8794bdb-cfc2-4560-a621-156d01bf4600`, child `c879-sub-1`; base_commit `dafd21b72d9d500db9fc893602b291c8abdaba16`. Author task specified Sol high; actual model/reasoning UNKNOWN without independent receipt. Worktree `.worktrees/codex-pr365-mock-balance`, branch `codex/pr365-mock-balance`, initial HEAD=base and status clean. Root owns task/author lease; child did not claim or delegate. Deadline 2026-11-02T17:06Z; one bounded task candidate; the first local E1 commit was corrected after root caught the reporter-retention defect, without running it or changing product/acceptance budgets.
 
 **B is E1 structure-ready only. A awaits a separate root freeze and is not implemented (BLOCKED within this card, not an owner-permission problem). Product fix, runtime RED/GREEN and independent acceptance are NOT_RUN.** Root explicitly confirmed this narrowed delivery after the fixture-authority gap was reported.
 
@@ -16,7 +16,7 @@ Fixed original SOURCE input under root `output/integrator/tools/logs/ci-evidence
 
 Only changed paths:
 
-1. `tests/admin/studio-ui2-c4-metadata.spec.ts`: +50/-0 lines.
+1. `tests/admin/studio-ui2-c4-metadata.spec.ts`: +54/-0 lines.
 2. `output/parity-live-sessions/CANONICAL-ROUTE-RED.md`: this report.
 
 No product, fixture, Go counter, shared gate, ownership generator, dependency, legacy Studio104 or Console case change. No push/dispatch/provider/network/browser/Go/PG/test runtime. No subprocess, fixture, container, port or temporary file was left running/created for this candidate.
@@ -25,13 +25,16 @@ No product, fixture, Go counter, shared gate, ownership generator, dependency, l
 
 The original dirty clean Cancel click (base185) remains untouched. Only the following original preparation-heading assertion (base186; candidate231) is surrounded by a failure-only catch. All original actions/assertions/timeouts/order remain byte-preserved. The original exception object is rethrown after diagnosis; diagnostic failures cannot replace it. Earlier Keep/Escape/Discard, reentry and reload assertions are unchanged. A failing final assertion remains failing.
 
-One read-only page.evaluate samples fixed route/DOM projection only after that assertion throws. One total 100ms asynchronous wait budget; no retry or extra click/read. Promise.race consumes both late success and rejection, clears its timer, and late results cannot annotate. Reporter annotation is synchronous (no awaited attach/filesystem call extends the wait). As with all JS timers, scheduler delay is not a hard real-time guarantee. No extra timeout, sleep or baseline assertion budget change.
+One read-only page.evaluate samples fixed route/DOM projection only after that assertion throws. One 100ms asynchronous read budget; no retry or extra click/read. Promise.race consumes both late success and rejection and clears its timer. Exactly one synchronous private JSON evidence write follows the read, using the existing live-console writeFileSync/mode0600/flush pattern. The write is explicitly outside the 100ms read budget and may add filesystem latency; the original assertion still keeps its original10s budget. No extra timeout or sleep; JS timers are not hard real-time guarantees. Late evaluation completion cannot write evidence.
 
 Allowlist: pathname STUDIO/CLAIMS/OTHER; hash EDIT/PREPARATION/OTHER; fragmentCount capped8; sameStore/sameScene booleans; preparation/editor heading, dialog and dirty-marker counts capped16; cancel/edit/save enabled boolean or null when missing/ambiguous; activeElement INPUT/SELECT/BUTTON/A/BODY/OTHER/NONE; rounded finite scrollX/Y clamped to +/-1000000, else null. Counts describe matched DOM nodes, not a new visibility oracle. Editor heading uses the existing .studio-editor h2; no new product selector. Button enabled reads disabled only, not successful navigation/guard execution.
 
-No raw URL, title/text, field value, DOM snapshot, credential, request header, history/Next/React private state leaves the page. URL parsing and fixed-label comparisons stay inside page.evaluate. No app/history/cache/listener/DOM mutation. Annotation `C4-dirty186-projection` holds status OK/TIMEOUT/UNAVAILABLE and only allowlisted primitives. Existing private-evidence guards remain unchanged.
+No raw URL, title/text, field value, DOM snapshot, credential, request header, history/Next/React private state leaves the page. URL parsing and fixed-label comparisons stay inside page.evaluate. No app/history/cache/listener/DOM mutation. File c4-dirty186-<locale>.json holds class REAL_PG, readBudgetMs100, and read.status OK/TIMEOUT/UNAVAILABLE with only allowlisted primitives. Existing private-evidence guards remain unchanged.
 
-Future evidence pointer: existing Playwright JSON reporter `${LC_BROWSER_EVIDENCE}/playwright/results.json` (tests/browser-evidence.mjs joins the harness parent with label playwright), matching test result annotation type `C4-dirty186-projection`. The exact runtime directory is NOT_RUN; no such observation is claimed here. Missing annotation/status OK does not establish guard/cache behavior; TIMEOUT/UNAVAILABLE keeps final route UNKNOWN. Scroll/focus equivalence remains UNKNOWN, no invented pixel threshold or scroll PASS.
+Future evidence pointer: `${LC_BROWSER_EVIDENCE}/c4-dirty186-en.json`, `.../c4-dirty186-zh-TW.json`, `.../c4-dirty186-zh-CN.json`. At fixed dafd `tests/foundation/browser_studio_ui_test.go:191`, evidence is `output/playwright/studio-ui-<UTC>/`;242 forwards it to the browser. Fixed `.github/workflows/gates.yml:386-394` uploads output/playwright for nonbundle jobs with always(); bundle members are moved to output/members/<art>/playwright at361 and uploaded at417-427 etc. Thus the file belongs to existing downloadable evidence trees; actual file creation/upload/contents remain NOT_RUN. File errors are swallowed to preserve the original error, so absent file means UNKNOWN. Scroll/focus equivalence remains UNKNOWN; no invented threshold or scroll PASS.
+
+Root caught that the Go command227 forces --reporter=list, overriding configured JSON reporters. First local commit5cfccdcfb used an annotation and incorrectly predicted config JSON retention; it was not pushed or executed. That delivery claim is withdrawn here. Read-only installed Playwright1.63.0 SOURCE: lib/common/index.js522 uses takeFirst(configCLIOverrides.reporter,...); lib/runner/index.js4665 begins ListReporter,4797 onTestEnd only emits status/failure; formatFailure1328-1418 reads errors+attachments, and formatResultFailure1419+ reads errors. Arbitrary annotations have no proven list output path. Root authorized replacing that unretained annotation with the existing JSON-file evidence pattern, explicitly separating100ms read budget from filesystem write. This is an evidence-path correction, not a dirty/product third fix. The old local commit remains in history.
+
 
 ## A exact blocker and minimal separate-scope suggestion
 
@@ -88,13 +91,13 @@ SHA256/bytes:
 
 - Base spec: `da2d9489e579cb882b7b1d3c96a4196432cb84e89ea2207f5cc96d9198f20056` /15414.
 - Inverse spec: same hash/bytes, exact byte equality.
-- Candidate spec: `5cd697e4817d44edca26048e7039478cc93f959ad237dabc6b7c0b946a8ea53d` /18803.
+- Candidate spec: `713662e935d4f5c638cee07fa4ab61cbe924bc2e33950d3db80ae8cf56c49446` /19043.
 
 Rollback: restore only the assigned spec from the base object; this report was absent at base. No rollback executed. Original failing samples remain.
 
 ## Unresolved / NOT_RUN
 
-A independent route cases: root must separately freeze the complete added-login/create effect budget; BLOCKED in this card, not awaiting owner permissions. B actual snapshot and reporter retention: NOT_RUN. Original dirty186 final route/DOM/root cause: UNKNOWN. Original Console duplicate-hash RED and Studio104 are preserved, not repaired. Product hash transport, dirty guard fix, browser/REAL_PG/CI/static typecheck/full gates, injected RED->GREEN and independent review: NOT_RUN. Root must review this diff and run bound real gates; E1 cannot establish product completion or release readiness.
+A independent route cases: root must separately freeze the complete added-login/create effect budget; BLOCKED in this card, not awaiting owner permissions. B actual snapshot, evidence-file write and CI upload: NOT_RUN. Original dirty186 final route/DOM/root cause: UNKNOWN. Original Console duplicate-hash RED and Studio104 are preserved, not repaired. Product hash transport, dirty guard fix, browser/REAL_PG/CI/static typecheck/full gates, injected RED->GREEN and independent review: NOT_RUN. Root must review this diff and run bound real gates; E1 cannot establish product completion or release readiness.
 
 ## Fixed-input equality check
 
@@ -109,3 +112,11 @@ Python pathlib + git show + hashlib comparison: exit0 for all9 unchanged read in
 - `contracts/studio-v1.md` SHA256 `cb924b6fc15cb733caaa23a0d960de0620b37971962ee3f79fac5843603f0d70`; current read bytes exactly equal base object.
 - `contracts/tasks.json` SHA256 `87e25036acafb5b708e944ad4f4adcbea53d1ef3867bdf0f1c239d9fadc2cf05`; current read bytes exactly equal base object.
 - `contracts/invariants.json` SHA256 `ed4f7fcaad364978c3593a7cbafd45c96d75007cc38de2bd254fa9ca8c652f5f`; current read bytes exactly equal base object.
+
+## Reporter SOURCE provenance
+
+The following installed sources were read without execution; they are not tracked dafd objects or a whole-CI byte-equality claim.
+
+- Installed Playwright1.63.0 `package.json` SHA256 `8bc2ddebe8d9b051b9ecb87d62c6c63877e59d08617f32c3215681ca8bb70998` /1359B.
+- Installed Playwright1.63.0 `lib/common/index.js` SHA256 `f4a6b14f5ba21a118b58a6a25eb0b281a3acc4157023b014e0197145056124a4` /115517B.
+- Installed Playwright1.63.0 `lib/runner/index.js` SHA256 `7a2e4e1114d3237d61b87723b4d86a37944c9143f3ce2fb0b2e8867e0c612a5e` /315445B.
