@@ -148,7 +148,7 @@ export function useCollectionCreate(store: string, boundary: string, readReady: 
   const current = view.scope === scope && readReady && !!verifiedCookie.current && verifiedCookie.current === csrfCookie() ? view : null;
   const draft = current?.pending ? bodyOf(current.pending.command.body) : null;
   return {
-    create, retry, busy, ready: !!current?.ready, message: current?.message ?? (readReady && view.ready
+    create, retry, busy, ready: !!current?.ready, message: current ? current.message : (readReady && view.ready
       ? { kind: "uncertain" as const, text: `${copy.uncertain} ${copy.unavailable}` } : null), draft,
     blocked: !current?.ready || locked.current || flight.current,
     canRetry: !!current?.retry && !!pending.current && !flight.current,

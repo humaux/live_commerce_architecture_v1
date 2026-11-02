@@ -293,6 +293,19 @@ if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") {
     return { commands, receipts, otherWrites, originalID, originalJournal: originalJournal! };
   }
 
+  test("clean verified collection session has no recovery alert and permits both creation entries", async ({ page }) => {
+    const writes: string[] = [];
+    page.on("request", request => {
+      if (new URL(request.url()).pathname === endpoint && request.method() === "POST") writes.push(request.method());
+    });
+    await signedLogin(page);
+    await expect(page.getByTestId("collection-manage-new")).toBeEnabled();
+    await expect(page.getByTestId("collection-new")).toBeEnabled();
+    expect(await page.evaluate(key => sessionStorage.getItem(key), journalKey)).toBeNull();
+    await expect(page.getByTestId("collections-page").getByRole("alert")).toHaveCount(0);
+    expect(writes).toEqual([]);
+  });
+
   test("valid manual journal reload restores original Retry and real Go/PG receipt", async ({ page }, testInfo) => {
     const title = `${tag} durable manual reload`;
     const description = `${tag} durable description`;
@@ -396,16 +409,26 @@ if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") {
     const title = `${tag} rapid doubleclick`;
     const commands: Captured[] = [];
     const receipts: string[] = [];
+    const settled: Array<{ stage: "fetch" | "json" | "receipt"; status: number | null }> = [];
     await signedLogin(page);
     await page.route(`**${endpoint}`, async route => {
       if (route.request().method() !== "POST") return route.continue();
       commands.push({ key: route.request().headers()["idempotency-key"] ?? null, body: route.request().postData() });
-      const response = await route.fetch();
-      const body = await response.json();
-      expect(response.status()).toBe(200);
-      receipts.push(body.id);
-      if (commands.length === 1) await route.abort("connectionreset");
-      else await route.fulfill({ response });
+      const outcome: (typeof settled)[number] = { stage: "fetch", status: null };
+      try {
+        const response = await route.fetch();
+        outcome.status = response.status();
+        outcome.stage = "json";
+        const body = await response.json();
+        expect(response.status()).toBe(200);
+        receipts.push(body.id);
+        outcome.stage = "receipt";
+        if (commands.length === 1) await route.abort("connectionreset");
+        else await route.fulfill({ response });
+      } catch {
+        // Fixed stage/status only: preserve a real transport/parse/status failure without exporting its payload.
+        await route.abort("failed");
+      } finally { settled.push(outcome); }
     });
     await page.getByTestId("collection-manage-new").click();
     await page.getByTestId("collection-title").fill(title);
@@ -413,6 +436,10 @@ if (process.env.PRODUCT_EDITOR_ACCEPTANCE !== "1") {
     const save = page.getByTestId("collection-save");
     await expect(save).toBeEnabled();
     await save.dblclick();
+    await expect.poll(() => commands.length > 0 && settled.length === commands.length,
+      { message: "wait for each real POST result before checking creation effects" }).toBe(true);
+    expect(settled, "each intercepted POST must reach its genuine successful receipt")
+      .toEqual(commands.map(() => ({ stage: "receipt", status: 200 })));
     await expect(page.getByTestId("collection-message")).toBeVisible();
     expect(commands.length, "both click events may produce at most one duplicate replay").toBeGreaterThanOrEqual(1);
     expect(commands.length).toBeLessThanOrEqual(2);
