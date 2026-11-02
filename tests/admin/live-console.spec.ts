@@ -1414,3 +1414,195 @@ test.describe("PARITY-LIVE current Figma route parity (MOCK)", () => {
     expect(mock.posts()).toBe(0);
   });
 });
+
+
+// C4 metadata freeze: independent literals from review-c4-backfix2-delta.md, not production i18n.
+// Append-only: MOCK proves navigation/copy receipts only; metadata PATCH belongs to REAL PG.
+const c4MetadataWords = {
+  en: { edit: "Edit draft", name: "Scene name", schedule: "Scheduled time (Taipei time, optional)", aspect: "Canvas ratio", success: "Next session draft created.", notice: "Post source, existing claims and payment links are not copied. The new session’s claim window is closed.", unknown: "Result awaiting confirmation", unknownHelp: "The result cannot be confirmed yet. Reload and check again.", retry: "Retry original request", discard: "Discard changes" },
+  "zh-TW": { edit: "編輯草稿", name: "場次名稱", schedule: "預定時間（台北時間，選填）", aspect: "畫面比例", success: "已建立下一場草稿。", notice: "貼文來源、認領紀錄與付款連結不會複製。新場次的認領窗口為關閉。", unknown: "結果待確認", unknownHelp: "提交結果暫無法確認，請重新整理後核對。", retry: "依原請求重試", discard: "放棄變更" },
+  "zh-CN": { edit: "编辑草稿", name: "场次名称", schedule: "计划时间（台北时间，可选）", aspect: "画幅", success: "已创建下一场草稿。", notice: "帖子来源、认领记录和付款链接不会复制。新场次的认领窗口为关闭。", unknown: "结果待确认", unknownHelp: "提交结果暂时无法确认，请重新加载后核对。", retry: "按原请求重试", discard: "放弃更改" },
+} as const;
+const c4MetadataControl = (page: Page, name: string) => page.getByRole("button", { name, exact: true }).or(page.getByRole("link", { name, exact: true }));
+const c4MetadataPath = (scene: string) => `/api/stores/${store}/live-sessions/${scene}`;
+
+for (const viewport of parityViewports) test(`C4 metadata preparation native Edit and original settings ${viewport.width}`, async ({ page, request }) => {
+  const locale = "zh-TW", c = parityWords[locale], m = c4MetadataWords[locale], scene = scenes[0]!;
+  const before = (await facts(request)).receipts.length;
+  await page.setViewportSize(viewport); await login(page);
+  let detail: { draft: { session_id: string; title: string; scheduled_at: string | null; aspect_ratio: string }; can_manage: boolean };
+  const writes: string[] = [];
+  page.on("request", wire => { if (new URL(wire.url()).pathname.startsWith("/api/stores/") && !["GET", "HEAD"].includes(wire.method())) writes.push(wire.method()); });
+  try {
+    await test.step("SETUP: real list card loads the existing scene and GET detail", async () => {
+      await page.goto(`${origin}/${locale}/studio?store=${store}`);
+      const title = (await facts(request)).scenes[scene]!.Title;
+      const card = page.locator(".studio-scene-list .studio-scene").filter({ has: page.locator("strong", { hasText: title }) });
+      await expect(card).toHaveCount(1);
+      const [response] = await Promise.all([
+        page.waitForResponse(response => new URL(response.url()).pathname === c4MetadataPath(scene) && response.request().method() === "GET" && response.status() === 200),
+        card.click(),
+      ]);
+      detail = await response.json();
+      await expect(page.getByRole("heading", { name: c.prepare, exact: true })).toBeVisible();
+      expect(new URL(page.url()).searchParams.get("scene")).toBe(scene);
+    });
+    await test.step("REGRESSION: View settings still opens the real same-scene preflight", async () => {
+      await c4MetadataControl(page, c.settings).click();
+      await expect(page.getByRole("heading", { name: c.preflight, exact: true })).toBeVisible();
+      const url = new URL(page.url());
+      expect(url.pathname).toBe(`/${locale}/studio/claims`);
+      expect(url.searchParams.get("store")).toBe(store);
+      expect(url.searchParams.get("scene")).toBe(scene);
+      expect(url.hash).toBe("#preflight");
+      await page.goBack();
+      await expect(page.getByRole("heading", { name: c.prepare, exact: true })).toBeVisible();
+    });
+    await test.step("EXPECTED_RED_ENTRY: real Edit click, never goto/hash assignment", async () => {
+      await c4MetadataControl(page, m.edit).click();
+      await expect(page).toHaveURL(`${origin}/${locale}/studio?store=${store}&scene=${scene}#edit`);
+      expect(detail.can_manage).toBe(true);
+      expect(detail.draft.session_id).toBe(scene);
+      await expect(page.getByLabel(m.name, { exact: true })).toHaveValue(detail.draft.title);
+      await expect(page.getByLabel(m.schedule, { exact: true })).toHaveValue("");
+      expect(detail.draft.scheduled_at).toBeNull();
+      await expect(page.getByLabel(m.aspect, { exact: true })).toHaveValue(detail.draft.aspect_ratio);
+    });
+  } finally {
+    expect((await facts(request)).receipts).toHaveLength(before);
+    expect(writes).toHaveLength(0);
+    await test.info().attach("C4-metadata-zero-write", { body: JSON.stringify({ class: "MOCK", viewport: viewport.width, expected: "native Edit and preserved preflight; zero business receipts", actual: test.info().status }), contentType: "application/json" });
+  }
+});
+
+for (const [locale, viewport] of [["en", parityViewports[0]], ["zh-TW", parityViewports[1]], ["zh-CN", parityViewports[1]]] as const) {
+  test(`C4 metadata successful copy uses returned new ID ${locale} ${viewport.width}`, async ({ page, request }) => {
+    const c = parityWords[locale], m = c4MetadataWords[locale], scene = scenes[0]!;
+    await page.setViewportSize(viewport); await login(page);
+    await page.goto(`${origin}/${locale}/studio?store=${store}&scene=${scene}#post-live`);
+    const initial = await facts(request), source = initial.scenes[scene]!;
+    const writes: string[] = [];
+    page.on("request", wire => { if (new URL(wire.url()).pathname.startsWith("/api/stores/") && !["GET", "HEAD"].includes(wire.method())) writes.push(wire.method()); });
+    const sourceFacts = { title: source.Title, phase: source.Phase, stock: source.Stock, active: source.Active, copied: source.Copied };
+    await c4MetadataControl(page, c.copy).click();
+    const title = `C4 metadata copy ${locale} ${viewport.width}`;
+    await page.getByLabel(c.copyName, { exact: true }).fill(title);
+    await expect(page.getByText(m.success, { exact: true })).toHaveCount(0);
+    const copiedRead = page.waitForResponse(async response => {
+      if (response.request().method() !== "GET" || response.status() !== 200 || !new URL(response.url()).pathname.startsWith(`${c4MetadataPath("")}`)) return false;
+      if (!/\/live-sessions\/[0-9a-f-]{36}$/.test(new URL(response.url()).pathname)) return false;
+      const value = await response.json() as { draft?: { session_id: string } };
+      return !!value.draft && value.draft.session_id !== scene;
+    });
+    const submitted = page.waitForResponse(response => new URL(response.url()).pathname === `${c4MetadataPath(scene)}/copy` && response.request().method() === "POST");
+    await c4MetadataControl(page, c.copyReview).click();
+    const response = await submitted;
+    expect(response.status()).toBe(200);
+    const result = await response.json() as { session: { session_id: string; title: string }; window: { session_id: string; state: string; generation: number; opened_at: string | null } };
+    const newID = result.session.session_id;
+    expect(newID).toMatch(/^[0-9a-f-]{36}$/); expect(newID).not.toBe(scene);
+    expect(result.session.title).toBe(title);
+    expect(result.window).toMatchObject({ session_id: newID, state: "CLOSED", generation: 0, opened_at: null });
+    const detail = await (await copiedRead).json() as { draft: { session_id: string; title: string } };
+    expect(detail.draft).toMatchObject({ session_id: newID, title });
+    await expect(page.getByRole("heading", { name: c.copied, exact: true })).toBeVisible();
+    const successURL = page.url();
+    expect(new URL(successURL).searchParams.get("scene")).toBe(newID);
+    expect(new URL(successURL).searchParams.get("store")).toBe(store);
+    const committed = await facts(request);
+    expect(committed.receipts.slice(initial.receipts.length)).toMatchObject([{ scene, action: "copy", status: 200, effect: true }]);
+    await test.info().attach("C4-copy-real-response", { body: JSON.stringify({ class: "MOCK", status: response.status(), distinctReturnedID: newID !== scene, returnedDetailMatched: detail.draft.session_id === newID, effectReceipts: committed.receipts.length - initial.receipts.length }), contentType: "application/json" });
+    try {
+      await test.step("EXPECTED_RED_COPY: frozen success copy follows real 200 and returned detail", async () => {
+        await expect.soft(page.getByText(m.success, { exact: true })).toBeVisible();
+        await expect.soft(page.getByText(m.notice, { exact: true })).toBeVisible();
+      });
+      await test.step("EXPECTED_RED_ENTRY: Edit/Open preparation retain returned copied identity", async () => {
+        await c4MetadataControl(page, m.edit).click();
+        await expect(page.getByLabel(m.name, { exact: true })).toHaveValue(title);
+        expect(new URL(page.url()).searchParams.get("scene")).toBe(newID);
+        expect(new URL(page.url()).hash).toBe("#edit");
+        await page.goBack();
+        await expect(page.getByRole("heading", { name: c.copied, exact: true })).toBeVisible();
+        await c4MetadataControl(page, c.openPrep).click();
+        await expect(page.getByRole("heading", { name: c.preflight, exact: true })).toBeVisible();
+        expect(new URL(page.url()).searchParams.get("scene")).toBe(newID);
+        expect(new URL(page.url()).pathname).toBe(`/${locale}/studio/claims`);
+        expect(new URL(page.url()).hash).toBe("#preflight");
+        await page.goBack();
+        await expect(page.getByRole("heading", { name: c.copied, exact: true })).toBeVisible();
+        await c4MetadataControl(page, c.back).click();
+        await expect(page).toHaveURL(`${origin}/${locale}/studio?store=${store}`);
+        await expect(page.locator(".studio-scene-list").getByText(title, { exact: true })).toBeVisible();
+      });
+    } finally {
+      const after = await facts(request), currentSource = after.scenes[scene]!;
+      expect(writes).toEqual(["POST"]);
+      expect(after.receipts).toHaveLength(committed.receipts.length);
+      expect({ title: currentSource.Title, phase: currentSource.Phase, stock: currentSource.Stock, active: currentSource.Active, copied: currentSource.Copied }).toEqual(sourceFacts);
+      expect(after.scenes[newID]!.Title).toBe(title);
+    }
+  });
+
+  test(`C4 metadata copy UNKNOWN blocks ${locale === "zh-CN" ? "shell" : "Back"} independently of Edit ${locale} ${viewport.width}`, async ({ page, request }) => {
+    // Never traverse missing Edit: exercise the existing copy form and its existing exits directly.
+    const c = parityWords[locale], m = c4MetadataWords[locale], scene = scenes[0]!;
+    await page.setViewportSize(viewport); await login(page);
+    await page.goto(`${origin}/${locale}/studio?store=${store}&scene=${scene}#post-live`);
+    await c4MetadataControl(page, c.copy).click();
+    const title = `C4 lost ACK ${locale} ${viewport.width}`;
+    await page.getByLabel(c.copyName, { exact: true }).fill(title);
+    const before = await facts(request), commands: { key: string; body: string }[] = [];
+    let committedID = "", upstreamStatus = 0;
+    const path = `${c4MetadataPath(scene)}/copy`;
+    await page.route(`**${path}`, async route => {
+      const wire = route.request();
+      commands.push({ key: wire.headers()["idempotency-key"] ?? "", body: wire.postData() ?? "" });
+      if (commands.length !== 1) { await route.continue(); return; }
+      // FAULT: actual server effect and 200 first; abort only the client ACK. No fabricated response.
+      const actual = await route.fetch();
+      upstreamStatus = actual.status();
+      const result = await actual.json() as { session: { session_id: string } };
+      committedID = result.session.session_id;
+      await actual.dispose();
+      await route.abort("failed");
+    });
+    await c4MetadataControl(page, c.copyReview).click();
+    await test.step("SETUP_REAL_200: commit and original Retry exist before attempting departure", async () => {
+      await expect.poll(() => upstreamStatus).toBe(200);
+      expect(committedID).toMatch(/^[0-9a-f-]{36}$/); expect(committedID).not.toBe(scene);
+      await expect(page.getByRole("button", { name: m.retry, exact: true })).toBeVisible();
+      const receipts = (await facts(request)).receipts.slice(before.receipts.length);
+      expect(receipts).toMatchObject([{ scene, action: "copy", status: 200, effect: true }]);
+      await test.info().attach("C4-UNKNOWN-precondition", { body: JSON.stringify({ class: "MOCK", upstreamStatus, distinctReturnedID: committedID !== scene, effectReceipts: receipts.length }), contentType: "application/json" });
+    });
+    const unresolvedURL = page.url();
+    await test.step("EXPECTED_RED_GUARD: existing Back/shell must preserve original operation", async () => {
+      if (locale === "zh-CN") {
+        const menu = page.locator('button[aria-controls="workspace-navigation"]');
+        if (await menu.isVisible()) await menu.click();
+        await page.getByTestId("nav-orders").click();
+      } else await c4MetadataControl(page, c.back).click();
+      await expect.soft(page).toHaveURL(unresolvedURL);
+      await expect.soft(page.getByLabel(c.copyName, { exact: true })).toHaveValue(title);
+      await expect.soft(page.getByRole("button", { name: m.retry, exact: true })).toBeVisible();
+      await expect.soft(page.getByText(m.unknown, { exact: true })).toBeVisible();
+      await expect.soft(page.getByText(m.unknownHelp, { exact: true })).toBeVisible();
+      await expect.soft(c4MetadataControl(page, m.discard)).toHaveCount(0);
+      expect.soft(commands.length).toBe(1);
+      expect.soft((await facts(request)).receipts).toHaveLength(before.receipts.length + 1);
+    });
+    // If departure wrongly unmounts the operation, the guard assertions above remain failures.
+    // A correct guard must also permit the existing original-key Retry, never a new copy.
+    await page.getByRole("button", { name: m.retry, exact: true }).click();
+    await expect(page.getByRole("heading", { name: c.copied, exact: true })).toBeVisible();
+    expect(new URL(page.url()).searchParams.get("scene")).toBe(committedID);
+    expect(commands.length).toBe(2);
+    expect(commands[0]!.key.length > 0 && commands[1]!.key === commands[0]!.key).toBe(true);
+    expect(commands[1]!.body === commands[0]!.body).toBe(true);
+    const after = await facts(request), receipts = after.receipts.slice(before.receipts.length);
+    expect(receipts.filter(receipt => receipt.effect)).toHaveLength(1);
+    expect(Object.values(after.scenes).filter(row => row.Title === title)).toHaveLength(1);
+    await test.info().attach("C4-UNKNOWN-retry", { body: JSON.stringify({ class: "MOCK", attempts: commands.length, sameKey: commands[1]!.key === commands[0]!.key, sameBody: commands[1]!.body === commands[0]!.body, singleEffect: receipts.filter(receipt => receipt.effect).length === 1 }), contentType: "application/json" });
+  });
+}
