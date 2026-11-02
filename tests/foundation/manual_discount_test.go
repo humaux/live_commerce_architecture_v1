@@ -564,6 +564,156 @@ func mdDBBoundaryContract(t *testing.T) {
 		return candidate
 	}
 
+	// Exercise the replacement SECURITY DEFINER itself: store:read opens the
+	// callback even when either write permission is absent. No Go write guard
+	// can supply the expected database error on behalf of the target function.
+	t.Run("authorize", func(t *testing.T) {
+		const authorizeSQL = `SELECT fulfillment.authorize_manual_order_discount($1::bytea,$2::uuid,$3::uuid,$4::bytea,$5::text,$6::bigint)`
+		const authorizeSignature = "fulfillment.authorize_manual_order_discount(bytea,uuid,uuid,bytea,text,bigint)"
+		for _, tc := range []struct {
+			name  string
+			perms []string
+		}{
+			{"neither permission", nil},
+			{"missing inventory reserve", []string{"catalog:read"}},
+			{"missing catalog read", []string{"inventory:reserve"}},
+			{"both permissions persist unbound authorization", []string{"inventory:reserve", "catalog:read"}},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				token, principal := e.member(tc.perms...)
+				b := e.newBuyer() // Real owner FK; invalid setup cannot pass by SQLSTATE.
+				owner := b.cap.Scope.OwnerID
+				if e.count(`SELECT count(*) FROM storefront.manual_order_discounts WHERE owner_id=$1`, owner) != 0 {
+					t.Fatal("authorize fixture must start empty")
+				}
+				tokenHash := sha256.Sum256([]byte(token))
+				requestHash := sha256.Sum256([]byte("synthetic direct authorize " + owner))
+				targetEntered := false
+				err := scoped(t, token, principal, "store:read", func(tx pgx.Tx, s platform.Scope) error {
+					for _, permission := range []string{"inventory:reserve", "catalog:read"} {
+						want := false
+						for _, granted := range tc.perms {
+							want = want || granted == permission
+						}
+						// Owner readback is independent of the runtime permission helper.
+						actual := e.count(`SELECT count(*) FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission=$4`, s.TenantID, s.StoreID, s.PrincipalID, permission)
+						got := platform.RequirePermission(ctx, tx, s, token, permission)
+						if (actual == 1) != want || actual > 1 || (want && got != nil) || (!want && !errors.Is(got, platform.ErrForbidden)) {
+							t.Fatalf("authorize actual permission fixture differs: %s=%t rows=%d", permission, want, actual)
+						}
+					}
+					targetEntered = true
+					_, err := tx.Exec(ctx, authorizeSQL, tokenHash[:], e.store(), owner, requestHash[:], "直播優惠", int64(100))
+					return err
+				})
+				if !targetEntered {
+					t.Fatal("authorize function call never reached")
+				}
+				n := e.count(`SELECT count(*) FROM storefront.manual_order_discounts WHERE owner_id=$1`, owner)
+				if len(tc.perms) != 2 {
+					if sqlState(err) != "PT403" || n != 0 {
+						t.Fatalf("direct authorize must deny missing permission without rows: SQLSTATE=%s rows=%d", sqlState(err), n)
+					}
+					return
+				}
+				if err != nil || n != 1 {
+					t.Fatalf("direct authorize success control: SQLSTATE=%s rows=%d", sqlState(err), n)
+				}
+				var tenant, store, savedOwner, savedPrincipal, name string
+				var savedHash []byte
+				var amount int64
+				var unbound bool
+				if err := f.owner.QueryRow(ctx, `SELECT tenant_id::text,store_id::text,owner_id::text,principal_id::text,request_hash,name,amount_minor,quote_id IS NULL
+  FROM storefront.manual_order_discounts WHERE owner_id=$1`, owner).Scan(&tenant, &store, &savedOwner, &savedPrincipal, &savedHash, &name, &amount, &unbound); err != nil {
+					t.Fatal(err)
+				}
+				if tenant != e.tenant() || store != e.store() || savedOwner != owner || savedPrincipal != principal || !bytes.Equal(savedHash, requestHash[:]) || name != "直播優惠" || amount != 100 || !unbound {
+					t.Fatal("authorize must persist exact derived scope/request/discount with NULL quote")
+				}
+			})
+		}
+
+		for _, tc := range []struct{ name, guc string }{
+			{"tenant GUC mismatch", "app.tenant_id"},
+			{"store GUC mismatch", "app.store_id"},
+			{"principal GUC mismatch", "app.principal_id"},
+			{"mixed buyer GUC", "app.buyer_id"},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				token, principal := e.member("inventory:reserve", "catalog:read")
+				_, otherPrincipal := e.member("inventory:reserve", "catalog:read")
+				b := e.newBuyer()
+				owner := b.cap.Scope.OwnerID
+				values := map[string]string{"app.tenant_id": f.tenantB, "app.store_id": f.storeA2, "app.principal_id": otherPrincipal, "app.buyer_id": owner}
+				tokenHash := sha256.Sum256([]byte(token))
+				requestHash := sha256.Sum256([]byte("synthetic authorize GUC " + owner))
+				if e.count(`SELECT count(*) FROM storefront.manual_order_discounts WHERE owner_id=$1`, owner) != 0 {
+					t.Fatal("GUC fixture must start empty")
+				}
+				targetEntered := false
+				err := scoped(t, token, principal, "store:read", func(tx pgx.Tx, s platform.Scope) error {
+					for _, permission := range []string{"inventory:reserve", "catalog:read"} {
+						if e.count(`SELECT count(*) FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission=$4`, s.TenantID, s.StoreID, s.PrincipalID, permission) != 1 || platform.RequirePermission(ctx, tx, s, token, permission) != nil {
+							t.Fatal("GUC target requires both actual permissions")
+						}
+					}
+					var saved string
+					if err := tx.QueryRow(ctx, `SELECT set_config($1,$2,true)`, tc.guc, values[tc.guc]).Scan(&saved); err != nil || saved != values[tc.guc] {
+						t.Fatal("GUC mismatch setup failed before target")
+					}
+					targetEntered = true
+					_, err := tx.Exec(ctx, authorizeSQL, tokenHash[:], e.store(), owner, requestHash[:], "直播優惠", int64(100))
+					return err
+				})
+				n := e.count(`SELECT count(*) FROM storefront.manual_order_discounts WHERE owner_id=$1`, owner)
+				if !targetEntered || sqlState(err) != "PT403" || n != 0 {
+					t.Fatalf("authorize must reject mismatched/mixed GUC without rows: reached=%t SQLSTATE=%s rows=%d", targetEntered, sqlState(err), n)
+				}
+			})
+		}
+
+		for _, role := range []string{"commerce_buyer_runtime", "commerce_checkout_runtime"} {
+			t.Run(role+" EXECUTE denied", func(t *testing.T) {
+				token, _ := e.member("inventory:reserve", "catalog:read")
+				b := e.newBuyer()
+				owner := b.cap.Scope.OwnerID
+				// Borrow the genuine existing role pools, never SET ROLE or forged GUCs.
+				pool := b.h.a.runtime
+				if role == "commerce_checkout_runtime" {
+					pool = e.p.pool
+				}
+				tx, err := pool.Begin(ctx)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer tx.Rollback(ctx)
+				var sameLogin, intendedRole, privileged, schemaUsage, execute bool
+				if err := tx.QueryRow(ctx, `SELECT current_user=session_user,pg_has_role(current_user,$1,'USAGE'),
+  r.rolsuper OR r.rolbypassrls OR pg_has_role(current_user,'commerce_auth','USAGE') OR pg_has_role(current_user,'commerce_runtime','USAGE'),
+  has_schema_privilege(current_user,'fulfillment','USAGE'),has_function_privilege(current_user,$2,'EXECUTE')
+  FROM pg_roles r WHERE r.rolname=current_user`, role, authorizeSignature).Scan(&sameLogin, &intendedRole, &privileged, &schemaUsage, &execute); err != nil {
+					t.Fatal(err)
+				}
+				if !sameLogin || !intendedRole || privileged || !schemaUsage || execute {
+					t.Fatal("authorize ACL requires actual restricted role, schema USAGE and no function EXECUTE")
+				}
+				if e.count(`SELECT count(*) FROM storefront.manual_order_discounts WHERE owner_id=$1`, owner) != 0 {
+					t.Fatal("ACL fixture must start empty")
+				}
+				tokenHash := sha256.Sum256([]byte(token))
+				requestHash := sha256.Sum256([]byte("synthetic authorize ACL " + owner))
+				_, err = tx.Exec(ctx, authorizeSQL, tokenHash[:], e.store(), owner, requestHash[:], "直播優惠", int64(100))
+				if rollbackErr := tx.Rollback(ctx); rollbackErr != nil {
+					t.Fatal(rollbackErr)
+				}
+				n := e.count(`SELECT count(*) FROM storefront.manual_order_discounts WHERE owner_id=$1`, owner)
+				if sqlState(err) != "42501" || n != 0 {
+					t.Fatalf("actual buyer/checkout authorize EXECUTE must fail without rows: SQLSTATE=%s rows=%d", sqlState(err), n)
+				}
+			})
+		}
+	})
+
 	for _, tc := range []struct {
 		name  string
 		perms []string
