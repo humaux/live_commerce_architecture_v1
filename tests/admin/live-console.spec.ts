@@ -1703,7 +1703,10 @@ for (const [locale, viewport] of [["en", parityViewports[0]], ["zh-TW", parityVi
       if (locale === "zh-CN") {
         const menu = page.locator('button[aria-controls="workspace-navigation"]');
         if (await menu.isVisible()) await c4MetadataClickLocator(menu);
-        await c4MetadataClickLocator(page.getByTestId("nav-orders"));
+        const liveGroup = page.getByTestId("nav-group-live");
+        await expect(liveGroup).toBeVisible({ timeout: 10000 });
+        if (await liveGroup.getAttribute("aria-expanded") !== "true") await c4MetadataClickLocator(liveGroup);
+        await c4MetadataClickLocator(page.getByTestId("nav-studio"));
       } else await c4MetadataClick(page, c.back);
       diagnostic.note("unknown-departure-assert-start", { selected_id: new URL(page.url()).searchParams.get("scene") });
       await expect.soft(page).toHaveURL(unresolvedURL);

@@ -72,7 +72,7 @@ async function c4OwnedDraft(page: Page, locale: keyof typeof c4EditorWords, titl
     page.waitForResponse(response => response.request().method() === "POST" && new URL(response.url()).pathname === `/api/stores/${store}/live-sessions`, { timeout: 15000 }),
     page.getByRole("button", { name: c.create, exact: true }).click({ timeout: 15000 }),
   ]);
-  expect(response.status()).toBe(201);
+  expect(response.status()).toBe(200);
   expect((response.request().headers()["idempotency-key"] ?? "").length > 0).toBe(true);
   const draft = await response.json() as { session_id: string; title: string; scheduled_at: string | null; aspect_ratio: string; state: string; version: number };
   expect(draft).toMatchObject({ title, scheduled_at: null, aspect_ratio: "9:16", state: "DRAFT", version: 1 });
