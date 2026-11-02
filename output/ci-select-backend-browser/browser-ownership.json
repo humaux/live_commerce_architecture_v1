@@ -24,6 +24,7 @@
     "tests/admin/card-payments.spec.ts": "544652d4c129dfc4eb3ba695d230a2302071acebc2616709ff8421f28f2f58d9",
     "tests/admin/catalog-core.spec.ts": "6ccb77647369b8573013fefe859b19ef69029227b5b319b22804d2499062db08",
     "tests/admin/catalog-document-driver.ts": "da77d282f47c6b63104c917e7cf7bd97166091bd21d511b74699983180913f8e",
+    "tests/admin/catalog-manual-unknown.spec.ts": "5c55fef76b84ba949d496850dc6459afda0c7648e283996d6bd69177d87825b0",
     "tests/admin/catalog-receipt.test.ts": "972625dffcda9c32dee20554bad573dc842bfdc82887b84f7899579dd8e1c1b4",
     "tests/admin/catalog-v2-model.test.ts": "a358e29e75ddf33ddf20297a33f54fd5e127a0a8e28713e3c0a46ffeb60ca69f",
     "tests/admin/catalog-v2-simplified.acceptance.ts": "115da90b957ed2b9a31b980e2baa074e22d69494b114bb767870f50c75fc400a",
@@ -256,7 +257,7 @@
     "tests/foundation/browser_buyer_chain_test.go": "a7bdee104acee6ed6fc32594e6a33abae0f2a6a5b1b724054620c787c44aa8ed",
     "tests/foundation/browser_buyer_comms_test.go": "4e7ab136ef2e5ac637e487e853fd6285301c190a57d3036c6ca26430b2908e61",
     "tests/foundation/browser_card_payments_test.go": "6904038cf08495111a962d1a22b60db5c4cfc06085ba4b808930548264d67b68",
-    "tests/foundation/browser_catalog_core_test.go": "82ed3818cda5328ff139453cea052878a768e2e52255e771827baf8401ca4196",
+    "tests/foundation/browser_catalog_core_test.go": "2f23125028765b221cb442748d68dccb2a19a795e53f64eed7451f745fcf4c55",
     "tests/foundation/browser_catalog_media_test.go": "d7a727165f4cc4e1d6ca57fc54292a686c3b7950164cdcfef8ec673a06207b2c",
     "tests/foundation/browser_checkout_offline_test.go": "6199cd3dd28ce70a726ebc6883db06a74795f767c6c5eebe3a35fc77b6ceedaf",
     "tests/foundation/browser_claim_checkout_test.go": "d0b7d2eb285373130f715ae81cca5e5b2bdd718bc6fc6569ea8235dc9c941605",
@@ -2840,6 +2841,7 @@
     "--browser-product-editor": {
       "specs": [
         "tests/admin/catalog-core.spec.ts",
+        "tests/admin/catalog-manual-unknown.spec.ts",
         "tests/admin/parity-data-ops.spec.ts",
         "tests/ci/product-editor-matrix-claims.mjs",
         "tests/ci/product-editor-matrix-controls.mjs",
@@ -2852,6 +2854,7 @@
       "inputs": [
         "tests/admin/catalog-core.spec.ts",
         "tests/admin/catalog-document-driver.ts",
+        "tests/admin/catalog-manual-unknown.spec.ts",
         "tests/admin/catalog-v2-simplified.acceptance.ts",
         "tests/admin/fixtures/native-device.ts",
         "tests/admin/parity-data-ops-support.ts",
@@ -2902,6 +2905,8 @@
         "tests/admin/catalog-core.spec.ts:server/import apps/admin",
         "tests/admin/catalog-document-driver.ts:import apps/admin/lib/product-editor-copy.ts",
         "tests/admin/catalog-document-driver.ts:server/import apps/admin",
+        "tests/admin/catalog-manual-unknown.spec.ts:import apps/admin/lib/catalog-v2-copy.ts",
+        "tests/admin/catalog-manual-unknown.spec.ts:server/import apps/admin",
         "tests/admin/product-editor-layout.acceptance.ts:import apps/admin/lib/catalog-v2-copy.ts",
         "tests/admin/product-editor-layout.acceptance.ts:import apps/admin/lib/presentation-copy.ts",
         "tests/admin/product-editor-layout.acceptance.ts:import apps/admin/lib/product-editor-copy.ts",
@@ -2919,6 +2924,7 @@
         "tests/ci/product-editor-matrix-controls.test.mjs:server/import apps/admin",
         "tests/ci/product-editor-matrix-ledger.test.mjs:server/import apps/admin",
         "tests/foundation/browser_catalog_core_test.go -> tests/admin/catalog-core.spec.ts",
+        "tests/foundation/browser_catalog_core_test.go -> tests/admin/catalog-manual-unknown.spec.ts",
         "tests/foundation/browser_catalog_core_test.go -> tests/admin/parity-data-ops.spec.ts",
         "tests/foundation/browser_catalog_core_test.go:server/import apps/admin",
         "tests/foundation/catalog_matrix_ledger_test.go -> tests/ci/product-editor-matrix-claims.mjs",
@@ -2934,6 +2940,7 @@
     "--browser-catalog-core": {
       "specs": [
         "tests/admin/catalog-core.spec.ts",
+        "tests/admin/catalog-manual-unknown.spec.ts",
         "tests/admin/parity-data-ops.spec.ts",
         "tests/ci/product-editor-matrix-claims.mjs",
         "tests/ci/product-editor-matrix-controls.mjs",
@@ -2946,6 +2953,7 @@
       "inputs": [
         "tests/admin/catalog-core.spec.ts",
         "tests/admin/catalog-document-driver.ts",
+        "tests/admin/catalog-manual-unknown.spec.ts",
         "tests/admin/catalog-v2-simplified.acceptance.ts",
         "tests/admin/fixtures/native-device.ts",
         "tests/admin/parity-data-ops-support.ts",
@@ -2996,6 +3004,8 @@
         "tests/admin/catalog-core.spec.ts:server/import apps/admin",
         "tests/admin/catalog-document-driver.ts:import apps/admin/lib/product-editor-copy.ts",
         "tests/admin/catalog-document-driver.ts:server/import apps/admin",
+        "tests/admin/catalog-manual-unknown.spec.ts:import apps/admin/lib/catalog-v2-copy.ts",
+        "tests/admin/catalog-manual-unknown.spec.ts:server/import apps/admin",
         "tests/admin/product-editor-layout.acceptance.ts:import apps/admin/lib/catalog-v2-copy.ts",
         "tests/admin/product-editor-layout.acceptance.ts:import apps/admin/lib/presentation-copy.ts",
         "tests/admin/product-editor-layout.acceptance.ts:import apps/admin/lib/product-editor-copy.ts",
@@ -3013,6 +3023,7 @@
         "tests/ci/product-editor-matrix-controls.test.mjs:server/import apps/admin",
         "tests/ci/product-editor-matrix-ledger.test.mjs:server/import apps/admin",
         "tests/foundation/browser_catalog_core_test.go -> tests/admin/catalog-core.spec.ts",
+        "tests/foundation/browser_catalog_core_test.go -> tests/admin/catalog-manual-unknown.spec.ts",
         "tests/foundation/browser_catalog_core_test.go -> tests/admin/parity-data-ops.spec.ts",
         "tests/foundation/browser_catalog_core_test.go:server/import apps/admin",
         "tests/foundation/catalog_matrix_ledger_test.go -> tests/ci/product-editor-matrix-claims.mjs",

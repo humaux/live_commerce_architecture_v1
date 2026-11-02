@@ -204,7 +204,7 @@ func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
 	if d := os.Getenv("LC_BROWSER_DIAGNOSTIC"); d != "" { // diagnostic only, see the spec: never part of the gate
 		env["LC_BROWSER_DIAGNOSTIC"] = d
 	}
-	brfPlaywright(t, ctx, stack, []string{"catalog-core.spec.ts", "parity-data-ops.spec.ts"}, env)
+	brfPlaywright(t, ctx, stack, []string{"catalog-core.spec.ts", "parity-data-ops.spec.ts", "catalog-manual-unknown.spec.ts"}, env)
 	if productEditor {
 		ledgerPath := filepath.Join(evidence, "product-editor-click-ledger.json")
 		ledger, err := os.ReadFile(ledgerPath)
