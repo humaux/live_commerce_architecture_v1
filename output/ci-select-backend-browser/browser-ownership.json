@@ -762,7 +762,7 @@
     "tests/storefront/shop-real-gate.mjs": "91f6f6f19c5550ff46436835fc55bad4e29aa39990baeea5d756cd929ee1e6d4",
     "tests/storefront/store-domains-gate.mjs": "94d3d543b931453ce9176b3801161b3aae809796dee0ef7793ff32e951497185",
     "tests/storefront/storefront-publish-gate.mjs": "7f47df8fc3a9ab9f751b0b8eb1cf596b150de32aa3d7b4979b09970144249cf3",
-    "tests/storefront/stripe-browser.mjs": "eb067cbf66d65a95f73418bcd1f2d412e50271a1eeddd3973f02f4dfc2359512",
+    "tests/storefront/stripe-browser.mjs": "37d816c1975aa078b03432eb835aac6ef22688196c2db32f6687d5de903c5ef4",
     "tests/ui/click-sweep-known-defects.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
     "tests/ui/click-sweep-lib.mjs": "f8bca37be6b89ad2b9182ed990daf20ef482a14b04cbe580d454ad44ecdaee0c",
     "tests/ui/click-sweep-lib.test.mjs": "01a8c9de28e0e27463d24632a52f81aeebfa3525a7ae24eb6421d938ee3b9697",
