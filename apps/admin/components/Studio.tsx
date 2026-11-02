@@ -487,7 +487,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
 
   function mayLeave(depart = false) {
     if (recoveryGuard) return false;
-    if (pending.current || actionError === "uncertain") return false;
+    if (pending.current || volatile.current.actionError === "uncertain") return false;
     if (dirty.current && !window.confirm(c.dirty)) return false;
     if (!copyNavigationGuard.current()) return false;
     if (sameRecovery(historyRecovery, scope, scene)) historyRecovery = null;
@@ -557,7 +557,8 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
         if (epoch !== actionEpoch.current) return;
         pending.current = null;
         dirty.current = false;
-        setNewMode(false);
+        volatile.current.actionError = null;
+        setActionError(null);
         setPageReload((value) => value + 1);
         navigate(storeID, "", draft.session_id);
       } else if (action === "edit") {
