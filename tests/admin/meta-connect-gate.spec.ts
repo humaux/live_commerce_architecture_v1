@@ -709,3 +709,68 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) test(`C4 session cards a
 });
 const studioParityName = {"zh-TW":"場次名稱", "zh-CN":"场次名称", en:"Scene name"};
 const studioParitySave = {"zh-TW":"建立草稿", "zh-CN":"建立草稿", en:"Create draft"};
+
+// Independent P1-B regression: real committed OAuth start with only its browser ACK lost.
+for (const viewport of parityViewports) test(`Meta UNKNOWN start keeps same-key recovery reachable ${viewport.width}`, async ({ page }) => {
+  await page.setViewportSize(viewport);
+  await signedLogin(page);
+  await openSettings(page, "en");
+  const before = await facts();
+  await answerDialog(page);
+  answer = { profile: "full" };
+  const starts: { key: string; body: string }[] = [];
+  const unexpectedWrites: string[] = [];
+  let receiptDigest = "", sameReceipt = false;
+  page.on("request", request => {
+    const pathname = new URL(request.url()).pathname;
+    if (request.method() !== "GET" && /\/meta-connect\/(pick|disconnect)$/.test(pathname)) unexpectedWrites.push(pathname);
+  });
+  await page.route("**/api/meta/connect", async route => {
+    const request = route.request();
+    expect(request.method()).toBe("POST");
+    starts.push({ key: request.headers()["idempotency-key"] ?? "", body: request.postData() ?? "" });
+    // FAULT/TRANSPORT: execute genuine Next -> Go -> PG start before dropping only the first ACK.
+    const response = await route.fetch();
+    expect(response.status()).toBe(200);
+    const body: unknown = await response.json();
+    const closedReply = !!body && typeof body === "object" && !Array.isArray(body)
+      && Object.keys(body).length === 1 && Object.hasOwn(body, "dialog_url");
+    expect(closedReply, "real start returns the closed BFF receipt").toBe(true);
+    const dialog = (body as { dialog_url: unknown }).dialog_url;
+    expect(typeof dialog === "string" && URL.canParse(dialog), "receipt contains a valid dialog URL").toBe(true);
+    const url = new URL(dialog as string);
+    expect(url.protocol === "https:" && url.hostname === "www.facebook.com" && !url.username && !url.password && !url.port,
+      "receipt targets the official dialog").toBe(true);
+    // Keep receipt values private: assertions expose booleans only, never OAuth URL/state/token.
+    const digest = createHash("sha256").update(JSON.stringify(body)).digest("hex");
+    if (starts.length === 1) {
+      receiptDigest = digest;
+      await route.abort("failed");
+    } else {
+      sameReceipt = digest === receiptDigest;
+      await route.fulfill({ response });
+    }
+  });
+  await officialStart(page, "metaconnect-connect", "en");
+  await expect(page.getByTestId("metaconnect-error")).toHaveText(metaConnectCopy.en.uncertainStart);
+  const retry = page.getByRole("button", { name: parityWords.en.official, exact: true });
+  await expect(retry).toBeEnabled();
+  // Expected pre-fix RED: a3278e5 enables Back and can strand the unresolved connect on its locked list.
+  await expect(page.getByRole("button", { name: parityWords.en.returnList, exact: true })).toBeDisabled();
+  expect(starts.length, "no automatic replay while UNKNOWN").toBe(1);
+  await retry.click();
+  await expect(page.getByTestId("metaconnect-pick")).toBeVisible();
+  expect(starts.length).toBe(2);
+  expect(starts[0].key.length >= 8 && starts[0].key === starts[1].key, "recovery keeps the original key").toBe(true);
+  expect(starts[0].body === JSON.stringify({ store }) && starts[0].body === starts[1].body, "recovery keeps the original body").toBe(true);
+  expect(sameReceipt, "keyed replay returns the original committed receipt").toBe(true);
+  await page.getByRole("button", { name: metaConnectCopy.en.pickCancel, exact: true }).click();
+  await expect(page.getByTestId("metaconnect-none")).toBeVisible();
+  await page.reload();
+  await enterSettings(page);
+  await expect(page.getByTestId("metaconnect-none")).toBeVisible();
+  const after = await facts();
+  expect(["connections", "bindings", "routes", "heads"].every(name => before[name as keyof typeof before] === after[name as keyof typeof after]),
+    "recovering start creates no Page connection/binding/route/head effect").toBe(true);
+  expect(unexpectedWrites).toHaveLength(0);
+});
