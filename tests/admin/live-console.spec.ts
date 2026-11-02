@@ -1426,40 +1426,104 @@ const c4MetadataWords = {
 const c4MetadataControl = (page: Page, name: string) => page.getByRole("button", { name, exact: true }).or(page.getByRole("link", { name, exact: true }));
 const c4MetadataPath = (scene: string) => `/api/stores/${store}/live-sessions/${scene}`;
 
+
+// Diagnostic-only projection. Never persist a title, raw command, header, DOM or exception text.
+// A fixed filename and <=32 bounded entries survive a closed browser/request fixture.
+import { writeFileSync } from "node:fs";
+type C4PhaseReceipt = { scene: string | null; action: "copy" | "other"; key_hash: string | null; body_hash: string | null; status: number; effect: boolean };
+type C4PhaseProjection = {
+  response_status?: number; source_id?: string | null; selected_id?: string | null; copied_id?: string | null; detail_id?: string | null;
+  detail_version?: number; window_state?: "CLOSED" | "OPEN" | "INVALID"; window_generation?: number; window_opened_at?: string | null;
+  receipts?: C4PhaseReceipt[]; receipt_count?: number; write_count?: number; oracle?: "passed" | "failed" | "not_run"; phase_at_failure?: string;
+};
+const c4DiagnosticID = (value: unknown): string | null => typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(value) ? value : null;
+const c4DiagnosticHash = (value: unknown): string | null => typeof value === "string" && /^[0-9a-f]{16,64}$/.test(value) ? value : null;
+function c4ReceiptProjection(rows: readonly Receipt[]): C4PhaseReceipt[] {
+  return rows.slice(0, 8).map(row => ({ scene: c4DiagnosticID(row.scene), action: row.action === "copy" ? "copy" : "other",
+    key_hash: c4DiagnosticHash(row.key_hash), body_hash: c4DiagnosticHash(row.body_hash), status: Number.isSafeInteger(row.status) && row.status >= 100 && row.status <= 599 ? row.status : 0, effect: row.effect === true }));
+}
+function c4MetadataJournal(caseID: string) {
+  if (!/^(?:prep|copy|unknown)-(?:en|zh-TW|zh-CN)-(?:1440|390)$/.test(caseID)) throw new Error("invalid C4 diagnostic case ID");
+  const file = `${evidence}/c4-metadata-${caseID}.json`, started = Date.now();
+  const entries: (C4PhaseProjection & { phase: string; elapsed_ms: number })[] = [];
+  let current = "created";
+  const note = (phase: string, projection: C4PhaseProjection = {}) => {
+    if (!/^[a-z0-9-]{1,64}$/.test(phase) || entries.length >= 32) throw new Error("invalid C4 diagnostic phase or entry budget");
+    current = phase;
+    const safe: C4PhaseProjection = {};
+    for (const key of ["source_id", "selected_id", "copied_id", "detail_id"] as const)
+      if (key in projection) safe[key] = c4DiagnosticID(projection[key]);
+    for (const key of ["response_status", "detail_version", "window_generation", "receipt_count", "write_count"] as const) {
+      const value = projection[key];
+      if (typeof value === "number" && Number.isSafeInteger(value) && value >= 0 && value <= 2_147_483_647) safe[key] = value;
+    }
+    if (projection.window_state !== undefined) safe.window_state = projection.window_state === "CLOSED" || projection.window_state === "OPEN" ? projection.window_state : "INVALID";
+    if (projection.window_opened_at === null || typeof projection.window_opened_at === "string" && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,6})?Z$/.test(projection.window_opened_at)) safe.window_opened_at = projection.window_opened_at;
+    if (projection.receipts) safe.receipts = projection.receipts.slice(0, 8);
+    if (projection.oracle === "passed" || projection.oracle === "failed" || projection.oracle === "not_run") safe.oracle = projection.oracle;
+    if (projection.phase_at_failure && /^[a-z0-9-]{1,64}$/.test(projection.phase_at_failure)) safe.phase_at_failure = projection.phase_at_failure;
+    entries.push({ phase, elapsed_ms: Date.now() - started, ...safe });
+    writeFileSync(file, JSON.stringify({ class: "MOCK", case_id: caseID, entries }), { encoding: "utf8", mode: 0o600, flush: true });
+  };
+  const preserveFailure = (phase: "primary-error" | "secondary-oracle-error", oracle?: "failed" | "not_run") => {
+    const phase_at_failure = current;
+    // A diagnostic filesystem failure must never replace an already failing original assertion.
+    try { note(phase, { phase_at_failure, ...(oracle ? { oracle } : {}) }); } catch { /* Original failure remains authoritative. */ }
+  };
+  note("created");
+  return { note, preserveFailure };
+}
+async function c4MetadataClickLocator(control: ReturnType<typeof c4MetadataControl>) {
+  await expect(control).toBeVisible({ timeout: 10000 });
+  await control.click({ timeout: 15000 });
+}
+async function c4MetadataClick(page: Page, name: string) { await c4MetadataClickLocator(c4MetadataControl(page, name)); }
+
 for (const viewport of parityViewports) test(`C4 metadata preparation native Edit and original settings ${viewport.width}`, async ({ page, request }) => {
   const locale = "zh-TW", c = parityWords[locale], m = c4MetadataWords[locale], scene = scenes[0]!;
-  const before = (await facts(request)).receipts.length;
-  await page.setViewportSize(viewport); await login(page);
-  let detail: { draft: { session_id: string; title: string; scheduled_at: string | null; aspect_ratio: string }; can_manage: boolean };
+  const diagnostic = c4MetadataJournal(`prep-${locale}-${viewport.width}`);
+  let before: number | undefined, primaryError = false;
+  let detail: { draft: { session_id: string; title: string; scheduled_at: string | null; aspect_ratio: string; version: number }; can_manage: boolean };
   const writes: string[] = [];
-  page.on("request", wire => { if (new URL(wire.url()).pathname.startsWith("/api/stores/") && !["GET", "HEAD"].includes(wire.method())) writes.push(wire.method()); });
   try {
+    diagnostic.note("baseline-facts-start", { source_id: scene });
+    before = (await facts(request)).receipts.length;
+    diagnostic.note("login-start");
+    await page.setViewportSize(viewport); await login(page);
+    page.on("request", wire => { if (new URL(wire.url()).pathname.startsWith("/api/stores/") && !["GET", "HEAD"].includes(wire.method())) writes.push(wire.method()); });
     await test.step("SETUP: real list card loads the existing scene and GET detail", async () => {
+      diagnostic.note("list-route-start");
       await page.goto(`${origin}/${locale}/studio?store=${store}`);
       const title = (await facts(request)).scenes[scene]!.Title;
       const card = page.locator(".studio-scene-list .studio-scene").filter({ has: page.locator("strong", { hasText: title }) });
       await expect(card).toHaveCount(1);
+      diagnostic.note("list-card-click-start");
       const [response] = await Promise.all([
         page.waitForResponse(response => new URL(response.url()).pathname === c4MetadataPath(scene) && response.request().method() === "GET" && response.status() === 200, { timeout: 15000 }),
-        card.click(),
+        c4MetadataClickLocator(card),
       ]);
+      diagnostic.note("selected-detail-status", { response_status: response.status(), source_id: scene });
       detail = await response.json();
+      diagnostic.note("selected-detail-received", { response_status: response.status(), source_id: scene, selected_id: detail.draft.session_id, detail_version: detail.draft.version });
       await expect(page.getByRole("heading", { name: c.prepare, exact: true })).toBeVisible();
       expect(new URL(page.url()).searchParams.get("scene")).toBe(scene);
     });
     await test.step("REGRESSION: View settings still opens the real same-scene preflight", async () => {
-      await c4MetadataControl(page, c.settings).click();
+      diagnostic.note("view-settings-click-start");
+      await c4MetadataClick(page, c.settings);
       await expect(page.getByRole("heading", { name: c.preflight, exact: true })).toBeVisible();
       const url = new URL(page.url());
       expect(url.pathname).toBe(`/${locale}/studio/claims`);
       expect(url.searchParams.get("store")).toBe(store);
       expect(url.searchParams.get("scene")).toBe(scene);
       expect(url.hash).toBe("#preflight");
-      await page.goBack();
+      diagnostic.note("preflight-back-start", { selected_id: url.searchParams.get("scene") });
+      await page.goBack({ timeout: 15000 });
       await expect(page.getByRole("heading", { name: c.prepare, exact: true })).toBeVisible();
     });
     await test.step("EXPECTED_RED_ENTRY: real Edit click, never goto/hash assignment", async () => {
-      await c4MetadataControl(page, m.edit).click();
+      diagnostic.note("edit-click-start");
+      await c4MetadataClick(page, m.edit);
       await expect(page).toHaveURL(`${origin}/${locale}/studio?store=${store}&scene=${scene}#edit`);
       expect(detail.can_manage).toBe(true);
       expect(detail.draft.session_id).toBe(scene);
@@ -1467,26 +1531,47 @@ for (const viewport of parityViewports) test(`C4 metadata preparation native Edi
       await expect(page.getByLabel(m.schedule, { exact: true })).toHaveValue("");
       expect(detail.draft.scheduled_at).toBeNull();
       await expect(page.getByLabel(m.aspect, { exact: true })).toHaveValue(detail.draft.aspect_ratio);
+      diagnostic.note("edit-fields-matched", { selected_id: detail.draft.session_id });
     });
+  } catch (error) {
+    primaryError = true; diagnostic.preserveFailure("primary-error"); throw error;
   } finally {
-    expect((await facts(request)).receipts).toHaveLength(before);
-    expect(writes).toHaveLength(0);
-    await test.info().attach("C4-metadata-zero-write", { body: JSON.stringify({ class: "MOCK", viewport: viewport.width, expected: "native Edit and preserved preflight; zero business receipts", actual: test.info().status }), contentType: "application/json" });
+    const alreadyFailed = primaryError || test.info().errors.length > 0;
+    let readCompleted = false;
+    if (before !== undefined) {
+      try {
+        diagnostic.note("final-oracle-start");
+        const after = await facts(request); readCompleted = true;
+        diagnostic.note("final-oracle-facts", { receipt_count: after.receipts.length, write_count: writes.length });
+        expect(after.receipts).toHaveLength(before);
+        expect(writes).toHaveLength(0);
+        diagnostic.note("final-oracle-pass", { oracle: "passed" });
+        await test.info().attach("C4-metadata-zero-write", { body: JSON.stringify({ class: "MOCK", viewport: viewport.width, expected: "native Edit and preserved preflight; zero business receipts", actual: test.info().status }), contentType: "application/json" });
+      } catch (error) {
+        diagnostic.preserveFailure("secondary-oracle-error", readCompleted ? "failed" : "not_run");
+        if (!alreadyFailed) throw error;
+      }
+    } else diagnostic.preserveFailure("secondary-oracle-error", "not_run");
   }
 });
 
 for (const [locale, viewport] of [["en", parityViewports[0]], ["zh-TW", parityViewports[1]], ["zh-CN", parityViewports[1]]] as const) {
   test(`C4 metadata successful copy uses returned new ID ${locale} ${viewport.width}`, async ({ page, request }) => {
     const c = parityWords[locale], m = c4MetadataWords[locale], scene = scenes[0]!;
+    const diagnostic = c4MetadataJournal(`copy-${locale}-${viewport.width}`);
+    diagnostic.note("login-start", { source_id: scene });
     await page.setViewportSize(viewport); await login(page);
     await page.goto(`${origin}/${locale}/studio?store=${store}&scene=${scene}#post-live`);
+    diagnostic.note("copy-source-facts-start");
     const initial = await facts(request), source = initial.scenes[scene]!;
     const writes: string[] = [];
     page.on("request", wire => { if (new URL(wire.url()).pathname.startsWith("/api/stores/") && !["GET", "HEAD"].includes(wire.method())) writes.push(wire.method()); });
     const sourceFacts = { title: source.Title, phase: source.Phase, stock: source.Stock, active: source.Active, copied: source.Copied };
-    await c4MetadataControl(page, c.copy).click();
+    diagnostic.note("copy-form-click-start");
+    await c4MetadataClick(page, c.copy);
+    diagnostic.note("copy-form-fill-start");
     const title = `C4 metadata copy ${locale} ${viewport.width}`;
-    await page.getByLabel(c.copyName, { exact: true }).fill(title);
+    await page.getByLabel(c.copyName, { exact: true }).fill(title, { timeout: 15000 });
     await expect(page.getByText(m.success, { exact: true })).toHaveCount(0);
     const copiedRead = page.waitForResponse(async response => {
       if (response.request().method() !== "GET" || response.status() !== 200 || !new URL(response.url()).pathname.startsWith(`${c4MetadataPath("")}`)) return false;
@@ -1494,64 +1579,96 @@ for (const [locale, viewport] of [["en", parityViewports[0]], ["zh-TW", parityVi
       const value = await response.json() as { draft?: { session_id: string } };
       return !!value.draft && value.draft.session_id !== scene;
     }, { timeout: 15000 });
+    // Observe both outcomes immediately so an early native-click failure cannot create an unhandled waiter rejection.
+    const copiedReadOutcome = copiedRead.then(response => ({ ok: true as const, response }), error => ({ ok: false as const, error }));
     const submitted = page.waitForResponse(response => new URL(response.url()).pathname === `${c4MetadataPath(scene)}/copy` && response.request().method() === "POST", { timeout: 15000 });
-    await c4MetadataControl(page, c.copyReview).click();
-    const response = await submitted;
+    diagnostic.note("copy-submit-start");
+    const [response] = await Promise.all([submitted, c4MetadataClick(page, c.copyReview)]);
+    diagnostic.note("copy-post-status", { response_status: response.status(), source_id: scene });
     expect(response.status()).toBe(200);
     const result = await response.json() as { session: { session_id: string; title: string }; window: { session_id: string; state: string; generation: number; opened_at: string | null } };
     const newID = result.session.session_id;
+    diagnostic.note("copy-post-response", { response_status: response.status(), source_id: scene, copied_id: newID, window_state: result.window.state === "CLOSED" || result.window.state === "OPEN" ? result.window.state : "INVALID", window_generation: result.window.generation, window_opened_at: result.window.opened_at });
     expect(newID).toMatch(/^[0-9a-f-]{36}$/); expect(newID).not.toBe(scene);
     expect(result.session.title).toBe(title);
     expect(result.window).toMatchObject({ session_id: newID, state: "CLOSED", generation: 0, opened_at: null });
-    const detail = await (await copiedRead).json() as { draft: { session_id: string; title: string } };
+    diagnostic.note("copied-detail-wait-start");
+    const readOutcome = await copiedReadOutcome;
+    if (!readOutcome.ok) throw readOutcome.error;
+    const detailResponse = readOutcome.response;
+    diagnostic.note("copied-detail-status", { response_status: detailResponse.status(), copied_id: newID });
+    const detail = await detailResponse.json() as { draft: { session_id: string; title: string; version: number } };
+    diagnostic.note("copied-detail-response", { response_status: detailResponse.status(), copied_id: newID, detail_id: detail.draft.session_id, detail_version: detail.draft.version });
     expect(detail.draft).toMatchObject({ session_id: newID, title });
     await expect(page.getByRole("heading", { name: c.copied, exact: true })).toBeVisible();
     const successURL = page.url();
     expect(new URL(successURL).searchParams.get("scene")).toBe(newID);
     expect(new URL(successURL).searchParams.get("store")).toBe(store);
     const committed = await facts(request);
+    diagnostic.note("copy-effect-receipts", { source_id: scene, copied_id: newID, receipts: c4ReceiptProjection(committed.receipts.slice(initial.receipts.length)), receipt_count: committed.receipts.length - initial.receipts.length });
     expect(committed.receipts.slice(initial.receipts.length)).toMatchObject([{ scene, action: "copy", status: 200, effect: true }]);
     await test.info().attach("C4-copy-real-response", { body: JSON.stringify({ class: "MOCK", status: response.status(), distinctReturnedID: newID !== scene, returnedDetailMatched: detail.draft.session_id === newID, effectReceipts: committed.receipts.length - initial.receipts.length }), contentType: "application/json" });
+    let primaryError = false;
     try {
       await test.step("EXPECTED_RED_COPY: frozen success copy follows real 200 and returned detail", async () => {
+        diagnostic.note("copy-success-copy-start");
         await expect.soft(page.getByText(m.success, { exact: true })).toBeVisible();
         await expect.soft(page.getByText(m.notice, { exact: true })).toBeVisible();
       });
       await test.step("EXPECTED_RED_ENTRY: Edit/Open preparation retain returned copied identity", async () => {
-        await c4MetadataControl(page, m.edit).click();
+        diagnostic.note("copied-edit-click-start");
+        await c4MetadataClick(page, m.edit);
         await expect(page.getByLabel(m.name, { exact: true })).toHaveValue(title);
         expect(new URL(page.url()).searchParams.get("scene")).toBe(newID);
         expect(new URL(page.url()).hash).toBe("#edit");
-        await page.goBack();
+        await page.goBack({ timeout: 15000 });
         await expect(page.getByRole("heading", { name: c.copied, exact: true })).toBeVisible();
-        await c4MetadataControl(page, c.openPrep).click();
+        diagnostic.note("copied-open-preparation-start");
+        await c4MetadataClick(page, c.openPrep);
         await expect(page.getByRole("heading", { name: c.preflight, exact: true })).toBeVisible();
         expect(new URL(page.url()).searchParams.get("scene")).toBe(newID);
         expect(new URL(page.url()).pathname).toBe(`/${locale}/studio/claims`);
         expect(new URL(page.url()).hash).toBe("#preflight");
-        await page.goBack();
+        await page.goBack({ timeout: 15000 });
         await expect(page.getByRole("heading", { name: c.copied, exact: true })).toBeVisible();
-        await c4MetadataControl(page, c.back).click();
+        diagnostic.note("copied-list-back-start");
+        await c4MetadataClick(page, c.back);
         await expect(page).toHaveURL(`${origin}/${locale}/studio?store=${store}`);
         await expect(page.locator(".studio-scene-list").getByText(title, { exact: true })).toBeVisible();
       });
+    } catch (error) {
+      primaryError = true; diagnostic.preserveFailure("primary-error"); throw error;
     } finally {
-      const after = await facts(request), currentSource = after.scenes[scene]!;
-      expect(writes).toEqual(["POST"]);
-      expect(after.receipts).toHaveLength(committed.receipts.length);
-      expect({ title: currentSource.Title, phase: currentSource.Phase, stock: currentSource.Stock, active: currentSource.Active, copied: currentSource.Copied }).toEqual(sourceFacts);
-      expect(after.scenes[newID]!.Title).toBe(title);
+      const alreadyFailed = primaryError || test.info().errors.length > 0;
+      let readCompleted = false;
+      try {
+        diagnostic.note("final-oracle-start");
+        const after = await facts(request), currentSource = after.scenes[scene]!; readCompleted = true;
+        diagnostic.note("final-oracle-facts", { source_id: scene, copied_id: newID, receipt_count: after.receipts.length, write_count: writes.length, receipts: c4ReceiptProjection(after.receipts.slice(initial.receipts.length)) });
+        expect(writes).toEqual(["POST"]);
+        expect(after.receipts).toHaveLength(committed.receipts.length);
+        expect({ title: currentSource.Title, phase: currentSource.Phase, stock: currentSource.Stock, active: currentSource.Active, copied: currentSource.Copied }).toEqual(sourceFacts);
+        expect(after.scenes[newID]!.Title).toBe(title);
+        diagnostic.note("final-oracle-pass", { oracle: "passed" });
+      } catch (error) {
+        diagnostic.preserveFailure("secondary-oracle-error", readCompleted ? "failed" : "not_run");
+        if (!alreadyFailed) throw error;
+      }
     }
   });
 
   test(`C4 metadata copy UNKNOWN blocks ${locale === "zh-CN" ? "shell" : "Back"} independently of Edit ${locale} ${viewport.width}`, async ({ page, request }) => {
     // Never traverse missing Edit: exercise the existing copy form and its existing exits directly.
     const c = parityWords[locale], m = c4MetadataWords[locale], scene = scenes[0]!;
+    const diagnostic = c4MetadataJournal(`unknown-${locale}-${viewport.width}`);
+    diagnostic.note("login-start", { source_id: scene });
     await page.setViewportSize(viewport); await login(page);
     await page.goto(`${origin}/${locale}/studio?store=${store}&scene=${scene}#post-live`);
-    await c4MetadataControl(page, c.copy).click();
+    diagnostic.note("copy-form-click-start");
+    await c4MetadataClick(page, c.copy);
+    diagnostic.note("copy-form-fill-start");
     const title = `C4 lost ACK ${locale} ${viewport.width}`;
-    await page.getByLabel(c.copyName, { exact: true }).fill(title);
+    await page.getByLabel(c.copyName, { exact: true }).fill(title, { timeout: 15000 });
     const before = await facts(request), commands: { key: string; body: string }[] = [];
     let committedID = "", upstreamStatus = 0;
     const path = `${c4MetadataPath(scene)}/copy`;
@@ -1562,27 +1679,33 @@ for (const [locale, viewport] of [["en", parityViewports[0]], ["zh-TW", parityVi
       // FAULT: actual server effect and 200 first; abort only the client ACK. No fabricated response.
       const actual = await route.fetch();
       upstreamStatus = actual.status();
-      const result = await actual.json() as { session: { session_id: string } };
+      diagnostic.note("upstream-response-status", { response_status: upstreamStatus, source_id: scene });
+      const result = await actual.json() as { session: { session_id: string }; window?: { state: string; generation: number; opened_at: string | null } };
       committedID = result.session.session_id;
+      diagnostic.note("upstream-real-response-before-drop", { response_status: upstreamStatus, source_id: scene, copied_id: committedID, window_state: result.window?.state === "CLOSED" || result.window?.state === "OPEN" ? result.window.state : "INVALID", window_generation: result.window?.generation, window_opened_at: result.window?.opened_at });
       await actual.dispose();
       await route.abort("failed");
     });
-    await c4MetadataControl(page, c.copyReview).click();
+    diagnostic.note("copy-submit-start");
+    await c4MetadataClick(page, c.copyReview);
     await test.step("SETUP_REAL_200: commit and original Retry exist before attempting departure", async () => {
       await expect.poll(() => upstreamStatus).toBe(200);
       expect(committedID).toMatch(/^[0-9a-f-]{36}$/); expect(committedID).not.toBe(scene);
       await expect(page.getByRole("button", { name: m.retry, exact: true })).toBeVisible();
       const receipts = (await facts(request)).receipts.slice(before.receipts.length);
+      diagnostic.note("unknown-effect-receipts", { source_id: scene, copied_id: committedID, receipts: c4ReceiptProjection(receipts), receipt_count: receipts.length });
       expect(receipts).toMatchObject([{ scene, action: "copy", status: 200, effect: true }]);
       await test.info().attach("C4-UNKNOWN-precondition", { body: JSON.stringify({ class: "MOCK", upstreamStatus, distinctReturnedID: committedID !== scene, effectReceipts: receipts.length }), contentType: "application/json" });
     });
     const unresolvedURL = page.url();
     await test.step("EXPECTED_RED_GUARD: existing Back/shell must preserve original operation", async () => {
+      diagnostic.note("unknown-departure-click-start");
       if (locale === "zh-CN") {
         const menu = page.locator('button[aria-controls="workspace-navigation"]');
-        if (await menu.isVisible()) await menu.click();
-        await page.getByTestId("nav-orders").click();
-      } else await c4MetadataControl(page, c.back).click();
+        if (await menu.isVisible()) await c4MetadataClickLocator(menu);
+        await c4MetadataClickLocator(page.getByTestId("nav-orders"));
+      } else await c4MetadataClick(page, c.back);
+      diagnostic.note("unknown-departure-assert-start", { selected_id: new URL(page.url()).searchParams.get("scene") });
       await expect.soft(page).toHaveURL(unresolvedURL);
       await expect.soft(page.getByLabel(c.copyName, { exact: true })).toHaveValue(title);
       await expect.soft(page.getByRole("button", { name: m.retry, exact: true })).toBeVisible();
@@ -1594,15 +1717,18 @@ for (const [locale, viewport] of [["en", parityViewports[0]], ["zh-TW", parityVi
     });
     // If departure wrongly unmounts the operation, the guard assertions above remain failures.
     // A correct guard must also permit the existing original-key Retry, never a new copy.
-    await page.getByRole("button", { name: m.retry, exact: true }).click();
+    diagnostic.note("original-retry-click-start");
+    await c4MetadataClick(page, m.retry);
     await expect(page.getByRole("heading", { name: c.copied, exact: true })).toBeVisible();
     expect(new URL(page.url()).searchParams.get("scene")).toBe(committedID);
     expect(commands.length).toBe(2);
     expect(commands[0]!.key.length > 0 && commands[1]!.key === commands[0]!.key).toBe(true);
     expect(commands[1]!.body === commands[0]!.body).toBe(true);
     const after = await facts(request), receipts = after.receipts.slice(before.receipts.length);
+    diagnostic.note("retry-effect-receipts", { source_id: scene, copied_id: committedID, selected_id: new URL(page.url()).searchParams.get("scene"), receipts: c4ReceiptProjection(receipts), receipt_count: receipts.length });
     expect(receipts.filter(receipt => receipt.effect)).toHaveLength(1);
     expect(Object.values(after.scenes).filter(row => row.Title === title)).toHaveLength(1);
+    diagnostic.note("retry-oracles-pass", { oracle: "passed" });
     await test.info().attach("C4-UNKNOWN-retry", { body: JSON.stringify({ class: "MOCK", attempts: commands.length, sameKey: commands[1]!.key === commands[0]!.key, sameBody: commands[1]!.body === commands[0]!.body, singleEffect: receipts.filter(receipt => receipt.effect).length === 1 }), contentType: "application/json" });
   });
 }

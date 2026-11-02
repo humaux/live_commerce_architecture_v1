@@ -224,7 +224,7 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 	worker := lmwProcess(t, workerBinary, "studio-ui-worker", workerEnv)
 	mrReadyLog(t, worker, "media_worker_ready")
 	playwrightLog := browserLog(t, filepath.Join(evidence, "playwright.log"))
-	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/studio-ui.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
+	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/studio-ui.spec.ts", "tests/admin/studio-ui2-c4-metadata.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
 	if focused {
 		// A single known main case preserves its real chain while giving exact
 		// cohort totals below. Arbitrary subsets cannot bypass full readbacks.
