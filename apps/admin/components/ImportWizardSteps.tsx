@@ -49,21 +49,25 @@ export function ImportVerdictTable({ locale, preview, signed = false }: { locale
   const rows = orderedImportRows(preview.rows), start = page * 50;
   return <>
     {!signed && <p className="orders-hint">{c.onlyRowsHint}</p>}
-    <div className="orders-table-scroll"><table className="orders-table import-verdicts" data-testid="import-rows">
-      <thead className={signed ? "sr-only" : undefined}><tr><th>{c.row}</th><th>{c.outcome}</th><th>{c.code}</th></tr></thead>
+    <div className="orders-table-scroll"><table className={`orders-table import-verdicts${signed ? " import-verdicts-signed" : ""}`} data-testid="import-rows">
+      <thead className={signed ? "sr-only" : undefined}><tr>{signed ? <th colSpan={3} scope="col">{c.row} · {c.outcome} · {c.code}</th> : <><th>{c.row}</th><th>{c.outcome}</th><th>{c.code}</th></>}</tr></thead>
       <tbody>{rows.slice(start, start + 50).map(row => <tr key={row.row} data-testid={`import-row-${row.row}`}>
-        <td>{signed ? dataOpsText(row.outcome === "created" ? d.willCreate : row.outcome === "updated" ? d.willUpdate : d.willSkip, { n: row.row, reason: c.errors[row.code ?? ""] ?? c.unavailable }) : row.row}</td><td>{!signed && c.outcomes[row.outcome]}</td>
-        <td>{!signed && row.code && <span>{c.errors[row.code] ?? c.unavailable}</span>}
+        {signed ? <td colSpan={3}>
+          {dataOpsText(row.outcome === "created" ? d.willCreate : row.outcome === "updated" ? d.willUpdate : d.willSkip, { n: row.row, reason: c.errors[row.code ?? ""] ?? c.unavailable })}
           {row.consent_ignored && <span className="import-verdict-note">{c.consentIgnoredRows}</span>}
           {row.warning === "city_dropped" && <span className="import-verdict-note">{c.cityDroppedRows}</span>}
-        </td>
+        </td> : <><td>{row.row}</td><td>{c.outcomes[row.outcome]}</td>
+        <td>{row.code && <span>{c.errors[row.code] ?? c.unavailable}</span>}
+          {row.consent_ignored && <span className="import-verdict-note">{c.consentIgnoredRows}</span>}
+          {row.warning === "city_dropped" && <span className="import-verdict-note">{c.cityDroppedRows}</span>}
+        </td></>}
       </tr>)}</tbody>
     </table></div>
     {rows.length === 0 && <p>{c.empty}</p>}
-    <div className="import-actions" hidden={signed && rows.length <= 50}>
+    {(!signed || rows.length > 50) && <div className="import-actions">
       <button type="button" data-testid="import-row-previous" disabled={page === 0} onClick={() => setPage(value => value - 1)}>{importViewCopy[locale].previous}</button>
       <output aria-live="polite">{rows.length ? start + 1 : 0}–{Math.min(start + 50, rows.length)} / {rows.length}</output>
       <button type="button" data-testid="import-row-next" disabled={start + 50 >= rows.length} onClick={() => setPage(value => value + 1)}>{importViewCopy[locale].next}</button>
-    </div>
+    </div>}
   </>;
 }
