@@ -554,12 +554,32 @@ jobs:
           shopt -s nullglob
           grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/members/*/ci-gates/*.log output/members/*/playwright/*/ci-gates/*.log /dev/null | head -200 || true
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
-        if: always() && !matrix.bundle && !startsWith(matrix.mode, '--browser-visual-lint')
+        if: always() && !matrix.bundle && matrix.mode != '--browser-webkit' && !startsWith(matrix.mode, '--browser-visual-lint')
         with:
           name: ${{ matrix.art }}
           path: |
             output/ci-gates/
             output/playwright/
+          retention-days: 14
+          if-no-files-found: ignore
+      # Keep WebKit's structured results on every run; large screenshots/video/traces are only useful for diagnosing failures.
+      - name: Upload WebKit logs
+        if: always() && matrix.mode == '--browser-webkit'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: ${{ matrix.art }}
+          path: |
+            output/ci-gates/
+            output/playwright/**/*.log
+            output/playwright/**/*.jsonl
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Upload WebKit failure evidence
+        if: failure() && matrix.mode == '--browser-webkit'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: ${{ matrix.art }}-failure
+          path: output/playwright/
           retention-days: 14
           if-no-files-found: ignore
       - name: Upload visual lint evidence

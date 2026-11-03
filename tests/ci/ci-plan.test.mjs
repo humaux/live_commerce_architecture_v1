@@ -8,6 +8,13 @@ import path from "node:path";
 import test from "node:test";
 import { SWEEP_SHARDS, UNIT_SHARDS, VISUAL_SHARDS, artifactName, expand, main, prebuiltModes } from "../../scripts/dev/ci-plan.mjs";
 
+test("the full click sweep plans 24 slices to split the measured long 20-slice legs", () => {
+  const plan = expand(["--browser-click-sweep"], { groupIds: [] });
+  assert.equal(plan.sweepN, 24);
+  assert.equal(plan.matrix.length, 24);
+  assert.equal(new Set(plan.matrix.map(({ art }) => art)).size, 24);
+});
+
 const groupIds = ["g01", "g02", "g03"];
 const modes = (r) => r.matrix.map((e) => e.mode);
 

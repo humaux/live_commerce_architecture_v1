@@ -22,16 +22,18 @@ export const UNIT_SHARDS = 2;
 
 /** Click-sweep shards per full run. Candidate calibrated from the current registry's existing cost model:
  * 10 shards max 994, 20 max 506, 24 max 425, 30 still max 425. These are planning weights, NOT measured speedups.
- * Keep LC_SWEEP_WORKERS=1 and every stateful storefront session/J2-J3 on its owning shard. Verify runner quota and
- * same-SHA wall time before rollout; extra shards can queue and cost more. No coverage selection changes. */
-export const SWEEP_SHARDS = 20;
+ * Run 41682937571's 20-slice Gate steps 6 and 7 took 584/585 s. Split to 24 using the same complete partition;
+ * 425 is a model weight, not seconds or a speedup guarantee. Keep LC_SWEEP_WORKERS=1 and every stateful storefront
+ * session/J2-J3 on its owning shard. Verify same-SHA wall time and runner quota: extra shards can queue and cost more. */
+export const SWEEP_SHARDS = 24;
 /** Visual-lint candidate: eight isolated runner slices; workflow worker count, locales, viewports and assertions unchanged. */
 export const VISUAL_SHARDS = 8;
 
 /**
- * Gate-step seconds per mode: the max of the three build-once UI-scale runs 40506418652, 40541796588 and 40575283835 (2026-10-27/28, n=3).
+ * Gate-step seconds: payment 266 and ui-gallery 346 are Gate step completed_at - started_at in run 41682937571 (2026-11-03).
+ * UNKNOWN current per-mode time for the other entries: both runs 41677297535/41682937571 ran them in serial bundles, so their job/step times cannot be attributed to individual modes. Retain their 2026-10-27/28 estimates (max of runs 40506418652, 40541796588 and 40575283835) pending individual measurements.
  * Only modes listed here AND under BUNDLE_LIMIT_S are bundled; a new or unmeasured mode always gets its own job. Re-measure when a leg's suite grows.
- * Excluded on purpose (>= limit): --browser-live-console 379, --browser-webkit 408, the click-sweep / visual-lint slices and the foundation shards.
+ * Excluded on purpose (>= limit): --browser-live-console 379, --browser-webkit 562 (run 41682937571), click-sweep / visual-lint slices and foundation shards.
  */
 export const GATE_SECONDS = {
   "--browser-studio-bff": 14, "--browser-manual-order": 17, "--browser-merchant-buyer": 17, "--browser-merchant-orders-bff": 21, "--browser-buyer": 22,
@@ -43,7 +45,7 @@ export const GATE_SECONDS = {
   "--browser-refund-fulfilment": 72, "--browser-studio-ui": 74, "--browser-card-payments": 82, "--browser-product-media-v2": 83, "--browser-admin-legacy": 84,
   "--browser-e2e": 87, "--browser-inbox": 88, "--browser-customers-billing": 104, "--browser-password-auth": 110, "--browser-admin-shell": 117,
   "--browser-merchant-orders-ui": 137, "--live-browser-input": 139, "--browser-cvs": 145, "--browser-tracking-backfill": 146, "--browser-platform-site": 159,
-  "--browser-ads-attribution": 162, "--browser-product-editor": 198, "--browser-payment": 279, "--browser-ui-gallery": 315,
+  "--browser-ads-attribution": 162, "--browser-product-editor": 198, "--browser-payment": 266, "--browser-ui-gallery": 346,
 };
 /** A leg is "short" below this gate time (owner card CI-SPEED-2: ~6 min); long legs keep their own job. */
 export const BUNDLE_LIMIT_S = 360; // measured ceiling of the bundled table; BUNDLE_MAX is what bounds a serial bundle

@@ -24,6 +24,15 @@ const registryNames = new Set(modeEntries(readFileSync(path.join(repo, "scripts/
 const uiModes = ["foundation-shards", "--browser-click-sweep", "--browser-visual-lint", ...Object.keys(GATE_SECONDS), "--browser-live-console", "--browser-webkit", "--browser-new-unmeasured"];
 const uiMatrix = expand(uiModes, { groupIds: ["g01", "g02"] }).matrix;
 
+test("WebKit keeps lightweight logs on success and full diagnostics on failure without changing receipts or sweep evidence", () => {
+  const gate = job("gate");
+  assert.match(gate, /if: always\(\) && !matrix\.bundle && matrix\.mode != '--browser-webkit' && !startsWith\(matrix\.mode, '--browser-visual-lint'\)/);
+  assert.match(gate, /- name: Upload WebKit logs\n        if: always\(\) && matrix\.mode == '--browser-webkit'[\s\S]*?name: \$\{\{ matrix\.art \}\}[\s\S]*?output\/playwright\/\*\*\/\*\.jsonl/);
+  assert.match(gate, /- name: Upload WebKit failure evidence\n        if: failure\(\) && matrix\.mode == '--browser-webkit'[\s\S]*?name: \$\{\{ matrix\.art \}\}-failure[\s\S]*?output\/playwright\//);
+  assert.match(gate, /name: receipt-\$\{\{ matrix\.art \}\}\n          path: output\/receipt\//);
+  assert.match(job("aggregate"), /pattern: gate-browser-click-sweep_\*/);
+});
+
 test("CI-SPEED-2: every planned mode runs in exactly one job; only measured short legs are bundled, each keeping its own mode and artifact name", () => {
   const jobs = bundleJobs(uiMatrix);
   const members = jobs.flatMap((j) => j.members.map((m) => m.mode));
@@ -83,7 +92,7 @@ test("CI-SPEED-2: gates.yml runs its partition of `jobs`, verifies receipts agai
   // The solo receipt + evidence steps never run in a bundle job (a receipt for mode "bundle:NN" would be unplanned = red).
   assert.match(gate, /- name: Run receipt\n        if: always\(\) && !matrix\.bundle\n/);
   assert.match(gate, /if: always\(\) && !matrix\.bundle\n        with:\n          name: receipt-\$\{\{ matrix\.art \}\}/);
-  assert.match(gate, /if: always\(\) && !matrix\.bundle && !startsWith\(matrix\.mode, '--browser-visual-lint'\)/);
+  assert.match(gate, /if: always\(\) && !matrix\.bundle && matrix\.mode != '--browser-webkit' && !startsWith\(matrix\.mode, '--browser-visual-lint'\)/);
   // One receipt command for solo and bundle members: same writer, same log globs.
   const write = "node scripts/dev/matrix-receipts.mjs write output/receipt output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/ci-gates/**/*.jsonl output/playwright/**/*.jsonl";
   assert.equal(gate.split(write).length - 1, 2, "the solo step and the bundle loop write receipts with the identical command");
