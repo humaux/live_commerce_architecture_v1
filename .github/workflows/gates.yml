@@ -7,7 +7,7 @@
 #   untagged and -tags browser ./tests/foundation graphs) and every gate leg in the plan's `prebuilt_modes` restores it (scripts/dev/prebuilt.mjs refuses any other SHA)
 #   instead of rebuilding per job (measured run 40461573230: ~90 s Go compile + ~20 s Next per browser job, x61 jobs).
 #   2026-10-28 CI-SPEED-2: the plan's `jobs` output packs the legs measured under 6 min (ci-plan.mjs GATE_SECONDS) into ~10 bundle jobs, saving ~75 s of runner
-#   setup per bundled leg. The planned mode list (`matrix`, what `receipts` verifies) is unchanged: every member runs (never stops at the first red one) under its own
+#   setup per bundled leg. The planned mode list (`matrix`, what `required` verifies) is unchanged: every member runs (never stops at the first red one) under its own
 #   150 min bound, writes its OWN receipt from its own output tree and uploads its OWN `receipt-<art>` and `<art>` artifacts; any red member turns the job red.
 #   Explicit dispatches (incl. `@i/N` re-runs and extra_env calibration) are never bundled.
 # Depends on: scripts/dev/ci-plan.mjs (matrix), scripts/dev/shard-plan.mjs + shard-plan.json (foundation groups), scripts/dev/test-local.sh (modes),
@@ -21,7 +21,7 @@
 #   CI-runnable --browser-* mode when any UI path changed, plus the browser modes wired by changed internal//cmd//migrations/ paths via the registry's lc_covers data
 #   (scripts/dev/pr-modes.mjs, CI-SELECT), plus deploy-smoke when deploy/ or scripts/deploy* changed.
 #   STABLE REQUIRED CHECK NAME for a branch ruleset: `Gates (GitHub runners) / required` (job `required`: fails when plan, any gate leg, the sweep/visual aggregate, the
-#   `receipts` verifier (every planned mode: one same-run, same-sha PASS receipt with test_count > 0) or an expected deploy-smoke failed, was cancelled or was skipped). Do NOT require the individual `gate (<mode>)` names: they change with the planned set. `extra_env` is never applied on pull_request;
+#   receipt verifier (every planned mode: one same-run, same-sha PASS receipt with test_count > 0) or an expected deploy-smoke failed, was cancelled or was skipped). Do NOT require the individual `gate (<mode>)` names: they change with the planned set. `extra_env` is never applied on pull_request;
 #   calibration / fault-injection runs stay an extra workflow_dispatch. No pull_request_target, no secrets.
 name: Gates (GitHub runners)
 
@@ -74,6 +74,8 @@ jobs:
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
       jobs: ${{ steps.plan.outputs.jobs }}
+      foundation_jobs: ${{ steps.plan.outputs.foundation_jobs }}
+      gate_jobs: ${{ steps.plan.outputs.gate_jobs }}
       sweep_n: ${{ steps.plan.outputs.sweep_n }}
       visual_n: ${{ steps.plan.outputs.visual_n }}
       deploy: ${{ steps.pr.outputs.deploy || 'false' }}
@@ -164,15 +166,171 @@ jobs:
           overwrite: true # a re-run of this job replaces its own run's artifact
           if-no-files-found: error
 
-  gate:
+  # The foundation shards do not consume prebuilt: start their unchanged Go/PG
+  # commands as soon as planning succeeds. In particular, the three real-clock
+  # tests still observe their original 15-minute SQL deadlines in full.
+  foundation_gate:
     name: gate (${{ matrix.mode }})
-    needs: [plan, build]
-    # build is skipped when no leg consumes it (push: foundation shards only); a failed build skips every leg, which `required` reports red.
-    if: ${{ !cancelled() && needs.plan.result == 'success' && (needs.build.result == 'success' || needs.build.result == 'skipped') }}
+    needs: plan
+    if: ${{ !cancelled() && needs.plan.result == 'success' && needs.plan.outputs.foundation_jobs != '[]' }}
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(needs.plan.outputs.jobs) }} # solo legs + CI-SPEED-2 bundles; receipts still verify needs.plan.outputs.matrix
+        include: ${{ fromJSON(needs.plan.outputs.foundation_jobs) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: ${{ matrix.timeout }}
+    concurrency:
+      group: gates-${{ github.event_name }}-${{ github.ref }}-${{ matrix.mode }}-${{ github.event_name == 'workflow_dispatch' && inputs.extra_env || '' }}
+      cancel-in-progress: ${{ github.event_name != 'push' }}
+    env:
+      GOTOOLCHAIN: go1.27.3
+      GOFLAGS: -mod=readonly
+      MODE: ${{ matrix.mode }}
+      BUNDLE: ${{ matrix.bundle }}
+      MEMBERS: ${{ join(matrix.members.*.mode, ' ') }}
+      MEMBERS_JSON: ${{ toJSON(matrix.members) }}
+      EXTRA_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.extra_env || '' }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # live_media_stop_legacy_test builds a pinned pre-LMR binary from git history
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+          # Reuse verified modules and content-addressed compiler output, never PG or gate receipts.
+          # Go hashes source/flags (including -race); -count=1 below still executes every selected test.
+          # Only the shard:gNN legs restore/save: they all compile the identical ./tests/foundation -race graph (-run/-skip do not
+          # change build IDs), so whichever finishes first saves the shared foundation compile (cmd/* binaries that individual
+          # tests `go build` at runtime still differ per shard and may rebuild). The key is immutable, so any other writer
+          # (ui-gallery builds no Go, shard:unit a different package set) would seed a partial cache for every later run (review-735cb2ce2 P2-1).
+          # go.mod joins the key to retire the partial go.sum-only entry #78 left behind.
+          cache: ${{ startsWith(matrix.mode, 'shard:g') }}
+          cache-dependency-path: |
+            go.mod
+            go.sum
+      # proxy.golang.org drops streams under ~80 parallel jobs (INTERNAL_ERROR, 3x on 2026-10-14: #58 password-auth/visual-lint, #59
+      # merchant-buyer), failing a gate before any test runs. Prefetch with bounded retry; go.sum still verifies every module.
+      - name: Go modules (prefetch with retry)
+        run: for i in 1 2 3; do go mod download && exit 0; echo "go mod download attempt $i failed; retrying"; sleep $((i * 15)); done; exit 1
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false # v5 auto-caches from package.json packageManager before pnpm exists; keep v4 behaviour
+      - uses: ./.github/actions/pnpm # pnpm from the cached Corepack home, no per-run registry download (#107)
+      - name: Node dependencies (frozen lockfile)
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Download pinned test image
+        run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+      - name: Gate
+        id: gate
+        run: |
+          set -o pipefail
+          # Only LC_* names with plain values: an inject-fail run of a new gate must not be able to set arbitrary env.
+          for kv in $EXTRA_ENV; do
+            [[ "$kv" =~ ^LC_[A-Z0-9_]+=[A-Za-z0-9._:-]*$ ]] || { echo "refusing extra_env entry: $kv" >&2; exit 2; }
+            export "$kv"; echo "extra_env: ${kv%%=*} set"
+          done
+          # Explicit dispatch only: inject a real source fault before native PG
+          # setup. The ordinary gate keeps its verdict and must go red.
+          if [[ -n "${LC_OA_MUTATION:-}" ]]; then
+            [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]] || exit 2
+            python3 tests/foundation/order_attempt_mutation.py
+          fi
+          # One planned mode: the per-mode dispatch every leg ran before CI-SPEED-2 (a solo job runs it once, a bundle job once per member).
+          # A member runs in a child `bash -eo pipefail` (the step's own -e + pipefail), so its exports (LC_BROWSER_EVIDENCE_ROOT) never reach the next member.
+          gate_one() {
+            local MODE="$1"
+            mkdir -p output/ci-gates
+            log_root=output/ci-gates
+            case "$MODE" in
+              --browser*|--stripe-browser*|--ops-disk-guard)
+                mkdir -p output/playwright
+                export LC_BROWSER_EVIDENCE_ROOT="$(mktemp -d "$PWD/output/playwright/run.XXXXXXXX")"
+                log_root="$LC_BROWSER_EVIDENCE_ROOT/ci-gates"
+                mkdir -p "$log_root"
+                ;;
+            esac
+            log="$log_root/$(printf '%s' "$MODE" | tr -c 'A-Za-z0-9_-' '_').log"
+            case "$MODE" in
+              foundation) bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
+              shard:unit) LC_FOUNDATION_PKGS="$(go list ./... | grep -v '/tests/foundation$' | tr '\n' ' ')" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
+              # A balanced group of scripts/dev/shard-plan.json: an anchored explicit -run list, or (the catch-all) -skip of every other group's tests.
+              shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="$(node scripts/dev/shard-plan.mjs run "${MODE#shard:}")" LC_FOUNDATION_SKIP="$(node scripts/dev/shard-plan.mjs skip "${MODE#shard:}")" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
+              shard:*)    LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="${MODE#shard:}" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
+              focused:*)  LC_FOCUSED_TIMEOUT=7200s bash scripts/dev/test-focused.sh "${MODE#focused:}" 2>&1 | tee "$log" ;;
+              # One slice of the sweep / visual lint (tests/ui/sweep-shard-lib.mjs): its own PG, fixture and store, so click-sweep runs its single worker race-free.
+              --browser-click-sweep@*|--browser-visual-lint@*) LC_SWEEP_SHARD="${MODE##*@}" xvfb-run -a bash scripts/dev/test-local.sh "${MODE%@*}" 2>&1 | tee "$log" ;;
+              # Some browser suites run headed on purpose (MOU03 native bfcache/visibility); the runner has no display.
+              # Xvfb comes with `playwright install --with-deps`.
+              --browser*|--stripe-browser*) xvfb-run -a bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;
+              --*)        bash scripts/dev/test-local.sh "$MODE" 2>&1 | tee "$log" ;;
+              *) echo "unknown mode: $MODE" >&2; exit 2 ;;
+            esac
+          }
+          if [[ "$BUNDLE" != true ]]; then gate_one "$MODE"; exit; fi
+          # CI-SPEED-2 bundle: EVERY member runs, each under its own 150 min bound (the solo job bound) in a fresh output tree; its receipt is written from that
+          # tree alone (same command as the solo "Run receipt" step), then the tree moves to output/members/<art>/ for that member's own artifacts.
+          # Member list on fd 3, so a gate that reads stdin cannot eat the remaining members. Any red member (or receipt write) = red step, after all ran.
+          export -f gate_one
+          rc=0
+          while read -r m art <&3; do
+            echo "::group::bundle member $m"
+            if timeout --kill-after=60s 150m bash -c 'set -eo pipefail; gate_one "$1"' _ "$m"; then outcome=success; else outcome=failure; rc=1; fi
+            echo "::endgroup::"
+            echo "bundle member $m: $outcome"
+            ( shopt -s nullglob globstar
+              MODE="$m" GATE_OUTCOME="$outcome" node scripts/dev/matrix-receipts.mjs write output/receipt output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/ci-gates/**/*.jsonl output/playwright/**/*.jsonl || exit 1
+              # BUNDLE-258: the writer already scores an exit-0 member FAIL from a failure line in its log (#147 CI-6). The step's own verdict
+              # follows the receipt it just wrote, so the bundle job is red whenever any member receipt is not PASS (not only on a non-zero exit).
+              for receipt in output/receipt/receipt-*.json; do
+                jq -e '.status == "PASS"' "$receipt" >/dev/null || { echo "bundle member $m: receipt $(basename "$receipt") is not PASS" >&2; exit 1; }
+              done ) || rc=1
+            mkdir -p "output/members/$art"
+            for d in ci-gates playwright receipt; do if [[ -e "output/$d" ]]; then mv "output/$d" "output/members/$art/"; fi; done
+          done 3< <(jq -r '.[] | "\(.mode) \(.art)"' <<<"$MEMBERS_JSON")
+          exit "$rc"
+      # MATRIX-RECEIPT (#128): ONE shared step for every mode, after the gate (always, so a failed gate still reports FAIL). test_count is counted
+      # from this job's own gate log (go test -v PASS/FAIL lines + node --test summary) and its per-step go test -json logs (*.jsonl, e.g. --browser-webkit),
+      # never a static count; the `required` job checks it against the complete plan.
+      - name: Run receipt
+        if: always() && !matrix.bundle
+        env:
+          GATE_OUTCOME: ${{ steps.gate.outcome }}
+        run: |
+          shopt -s nullglob globstar
+          node scripts/dev/matrix-receipts.mjs write output/receipt output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/ci-gates/**/*.jsonl output/playwright/**/*.jsonl
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: always() && !matrix.bundle
+        with:
+          name: receipt-${{ matrix.art }}
+          path: output/receipt/
+          retention-days: 14
+          if-no-files-found: ignore # a job that wrote none is reported missing by the required verifier
+      - name: Failure summary
+        if: always()
+        run: |
+          shopt -s nullglob
+          grep -hE '^--- FAIL|^FAIL|test-focused:|NOT_RUN' output/ci-gates/*.log output/playwright/*/ci-gates/*.log output/members/*/ci-gates/*.log output/members/*/playwright/*/ci-gates/*.log /dev/null | head -200 || true
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        if: always() && !matrix.bundle && !startsWith(matrix.mode, '--browser-visual-lint')
+        with:
+          name: ${{ matrix.art }}
+          path: |
+            output/ci-gates/
+            output/playwright/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  gate:
+    name: gate (${{ matrix.mode }})
+    needs: [plan, build]
+    # Only the non-foundation lane waits for build. Its failure still blocks required.
+    if: ${{ !cancelled() && needs.plan.result == 'success' && (needs.build.result == 'success' || needs.build.result == 'skipped') && needs.plan.outputs.gate_jobs != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.gate_jobs) }} # solo legs + CI-SPEED-2 bundles; receipts still verify needs.plan.outputs.matrix
     runs-on: ubuntu-24.04
     timeout-minutes: ${{ matrix.timeout }} # 150 per solo leg; a bundle gets 360 and bounds each member at 150 itself
     concurrency:
@@ -363,7 +521,7 @@ jobs:
           exit "$rc"
       # MATRIX-RECEIPT (#128): ONE shared step for every mode, after the gate (always, so a failed gate still reports FAIL). test_count is counted
       # from this job's own gate log (go test -v PASS/FAIL lines + node --test summary) and its per-step go test -json logs (*.jsonl, e.g. --browser-webkit),
-      # never a static count; the `receipts` job checks it against the plan.
+      # never a static count; `required` checks it against the plan.
       - name: Run receipt
         if: always() && !matrix.bundle
         env:
@@ -377,7 +535,7 @@ jobs:
           name: receipt-${{ matrix.art }}
           path: output/receipt/
           retention-days: 14
-          if-no-files-found: ignore # a job that wrote none is reported missing by the receipts job
+          if-no-files-found: ignore # a job that wrote none is reported missing by the required verifier
       - name: Failure summary
         if: always()
         run: |
@@ -592,31 +750,6 @@ jobs:
           retention-days: 14
           if-no-files-found: ignore
 
-  # MATRIX-RECEIPT verifier (#128): for every mode the plan job emitted (whatever the event planned: a push to r3/integration plans only the foundation shards),
-  # exactly one receipt from THIS run id and sha, status PASS, test_count > 0. Missing, duplicate, stale, unplanned or zero-count = red. Feeds `required`.
-  receipts:
-    needs: [plan, gate]
-    if: ${{ always() && needs.plan.result == 'success' }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
-        with:
-          persist-credentials: false
-      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
-        with:
-          node-version: "24"
-          package-manager-cache: false
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
-        continue-on-error: true # no receipt at all is reported by the verifier per planned mode, not as a download error
-        with:
-          pattern: receipt-gate-*
-          path: receipts
-      - name: Every planned mode has one fresh PASS receipt with tests
-        env:
-          PLANNED: ${{ needs.plan.outputs.matrix }}
-        run: node scripts/dev/matrix-receipts.mjs verify receipts
-
   # deploy-smoke.yml as a reusable workflow: when deploy/ or scripts/deploy* changed it runs inside this run, so `required` waits for it (see deploy-smoke.yml header).
   deploy:
     needs: plan
@@ -627,7 +760,7 @@ jobs:
   # expected (a sweep / visual-lint was planned), and deploy-smoke succeeded when it was expected. Skipped / cancelled / failed anywhere else is red, never silently green.
   required:
     name: required
-    needs: [plan, build, gate, aggregate, deploy, receipts]
+    needs: [plan, build, foundation_gate, gate, aggregate, deploy]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -635,20 +768,55 @@ jobs:
       PLAN: ${{ needs.plan.result }}
       BUILD: ${{ needs.build.result }}
       BUILD_EXPECTED: ${{ needs.plan.outputs.prebuild == 'true' }}
+      FOUNDATION: ${{ needs.foundation_gate.result }}
+      FOUNDATION_EXPECTED: ${{ needs.plan.outputs.foundation_jobs != '[]' }}
       GATE: ${{ needs.gate.result }}
+      GATE_EXPECTED: ${{ needs.plan.outputs.gate_jobs != '[]' }}
       AGG: ${{ needs.aggregate.result }}
       AGG_EXPECTED: ${{ needs.plan.outputs.sweep_n != '0' || needs.plan.outputs.visual_n != '0' }}
       DEPLOY: ${{ needs.deploy.result }}
-      RECEIPTS: ${{ needs.receipts.result }}
       DEPLOY_EXPECTED: ${{ needs.plan.outputs.deploy == 'true' }}
     steps:
-      - run: |
-          echo "plan=$PLAN build=$BUILD (expected $BUILD_EXPECTED) gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED) receipts=$RECEIPTS"
+      # CI-SPEED-520: verify receipts inside the stable required check, removing one serial runner allocation.
+      # Keep the verifier unchanged: one PASS receipt per planned mode, same run/SHA, nonzero tests; mixed attempts
+      # of this run/SHA remain valid for rerun-failed-jobs. Do not merge artifact directories (duplicates must survive).
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        if: needs.plan.result == 'success'
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        if: needs.plan.result == 'success'
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        id: receipts_download
+        if: needs.plan.result == 'success'
+        continue-on-error: true # keep verifier diagnostics; the final verdict still rejects a failed download
+        with:
+          pattern: receipt-gate-*
+          path: receipts
+      - name: Every planned mode has one fresh PASS receipt with tests
+        id: receipts
+        if: ${{ always() && needs.plan.result == 'success' }}
+        env:
+          PLANNED: ${{ needs.plan.outputs.matrix }}
+        run: node scripts/dev/matrix-receipts.mjs verify receipts
+      - name: Required verdict
+        if: ${{ always() }}
+        env:
+          # outcome is before continue-on-error; skipped/cancelled/failed verification can never become green.
+          RECEIPTS: ${{ steps.receipts.outcome }}
+          RECEIPT_DOWNLOAD: ${{ steps.receipts_download.outcome }}
+        run: |
+          echo "plan=$PLAN build=$BUILD (expected $BUILD_EXPECTED) foundation=$FOUNDATION (expected $FOUNDATION_EXPECTED) gate=$GATE (expected $GATE_EXPECTED) aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED) receipts=$RECEIPTS download=$RECEIPT_DOWNLOAD"
           rc=0
           if [[ "$BUILD_EXPECTED" == true ]]; then [[ "$BUILD" == success ]] || rc=1; else [[ "$BUILD" == skipped ]] || rc=1; fi
+          [[ "$RECEIPT_DOWNLOAD" == success ]] || rc=1
           [[ "$RECEIPTS" == success ]] || rc=1
           [[ "$PLAN" == success ]] || rc=1
-          [[ "$GATE" == success ]] || rc=1
+          if [[ "$FOUNDATION_EXPECTED" == true ]]; then [[ "$FOUNDATION" == success ]] || rc=1; else [[ "$FOUNDATION" == skipped ]] || rc=1; fi
+          if [[ "$GATE_EXPECTED" == true ]]; then [[ "$GATE" == success ]] || rc=1; else [[ "$GATE" == skipped ]] || rc=1; fi
           if [[ "$AGG_EXPECTED" == true ]]; then [[ "$AGG" == success ]] || rc=1; else [[ "$AGG" == skipped ]] || rc=1; fi
           if [[ "$DEPLOY_EXPECTED" == true ]]; then [[ "$DEPLOY" == success ]] || rc=1; else [[ "$DEPLOY" == skipped ]] || rc=1; fi
           exit "$rc"

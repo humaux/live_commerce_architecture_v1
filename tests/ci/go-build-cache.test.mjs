@@ -20,9 +20,9 @@ const shardModes = expand(["foundation-shards"], { groupIds: shardPlan.groups.ma
 assert.ok(shardModes.length > 0 && shardModes.some(m => /^shard:g\d\d$/.test(m)), "shard-plan.json must enumerate at least one shard:gNN mode");
 const runner = readFileSync(new URL("../../scripts/dev/test-local.sh", import.meta.url), "utf8");
 
-function cacheContract(source) {
+function cacheContract(source, jobName = "foundation_gate") {
   // Only the matrix job owns this optimization; the lightweight plan job cannot seed a partial cache.
-  const gate = source.split(/^  gate:\s*$/m)[1]?.split(/^  aggregate:\s*$/m)[0] ?? "";
+  const gate = source.split(new RegExp(`^  ${jobName}:\\s*$`, "m"))[1]?.split(/^  [\w-]+:\s*$/m)[0] ?? "";
   const setup = gate.match(/      - uses: actions\/setup-go@[^\n]+\n([\s\S]*?)(?=      - (?:name|uses):)/)?.[1] ?? "";
   assert.match(gate, /actions\/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16\b/, "keep the existing pinned action");
   assert.match(setup, /^          go-version-file: go\.mod$/m, "exact Go version stays in go.mod");
@@ -34,8 +34,8 @@ function cacheContract(source) {
 }
 
 // #86 (PR #81 review P2-2): the cache above is only safe while every cache-owning leg builds the same ./tests/foundation graph.
-function shardScopeContract(source) {
-  const gate = source.split(/^  gate:\s*$/m)[1]?.split(/^  aggregate:\s*$/m)[0] ?? "";
+function shardScopeContract(source, jobName = "foundation_gate") {
+  const gate = source.split(new RegExp(`^  ${jobName}:\\s*$`, "m"))[1]?.split(/^  [\w-]+:\s*$/m)[0] ?? "";
   // #107: every case arm with a shard: alternative, at any indentation, quoted or in "(pattern)" form; its body runs to ";;".
   // #116: spaces around "|" are fine; an arm needs whitespace-free alternatives, so command lines containing ")" are not arms.
   // #147 CI-3: exactly the second `case "$MODE" in` (the dispatch holding the shard arms) is scanned; a harmless `*) ;;` in the
@@ -92,6 +92,9 @@ function executionContract(source) {
 test("matrix reuses native Go compilation while every selected foundation test still executes", () => {
   cacheContract(workflow);
   shardScopeContract(workflow);
+  // Custom shard regexes still use the original lane. Both dispatches stay safe.
+  cacheContract(workflow, "gate");
+  shardScopeContract(workflow, "gate");
   executionContract(runner);
 });
 
@@ -218,3 +221,4 @@ test("injected result reuse or lost race/selector goes RED, rather than manufact
     assert.throws(() => executionContract(changed), /keep /);
   }
 });
+

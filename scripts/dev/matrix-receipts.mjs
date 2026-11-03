@@ -26,7 +26,7 @@
 // Depends on: scripts/dev/ci-plan.mjs (artifactName), scripts/dev/pr-modes.mjs (modeEntries, read-only mode registry);
 //   env MODE, GATE_OUTCOME, GITHUB_RUN_ID, GITHUB_RUN_ATTEMPT, GITHUB_SHA, RECEIPT_SPEC_ROOT (write); env PLANNED (the plan
 //   job's `matrix` output), GITHUB_RUN_ID, GITHUB_SHA (verify). No network, no third-party dependencies.
-// Used by: .github/workflows/gates.yml (gate job "Run receipt" step, `receipts` job feeding `required`), tests/ci/matrix-receipts.test.mjs.
+// Used by: .github/workflows/gates.yml (gate job "Run receipt" step, `required` job receipt-verification step), tests/ci/matrix-receipts.test.mjs.
 // Usage: node scripts/dev/matrix-receipts.mjs write <out-dir> <gate-log | go-test-json-log>...   |   node scripts/dev/matrix-receipts.mjs verify <receipts-dir>
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";

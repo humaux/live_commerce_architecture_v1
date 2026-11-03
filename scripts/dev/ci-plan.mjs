@@ -16,10 +16,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { modeEntries } from "./pr-modes.mjs";
 
-/** Click-sweep shards per full run. Measured on 2026-10-07: ~7600 s of single-worker route time + ~5 min of per-job setup/builds; 10 shards = ~12-16 min per job. Retune from the shard times in PLAN.md. */
-export const SWEEP_SHARDS = 10;
-/** Visual-lint shards per full run (audit workers stay at 3: it only reads). 14 min whole -> ~7-9 min per shard. */
-export const VISUAL_SHARDS = 4;
+/** Click-sweep shards per full run. Candidate calibrated from the current registry's existing cost model:
+ * 10 shards max 994, 20 max 506, 24 max 425, 30 still max 425. These are planning weights, NOT measured speedups.
+ * Keep LC_SWEEP_WORKERS=1 and every stateful storefront session/J2-J3 on its owning shard. Verify runner quota and
+ * same-SHA wall time before rollout; extra shards can queue and cost more. No coverage selection changes. */
+export const SWEEP_SHARDS = 20;
+/** Visual-lint candidate: eight isolated runner slices; workflow worker count, locales, viewports and assertions unchanged. */
+export const VISUAL_SHARDS = 8;
 
 /**
  * Gate-step seconds per mode: the max of the three build-once UI-scale runs 40506418652, 40541796588 and 40575283835 (2026-10-27/28, n=3).
@@ -111,11 +114,28 @@ export function prebuiltModes(matrix, registrySource) {
   });
 }
 
+/**
+ * Let the ordinary Go/PG shards start after planning instead of waiting for the
+ * browser build they never consume. Keep the complete jobs/matrix outputs for
+ * coverage and receipt verification; only scheduling is partitioned.
+ * Unknown/custom modes and bundles stay on the existing lane, fail-closed.
+ */
+export function partitionJobs(jobs) {
+  const foundation = [], gate = [];
+  for (const job of jobs) {
+    const isFoundation = !job.bundle && job.members.length === 1 &&
+      job.members[0].mode === job.mode && /^shard:(unit|g[0-9]{2})$/.test(job.mode);
+    (isFoundation ? foundation : gate).push(job);
+  }
+  return { foundation, gate };
+}
+
 export function main(env = process.env) {
   const plan = JSON.parse(readFileSync(path.join(root, "scripts/dev/shard-plan.json"), "utf8"));
   const result = expand(JSON.parse(env.MODES ?? ""), { groupIds: plan.groups.map((g) => g.id) });
   const prebuiltMembers = new Set(prebuiltModes(result.matrix, readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8")));
   const jobs = bundleJobs(result.matrix, { enabled: env.BUNDLE === "true" });
+  const lanes = partitionJobs(jobs);
   // A job (solo or bundle) restores the prebuilt artifact when any of its members consumes it.
   const prebuilt = jobs.filter((j) => j.members.some((m) => prebuiltMembers.has(m.mode))).map((j) => j.mode);
   console.log(`ci-plan: ${result.matrix.length} mode(s)${result.sweepN ? `; click-sweep x${result.sweepN} (aggregate)` : ""}${result.visualN ? `; visual-lint x${result.visualN} (aggregate)` : ""}`);
@@ -123,7 +143,7 @@ export function main(env = process.env) {
   console.log(`ci-plan: ${jobs.length} job(s), ${jobs.filter((j) => j.bundle).length} bundle(s)`);
   for (const j of jobs.filter((x) => x.bundle)) console.log(`  ${j.mode}: ${j.members.map((m) => m.mode).join(" ")}`);
   console.log(`ci-plan: ${prebuilt.length} job(s) reuse the prebuilt Next + Go build cache`);
-  if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `matrix=${JSON.stringify(result.matrix)}\njobs=${JSON.stringify(jobs)}\nsweep_n=${result.sweepN}\nvisual_n=${result.visualN}\nprebuilt_modes=${JSON.stringify(prebuilt)}\nprebuild=${prebuilt.length > 0}\n`);
+  if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `matrix=${JSON.stringify(result.matrix)}\njobs=${JSON.stringify(jobs)}\nfoundation_jobs=${JSON.stringify(lanes.foundation)}\ngate_jobs=${JSON.stringify(lanes.gate)}\nsweep_n=${result.sweepN}\nvisual_n=${result.visualN}\nprebuilt_modes=${JSON.stringify(prebuilt)}\nprebuild=${prebuilt.length > 0}\n`);
   return 0;
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

@@ -1,5 +1,5 @@
 // Purpose: CI-SPEED-2 gate bundles. (1) scripts/dev/ci-plan.mjs bundleJobs: every planned mode in exactly one job, only measured short legs bundled, each
-//   member keeps its own mode/art, explicit dispatches never bundled. (2) gates.yml contract: the gate matrix is `jobs`, receipts still verify `matrix`,
+//   member keeps its own mode/art, explicit dispatches never bundled. (2) gates.yml contract: the gate matrix is `gate_jobs`, receipts still verify `matrix`,
 //   BUNDLE_MAX unrolled per-member upload slots under the solo artifact names. (3) The REAL Gate step shell is EXECUTED with stubbed browsers: a red member
 //   must leave its own FAIL receipt, must not stop the members after it, and must turn the step (and so `required`) red. (4) BUNDLE-258: a member that exits 0 while its
 //   log carries a failure is recorded FAIL by the writer, and the step's own verdict must follow that receipt (not only the member exit codes).
@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { BUNDLE_LIMIT_S, BUNDLE_MAX, GATE_SECONDS, artifactName, bundleJobs, expand } from "../../scripts/dev/ci-plan.mjs";
+import { SWEEP_SHARDS, VISUAL_SHARDS, BUNDLE_LIMIT_S, BUNDLE_MAX, GATE_SECONDS, artifactName, bundleJobs, expand } from "../../scripts/dev/ci-plan.mjs";
 import { receiptFile, verify } from "../../scripts/dev/matrix-receipts.mjs";
 import { modeEntries } from "../../scripts/dev/pr-modes.mjs";
 
@@ -21,7 +21,8 @@ const wf = readFileSync(path.join(repo, ".github/workflows/gates.yml"), "utf8");
 const job = (name) => wf.split(new RegExp(`^  ${name}:\\s*$`, "m"))[1]?.split(/^  [\w-]+:\s*$/m)[0] ?? "";
 const registryNames = new Set(modeEntries(readFileSync(path.join(repo, "scripts/dev/test-local.sh"), "utf8")).map((e) => e.name));
 // A UI-scale plan: shards, sweep/visual slices, every measured leg, the two long legs and one unmeasured mode.
-const uiMatrix = expand(["foundation-shards", "--browser-click-sweep", "--browser-visual-lint", ...Object.keys(GATE_SECONDS), "--browser-live-console", "--browser-webkit", "--browser-new-unmeasured"], { groupIds: ["g01", "g02"] }).matrix;
+const uiModes = ["foundation-shards", "--browser-click-sweep", "--browser-visual-lint", ...Object.keys(GATE_SECONDS), "--browser-live-console", "--browser-webkit", "--browser-new-unmeasured"];
+const uiMatrix = expand(uiModes, { groupIds: ["g01", "g02"] }).matrix;
 
 test("CI-SPEED-2: every planned mode runs in exactly one job; only measured short legs are bundled, each keeping its own mode and artifact name", () => {
   const jobs = bundleJobs(uiMatrix);
@@ -29,7 +30,10 @@ test("CI-SPEED-2: every planned mode runs in exactly one job; only measured shor
   assert.deepEqual([...members].sort(), uiMatrix.map((e) => e.mode).sort(), "the job members are exactly the planned modes, once each");
   const bundles = jobs.filter((j) => j.bundle);
   assert.ok(bundles.length >= 5 && bundles.length <= 12, `~10 bundles for a UI PR, got ${bundles.length}`);
-  assert.ok(jobs.length < uiMatrix.length / 2, `${uiMatrix.length} modes -> ${jobs.length} jobs`);
+  const baseline = expand(uiModes, { groupIds: ["g01", "g02"], sweep: 10, visual: 4 }).matrix;
+  assert.ok(bundleJobs(baseline).length < baseline.length / 2, "the original 10/4 plan still meets its full-matrix compression contract");
+  const short = uiMatrix.filter((e) => Number.isFinite(GATE_SECONDS[e.mode]) && GATE_SECONDS[e.mode] < BUNDLE_LIMIT_S);
+  assert.ok(bundleJobs(short).length < short.length / 2, "bundling still halves the eligible short-leg jobs; isolated sweep count is independent");
   for (const b of bundles) {
     assert.match(b.mode, /^bundle:\d\d$/);
     assert.equal(b.timeout, 360);
@@ -43,7 +47,7 @@ test("CI-SPEED-2: every planned mode runs in exactly one job; only measured shor
     assert.deepEqual(j, { mode: j.mode, art: artifactName(j.mode), bundle: false, timeout: 150, members: [{ mode: j.mode, art: artifactName(j.mode) }] });
   }
   const solo = new Set(jobs.filter((j) => !j.bundle).map((j) => j.mode));
-  for (const m of ["shard:unit", "shard:g01", "--browser-click-sweep@1/10", "--browser-visual-lint@4/4", "--browser-live-console", "--browser-webkit", "--browser-new-unmeasured"]) assert.ok(solo.has(m), `${m} keeps its own job`);
+  for (const m of ["shard:unit", "shard:g01", `--browser-click-sweep@1/${SWEEP_SHARDS}`, `--browser-visual-lint@${VISUAL_SHARDS}/${VISUAL_SHARDS}`, "--browser-live-console", "--browser-webkit", "--browser-new-unmeasured"]) assert.ok(solo.has(m), `${m} keeps its own job`);
   assert.deepEqual(bundleJobs(uiMatrix), jobs, "deterministic");
 });
 
@@ -62,11 +66,11 @@ test("CI-SPEED-2: the measured table names only real registry modes, all under t
   }
 });
 
-test("CI-SPEED-2: gates.yml runs `jobs`, verifies receipts against `matrix`, and unrolls exactly BUNDLE_MAX per-member upload slots", () => {
-  const plan = job("plan"), gate = job("gate"), receipts = job("receipts");
+test("CI-SPEED-2: gates.yml runs its partition of `jobs`, verifies receipts against `matrix`, and unrolls exactly BUNDLE_MAX per-member upload slots", () => {
+  const plan = job("plan"), gate = job("gate"), receipts = job("required");
   assert.match(plan, /jobs: \$\{\{ steps\.plan\.outputs\.jobs \}\}/);
   assert.match(plan, /BUNDLE: \$\{\{ github\.event_name != 'workflow_dispatch' \|\| \(inputs\.full_browser_universe == 'true' && inputs\.extra_env == ''\) \}\}/);
-  assert.match(gate, /include: \$\{\{ fromJSON\(needs\.plan\.outputs\.jobs\) \}\}/);
+  assert.match(gate, /include: \$\{\{ fromJSON\(needs\.plan\.outputs\.gate_jobs\) \}\}/);
   assert.match(gate, /timeout-minutes: \$\{\{ matrix\.timeout \}\}/);
   assert.match(receipts, /PLANNED: \$\{\{ needs\.plan\.outputs\.matrix \}\}/, "receipts verify the planned MODES, never the job list");
   assert.match(gate, /timeout --kill-after=60s 150m bash -c 'set -eo pipefail; gate_one "\$1"' _ "\$m"/, "each member keeps the 150 min solo bound");

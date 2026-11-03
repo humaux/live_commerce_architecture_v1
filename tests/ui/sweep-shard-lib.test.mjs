@@ -2,6 +2,7 @@
 // shard for any N, and the aggregate turns a missing shard / page / journey / registry route into a failure. Run by scripts/dev/test-node.sh (no browser, no PG).
 import assert from "node:assert/strict";
 import test from "node:test";
+import { SWEEP_SHARDS, VISUAL_SHARDS } from "../../scripts/dev/ci-plan.mjs";
 import { routes as adminRoutes } from "../../apps/admin/src/routes.ts";
 import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -45,7 +46,7 @@ test("assignShards: deterministic, every key owned once, near-balanced (LPT boun
 
 test("planClick: for every N the shards partition the whole universe (every registry route x variant, storefront walk, journey)", () => {
   assert.ok(adminRoutes.length >= 25, "the registry is read, not stubbed");
-  for (const of of [1, 2, 6, 10, 12, 20, 200]) {
+  for (const of of [1, 2, 6, 10, 12, 20, SWEEP_SHARDS, 200]) {
     const plan = planClick(adminRoutes, weights, of);
     const seen = new Map();
     for (const p of plan.pages) { const i = plan.owner.get(p.unit); assert.ok(i >= 1 && i <= of, p.page); assert.ok(!seen.has(p.page), `duplicate page ${p.page}`); seen.set(p.page, i); }
@@ -82,7 +83,7 @@ function clickShards(of, routes = adminRoutes) {
 const clickArgs = (shards) => ({ shards, adminRoutes, weights, known: [] });
 
 test("aggregate click: honest shards pass for several N", () => {
-  for (const of of [1, 4, 10, 12]) assert.deepEqual(verifyClick(clickArgs(clickShards(of))).problems, [], `N=${of}`);
+  for (const of of [1, 4, 10, 12, 20, SWEEP_SHARDS]) assert.deepEqual(verifyClick(clickArgs(clickShards(of))).problems, [], `N=${of}`);
 });
 
 test("aggregate click: a missing shard, a dropped page row, a lost journey, a failing row, a stale known defect and a missing platform marker are each a failure", () => {
@@ -113,18 +114,26 @@ function visualShards(of) {
   for (const l of VISUAL_LOCALES) for (const v of VISUAL_VIEWPORTS) {
     const size = `${v.size.width}x${v.size.height}`;
     for (const id of units) keys.push(`admin|${id}|${l}|${size}`);
-    for (const id of ["home", "products", "cart"]) keys.push(`storefront|${id}|${l}|${size}`);
-    for (const id of ["home", "privacy"]) keys.push(`platform|${id}|${l}|${size}`);
+    for (const route of STOREFRONT_ROUTES) keys.push(`storefront|${routeId(route)}|${l}|${size}`);
+    for (const id of ["home", "privacy", "terms", "data-deletion", "contact"]) keys.push(`platform|${id}|${l}|${size}`);
   }
-  const owner = assignShards(keys.map((key) => ({ key, weight: 1 })), of);
+  // Same atomic capture tasks as visual-audit.mjs: storefront cart/checkout/order share a session.
+  const taskKey = (key) => {
+    const [app, , locale, size] = key.split("|");
+    const viewport = VISUAL_VIEWPORTS.find((v) => `${v.size.width}x${v.size.height}` === size).name;
+    return app === "storefront" ? `storefront|${locale}|${viewport}` : key;
+  };
+  const weights = new Map();
+  for (const key of keys) { const task = taskKey(key); weights.set(task, key.startsWith("storefront|") ? (weights.get(task) ?? 8) + 1 : 1); }
+  const owner = assignShards([...weights].map(([key, weight]) => ({ key, weight })), of);
   return Array.from({ length: of }, (_, k) => {
-    const owned = keys.filter((x) => owner.get(x) === k + 1);
+    const owned = keys.filter((x) => owner.get(taskKey(x)) === k + 1);
     return { source: `lint-${k + 1}`, report: { shard: shardReport({ index: k + 1, of }, keys, owned, { complete: true }), units: owned.map((x) => { const [app, id, locale, size] = x.split("|"); return { app, id, locale, size, shot: "x.png" }; }), blockingInstances: 0, verdict: { exit: 0, reasons: [] } } };
   });
 }
 
 test("aggregate visual: honest shards pass; a missing shard, a missing shot, a blocking verdict and a registry route outside the universe each fail", () => {
-  for (const of of [1, 3, 4]) assert.deepEqual(verifyVisual({ shards: visualShards(of), adminRoutes }).problems, [], `N=${of}`);
+  for (const of of [1, 3, 4, VISUAL_SHARDS]) assert.deepEqual(verifyVisual({ shards: visualShards(of), adminRoutes }).problems, [], `N=${of}`);
   const bad = (mutate, re, routes = adminRoutes) => { const s = visualShards(4); mutate(s); const r = verifyVisual({ shards: s, adminRoutes: routes }); assert.ok(r.problems.some((p) => re.test(p)), `${re}: ${r.problems.join(" | ") || "no problem raised"}`); };
   bad((s) => s.pop(), /shard 4\/4 is missing/);
   bad((s) => { s[1].report.units.pop(); }, /owned shot\(s\) missing/);
@@ -154,4 +163,68 @@ test("artifact discovery finds nested run evidence and retains platform marker r
   assert.equal(discover("click", dir)[0].platformPass, true);
   assert.deepEqual(discover("visual", dir).map((item) => item.report.marker), ["current"]);
   assert.deepEqual(discover("click", path.join(dir, "missing")), []);
+});
+
+
+// CI speed candidate regression: compare exact coverage, not outer Go wrapper PASS counts.
+// Deliberately evaluate both capacity choices before changing the default. This test is not a browser benchmark.
+test("CI candidate sweep counts preserve the exact baseline universe, journeys and stateful walks", () => {
+  const baseline = planClick(adminRoutes, weights, 10);
+  const pageUniverse = baseline.pages.map((p) => p.page).sort();
+  const unitUniverse = baseline.units.map((u) => u.key).sort();
+  for (const of of new Set([20, 24, SWEEP_SHARDS])) {
+    const plan = planClick(adminRoutes, weights, of), shards = clickShards(of);
+    assert.deepEqual(plan.pages.map((p) => p.page).sort(), pageUniverse);
+    assert.deepEqual(plan.units.map((u) => u.key).sort(), unitUniverse);
+    assert.deepEqual(plan.journeyOwner, baseline.journeyOwner);
+    const owned = shards.flatMap((s) => s.report.summary.shard.owned);
+    assert.equal(new Set(owned).size, owned.length, "no duplicated page ownership");
+    assert.deepEqual(owned.sort(), pageUniverse, "no dropped or extra page/locale/viewport combination");
+    assert.ok(shards.every((s) => s.report.summary.shard.owned.length > 0), `every ${of}-way slice is nonempty`);
+    assert.deepEqual(verifyClick(clickArgs(shards)).problems, []);
+    for (const v of CLICK_VARIANTS) {
+      const key = `storefront|${v.viewport}|${v.locale}`;
+      assert.equal(new Set(plan.pages.filter((p) => p.unit === key).map((p) => plan.owner.get(p.unit))).size, 1);
+    }
+    assert.equal(plan.owner.get(plan.journeyOwner.J23), plan.owner.get("storefront|desktop|zh-TW"));
+    assert.equal(shards.filter((s) => s.platformPass).length, 1);
+  }
+});
+
+test("CI candidate click aggregate rejects missing, duplicate, omitted and incomplete evidence", () => {
+  const reject = (mutate, pattern) => {
+    const shards = clickShards(SWEEP_SHARDS); mutate(shards);
+    const result = verifyClick(clickArgs(shards));
+    assert.ok(result.problems.some((p) => pattern.test(p)), result.problems.join(" | "));
+  };
+  reject((s) => s.pop(), /is missing/);
+  reject((s) => s.push({ ...s[0], source: "duplicate" }), /found twice/);
+  reject((s) => s[0].report.rows.splice(0, 1), /no page-load row/);
+  reject((s) => { s[0].report.summary.shard.complete = false; }, /not a full-coverage run/);
+  reject((s) => { s[0].platformPass = false; }, /platform-runner/);
+});
+
+test("CI candidate visual slices retain all baseline shots and reject missing or duplicate evidence", () => {
+  const universe = visualShards(4).flatMap((s) => s.report.shard.owned).sort();
+  const shards = visualShards(VISUAL_SHARDS), owned = shards.flatMap((s) => s.report.shard.owned);
+  assert.ok(shards.every((s) => s.report.shard.owned.length > 0));
+  assert.equal(new Set(owned).size, owned.length);
+  assert.deepEqual(owned.sort(), universe);
+  assert.equal(universe.length, (adminRoutes.length + 3 + STOREFRONT_ROUTES.length + 5) * VISUAL_LOCALES.length * VISUAL_VIEWPORTS.length);
+  for (const locale of VISUAL_LOCALES) for (const viewport of VISUAL_VIEWPORTS) {
+    const size = `${viewport.size.width}x${viewport.size.height}`;
+    const owners = shards.filter((s) => s.report.shard.owned.some((key) => key.startsWith("storefront|") && key.endsWith(`|${locale}|${size}`)));
+    assert.equal(owners.length, 1, "the storefront cart-bearing visual walk is never split");
+  }
+  assert.deepEqual(verifyVisual({ shards, adminRoutes }).problems, []);
+  const reject = (mutate, pattern) => {
+    const broken = visualShards(VISUAL_SHARDS); mutate(broken);
+    const result = verifyVisual({ shards: broken, adminRoutes });
+    assert.ok(result.problems.some((p) => pattern.test(p)), result.problems.join(" | "));
+  };
+  reject((s) => s.pop(), /is missing/);
+  reject((s) => s.push({ ...s[0], source: "duplicate" }), /found twice/);
+  reject((s) => s[0].report.units.pop(), /owned shot\(s\) missing/);
+  reject((s) => { s[0].report.shard.complete = false; }, /not a full-coverage run/);
+  reject((s) => { s[1].report.shard.owned.push(s[0].report.shard.owned[0]); }, /overlap/);
 });
