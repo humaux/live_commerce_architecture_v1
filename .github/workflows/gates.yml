@@ -10,6 +10,10 @@
 #   setup per bundled leg. The planned mode list (`matrix`, what `required` verifies) is unchanged: every member runs (never stops at the first red one) under its own
 #   150 min bound, writes its OWN receipt from its own output tree and uploads its OWN `receipt-<art>` and `<art>` artifacts; any red member turns the job red.
 #   Explicit dispatches (incl. `@i/N` re-runs and extra_env calibration) are never bundled.
+#   2026-11-04 FOUNDATION-LANE (owner gate change): the three order-attempt tests that wait for the product's real 15-minute `execute_by` deadline
+#   measured 904.x s each and floored every pull request at ~23 min. They now live in the dedicated `grc` shard of scripts/dev/shard-plan.json; a pull
+#   request plans every other shard, while a push to r3/integration, the nightly schedule and a manual dispatch also plan `grc`. Nothing is deleted,
+#   skipped, shortened or relaxed: `node scripts/dev/shard-plan.mjs --check-lanes` proves the PR lane plus `grc` still covers every top-level test exactly once.
 # Depends on: scripts/dev/ci-plan.mjs (matrix), scripts/dev/shard-plan.mjs + shard-plan.json (foundation groups), scripts/dev/test-local.sh (modes),
 #   scripts/dev/ci-playwright-browsers.mjs (registry engine requirements), ci-playwright-install.sh (installs only the system deps the runner image lacks, from cached .debs when possible; bounded apt otherwise),
 #   scripts/dev/test-focused.sh (regex runs), tests/ui/sweep-aggregate.mjs (whole-run verdict), scripts/dev/matrix-receipts.mjs (per-job run receipts + verifier, #128), the pinned postgres image,
@@ -120,6 +124,10 @@ jobs:
           # CI-SPEED-2: pack short legs for PR / push / schedule and the full-universe dispatch; an explicit modes list (single `@i/N` slice, calibration) or any
           # extra_env dispatch keeps one job per mode.
           BUNDLE: ${{ github.event_name != 'workflow_dispatch' || (inputs.full_browser_universe == 'true' && inputs.extra_env == '') }}
+          # FOUNDATION-LANE (owner 2026-11-04): a pull request omits the three 15-minute real-clock order-attempt shards whose floor made every PR ~23 min;
+          # push to r3/integration and the nightly schedule still run every shard, and `shard-plan.mjs --check-lanes` proves the two lanes cover every
+          # top-level test exactly once. A manual dispatch is a full run unless it asks for an explicit mode list.
+          FOUNDATION_LANE: ${{ github.event_name == 'pull_request' && 'pr' || 'full' }}
         run: node scripts/dev/ci-plan.mjs
 
   # CI-SPEED build-once: the Next builds and the Go compile every prebuilt_modes leg used to repeat, done once for this run's SHA. Same commands as the legs

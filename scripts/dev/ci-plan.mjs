@@ -15,6 +15,7 @@ import { appendFileSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { modeEntries } from "./pr-modes.mjs";
+import { laneGroupIds } from "./shard-plan.mjs";
 
 /** Click-sweep shards per full run. Candidate calibrated from the current registry's existing cost model:
  * 10 shards max 994, 20 max 506, 24 max 425, 30 still max 425. These are planning weights, NOT measured speedups.
@@ -124,7 +125,7 @@ export function partitionJobs(jobs) {
   const foundation = [], gate = [];
   for (const job of jobs) {
     const isFoundation = !job.bundle && job.members.length === 1 &&
-      job.members[0].mode === job.mode && /^shard:(unit|g[0-9]{2})$/.test(job.mode);
+      job.members[0].mode === job.mode && /^shard:(unit|g[0-9]{2}|grc)$/.test(job.mode); // grc = the real-clock group (push/nightly only)
     (isFoundation ? foundation : gate).push(job);
   }
   return { foundation, gate };
@@ -132,18 +133,20 @@ export function partitionJobs(jobs) {
 
 export function main(env = process.env) {
   const plan = JSON.parse(readFileSync(path.join(root, "scripts/dev/shard-plan.json"), "utf8"));
-  const result = expand(JSON.parse(env.MODES ?? ""), { groupIds: plan.groups.map((g) => g.id) });
+  // Foundation lane (owner 2026-11-04): pull requests omit the three 15-minute real-clock shards; push/nightly run every shard.
+  const lane = env.FOUNDATION_LANE ?? "full";
+  const result = expand(JSON.parse(env.MODES ?? ""), { groupIds: laneGroupIds(plan, lane) });
   const prebuiltMembers = new Set(prebuiltModes(result.matrix, readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8")));
   const jobs = bundleJobs(result.matrix, { enabled: env.BUNDLE === "true" });
   const lanes = partitionJobs(jobs);
   // A job (solo or bundle) restores the prebuilt artifact when any of its members consumes it.
   const prebuilt = jobs.filter((j) => j.members.some((m) => prebuiltMembers.has(m.mode))).map((j) => j.mode);
-  console.log(`ci-plan: ${result.matrix.length} mode(s)${result.sweepN ? `; click-sweep x${result.sweepN} (aggregate)` : ""}${result.visualN ? `; visual-lint x${result.visualN} (aggregate)` : ""}`);
+  console.log(`ci-plan: foundation lane ${lane}; ${result.matrix.length} mode(s)${result.sweepN ? `; click-sweep x${result.sweepN} (aggregate)` : ""}${result.visualN ? `; visual-lint x${result.visualN} (aggregate)` : ""}`);
   for (const e of result.matrix) console.log(`  ${e.mode}  -> artifact ${e.art}`);
   console.log(`ci-plan: ${jobs.length} job(s), ${jobs.filter((j) => j.bundle).length} bundle(s)`);
   for (const j of jobs.filter((x) => x.bundle)) console.log(`  ${j.mode}: ${j.members.map((m) => m.mode).join(" ")}`);
   console.log(`ci-plan: ${prebuilt.length} job(s) reuse the prebuilt Next + Go build cache`);
-  if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `matrix=${JSON.stringify(result.matrix)}\njobs=${JSON.stringify(jobs)}\nfoundation_jobs=${JSON.stringify(lanes.foundation)}\ngate_jobs=${JSON.stringify(lanes.gate)}\nsweep_n=${result.sweepN}\nvisual_n=${result.visualN}\nprebuilt_modes=${JSON.stringify(prebuilt)}\nprebuild=${prebuilt.length > 0}\n`);
+  if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `matrix=${JSON.stringify(result.matrix)}\njobs=${JSON.stringify(jobs)}\nfoundation_jobs=${JSON.stringify(lanes.foundation)}\ngate_jobs=${JSON.stringify(lanes.gate)}\nsweep_n=${result.sweepN}\nvisual_n=${result.visualN}\nprebuilt_modes=${JSON.stringify(prebuilt)}\nprebuild=${prebuilt.length > 0}\nfoundation_lane=${lane}\n`);
   return 0;
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

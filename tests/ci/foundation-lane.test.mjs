@@ -98,3 +98,44 @@ test("same receipt and evidence names, freshness inputs and pinned PG image are 
   assert.match(early, /name: \$\{\{ matrix\.art \}\}/);
   assert.equal(early.match(/docker pull postgres@sha256:[a-f0-9]+/)[0], gate.match(/docker pull postgres@sha256:[a-f0-9]+/)[0]);
 });
+
+// REAL-CLOCK-LANE (owner 2026-11-04): the three 15-minute order-attempt tests must never floor a pull request, must still run on push/nightly,
+// and the two lanes together must still cover every top-level test exactly once. These tests are the mechanical proof of that gate change.
+import { LONG_REAL_CLOCK, REAL_CLOCK_GROUP, checkLanes, laneGroupIds, topLevelTests } from "../../scripts/dev/shard-plan.mjs";
+
+const shardPlan = JSON.parse(readFileSync(new URL("../../scripts/dev/shard-plan.json", import.meta.url), "utf8"));
+
+test("lanes cover every top-level test exactly once and the real-clock group holds exactly the three measured tests", () => {
+  const names = topLevelTests();
+  assert.equal(names.length, shardPlan.groups.flatMap((g) => g.tests).length, "no test is listed twice or dropped");
+  assert.deepEqual(checkLanes(shardPlan, names).problems, []);
+  const grc = shardPlan.groups.find((g) => g.id === REAL_CLOCK_GROUP);
+  assert.deepEqual(grc.tests, [...LONG_REAL_CLOCK].sort());
+  for (const name of LONG_REAL_CLOCK) assert.ok(!laneGroupIds(shardPlan, "pr").includes(`shard:${REAL_CLOCK_GROUP}`) && !shardPlan.groups.filter((g) => g.id !== REAL_CLOCK_GROUP).some((g) => g.tests.includes(name)), `${name} must not be in a PR shard`);
+  assert.deepEqual(laneGroupIds(shardPlan, "full"), shardPlan.groups.map((g) => g.id));
+  assert.ok(!laneGroupIds(shardPlan, "pr").includes(REAL_CLOCK_GROUP));
+  assert.throws(() => laneGroupIds(shardPlan, "fast"), /unknown foundation lane/);
+});
+
+test("the planner omits the real-clock shard on pull_request and keeps it on push/nightly", () => {
+  const run = (lane) => {
+    const dir = mkdtempSync(path.join(tmpdir(), "real-clock-lane-"));
+    try {
+      const out = path.join(dir, "out");
+      main({ MODES: '["foundation-shards"]', BUNDLE: "true", FOUNDATION_LANE: lane, GITHUB_OUTPUT: out });
+      const values = Object.fromEntries(readFileSync(out, "utf8").trim().split("\n").map((line) => { const i = line.indexOf("="); return [line.slice(0, i), line.slice(i + 1)]; }));
+      return { matrix: JSON.parse(values.matrix), jobs: JSON.parse(values.jobs), lane: values.foundation_lane };
+    } finally { rmSync(dir, { recursive: true, force: true }); }
+  };
+  const pr = run("pr"), full = run("full");
+  assert.equal(pr.lane, "pr");
+  assert.ok(!pr.matrix.some((m) => m.mode === `shard:${REAL_CLOCK_GROUP}`), "pull request matrix must not plan grc");
+  assert.ok(full.matrix.some((m) => m.mode === `shard:${REAL_CLOCK_GROUP}`), "full matrix must plan grc");
+  assert.equal(full.matrix.length, pr.matrix.length + 1);
+  assert.ok(pr.jobs.flatMap((j) => j.members).every((m) => m.mode !== `shard:${REAL_CLOCK_GROUP}`));
+});
+
+test("gates.yml selects the PR lane for pull_request and the full lane otherwise", () => {
+  assert.match(wf, /FOUNDATION_LANE: \$\{\{ github\.event_name == 'pull_request' && 'pr' \|\| 'full' \}\}/);
+  assert.match(job("plan"), /FOUNDATION_LANE/);
+});
