@@ -263,6 +263,8 @@ jobs:
             case "$MODE" in
               foundation) bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
               shard:unit) LC_FOUNDATION_PKGS="$(go list ./... | grep -v '/tests/foundation$' | tr '\n' ' ')" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
+              # Split unit shard: `shard:unit@i/N` runs slice i of the deterministic `go list ./...` order (non-foundation packages).
+              shard:unit@*) IFS=/ read -r _ui _un <<< "${MODE##*@}"; LC_FOUNDATION_PKGS="$(go list ./... | grep -v '/tests/foundation$' | awk -v i="$_ui" -v n="$_un" 'NR % n == i - 1' | tr '\n' ' ')" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
               # A balanced group of scripts/dev/shard-plan.json: an anchored explicit -run list, or (the catch-all) -skip of every other group's tests.
               shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="$(node scripts/dev/shard-plan.mjs run "${MODE#shard:}")" LC_FOUNDATION_SKIP="$(node scripts/dev/shard-plan.mjs skip "${MODE#shard:}")" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
               shard:*)    LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="${MODE#shard:}" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
@@ -492,6 +494,8 @@ jobs:
             case "$MODE" in
               foundation) bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
               shard:unit) LC_FOUNDATION_PKGS="$(go list ./... | grep -v '/tests/foundation$' | tr '\n' ' ')" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
+              # Split unit shard: `shard:unit@i/N` runs slice i of the deterministic `go list ./...` order (non-foundation packages).
+              shard:unit@*) IFS=/ read -r _ui _un <<< "${MODE##*@}"; LC_FOUNDATION_PKGS="$(go list ./... | grep -v '/tests/foundation$' | awk -v i="$_ui" -v n="$_un" 'NR % n == i - 1' | tr '\n' ' ')" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
               # A balanced group of scripts/dev/shard-plan.json: an anchored explicit -run list, or (the catch-all) -skip of every other group's tests.
               shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="$(node scripts/dev/shard-plan.mjs run "${MODE#shard:}")" LC_FOUNDATION_SKIP="$(node scripts/dev/shard-plan.mjs skip "${MODE#shard:}")" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
               shard:*)    LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="${MODE#shard:}" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;

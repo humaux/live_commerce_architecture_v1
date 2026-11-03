@@ -17,6 +17,9 @@ import { fileURLToPath } from "node:url";
 import { modeEntries } from "./pr-modes.mjs";
 import { laneGroupIds } from "./shard-plan.mjs";
 
+/** Non-foundation Go packages are one 834 s shard today (run 41677297535); two shards bring it under the target. */
+export const UNIT_SHARDS = 2;
+
 /** Click-sweep shards per full run. Candidate calibrated from the current registry's existing cost model:
  * 10 shards max 994, 20 max 506, 24 max 425, 30 still max 425. These are planning weights, NOT measured speedups.
  * Keep LC_SWEEP_WORKERS=1 and every stateful storefront session/J2-J3 on its owning shard. Verify runner quota and
@@ -43,9 +46,9 @@ export const GATE_SECONDS = {
   "--browser-ads-attribution": 162, "--browser-product-editor": 198, "--browser-payment": 279, "--browser-ui-gallery": 315,
 };
 /** A leg is "short" below this gate time (owner card CI-SPEED-2: ~6 min); long legs keep their own job. */
-export const BUNDLE_LIMIT_S = 360;
+export const BUNDLE_LIMIT_S = 360; // measured ceiling of the bundled table; BUNDLE_MAX is what bounds a serial bundle
 /** Target gate seconds per bundle (~10 bundles for a UI PR; a bundle stays well under the ~18 min sweep / shard legs, so wall clock is not lengthened). */
-export const BUNDLE_TARGET_S = 420;
+export const BUNDLE_TARGET_S = 240; // lowered from 420: one 8-member bundle ran 19 min (run 41677297535)
 /** Most members one bundle job carries: gates.yml unrolls exactly this many per-member upload slots (tests/ci/gate-bundle.test.mjs pins both). */
 export const BUNDLE_MAX = 8;
 
@@ -60,7 +63,7 @@ export function expand(modes, { groupIds, sweep = SWEEP_SHARDS, visual = VISUAL_
   if (!Array.isArray(modes) || !modes.length || modes.some((m) => typeof m !== "string" || !/^[\x20-\x7e]+$/.test(m))) throw new Error("modes must be a non-empty JSON array of printable strings");
   const out = [];
   for (const m of modes) {
-    if (m === "foundation-shards") out.push("shard:unit", ...groupIds.map((id) => `shard:${id}`));
+    if (m === "foundation-shards") out.push(...Array.from({ length: UNIT_SHARDS }, (_, i) => `shard:unit@${i + 1}/${UNIT_SHARDS}`), ...groupIds.map((id) => `shard:${id}`));
     else if (m === "--browser-click-sweep") out.push(...fanOut(m, sweep));
     else if (m === "--browser-visual-lint") out.push(...fanOut(m, visual));
     else out.push(m);
@@ -125,7 +128,7 @@ export function partitionJobs(jobs) {
   const foundation = [], gate = [];
   for (const job of jobs) {
     const isFoundation = !job.bundle && job.members.length === 1 &&
-      job.members[0].mode === job.mode && /^shard:(unit|g[0-9]{2}|grc)$/.test(job.mode); // grc = the real-clock group (push/nightly only)
+      job.members[0].mode === job.mode && /^shard:(unit|unit@[0-9]+\/[0-9]+|g[0-9]{2}|grc)$/.test(job.mode); // grc = the real-clock group (push/nightly only)
     (isFoundation ? foundation : gate).push(job);
   }
   return { foundation, gate };

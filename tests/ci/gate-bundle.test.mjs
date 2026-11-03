@@ -29,9 +29,9 @@ test("CI-SPEED-2: every planned mode runs in exactly one job; only measured shor
   const members = jobs.flatMap((j) => j.members.map((m) => m.mode));
   assert.deepEqual([...members].sort(), uiMatrix.map((e) => e.mode).sort(), "the job members are exactly the planned modes, once each");
   const bundles = jobs.filter((j) => j.bundle);
-  assert.ok(bundles.length >= 5 && bundles.length <= 12, `~10 bundles for a UI PR, got ${bundles.length}`);
+  assert.ok(bundles.length >= 5 && bundles.length <= 18, `bundles are shallower than before (target ${240}s, max 8 members); got ${bundles.length}`);
   const baseline = expand(uiModes, { groupIds: ["g01", "g02"], sweep: 10, visual: 4 }).matrix;
-  assert.ok(bundleJobs(baseline).length < baseline.length / 2, "the original 10/4 plan still meets its full-matrix compression contract");
+  assert.ok(bundleJobs(baseline, { target: 420 }).length < baseline.length / 2, "the original 420 s target still meets its full-matrix compression contract");
   const short = uiMatrix.filter((e) => Number.isFinite(GATE_SECONDS[e.mode]) && GATE_SECONDS[e.mode] < BUNDLE_LIMIT_S);
   assert.ok(bundleJobs(short).length < short.length / 2, "bundling still halves the eligible short-leg jobs; isolated sweep count is independent");
   for (const b of bundles) {
@@ -47,7 +47,7 @@ test("CI-SPEED-2: every planned mode runs in exactly one job; only measured shor
     assert.deepEqual(j, { mode: j.mode, art: artifactName(j.mode), bundle: false, timeout: 150, members: [{ mode: j.mode, art: artifactName(j.mode) }] });
   }
   const solo = new Set(jobs.filter((j) => !j.bundle).map((j) => j.mode));
-  for (const m of ["shard:unit", "shard:g01", `--browser-click-sweep@1/${SWEEP_SHARDS}`, `--browser-visual-lint@${VISUAL_SHARDS}/${VISUAL_SHARDS}`, "--browser-live-console", "--browser-webkit", "--browser-new-unmeasured"]) assert.ok(solo.has(m), `${m} keeps its own job`);
+  for (const m of ["shard:unit@1/2", "shard:unit@2/2", "shard:g01", `--browser-click-sweep@1/${SWEEP_SHARDS}`, `--browser-visual-lint@${VISUAL_SHARDS}/${VISUAL_SHARDS}`, "--browser-live-console", "--browser-webkit", "--browser-new-unmeasured"]) assert.ok(solo.has(m), `${m} keeps its own job`);
   assert.deepEqual(bundleJobs(uiMatrix), jobs, "deterministic");
 });
 
@@ -101,7 +101,7 @@ function runGate({ bundle, mode, members = [], fail = [], loudFail = [], stdinEa
   const dir = mkdtempSync(path.join(tmpdir(), "gate-bundle-"));
   // Real copies, not a symlink: a CLI module run through a symlink fails its own `argv[1] === import.meta.url` main guard and silently writes nothing.
   mkdirSync(path.join(dir, "scripts/dev"), { recursive: true });
-  for (const f of ["matrix-receipts.mjs", "ci-plan.mjs", "pr-modes.mjs", "test-local.sh", "shard-plan.json"]) copyFileSync(path.join(repo, "scripts/dev", f), path.join(dir, "scripts/dev", f));
+  for (const f of ["matrix-receipts.mjs", "ci-plan.mjs", "pr-modes.mjs", "test-local.sh", "shard-plan.json", "shard-plan.mjs"]) copyFileSync(path.join(repo, "scripts/dev", f), path.join(dir, "scripts/dev", f));
   const bin = path.join(dir, ".bin");
   mkdirSync(bin);
   writeFileSync(path.join(bin, "xvfb-run"), `#!/usr/bin/env bash

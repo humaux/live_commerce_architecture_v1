@@ -6,7 +6,7 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { SWEEP_SHARDS, VISUAL_SHARDS, artifactName, expand, main, prebuiltModes } from "../../scripts/dev/ci-plan.mjs";
+import { SWEEP_SHARDS, UNIT_SHARDS, VISUAL_SHARDS, artifactName, expand, main, prebuiltModes } from "../../scripts/dev/ci-plan.mjs";
 
 const groupIds = ["g01", "g02", "g03"];
 const modes = (r) => r.matrix.map((e) => e.mode);
@@ -21,10 +21,10 @@ test("the full sweep and the full visual lint fan out into every shard and ask f
 });
 
 test("foundation-shards = the unit shard + every plan group; the serial `foundation` mode is untouched", () => {
-  assert.deepEqual(modes(expand(["foundation-shards"], { groupIds })), ["shard:unit", "shard:g01", "shard:g02", "shard:g03"]);
+  assert.deepEqual(modes(expand(["foundation-shards"], { groupIds })), ["shard:unit@1/2", "shard:unit@2/2", "shard:g01", "shard:g02", "shard:g03"]);
   assert.deepEqual(modes(expand(["foundation", "focused:^TestX$", "shard:^TestL"], { groupIds })), ["foundation", "focused:^TestX$", "shard:^TestL"]);
   const real = JSON.parse(readFileSync(new URL("../../scripts/dev/shard-plan.json", import.meta.url), "utf8")).groups.map((g) => g.id);
-  assert.equal(expand(["foundation-shards"], { groupIds: real }).matrix.length, real.length + 1);
+  assert.equal(expand(["foundation-shards"], { groupIds: real }).matrix.length, real.length + UNIT_SHARDS);
 });
 
 test("an explicit shard re-run (or a partial list) never claims the whole-run aggregate", () => {

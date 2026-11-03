@@ -20,7 +20,7 @@ test("every real foundation shard moves once and every other mode stays in the o
     const jobs = bundleJobs(matrix, { enabled });
     const before = structuredClone(jobs);
     const lanes = partitionJobs(jobs);
-    assert.deepEqual(lanes.foundation.map((j) => j.mode), ["shard:unit", ...groupIds.map((id) => `shard:${id}`)]);
+    assert.deepEqual(lanes.foundation.map((j) => j.mode), ["shard:unit@1/2", "shard:unit@2/2", ...groupIds.map((id) => `shard:${id}`)]);
     assert.deepEqual(jobs, before, "partitioning does not alter mode, members, timeout or artifacts");
     assert.deepEqual([...lanes.foundation, ...lanes.gate].map((j) => j.mode).sort(), jobs.map((j) => j.mode).sort());
     const all = [...lanes.foundation, ...lanes.gate].flatMap((j) => j.members);
