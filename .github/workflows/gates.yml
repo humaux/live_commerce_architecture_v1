@@ -363,7 +363,8 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
-          fetch-depth: 0 # live_media_stop_legacy_test builds a pinned pre-LMR binary from git history
+          # Only the seven WebKit browser tests use no historical Git object; all other modes retain full history for the pre-LMR test.
+          fetch-depth: ${{ matrix.mode == '--browser-webkit' && '1' || '0' }}
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod

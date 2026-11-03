@@ -71,10 +71,11 @@ test("early foundation job does not depend on build and the original lane uses i
   for (const lane of [early, gate]) {
     assert.match(lane, /fail-fast: false/);
     assert.match(lane, /persist-credentials: false/);
-    assert.match(lane, /fetch-depth: 0/);
     assert.match(lane, /group: gates-\$\{\{ github\.event_name \}\}/);
     assert.match(lane, /EXTRA_ENV: \$\{\{ github\.event_name == 'workflow_dispatch' && inputs\.extra_env \|\| '' \}\}/);
   }
+  assert.match(early, /fetch-depth: 0/, 'foundation keeps pinned pre-LMR source');
+  assert.match(gate, /fetch-depth: \$\{\{ matrix\.mode == '--browser-webkit' && '1' \|\| '0' \}\}/, 'only the seven-step WebKit mode may use a shallow checkout');
 });
 
 test("both lanes execute byte-identical gate commands, fault injection and verdict propagation", () => {

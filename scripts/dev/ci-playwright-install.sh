@@ -2,7 +2,7 @@
 # Purpose: install the mode's browser dependencies and binaries in CI, touching the network only when the runner image lacks a dependency
 #   and the cached .debs cannot supply it (#162: a fresh apt install on every job timed out on a slow mirror, exit=124 x3, before any test ran).
 # Depends on: frozen Playwright CLI (`install-deps --dry-run` simulates the install and lists the missing packages, no network),
-#   hosted Linux runner tooling (sudo, apt-get, apt-cache, dpkg-deb, sha256sum), LC_PLAYWRIGHT_DEBS_DIR = a runner-owned directory that gates.yml restores/saves with actions/cache.
+#   hosted Linux runner tooling (sudo, apt-get, apt-cache, dpkg-deb, Python >=3.11), LC_PLAYWRIGHT_DEBS_DIR = a runner-owned directory that gates.yml restores/saves with actions/cache.
 # Used by: gates.yml and fake-network-edge process tests (tests/ci/playwright-deps.test.mjs).
 # Invariant: the script exits non-zero unless dpkg reports every package it set out to install as installed; nothing is skipped silently.
 set -euo pipefail
@@ -28,20 +28,42 @@ dry_run() {
 }
 # Bounded apt call as root: the monitor can terminate the complete apt process group. Never use --foreground.
 apt_bounded() { sudo timeout --kill-after=15s 240s "$@"; }
-# P2-3: every cached .deb must hash to the SHA256 the runner's apt index lists for that exact package=version; otherwise the cache is
-# discarded (never installed unverified). Without an index entry the hash cannot be verified, which counts as a mismatch.
+# P2-3: each cached .deb must match the runner's apt index for its exact package/version. A manifest in the same cache cannot authenticate it.
+# Batch the index lookup: repeatedly loading apt's index once per package took ~211s in run 41682937571; all hashes remain mandatory.
 verify_debs() {
-  local f pkg ver want got n=0
-  for f in "$debs"/*.deb; do
-    [[ -e "$f" ]] || return 1
-    pkg="$(dpkg-deb -f "$f" Package 2>/dev/null)"; ver="$(dpkg-deb -f "$f" Version 2>/dev/null)"
-    [[ -n "$pkg" && -n "$ver" ]] || { echo "ci-playwright-install: unreadable cached deb ${f##*/}" >&2; return 1; }
-    want="$(apt-cache show "$pkg=$ver" 2>/dev/null | sed -n 's/^SHA256: *//p' | head -n 1)"
-    got="$(sha256sum "$f" | cut -d' ' -f1)"
-    [[ -n "$want" && "$want" == "$got" ]] || { echo "ci-playwright-install: cached ${f##*/} not verified against the apt index (index=${want:-none} file=$got)" >&2; return 1; }
-    n=$((n+1))
-  done
-  [[ "$n" -gt 0 ]]
+  python3 - "$debs" <<'PY'
+import hashlib, pathlib, re, subprocess, sys
+
+try:
+    files = sorted(pathlib.Path(sys.argv[1]).glob('*.deb'))
+    if not files:
+        raise ValueError('empty cache')
+    entries = []
+    for file in files:
+        metadata = subprocess.run(['dpkg-deb', '-f', str(file), 'Package', 'Version'], check=True, capture_output=True, text=True, timeout=30).stdout
+        fields = dict(line.split(': ', 1) for line in metadata.splitlines() if ': ' in line)
+        pkg, version = fields.get('Package', ''), fields.get('Version', '')
+        if not re.fullmatch(r'[a-z0-9][a-z0-9+.-]*', pkg) or not re.fullmatch(r'[A-Za-z0-9.+:~_-]+', version):
+            raise ValueError(f'invalid package metadata: {file.name}')
+        entries.append((file, pkg, version))
+    selectors = list(dict.fromkeys(f'{pkg}={version}' for _, pkg, version in entries))
+    index = subprocess.run(['apt-cache', 'show', *selectors], check=True, capture_output=True, text=True, timeout=120).stdout
+    hashes = {}
+    for paragraph in re.split(r'\n\s*\n', index):
+        fields = dict(line.split(': ', 1) for line in paragraph.splitlines() if ': ' in line)
+        key = fields.get('Package'), fields.get('Version')
+        sha = fields.get('SHA256', '')
+        if re.fullmatch(r'[0-9a-fA-F]{64}', sha):
+            hashes.setdefault(key, set()).add(sha.lower())
+    for file, pkg, version in entries:
+        with file.open('rb') as stream:
+            digest = hashlib.file_digest(stream, 'sha256').hexdigest()
+        if digest not in hashes.get((pkg, version), set()):
+            raise ValueError(f'{file.name} not verified against apt index')
+except (OSError, ValueError, subprocess.SubprocessError) as error:
+    print(f'ci-playwright-install: cache verification failed: {error}', file=sys.stderr)
+    sys.exit(1)
+PY
 }
 
 state="$(dry_run "$@")"
