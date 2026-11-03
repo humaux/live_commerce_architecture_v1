@@ -15,16 +15,25 @@ import { appendFileSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { modeEntries } from "./pr-modes.mjs";
+import { laneGroupIds } from "./shard-plan.mjs";
 
-/** Click-sweep shards per full run. Measured on 2026-10-07: ~7600 s of single-worker route time + ~5 min of per-job setup/builds; 10 shards = ~12-16 min per job. Retune from the shard times in PLAN.md. */
-export const SWEEP_SHARDS = 10;
-/** Visual-lint shards per full run (audit workers stay at 3: it only reads). 14 min whole -> ~7-9 min per shard. */
-export const VISUAL_SHARDS = 4;
+/** Non-foundation Go packages are one 834 s shard today (run 41677297535); two shards bring it under the target. */
+export const UNIT_SHARDS = 2;
+
+/** Click-sweep shards per full run. Candidate calibrated from the current registry's existing cost model:
+ * 10 shards max 994, 20 max 506, 24 max 425, 30 still max 425. These are planning weights, NOT measured speedups.
+ * Run 41682937571's 20-slice Gate steps 6 and 7 took 584/585 s. Split to 24 using the same complete partition;
+ * 425 is a model weight, not seconds or a speedup guarantee. Keep LC_SWEEP_WORKERS=1 and every stateful storefront
+ * session/J2-J3 on its owning shard. Verify same-SHA wall time and runner quota: extra shards can queue and cost more. */
+export const SWEEP_SHARDS = 24;
+/** Visual-lint candidate: eight isolated runner slices; workflow worker count, locales, viewports and assertions unchanged. */
+export const VISUAL_SHARDS = 8;
 
 /**
- * Gate-step seconds per mode: the max of the three build-once UI-scale runs 40506418652, 40541796588 and 40575283835 (2026-10-27/28, n=3).
+ * Gate-step seconds: payment 266 and ui-gallery 346 are Gate step completed_at - started_at in run 41682937571 (2026-11-03).
+ * UNKNOWN current per-mode time for the other entries: both runs 41677297535/41682937571 ran them in serial bundles, so their job/step times cannot be attributed to individual modes. Retain their 2026-10-27/28 estimates (max of runs 40506418652, 40541796588 and 40575283835) pending individual measurements.
  * Only modes listed here AND under BUNDLE_LIMIT_S are bundled; a new or unmeasured mode always gets its own job. Re-measure when a leg's suite grows.
- * Excluded on purpose (>= limit): --browser-live-console 379, --browser-webkit 408, the click-sweep / visual-lint slices and the foundation shards.
+ * Excluded on purpose (>= limit): --browser-live-console 379, --browser-webkit 562 (run 41682937571), click-sweep / visual-lint slices and foundation shards.
  */
 export const GATE_SECONDS = {
   "--browser-studio-bff": 14, "--browser-manual-order": 17, "--browser-merchant-buyer": 17, "--browser-merchant-orders-bff": 21, "--browser-buyer": 22,
@@ -36,12 +45,12 @@ export const GATE_SECONDS = {
   "--browser-refund-fulfilment": 72, "--browser-studio-ui": 74, "--browser-card-payments": 82, "--browser-product-media-v2": 83, "--browser-admin-legacy": 84,
   "--browser-e2e": 87, "--browser-inbox": 88, "--browser-customers-billing": 104, "--browser-password-auth": 110, "--browser-admin-shell": 117,
   "--browser-merchant-orders-ui": 137, "--live-browser-input": 139, "--browser-cvs": 145, "--browser-tracking-backfill": 146, "--browser-platform-site": 159,
-  "--browser-ads-attribution": 162, "--browser-product-editor": 198, "--browser-payment": 279, "--browser-ui-gallery": 315,
+  "--browser-ads-attribution": 162, "--browser-product-editor": 198, "--browser-payment": 266, "--browser-ui-gallery": 346,
 };
 /** A leg is "short" below this gate time (owner card CI-SPEED-2: ~6 min); long legs keep their own job. */
-export const BUNDLE_LIMIT_S = 360;
+export const BUNDLE_LIMIT_S = 360; // measured ceiling of the bundled table; BUNDLE_MAX is what bounds a serial bundle
 /** Target gate seconds per bundle (~10 bundles for a UI PR; a bundle stays well under the ~18 min sweep / shard legs, so wall clock is not lengthened). */
-export const BUNDLE_TARGET_S = 420;
+export const BUNDLE_TARGET_S = 240; // lowered from 420: one 8-member bundle ran 19 min (run 41677297535)
 /** Most members one bundle job carries: gates.yml unrolls exactly this many per-member upload slots (tests/ci/gate-bundle.test.mjs pins both). */
 export const BUNDLE_MAX = 8;
 
@@ -56,7 +65,7 @@ export function expand(modes, { groupIds, sweep = SWEEP_SHARDS, visual = VISUAL_
   if (!Array.isArray(modes) || !modes.length || modes.some((m) => typeof m !== "string" || !/^[\x20-\x7e]+$/.test(m))) throw new Error("modes must be a non-empty JSON array of printable strings");
   const out = [];
   for (const m of modes) {
-    if (m === "foundation-shards") out.push("shard:unit", ...groupIds.map((id) => `shard:${id}`));
+    if (m === "foundation-shards") out.push(...Array.from({ length: UNIT_SHARDS }, (_, i) => `shard:unit@${i + 1}/${UNIT_SHARDS}`), ...groupIds.map((id) => `shard:${id}`));
     else if (m === "--browser-click-sweep") out.push(...fanOut(m, sweep));
     else if (m === "--browser-visual-lint") out.push(...fanOut(m, visual));
     else out.push(m);
@@ -111,19 +120,38 @@ export function prebuiltModes(matrix, registrySource) {
   });
 }
 
+/**
+ * Let the ordinary Go/PG shards start after planning instead of waiting for the
+ * browser build they never consume. Keep the complete jobs/matrix outputs for
+ * coverage and receipt verification; only scheduling is partitioned.
+ * Unknown/custom modes and bundles stay on the existing lane, fail-closed.
+ */
+export function partitionJobs(jobs) {
+  const foundation = [], gate = [];
+  for (const job of jobs) {
+    const isFoundation = !job.bundle && job.members.length === 1 &&
+      job.members[0].mode === job.mode && /^shard:(unit|unit@[0-9]+\/[0-9]+|g[0-9]{2}|grc)$/.test(job.mode); // grc = the real-clock group (push/nightly only)
+    (isFoundation ? foundation : gate).push(job);
+  }
+  return { foundation, gate };
+}
+
 export function main(env = process.env) {
   const plan = JSON.parse(readFileSync(path.join(root, "scripts/dev/shard-plan.json"), "utf8"));
-  const result = expand(JSON.parse(env.MODES ?? ""), { groupIds: plan.groups.map((g) => g.id) });
+  // Foundation lane (owner 2026-11-04): pull requests omit the three 15-minute real-clock shards; push/nightly run every shard.
+  const lane = env.FOUNDATION_LANE ?? "full";
+  const result = expand(JSON.parse(env.MODES ?? ""), { groupIds: laneGroupIds(plan, lane) });
   const prebuiltMembers = new Set(prebuiltModes(result.matrix, readFileSync(path.join(root, "scripts/dev/test-local.sh"), "utf8")));
   const jobs = bundleJobs(result.matrix, { enabled: env.BUNDLE === "true" });
+  const lanes = partitionJobs(jobs);
   // A job (solo or bundle) restores the prebuilt artifact when any of its members consumes it.
   const prebuilt = jobs.filter((j) => j.members.some((m) => prebuiltMembers.has(m.mode))).map((j) => j.mode);
-  console.log(`ci-plan: ${result.matrix.length} mode(s)${result.sweepN ? `; click-sweep x${result.sweepN} (aggregate)` : ""}${result.visualN ? `; visual-lint x${result.visualN} (aggregate)` : ""}`);
+  console.log(`ci-plan: foundation lane ${lane}; ${result.matrix.length} mode(s)${result.sweepN ? `; click-sweep x${result.sweepN} (aggregate)` : ""}${result.visualN ? `; visual-lint x${result.visualN} (aggregate)` : ""}`);
   for (const e of result.matrix) console.log(`  ${e.mode}  -> artifact ${e.art}`);
   console.log(`ci-plan: ${jobs.length} job(s), ${jobs.filter((j) => j.bundle).length} bundle(s)`);
   for (const j of jobs.filter((x) => x.bundle)) console.log(`  ${j.mode}: ${j.members.map((m) => m.mode).join(" ")}`);
   console.log(`ci-plan: ${prebuilt.length} job(s) reuse the prebuilt Next + Go build cache`);
-  if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `matrix=${JSON.stringify(result.matrix)}\njobs=${JSON.stringify(jobs)}\nsweep_n=${result.sweepN}\nvisual_n=${result.visualN}\nprebuilt_modes=${JSON.stringify(prebuilt)}\nprebuild=${prebuilt.length > 0}\n`);
+  if (env.GITHUB_OUTPUT) appendFileSync(env.GITHUB_OUTPUT, `matrix=${JSON.stringify(result.matrix)}\njobs=${JSON.stringify(jobs)}\nfoundation_jobs=${JSON.stringify(lanes.foundation)}\ngate_jobs=${JSON.stringify(lanes.gate)}\nsweep_n=${result.sweepN}\nvisual_n=${result.visualN}\nprebuilt_modes=${JSON.stringify(prebuilt)}\nprebuild=${prebuilt.length > 0}\nfoundation_lane=${lane}\n`);
   return 0;
 }
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

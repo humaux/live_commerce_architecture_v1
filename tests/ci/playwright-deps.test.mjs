@@ -66,11 +66,12 @@ test('TH-7: front-only is a reviewed allowlist, so executablePath evidence canno
   assert.throws(() => assertWebKitCoverage(registryWith('TestMarkerBrowser'), [...goSources, browser], [...goFiles, 'tests/foundation/browser_marker_test.go']), /webkit/i);
 });
 
-function installer({ indexSha = 'MATCH', failures = 0, browsers = ['chromium'], first = 'missing', dpkg = 'installed', debs = false, offlineFails = false } = {}) {
+function installer({ indexSha = 'MATCH', failures = 0, browsers = ['chromium'], first = 'missing', dpkg = 'installed', debs = false, offlineFails = false, extraDeb = false, missingIndex = '' } = {}) {
   mkdirSync('output/playwright', { recursive: true }); // untracked: absent on a fresh checkout (PR #27 review)
   const dir = mkdtempSync('output/playwright/ci-playwright-deps-test.');
   const bin = path.resolve(dir, 'bin'), trace = path.resolve(dir, 'trace.jsonl'), debDir = path.resolve(dir, 'debs'); mkdirSync(bin);
   if (debs) { mkdirSync(debDir); writeFileSync(path.join(debDir, 'libfoo_1_amd64.deb'), 'x'); }
+  if (debs && extraDeb) writeFileSync(path.join(debDir, 'libbar_1_amd64.deb'), 'x');
   const goodSha = createHash('sha256').update('x').digest('hex');
   const fake = `const fs=require('fs'); const tool=__TOOL__; const args=process.argv.slice(2); const e=process.env; fs.appendFileSync(e.EDGE_TRACE,JSON.stringify({tool,args})+'\\n');
 const count=(k)=>{const p=e.EDGE_TRACE+'.'+k;const n=(fs.existsSync(p)?Number(fs.readFileSync(p)):0)+1;fs.writeFileSync(p,String(n));return n};
@@ -78,8 +79,8 @@ if(tool==='uname'){console.log('Linux');process.exit(0)}
 if(tool==='sudo'){const r=require('child_process').spawnSync(args[0],args.slice(1),{stdio:'inherit'});process.exit(r.status??1)}
 if(tool==='timeout'){const i=args.findIndex(x=>/^\\d+s$/.test(x));const r=require('child_process').spawnSync(args[i+1],args.slice(i+2),{stdio:'inherit'});process.exit(r.status??1)}
 if(tool==='sleep')process.exit(0);
-if(tool==='dpkg-deb'){console.log(args[2]==='Package'?'libfoo':'1.0');process.exit(0)}
-if(tool==='apt-cache'){if(e.INDEX_SHA)console.log('Package: libfoo\\nSHA256: '+e.INDEX_SHA);process.exit(0)}
+if(tool==='dpkg-deb'){const pkg=args[1].includes('libbar_')?'libbar':'libfoo';if(args.length===4)console.log('Package: '+pkg+'\\nVersion: 1.0');else console.log(args[2]==='Package'?pkg:'1.0');process.exit(0)}
+if(tool==='apt-cache'){if(e.INDEX_SHA)console.log(args.slice(1).filter(a=>a.split('=')[0]!==e.MISSING_INDEX).map(a=>'Package: '+a.split('=')[0]+'\\nVersion: 1.0\\nSHA256: '+e.INDEX_SHA+'\\n').join('\\n'));process.exit(0)}
 if(tool==='dpkg-query'){console.log(e.DPKG_STATE==='installed'?'installed':'not-installed');process.exit(0)}
 if(tool==='apt-get'){
   if(args.includes('update'))process.exit(0);
@@ -100,8 +101,8 @@ if(tool==='node'){process.exit(count('cli')<=Number(e.EDGE_FAILURES)?17:0)}
   // #164 self-check: a fixture that does not parse would fail every case for the wrong reason (SyntaxError, then ENOENT on the trace).
   for (const name of ['uname', 'sudo', 'timeout', 'sleep', 'node', 'pnpm', 'apt-get', 'dpkg-query', 'apt-cache', 'dpkg-deb']) execFileSync(process.execPath, ['--check', path.join(bin, name + '.cjs')]);
   const probe = spawnSync(process.execPath, [path.join(bin, 'apt-cache.cjs'), 'show', 'x'], { encoding: 'utf8', env: { ...process.env, EDGE_TRACE: path.resolve(dir, 'probe.jsonl'), INDEX_SHA: 'abc' } });
-  assert.deepEqual(probe.stdout.trimEnd().split('\n'), ['Package: libfoo', 'SHA256: abc'], 'the apt-cache double must print exactly two lines');
-  const result = spawnSync('bash', ['scripts/dev/ci-playwright-install.sh', ...browsers], { encoding: 'utf8', timeout: 10000, env: { ...process.env, PATH: bin + ':' + process.env.PATH, EDGE_TRACE: trace, EDGE_FAILURES: String(failures), DRY_FIRST: first, DPKG_STATE: dpkg, INDEX_SHA: indexSha === 'MATCH' ? goodSha : indexSha === 'NONE' ? '' : indexSha, OFFLINE_FAILS: offlineFails ? '1' : '0', LC_PLAYWRIGHT_DEBS_DIR: debDir, GITHUB_OUTPUT: path.resolve(dir, 'out'), FAKE_CLI: '/fixture/playwright-cli.js' } });
+  assert.deepEqual(probe.stdout.trimEnd().split('\n'), ['Package: x', 'Version: 1.0', 'SHA256: abc'], 'the apt-cache double must print the requested package and version');
+  const result = spawnSync('bash', ['scripts/dev/ci-playwright-install.sh', ...browsers], { encoding: 'utf8', timeout: 10000, env: { ...process.env, PATH: bin + ':' + process.env.PATH, EDGE_TRACE: trace, EDGE_FAILURES: String(failures), DRY_FIRST: first, DPKG_STATE: dpkg, INDEX_SHA: indexSha === 'MATCH' ? goodSha : indexSha === 'NONE' ? '' : indexSha, MISSING_INDEX: missingIndex, OFFLINE_FAILS: offlineFails ? '1' : '0', LC_PLAYWRIGHT_DEBS_DIR: debDir, GITHUB_OUTPUT: path.resolve(dir, 'out'), FAKE_CLI: '/fixture/playwright-cli.js' } });
   const events = readFileSync(trace, 'utf8').trim().split('\n').map(JSON.parse);
   let out = ''; try { out = readFileSync(path.resolve(dir, 'out'), 'utf8'); } catch {}
   rmSync(dir, { recursive: true }); return { result, events, out };
@@ -197,6 +198,21 @@ test('P2-2: a "Missing system dependencies" header with no parsable package name
 test('P2-3 hash match: a cached deb whose SHA256 equals the apt index is installed offline', () => {
   const { result, events } = installer({ debs: true }); assert.equal(result.status, 0, result.stderr);
   assert.ok(aptCalls(events).some(x => x.args.includes('--no-download')));
+});
+test('cached deb verification batches the index lookup for every exact package version', () => {
+  const { result, events } = installer({ debs: true, extraDeb: true });
+  assert.equal(result.status, 0, result.stderr);
+  const lookups = events.filter(x => x.tool === 'apt-cache');
+  assert.equal(lookups.length, 1, 'one apt index load for the complete cache');
+  assert.deepEqual(new Set(lookups[0].args.slice(1)), new Set(['libfoo=1.0', 'libbar=1.0']));
+  assert.ok(aptCalls(events).some(x => x.args.includes('--no-download')));
+});
+test('a missing index entry for one of several cached debs rejects the whole cache', () => {
+  const { result, events } = installer({ debs: true, extraDeb: true, missingIndex: 'libbar' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.ok(!aptCalls(events).some(x => x.args.includes('--no-download')));
+  assert.ok(aptCalls(events).some(x => x.args.includes('update')));
+  assert.match(result.stderr, /libbar_1_amd64\.deb not verified against apt index/);
 });
 test('P2-3 hash mismatch: a tampered cached deb is never installed; the cache is discarded and the network path runs', () => {
   const { result, events } = installer({ debs: true, indexSha: 'deadbeef' }); assert.equal(result.status, 0, result.stderr);

@@ -777,7 +777,7 @@
     "tests/ui/product-media-journey.mjs": "40f7470c598b5b1aae51af7ab5c5d03bd59e6161ca9ff0e1092072b3d2ba9dc9",
     "tests/ui/sweep-aggregate.mjs": "96b17bae5f7ed4cc3df60671b12b7a42bb23ebca24c473eb0c819924720d9c3a",
     "tests/ui/sweep-shard-lib.mjs": "918806dc37d079986785de2c9c6b54dbb107ab46da57934d9cd94d1274422c7c",
-    "tests/ui/sweep-shard-lib.test.mjs": "4c1f91c5301c193710ed793280615ce13a3bbf2adc1478ff8ce713807b9f3a9d",
+    "tests/ui/sweep-shard-lib.test.mjs": "24735a00490c5841bcb5af0e601d08c49e3283b3abc1d226e06f22275935c066",
     "tests/ui/visual-audit.mjs": "414ab92a4ad72151dd9cda861fecbdbb1b97a009588313013252e1b56cc06ada",
     "tests/ui/visual-lint-canary.mjs": "31f23d3e13a38aa3c1ae4fc62515bc28e0805e1960810e8668eca660cde02745",
     "tests/ui/visual-lint-lib.mjs": "d236975b2c2843ff536400d26507e7cf5d3230a18e6fca5e31235f28ee1ce480",
@@ -792,7 +792,7 @@
     "packages/format/package.json": "0a52b62b35e640298589968137e2d8899151bbcb2e0714f3f9204afc70beb3ed",
     "packages/i18n/package.json": "096562b66a71f0479808557beb6490deef65c7cf1626867ec23cffbdaedebfce",
     "packages/ui/package.json": "85891954909057d1783e4a0b8585e5b8f4609f9259116ae808ce34f1f4347078",
-    "scripts/dev/test-node.sh": "dbc6099ac8d83d1c84ef3618c69da212ae48a160c10f29aed8e90c265b4f8850"
+    "scripts/dev/test-node.sh": "32f9539e9af610f9373f836e4b29f18c44b2359e306a11f28da90eaf9bb5ad72"
   },
   "modes": {
     "--browser-inbox": {

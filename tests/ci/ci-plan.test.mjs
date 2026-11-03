@@ -6,7 +6,14 @@ import { mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { SWEEP_SHARDS, VISUAL_SHARDS, artifactName, expand, main, prebuiltModes } from "../../scripts/dev/ci-plan.mjs";
+import { SWEEP_SHARDS, UNIT_SHARDS, VISUAL_SHARDS, artifactName, expand, main, prebuiltModes } from "../../scripts/dev/ci-plan.mjs";
+
+test("the full click sweep plans 24 slices to split the measured long 20-slice legs", () => {
+  const plan = expand(["--browser-click-sweep"], { groupIds: [] });
+  assert.equal(plan.sweepN, 24);
+  assert.equal(plan.matrix.length, 24);
+  assert.equal(new Set(plan.matrix.map(({ art }) => art)).size, 24);
+});
 
 const groupIds = ["g01", "g02", "g03"];
 const modes = (r) => r.matrix.map((e) => e.mode);
@@ -21,10 +28,10 @@ test("the full sweep and the full visual lint fan out into every shard and ask f
 });
 
 test("foundation-shards = the unit shard + every plan group; the serial `foundation` mode is untouched", () => {
-  assert.deepEqual(modes(expand(["foundation-shards"], { groupIds })), ["shard:unit", "shard:g01", "shard:g02", "shard:g03"]);
+  assert.deepEqual(modes(expand(["foundation-shards"], { groupIds })), ["shard:unit@1/2", "shard:unit@2/2", "shard:g01", "shard:g02", "shard:g03"]);
   assert.deepEqual(modes(expand(["foundation", "focused:^TestX$", "shard:^TestL"], { groupIds })), ["foundation", "focused:^TestX$", "shard:^TestL"]);
   const real = JSON.parse(readFileSync(new URL("../../scripts/dev/shard-plan.json", import.meta.url), "utf8")).groups.map((g) => g.id);
-  assert.equal(expand(["foundation-shards"], { groupIds: real }).matrix.length, real.length + 1);
+  assert.equal(expand(["foundation-shards"], { groupIds: real }).matrix.length, real.length + UNIT_SHARDS);
 });
 
 test("an explicit shard re-run (or a partial list) never claims the whole-run aggregate", () => {
@@ -49,8 +56,15 @@ test("main writes matrix / sweep_n / visual_n to GITHUB_OUTPUT", () => {
   const out = path.join(mkdtempSync(path.join(tmpdir(), "ci-plan-")), "out");
   main({ MODES: JSON.stringify(["--browser-click-sweep"]), GITHUB_OUTPUT: out });
   const text = readFileSync(out, "utf8");
-  assert.match(text, /^matrix=\[\{"mode":"--browser-click-sweep@1\/10","art":"gate-browser-click-sweep_1_10"\}/);
-  assert.match(text, /\nsweep_n=10\nvisual_n=0\nprebuilt_modes=\["--browser-click-sweep@1\/10",.*"--browser-click-sweep@10\/10"\]\nprebuild=true\n$/);
+  const outputs = Object.fromEntries(text.trimEnd().split("\n").map((line) => {
+    const at = line.indexOf("="); return [line.slice(0, at), line.slice(at + 1)];
+  }));
+  const expected = Array.from({ length: SWEEP_SHARDS }, (_, i) => `--browser-click-sweep@${i + 1}/${SWEEP_SHARDS}`);
+  assert.deepEqual(JSON.parse(outputs.matrix), expected.map((mode) => ({ mode, art: artifactName(mode) })));
+  assert.deepEqual(JSON.parse(outputs.prebuilt_modes), expected);
+  assert.equal(outputs.sweep_n, String(SWEEP_SHARDS));
+  assert.equal(outputs.visual_n, "0");
+  assert.equal(outputs.prebuild, "true");
 });
 
 // PR #39 r7 (Codex P2): the nightly schedule shares the ref and mode names with post-merge push runs and has
@@ -69,7 +83,7 @@ const job = (name) => wf.split(new RegExp(`^  ${name}:\\s*$`, "m"))[1]?.split(/^
 test("CI-SPEED: build-once consumers are exactly the registry arms that build a Next app or compile ./tests/foundation", () => {
   const matrix = expand(["foundation-shards", "--browser-click-sweep", "--browser-cvs", "--browser-ui-gallery", "--browser-picklist", "focused:^TestX$"], { groupIds }).matrix;
   const got = prebuiltModes(matrix, registry);
-  assert.ok(got.includes("--browser-click-sweep@1/10") && got.includes("--browser-click-sweep@10/10") && got.includes("--browser-cvs"));
+  assert.ok(got.includes(`--browser-click-sweep@1/${SWEEP_SHARDS}`) && got.includes(`--browser-click-sweep@${SWEEP_SHARDS}/${SWEEP_SHARDS}`) && got.includes("--browser-cvs"));
   for (const m of ["shard:unit", "shard:g01", "focused:^TestX$", "--browser-ui-gallery", "--browser-picklist"]) assert.ok(!got.includes(m), `${m} builds nothing shared (or its own flagged build)`);
 });
 
@@ -84,14 +98,14 @@ test("CI-SPEED: gates.yml builds once, restores only same-run prebuilt output, a
   assert.match(gate, /contains\(fromJSON\(needs\.plan\.outputs\.prebuilt_modes\), matrix\.mode\)/);
   assert.match(gate, /env\.EXTRA_ENV == ''/, "fault-injection dispatches build their own");
   assert.match(gate, /node scripts\/dev\/prebuilt\.mjs unpack "\$RUNNER_TEMP\/prebuilt" gocache\n\s+echo "LC_PREBUILT_DIR=\$RUNNER_TEMP\/prebuilt" >> "\$GITHUB_ENV"/);
-  assert.match(required, /needs: \[plan, build, gate, aggregate, deploy, receipts\]/);
+  assert.match(required, /needs: \[plan, build, foundation_gate, gate, aggregate, deploy\]/);
   assert.match(required, /if \[\[ "\$BUILD_EXPECTED" == true \]\]; then \[\[ "\$BUILD" == success \]\] \|\| rc=1; else \[\[ "\$BUILD" == skipped \]\] \|\| rc=1; fi/);
 });
 
 // #238 review P2: the `required` step's shell is EXECUTED here, not only regex-matched: every combination of job results (incl. cancelled and an
 // empty result) and expectations against an independent oracle.
 test("CI-SPEED review P2: the real `required` script accepts exactly the right result combinations", () => {
-  const block = /^  required:[\s\S]*?\n      - run: \|\n((?:          .*\n|\s*\n)+)/m.exec(wf)?.[1];
+  const block = /^  required:[\s\S]*?\n      - name: Required verdict\n[\s\S]*?\n        run: \|\n((?:          .*\n|\s*\n)+)/m.exec(wf)?.[1];
   assert.ok(block, "required job run block not found");
   const script = block.split("\n").map((l) => l.slice(10)).join("\n");
   // Every result GitHub reports (and "" for a job that never ran) on the expectation-dependent legs; on PLAN/GATE/RECEIPTS, which must be success,
@@ -99,7 +113,7 @@ test("CI-SPEED review P2: the real `required` script accepts exactly the right r
   const R = ["success", "skipped", "failure", "cancelled", ""], M = ["success", "cancelled", ""], B = ["true", "false"], combos = [];
   for (const PLAN of M) for (const BUILD of R) for (const GATE of M) for (const AGG of R) for (const DEPLOY of R) for (const RECEIPTS of M)
     for (const BUILD_EXPECTED of B) for (const AGG_EXPECTED of B) for (const DEPLOY_EXPECTED of B)
-      combos.push({ PLAN, BUILD, GATE, AGG, DEPLOY, RECEIPTS, BUILD_EXPECTED, AGG_EXPECTED, DEPLOY_EXPECTED });
+      combos.push({ PLAN, BUILD, GATE, AGG, DEPLOY, RECEIPTS, BUILD_EXPECTED, AGG_EXPECTED, DEPLOY_EXPECTED, FOUNDATION: "success", FOUNDATION_EXPECTED: "true", GATE_EXPECTED: "true", RECEIPT_DOWNLOAD: "success" });
   const keys = Object.keys(combos[0]);
   // "|" separates fields so an empty result ("") survives `read`.
   const fn = `req() { ( ${script}\n) >/dev/null; }\nwhile IFS='|' read -r ${keys.join(" ")}; do export ${keys.join(" ")}; req; echo $?; done`;

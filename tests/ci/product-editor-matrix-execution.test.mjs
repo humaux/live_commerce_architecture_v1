@@ -62,3 +62,77 @@ for (const [flag, pattern] of [["-run", "^$"], ["-skip", "^TestProductEditorMatr
     });
   }
 }
+
+
+// A duplicate across the two planned lanes is intentional; a duplicate inside a
+// lane or a valid-looking command outside its actual Gate run is never evidence.
+const laneNames = ["foundation_gate", "gate"];
+function changeLane(name, change) {
+  const header = `  ${name}:\n`, start = source.workflow.indexOf(header);
+  assert.ok(start >= 0, `${name} exists`);
+  const offset = source.workflow.slice(start + header.length).search(/^  [A-Za-z_][\w-]*:[ \t]*$/m);
+  const end = offset < 0 ? source.workflow.length : start + header.length + offset;
+  return source.workflow.slice(0, start) + change(source.workflow.slice(start, end)) + source.workflow.slice(end);
+}
+function rejectsDispatch(workflow) {
+  assert.ok(matrixExecutionIssues({ ...source, workflow }).some((issue) => issue.includes("dispatch")));
+}
+for (const name of laneNames) {
+  for (const selector of ["run", "skip"]) {
+    test(`${name} independently rejects a changed planner ${selector} call`, () => {
+      rejectsDispatch(changeLane(name, (body) => body.replace(`shard-plan.mjs ${selector} `, `shard-plan.mjs wrong-${selector} `)));
+    });
+  }
+  for (const mutation of ["missing", "comment", "duplicate", "extra filter", "masked failure"]) {
+    test(`${name} rejects ${mutation} dispatch even when the other lane is intact`, () => {
+      rejectsDispatch(changeLane(name, (body) => {
+        const line = body.split("\n").find((s) => s.trim().startsWith("shard:g[0-9][0-9]) "));
+        assert.ok(line);
+        const replacement = mutation === "missing" ? "" : mutation === "comment" ? `# ${line.trim()}`
+          : mutation === "duplicate" ? `${line}\n${line}`
+          : mutation === "extra filter" ? line.replace('2>&1 | tee', '-skip TestProductEditorMatrixLedgerEvidence 2>&1 | tee')
+          : line.replace(' ;;', ' || true ;;');
+        return body.replace(line, () => replacement);
+      }));
+    });
+  }
+  test(`${name} cannot move the dispatch into an unrelated step`, () => {
+    rejectsDispatch(changeLane(name, (body) => {
+      const line = body.split("\n").find((s) => s.trim().startsWith("shard:g[0-9][0-9]) "));
+      return body.replace(line, "") + `      - name: Unrelated command\n        run: |\n${line}\n`;
+    }));
+  });
+  test(`${name} must bind its own matrix output and runtime MODE`, () => {
+    const output = name === "foundation_gate" ? "foundation_jobs" : "gate_jobs";
+    rejectsDispatch(changeLane(name, (body) => body.replace(`fromJSON(needs.plan.outputs.${output})`, "fromJSON(needs.plan.outputs.jobs)")));
+    rejectsDispatch(changeLane(name, (body) => body.replace("MODE: ${{ matrix.mode }}", "MODE: shard:g01")));
+    rejectsDispatch(changeLane(name, (body) => body.replace("        id: gate\n", "        id: unused_gate\n")));
+  });
+  test(`${name} cannot disappear or be duplicated while global dispatch text remains`, () => {
+    rejectsDispatch(changeLane(name, (body) => body.replace(`  ${name}:`, `  renamed_${name}:`)));
+    rejectsDispatch(changeLane(name, (body) => body + body));
+  });
+}
+test("an unplanned third lane cannot supply another valid-looking dispatch", () => {
+  const line = source.workflow.split("\n").find((s) => s.trim().startsWith("shard:g[0-9][0-9]) "));
+  rejectsDispatch(source.workflow + `\n  unplanned_gate:\n    steps:\n      - run: |\n${line}\n`);
+});
+for (const name of laneNames) {
+  for (const position of ["before run", "after run"]) {
+    test(`${name} rejects a step MODE override ${position} that would mislabel its receipt`, () => {
+      rejectsDispatch(changeLane(name, (body) => {
+        const override = "        env:\n          MODE: shard:g01\n";
+        if (position === "before run") return body.replace("        id: gate\n", `        id: gate\n${override}`);
+        return body.replace("      # MATRIX-RECEIPT", `${override}      # MATRIX-RECEIPT`);
+      }));
+    });
+  }
+  test(`${name} cannot replace job MODE with an incidental binding inside the Gate script`, () => {
+    rejectsDispatch(changeLane(name, (body) => body.replace("      MODE: ${{ matrix.mode }}\n", "")
+      .replace("        id: gate\n        run: |\n", "        id: gate\n        run: |\n          MODE: ${{ matrix.mode }}\n")));
+  });
+  test(`${name} rejects unreviewed step conditions and failure masking`, () => {
+    for (const setting of ["if: false", "continue-on-error: true", "env: ${{ fromJSON('{}') }}"])
+      rejectsDispatch(changeLane(name, (body) => body.replace("        id: gate\n", `        id: gate\n        ${setting}\n`)));
+  });
+}

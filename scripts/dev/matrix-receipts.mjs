@@ -20,13 +20,12 @@
 //   first, so a node summary is evidence only when the suite marks its own browser execution and its summary sits after the
 //   gate's browser-run marker (review 184 P1a); a node browser runner may instead print PASS/FAIL case lines to the gate log
 //   after that marker. Original and durable copies of one evidence tree share a per-run directory identity and count once (P2).
+// Depends on: scripts/dev/ci-plan.mjs (artifactName), scripts/dev/pr-modes.mjs (modeEntries, read-only mode registry); env MODE, GATE_OUTCOME,
+//   GITHUB_RUN_ID, GITHUB_RUN_ATTEMPT, GITHUB_SHA, RECEIPT_SPEC_ROOT (write), PLANNED (verify). No network, no third-party dependencies.
+// Used by: .github/workflows/gates.yml (gate job "Run receipt" step, `required` job receipt-verification step), tests/ci/matrix-receipts.test.mjs.
 //   status is FAIL when the gate step failed OR a parsed failure (Go `--- FAIL:` / JSON fail / bare `FAIL<TAB>`, node summary
-//   fail>0, Playwright `N failed` / spec ✘) was seen, even if the gate exited 0 (#147 CI-6); an explicit `0 failed` is not
-//   a failure. Historical evidence never feeds this.
-// Depends on: scripts/dev/ci-plan.mjs (artifactName), scripts/dev/pr-modes.mjs (modeEntries, read-only mode registry);
-//   env MODE, GATE_OUTCOME, GITHUB_RUN_ID, GITHUB_RUN_ATTEMPT, GITHUB_SHA, RECEIPT_SPEC_ROOT (write); env PLANNED (the plan
-//   job's `matrix` output), GITHUB_RUN_ID, GITHUB_SHA (verify). No network, no third-party dependencies.
-// Used by: .github/workflows/gates.yml (gate job "Run receipt" step, `receipts` job feeding `required`), tests/ci/matrix-receipts.test.mjs.
+//   fail>0, Playwright `N failed` / spec ✘) was seen, even if the gate exited 0 (#147 CI-6); an explicit `0 failed` is not a
+//   failure; historical evidence never feeds this.
 // Usage: node scripts/dev/matrix-receipts.mjs write <out-dir> <gate-log | go-test-json-log>...   |   node scripts/dev/matrix-receipts.mjs verify <receipts-dir>
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";

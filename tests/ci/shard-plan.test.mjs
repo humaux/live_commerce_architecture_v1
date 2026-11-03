@@ -6,7 +6,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { UNPLANNED_LIMIT, check, pack, parseDurations, runRegex, selectedBy, skipRegex, topLevelTests } from "../../scripts/dev/shard-plan.mjs";
+import { LONG_REAL_CLOCK, REAL_CLOCK_GROUP, UNPLANNED_LIMIT, check, checkLanes, laneGroupIds, pack, parseDurations, runRegex, selectedBy, skipRegex, topLevelTests } from "../../scripts/dev/shard-plan.mjs";
 
 const plan = JSON.parse(readFileSync(new URL("../../scripts/dev/shard-plan.json", import.meta.url), "utf8"));
 const names = topLevelTests();
@@ -83,7 +83,11 @@ test("pack: deterministic, balanced to within the longest test, every name once"
   const a = pack(names, seconds, 7), b = pack([...names].reverse(), seconds, 7);
   assert.deepEqual(a, b);
   assert.equal(a.groups.flatMap((g) => g.tests).length, names.length);
-  const est = a.groups.map((g) => g.est_seconds), max = Math.max(...Object.values(seconds));
+  // The real-clock tests are not part of the balancing problem: they get their own group (grc) so the PR lane can omit them.
+  const grc = a.groups.find((g) => g.id === REAL_CLOCK_GROUP);
+  assert.deepEqual(grc.tests, [...LONG_REAL_CLOCK].sort());
+  assert.equal(grc.catch_all, false);
+  const est = a.groups.filter((g) => g.id !== REAL_CLOCK_GROUP).map((g) => g.est_seconds), max = Math.max(...Object.values(seconds));
   assert.ok(Math.max(...est) - Math.min(...est) <= max + 1, `est ${est.join(",")}`);
 });
 
