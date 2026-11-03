@@ -38,8 +38,9 @@ import (
 )
 
 const (
-	forBuyerOperation = "merchanttools.order.for_buyer"
-	maxForBuyerBundle = 5
+	forBuyerOperation      = "merchanttools.order.for_buyer"
+	forBuyerBeginOperation = "merchanttools.order.for_buyer.begin"
+	maxForBuyerBundle      = 5
 	// maxGrantAuditBytes keeps one claims.merchant_origin_granted detail under command.AuditDetails' 1024-byte cap.
 	maxGrantAuditBytes = 900
 	// maxGrantAuditLines is how many lines (full offer id, SKU id, quantity, unit price actually charged) one audit event lists; line_count is the total.
@@ -260,6 +261,15 @@ func (f *ForBuyer) placeOrder(ctx context.Context, token, storeID, key string, m
 	var lines []claims.ForBuyerLine
 	err = platform.WithScope(ctx, m.pool, token, storeID, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
 		var inner error
+		// I02: even an empty bundle set needs a durable full-request binding before
+		// Place can commit independently; a failed begin rolls this receipt back.
+		var binding struct{}
+		if inner = command.Run(ctx, tx, scope, forBuyerBeginOperation, key, request, &binding, func() error { return nil }); inner != nil {
+			if errors.Is(inner, command.ErrConflict) {
+				return &claims.ForBuyerError{Status: http.StatusConflict, Code: "idempotency_conflict"}
+			}
+			return inner
+		}
 		// Calls claims.for_buyer_begin (0129; live-console-v1 §5.1 3a+3b): reservation rows, fail-closed buyer comparison, grants.
 		if begun, inner = claims.BeginForBuyer(ctx, tx, keyHash[:], requestHash[:], target.ConversationID, target.BundleIDs, buyerOwner); inner != nil {
 			return inner
