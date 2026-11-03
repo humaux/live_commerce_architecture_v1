@@ -538,7 +538,16 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
       // Restart the read that navigation just cancelled, even in that case.
       if (nextScene === selectedID) setDetailReload((value) => value + 1);
     }
-    router.push(`${studioURL(locale, nextStore, nextCursor, nextScene)}${nextScene ? `#${nextTask}` : ""}`);
+    const target = `${studioURL(locale, nextStore, nextCursor, nextScene)}${nextScene ? `#${nextTask}` : ""}`;
+    const next = new URL(target, window.location.href);
+    // Next 16 seeds its route cache with the hydration URL including the fragment, then appends
+    // a same-route push's fragment (#preparation + #edit -> #preparation#edit). The fragment is
+    // navigation state only, so a same-document change sets it natively instead of re-pushing.
+    if (nextScene && next.pathname === window.location.pathname && next.search === window.location.search) {
+      window.location.hash = nextTask;
+    } else {
+      router.push(target);
+    }
     return true;
   }
   function newScene() {
