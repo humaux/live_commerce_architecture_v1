@@ -784,6 +784,107 @@ func mdDBBoundaryContract(t *testing.T) {
 			}
 			t.Log("bind_authority positive target entered and exact tuple bound")
 		}
+		for _, revoke := range []bool{false, true} {
+			name := "locked_no_revoke"
+			if revoke {
+				name = "locked_catalog_revoked"
+			}
+			t.Run(name, func(t *testing.T) {
+				token, principal := e.member("inventory:reserve", "catalog:read")
+				owner, q, before, frozen := fixture(t, principal)
+				lock, err := f.owner.Begin(ctx)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer lock.Rollback(ctx)
+				var holderPID int
+				if err = lock.QueryRow(ctx, `SELECT pg_backend_pid()`).Scan(&holderPID); err != nil {
+					t.Fatal(err)
+				}
+				var one int
+				if err = lock.QueryRow(ctx, `SELECT 1 FROM storefront.manual_order_discounts WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3 FOR UPDATE`, e.tenant(), e.store(), owner).Scan(&one); err != nil {
+					t.Fatal(err)
+				}
+				runCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+				defer cancel()
+				pids := make(chan int, 1)
+				type result struct{ target, wrapper error }
+				done := make(chan result, 1)
+				go func() {
+					var targetErr error
+					wrapper := platform.WithScope(runCtx, f.runtime, token, e.store(), "store:read", func(tx pgx.Tx, s platform.Scope) error {
+						var pid int
+						if err := tx.QueryRow(runCtx, `SELECT pg_backend_pid()`).Scan(&pid); err != nil {
+							return err
+						}
+						pids <- pid
+						hash := sha256.Sum256([]byte(token))
+						_, targetErr = tx.Exec(runCtx, targetSQL, hash[:], e.store(), q.ID)
+						return targetErr
+					})
+					done <- result{targetErr, wrapper}
+				}()
+				joined := false
+				defer func() {
+					cancel()
+					_ = lock.Rollback(context.Background())
+					if !joined {
+						select {
+						case <-done:
+						case <-time.After(time.Second):
+							t.Error("HARNESS_FAIL binder did not stop")
+						}
+					}
+				}()
+				var pid int
+				select {
+				case pid = <-pids:
+				case r := <-done:
+					joined = true
+					t.Fatalf("HARNESS_FAIL scope before binder: %v", r.wrapper)
+				case <-runCtx.Done():
+					t.Fatal("HARNESS_FAIL no binder pid")
+				}
+				deadline := time.Now().Add(800 * time.Millisecond)
+				blocked := false
+				for time.Now().Before(deadline) {
+					if err = f.owner.QueryRow(runCtx, `SELECT $2=ANY(pg_blocking_pids($1))`, pid, holderPID).Scan(&blocked); err != nil {
+						t.Fatalf("HARNESS_FAIL blocker check: %v", err)
+					}
+					if blocked {
+						break
+					}
+					time.Sleep(5 * time.Millisecond)
+				}
+				if !blocked {
+					t.Fatal("HARNESS_FAIL binder never blocked on holder")
+				}
+				if revoke {
+					tag, err := f.owner.Exec(runCtx, `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='catalog:read'`, e.tenant(), e.store(), principal)
+					if err != nil || tag.RowsAffected() != 1 {
+						t.Fatalf("HARNESS_FAIL revoke: %v rows=%d", err, tag.RowsAffected())
+					}
+				}
+				if err = lock.Commit(ctx); err != nil {
+					t.Fatalf("HARNESS_FAIL release: %v", err)
+				}
+				var got result
+				select {
+				case got = <-done:
+					joined = true
+				case <-runCtx.Done():
+					t.Fatal("HARNESS_FAIL binder did not finish")
+				}
+				if revoke {
+					if sqlState(got.target) != "PT403" {
+						t.Fatalf("binder after revoked grant SQLSTATE=%s wrapper=%v, want PT403", sqlState(got.target), got.wrapper)
+					}
+					unchanged(t, owner, q, before, frozen)
+				} else if got.target != nil || got.wrapper != nil || e.count(`SELECT count(*) FROM storefront.manual_order_discounts WHERE owner_id=$1 AND quote_id=$2`, owner, q.ID) != 1 {
+					t.Fatalf("binder without revocation: target=%v wrapper=%v", got.target, got.wrapper)
+				}
+			})
+		}
 		for _, tc := range []struct {
 			name, guc string
 			perms     []string
