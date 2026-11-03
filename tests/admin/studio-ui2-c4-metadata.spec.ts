@@ -171,11 +171,11 @@ c4PrivateTest.describe("C4 metadata independent REAL PG contracts", () => {
     const result = await saved.json() as { session_id: string; title: string; scheduled_at: string; aspect_ratio: string; version: number };
     expect(result).toMatchObject({ session_id: draft.session_id, title: changed, aspect_ratio: "16:9", version: draft.version + 1 });
     expect(new Date(result.scheduled_at).toISOString()).toBe("2030-01-01T00:00:00.000Z");
-    const [reloaded] = await Promise.all([
-      page.waitForResponse(response => response.request().method() === "GET" && new URL(response.url()).pathname === path && response.status() === 200, { timeout: 15000 }),
+    const [detail] = await Promise.all([
+      page.waitForResponse(response => response.request().method() === "GET" && new URL(response.url()).pathname === path && response.status() === 200, { timeout: 15000 })
+        .then(response => response.json() as Promise<{ draft: typeof result }>),
       page.reload(),
     ]);
-    const detail = await reloaded.json() as { draft: typeof result };
     expect(detail.draft).toMatchObject(result);
     await expect(page.getByLabel("Scene name", { exact: true })).toHaveValue(changed);
     await expect(page.getByLabel("Scheduled time (Taipei time, optional)", { exact: true })).toHaveValue("2030-01-01T08:00");
