@@ -2,11 +2,13 @@
 // Depends on: signed cookie/context helpers, strict JSON, closed contract validators and private Go buyer transport.
 // Used by: /api/buyer catch-all route (app/api/buyer/[...path]/route.ts) and CI BFF tests.
 // Invariants: server-resolved published origin and scope; no generic proxy, client scope, raw diagnostics, PII logs, credential disclosure or mutation/contact retry.
-import { type BuyerReturnBody, type BuyerReturnFields, RETURN_REQUEST_CODES, buyerReturnBodies, buyerReturnRoute, isBuyerReturnMutation, validBuyerReturnBody, validBuyerReturnResponse } from "./buyer-returns.ts";
+import { type BuyerReturnBody, type BuyerReturnFields, buyerReturnBodies, buyerReturnRoute, isBuyerReturnMutation, validBuyerReturnBody, validBuyerReturnResponse } from "./buyer-returns.ts";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
 import { readAdSignals, readAdTouch } from "./ad-touch.ts";
 import { strictJSON } from "./strict-json.ts";
+import { messages } from "./refusal-messages.ts";
+import { contactReceipt, contactRetryAfter, validContactBody, validContactKey } from "./contact-contract.ts";
 import {
   validHostedHandoff,
   validOrderPayment,
@@ -14,8 +16,8 @@ import {
   validPaymentSignal,
   type PaymentMethodCode,
 } from "./payment-contract.ts";
-// storefront-v2 §F: the closed discount-code refusals (422 of the quote request and of checkout) and the promo_code mirror.
-import { PROMO_CODE_SHAPE, PROMO_ERROR_CODES } from "./promo-contract.ts";
+// storefront-v2 §F: the promo_code mirror (the discount-code refusal codes are admitted through refusal-messages.ts).
+import { PROMO_CODE_SHAPE } from "./promo-contract.ts";
 import {
   CLAIM_TOKEN,
   validClaimPreview,
@@ -31,7 +33,6 @@ import {
   validErasureSummary,
 } from "./privacy-contract.ts";
 import {
-  TRANSFER_ERROR_CODES,
   validBuyerEmail,
   validProofBody,
   validProofResult,
@@ -40,7 +41,6 @@ import {
 import { validLookupBody, validLookupResult } from "./lookup-contract.ts";
 import { validLinkBody, validLinkResult } from "./order-link-contract.ts";
 import {
-  CVS_ERROR_CODES,
   DEFINITE_CVS_CODES,
   isPaymentMode,
   validBuyerStore,
@@ -109,38 +109,6 @@ type Route = {
   // Manual-order buyer link exchange (storefront-v2 G3): same cookie-less, mint-a-token handling as the guest lookup, other private path and body.
   link?: boolean;
 } & BuyerReturnFields;
-
-const messages: Record<string, string> = {
- ...Object.fromEntries(RETURN_REQUEST_CODES.map(code=>[code,"Request refused."])),
-  unauthorized: "Session unavailable.",
-  forbidden: "Request not permitted.",
-  not_found: "Resource not found.",
-  method_not_allowed: "Method not allowed.",
-  invalid_request: "Request validation failed.",
-  invalid_json: "Malformed JSON body.",
-  json_required: "JSON content type required.",
-  context_changed: "Buyer session changed. Reload before continuing.",
-  conflict: "Request conflicts with current state.",
-  insufficient_inventory: "Insufficient available inventory.",
-  rate_limited: "Too many requests.",
-  unavailable: "Temporarily unavailable.",
-  erased: "This data was erased.",
-  erasure_blocked: "Erasure is blocked while a payment may still be open.",
-  export_too_large: "The export is too large for one file.",
-  idempotency_conflict: "Request conflicts with an earlier one.",
-  // taiwan-cvs-logistics-v1 §5.2/§16 refusals; the UI maps the code to text, these are generic fallbacks.
-  ...Object.fromEntries(
-    CVS_ERROR_CODES.map((code) => [code, "Request refused."]),
-  ),
-  // storefront-v2 §C bank-transfer refusals (422 from the buyer definers); the UI maps the code to text.
-  ...Object.fromEntries(
-    TRANSFER_ERROR_CODES.map((code) => [code, "Request refused."]),
-  ),
-  // storefront-v2 §F discount-code refusals (422 from the quote request / BeginCheckout); the UI maps the code to text.
-  ...Object.fromEntries(
-    PROMO_ERROR_CODES.map((code) => [code, "Request refused."]),
-  ),
-};
 
 function headers(extra?: HeadersInit) {
   const result = new Headers(extra);
@@ -690,16 +658,7 @@ const UUID_TEXT =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 function extraShapeOK(shape: Shape, parsed: unknown): boolean {
   const v = parsed as Record<string, unknown>;
-  if (shape === shapes.contact) {
-    const text = (value: unknown, max: number, required = false, multiline = false) =>
-      typeof value === "string" && [...value].length <= max && (!required || value.trim().length > 0) &&
-      !(multiline ? /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/u : /\p{Cc}/u).test(value);
-    return text(v.name, 120, true) && text(v.message, 5000, true, true) &&
-      text(v.email, 254, true) && new TextEncoder().encode(v.email as string).length <= 254 &&
-      /^[^\s<>"\\@]+@[^\s<>"\\@]+$/.test(v.email as string) &&
-      (v.order_number === undefined || text(v.order_number, 64)) &&
-      (v.website === undefined || v.website === "");
-  }
+  if (shape === shapes.contact) return validContactBody(v);
   if (shape === shapes.quote)
     return (
       v.promo_code === undefined ||
@@ -1077,23 +1036,18 @@ function forbiddenHeaders(request: Request): boolean {
 // retains the caller's key for explicit replay, with no automatic retry or diagnostic forwarding.
 async function contactMessage(request: Request, cfg: Config, origin: string): Promise<Response> {
   const key = request.headers.get("idempotency-key");
-  if (!key || !/^[A-Za-z0-9_.:-]{8,128}$/.test(key)) return failure(422, "invalid_request", true);
+  if (!validContactKey(key)) return failure(422, "invalid_request", true);
   const parsed = await bodyJSON(request, shapes.contact, true);
   if (parsed.error) return parsed.error;
   const response = await upstream(request, cfg, origin, "", "contact-messages", "POST", parsed.body, key, undefined, forwardedIP(request));
   if (response.status !== 201) {
     const error = await upstreamError(response, true);
-    const retry = response.headers.get("retry-after");
-    if (error.status === 429 && retry && /^\d{1,3}$/.test(retry) && +retry >= 1 && +retry <= 600)
-      error.headers.set("Retry-After", retry);
+    const retry = contactRetryAfter(error.status, response.headers.get("retry-after"));
+    if (retry) error.headers.set("Retry-After", retry);
     return error;
   }
-  const value = await upstreamJSON(response, true);
-  if (!value || typeof value !== "object" || Array.isArray(value)) return failure(503, "unavailable", true);
-  const receipt = value as Record<string, unknown>;
-  if (Object.keys(receipt).length !== 2 || typeof receipt.message_id !== "string" ||
-      !UUID_TEXT.test(receipt.message_id) || receipt.status !== "received") return failure(503, "unavailable", true);
-  return Response.json({ message_id: receipt.message_id, status: "received" }, { status: 201, headers: headers() });
+  const receipt = contactReceipt(await upstreamJSON(response, true));
+  return receipt ? Response.json(receipt, { status: 201, headers: headers() }) : failure(503, "unavailable", true);
 }
 
 export async function handleBuyerRequest(request: Request): Promise<Response> {

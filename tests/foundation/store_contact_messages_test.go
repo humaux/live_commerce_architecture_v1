@@ -87,6 +87,24 @@ func contactReceived(t *testing.T, r bhResponse) contactReceipt {
 func contactAdminPath(store string) string { return "/v1/admin/stores/" + store + "/contact-messages" }
 
 func contactAdmin(e *tcvEnv, token, method, suffix, key string, in any) *httptest.ResponseRecorder {
+	return contactAdminAt(e, e.store(), token, method, suffix, key, in)
+}
+
+// contactAdminAt sends what a real server delivers: a bodiless GET reaches the handler as http.NoBody (studioRoute refuses any
+// other GET body with 422; adminRequest's byte reader is not NoBody), so reads are built without a body.
+func contactAdminAt(e *tcvEnv, store, token, method, suffix, key string, in any) *httptest.ResponseRecorder {
+	if method == http.MethodGet && in == nil {
+		r := httptest.NewRequest(method, contactAdminPath(store)+suffix, nil)
+		if token != "" {
+			r.Header.Set("Authorization", "Bearer "+token)
+		}
+		if key != "" {
+			r.Header.Set("Idempotency-Key", key)
+		}
+		w := httptest.NewRecorder()
+		e.merchant.ServeHTTP(w, r)
+		return w
+	}
 	var body []byte
 	if in != nil {
 		body, _ = json.Marshal(in)
@@ -99,7 +117,7 @@ func contactAdmin(e *tcvEnv, token, method, suffix, key string, in any) *httptes
 	if in != nil {
 		contentType = "application/json"
 	}
-	return adminRequest(e.merchant, method, contactAdminPath(e.store())+suffix, token, body, contentType, headers)
+	return adminRequest(e.merchant, method, contactAdminPath(store)+suffix, token, body, contentType, headers)
 }
 
 func contactRead[T any](t *testing.T, r *httptest.ResponseRecorder) T {
@@ -219,7 +237,11 @@ func TestStoreContactPublishedOriginAndMerchantPermissions(t *testing.T) {
 		{"", "GET", "", nil, 401}, {limited, "GET", "", nil, 403},
 		{limited, "GET", path, nil, 403}, {viewer, "POST", path + "/handled", map[string]any{"expected_version": 0}, 403},
 	} {
-		if r := contactAdmin(e, tc.token, tc.method, tc.suffix, t04Key("contact-denied"), tc.input); r.Code != tc.status {
+		key := "" // reads carry no Idempotency-Key (claimsRoute refuses one with 422 before authorization)
+		if tc.method == http.MethodPost {
+			key = t04Key("contact-denied")
+		}
+		if r := contactAdmin(e, tc.token, tc.method, tc.suffix, key, tc.input); r.Code != tc.status {
 			t.Fatalf("contact permission status=%d, want=%d", r.Code, tc.status)
 		}
 	}
@@ -229,12 +251,12 @@ func TestStoreContactPublishedOriginAndMerchantPermissions(t *testing.T) {
 	mustExec(t, e.p.f.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'Contact sibling','TWD')`, e.tenant(), sibling)
 	mustExec(t, e.p.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) SELECT $1,$2,$3,p FROM unnest(ARRAY['store:read','inbox:read','inbox:reply']) p`, e.tenant(), sibling, e.p.f.principalA)
 	for _, store := range []string{foreign.store, sibling} {
-		r := adminRequest(e.merchant, "GET", contactAdminPath(store)+path, e.token(), nil, "", nil)
+		r := contactAdminAt(e, store, e.token(), "GET", path, "", nil)
 		if r.Code != 404 {
 			t.Fatalf("foreign store read status=%d, want=404", r.Code)
 		}
 	}
-	r := adminRequest(e.merchant, "GET", contactAdminPath(e.store())+path, foreign.token, nil, "", nil)
+	r := contactAdmin(e, foreign.token, "GET", path, "", nil)
 	if r.Code != 404 {
 		t.Fatalf("foreign tenant read status=%d, want=404", r.Code)
 	}
