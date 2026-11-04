@@ -9,6 +9,8 @@
 // SKU). Add = merge into the shared multi-SKU cart (CartProvider.add, journalled + CAS); Buy now = add, then go to checkout.
 // A sold-out variant cannot be added (button disabled); a combination that has no in-stock variant is disabled in the chips.
 // The phone dock opens the local options task; only its successful add goes to the cart. Base/desktop actions retain their drawer/checkout behavior.
+// One buy card for every product (integrator ruling 2026-11-04): add-to-cart AND buy-now always; a product without option axes shows the
+// default-variant tag, and its phone dock adds directly (nothing to choose).
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
@@ -19,6 +21,7 @@ import type { ProductDetail } from "../lib/shop-contract";
 import { browseCopy } from "../lib/browse-copy";
 import MobileProductOptions from "./product/MobileProductOptions";
 import styles from "./product/MobileProductOptions.module.css";
+import layout from "./product/ProductLayout.module.css";
 import { fmt, shopCopy } from "../lib/shop-copy";
 import { useCart } from "./CartProvider";
 import { CartNotice } from "./CartLines";
@@ -172,12 +175,14 @@ export default function ProductBuy({ locale, product, currency, chosen, onChoose
       {descriptionEntry}
       {!optionsOpen && <>
       {optionControls}
+      {product.options.length === 0 && <p className={layout.standard} data-testid="default-variant-tag">{optionsCopy.standard}</p>}
       <p className={`sf-stock sf-stock--${variant?.stock ?? "none"}`} data-testid="stock-hint" role="status">
         <i aria-hidden="true" />
         {stockText}
       </p>
 
       {quantityControl}
+      <p className={layout.note} data-testid="product-buy-note">{optionsCopy.note}</p>
 
       <div className="sf-buy__actions" ref={actions}>
         <button type="button" className="sf-btn sf-btn--primary sf-btn--block" disabled={soldOut || busy} onClick={() => void addToCart("drawer")} data-testid="add-to-cart">
@@ -199,11 +204,15 @@ export default function ProductBuy({ locale, product, currency, chosen, onChoose
 
       <div className={`sf-sticky ${styles.entryDock}`} data-testid={sticky ? "sticky-buy" : undefined}>
           <strong>{variant ? formatMoney(locale, variant.price_minor, currency) : "—"}</strong>
-          <div data-testid="product-options-dock-entry">
+          {product.options.length > 0 ? <div data-testid="product-options-dock-entry">
             <button type="button" className="sf-btn sf-btn--primary" disabled={busy} onClick={(event) => openOptions(event.currentTarget)}>
               {optionsCopy.choose}
             </button>
-          </div>
+          </div> : <div data-testid="product-dock-add">
+            <button type="button" className="sf-btn sf-btn--primary" disabled={soldOut || busy} onClick={() => void addToCart("drawer")}>
+              {busy ? copy.loading : addLabel}
+            </button>
+          </div>}
       </div>
       {optionsOpen && (
         <MobileProductOptions locale={locale} product={product} variant={variant} currency={currency}

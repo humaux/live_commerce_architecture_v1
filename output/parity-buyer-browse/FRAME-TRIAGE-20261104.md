@@ -109,3 +109,53 @@ RED then GREEN for 4:9192, 4:9296, 6:19933, 6:19984 on the real routes, three lo
   form UI exists yet → now REACHABLE, planned as round (c) after b-product and b-cart. Still DEFERRED in the spec until that round.
 
 Round order: (a) b-product 13 reachable, (b) b-cart 12 reachable, (c) contact 4.
+
+## Round (a) b-product (13 reachable frames)
+
+Writer: ui_worker (Claude Opus 5.5) after the b-home handover. Base: `520b02972` (origin/r3/integration unchanged since `e706aa737`).
+Figma read: the cached bridge screenshots of 102:2163 / 102:2232 / 104:3416 / 51:1381 and the frame text dump (`figma/texts.json`, git-ignored);
+the six single-SKU pairs share one layout (text dump), 104:3416/3485 differ only by the selected value chip.
+
+### Frame -> fixture mapping (demo products are a data gap)
+
+| Frames (D / M) | Figma demo product | Fixture product (SFR) | Shape | Route |
+|---|---|---|---|---|
+| 102:2163 / 102:2232 | 日常斜背小包 NT$980 | `dripper` Ceramic Dripper Set (SFR:152) | single SKU, in stock | `/[locale]/products/ceramic-dripper-set` |
+| 104:2209 / 104:2278 | 輕量帆布托特包 NT$1,280 | `item01` Everyday Item 01 (SFR:156) | single SKU, in stock | `/[locale]/products/item-01` |
+| 104:2553 / 104:2622 | 迷你收納袋 | `item02` Everyday Item 02 | single SKU, in stock | `/[locale]/products/item-02` |
+| 104:3072 / 104:3141 | 簡約提袋 | `item03` Everyday Item 03 | single SKU, in stock | `/[locale]/products/item-03` |
+| 104:3758 / 104:3827 | 輕便收納包 | `item04` Everyday Item 04 | single SKU, in stock | `/[locale]/products/item-04` |
+| 104:3416 / 104:3485 | 米白托特包 (chip 米白) | `scarf` Wool Knit Scarf, Color = Oat preselected (SFR:146) | one axis | `/[locale]/products/wool-knit-scarf` |
+| 51:1381 | 焦糖托特包 description + delivery | `candle` (the existing 4:9532 / 51:1380 product) | one axis | `/[locale]/products/cedar-fig-candle` |
+
+Each mapped product page is reached by a real click on its search-result card, in zh-TW / zh-CN / en at 1440x900 and 390x844.
+
+### Adopted (integrator ruling 2026-11-04: one buy card, add-to-cart AND buy-now on every product)
+
+Default-variant tag 「標準款」 (products without option axes), quantity, the note 「商品規格與金額以本頁選擇為準；收件資料在結帳時填寫。」,
+the description card, the desktop back link 「‹ 所有商品」 (replaces the breadcrumb trail), the phone header bar (back + title), the phone
+bottom action (single SKU: 「加入購物車」 adds directly), and the 51:1381 delivery section in the description task.
+
+### P2 for #546 (frame detail not implemented; the master frame or a fact rule wins)
+
+- Price inside the add-to-cart label (「加入購物車 · NT$980」, desktop single-SKU frames and 104:3416): not adopted. 4:9441/4:9532 assert the exact
+  label 「加入購物車」 (`add-to-cart + buy-now buttons` step, `toHaveText(c.addToCart)`).
+- Buy-now absent in the single-SKU frames: not adopted. Integrator ruling: one buy card; 4:9441 asserts 「立即購買」.
+- 104:3485 (one axis) phone bottom action 「加入購物車」: kept 「選擇規格」. The 51:1380 `spec dock entry` step asserts the options dock on the
+  one-axis master product.
+- Phone bottom bar: the frames show the button alone; the dock keeps the price beside it (one dock layout with 4:9532).
+- Phone note text: 102:2232 and the other mobile frames say 「加入購物車後，可在結帳時填寫收件資料並選擇配送方式。」. The ruling names the desktop
+  note, so one note is shown on every viewport.
+- Phone single-SKU pages keep the 4:9532 entries 「選擇規格」 and 「商品說明與配送」 (not drawn in the single-SKU frames).
+- Quantity is the 4:9441 stepper (frames draw a static 「數量 1」).
+- Desktop frames also draw a page-level title above the grid and the buy side as a bordered card: not in the ruling's list, not built.
+- 51:1381 delivery copy is kept generic: 「可選宅配或門市取貨。」 is replaced by the existing 「可用方式依收貨地點而定，請以結帳時確認的選項為準。」, because
+  a store's methods are store-dependent (`contracts/storefront-v2.md:123`, "CVS pickup when the merchant enables it") and the page does
+  not know them before checkout. The pickup sentence reuses the accepted 51:1380 copy 「門市取貨：結帳時選擇超商品牌，填寫門市號碼（店名、地址可不填）。」.
+- The phone shell header stays above the product header bar (frames put the bar at y=0). This is the accepted shell-header delta from b-home.
+
+### RED witness (b-product)
+
+| Head | Run / job | Result |
+|---|---|---|
+| `b1f59ad8d` (RED, tests only) | Gates 41850176970, gate (bundle:02) job 126647604139, artifact `gate-browser-storefront` 13336252595 | Causal RED: `TestBrowserStorefront` FAIL 331.85s, `exit status 1` from the parity assertion (no kill). Manifest: `COVERED 30 · NOT_COVERED 25 · DEFERRED 14 · BLOCKED 4 of 73`; ledger 388/397 PASS. The only 9 FAIL rows are new: `102:2163` (1440x900) and `102:2232` (390x844) "back link" × zh-TW/zh-CN/en (`getByTestId('product-back').getByRole('link', { name: '所有商品' / 'All products' })` not visible, 10s), and `51:1381` "description delivery section" × zh-TW/zh-CN/en. The 10 other mapped frames are NOT_RUN by design (first-product anchor failed); 4:9441/4:9532 rows all PASS. |
