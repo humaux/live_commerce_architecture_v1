@@ -5,13 +5,8 @@
 - Figma file `iJ9lDdFIXgTlKkt5Tvrc0X`, page `4:8829` (10 · SHOPLINE Redesign), section **「會員積分 v1 · DESIGN」 `1554:62573`** at (490000, 605000)
 - Written through the local Fleet Bridge (`use_figma`, `get_screenshot`). Only new nodes in the new section were written; no signed frame, COMPONENT or COMPONENT_SET was modified (so no bakref run was needed). The signed frames were only cloned as templates.
 - Scope source: the owner-confirmed brief of 2026-11-05 as passed to this lane, plus the contract draft `contracts/loyalty-points-v1.md` on `origin/unit/loyalty-points-contract@e0d3e968` (read at the end; see U1 to U4)
-- Frames: **77** (38 desktop 1440×900 + 39 mobile 390×844); exports in `figma/<node-id>.png` (git-ignored by `output/**/figma/`; hashes in `PNG-SHA256SUMS.txt`, largest file < 1 MiB, ADR-20261031)
+- Frames: **99** (49 desktop 1440×900 + 50 mobile 390×844; round 2 of 2026-11-05 applied the integrator rulings U1–U7); exports in `figma/<node-id>.png` (git-ignored by `output/**/figma/`; hashes in `PNG-SHA256SUMS.txt`, largest file < 1 MiB, ADR-20261031)
 - Generator: `figma-src/lib.js` + `figma-src/screens.js` (idempotent: re-running a key replaces the frame with the same name), QA probe `figma-src/qa.js`
-
-> **2026-11-05 update in progress (integrator rulings on U1–U7, contract #549 head `e0d3e9686`): BLOCKED, second plugin disconnect.**
-> Built so far: A11 `1554:79479` / `1554:79554`, A12 `1554:79596` / `1554:79683`, and rebuilt C1 `1556:80238` / `1556:80351`, C2 `1556:80406` / `1556:80486`, C3 `1556:80531` / `1556:80666`, C4 `1556:80743` / `1556:80868`, C5 `1556:80937` / `1556:81006`, C6 `1556:81040` / `1556:81108`.
-> Disconnect 1 hit batch C1–C7; disconnect 2 hit batch C7+C8 (connection `7f43f326…`, `Figma disconnected. Operation was not replayed`). Both batches contained C7, so C7 is a suspect. The C7/C8 outcome is unknown; no write was replayed.
-> Still to run (≤ 4 roots per call, start with C8 alone, then C7 alone): `C7–C17, D1–D7, E1, E2, E4, E5, E6`. Then export, run `qa.js` and refresh the table below. **Until then the C7+, D and E rows below are stale, and the ids of C1–C6 in the table are superseded by the ones above.**
 
 ## Templates and component reuse
 
@@ -22,7 +17,7 @@
 | Nav items | `Nav Item` set `4:12737` (Item=customers State=Active for 會員 pages) + the custom `Navigation / 手工單` sub-item frame | 會員 sub-item = clone of the 手工單 sub-item with a new 18px person icon (stroke `color/teal`) |
 | Primary / Secondary buttons | `Button/Kind=Primary` and `Kind=Secondary` instances from `1470:167239` / `1470:167241` | cloned, label overridden, prototype reactions cleared |
 | Danger button (扣回本單積分) | `Button` set `4:12718` Kind=Danger | instance |
-| Tags (本單贈送 success, 手動調整 neutral, 沖正 / 待確認 / 積分未贈送 / 已全數扣回 warning) | `Tag` set `1401:38432` | instances |
+| Tags (本單贈送 success; 手動調整 / 已扣回 / 已刪除資料 neutral; 待確認 / 積分未贈送 warning; 已下載 success) | `Tag` set `1401:38432` | instances |
 | Fields | same structure as the signed `Field / … → Value / …` frames (label 13, value 15, fill `color/subtle`, r5) | rebuilt with the same tokens; error = 1.5px `color/danger` stroke + 13px `color/danger` text (same token as `InlineError 1429:34299`) |
 | Mobile menu | `1470:165651` 手工單 · nav | cloned; 顧客 + 會員 items added |
 | Type | Noto Sans SC Regular/Medium 13/14/15/16/20/28, PingFang SC Medium in buttons (as in the signed frames) | no new type styles |
@@ -34,22 +29,24 @@ Not reused on purpose: `Segmented 1401:38449` (30px high, below the 44px touch t
 
 | Node id | Name | Viewport | Purpose | State |
 |---|---|---|---|---|
-| `1554:74786` | DESIGN · Admin Desktop · 手工單 · 已建立 · 含積分 | 1440×900 | Confirmation (手工單已建立): award recorded, new balance, link to member | success, member_award.state=awarded |
-| `1554:74861` | DESIGN · Admin Mobile · 手工單 · 已建立 · 含積分 | 390×844 | Confirmation (手工單已建立): award recorded, new balance, link to member | success, member_award.state=awarded |
-| `1554:79210` | DESIGN · Admin Desktop · 手工單 · 已建立 · 積分未贈送 | 1440×900 | Order placed but award not recorded (contract LP18 not_awarded) with recovery hint | success + not_awarded |
-| `1554:79286` | DESIGN · Admin Mobile · 手工單 · 已建立 · 積分未贈送 | 390×844 | Order placed but award not recorded (contract LP18 not_awarded) with recovery hint | success + not_awarded |
+| `1554:74786` | DESIGN · Admin Desktop · 手工單 · 已建立 · 含積分 | 1440×900 | Confirmation: award recorded, new balance, link to member | success, member_award.state=awarded |
+| `1554:74861` | DESIGN · Admin Mobile · 手工單 · 已建立 · 含積分 | 390×844 | Confirmation: award recorded, new balance, link to member | success, member_award.state=awarded |
+| `1554:79210` | DESIGN · Admin Desktop · 手工單 · 已建立 · 積分未贈送 | 1440×900 | Order placed but award not recorded (LP18 not_awarded) with recovery hint | success + not_awarded |
+| `1554:79286` | DESIGN · Admin Mobile · 手工單 · 已建立 · 積分未贈送 | 390×844 | Order placed but award not recorded (LP18 not_awarded) with recovery hint | success + not_awarded |
 | `1554:74900` | DESIGN · Admin Desktop · 手工單 · 建立新會員 · 結果待確認 | 1440×900 | Inline member create answer lost: no auto-resend, 重新讀取 only, 下一步 disabled | UNKNOWN |
 | `1554:74982` | DESIGN · Admin Mobile · 手工單 · 建立新會員 · 結果待確認 | 390×844 | Inline member create answer lost: no auto-resend, 重新讀取 only, 下一步 disabled | UNKNOWN |
-| `1554:78492` | DESIGN · Admin Desktop · 手工單 · 扣回本單積分 · 確認 | 1440×900 | Reversal dialog prefilled with the award (editable), required note, balance preview | confirm |
-| `1554:78584` | DESIGN · Admin Mobile · 手工單 · 扣回本單積分 · 確認 | 390×844 | Reversal dialog prefilled with the award (editable), required note, balance preview | confirm |
-| `1554:79052` | DESIGN · Admin Desktop · 手工單 · 扣回本單積分 · 結果待確認 | 1440×900 | Reversal answer lost: 重新讀取 only | UNKNOWN |
-| `1554:79134` | DESIGN · Admin Mobile · 手工單 · 扣回本單積分 · 結果待確認 | 390×844 | Reversal answer lost: 重新讀取 only | UNKNOWN |
-| `1554:78644` | DESIGN · Admin Desktop · 手工單 · 扣回本單積分 · 超過贈送 | 1440×900 | Amount > award: inline error (brief rule; see UNKNOWN U1) | validation error |
-| `1554:78734` | DESIGN · Admin Mobile · 手工單 · 扣回本單積分 · 超過贈送 | 390×844 | Amount > award: inline error (brief rule; see UNKNOWN U1) | validation error |
-| `1554:78792` | DESIGN · Admin Desktop · 手工單 · 扣回本單積分 · 餘額不足 | 1440×900 | Member already spent points: reversal would go negative, max = balance | blocked |
-| `1554:78882` | DESIGN · Admin Mobile · 手工單 · 扣回本單積分 · 餘額不足 | 390×844 | Member already spent points: reversal would go negative, max = balance | blocked |
+| `1558:85037` | DESIGN · Admin Desktop · 手工單 · 扣回本單積分 · 確認 | 1440×900 | Prefilled manual deduct (手動調整, linked to #M1031), amount editable, no cap, required note, preview (U1, LP19) | confirm |
+| `1558:85132` | DESIGN · Admin Mobile · 手工單 · 扣回本單積分 · 確認 | 390×844 | Prefilled manual deduct (手動調整, linked to #M1031), amount editable, no cap, required note, preview (U1, LP19) | confirm |
+| `1558:85469` | DESIGN · Admin Desktop · 手工單 · 扣回本單積分 · 結果待確認 | 1440×900 | Deduct answer lost: 重新讀取 only | UNKNOWN |
+| `1558:85552` | DESIGN · Admin Mobile · 手工單 · 扣回本單積分 · 結果待確認 | 390×844 | Deduct answer lost: 重新讀取 only | UNKNOWN |
+| `1558:85195` | DESIGN · Admin Desktop · 手工單 · 扣回本單積分 · 餘額不足 | 1440×900 | Deduct would go below 0 (LP6): inline error, confirm disabled | blocked |
+| `1558:85288` | DESIGN · Admin Mobile · 手工單 · 扣回本單積分 · 餘額不足 | 390×844 | Deduct would go below 0 (LP6): inline error, confirm disabled | blocked |
+| `1554:79479` | DESIGN · Admin Desktop · 手工單 · 收件資料 · 無積分權限 | 1440×900 | Creator without customers:points: no 會員與積分 card (U2) | permission |
+| `1554:79554` | DESIGN · Admin Mobile · 手工單 · 收件資料 · 無積分權限 | 390×844 | Creator without customers:points: no 會員與積分 card (U2) | permission |
 | `1554:74275` | DESIGN · Admin Desktop · 手工單 · 會員 · 已選擇 | 1440×900 | Member chosen (change/remove) and 本單贈送積分 = 50 | filled |
 | `1554:74361` | DESIGN · Admin Mobile · 手工單 · 會員 · 已選擇 | 390×844 | Member chosen (change/remove) and 本單贈送積分 = 50 | filled |
+| `1554:79596` | DESIGN · Admin Desktop · 手工單 · 會員 · 帶入姓名 | 1440×900 | 姓名 prefilled from the chosen member, editable, order-only (U6, LP17) | prefill |
+| `1554:79683` | DESIGN · Admin Mobile · 手工單 · 會員 · 帶入姓名 | 390×844 | 姓名 prefilled from the chosen member, editable, order-only (U6, LP17) | prefill |
 | `1554:74138` | DESIGN · Admin Desktop · 手工單 · 會員 · 建立新會員 | 1440×900 | Inline small create form (display name + contact note) inside the picker | inline create |
 | `1554:74227` | DESIGN · Admin Mobile · 手工單 · 會員 · 建立新會員 | 390×844 | Inline small create form (display name + contact note) inside the picker | inline create |
 | `1554:73997` | DESIGN · Admin Desktop · 手工單 · 會員 · 搜尋 | 1440×900 | Member picker open: substring search over name + contact note, results with balance, inline 建立新會員 entry | focus, results |
@@ -62,12 +59,12 @@ Not reused on purpose: `Segmented 1401:38449` (30px high, below the 44px touch t
 | `1554:74492` | DESIGN · Admin Mobile · 手工單 · 積分 · 未選會員 | 390×844 | Points typed without a member: blocks 下一步 with inline errors | validation error |
 | `1554:74537` | DESIGN · Admin Desktop · 手工單 · 積分 · 非整數 | 1440×900 | Points not a positive integer | validation error |
 | `1554:74623` | DESIGN · Admin Mobile · 手工單 · 積分 · 非整數 | 390×844 | Points not a positive integer | validation error |
-| `1554:78380` | DESIGN · Admin Desktop · 手工單 · 訂單詳情 · 含積分 | 1440×900 | Manual-order detail with member, award line, deductible amount, 扣回本單積分 | default |
-| `1554:78452` | DESIGN · Admin Mobile · 手工單 · 訂單詳情 · 含積分 | 390×844 | Manual-order detail with member, award line, deductible amount, 扣回本單積分 | default |
-| `1554:78940` | DESIGN · Admin Desktop · 手工單 · 訂單詳情 · 已扣回 | 1440×900 | After reversal: reversal line, 0 deductible, 已全數扣回 tag, action removed | after reversal |
-| `1554:79012` | DESIGN · Admin Mobile · 手工單 · 訂單詳情 · 已扣回 | 390×844 | After reversal: reversal line, 0 deductible, 已全數扣回 tag, action removed | after reversal |
-| `1554:75023` | DESIGN · Admin Desktop · 會員 · 列表 | 1440×900 | Member list: search, name / truncated contact note / balance / last change, cursor pagination (上一頁 disabled on first page), 新增會員 | default |
-| `1554:75132` | DESIGN · Admin Mobile · 會員 · 列表 | 390×844 | Member list: search, name / truncated contact note / balance / last change, cursor pagination (上一頁 disabled on first page), 新增會員 | default |
+| `1558:84923` | DESIGN · Admin Desktop · 手工單 · 訂單詳情 · 含積分 | 1440×900 | Manual-order detail: member, link, 本單相關積分紀錄 (award), balance, 扣回本單積分 | default |
+| `1558:84996` | DESIGN · Admin Mobile · 手工單 · 訂單詳情 · 含積分 | 390×844 | Manual-order detail: member, link, 本單相關積分紀錄 (award), balance, 扣回本單積分 | default |
+| `1558:85349` | DESIGN · Admin Desktop · 手工單 · 訂單詳情 · 已扣回 | 1440×900 | After the deduct: 手動調整 −50 line under the order entries, net 0, tag 已扣回 50 點 | after deduct |
+| `1558:85425` | DESIGN · Admin Mobile · 手工單 · 訂單詳情 · 已扣回 | 390×844 | After the deduct: 手動調整 −50 line under the order entries, net 0, tag 已扣回 50 點 | after deduct |
+| `1554:75023` | DESIGN · Admin Desktop · 會員 · 列表 | 1440×900 | Member list: search, name / truncated contact note / balance / last change, cursor pagination, 新增會員 | default |
+| `1554:75132` | DESIGN · Admin Mobile · 會員 · 列表 | 390×844 | Member list: search, name / truncated contact note / balance / last change, cursor pagination, 新增會員 | default |
 | `1554:75189` | DESIGN · Admin Desktop · 會員 · 列表 · 搜尋無結果 | 1440×900 | Search with no match + 清除搜尋 | empty search |
 | `1554:75261` | DESIGN · Admin Mobile · 會員 · 列表 · 搜尋無結果 | 390×844 | Search with no match + 清除搜尋 | empty search |
 | `1554:75630` | DESIGN · Admin Desktop · 會員 · 列表 · 無權限 | 1440×900 | No customers:read; no data shown, no actions | forbidden |
@@ -78,39 +75,60 @@ Not reused on purpose: `Segmented 1401:38449` (30px high, below the 44px touch t
 | `1554:75596` | DESIGN · Admin Mobile · 會員 · 列表 · 讀取失敗 | 390×844 | Read failed, 重新讀取 (read only) | error |
 | `1554:75399` | DESIGN · Admin Desktop · 會員 · 列表 · 載入中 | 1440×900 | Skeleton rows | loading |
 | `1554:75483` | DESIGN · Admin Mobile · 會員 · 列表 · 載入中 | 390×844 | Skeleton rows | loading |
+| `1558:81989` | DESIGN · Admin Desktop · 會員 · 刪除資料 · 確認 | 1440×900 | Erase confirm: what is deleted, what is kept (points, order buyer names unchanged), irreversible (U4, LP11/LP17) | confirm |
+| `1558:82114` | DESIGN · Admin Mobile · 會員 · 刪除資料 · 確認 | 390×844 | Erase confirm: what is deleted, what is kept (points, order buyer names unchanged), irreversible (U4, LP11/LP17) | confirm |
+| `1558:82182` | DESIGN · Admin Desktop · 會員 · 刪除資料 · 結果待確認 | 1440×900 | Erase answer lost: 重新讀取 only | UNKNOWN |
+| `1558:82305` | DESIGN · Admin Mobile · 會員 · 刪除資料 · 結果待確認 | 390×844 | Erase answer lost: 重新讀取 only | UNKNOWN |
+| `1558:82533` | DESIGN · Admin Desktop · 會員 · 匯出資料 | 1440×900 | Export dialog: JSON download, no staff names, personal-data warning (U4, LP12) | ready |
+| `1558:82656` | DESIGN · Admin Mobile · 會員 · 匯出資料 | 390×844 | Export dialog: JSON download, no staff names, personal-data warning (U4, LP12) | ready |
+| `1558:83100` | DESIGN · Admin Desktop · 會員 · 匯出資料 · 失敗 | 1440×900 | Download not finished: 再試一次 (same key; replay is safe per contract) | error |
+| `1558:83223` | DESIGN · Admin Mobile · 會員 · 匯出資料 · 失敗 | 390×844 | Download not finished: 再試一次 (same key; replay is safe per contract) | error |
+| `1558:82911` | DESIGN · Admin Desktop · 會員 · 匯出資料 · 已下載 | 1440×900 | Downloaded file name and entry count | success |
+| `1558:83034` | DESIGN · Admin Mobile · 會員 · 匯出資料 · 已下載 | 390×844 | Downloaded file name and entry count | success |
+| `1558:82722` | DESIGN · Admin Desktop · 會員 · 匯出資料 · 準備中 | 1440×900 | Preparing the file; actions disabled | loading |
+| `1558:82845` | DESIGN · Admin Mobile · 會員 · 匯出資料 · 準備中 | 390×844 | Preparing the file; actions disabled | loading |
+| `1558:82371` | DESIGN · Admin Desktop · 會員 · 已刪除資料 | 1440×900 | Erased member: 已刪除的會員, notes shown as （已刪除）, points kept, no actions | after erase |
+| `1558:82484` | DESIGN · Admin Mobile · 會員 · 已刪除資料 | 390×844 | Erased member: 已刪除的會員, notes shown as （已刪除）, points kept, no actions | after erase |
 | `1554:75725` | DESIGN · Admin Desktop · 會員 · 新增會員 | 1440×900 | Create member dialog / bottom sheet | default |
 | `1554:75850` | DESIGN · Admin Mobile · 會員 · 新增會員 | 390×844 | Create member dialog / bottom sheet | default |
 | `1554:75922` | DESIGN · Admin Desktop · 會員 · 新增會員 · 名稱未填 | 1440×900 | Required display name missing | validation error |
 | `1554:76047` | DESIGN · Admin Mobile · 會員 · 新增會員 · 名稱未填 | 390×844 | Required display name missing | validation error |
-| `1554:76401` | DESIGN · Admin Desktop · 會員 · 編輯資料 | 1440×900 | Edit member info dialog; balance not editable here | default |
-| `1554:76533` | DESIGN · Admin Mobile · 會員 · 編輯資料 | 390×844 | Edit member info dialog; balance not editable here | default |
-| `1554:76608` | DESIGN · Admin Desktop · 會員 · 編輯資料 · 結果待確認 | 1440×900 | Edit answer lost: 重新讀取 / 關閉, no resend | UNKNOWN |
-| `1554:76730` | DESIGN · Admin Mobile · 會員 · 編輯資料 · 結果待確認 | 390×844 | Edit answer lost: 重新讀取 / 關閉, no resend | UNKNOWN |
-| `1554:76120` | DESIGN · Admin Desktop · 會員 · 詳情 | 1440×900 | Member detail: balance header, contact note, notes, append-only ledger (time, ±points, reason tag, linked order, note, staff), 調整積分, 編輯資料 | default |
-| `1554:76230` | DESIGN · Admin Mobile · 會員 · 詳情 | 390×844 | Member detail: balance header, contact note, notes, append-only ledger (time, ±points, reason tag, linked order, note, staff), 調整積分, 編輯資料 | default |
-| `1554:79326` | DESIGN · Admin Desktop · 會員 · 詳情 · 唯讀 | 1440×900 | Has customers:read but not customers:points: no adjust/edit actions | read-only permission |
-| `1554:79430` | DESIGN · Admin Mobile · 會員 · 詳情 · 唯讀 | 390×844 | Has customers:read but not customers:points: no adjust/edit actions | read-only permission |
-| `1554:76283` | DESIGN · Admin Desktop · 會員 · 詳情 · 尚無紀錄 | 1440×900 | New member, balance 0, empty ledger | empty |
-| `1554:76360` | DESIGN · Admin Mobile · 會員 · 詳情 · 尚無紀錄 | 390×844 | New member, balance 0, empty ledger | empty |
-| `1554:76898` | DESIGN · Admin Desktop · 會員 · 詳情 · 讀取失敗 | 1440×900 | Read failed, 重新讀取 | error |
-| `1554:76967` | DESIGN · Admin Mobile · 會員 · 詳情 · 讀取失敗 | 390×844 | Read failed, 重新讀取 | error |
-| `1554:76795` | DESIGN · Admin Desktop · 會員 · 詳情 · 載入中 | 1440×900 | Skeleton | loading |
-| `1554:76864` | DESIGN · Admin Mobile · 會員 · 詳情 · 載入中 | 390×844 | Skeleton | loading |
-| `1554:77001` | DESIGN · Admin Desktop · 會員 · 調整積分 · 增加 | 1440×900 | 調整積分 dialog/sheet: add/deduct toggle, integer amount, required note, live balance preview | add, filled |
-| `1554:77136` | DESIGN · Admin Mobile · 會員 · 調整積分 · 增加 | 390×844 | 調整積分 dialog/sheet: add/deduct toggle, integer amount, required note, live balance preview | add, filled |
-| `1554:77425` | DESIGN · Admin Desktop · 會員 · 調整積分 · 扣除超過餘額 | 1440×900 | Deduct > balance: inline error, 下一步 disabled | blocked (would go negative) |
-| `1554:77559` | DESIGN · Admin Mobile · 會員 · 調整積分 · 扣除超過餘額 | 390×844 | Deduct > balance: inline error, 下一步 disabled | blocked (would go negative) |
-| `1554:78197` | DESIGN · Admin Desktop · 會員 · 調整積分 · 未記入 | 1440×900 | Server refused (balance changed meanwhile, 409 points_insufficient): nothing written | error (definite refusal) |
-| `1554:78317` | DESIGN · Admin Mobile · 會員 · 調整積分 · 未記入 | 390×844 | Server refused (balance changed meanwhile, 409 points_insufficient): nothing written | error (definite refusal) |
-| `1554:77636` | DESIGN · Admin Desktop · 會員 · 調整積分 · 確認 | 1440×900 | Confirm step: member, −30, note, 120 → 90, append-only warning | confirm |
-| `1554:77759` | DESIGN · Admin Mobile · 會員 · 調整積分 · 確認 | 390×844 | Confirm step: member, −30, note, 120 → 90, append-only warning | confirm |
-| `1554:78014` | DESIGN · Admin Desktop · 會員 · 調整積分 · 結果待確認 | 1440×900 | Answer lost: 重新讀取 only, never auto-resend | UNKNOWN |
-| `1554:78134` | DESIGN · Admin Mobile · 會員 · 調整積分 · 結果待確認 | 390×844 | Answer lost: 重新讀取 only, never auto-resend | UNKNOWN |
-| `1554:77214` | DESIGN · Admin Desktop · 會員 · 調整積分 · 說明未填 | 1440×900 | Required note missing | validation error |
-| `1554:77348` | DESIGN · Admin Mobile · 會員 · 調整積分 · 說明未填 | 390×844 | Required note missing | validation error |
-| `1554:77825` | DESIGN · Admin Desktop · 會員 · 調整積分 · 送出中 | 1440×900 | Submitting; both actions disabled | loading |
-| `1554:77948` | DESIGN · Admin Mobile · 會員 · 調整積分 · 送出中 | 390×844 | Submitting; both actions disabled | loading |
+| `1556:80531` | DESIGN · Admin Desktop · 會員 · 編輯資料 | 1440×900 | Edit member info dialog; balance not editable here | default |
+| `1556:80666` | DESIGN · Admin Mobile · 會員 · 編輯資料 | 390×844 | Edit member info dialog; balance not editable here | default |
+| `1558:83289` | DESIGN · Admin Desktop · 會員 · 編輯資料 · 已被他人修改 | 1440×900 | 409 conflict (stale expected_version): changes not saved, 重新讀取 (U4) | conflict |
+| `1558:83424` | DESIGN · Admin Mobile · 會員 · 編輯資料 · 已被他人修改 | 390×844 | 409 conflict (stale expected_version): changes not saved, 重新讀取 (U4) | conflict |
+| `1556:80743` | DESIGN · Admin Desktop · 會員 · 編輯資料 · 結果待確認 | 1440×900 | Edit answer lost: 重新讀取 / 關閉, no resend | UNKNOWN |
+| `1556:80868` | DESIGN · Admin Mobile · 會員 · 編輯資料 · 結果待確認 | 390×844 | Edit answer lost: 重新讀取 / 關閉, no resend | UNKNOWN |
+| `1556:80238` | DESIGN · Admin Desktop · 會員 · 詳情 | 1440×900 | Member detail: balance header, contact note, notes, 匯出資料/刪除資料 links, append-only ledger (time, ±points, reason tag, linked order, note, staff), 調整積分, 編輯資料 | default |
+| `1556:80351` | DESIGN · Admin Mobile · 會員 · 詳情 | 390×844 | Member detail: balance header, contact note, notes, 匯出資料/刪除資料 links, append-only ledger (time, ±points, reason tag, linked order, note, staff), 調整積分, 編輯資料 | default |
+| `1558:81656` | DESIGN · Admin Desktop · 會員 · 詳情 · 唯讀 | 1440×900 | Has customers:read but not customers:points: no adjust/edit/privacy actions | read-only permission |
+| `1558:81760` | DESIGN · Admin Mobile · 會員 · 詳情 · 唯讀 | 390×844 | Has customers:read but not customers:points: no adjust/edit/privacy actions | read-only permission |
+| `1556:80406` | DESIGN · Admin Desktop · 會員 · 詳情 · 尚無紀錄 | 1440×900 | New member, balance 0, empty ledger | empty |
+| `1556:80486` | DESIGN · Admin Mobile · 會員 · 詳情 · 尚無紀錄 | 390×844 | New member, balance 0, empty ledger | empty |
+| `1556:81040` | DESIGN · Admin Desktop · 會員 · 詳情 · 讀取失敗 | 1440×900 | Read failed, 重新讀取 | error |
+| `1556:81108` | DESIGN · Admin Mobile · 會員 · 詳情 · 讀取失敗 | 390×844 | Read failed, 重新讀取 | error |
+| `1556:80937` | DESIGN · Admin Desktop · 會員 · 詳情 · 載入中 | 1440×900 | Skeleton | loading |
+| `1556:81006` | DESIGN · Admin Mobile · 會員 · 詳情 · 載入中 | 390×844 | Skeleton | loading |
+| `1558:85603` | DESIGN · Admin Desktop · 會員 · 詳情 · 載入更多 | 1440×900 | Ledger 50 per page: note + 載入更多紀錄 (U3); shows the order-linked 手動調整 deduct row | paging |
+| `1558:85715` | DESIGN · Admin Mobile · 會員 · 詳情 · 載入更多 | 390×844 | Ledger 50 per page: note + 載入更多紀錄 (U3); shows the order-linked 手動調整 deduct row | paging |
+| `1558:85764` | DESIGN · Admin Desktop · 會員 · 詳情 · 載入更多失敗 | 1440×900 | Loading older entries failed: inline error + 重新讀取 | paging error |
+| `1558:85876` | DESIGN · Admin Mobile · 會員 · 詳情 · 載入更多失敗 | 390×844 | Loading older entries failed: inline error + 重新讀取 | paging error |
+| `1558:83502` | DESIGN · Admin Desktop · 會員 · 調整積分 · 增加 | 1440×900 | 調整積分 dialog/sheet: add/deduct toggle, integer amount, required note, live balance preview | add, filled |
+| `1558:83640` | DESIGN · Admin Mobile · 會員 · 調整積分 · 增加 | 390×844 | 調整積分 dialog/sheet: add/deduct toggle, integer amount, required note, live balance preview | add, filled |
+| `1558:83938` | DESIGN · Admin Desktop · 會員 · 調整積分 · 扣除超過餘額 | 1440×900 | Deduct > balance: inline error, 下一步 disabled | blocked (would go negative) |
+| `1558:84075` | DESIGN · Admin Mobile · 會員 · 調整積分 · 扣除超過餘額 | 390×844 | Deduct > balance: inline error, 下一步 disabled | blocked (would go negative) |
+| `1558:84734` | DESIGN · Admin Desktop · 會員 · 調整積分 · 未記入 | 1440×900 | Server refused (409 points_insufficient after a concurrent change): nothing written | error (definite refusal) |
+| `1558:84857` | DESIGN · Admin Mobile · 會員 · 調整積分 · 未記入 | 390×844 | Server refused (409 points_insufficient after a concurrent change): nothing written | error (definite refusal) |
+| `1558:84155` | DESIGN · Admin Desktop · 會員 · 調整積分 · 確認 | 1440×900 | Confirm step: member, −30, note, 120 → 90, append-only warning | confirm |
+| `1558:84281` | DESIGN · Admin Mobile · 會員 · 調整積分 · 確認 | 390×844 | Confirm step: member, −30, note, 120 → 90, append-only warning | confirm |
+| `1558:84545` | DESIGN · Admin Desktop · 會員 · 調整積分 · 結果待確認 | 1440×900 | Answer lost: 重新讀取 only, never auto-resend | UNKNOWN |
+| `1558:84668` | DESIGN · Admin Mobile · 會員 · 調整積分 · 結果待確認 | 390×844 | Answer lost: 重新讀取 only, never auto-resend | UNKNOWN |
+| `1558:83721` | DESIGN · Admin Desktop · 會員 · 調整積分 · 說明未填 | 1440×900 | Required note missing | validation error |
+| `1558:83858` | DESIGN · Admin Mobile · 會員 · 調整積分 · 說明未填 | 390×844 | Required note missing | validation error |
+| `1558:84350` | DESIGN · Admin Desktop · 會員 · 調整積分 · 送出中 | 1440×900 | Submitting; both actions disabled | loading |
+| `1558:84476` | DESIGN · Admin Mobile · 會員 · 調整積分 · 送出中 | 390×844 | Submitting; both actions disabled | loading |
 | `1554:79184` | DESIGN · Admin Mobile · 會員 · 選單 | 390×844 | Mobile menu with 顧客 and 會員 (current) added | nav |
+
 Coordinates inside the section: row 0 手工單 (A1–A10), row 1 member list (B), row 2 member detail (C), row 3 調整積分 (D), row 4 order detail + 扣回 (E), row 5 mobile menu (F); each column = desktop at x, mobile at x+1500.
 
 ## Navigation decision
@@ -179,7 +197,6 @@ Rejected: a top-level 會員積分 item (adds an 11th nav item for a record-only
 | ledger.title | 積分紀錄 | 积分记录 | Points history |
 | ledger.note | 紀錄只能新增，不能修改或刪除；記錯時請用手動調整更正。 | 记录只能新增，不能修改或删除；记错时请用手动调整更正。 | Entries can only be added, never edited or deleted. Fix a mistake with a manual adjustment. |
 | ledger.col | 時間 / 積分 / 原因 / 關聯訂單 / 說明 / 經手人 | 时间 / 积分 / 原因 / 关联订单 / 说明 / 经手人 | Time / Points / Reason / Order / Note / Staff |
-| ledger.reason | 本單贈送 / 手動調整 / 沖正 | 本单赠送 / 手动调整 / 冲正 | Order award / Manual adjustment / Reversal |
 | ledger.empty | 尚無積分紀錄。可以用「調整積分」記入第一筆，或在手工單贈送。 | 暂无积分记录。可以用「调整积分」记入第一笔，或在手工单赠送。 | No points yet. Use "Adjust points" or give points on a manual order. |
 | adj.title | 調整積分 · 目前餘額 {n} 點 | 调整积分 · 当前余额 {n} 点 | Adjust points · Balance {n} pts |
 | adj.toggle | 增加積分 / 扣除積分 | 增加积分 / 扣除积分 | Add points / Deduct points |
@@ -199,16 +216,9 @@ Rejected: a top-level 會員積分 item (adds an 11th nav item for a record-only
 | adj.refused | 未記入 · 餘額已變動（目前 {b} 點），扣除 {n} 點會小於 0，這筆調整沒有記入。 · 請返回修改點數後再確認。 | 未记入 · 余额已变动（当前 {b} 点），扣除 {n} 点会小于 0，这笔调整没有记入。 · 请返回修改点数后再确认。 | Not recorded · The balance changed (now {b} pts); deducting {n} would go below 0, so nothing was recorded. · Go back and change the amount. |
 | ord.points.title | 會員與積分 · 會員：{name} | 会员与积分 · 会员：{name} | Member & points · Member: {name} |
 | ord.points.award | 本單贈送 +{n} 點 · {time} · {staff} | 本单赠送 +{n} 点 · {time} · {staff} | Order award +{n} pts · {time} · {staff} |
-| ord.points.deductible | 可扣回 {n} 點 · 會員目前餘額 {b} 點 | 可扣回 {n} 点 · 会员当前余额 {b} 点 | Up to {n} pts can be taken back · member balance {b} pts |
 | ord.reverse.cta | 扣回本單積分 | 扣回本单积分 | Take back this order's points |
-| ord.reverse.amount | 扣回點數 · 最多可扣回 {n} 點（本單贈送 {a} 點，已扣回 {r} 點）。 | 扣回点数 · 最多可扣回 {n} 点（本单赠送 {a} 点，已扣回 {r} 点）。 | Points to take back · Up to {n} pts (awarded {a}, already taken back {r}). |
 | ord.reverse.preview | {name}的餘額：{a} → {b} 點 | {name}的余额：{a} → {b} 点 | {name}'s balance: {a} → {b} pts |
-| ord.reverse.warn | 送出後會新增一筆「沖正」紀錄，不能修改或刪除。 | 提交后会新增一笔「冲正」记录，不能修改或删除。 | This adds a "Reversal" entry that can't be edited or deleted. |
-| ord.reverse.confirm | 確認扣回 | 确认扣回 | Take back |
-| ord.reverse.err.exceeds | 不能超過本單可扣回的 {n} 點。 | 不能超过本单可扣回的 {n} 点。 | Can't be more than the {n} pts left from this order. |
-| ord.reverse.err.balance | {name}目前只剩 {b} 點，扣回 {n} 點會讓餘額小於 0。最多可扣回 {b} 點。 | {name}当前只剩 {b} 点，扣回 {n} 点会让余额小于 0。最多可扣回 {b} 点。 | {name} has only {b} pts left; taking back {n} would go below 0. You can take back up to {b}. |
-| ord.reversed | 已全數扣回 · 已扣回 −{n} 點 · {time} · {staff} · {note} · 可扣回 0 點 | 已全数扣回 · 已扣回 −{n} 点 · {time} · {staff} · {note} · 可扣回 0 点 | Fully taken back · −{n} pts · {time} · {staff} · {note} · 0 pts left to take back |
-| ord.reverse.unknown | 網路回應中斷，扣回 {n} 點可能已經記入。請先重新讀取本單與會員積分，勿再次送出。 | 网络响应中断，扣回 {n} 点可能已经记入。请先重新读取本单与会员积分，勿再次提交。 | The connection dropped; taking back {n} pts may already be recorded. Reload the order and member points first; don't submit again. |
+| ord.reverse.unknown | 網路回應中斷，扣除 {n} 點可能已經記入。請先重新讀取本單與會員積分，勿再次送出。 | 网络响应中断，扣除 {n} 点可能已经记入。请先重新读取本单与会员积分，勿再次提交。 | The connection dropped; taking back {n} pts may already be recorded. Reload the order and member points first; don't submit again. |
 
 ## Self-QA (visual + structural)
 
@@ -229,6 +239,16 @@ Method: every frame exported with `get_screenshot` (scale 1) and inspected in mo
 
 Not done: no prototype reactions were wired between the new frames (cloned reactions were cleared so no button points to the wrong frame); no Code Connect.
 
+### Self-QA round 2 (2026-11-05, after the rulings)
+
+The probe found 0 issues on all 99 frames after the fix below. The 62 changed and new frames (A11, A12, C1–C17, D1–D7, E1, E2, E4–E6) were exported and inspected visually.
+
+| # | Finding | Severity | Fix |
+|---|---|---|---|
+| F11 | 載入更多 and 載入更多失敗 desktop: content 726px in a 620px viewport, so the button was clipped | P1 | compact header (balance only) + 3 ledger rows in those two frames |
+| F12 | An interrupted batch left a loose `Action · 儲存` instance at section level | P2 | the runner removes stray `Action ·` / `Tag /` nodes before building |
+| F13 | The official file's plugin disconnected twice during rebuild batches; both batches contained C7. Run alone, C7 and C8 built fine, and the rest went through at 2 keys per call. Cause not found; C7 was not rewritten | note | keep batches ≤ 4 roots |
+
 ## Integrator rulings 2026-11-05 (the contract is the authority where it differs from the brief)
 
 - U1 → contract LP10/LP19: no 「沖正」 reason. 「扣回本單積分」 opens a prefilled manual deduct: reason 手動調整, linked to the order, amount editable (prefilled with the award), **no cap**, never below 0 (the 餘額不足 state stays). The ledger row shows 手動調整 + the order link. The order page lists 「本單相關積分紀錄」 (`GET members/entries?order_id=`) instead of 「可扣回」. Removed: the over-award frame and the copy keys `ord.reverse.err.exceeds`, `ord.reverse.amount`, `ord.reversed`, `ledger.reason=沖正`.
@@ -245,6 +265,7 @@ New and changed copy (zh-TW · zh-CN · en):
 | ord.entries.label | 本單相關積分紀錄 | 本单相关积分记录 | Points entries for this order |
 | ord.entries.deduct | 手動調整 −{n} 點 · {time} · {staff} · {note} | 手动调整 −{n} 点 · {time} · {staff} · {note} | Manual adjustment −{n} pts · {time} · {staff} · {note} |
 | ord.entries.total | 本單相關合計 {n} 點 · 會員目前餘額 {b} 點 | 本单相关合计 {n} 点 · 会员当前余额 {b} 点 | Net for this order {n} pts · member balance {b} pts |
+| ledger.reason | 本單贈送 / 手動調整 | 本单赠送 / 手动调整 | Order award / Manual adjustment |
 | ord.reverse.reason | 原因：手動調整 · 關聯訂單 #{order} | 原因：手动调整 · 关联订单 #{order} | Reason: manual adjustment · order #{order} |
 | ord.reverse.amount | 扣除點數 · 已帶入本單贈送的 {n} 點，可以修改。 | 扣除点数 · 已带入本单赠送的 {n} 点，可以修改。 | Points to deduct · Prefilled with this order's {n} pts; you can change it. |
 | ord.reverse.warn | 送出後會新增一筆「手動調整」紀錄並關聯這張訂單，不能修改或刪除。 | 提交后会新增一笔「手动调整」记录并关联这张订单，不能修改或删除。 | This adds a "Manual adjustment" entry linked to this order; it can't be edited or deleted. |
