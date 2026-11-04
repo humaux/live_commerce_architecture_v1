@@ -1,0 +1,6 @@
+command: go run ./scripts/dev/contractdrift
+exit: 0
+evidence_level: E1 (static scanner; no runtime tests)
+raw_log: rebase-scanner-after.raw.log (retained locally, not staged)
+raw_sha256: 384922ac46a71eab49ddedce07c76296a60feb65f6e82c8727c0f9eb4cdca29c
+SUMMARY routes go=339 contract=187 bff=312; errors=0 warnings=277 CONTRACT_ONLY=33 GO_405_FALLBACK=4 GO_MOUNT_OR_FALLBACK=91 GO_NOT_IN_BFF=27 GO_ONLY=189 GO_ROUTE_TABLE=4 METHOD_MISMATCH=4 UNRESOLVED=51

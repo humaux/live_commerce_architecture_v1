@@ -170,6 +170,45 @@ func TestLiveConsoleOrderForBuyerKeyBoundToItsBody(t *testing.T) {
 	}
 }
 
+func TestLiveConsoleEmptyBundleCrashBindsOuterRequest(t *testing.T) {
+	for _, field := range []string{"conversation", "send", "bundle"} {
+		t.Run(field, func(t *testing.T) {
+			e := lbuNew(t)
+			key := t04Key("lcn12-empty-" + field)
+			original := e.input(nil, "")
+			before := e.orders()
+			e.crashAfterPlace(key, original)
+			orders := e.orders()
+			if orders != before+1 || e.plan.planned() != 0 {
+				t.Fatal("fault must follow exactly one placed order and precede messaging")
+			}
+			changed := original
+			if field == "conversation" {
+				conversation := lcConversation(t, e.p.f, e.tenant(), e.store(), "page")
+				changed.For.ConversationID = &conversation
+			} else if field == "send" {
+				changed.SendPaymentLink = true
+			} else {
+				changed.For.BundleIDs = []string{randomUUID()}
+			}
+			_, _, err := e.fb.Place(context.Background(), e.token(), e.store(), key, changed)
+			var coded *claims.ForBuyerError
+			if !errors.As(err, &coded) || coded.Status != 409 || coded.Code != "idempotency_conflict" {
+				t.Fatalf("changed outer request after fault: got %v, want 409 idempotency_conflict", err)
+			}
+			if e.orders() != orders || e.plan.planned() != 0 {
+				t.Fatal("changed request created an order or planned a message")
+			}
+			if _, _, err := e.fb.Place(context.Background(), e.token(), e.store(), key, original); err != nil {
+				t.Fatalf("original request must resume: %v", err)
+			}
+			if e.orders() != orders {
+				t.Fatal("resume created another order")
+			}
+		})
+	}
+}
+
 func TestLiveConsoleOrderForBuyerGrantsDoNotOutliveRequest(t *testing.T) {
 	e := lbuNew(t)
 	token := e.token()

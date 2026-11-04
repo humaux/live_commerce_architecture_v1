@@ -1,0 +1,6 @@
+apps/admin/components/MetaConnect.tsx(19,23): error TS2307: Cannot find module './live-sessions/session-tasks.module.css' or its corresponding type declarations.
+apps/admin/components/MetaConnect.tsx(39,8): error TS2882: Cannot find module or type declarations for side-effect import of './settings.css'.
+apps/admin/components/MetaHealthCapabilities.tsx(12,8): error TS2882: Cannot find module or type declarations for side-effect import of './meta-health.css'.
+packages/ui/src/AppShell.tsx(7,20): error TS2307: Cannot find module './AppShell.module.css' or its corresponding type declarations.
+packages/ui/src/AppShell.tsx(8,8): error TS2882: Cannot find module or type declarations for side-effect import of './tokens.css'.
+packages/ui/src/Presentation.tsx(17,15): error TS2307: Cannot find module './Presentation.module.css' or its corresponding type declarations.

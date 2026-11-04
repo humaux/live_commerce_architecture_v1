@@ -177,7 +177,7 @@ Package buyer owns the anonymous buyer capability boundary: issuing short-lived 
 
 Package buyerhttp owns the private, BFF-only buyer transport (catalog, cart, quote, checkout, payment and claim routes).
 
-- Depends on (internal): `internal/attribution`, `internal/buyer`, `internal/checkout`, `internal/claims`, `internal/command`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httperror`, `internal/pagination`, `internal/platform`, `internal/pricing`, `internal/promotions`, `internal/storefront`, `internal/storefrontdomains`
+- Depends on (internal): `internal/attribution`, `internal/buyer`, `internal/checkout`, `internal/claims`, `internal/command`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httperror`, `internal/pagination`, `internal/platform`, `internal/pricing`, `internal/promotions`, `internal/returns`, `internal/storefront`, `internal/storefrontdomains`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
 - Used by: `cmd/api`
 
@@ -643,7 +643,7 @@ Package returns owns the merchant-side minimal returns (RMA) commands of contrac
 
 - Depends on (internal): `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`
-- Used by: `internal/fulfillment`, `internal/httpapi`
+- Used by: `internal/buyerhttp`, `internal/fulfillment`, `internal/httpapi`
 
 ## `internal/storefront`
 

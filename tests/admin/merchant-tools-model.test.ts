@@ -4,10 +4,54 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  csvFileProblem, draftProblem, manualBody, parseDashboard, parseImportResult, parseManualOptions, parseManualResult, parseRegenerateResult, rowErrorCodes, toolsRoute,
+  csvFileProblem, draftProblem, manualBody, recipientGaps, parseDashboard, parseImportResult, parseManualOptions, parseManualResult, parseRegenerateResult, rowErrorCodes, toolsRoute,
   validManualBody, validRegenerateBody, MAX_CSV_BYTES, type ManualDraft, type ManualOption,
 } from "../../apps/admin/lib/merchant-tools-model.ts";
 import { toolsCopy } from "../../apps/admin/lib/merchant-tools-copy.ts";
+import { parseSummary } from "../../apps/admin/lib/catalog-v2-model.ts";
+
+test("picker product model keeps the additive authenticated thumbnail and null without an image", () => {
+  const image = "44444444-4444-4444-8444-444444444444";
+  const row = {
+    id, slug: "synthetic-picker-product", name: "測試商品", status: "active", version: 1,
+    cover_image_id: image, cover_image_url: `/api/stores/${market}/products/${id}/images/${image}?w=360`,
+    price_min_minor: 2500, price_max_minor: 2500, currency: "TWD", sku_count: 1, available: 10,
+    keyword: "", inventory_tracked: true, updated_at: "2026-10-31T00:00:00.000000Z",
+  };
+  assert.equal((parseSummary(row) as unknown as Record<string, unknown>).cover_image_url, row.cover_image_url);
+  assert.equal((parseSummary({ ...row, cover_image_id: null, cover_image_url: null }) as unknown as Record<string, unknown>).cover_image_url, null);
+});
+
+// FEAT-MANUAL-DISCOUNT: the BFF accepts only this bounded adjustment object;
+// totals and SKU prices remain server authority. Run only in GitHub CI.
+test("named manual discount passes BFF grammar in every locale without opening price overrides", () => {
+  for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
+    const body = { ...manualBody(draft({ locale })), discount: { name: "直播優惠", amount_minor: 100 } };
+    assert.equal(validManualBody(body), true, `${locale}: named discount must reach Go`);
+    for (const discount of [
+      { name: "", amount_minor: 100 }, { name: "   ", amount_minor: 100 },
+      { name: "惠".repeat(31), amount_minor: 100 }, { name: "直播\n優惠", amount_minor: 100 },
+      { name: "直播優惠", amount_minor: 0 }, { name: "直播優惠", amount_minor: -1 },
+      { name: "直播優惠", amount_minor: 1.5 }, { name: "直播優惠", amount_minor: "100" },
+      { name: "直播優惠", amount_minor: Number.MAX_SAFE_INTEGER + 1 },
+      { name: "直播優惠", amount_minor: 100, currency: "USD" },
+      { name: "直播優惠", amount_minor: 100, unit_price_minor: 1 },
+    ]) assert.equal(validManualBody({ ...body, discount }), false, JSON.stringify(discount));
+    assert.equal(validManualBody({ ...body, total_minor: 1 }), false);
+    assert.equal(validManualBody({ ...body, tenant_id: id }), false);
+    assert.equal(validManualBody({ ...body, store_id: id }), false);
+    assert.equal(validManualBody({ ...body, items: [{ sku_id: sku, quantity: 1, unit_price_minor: 1 }] }), false);
+  }
+});
+
+test("named discount survives the strict manual-order response parser", () => {
+  const discount = { name: "直播優惠", amount_minor: 100 };
+  const parsed = parseManualResult(result({ discount }));
+  assert.deepEqual((parsed as unknown as Record<string, unknown>).discount, discount);
+  for (const bad of [{ ...discount, amount_minor: -1 }, { ...discount, name: "" }, { ...discount, currency: "USD" }]) {
+    assert.throws(() => parseManualResult(result({ discount: bad })), /unavailable/);
+  }
+});
 
 const id = "11111111-1111-4111-8111-111111111111";
 const market = "22222222-2222-4222-8222-222222222222";
@@ -166,6 +210,20 @@ test("manual result: link is https with the order id and a 43-char capability in
 const draft = (over: Partial<ManualDraft> = {}): ManualDraft => ({
   lines: [{ sku_id: sku, quantity: 2 }], name: "Wang", phone: "0912-345-678", email: "", option: option(), mode: "bank_transfer",
   home: { region: "", city: "Taipei", postal_code: "", line1: "1 Road", line2: "" }, cvs: { store_code: "", store_name: "", store_address: "" }, locale: "zh-TW", ...over,
+});
+
+test("draft: recipient gaps (signed 訂單缺少收件資料) only when everything else is sendable", () => {
+  const cvs = option({ delivery_kind: "cvs_711", payment_modes: ["bank_transfer"], pickup_selection: "buyer_entered" });
+  const store = { store_code: "123456", store_name: "S", store_address: "Taipei City" };
+  assert.deepEqual(recipientGaps(draft()), []);
+  assert.deepEqual(recipientGaps(draft({ phone: "" })), ["phone"]);
+  assert.deepEqual(recipientGaps(draft({ option: cvs, phone: "" })), ["phone", "store"]);
+  assert.deepEqual(recipientGaps(draft({ option: cvs })), ["store"]);
+  assert.deepEqual(recipientGaps(draft({ option: cvs, cvs: { ...store, store_name: "" } })), ["store"]); // the server needs all three
+  assert.deepEqual(recipientGaps(draft({ option: cvs, cvs: store })), []);
+  // Any other problem keeps the ordinary hint: no recipient panel for an empty cart, a missing name or an unchosen delivery.
+  for (const over of [{ lines: [] }, { name: "" }, { option: null }, { mode: "" as const }]) assert.deepEqual(recipientGaps(draft({ ...over, phone: "" })), []);
+  assert.equal(draftProblem(draft({ option: cvs, phone: "" })), "phone"); // still not sendable
 });
 
 test("draft: first problem, and the body has no price-like field at all", () => {

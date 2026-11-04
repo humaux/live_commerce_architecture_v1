@@ -29,7 +29,7 @@ const suites: Record<string, string[]> = {
   "merchant-orders-ui": ["orders-ui.spec.ts", "shipping-center.spec.ts"],
   "parcel-merge-ui": ["parcel-merge.spec.ts"],
   "inbox": ["inbox-ui.spec.ts", "inbox-bundle-ui.spec.ts", "inbox-customer-ui.spec.ts", "inbox-v2-ui.spec.ts"],
-  "studio-ui": ["studio-ui.spec.ts"],
+  "studio-ui": ["studio-ui.spec.ts", "studio-ui2-c4-metadata.spec.ts"],
   // KC16: admin + storefront Next, Go and PG are started by browser_live_claims_test.go.
   "live-claims": ["claims-ui.spec.ts"],
   // LC-U1: real signed session/BFF; Console upstream and receipts explicitly MOCK.

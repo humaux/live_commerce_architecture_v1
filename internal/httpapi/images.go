@@ -15,11 +15,13 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/internal/catalog"
+	"livecommerce/internal/command"
 	"livecommerce/internal/platform"
 )
 
@@ -30,6 +32,7 @@ const maxUploadBody = catalog.MaxImageBytes + 64<<10
 type rawResponse struct {
 	contentType string
 	body        []byte
+	noStore     bool
 }
 
 func registerImageRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
@@ -52,6 +55,17 @@ func registerImageRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 		return catalog.ListImages(ctx, tx, s, r.PathValue("product_id"))
 	}))
 	mux.HandleFunc("GET "+images+"/{image_id}", scoped(pool, "catalog:read", func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+		if r.URL.RawQuery != "" || r.URL.ForceQuery {
+			if r.URL.RawQuery != "w=360" && r.URL.RawQuery != "w=720" && r.URL.RawQuery != "w=1080" {
+				return nil, command.ErrInvalid
+			}
+			width, _ := strconv.Atoi(r.URL.Query().Get("w")) // exact width grammar checked above
+			img, rendition, err := catalog.GetImageSize(ctx, tx, s, r.PathValue("product_id"), r.PathValue("image_id"), width)
+			if err != nil {
+				return nil, err
+			}
+			return rawResponse{contentType: img.ContentType, body: img.Bytes, noStore: !rendition}, nil
+		}
 		img, err := catalog.GetImage(ctx, tx, s, r.PathValue("product_id"), r.PathValue("image_id"))
 		if err != nil {
 			return nil, err
@@ -97,6 +111,9 @@ func imageUploadQuery(r *http.Request) (role, optionValue string, ok bool) {
 func writeRaw(w http.ResponseWriter, raw rawResponse) {
 	w.Header().Set("Content-Type", raw.contentType)
 	w.Header().Set("Cache-Control", "private, max-age=300")
+	if raw.noStore {
+		w.Header().Set("Cache-Control", "no-store")
+	}
 	w.Header().Set("Content-Security-Policy", "default-src 'none'; sandbox")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(raw.body)

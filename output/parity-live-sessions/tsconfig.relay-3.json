@@ -1,0 +1,57 @@
+{
+  "extends": "./tsconfig.static.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "typeRoots": [
+      "/Volumes/data/live_commerce_architecture_v1/node_modules/.pnpm/@types+node@24.13.6/node_modules/@types",
+      "/Volumes/data/live_commerce_architecture_v1/node_modules/.pnpm/@types+react@19.3.0/node_modules/@types",
+      "/Volumes/data/live_commerce_architecture_v1/node_modules/.pnpm/@types+react-dom@19.3.0_@types+react@19.3.0/node_modules/@types"
+    ],
+    "paths": {
+      "@/*": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-live-sessions/apps/admin/*"
+      ],
+      "@live-commerce/i18n": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-live-sessions/packages/i18n/src/index.ts"
+      ],
+      "@live-commerce/ui": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-live-sessions/packages/ui/src/AppShell.tsx"
+      ],
+      "@live-commerce/format": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-live-sessions/packages/format/src/index.ts"
+      ],
+      "@live-commerce/markdown-lite": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-live-sessions/packages/markdown-lite/src/index.ts"
+      ],
+      "react": [
+        "/Volumes/data/live_commerce_architecture_v1/node_modules/.pnpm/@types+react@19.3.0/node_modules/@types/react/index.d.ts"
+      ],
+      "react/*": [
+        "/Volumes/data/live_commerce_architecture_v1/node_modules/.pnpm/@types+react@19.3.0/node_modules/@types/react/*"
+      ],
+      "react-dom": [
+        "/Volumes/data/live_commerce_architecture_v1/node_modules/.pnpm/@types+react-dom@19.3.0_@types+react@19.3.0/node_modules/@types/react-dom/index.d.ts"
+      ],
+      "react-dom/*": [
+        "/Volumes/data/live_commerce_architecture_v1/node_modules/.pnpm/@types+react-dom@19.3.0_@types+react@19.3.0/node_modules/@types/react-dom/*"
+      ],
+      "@live-commerce/ui/ds": [
+        "/Volumes/data/live_commerce_architecture_v1/.worktrees/parity-live-sessions/packages/ui/src/ds/index.ts"
+      ],
+      "@playwright/test": [
+        "/Volumes/data/live_commerce_architecture_v1/node_modules/@playwright/test/index.d.ts"
+      ]
+    },
+    "types": [
+      "node"
+    ]
+  },
+  "include": [
+    "../../tests/admin/claims-ui.spec.ts",
+    "../../tests/admin/meta-connect.spec.ts",
+    "../../tests/admin/meta-connect-gate.spec.ts",
+    "../../tests/admin/parity-live-sessions.ts",
+    "../../apps/admin/components/MetaConnect.tsx",
+    "/Volumes/data/live_commerce_architecture_v1/node_modules/.pnpm/next@16.3.5_@types+node@24.13.6_react-dom@19.3.0_react@19.3.0__react@19.3.0/node_modules/next/types/global.d.ts"
+  ]
+}

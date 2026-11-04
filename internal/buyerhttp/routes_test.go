@@ -20,7 +20,7 @@ func routeSample(pattern string) string {
 }
 
 func TestRouteTableEntriesAreDispatched(t *testing.T) {
-	if len(routeRows) != 48 { // 46 frozen legacy rows plus exactly two FEAT-LIVE-REPLAY reads.
+	if len(routeRows) != 52 { // 46 frozen legacy rows plus two FEAT-LIVE-REPLAY reads and four FEAT-BUYER-RMA return-request rows.
 		t.Fatalf("inventory changed: %d entries", len(routeRows))
 	}
 	seen := map[string]bool{}
@@ -77,8 +77,11 @@ func TestRouteTableMatchesLegacy(t *testing.T) {
 	methods := []string{"", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE", "CONNECT", "get"}
 	for path := range paths {
 		got, want := matchRoute(path), legacyMatchRoute(path)
-		// Keep the immutable legacy oracle unchanged. Independently specify the two additive
-		// replay paths, including the existing matcher's deferred UUID validation and strict segments.
+		// Keep the immutable legacy oracle unchanged. Independently specify the additive
+		// return-request and replay paths, including the existing matcher's deferred UUID validation and strict segments.
+		if want.kind == unknownRoute {
+			want = returnRequestOracle(path)
+		}
 		replay := false
 		if path == "/v1/buyer/replays" {
 			want, replay = route{kind: replayListRoute}, true
@@ -89,7 +92,7 @@ func TestRouteTableMatchesLegacy(t *testing.T) {
 			t.Errorf("path %q: got %+v want %+v", path, got, want)
 		}
 		for _, method := range methods {
-			wantMethod := legacyAllowed(want.kind, method)
+			wantMethod := legacyAllowed(want.kind, method) || returnRequestOracleAllowed(want.kind, method)
 			if replay {
 				wantMethod = method == http.MethodGet
 			}

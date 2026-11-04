@@ -12,6 +12,10 @@ package foundation_test
 // stripeadmin (registrar login + fake transport), never through a merchant
 // runtime role. Fixtures that deliberately mutate rows as the migration owner
 // (drift, aging) are named at their call site so the evidence can list them.
+//
+// The shared harness also owns the bounded-poll wake helper (sstWake below):
+// every representation of a sleeping payment River job must be made due, or a
+// bounded poll can starve one job kind behind another (TestStripeSP11BusySnoozeIsWakeable, #468).
 
 import (
 	"context"
@@ -843,9 +847,18 @@ func sstAge(t *testing.T, f *testFixture, attempt string, d time.Duration) {
 
 // sstWake makes an attempt's sleeping River jobs due now. River schedules snoozes
 // minutes ahead; tests move the schedule, never the code under test.
+//
+// River persists two snooze shapes (river jobexecutor): a snooze longer than the 5 s
+// scheduler interval is state='scheduled' with a future scheduled_at, while a short
+// one (river.JobSnooze <= 5 s, e.g. the 2 s busy lease) is state='available' with a
+// future scheduled_at (riverdriver.JobSetStateSnoozedAvailable). Both must be made
+// due: leaving the short shape asleep re-arms a 1-minute poller on every bounded-poll
+// round while the busy signal job waits for River, so the poller's claim loop starves
+// the signal until its assertion deadline (#468).
 func sstWake(t *testing.T, f *testFixture, attempt string) {
 	t.Helper()
 	mustExec(t, f.owner, `UPDATE river_payment.river_job SET state='available',scheduled_at=clock_timestamp()
 	 WHERE kind IN ('payment_query_v1','payment_signal_v1','payment_reconcile_v1')
-	 AND args->>'operation_id'=$1 AND state IN ('scheduled','retryable')`, attempt)
+	 AND args->>'operation_id'=$1
+	 AND (state IN ('scheduled','retryable') OR (state='available' AND scheduled_at>clock_timestamp()))`, attempt)
 }

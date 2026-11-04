@@ -130,12 +130,22 @@ export function parseManualOptions(value: unknown): ManualOption[] {
   });
 }
 
+export type ManualDiscount = { name: string; amount_minor: number };
+const validDiscount = (v: unknown): v is ManualDiscount => {
+ if (!v || typeof v !== "object" || Array.isArray(v)) return false;
+ const d = v as Record<string, unknown>;
+ return Object.keys(d).sort().join(",") === "amount_minor,name" && typeof d.name === "string" &&
+  Array.from(d.name.trim()).length >= 1 && Array.from(d.name.trim()).length <= 30 && !/[\p{Cc}\p{Cf}\p{Cs}\p{Zl}\p{Zp}]/u.test(d.name) && money(d.amount_minor) && (d.amount_minor as number) > 0;
+};
 export type ManualResult = {
   order_id: string; commercial_state: "AWAITING_TRANSFER" | "CONFIRMED" | "AWAITING_COLLECTION"; payment_mode: ManualPaymentMode; total_minor: number; currency: string;
-  expires_at: string; buyer_link: string | null; link_state: "configured" | "storefront_unavailable" | "domain_selection_required"; source: "merchant_manual";
+  expires_at: string; buyer_link: string | null; link_state: "configured" | "storefront_unavailable" | "domain_selection_required"; source: "merchant_manual"; discount?: ManualDiscount;
 };
 export function parseManualResult(value: unknown): ManualResult {
-  const v = object(value, ["order_id", "commercial_state", "payment_mode", "total_minor", "currency", "expires_at", "buyer_link", "link_state", "source"]);
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw fail();
+  const raw = value as Record<string, unknown>;
+  if ("discount" in raw && (!validDiscount(raw.discount) || raw.discount.name !== raw.discount.name.trim())) throw fail();
+  const v = object(raw, ["order_id", "commercial_state", "payment_mode", "total_minor", "currency", "expires_at", "buyer_link", "link_state", "source", ...("discount" in raw ? ["discount"] : [])]);
   if (typeof v.order_id !== "string" || !canonicalUUID.test(v.order_id) ||
     !(manualPaymentModes as readonly string[]).includes(String(v.payment_mode)) || v.commercial_state !== placementState[v.payment_mode as ManualPaymentMode] ||
     !money(v.total_minor) || !/^[A-Z]{3}$/.test(String(v.currency)) ||
@@ -161,20 +171,33 @@ export type ManualDraft = {
 export type DraftProblem = "lines" | "name" | "phone" | "email" | "delivery" | "mode" | "address" | "store";
 const phoneOK = (s: string) => /^[0-9+() -]{6,32}$/.test(s) && s.replace(/\D/g, "").length >= 6 && s.replace(/\D/g, "").length <= 20;
 
-/** First problem of a draft (null = sendable). The server re-validates everything; this keeps an obviously wrong form from being sent. */
-export function draftProblem(d: ManualDraft): DraftProblem | null {
+/** First problem of a draft (null = sendable). The server re-validates everything; this keeps an obviously wrong form from being sent.
+ *  `skipRecipient` leaves out the two recipient checks (phone, CVS store) so recipientGaps can tell a recipient-only gap apart. */
+export function draftProblem(d: ManualDraft, skipRecipient = false): DraftProblem | null {
   if (d.lines.length < 1 || d.lines.length > 50 || d.lines.some((l) => !canonicalUUID.test(l.sku_id) || !Number.isInteger(l.quantity) || l.quantity < 1 || l.quantity > 1000) ||
     new Set(d.lines.map((l) => l.sku_id)).size !== d.lines.length) return "lines";
   if (d.name.trim().length < 1 || Array.from(d.name.trim()).length > 120) return "name";
-  if (!phoneOK(d.phone.trim())) return "phone";
+  if (!skipRecipient && !phoneOK(d.phone.trim())) return "phone";
   if (d.email.trim() !== "" && !(d.email.trim().length <= 254 && /^[^\s@]+@[^\s@]+$/.test(d.email.trim()))) return "email";
   if (!d.option) return "delivery";
   if (d.mode === "" || !d.option.payment_modes.includes(d.mode)) return "mode";
   if (d.mode === "cash_on_delivery" && d.option.delivery_kind !== "home") return "mode"; // COD is home delivery only
   if (d.option.delivery_kind === "home") {
     if (d.home.city.trim() === "" || d.home.line1.trim() === "") return "address";
-  } else if (d.cvs.store_code.trim() === "" || d.cvs.store_name.trim() === "" || Array.from(d.cvs.store_address.trim()).length < 5) return "store";
+  } else if (!skipRecipient && !cvsComplete(d.cvs)) return "store";
   return null;
+}
+const cvsComplete = (c: ManualDraft["cvs"]) => c.store_code.trim() !== "" && c.store_name.trim() !== "" && Array.from(c.store_address.trim()).length >= 5;
+
+export type RecipientGap = "phone" | "store";
+/** The signed 訂單缺少收件資料 pre-submit state: the recipient fields still missing when everything else in the draft is sendable
+ *  (empty = no recipient-only gap; the ordinary first-problem hint covers every other case). Same rules as draftProblem, no new field. */
+export function recipientGaps(d: ManualDraft): RecipientGap[] {
+  if (draftProblem(d, true) !== null) return [];
+  const gaps: RecipientGap[] = [];
+  if (!phoneOK(d.phone.trim())) gaps.push("phone");
+  if (d.option!.delivery_kind !== "home" && !cvsComplete(d.cvs)) gaps.push("store");
+  return gaps;
 }
 
 /** The exact POST body. It has no price, discount, shipping or tenant field: the quote is the only price and the bearer is the only scope. */
@@ -220,14 +243,16 @@ export function toolsRoute(method: string, path: string): ToolsRoute | null {
 export function validManualBody(body: unknown): boolean {
   if (!body || typeof body !== "object" || Array.isArray(body)) return false;
   const keys = Object.keys(body).sort().join(",");
-  if (keys !== "customer,delivery,items,locale,payment_mode") return false;
+  const raw = body as Record<string, unknown>;
+  if (keys !== "customer,delivery,items,locale,payment_mode" && keys !== "customer,delivery,discount,items,locale,payment_mode") return false;
+  if ("discount" in raw && !validDiscount(raw.discount)) return false;
   const forbidden = /(price|amount|total|discount|shipping|tax|tenant|store_id)/i;
   const walk = (value: unknown): boolean => {
     if (Array.isArray(value)) return value.every(walk);
     if (value && typeof value === "object") return Object.entries(value).every(([k, v]) => !forbidden.test(k) && walk(v));
     return true;
   };
-  return walk(body);
+  return walk(Object.fromEntries(Object.entries(raw).filter(([key]) => key !== "discount")));
 }
 /** A regenerate-link body is JSON with exactly {order_id, locale}; the order id is a canonical UUID, the locale one of the three. */
 export function validRegenerateBody(body: unknown): boolean {
