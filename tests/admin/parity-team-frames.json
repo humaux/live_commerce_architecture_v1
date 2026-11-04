@@ -43,6 +43,38 @@
         "mobile": "1468:78392"
       },
       "reason": "owner-delegated design decision 2026-11-04: no-op admin change is blocked at role-edit (Continue disabled, 目前已是管理員，無須變更); no confirm/done screen for an unsent request"
+    },
+    {
+      "state": "signin",
+      "ids": {
+        "desktop": "1468:76904",
+        "mobile": "1468:76925"
+      },
+      "reason": "owner-delegated design decision 2026-11-04: shared identity sign-in/sign-up/verify pages (確認碼 wording, existing auth tests) replace invite-local auth frames; the invite link round-trips via return_to"
+    },
+    {
+      "state": "signup",
+      "ids": {
+        "desktop": "1468:76946",
+        "mobile": "1468:76968"
+      },
+      "reason": "owner-delegated design decision 2026-11-04: shared identity sign-in/sign-up/verify pages (確認碼 wording, existing auth tests) replace invite-local auth frames; the invite link round-trips via return_to"
+    },
+    {
+      "state": "verify-signin",
+      "ids": {
+        "desktop": "1468:76990",
+        "mobile": "1468:77006"
+      },
+      "reason": "owner-delegated design decision 2026-11-04: shared identity sign-in/sign-up/verify pages (確認碼 wording, existing auth tests) replace invite-local auth frames; the invite link round-trips via return_to"
+    },
+    {
+      "state": "verify-signup",
+      "ids": {
+        "desktop": "1468:77022",
+        "mobile": "1468:77038"
+      },
+      "reason": "owner-delegated design decision 2026-11-04: shared identity sign-in/sign-up/verify pages (確認碼 wording, existing auth tests) replace invite-local auth frames; the invite link round-trips via return_to"
     }
   ],
   "locales": {

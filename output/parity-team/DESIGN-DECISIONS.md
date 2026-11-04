@@ -9,7 +9,7 @@ The owner delegated three design questions to the integrator. The integrator's d
 - Decision: keep the shared `ReauthDialog` (OC-04 contract: password step-up, replays the original request exactly once with its idempotency key, focus trap). Do not build in-page re-auth on the Team page.
 - Reason: it works the same way on every admin page and is already security-tested (`tests/admin/oc/reauth.spec.ts`). Replaying with the idempotency key means a re-auth can never send a duplicate invitation. The in-page frames would have required a second re-auth path that does not replay the request.
 - Frames superseded (both viewports, exact ids): `reauth` 1468:75538 / 1468:75582, `reauth-signin` 1468:96313 / 1468:96358, `reauth-verify` 1468:96378 / 1468:96420.
-- Oracle: `tests/admin/parity-team-frames.json` `superseded` (line 6) lists these ids with the reason "owner-delegated design decision 2026-11-04: shared ReauthDialog (OC-04) replaces in-page re-auth". `tests/admin/parity-team.mjs:14-18,333`: each of these ids registers as a skipped test with that reason, and every other frame is still required. `:446-455`: the frozen-oracle test still requires all 82 frames / 164 ids, and pins the superseded list to these three states plus the two in §2, each with its signed ids and reason.
+- Oracle: `tests/admin/parity-team-frames.json` `superseded` (line 6) lists these ids with the reason "owner-delegated design decision 2026-11-04: shared ReauthDialog (OC-04) replaces in-page re-auth". `tests/admin/parity-team.mjs:14-19,334`: each of these ids registers as a skipped test with that reason, and every other frame is still required. `:483-494`: the frozen-oracle test still requires all 82 frames / 164 ids, and pins the superseded list to these three states plus the states in §2 and §4, each with its signed ids and reason.
 - `tests/admin/oc/reauth.spec.ts`: unchanged, all assertions kept.
 - Note: the card named the mobile ids. Both viewport ids of each state are superseded, because the decision is about the behaviour, not the screen size.
 
@@ -26,10 +26,10 @@ The owner delegated three design questions to the integrator. The integrator's d
 - Reason: a request that is never sent has no review or result. Showing 「角色未變更」 after a real promotion would be false. The guard on role-edit already tells the owner why Continue is disabled.
 - Oracle:
   - `tests/admin/parity-team-frames.json` `superseded` (lines 31-46) holds both entries.
-  - `tests/admin/parity-team.mjs:446-455` pins the superseded list to exactly the five states (3 re-auth + 2 no-op admin), each with its signed ids and reason, 10 ids in total.
-  - (b) `parity-team.mjs:186-191,230`: real clicks on 變更角色 for the admin member Ari. 管理員 stays selected, 「目前已是管理員，無須變更。」 is shown, 繼續 is disabled and nothing is written.
+  - `tests/admin/parity-team.mjs:483-494` pins the superseded list, with §1 and §4, to exactly nine states, each with its signed ids and reason, 18 ids in total.
+  - (b) `parity-team.mjs:187-193,231`: real clicks on 變更角色 for the admin member Ari. 管理員 stays selected, 「目前已是管理員，無須變更。」 is shown, 繼續 is disabled and nothing is written.
 - Product (c): `apps/admin/components/Team.tsx:196` shows `c.roleLines.admin` on the role review when the target is admin. That is 「管理員 · 管理業務，不含訂閱帳單與員工」 in zh-TW, with the signed zh-CN/en lines in those locales.
-  - The `R3 admin promotion` test (`parity-team.mjs:423`) asserts this line verbatim on the viewer → admin review.
+  - The `R3 admin promotion` test (`parity-team.mjs:424`) asserts this line verbatim on the viewer → admin review.
   - Promotion itself is unchanged since RELAY 7: Continue is refused only for an unchanged role (`Team.tsx:93,190`), it goes through set-role, the backend decides, and a refusal shows the error screen.
 
 ## 3. Stale nav label: the shared shell is correct (DONE)
@@ -38,11 +38,16 @@ The owner delegated three design questions to the integrator. The integrator's d
 - Reason: one shell across all admin pages. The signed frame's own breadcrumb already reads 「DaWan Live / 設定 / 員工」.
 - Frames: `nav` 1466:74190 / 1468:74244. Only that frame's expected text changes in `tests/admin/parity-team-frames.json`: `設定與員工` is removed, and `設定` and `員工` stay expected. There is an inline `note` at line 703. The locale entry is kept unchanged.
 
-## 4. Invite sign-in copy (PROPOSAL only, not implemented)
+## 4. Invitee sign-in, sign-up and verify on the shared identity pages (DONE)
 
-- Conflict: `signin` 1468:76904 / 1468:76925, `signup` 1468:76946 / 1468:76968, `verify-signin` 1468:76990 / 1468:77006 and `verify-signup` 1468:77022 / 1468:77038 use 驗證碼 / 查看信箱驗證碼 / 傳送驗證碼 / 使用收到邀請的信箱。. The invite page's links lead to the shared sign-in page, whose signed entry copy is 確認碼 / 請查看信箱 / 輸入確認碼 (`packages/i18n/src/entry-parity.ts:56-67`).
-- Proposed: one sign-in page, one vocabulary. Keep the entry page's signed copy, and change only these four frames' sign-in/verify strings to the entry page's text (same pattern as decision 3). Keep the invite-specific checks: 加入團隊, email prefill, and no auto-accept after verify. Move 「使用收到邀請的信箱。」 to the invite page above its 登入 / 建立帳號 links.
-- Separate follow-up: ReauthDialog (`apps/admin/lib/reauth-copy.ts`) says 驗證碼 while entry says 確認碼. That should be unified in one product-wide copy card.
+- Integrator ruling (2026-11-04, under the owner's delegation, same principle as re-auth): the invitee signs in, signs up and verifies on the shared identity pages. Those pages keep their 確認碼 wording and their existing auth tests. The invite page gets no auth forms of its own.
+- Why: CI at `22185bb33` had 8 admin-parity failures out of 231, all in these frames. The frames use their own vocabulary (驗證碼 / 查看信箱驗證碼 / 傳送驗證碼), while the shared page uses 確認碼 / 請查看信箱 (`packages/i18n/src/entry-parity.ts:56-67`). Running one sign-in page with one vocabulary avoids a second, untested auth path.
+- Frames superseded (exact ids, both viewports): `signin` 1468:76904 / 1468:76925, `signup` 1468:76946 / 1468:76968, `verify-signin` 1468:76990 / 1468:77006, `verify-signup` 1468:77022 / 1468:77038.
+  - Reason: "owner-delegated design decision 2026-11-04: shared identity sign-in/sign-up/verify pages (確認碼 wording, existing auth tests) replace invite-local auth frames; the invite link round-trips via return_to".
+  - Oracle: `tests/admin/parity-team-frames.json` `superseded` (lines 47-78). The pin at `tests/admin/parity-team.mjs:483-494` allows exactly nine states / 18 ids.
+- Invite-specific hint: no product change was needed. The signed-out invite page (`apps/admin/components/TeamInvite.tsx:58,63-72`) already shows 「使用收到邀請的信箱。」 next to 登入 / 建立帳號 (zh-CN 「请使用收到邀请的邮箱。」, en "Use the email address that received the invitation."). The `link` frame 1468:76880 / 1468:76892 stays required.
+- Round-trip: `parity-team.mjs:445-476`, test `R3 invite sign-in round-trip` (3 locales × 2 viewports), uses real clicks. On the signed-out invite page it checks the hint, then clicks 登入 and 建立帳號. Each link goes to the shared `/{locale}/` or `/{locale}/signup` page carrying the same invite back, and the page it lands on keeps it, with an empty query. The test also checks that no accept write happens.
+- Deviation from the ruling text, on security grounds: the carrier is the existing `#next=` URL fragment (`apps/admin/lib/invite-next.ts`), not a `return_to` query. A query would put the invite bearer token into request URLs, Referer headers and access logs. The staff-team hygiene gate forbids that (`tests/admin/staff-team.spec.ts:270-271,422,471-481`), and no server page reads such a query. The behaviour is the same: the invitee returns to the same invite. Assertions compare the value without printing it.
 
 ## Follow-up: Figma frames to be updated to match
 
@@ -50,6 +55,6 @@ The owner delegated three design questions to the integrator. The integrator's d
 - 1468:75538, 1468:75582, 1468:96313, 1468:96358, 1468:96378, 1468:96420: mark as superseded by the shared ReauthDialog, or replace them with the dialog.
 - 1468:78293, 1468:78333, 1468:78348, 1468:78392: mark as superseded by the role-edit-admin guard.
 - 1468:75905 / 1468:75945 (role-confirm): add a variant where the target role is 管理員, showing 「管理員 · 管理業務，不含訂閱帳單與員工」.
-- After the decision on item 4: the four invite sign-in frame pairs.
+- 1468:76904, 1468:76925, 1468:76946, 1468:76968, 1468:76990, 1468:77006, 1468:77022, 1468:77038: mark as superseded by the shared identity pages.
 
 Evidence: E1 only (`node --check`, JSON parse, ownership generate + `--check`). Browser parity in CI: NOT_RUN at this head. SANDBOX/LIVE: NOT_RUN. Own PASS = E0.

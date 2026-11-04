@@ -5,17 +5,21 @@
 Owner, 2026-11-04: 「页内重新登录：升级管理员的确认页和完成页：你进行决定设计，符合业务。设计稿里过时的导航文字：你进行决定设计，符合业务。」 The integrator's decisions, reasons and frame ids are in `DESIGN-DECISIONS.md`. Base: `0f47d64fe`. These are local commits only and have not been pushed.
 
 Done:
-1. Re-auth: the shared ReauthDialog (OC-04) stays. `tests/admin/parity-team-frames.json:6` `superseded` lists `reauth` 1468:75538/75582, `reauth-signin` 1468:96313/96358 and `reauth-verify` 1468:96378/96420, each with the reason "owner-delegated design decision 2026-11-04: shared ReauthDialog (OC-04) replaces in-page re-auth". `parity-team.mjs:14-18,333`: those six ids register as visible skips with that reason. `:446-455`: the frozen-oracle test still requires 82 frames / 164 ids and pins the superseded list (with item 3). `tests/admin/oc/reauth.spec.ts` is unchanged.
+1. Re-auth: the shared ReauthDialog (OC-04) stays. `tests/admin/parity-team-frames.json:6` `superseded` lists `reauth` 1468:75538/75582, `reauth-signin` 1468:96313/96358 and `reauth-verify` 1468:96378/96420, each with the reason "owner-delegated design decision 2026-11-04: shared ReauthDialog (OC-04) replaces in-page re-auth". `parity-team.mjs:14-19,334`: those six ids register as visible skips with that reason. `:483-494`: the frozen-oracle test still requires 82 frames / 164 ids and pins the superseded list (with item 3). `tests/admin/oc/reauth.spec.ts` is unchanged.
 2. Nav: in `parity-team-frames.json`, `nav` 1466:74190 / 1468:74244 no longer expects `設定與員工`. 設定 and 員工 (the shell breadcrumb) stay expected. Inline `note` at :703.
 3. Decision 2 (integrator ruling 2026-11-04): `role-confirm-admin` 1468:78293/78333 and `role-done-admin` 1468:78348/78392 are signed no-op screens.
    - They are added to `superseded` (`parity-team-frames.json:31-46`) with the reason "owner-delegated design decision 2026-11-04: no-op admin change is blocked at role-edit (Continue disabled, 目前已是管理員，無須變更); no confirm/done screen for an unsent request".
-   - The pin at `parity-team.mjs:446-455` allows exactly 5 states / 10 ids.
-   - `role-edit-admin` stays required, reached by a real click path (`:186-191,230`): 變更角色 on admin Ari, the 「目前已是管理員，無須變更。」 copy, 繼續 disabled, 0 writes.
-   - `Team.tsx:196`: the role review shows the signed 「管理員 · 管理業務，不含訂閱帳單與員工」 when the target role is admin. It is asserted in `R3 admin promotion` (`parity-team.mjs:423`).
+   - The pin at `parity-team.mjs:483-494` allows exactly 5 states / 10 ids at that relay; now 9 / 18, see item 5.
+   - `role-edit-admin` stays required, reached by a real click path (`:187-193,231`): 變更角色 on admin Ari, the 「目前已是管理員，無須變更。」 copy, 繼續 disabled, 0 writes.
+   - `Team.tsx:196`: the role review shows the signed 「管理員 · 管理業務，不含訂閱帳單與員工」 when the target role is admin. It is asserted in `R3 admin promotion` (`parity-team.mjs:424`).
 4. TS1117 (CI build at `0f47d64fe`): the duplicate key `joined` at `packages/i18n/src/team-parity.ts:95/194/293`. Both values are signed copy for different screens: the member line 「{role} · 加入 {date}」 (Team.tsx:155) and the invitee heading 「已加入團隊」 (TeamInvite.tsx:58). The second key silently overrode the member line. The invitee key is renamed to `inviteeJoined`, and `TeamInvite.tsx:58` is updated to match. A per-object duplicate scan finds no other duplicates.
+5. Invitee auth (integrator ruling 2026-11-04, after CI at `22185bb33` showed 8/231 admin-parity failures, all in these frames):
+   - `signin` 1468:76904/76925, `signup` 1468:76946/76968, `verify-signin` 1468:76990/77006 and `verify-signup` 1468:77022/77038 are superseded by the shared identity pages (`parity-team-frames.json:47-78`, reason as ruled). The pin at `parity-team.mjs:483-494` allows exactly 9 states / 18 ids.
+   - The signed-out invite page already shows 「使用收到邀請的信箱。」 next to 登入 / 建立帳號 (`TeamInvite.tsx:58,63-72`), so there is no product change. The `link` frame stays required.
+   - `R3 invite sign-in round-trip` (`parity-team.mjs:445-476`, 3 locales × 2 viewports) uses real clicks to check the hint, both links, the shared pathname, and that the same invite comes back in the fragment with an empty query. No write.
+   - Deviation: the carrier is the existing `#next=` fragment, not a `return_to` query. A query would leak the invite token into request URLs, Referer headers and logs, which `staff-team.spec.ts:270-271,422,471-481` forbids. See DESIGN-DECISIONS §4.
 
-Still blocked:
-- Invite sign-in copy, 驗證碼 vs 確認碼 (`signin`/`signup`/`verify-signin`/`verify-signup`): proposal in DESIGN-DECISIONS §4, not implemented.
+Still blocked: none in PARITY-TEAM scope.
 
 E1 only: `node --check tests/admin/parity-team.mjs` exit 0; `node --experimental-strip-types --check packages/i18n/src/team-parity.ts` exit 0; frames JSON parses; ownership regenerate + `--check` exit 0. No local tests/tsc/server. GREEN, parity, SANDBOX and LIVE are NOT_RUN. Own PASS = E0.
 

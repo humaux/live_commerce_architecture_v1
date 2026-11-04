@@ -1,4 +1,4 @@
-// Purpose: Assert the 164 signed staff frames on real routes (10 owner-superseded ids skip visibly) and capture honest parity/click receipts.
+// Purpose: Assert the 164 signed staff frames on real routes (18 owner-superseded ids skip visibly) and capture honest parity/click receipts.
 // Depends on: node:test, Playwright, frozen FRAME-COPY oracle and admin-parity's existing MOCK session/server.
 // Used by: parity-shell-browser.mjs / --browser-admin-parity; independent reviewers consume parity images.
 // Invariants: fixture responses are MOCK, not backend acceptance; no gallery, DOM writes, forced clicks or live mail.
@@ -12,9 +12,10 @@ import oracle from "./parity-team-frames.json" with { type: "json" };
 
 const expect = baseExpect.configure({ timeout: 1500 });
 // Owner-delegated design decisions 2026-11-04 (output/parity-team/DESIGN-DECISIONS.md): the shared ReauthDialog (OC-04,
-// tests/admin/oc/reauth.spec.ts) replaces the in-page re-auth frames, and the role-edit-admin guard replaces the no-op admin
-// confirm/done frames. Each superseded id stays registered as a visible skip with its reason; every other frame stays required,
-// and the frozen-oracle test pins this list to exactly those five states and reasons.
+// tests/admin/oc/reauth.spec.ts) replaces the in-page re-auth frames, the role-edit-admin guard replaces the no-op admin
+// confirm/done frames, and the shared identity pages replace the invite-local sign-in/sign-up/verify frames. Each superseded id
+// stays registered as a visible skip with its reason; every other frame stays required, and the frozen-oracle test pins this
+// list to exactly those nine states and reasons.
 const superseded = new Map(oracle.superseded.flatMap(item => Object.values(item.ids).map(id => [id, item.reason])));
 const viewports = [{ name: "desktop", width: 1440, height: 900 }, { name: "mobile", width: 390, height: 844 }];
 const roles = { owner: "店主", admin: "管理員", live: "直播人員", fulfilment: "出貨人員", viewer: "僅供檢視" };
@@ -438,6 +439,42 @@ export function registerTeamParity({ session, origin, store, output, sha }) {
     }
   });
 
+  // Integrator decision 2026-11-04: the invitee signs in / signs up on the shared identity pages. The signed-out invite page keeps
+  // its hint, and each link hands the same invite back. The carrier is the existing #next= fragment (lib/invite-next.ts), not a
+  // query, so the token never enters a request URL; assertions compare it without printing it.
+  for (const locale of ["zh-TW", "zh-CN", "en"]) for (const viewport of viewports) test(`PARITY-TEAM R3 invite sign-in round-trip ${locale} ${viewport.name}`, { timeout: 15000 }, async () => {
+    const { context, page } = await session({ width: viewport.width, height: viewport.height });
+    const f = fixtureState("link", store);
+    const invite = `/${locale}/invite/${inviteToken}`, back = `#next=${encodeURIComponent(invite)}`;
+    let completed = false;
+    const rows = [];
+    try {
+      await f.install(page);
+      await context.clearCookies(); // SETUP: signed-out fixture only.
+      for (const [text, path] of [["登入", `/${locale}/`], ["建立帳號", `/${locale}/signup`]]) {
+        await page.goto(`${origin()}${invite}`);
+        await expect(page.getByRole("heading", { name: translate("加入團隊", locale), exact: true })).toBeVisible();
+        await expect(page.locator("main").getByText(translate("使用收到邀請的信箱。", locale), { exact: true }), "invite hint beside the entry links").toBeVisible();
+        const link = page.getByRole("link", { name: translate(text, locale), exact: true });
+        const row = { page: `/${locale}/invite/[token]`, control: translate(text, locale), operation: "click", expected: `shared ${path} keeps #next= to the same invite`, actual: "NOT_REACHED", result: "fail" };
+        clicks.push(row); rows.push(row);
+        assert.ok(await link.getAttribute("href") === `${path}${back}`, `${text} links to shared ${path} with #next= to the same invite (value not logged)`);
+        await link.click();
+        await expect.poll(() => new URL(page.url()).pathname.replace(/\/$/, "")).toBe(path.replace(/\/$/, "")); // Next drops the trailing slash.
+        const landed = new URL(page.url());
+        assert.ok(landed.hash === back && landed.search === "", `shared ${path} keeps the same invite in the fragment, none in the query (value not logged)`);
+        row.actual = "shared page reached with the same invite in #next"; row.result = "clicked";
+      }
+      assert.equal(f.writes.length, 0, "signing in never accepts an invitation by itself");
+      completed = true;
+    } finally {
+      for (const row of rows) if (row.result === "clicked") row.result = completed ? "pass" : "fail";
+      await mkdir(`${output}/parity`, { recursive: true });
+      await writeFile(`${output}/parity/team-click-ledger.json`, JSON.stringify({ tier: "MOCK", sha, clicks }, null, 2) + "\n");
+      await context.close();
+    }
+  });
+
   test("PARITY-TEAM frozen oracle is the signed export, not application copy", () => {
     const source = readFileSync(new URL("../../output/parity-team/FRAME-COPY.md", import.meta.url));
     assert.equal(createHash("sha256").update(source).digest("hex"), oracle.source_sha256);
@@ -446,12 +483,14 @@ export function registerTeamParity({ session, origin, store, output, sha }) {
     // Only the owner-delegated frames may leave the required set, each by its exact signed ids and reason.
     const reauth = "owner-delegated design decision 2026-11-04: shared ReauthDialog (OC-04) replaces in-page re-auth";
     const noop = "owner-delegated design decision 2026-11-04: no-op admin change is blocked at role-edit (Continue disabled, 目前已是管理員，無須變更); no confirm/done screen for an unsent request";
-    const reasons = { "reauth": reauth, "reauth-signin": reauth, "reauth-verify": reauth, "role-confirm-admin": noop, "role-done-admin": noop };
+    const identity = "owner-delegated design decision 2026-11-04: shared identity sign-in/sign-up/verify pages (確認碼 wording, existing auth tests) replace invite-local auth frames; the invite link round-trips via return_to";
+    const reasons = { "reauth": reauth, "reauth-signin": reauth, "reauth-verify": reauth, "role-confirm-admin": noop, "role-done-admin": noop,
+      "signin": identity, "signup": identity, "verify-signin": identity, "verify-signup": identity };
     assert.deepEqual(oracle.superseded.map(item => item.state), Object.keys(reasons));
     for (const item of oracle.superseded) {
       assert.deepEqual(item.ids, oracle.frames.find(frame => frame.state === item.state).ids, `superseded ${item.state} names its signed ids`);
       assert.equal(item.reason, reasons[item.state]);
     }
-    assert.equal(superseded.size, 10);
+    assert.equal(superseded.size, 18);
   });
 }
