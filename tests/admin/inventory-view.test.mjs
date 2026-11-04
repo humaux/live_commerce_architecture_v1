@@ -40,7 +40,8 @@ test("#543 C: the next-page button reads as loading more, and a note says the ch
     assert.ok(more, `${locale} next-page button is labelled ${word.more}`);
     assert.equal(buttons.some(node => node.props.children === word.all), false, `${locale} no button reads as show-all`);
     assert.ok(nodes.some(node => node.props?.children === word.note), `${locale} loaded-rows filter note`);
-    more.props.onClick(); assert.deepEqual(navigations, [{ cursor: "cursor-2" }]);
+    // The navigate argument is created inside the vm realm, so compare its serialized value, not its prototype.
+    more.props.onClick(); assert.equal(JSON.stringify(navigations), JSON.stringify([{ cursor: "cursor-2" }]));
     const single = render(locale, undefined).nodes;
     assert.equal(single.some(node => node.props?.children === word.note || node.props?.children === word.more), false, `${locale} one page: no note, no button`);
   }
