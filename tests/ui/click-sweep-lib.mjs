@@ -126,7 +126,7 @@ export const INIT_SCRIPT = `(() => {
       const layers = [...document.querySelectorAll(${JSON.stringify(LAYER_CSS)})].filter(visible);
       const a = document.activeElement;
       return {
-        url: location.href, mut: window.__sweep ? window.__sweep.mutations : -1, layers: layers.length, layerNames: layers.map((l) => (l.getAttribute("aria-label") || l.getAttribute("role") || l.tagName).slice(0, 40)),
+        url: location.href, documentTimeOrigin: performance.timeOrigin, mut: window.__sweep ? window.__sweep.mutations : -1, layers: layers.length, layerNames: layers.map((l) => (l.getAttribute("aria-label") || l.getAttribute("role") || l.tagName).slice(0, 40)),
         active: a && a !== document.body ? (a.getAttribute("data-testid") || a.id || a.tagName) + ":" + (a.getAttribute("name") || "") : "", scrollY: Math.round(scrollY),
         activeInvalid: !!(a && a.matches && a.matches(":invalid:not(form):not(fieldset)")), invalid: document.querySelectorAll(":invalid:not(form):not(fieldset)").length, ariaInvalid: document.querySelectorAll('[aria-invalid="true"]').length,
         alerts: [...document.querySelectorAll('[role="alert"],[role="status"]')].filter(visible).map((e) => (e.textContent || "").trim().slice(0, 60)).join("|"),
@@ -336,12 +336,17 @@ export async function sweepControl(ctx, desc, classSize, opts = {}) {
   // effect within 3 s
   const effects = [];
   const deadline = Date.now() + (ctx.window ?? 3000);
-  let after = before;
+  let after = before, documentChanged = false;
   while (Date.now() < deadline) {
     after = await pageState(page);
     const ev = mon.since(mark);
     effects.length = 0;
-    if (after.navigated || after.url !== before.url) effects.push(after.url !== before.url ? `url ${before.url.replace(/^https?:\/\/[^/]+/, "")} -> ${after.url.replace(/^https?:\/\/[^/]+/, "")}` : "page reloaded");
+    // A failed snapshot is not navigation evidence. Both successful reads must
+    // identify real documents; a same-URL native GET resets the DOM mutation counter.
+    documentChanged = Number.isFinite(before.documentTimeOrigin) && before.documentTimeOrigin > 0
+      && Number.isFinite(after.documentTimeOrigin) && after.documentTimeOrigin > 0
+      && after.documentTimeOrigin !== before.documentTimeOrigin;
+    if (documentChanged || after.url !== before.url) effects.push(after.url !== before.url ? `url ${before.url.replace(/^https?:\/\/[^/]+/, "")} -> ${after.url.replace(/^https?:\/\/[^/]+/, "")}` : "page reloaded");
     for (const e of ev) if (["dialog", "popup", "download", "external"].includes(e.type)) effects.push(`${e.type}: ${e.text}`);
     if (after.layers !== before.layers) effects.push(after.layers > before.layers ? `layer opened (${after.layerNames.join(",")})` : "layer closed");
     if (after.mut > before.mut) effects.push(`DOM changed (${after.mut - before.mut} mutations)`);
@@ -377,6 +382,7 @@ export async function sweepControl(ctx, desc, classSize, opts = {}) {
     if (fpBefore && fpAfter && fpBefore !== fpAfter) { row.result = "fail"; row.failure = "destructive-changed-state"; row.actual += " | server state changed after the destructive control"; }
   }
   row.ms = Date.now() - t0;
+  row.documentNavigation = { beforeTimeOrigin: before.documentTimeOrigin ?? null, afterTimeOrigin: after.documentTimeOrigin ?? null, changed: documentChanged };
   row.after = after;
   return row;
 }

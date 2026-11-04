@@ -1,0 +1,2 @@
+foundation	Package docs and gate map are current	2026-11-01T05:04:32.9213356Z check-backend-coverage: 1 finding(s):
+foundation	Package docs and gate map are current	2026-11-01T05:04:32.9214280Z   internal/httpapi/live_replay.go is classified by nobody: declare its exact lc_covers, SHARED or BACKEND_ONLY file entry

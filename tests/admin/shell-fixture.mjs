@@ -1,10 +1,14 @@
-// W0 isolated MOCK transport. No production credentials, provider writes or PG.
+// Purpose: W0 isolated MOCK transport. No production credentials, provider writes or PG.
+// Depends on: node:http, node:crypto only.
+// Used by: tests/admin/{shell-browser,shell-runner,platform-runner,ui-gallery-runner,parity-shell-browser}.mjs, tests/ui/visual-audit.mjs.
+// Invariants: without `seeded` every response is unchanged (empty lists / explicit 503); `seeded` maps an exact
+//   pathname to a JSON body or `(url) => body`, consulted only before the empty-list/503 fallbacks, after auth.
 import { createServer } from "node:http";
 import { randomBytes } from "node:crypto";
 export const storeID = "11111111-1111-4111-8111-111111111111";
 export const otherID = "22222222-2222-4222-8222-222222222222";
 export const entityID = "33333333-3333-4333-8333-333333333333";
-export async function fixture() {
+export async function fixture({ seeded = {} } = {}) {
   const key = randomBytes(32).toString("base64url"),
     token = randomBytes(32).toString("base64url");
   const permissions = [
@@ -20,7 +24,8 @@ export async function fixture() {
   ];
   const state = { role: "owner", permissions, requests: [] };
   const server = createServer(async (req, res) => {
-    const path = new URL(req.url, "http://localhost").pathname;
+    const url = new URL(req.url, "http://localhost"),
+      path = url.pathname;
     state.requests.push(path);
     res.setHeader("Content-Type", "application/json");
     res.setHeader("Cache-Control", "no-store");
@@ -61,6 +66,10 @@ export async function fixture() {
         items: [{ id: entityID, name: "Synthetic warehouse" }],
         next_cursor: "",
       });
+    if (Object.hasOwn(seeded, path)) {
+      const seed = seeded[path];
+      return json(typeof seed === "function" ? seed(url) : seed);
+    }
     if (
       /\/(catalog-products|collections|catalog-ledger|customers|orders|live-sessions)$/.test(
         path,

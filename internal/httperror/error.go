@@ -67,7 +67,9 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"rate_limited":           "Too many requests.",
 		"insufficient_inventory": "Insufficient available inventory.",
 		"retry_later":            "Temporarily unavailable.", "unavailable": "Temporarily unavailable.",
-		"internal": "Request could not be completed.",
+		"internal":           "Request could not be completed.",
+		"invalid_transition": "Operation is not available in the current state.",
+		"no_official_video":  "No official replay video is available.",
 		// merchant-password-auth-v1 §16 (OC-15): recent re-authentication and the disabled owner role (both 403, never 401).
 		"reauth_required":     "Confirm it is you to continue.",
 		"owner_role_disabled": "The owner role cannot be granted.",
@@ -164,6 +166,8 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"lines_incomplete":    "Every item of the return must be listed exactly once.",
 		"nothing_received":    "No units were received.",
 		"refund_mismatch":     "The refund does not belong to this order.",
+		// FEAT-BUYER-RMA (0221): buyer return request already open for an item (409). Ruling 15: unlisted codes become "internal".
+		"request_open": "A return request for this item is already open.",
 		// manual-fulfilment-v1 Amendment W3-02B (pick list, unit w3-02b-picklist): > 500 order_ids.
 		"too_many": "Too many orders.",
 		// taiwan-cvs-logistics-v1 §8 / §5.2 / §16 (unit cvs-core). Ruling 15: an unknown code would be rewritten to "internal".
@@ -205,6 +209,9 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"cash_on_delivery_limit": "Too many cash-on-delivery orders are open.",
 		// home-cod P2-1 (#255): begin_hold PT409 when the merchant changed the COD surcharge after the quote; the buyer re-quotes.
 		"cod_surcharge_changed": "The cash-on-delivery fee changed; review the new total and try again.",
+		// storefront-v2 §G3: fixed manual discount and final COD amount refusals.
+		"discount_exceeds_subtotal": "The discount cannot exceed the merchandise subtotal.",
+		"cod_limit":                 "The total including the cash-on-delivery fee exceeds the delivery limit.",
 		// storefront-v2 §F (unit promotions): discount codes. The buyer codes are the 422s of the quote request and of BeginCheckout.
 		"promo_invalid": "This discount code is not valid.", "promo_not_started": "This discount code is not active yet.",
 		"promo_expired": "This discount code has expired.", "promo_min_subtotal": "The order is below the minimum amount for this discount code.",

@@ -262,6 +262,45 @@ Navigation: `GET /v1/admin/stores` items also carry the caller's `role` and effe
 - Limits: 20 live invitations and 50 creations per 24 h per store (PT429 `too_many_invitations`). Mail: one send after commit, outcome in `mail_state`, a resend is a new invitation that revokes the old one.
 - Evidence tier: REAL_PG author smoke `tests/foundation/staff_team_smoke_test.go` (4 tests, one red run each for email binding and owner floor); browser/E2E and mail over real SMTP: NOT_RUN.
 
+<a id="d-i11-staff-invitation-link-exception"></a>
+
+### D. I11 staff invitation link exception (owner approval 2026-11-01)
+
+Authority: the owner answered **「批准受限邀请链接例外（推荐）」** in the current task conversation,
+to the explicit question permitting the existing one-time invitation URL while prohibiting full-link/token logging,
+caching and Referrer leakage. Humaux `42086c79-d536-4769-990f-417115a458a0` indexes the recorded question and reply;
+the conversation approval is the authority. This section is the sole detailed definition of the I11 exception.
+
+- The exception permits only the existing staff invitation link on the configured HTTPS public admin origin,
+  `/{zh-CN|zh-TW|en}/invite/{token}`. The 256-bit random invitation token is single-use, expires after **72 hours**,
+  is bound to the invitation's store, role and email, and grants nothing until a signed-in principal with the matching
+  **verified email** accepts it. Expired, revoked, consumed and wrong-account invitations remain invalid.
+- Only the invitation token may occupy that path segment. Merchant/buyer session tokens, API/BFF keys, provider access
+  or refresh tokens, addresses and chat bodies retain I11's prohibition. This amendment does not authorize any other
+  URL token, including storefront preview tokens; their presence elsewhere is not an extension of this exception.
+- Acceptance carries the token in the authenticated POST JSON body, never an API query string. Existing exact Origin,
+  CSRF, server-derived scope and generic refusal checks remain. Sign-in return paths use the existing validated fragment
+  carrier; the invitation URL must not be copied into a login query string, error, analytics event or trace attribute.
+- The invitation response requires real `Referrer-Policy: no-referrer` and `Cache-Control: no-store` headers, including
+  signed-out/error responses. No shared or private cache may retain the token or full link. The token and full link must
+  not enter application, proxy/CDN/access logs, telemetry or Referrer headers; deployment must omit or redact the secret
+  path segment before logging. A meta tag alone does not establish this boundary.
+- This is URL classification only: it does not authorize production email or deployment, change the post-commit mail
+  behavior above, freeze an outbox design, or lift the current PARITY-TEAM invitation pause. Staff product inclusion
+  does not waive the separate backend and UI rollout gates. The UI/BFF/server refusal requirements in
+  [merchant-identity-v1 CF-TEAM](merchant-identity-v1.md#amendment-2026-10-28-cf-team) are not proof that those entry points
+  currently enforce a pause; report implementation and runtime evidence separately. Reopening remains a separate card.
+
+Acceptance (no implied PASS): `tests/admin/team-bff.test.ts` **I11-SI** binds this exception to the unchanged general P0
+prohibition and rejects invitation/session/provider/API credentials in API URLs, cacheable responses and echoed secrets;
+`tests/admin/invite-next.test.ts` checks the allowed relative invite shape and hostile return paths. Existing
+`tests/foundation/staff_team_gate_test.go` **SG01/SG06** cover expiry, email/store binding, single-use and secret exclusion
+from SQL/API URLs/logs; `tests/admin/staff-team.spec.ts` checks real browser Referrer behavior through
+`TestBrowserStaffTeam`. These tests must continue to pass on the delivery SHA; I11-SI is not browser or edge-log evidence.
+Before enabling delivery, obtain synthetic-link evidence that the served invitation response is no-store/no-referrer and
+that application plus deployed proxy/CDN logs and caches contain neither the full link nor token. Missing deployment or
+browser evidence is **NOT_RUN**, and blocks enabling this path; document-only or BFF success cannot substitute for it.
+
 ## F. Promotions (producer: unit promotions, migration 0091; amendment written before code, R4 wave 2)
 
 Discount codes. The server quote stays the only price authority (cart-quote-v1, checkout-quote-validation-v1): a code is validated
@@ -515,7 +554,7 @@ GREEN and independent acceptance remain pending until the implementation head is
 
 ## FEAT-CONTACT-STORE amendment — 2026-10-31
 
-Authority: integrator-directed FEAT-CONTACT-STORE-FIX1 and 2026-10-31 ownership/pin ruling. Migration **0218_store_contact_messages.sql**. This is a website contact surface, separate from Meta inbox conversations. UI remains pending PARITY-NEWFEAT; this amendment grants no buyer-mail or live-send authority.
+Authority: integrator-directed FEAT-CONTACT-STORE-FIX1 and 2026-10-31 ownership/pin ruling. Migration **0222_store_contact_messages.sql** (renumbered 0211 -> 0218 -> 0222 by the integrator 2026-11-04; follows base 0221). This is a website contact surface, separate from Meta inbox conversations. UI remains pending PARITY-NEWFEAT; this amendment grants no buyer-mail or live-send authority.
 
 - `POST /v1/buyer/contact-messages` — private BFF key and freshly verified published origin; guest allowed, syntactically valid buyer bearer optional and confers no additional authority. Public storefront BFF: `POST /api/buyer/contact-messages`. Body `{name,email,order_number?,message,website?}`; only string values, exact keys, no duplicates. Name 1–120 Unicode characters; email at most 254 UTF-8 bytes and a bare address; order number at most 64 characters; message 1–5000 characters, literal text (line breaks/tab allowed, no other controls). Required text cannot be whitespace-only. Honeypot absent or empty. At most 64 KiB JSON. No client tenant/store/amount. Go invalid fields = 422 `invalid_request`; BFF invalid JSON/body = 400, oversize = 413; wrong media = 415.
 - Requires `Idempotency-Key` matching `[A-Za-z0-9_.:-]{8,128}`. A committed response is exactly 201 `{message_id:uuid,status:"received"}`, no PII or buyer cookie. Same resolved store/key and same fields recover the first receipt even after handled or throttle; changed fields = 409 `conflict`. One store-scoped transaction lock serializes replay/admission, rate reservation, encrypted persistence and one notify intent. Commit failure/transport uncertainty = 503; BFF does not retry automatically. Keep the original key for explicit recovery.
@@ -526,4 +565,106 @@ Authority: integrator-directed FEAT-CONTACT-STORE-FIX1 and 2026-10-31 ownership/
 - PII at rest: one AES-256-GCM envelope (`key_id,nonce,ciphertext`), random nonce, AAD `livecommerce/store-contact/v1 + tenant UUID + store UUID + message UUID + key ID`. Both tenant and store are derived from the exact verified origin (store UUID alone is not globally unique). Shared payload-key environment, no new live credential. Request equality is checked against decrypted original fields, so there is no plaintext PII fingerprint and old-key replay still works during rotation. Ordinary runtime has no direct contact-table read/write grants. Only authenticated definer reads return envelopes to Go; no raw driver errors, email, name or body logs.
 - Notification: one new `store_contact` kind in the existing `notify.outbox`/worker; no new transport. Recipient is current `control.stores.contact_email`, never submitted buyer email; no inline SMTP. Generic notice in zh-TW/zh-CN/en contains no buyer PII/body; authenticated detail remains the read surface. Preserve existing daily/hourly caps, suspended-store guard, stale/FAILED policy and final UNKNOWN (never blindly resent). Tests use MOCK mail only.
 - Retention is an application policy, not a legal assertion: encrypted messages/replay horizon 180 days. Each existing notify worker claim calls a bounded restricted cleanup (100 expired messages + 200 expired IP buckets, `SKIP LOCKED`), including dormant stores; store admission also prunes bounded old rows. No new worker, queue or scheduler. Cleanup requires the existing worker to run; outages delay deletion and must not be described as an exact wall-clock guarantee.
-- CI gate: preserve the original contact HTTP/PG and BFF RED assertions; prove concurrency/replay, permissions/cross-store refusal, throttle, encrypted storage, one MOCK outbox notice, no PII logs and UNKNOWN no retry on the PR's own CI. R2 pin = current integration migration count + this file (139+1=140 at a3dc78e4d). No UI or production acceptance from these tests.
+- CI gate: preserve the original contact HTTP/PG and BFF RED assertions; prove concurrency/replay, permissions/cross-store refusal, throttle, encrypted storage, one MOCK outbox notice, no PII logs and UNKNOWN no retry on the PR's own CI. R2 pin = current integration migration count + this file (145+1=146 at f42e1e9bd). No UI or production acceptance from these tests.
+## Amendment FEAT-LIVE-REPLAY — buyer replay read (2026-10-31)
+
+Authority: owner 2026-10-30 ruling 「补后端一起做」; integrator 2026-10-31 authorizes
+extending the existing official LiveVideo read only. **Supersedes OC-Q9** in
+`owner-choices-20261026-v1.md` (no live-replay storefront entry; stays planned) for
+this backend capability. The original OC-Q9 text remains historical and unchanged.
+UI: pending PARITY-NEWFEAT. This amendment adds API/BFF only; no production release.
+
+Official sources read on 2026-10-31, Graph API **v26.0**:
+- https://developers.facebook.com/docs/graph-api/reference/live-video/ — `permalink_url`
+  is the official Facebook video permalink; the field entry adds no separate permission.
+- https://developers.facebook.com/docs/graph-api/reference/page/live_videos/ — owned/
+  moderated Page read requires Page token, MODERATE task, `pages_read_engagement`,
+  `pages_show_list` and Live Video API feature. The existing connection requests both
+  scopes; this card adds no scope or credential path. App grants/feature access remain
+  subject to the existing dispatcher policy checks; documentation is not LIVE proof.
+- https://developers.facebook.com/docs/plugins/embedded-video-player/ — use Facebook's
+  official player only: `https://www.facebook.com/plugins/video.php?href=<encoded permalink>`.
+  No private API, scraping, stream URL, media download, re-hosting or old-session backfill.
+
+The existing future `GET /{page}/live_videos` now requests
+`id,post_id,title,status,creation_time,permalink_url`. A successful lease-fenced completion
+persists a per-binding/per-video row in `live.replay_videos` (migration **0219**), in the
+same transaction as its existing bounded snapshot. Latest requested_at wins. Invalid or
+missing optional links normalize to empty without breaking the existing picker. Accept
+only HTTPS facebook.com/www.facebook.com video permalinks with an optional single Page
+path segment, `videos/{numeric_video_id}`, optional trailing slash, no query, fragment,
+credentials, non-default port, encoded path or controls. Refuse plugin/player inputs.
+A missing/unsupported permalink, including old polls and Instagram, cannot be published:
+`409 no_official_video`. No URL is inferred from a post/video ID.
+
+| Endpoint | Authority | Request | Result |
+| --- | --- | --- | --- |
+| `GET /v1/buyer/replays` | BFF key + verified published origin; no buyer credentials | no query/body/key | `200 {"items":[{"session_id":"uuid","title":"測試回放","ended_at":"2026-10-30T12:00:00Z","permalink_url":"https://www.facebook.com/synthetic.page/videos/777/"}]}` |
+| `GET /v1/buyer/replays/{session_id}` | same | canonical UUID, no query/body/key | `200 {"session_id":"uuid","title":"測試回放","ended_at":"2026-10-30T12:00:00Z","permalink_url":"https://www.facebook.com/synthetic.page/videos/777/","embed_url":"https://www.facebook.com/plugins/video.php?href=...","offers":[{"offer_id":"uuid","sku_id":"uuid","product":<exact current catalog-v2 detail>}]}` |
+
+BFF: `GET /api/shop/replays` and `GET /api/shop/replays/{session_id}`. Host-derived
+origin uses the existing public upstream resolver; no client tenant/store header or body
+is forwarded. No buyer login or bearer is needed; the private Go boundary refuses buyer
+bearers/cookies. All replies are no-store. Wrong method is 405; malformed IDs/body/query/
+Idempotency-Key are 422 invalid_request; bad BFF credentials/buyer credentials are 403
+forbidden; invalid origin is 422 invalid_request; missing/unpublished origin or foreign,
+hidden, non-ENDED/no-video detail is 404 not_found; transient failure is 503 unavailable.
+Private transport auth/header errors retain the shared buyer transport contract. Public
+BFF upstream unavailability is 503 unavailable, malformed detail path is 404 not_found.
+
+Lists contain at most the 50 latest public ENDED sessions, ordered by persisted
+`lifecycle_at DESC, session_id`; this API has no pagination in this card. ended_at is
+that persisted end transition, never an inferred Graph creation time. Detail reads are
+available for any qualifying session, including those older than the latest 50.
+Products are the offers recorded in that session, ordered by offer creation/id (both
+currently active and inactive offers, because ending a session can deactivate offers).
+Each offer carries the existing catalog-v2 detail including current SKU price, stock hint,
+images and publication/currency rules. Omit unpublished/missing products and offers whose
+SKU is absent from current visible variants. Sold-out variants keep the shop's `out`
+state; no historical offer price or client amount can become a purchase price. Checkout
+continues to use the existing quote/stock authority. Empty offers/items are `[]`.
+
+Retention: publication state/version lives with its session; official video metadata with
+its binding. No new personal data is collected. No automatic purge, no deletion endpoint,
+no old-row backfill, no customer/channel messages and no new external side effect. Hiding
+a replay takes effect on subsequent reads; cached/old write receipts do not republish it.
+The existing session/binding deletion policy is unchanged; FK references fail closed.
+
+Acceptance: CI-only `TestLiveReplayOfficialPermalinkRead`,
+`TestLiveReplayPermalinkTrustBoundary`, `TestLiveReplayOfficialReadPersistsVideo`,
+`TestLiveReplayPublicationAndBuyerReads` bind to the PR head/tested merge SHA. MOCK Graph
+and REAL_PG cover persistence/RLS/publication/permissions/scope/idempotency/CAS/current
+catalog parity. SANDBOX/LIVE/browser UI/independent review remain NOT_RUN until evidenced.
+
+## Amendment 2026-11-01 — FEAT-MANUAL-DISCOUNT (§G3 + picker thumbnail; migration 0220)
+
+Supersedes: §G3's prohibition on a discount **only** for the bounded named adjustment below. It does not supersede the no-item-price, tenant/store authority, payment/stock, messaging or permission boundaries. Migration **0220** is assigned by the integrator's 2026-11-01 REBASE card (renumbered from 0216); it follows base migration 0219. Quote/refund allocation authority: [cart-quote-v1 amendment](cart-quote-v1.md#amendment-2026-11-01--feat-manual-discount-0220).
+
+Canonical shared-pipeline endpoint: `POST /v1/admin/stores/{store_id}/orders/for-buyer` (existing route; additive discount grammar below).
+
+| Existing endpoint (prefix `/v1/admin/stores/{store_id}`) | Additive request/response | Authority/result |
+| --- | --- | --- |
+| `POST /orders/manual` | Optional non-null `discount:{name,amount_minor}`; all existing body keys remain required. Success adds the normalized `discount` when supplied. | `inventory:reserve` AND `catalog:read`; 201 new / 200 exact replay |
+| `POST /orders/for-buyer` | Same optional discount in the shared pipeline; existing `for` and `send_payment_link` semantics unchanged. | Existing for-buyer permissions and eligibility; 201 / 200 |
+| `GET /orders/{order_id}` | Optional `adjustments:[{kind:"manual_discount",name,amount_minor,currency}]` from the stored order quote; absent for older/no-discount orders. | `orders:read`; 200, no repricing |
+| `GET /catalog-products` (existing search/filter/pagination) | Each product adds `cover_image_url:string|null`. Main image uses `/api/stores/{authenticated store}/products/{product}/images/{cover_image_id}?w=360`; no image -> null. | `catalog:read`; 200; existing private image route authenticates and scopes every read |
+
+Buyer `GET /v1/buyer/orders/{order_id}` and the existing order-link exchange carry the same `snapshot.quote.adjustments` and frozen final money. Their owner capability, link expiry and opaque refusal rules are unchanged. Existing bank-transfer/pickup/COD payment views continue to use the discounted order total. UI: pending PARITY-MANUAL-ORDER; this card adds no UI page.
+
+Example addition to the **existing** manual/for-buyer request:
+```json
+{"discount":{"name":"  直播優惠  ","amount_minor":100}}
+```
+This is not a complete body: items/customer/delivery/payment_mode/locale (and the for-buyer keys) are still required. Full success shape for manual creation:
+```json
+{"order_id":"uuid","commercial_state":"AWAITING_TRANSFER","payment_mode":"bank_transfer","total_minor":2400,"currency":"TWD","expires_at":"RFC3339-UTC","buyer_link":null,"link_state":"storefront_unavailable","source":"merchant_manual","discount":{"name":"直播優惠","amount_minor":100}}
+```
+Name is trimmed, 1..30 printable Unicode characters; amount is integer `0 < amount_minor <= server goods subtotal` and <= 1e12. Shipping is excluded. Only one fixed amount is supported, in the quote's currency; a body currency, item price, client total, tenant_id or store_id remains an unknown-field refusal. No permission or setting is added.
+
+Every POST retains the required canonical `Idempotency-Key` (8..128 `[A-Za-z0-9_.:-]`), JSON <=64 KiB, no query, duplicate/unknown-key refusal at every depth, server-authenticated session scope and no automatic retry. Same key + same normalized discount name/amount = the same order/link/amount, with no second hold/audit; different discount name or amount (including added/removed discount) = **409 `idempotency_conflict`**, including a resume before receipt completion. Existing version/conflict checks remain: cart/service/allocation/policy changes or expired quote -> 409 `conflict`; existing for-buyer `bundle_already_ordered` / `bundle_buyer_mismatch` apply. There is no discount PATCH or independent version to edit after placement.
+
+Results/errors (additive to §G3 and live-console-v1 §5): 200 replay, 201 creation; 400 `invalid_json` (duplicate/unknown fields, malformed JSON or non-integer typed amount); 415 `json_required`; 422 `invalid_request` (missing/null discount components, empty/overlong/control name, nonpositive/out-of-range amount or existing validation); **422 `discount_exceeds_subtotal`**; **422 `cod_limit`** (manual/for-buyer final total + surcharge above cap or failing the existing COD amount constraint); 409 `idempotency_conflict|conflict|insufficient_inventory`; 401 `unauthorized`; 403 `forbidden`; 404 `not_found` (foreign scope/order stays opaque); 503 `retry_later` (uncertain, retry SAME key explicitly). Existing 422 `bank_transfer_unavailable|pay_at_pickup_unavailable|pay_at_pickup_amount_exceeds|cash_on_delivery_unavailable|cvs_entry_unavailable` and 429 `cash_on_delivery_limit` remain. For-buyer optional DM uses only the existing dispatcher/outbox and existing eligibility; unrequested DM remains not sent. BFF transport failures retain 503/504 semantics.
+
+Audit/receipt: `order.manual_created.details.discount` and `ops.command_results.response.discount` contain normalized name + amount in the same existing merchant command transaction; no body/contact data is added to audit. Receipt lifetime/idempotency and link retention remain §G3. `storefront.manual_order_discounts` retains authorization/hash/one quote binding with financial order evidence and contains no buyer/contact/plaintext token. No destructive migration, historical repricing or cleanup is part of this amendment. Thumbnail width follows media-sizes-v1 (360px, no new pipeline); the authenticated image route and its existing fallback/cache policy remain authoritative.
+
+OpenAPI additions: core-openapi `ManualOrderDiscount` / `QuoteAdjustment` and merchant detail `adjustments`; catalog-inventory-openapi product-list `cover_image_url`. The existing admin tools BFF admits the bounded discount object and preserves coded errors; strict admin/buyer models retain the additive fields. Gate: the CI-only assertions and RED run IDs in cart-quote-v1's amendment; E3 requires this PR's own GREEN and independent review before integration acceptance.

@@ -6,9 +6,10 @@ export const settingsUUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
 const uuid = "[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}";
 const session = `live-sessions/${uuid}`;
 export type SettingsKind =
-  "quickstart" | "profile" | "settings" | "templates" | "reminders" | "blocklist" | "check" | "remove" |
+  "replay" | "quickstart" | "profile" | "settings" | "templates" | "reminders" | "blocklist" | "check" | "remove" |
   "contactList" | "contactDetail" | "contactHandled";
 const resources: [SettingsKind, RegExp, string[]][] = [
+ ["replay", new RegExp(`^${session}/replay$`), ["GET", "PUT"]],
   ["contactList", /^contact-messages$/, ["GET"]],
   ["contactDetail", new RegExp(`^contact-messages/${uuid}$`), ["GET"]],
   ["contactHandled", new RegExp(`^contact-messages/${uuid}/handled$`), ["POST"]],
@@ -171,6 +172,7 @@ export function settingsBody(kind: SettingsKind, raw: string): boolean {
     const v = obj(JSON.parse(raw));
     if (kind === "contactHandled")
       return exact(v, ["expected_version"]) && integer(v.expected_version) === 0;
+    if (kind === "replay") return exact(v,["public","expected_version"]) && typeof v.public === "boolean" && integer(v.expected_version,1)<Number.MAX_SAFE_INTEGER;
     if (kind === "quickstart") return exact(v, []);
     if (kind === "profile")
       return (
@@ -265,6 +267,7 @@ export function settingsData(
       store_name: bool(steps.store_name), shipping: bool(steps.shipping), first_product: bool(steps.first_product),
     } };
   }
+  if (kind === "replay") return {session_id:id(v.session_id),public:bool(v.public),version:integer(v.version,1)};
   if (kind === "profile") return {
     name: str(v.name, 120),
     contact_email: str(v.contact_email, 254),
@@ -382,6 +385,7 @@ export function settingsData(
 }
 /** Boundary errors carry only a closed code, never an upstream diagnostic. */
 export const settingsCodes = new Set([
+ "no_official_video", "invalid_transition", "version_conflict",
   "unauthorized",
   "forbidden",
   "not_found",

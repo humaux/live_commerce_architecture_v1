@@ -1,5 +1,5 @@
 // Purpose: merchant contact list/detail and the one versioned mark-handled command.
-// Depends on: platform scope, command receipts/audit, storefront encryption and migration 0211's restricted definers.
+// Depends on: platform scope, command receipts/audit, storefront encryption and migration 0222's restricted definers.
 // Used by: NewHandler and the authenticated admin contact BFF.
 // Invariants: inbox permissions rechecked after waits/replay; receipts contain opaque metadata only; private no-store responses.
 package httpapi

@@ -36,7 +36,7 @@
   },
   {
     "table": "buyerhttp.Routes",
-    "dispatcher_sha256": "bfbb4441b77afb0b48f0c3bd0c326b75e276a528fa54e588a645cbe0f814c43a",
+    "dispatcher_sha256": "592b3c50a7298250c073d368757686783fa8eeec8ece8fe33eb82c3f5dc5672d",
     "functions": [
       "RouteTable.HasPrefix",
       "admittedPaymentMethod",
@@ -49,6 +49,7 @@
       "catalogRequest",
       "claimToken",
       "classify",
+      "contactDatabaseError",
       "contactDigest",
       "cvsHTTPError",
       "decodeExact",
@@ -63,6 +64,7 @@
       "handler.claimRequest",
       "handler.collectionMediaGet",
       "handler.consentPut",
+      "handler.contactPost",
       "handler.cvsRequest",
       "handler.cvsServe",
       "handler.designGet",
@@ -76,6 +78,8 @@
       "handler.privacyExport",
       "handler.privacyGet",
       "handler.quoteWithCodDue",
+      "handler.replayGet",
+      "handler.returnRequest",
       "handler.storeMedia",
       "handler.transferRequest",
       "handler.viewOnly",
@@ -122,13 +126,15 @@
       "writeOK"
     ],
     "declarations": [
-      "const bootstrapRoute,cartRoute,catalogRoute,catalogV2CollectionRoute,catalogV2CollectionsRoute,catalogV2ProductRoute,catalogV2ProductsRoute,checkoutRoute,claimLinkRoute,claimRedeemRoute,collectionMediaRoute,consentsRoute,designPreviewRoute,designPublishedRoute,destinationItemRoute,destinationRoute,mediaRoute,optionsRoute,orderRoute,ordersRoute,paymentCancelRoute,paymentHandoffRoute,paymentPrepareRoute,paymentRefreshRoute,paymentRoute,primaryOriginRoute,privacyErasureRoute,privacyExportRoute,privacyRoute,quoteRoute,quotesRoute,retireRoute,sessionRoute,storeMediaRoute,unknownRoute",
+      "const bootstrapRoute,cartRoute,catalogRoute,catalogV2CollectionRoute,catalogV2CollectionsRoute,catalogV2ProductRoute,catalogV2ProductsRoute,checkoutRoute,claimLinkRoute,claimRedeemRoute,collectionMediaRoute,consentsRoute,designPreviewRoute,designPublishedRoute,destinationItemRoute,destinationRoute,mediaRoute,optionsRoute,orderRoute,ordersRoute,paymentCancelRoute,paymentHandoffRoute,paymentPrepareRoute,paymentRefreshRoute,paymentRoute,primaryOriginRoute,privacyErasureRoute,privacyExportRoute,privacyRoute,quoteRoute,quotesRoute,replayDetailRoute,replayListRoute,retireRoute,sessionRoute,storeMediaRoute,unknownRoute",
       "const claimDerivedKeyPrefix,claimLinkPath,claimRedeemPath,claimTokenHeader",
+      "const contactRoute",
       "const designPreviewPath,designPublishedPath,previewTokenHeader",
       "const lookupPath,lookupWindow,routeLookup",
       "const maxJSON",
       "const orderLinkPath,routeOrderLink",
       "const routeCVSSelectionGet,routeCVSSelectionOpen,routeCVSSelectionVerify,routeCVSStoreEnter",
+      "const routeReturnRequestCreate,routeReturnRequestDetail,routeReturnRequestList,routeReturnRequestWithdraw",
       "const routeTransferGet,routeTransferProof",
       "const v2DefaultLimit,v2MaxLimit,v2MaxMinorMoney,v2MaxOffset,v2MaxQuery,v2Prefix",
       "func RouteTable.HasPrefix",
@@ -142,6 +148,7 @@
       "func catalogRequest",
       "func claimToken",
       "func classify",
+      "func contactDatabaseError",
       "func contactDigest",
       "func cvsHTTPError",
       "func decodeExact",
@@ -156,6 +163,7 @@
       "func handler.claimRequest",
       "func handler.collectionMediaGet",
       "func handler.consentPut",
+      "func handler.contactPost",
       "func handler.cvsRequest",
       "func handler.cvsServe",
       "func handler.designGet",
@@ -169,6 +177,8 @@
       "func handler.privacyExport",
       "func handler.privacyGet",
       "func handler.quoteWithCodDue",
+      "func handler.replayGet",
+      "func handler.returnRequest",
       "func handler.storeMedia",
       "func handler.transferRequest",
       "func handler.viewOnly",
@@ -251,6 +261,8 @@
       "type quoteAmountResponse",
       "type quoteLineResponse",
       "type quoteResponse",
+      "type replayItem",
+      "type replayOffer",
       "type responseError",
       "type route",
       "type routeEntry",
@@ -274,6 +286,6 @@
       "var linkTokenPattern",
       "var v2Slug"
     ],
-    "reviewed": "2026-10-28 integrator + independent review (Opus, OC-09b quoteWithCodDue + quoteResponse.CodDueMinor; output/buyer-route-table/review-oc09b-pin.md)"
+    "reviewed": "pending independent review (closure needs independent review): output/buyer-route-table/review-contact-store-pin-request.md"
   }
 ]

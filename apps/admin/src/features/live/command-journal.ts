@@ -6,7 +6,7 @@ import { validConsoleBody, validConsoleID } from "./console-request";
 export type LiveRequest = { method: "POST" | "PATCH"; path: string; body: string };
 export type LiveJournal = LiveRequest & { key: string; mayHaveCommitted: boolean };
 const object = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
-/** Accept only this store/scene's five UI commands; browser storage is untrusted input. */
+/** Accept only this store/scene's closed UI commands; browser storage is untrusted input. */
 export function validLiveRequest(v: unknown, scope: string): v is LiveRequest {
   if (!object(v) || typeof v.path !== "string" || typeof v.body !== "string" || v.body.length > 4096) return false;
   const [store, scene, extra] = scope.split(":");
@@ -14,6 +14,9 @@ export function validLiveRequest(v: unknown, scope: string): v is LiveRequest {
   let body: unknown; try { body = JSON.parse(v.body); } catch { return false; }
   if (!object(body) || JSON.stringify(body) !== v.body) return false;
   const base = `/api/stores/${store}/live-sessions/${scene}`;
+  if (v.method === "POST" && v.path === `${base}/claims/window`) return Object.keys(body).join(",") === "expected_version,state,match_mode" &&
+    Number.isSafeInteger(body.expected_version) && (body.expected_version as number) >= 0 && ["OPEN", "CLOSED"].includes(body.state as string) &&
+    ["EXACT", "KEYWORD_QTY_ONLY", "KEYWORD_QTY_CONTAINS"].includes(body.match_mode as string);
   if (v.method === "POST" && ["lifecycle", "copy"].some((p) => v.path === `${base}/${p}`)) return validConsoleBody(v.path, v.body) &&
     Object.keys(body).join(",") === (v.path.endsWith("/copy") ? "title,scheduled_at,expected_version" : "action,expected_version");
   const offer = new RegExp(`^${base}/claims/offers/([^/]+)(/recommend)?$`).exec(v.path);

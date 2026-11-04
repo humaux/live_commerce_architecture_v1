@@ -152,7 +152,8 @@ test("round 3: the real PR #30 diff selects live-console without the shared-http
   // specs, whose import closure reaches internal/live + internal/inbox, so the round-3 FILE join for
   // live_stream.go gains exactly identity (25 -> 26 FILE modes). CVS stays excluded (next test).
   // W3-U2 (+1): --browser-live-settings clicks comment rows served by live_stream.go:39 (covers-derivation.json evidence).
-  assert.ok(modes.length <= 28, `PR #30 must be domain-scoped, not all 48 browsers: ${modes.length}`);
+  // PARITY-LIVE (+1): --browser-live-console-parity runs the same live console harness, so it joins live_stream.go's FILE modes.
+  assert.ok(modes.length <= 29, `PR #30 must be domain-scoped, not all 48 browsers: ${modes.length}`);
 });
 
 test("round 3: live_stream transport alone selects live-console but not CVS", () => {
@@ -167,7 +168,8 @@ test("round 3: live_stream transport alone selects live-console but not CVS", ()
   // settings-real specs -> settings wizard import closure -> internal/live, internal/inbox), evidence-backed in
   // covers-derivation.json; the CVS exclusion above is what this test really guards, and it still holds.
   // W3-U2 (+1): --browser-live-settings clicks comment rows served by live_stream.go:39 (covers-derivation.json evidence).
-  assert.ok(modes.length <= 28, `live_stream transport selected ${modes.length} modes (W3-U2 derives 27 FILE modes + foundation)`);
+  // PARITY-LIVE (+1): --browser-live-console-parity drives the same live console routes (28 FILE modes + foundation).
+  assert.ok(modes.length <= 29, `live_stream transport selected ${modes.length} modes (W3-U2 derives 27 FILE modes + parity + foundation)`);
 });
 
 test("round 3: handler.go and unknown httpapi files remain conservative", () => {
@@ -244,7 +246,7 @@ test("round 2 narrowness: internal/live/stream.go does NOT select unrelated doma
 test("round 2 evidence: a metareply change selects exactly the modes whose harnesses drive MetaReply (live console + e2e)", () => {
   // internal/inbox does not import metareply and the inbox specs never call a metareply-served route — the evidence
   // selects --browser-live-console (comment fixtures) and --browser-e2e only; guessing more would re-widen round 1.
-  assert.deepEqual(planPr(["internal/integrations/metareply/reply.go"], usage).modes, [...FOUNDATION, "--browser-live-console", "--browser-e2e"]);
+  assert.deepEqual(planPr(["internal/integrations/metareply/reply.go"], usage).modes, [...FOUNDATION, "--browser-live-console", "--browser-live-console-parity", "--browser-e2e"]);
 });
 
 // Round 4 CORRECTION (K3 P2-1): the round-2 premise "the live-console harness never touches internal/inbox" was the
@@ -685,7 +687,7 @@ test("CI-SPEED-3: unknown specs, helpers and apps cannot silently select zero mo
 test("CI-SPEED-3: UI selections union with each other and backend/deploy guards", () => {
   const spec = "tests/admin/live-settings.spec.ts", component = "apps/storefront/components/CvsPickup.tsx";
   const selected = planPr([spec, component, "internal/integrations/metareply/reply.go", "deploy/compose.yml"], usage);
-  const expected = new Set([...FOUNDATION, ...uiOwners(spec), ...uiOwners(component), "--browser-live-console", "--browser-e2e"]);
+  const expected = new Set([...FOUNDATION, ...uiOwners(spec), ...uiOwners(component), "--browser-live-console", "--browser-live-console-parity", "--browser-e2e"]);
   assert.deepEqual(new Set(selected.modes), expected);
   assert.equal(selected.deploy, true);
   assert.equal(selected.modes.length, new Set(selected.modes).size);

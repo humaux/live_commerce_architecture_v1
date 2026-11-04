@@ -1,0 +1,4 @@
+gate (shard:g08)	Gate	2026-11-01T05:22:24.6167785Z     live_claims_schema_test.go:356: §3.2 column privilege matrix mismatch
+gate (shard:g08)	Gate	2026-11-01T05:22:24.6168298Z         missing: []
+gate (shard:g08)	Gate	2026-11-01T05:22:24.6170017Z         extra:   [commerce_replay_reader live.offers.created_at SELECT commerce_replay_reader live.offers.id SELECT commerce_replay_reader live.offers.session_id SELECT commerce_replay_reader live.offers.sku_id SELECT commerce_replay_reader live.offers.store_id SELECT commerce_replay_reader live.offers.tenant_id SELECT]
+gate (shard:g08)	Gate	2026-11-01T05:22:24.6171240Z === RUN   TestLiveClaimsKC03Schema/definers

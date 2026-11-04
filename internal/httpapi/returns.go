@@ -101,6 +101,7 @@ func rmaRoute(method string, next http.HandlerFunc) http.HandlerFunc {
 
 // registerReturnRoutes mounts the nine W3-08B routes; NewHandler calls it unconditionally.
 func registerReturnRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
+	registerBuyerReturnRequestRoutes(mux, pool)
 	const base = "/v1/admin/stores/{store_id}"
 	// POST cancel: {expected_state, reason}; fulfillment:write. A paid card order is refused 409 refund_first until refunds cover the capture.
 	mux.HandleFunc("POST "+base+"/orders/{order_id}/cancel", shipmentRoute(http.MethodPost, func(w http.ResponseWriter, r *http.Request) {

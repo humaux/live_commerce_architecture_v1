@@ -20,7 +20,7 @@ func routeSample(pattern string) string {
 }
 
 func TestRouteTableEntriesAreDispatched(t *testing.T) {
-	if len(routeRows) != 47 { // original 46 plus exactly one contact POST (storefront-v2 contact amendment)
+	if len(routeRows) != 53 { // 46 frozen legacy rows plus two FEAT-LIVE-REPLAY reads, four FEAT-BUYER-RMA return-request rows and one FEAT-CONTACT-STORE contact POST.
 		t.Fatalf("inventory changed: %d entries", len(routeRows))
 	}
 	seen := map[string]bool{}
@@ -77,20 +77,32 @@ func TestRouteTableMatchesLegacy(t *testing.T) {
 	methods := []string{"", "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "TRACE", "CONNECT", "get"}
 	for path := range paths {
 		got, want := matchRoute(path), legacyMatchRoute(path)
-		// The frozen matcher remains unchanged. This exact new path has its own contract;
-		// every historical path and cleaning alias retains the old oracle.
-		if path == "/v1/buyer/contact-messages" {
-			want = route{kind: contactRoute}
+		// Keep the immutable legacy oracle unchanged. Independently specify the additive
+		// return-request, replay and contact paths, including the existing matcher's deferred UUID validation and strict segments.
+		if want.kind == unknownRoute {
+			want = returnRequestOracle(path)
+		}
+		replay, contact := false, false
+		if path == "/v1/buyer/replays" {
+			want, replay = route{kind: replayListRoute}, true
+		} else if id, ok := strings.CutPrefix(path, "/v1/buyer/replays/"); ok && id != "" && !strings.Contains(id, "/") {
+			want, replay = route{kind: replayDetailRoute, id: id}, true
+		} else if path == "/v1/buyer/contact-messages" {
+			// This exact new path has its own contract (storefront-v2 contact amendment); its cleaning aliases keep the old oracle.
+			want, contact = route{kind: contactRoute}, true
 		}
 		if got != want {
 			t.Errorf("path %q: got %+v want %+v", path, got, want)
 		}
 		for _, method := range methods {
-			wantAllowed := legacyAllowed(want.kind, method)
-			if path == "/v1/buyer/contact-messages" {
-				wantAllowed = method == http.MethodPost
+			wantMethod := legacyAllowed(want.kind, method) || returnRequestOracleAllowed(want.kind, method)
+			if replay {
+				wantMethod = method == http.MethodGet
 			}
-			if allowed(got.kind, method) != wantAllowed {
+			if contact {
+				wantMethod = method == http.MethodPost
+			}
+			if allowed(got.kind, method) != wantMethod {
 				t.Errorf("method drift: %s %s", method, path)
 			}
 		}

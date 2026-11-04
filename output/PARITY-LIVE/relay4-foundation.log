@@ -1,0 +1,54 @@
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:39:59.4790612Z ✖ secondary failures preserve A1; only A1 is periodic; IG notice follows the platform/embeddability observation (185.573275ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:39:59.4809588Z ✖ the existing console refresh also explicitly refreshes its parent list; no automatic list read (65.077091ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:39:59.4815458Z ✔ parent forwards only an explicit refresh callback and retains the scene when list is unavailable (49.870227ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:39:59.4817193Z ✔ every explicit browser response/event/navigation waiter has a finite sub-test budget (57.594746ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:39:59.9679454Z ✔ A1 failures back off 3/6/12/24/30 seconds and success resets to five seconds (254.205756ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:39:59.9681008Z ✔ Retry-After is a minimum; hidden tabs cancel polling; forbidden locks and conceals (108.766427ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:39:59.9682554Z ✔ secondary reads are mount/refresh only, independent from A1 and non-fatal (66.271469ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:39:59.9684173Z ✔ UNKNOWN journal restores the exact key/method/path/body and explicit retry after reload (51.903107ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:39:59.9685919Z ✔ first definite 403 clears journal but locks commands; late success after navigation clears only its own key (49.216788ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:39:59.9687565Z ✔ private reads preserve Retry-After seconds and dates, without changing existing error codes (39.687638ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:39:59.9689168Z ✔ a restored in-flight or UNKNOWN request retains its journal after a replay 403 (116.663321ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:39:59.9690439Z ✔ restored copy success dispatches completion only in the still-current scene (92.475883ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:39:59.9695053Z ✔ SessionCopy resyncs closed same-ID titles, preserves open edits and cancels to latest draft (51.20584ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:39:59.9695935Z ✔ SessionCopy submit uses latest version; UNKNOWN request survives later draft/input changes (50.710301ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0132626Z ℹ tests 14
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0133125Z ℹ suites 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0133436Z ℹ pass 12
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0133741Z ℹ fail 2
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0134071Z ℹ cancelled 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0134409Z ℹ skipped 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0134701Z ℹ todo 0
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0135047Z ℹ duration_ms 1338.897289
+--
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0150536Z ✖ failing tests:
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0150997Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0151315Z test at tests/admin/live-console-render.test.ts:52:1
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0152171Z ✖ secondary failures preserve A1; only A1 is periodic; IG notice follows the platform/embeddability observation (185.573275ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0153284Z   TypeError [Error]: Cannot convert undefined or null to object
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0153710Z       at Object.values (<anonymous>)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0154137Z       at LiveConsole (evalmachine.<anonymous>:164:1144)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0155449Z       at Object.react_stack_bottom_frame (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:10371:18)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0158366Z       at renderWithHooks (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:5361:19)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0160632Z       at renderElement (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:5796:23)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0162926Z       at retryNode (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:6772:31)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0164777Z       at performWork (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:7919:19)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0166646Z       at startWork (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:8807:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0169398Z       at renderToStringImpl (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:8933:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0172223Z       at process.env.NODE_ENV.exports.renderToStaticMarkup (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:10426:14)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0173108Z 
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0173358Z test at tests/admin/live-console-render.test.ts:65:1
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0174271Z ✖ the existing console refresh also explicitly refreshes its parent list; no automatic list read (65.077091ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0175397Z   TypeError [Error]: Cannot convert undefined or null to object
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0175924Z       at Object.values (<anonymous>)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0176408Z       at LiveConsole (evalmachine.<anonymous>:164:1144)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0178011Z       at Object.react_stack_bottom_frame (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:10371:18)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0179772Z       at renderWithHooks (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:5361:19)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0181435Z       at renderElement (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:5796:23)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0183078Z       at retryNode (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:6772:31)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0184712Z       at performWork (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:7919:19)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0186493Z       at startWork (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:8807:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0188323Z       at renderToStringImpl (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:8933:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0190168Z       at process.env.NODE_ENV.exports.renderToStaticMarkup (/home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom-server-legacy.node.development.js:10426:14)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0196983Z ## matrix-receipts node-test end
+foundation	Node unit suites (storefront, i18n)	2026-10-30T13:40:00.0212316Z ##[error]Process completed with exit code 1.

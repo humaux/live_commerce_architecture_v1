@@ -1,0 +1,11 @@
+file:///Volumes/data/live_commerce_architecture_v1/.worktrees/feat-live-replay/output/ci-select-backend-browser/tools/derive-narrow-covers.mjs:1742
+  if (!targets.size) throw new Error(`${file.rel}: no domain service coverage; classify explicitly, never infer BACKEND_ONLY from missing URL evidence`);
+                           ^
+
+Error: internal/httpapi/profile.go: no domain service coverage; classify explicitly, never infer BACKEND_ONLY from missing URL evidence
+    at file:///Volumes/data/live_commerce_architecture_v1/.worktrees/feat-live-replay/output/ci-select-backend-browser/tools/derive-narrow-covers.mjs:1742:28
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.15.0

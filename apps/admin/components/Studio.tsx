@@ -1,20 +1,25 @@
 // Purpose: Owns studio draft editing and rehearsal controls.
-// Depends on: react, react-dom, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/presentation-copy, @/lib/model, @/lib/settings-client, @/lib/studio-client, @/lib/studio-model, @/lib/studio-copy, @/lib/orders-model, @/lib/promotions-model, ./WorkspaceFrame, ./AdminPageHeader, ./OperationalForms.module.css
+// Depends on: react, react-dom, next/navigation, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/settings-client, @/lib/studio-client, @/lib/studio-model, @/lib/studio-copy, @/lib/orders-model, @/lib/promotions-model, ./WorkspaceFrame, ./AdminPageHeader, ./OperationalForms.module.css, @live-commerce/format, @/src/features/live/{console-client,console-model,use-live-workspace,workspace-copy}, ./live-sessions/{SessionTasks,SessionReview,SessionMetadataEditor,session-tasks.module.css}
 // Used by: apps/admin/app/[locale]/studio/page.tsx
+// Invariants: Go owns draft CAS, scope and commands; session cards never infer provider success.
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useRouter } from "next/navigation";
-import type { Locale } from "@live-commerce/i18n";
-import { Badge, DateControl, Field, FormRow } from "@live-commerce/ui";
+import { liveSessionsCopy, type Locale } from "@live-commerce/i18n";
+import { SessionTasks, useSessionTask } from "./live-sessions/SessionTasks";
+import { SessionMetadataEditor, type MetadataForm as Form } from "./live-sessions/SessionMetadataEditor";
+import { SessionReview } from "./live-sessions/SessionReview";
+import type { CopyResult } from "@/src/features/live/console-model";
+import { readConsole } from "@/src/features/live/console-client";
+import taskStyle from "./live-sessions/session-tasks.module.css";
+import { Badge } from "@live-commerce/ui";
 import { money } from "@live-commerce/format";
 import { readSessionResults } from "@/src/features/live/console-client";
 import { useLiveRead } from "@/src/features/live/use-live-workspace";
 import { workspaceCopy } from "@/src/features/live/workspace-copy";
-import { SessionCopy } from "@/src/features/live/SessionCopy";
 import "@/src/features/live/workspace.css";
-import { presentationCopy } from "@/lib/presentation-copy";
 import type { Store } from "@/lib/model";
 import { csrfCookie, sessionBoundary } from "@/lib/settings-client";
 import {
@@ -22,7 +27,7 @@ import {
   startStudioRehearsal, stopStudioRehearsal, StudioError,
   type DraftInput, type StudioErrorCode,
 } from "@/lib/studio-client";
-import type { AspectRatio, Draft, StudioDetail, StudioPage } from "@/lib/studio-model";
+import type { Draft, StudioDetail, StudioPage } from "@/lib/studio-model";
 import { studioCopy } from "@/lib/studio-copy";
 import { displayTime } from "@/lib/orders-model";
 import { instantToTaipei, taipeiToInstant } from "@/lib/promotions-model";
@@ -33,7 +38,7 @@ import s from "./OperationalForms.module.css";
 type Status = "initial" | "loading" | "ready" | "hidden" | StudioErrorCode;
 type PageView = { scope: string; status: Status; data: StudioPage | null };
 type DetailView = { key: string; status: Status; data: StudioDetail | null };
-type Form = { id: string; title: string; scheduled: string; aspect: AspectRatio };
+type MetadataExit = { scope: string; scene: string; id: string; boundary: string; cookie: string };
 type Action = "create" | "edit" | "start" | "stop";
 type EditInput = DraftInput & { expected_version: number };
 type Pending = { signature: string; key: string; action: Action; body: DraftInput | EditInput | { authorization_id: string; expected_session_version: number } | { attempt_id: string }; sessionID: string; storeID: string; boundary: string };
@@ -110,11 +115,16 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   cursor: string;
   initialError: StudioErrorCode | null;
 }) {
-  const c = studioCopy[locale];
+  const p = liveSessionsCopy[locale], task = useSessionTask();
+  const c = { ...studioCopy[locale], editor: p.editDraft, editorHint: p.sourceHelp, rehearsal: p.diagnostics, prepared: p.diagnosticPrepared, noPrepared: p.diagnosticAbsent, start: p.diagnosticStart, operationState: { ...studioCopy[locale].operationState, READY: p.processing } };
+  const [metadataExit, setMetadataExit] = useState<MetadataExit | null>(null);
+  const metadataFocus = useRef<HTMLElement | null>(null);
+  const [filter, setFilter] = useState("all");
+  const [copyResult, setCopyResult] = useState<CopyResult | null>(null);
   const router = useRouter();
   const storeID = store?.id ?? "";
   const scope = `${locale}|${storeID}|${cursor}`;
-  const route = studioURL(locale, storeID, cursor, scene);
+  const route = `${studioURL(locale, storeID, cursor, scene)}${task === "edit" ? "#edit" : ""}`;
   const initialRecovery = !initialError && sameRecovery(historyRecovery, scope, scene) ? historyRecovery : null;
   const [page, setPage] = useState<PageView>({ scope: "", status: "initial", data: null });
   const [detail, setDetail] = useState<DetailView>({ key: "", status: "initial", data: null });
@@ -145,6 +155,8 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   const explicitDeparture = useRef(false);
   const previous = useRef<string[]>([]);
   const copyNavigationGuard = useRef<() => boolean>(() => true);
+  const registerCopyNavigationGuard = useCallback((guard: () => boolean) => {
+    copyNavigationGuard.current = guard; return () => { if (copyNavigationGuard.current === guard) copyNavigationGuard.current = () => true; }; }, []);
   const currentPage = page.scope === scope && (!cookie.current || csrfCookie() === cookie.current)
     ? page : { scope, status: "initial" as Status, data: null };
   // A visible shell is not an authenticated Studio read. Creation must wait
@@ -155,6 +167,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
   const resultIDs = currentPage.data?.items.map((item) => item.session_id) ?? [];
   const results = useLiveRead(`${storeID}:results:${resultIDs.join(",")}`, currentPage.status === "ready" && resultIDs.length > 0,
     (signal) => readSessionResults(storeID, resultIDs, signal));
+  const phases = useLiveRead(`${storeID}:phases:${resultIDs.join(",")}`, currentPage.status === "ready" && resultIDs.length > 0, signal => Promise.all(resultIDs.map(async id => ({ id, snapshot: await readConsole(storeID, id, signal).catch(() => null) }))));
   const liveCopy = workspaceCopy[locale];
   const detailKey = `${storeID}|${selectedID}`;
   const currentDetail = detail.key === detailKey && (!cookie.current || csrfCookie() === cookie.current)
@@ -165,13 +178,14 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
     !!shown && (form.id !== shown.draft.session_id || form.title !== shown.draft.title ||
       form.scheduled !== instantToTaipei(shown.draft.scheduled_at) || form.aspect !== shown.draft.aspect_ratio);
   if (newMode || shown) dirty.current = formDirty;
-  const volatile = useRef({ scope, scene, route, selectedID, detailKey, form, newMode, actionError, formError });
-  volatile.current = { scope, scene, route, selectedID, detailKey, form, newMode, actionError, formError };
+  const volatile = useRef({ scope, scene, route, selectedID, detailKey, form, newMode, busy, actionError, formError });
+  volatile.current = { scope, scene, route, selectedID, detailKey, form, newMode, busy, actionError, formError };
   const recoveryElsewhere = !!historyRecovery && !sameRecovery(historyRecovery, scope, scene);
   const recoveryGuard = hidden.current || sameRecovery(historyRecovery, scope, scene);
   const recoveryRoute = recoveryElsewhere ? historyRecovery?.route : null;
   useEffect(watchRecoverySession, []);
   useEffect(() => { explicitDeparture.current = false; }, [scope, scene]);
+  useEffect(() => { setMetadataExit(null); }, [scope, scene, selectedID, task]);
 
   // D02 (G-UI8): `clear` must keep ONE identity for the life of the page. It used to close over scope and detailKey; detailKey carries the
   // selected scene id, which comes from the page data, and loadPage resets that data on every run. So page data arriving changed `clear`, which
@@ -200,6 +214,8 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
       setFormError("");
       setPinnedScene({ scope: "", id: "" });
       setBusy(false);
+      setCopyResult(null);
+      setMetadataExit(null);
     });
   }, []);
 
@@ -421,6 +437,7 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
         setActionError(null);
         setFormError("");
         setBusy(false);
+        setMetadataExit(null);
       });
     };
     const visibility = () => document.visibilityState === "hidden" ? conceal() : reveal();
@@ -475,17 +492,41 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
 
   useEffect(() => () => { retainHistory(); }, []);
 
-  function mayLeave(depart = false) {
+  function metadataExitAllowed(exit: MetadataExit) {
+    const state = volatile.current;
+    return state.scope === exit.scope && state.scene === exit.scene && state.selectedID === exit.id &&
+      !state.newMode && state.form.id === exit.id && boundary.current === exit.boundary && !!exit.boundary &&
+      cookie.current === exit.cookie && !!exit.cookie && csrfCookie() === exit.cookie &&
+      !hidden.current && !blocked.current && !concealed.current && !historyRecovery && !state.busy &&
+      !pending.current && state.actionError !== "uncertain" && copyNavigationGuard.current();
+  }
+  function keepMetadata() {
+    const exit = metadataExit;
+    flushSync(() => setMetadataExit(null));
+    const field = metadataFocus.current;
+    if (exit && metadataExitAllowed(exit) && field?.isConnected && !field.matches(":disabled")) field.focus();
+  }
+  function leaveMetadata(discard: MetadataExit | null = null) {
+    const exit = discard ?? { scope, scene, id: selectedID, boundary: boundary.current, cookie: cookie.current };
+    if (!shown || !scene || !metadataExitAllowed(exit)) return;
+    if (dirty.current && !discard) { setMetadataExit(exit); return; }
+    if (navigate(storeID, cursor, exit.id, "preparation", discard ?? undefined)) {
+      setForm(formOf(shown.draft)); setFormError(""); setMetadataExit(null);
+    }
+  }
+  function mayLeave(depart = false, discard?: MetadataExit) {
+    // Discard authorizes only local metadata loss, after rechecking every other departure fence.
+    if (discard && !metadataExitAllowed(discard)) return false;
     if (recoveryGuard) return false;
-    if (pending.current || actionError === "uncertain") return false;
-    if (dirty.current && !window.confirm(c.dirty)) return false;
+    if (pending.current || volatile.current.actionError === "uncertain") return false;
+    if (dirty.current && !discard && !window.confirm(c.dirty)) return false;
     if (!copyNavigationGuard.current()) return false;
     if (sameRecovery(historyRecovery, scope, scene)) historyRecovery = null;
     if (depart) explicitDeparture.current = true;
     return true;
   }
-  function navigate(nextStore: string, nextCursor: string, nextScene: string) {
-    if (!mayLeave(true)) return false;
+  function navigate(nextStore: string, nextCursor: string, nextScene: string, nextTask = "edit", discard?: MetadataExit) {
+    if (!mayLeave(true, discard)) return false;
     dirty.current = false;
     setNewMode(false);
     if (nextStore !== storeID || nextCursor !== cursor) clear("loading");
@@ -493,8 +534,19 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
       detailEpoch.current++;
       detailController.current?.abort();
       setDetail({ key: `${nextStore}|${nextScene}`, status: "loading", data: null });
+      // Selecting the already loaded first card keeps the same detail key.
+      // Restart the read that navigation just cancelled, even in that case.
+      if (nextScene === selectedID) setDetailReload((value) => value + 1);
     }
-    router.push(studioURL(locale, nextStore, nextCursor, nextScene));
+    const target = `${studioURL(locale, nextStore, nextCursor, nextScene)}${nextScene ? `#${nextTask}` : ""}`;
+    const next = new URL(target, window.location.href);
+    // Next 16 appends a same-route push's fragment to the hydration URL (#preparation + #edit
+    // -> #preparation#edit); set navigation-only fragment state natively for same-document changes.
+    if (nextScene && next.pathname === window.location.pathname && next.search === window.location.search) {
+      window.location.hash = nextTask;
+    } else {
+      router.push(target);
+    }
     return true;
   }
   function newScene() {
@@ -544,7 +596,8 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
         if (epoch !== actionEpoch.current) return;
         pending.current = null;
         dirty.current = false;
-        setNewMode(false);
+        volatile.current.actionError = null;
+        setActionError(null);
         setPageReload((value) => value + 1);
         navigate(storeID, "", draft.session_id);
       } else if (action === "edit") {
@@ -619,9 +672,16 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
       {c.retrySame}</button>}
   </div>;
 
+  if ((!task || ["preparation", "post-live", "copy", "next-draft", "end", "review", "timeline", "audience"].includes(task)) && scene && !newMode) return <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="live" onBeforeNavigate={() => mayLeave(true)}>
+    <div data-testid="merchant-studio">{shown ? ["review", "timeline", "audience"].includes(task)
+      ? <SessionReview key={shown.draft.session_id} locale={locale} store={storeID} draft={shown.draft} task={task} />
+      : <SessionTasks key={shown.draft.session_id} locale={locale} store={storeID} detail={shown} task={task || "preparation"} refresh={refresh} copyResult={copyResult} onCopy={setCopyResult} registerNavigationGuard={registerCopyNavigationGuard} onEdit={() => navigate(storeID, cursor, shown.draft.session_id)} onBack={() => navigate(storeID, "", "")} />
+      : <p role={currentDetail.status === "loading" ? "status" : "alert"}>{statusText(currentDetail.status)}</p>}</div>
+  </WorkspaceFrame>;
+
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="live" onBeforeNavigate={() => mayLeave(true)}>
-    <div className={`studio-page ${s.page}`} data-testid="merchant-studio">
-      <AdminPageHeader locale={locale} description={c.subtitle} actions={<>
+    <div className={`studio-page ${s.page} ${taskStyle.page} ${!scene && !newMode ? taskStyle.list : ""}`} data-testid="merchant-studio">
+      <AdminPageHeader locale={locale} title={p.sessions} actions={<>
           {stores.length > 1 && <label>{c.store}<select value={storeID} onChange={(event) => {
             previous.current = []; navigate(event.target.value, "", "");
           }}>{stores.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
@@ -639,19 +699,21 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
           {locale === "zh-CN" ? "返回待处理场次" : locale === "zh-TW" ? "返回待處理場次" : "Return to session"}
         </button>
       </p>}
-      <div className={`studio-surface${mediaOn ? "" : " studio-planning-only"}`}>
+      <div className={taskStyle.filters}>{([["all", p.all], ["draft", p.preparing], ["live", p.live], ["ended", p.ended]] as const).map(([value, label]) => <button key={value} type="button" aria-pressed={filter === value} disabled={filter === value} onClick={() => setFilter(value)}>{label}</button>)}</div>
+      <div className={`studio-surface${mediaOn ? "" : " studio-planning-only"}`} style={!scene && !newMode ? { display: "block", maxWidth: 1000 } : undefined}>
         <section className="studio-scenes" aria-label={c.scenes}>
           <button type="button" className="primary studio-new" disabled={!creationReady || recoveryGuard || recoveryElsewhere || !storeID || busy || actionError === "uncertain" || shown?.can_manage === false}
             aria-describedby={currentPage.status !== "ready" ? "studio-list-status" : undefined}
-            onClick={newScene}>＋ {c.newScene}</button>
+            onClick={newScene}>{p.create}</button>
+          <button type="button" disabled={!shown?.can_manage || busy || formDirty || actionBlocked} onClick={() => { if (shown && mayLeave(true)) router.push(`${studioURL(locale, storeID, cursor, shown.draft.session_id)}#copy`); }}>{p.copyLast}</button>
           <h2 className="sr-only">{c.scenes}</h2>
           {currentPage.status === "ready" ? currentPage.data?.items.length ? <>
             <div className="studio-scene-list">
-              {currentPage.data.items.map((item) => <button key={item.session_id} type="button"
+              {currentPage.data.items.filter(item => filter === "all" || phases.data?.find(row => row.id === item.session_id)?.snapshot?.session.lifecycle === filter || filter === "ended" && phases.data?.find(row => row.id === item.session_id)?.snapshot?.session.lifecycle === "archived").map((item) => <article key={item.session_id} className={taskStyle.card}><button type="button"
                 className={`studio-scene ${!newMode && selectedID === item.session_id ? "selected" : ""}`}
                 aria-current={!newMode && selectedID === item.session_id ? "true" : undefined}
-                onClick={() => { navigate(storeID, cursor, item.session_id); }}>
-                <strong>{item.title}</strong><Badge>{c.state[item.state as keyof typeof c.state] ?? item.state}</Badge>
+                onClick={() => { navigate(storeID, cursor, item.session_id, "preparation"); }}>
+                <strong>{item.title}</strong><Badge>{(() => { const phase = phases.data?.find(row => row.id === item.session_id)?.snapshot?.session.lifecycle; return phase === "live" ? p.live : phase === "ended" || phase === "archived" ? p.ended : phase === "draft" ? p.preparing : c.state[item.state as keyof typeof c.state] ?? c.loading; })()}</Badge>
                 <small>{item.scheduled_at ? `${displayTime(locale, item.scheduled_at)} ${c.taipeiTime}` : c.schedule}</small>
                 <span className="live-session-results" data-testid={`live-session-results-${item.session_id}`}>
                   {results.data?.items.filter((result) => result.session_id === item.session_id).map((result) => <span key={result.session_id}>
@@ -661,7 +723,9 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
                   </span>)}
                   {results.error && liveCopy.noResults}
                 </span>
-              </button>)}
+              </button><div className={taskStyle.footer}>
+                <button type="button" onClick={() => { const phase = phases.data?.find(row => row.id === item.session_id)?.snapshot?.session.lifecycle; if (mayLeave(true)) router.push(phase === "live" ? `/${locale}/studio/console?store=${storeID}&scene=${item.session_id}` : `${studioURL(locale, storeID, cursor, item.session_id)}#${phase === "ended" || phase === "archived" ? "post-live" : "preparation"}`); }}>{(() => { const phase = phases.data?.find(row => row.id === item.session_id)?.snapshot?.session.lifecycle; return phase === "live" ? p.console : phase === "ended" || phase === "archived" ? p.after : p.check; })()}</button>
+              </div></article>)}
             </div>
             <div className="studio-pager">
               <button type="button" disabled={!previous.current.length} onClick={() => {
@@ -677,54 +741,17 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
               {currentPage.status === "loading" ? c.loading : statusText(currentPage.status)}
             </div>}
         </section>
-        <section className="studio-editor" aria-label={c.editor}>
-          <h2>{c.editor}</h2><p className="studio-muted">{c.editorHint}</p>
-          {newMode || shown ? <>
-            <FormRow className="studio-fields">
-              <Field id="studio-name" label={c.name}><input id="studio-name" value={form.title} maxLength={400} disabled={!canEdit || busy}
-                onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, title: event.target.value }); setFormError(""); }} /></Field>
-              {locale === "en" ? <Field id="studio-schedule-entry" label={c.schedule}>
-                <div className="studio-schedule-control">
-                  <input id="studio-schedule-entry" type="text" placeholder="YYYY-MM-DDTHH:mm" maxLength={16}
-                    value={form.scheduled} disabled={!canEdit || busy}
-                    onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, scheduled: event.target.value }); setFormError(""); }} />
-                  <span className="studio-schedule-picker">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4M17 3v4M3 10h18" /></svg>
-                    <input type="datetime-local" aria-label={c.pickSchedule} title={c.pickSchedule}
-                      value={form.scheduled} disabled={!canEdit || busy}
-                      min="2000-01-01T00:00" max="2199-12-31T23:59"
-                      onClick={(event) => event.currentTarget.showPicker?.()}
-                      onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, scheduled: event.target.value }); setFormError(""); }} />
-                  </span>
-                </div>
-              </Field> : <Field id="studio-schedule-entry" label={c.schedule}><DateControl emptyLabel={presentationCopy[locale].dateTime} id="studio-schedule-entry" type="datetime-local" value={form.scheduled} disabled={!canEdit || busy}
-                min="2000-01-01T00:00" max="2199-12-31T23:59"
-                onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, scheduled: event.target.value }); setFormError(""); }} /></Field>}
-              <Field id="studio-aspect" label={c.aspect} width="short"><select id="studio-aspect" value={form.aspect} disabled={!canEdit || busy}
-                onChange={(event) => { explicitDeparture.current = false; setForm({ ...form, aspect: event.target.value as AspectRatio }); }}>
-                <option value="9:16">{c.tall}</option><option value="16:9">{c.wide}</option>
-              </select></Field>
-            </FormRow>
-            <div className="studio-version">
-              <h3>{c.version}</h3>
-              {shown ? <div><strong>{c.state[shown.draft.state as keyof typeof c.state] ?? shown.draft.state} / {c.version} {shown.draft.version}</strong>
-                <span>{c.savedAt}: {displayTime(locale, shown.draft.updated_at)}</span></div> : <p>{c.newDraft}</p>}
-            </div>
-            {!canEdit && shown && !recoveryElsewhere && !recoveryGuard && <p className="studio-note">{shown.can_manage ? c.notDraftEditable : c.readOnly}</p>}
-            {formDirty && <p className="studio-dirty">{c.unsaved}</p>}
-            {formError && <p role="alert" className="studio-error">{formError}</p>}
-            <button type="button" className="primary studio-save" disabled={!canEdit || busy || (!newMode && !formDirty) || actionError === "uncertain" || actionError === "conflict"}
-              onClick={save}>{busy ? c.saving : newMode ? c.create : c.save}</button>
-            {canEdit && !busy && !newMode && !formDirty && !actionError && <p className="studio-note">{c.noChanges}</p>}
-          </> : currentDetail.status === "loading" && currentPage.status === "ready" ?
-            <p className="studio-panel-message" role="status">{c.detailLoading}</p> :
-            <p className="studio-panel-message" role="status">{selectedID ? statusText(currentDetail.status) : c.select}</p>}
-          {!mediaOn && actionAlert}
-          {shown && <SessionCopy key={shown.draft.session_id} locale={locale} store={storeID} draft={shown.draft} boundary={boundary.current} disabled={!shown.can_manage || busy || formDirty || recoveryGuard || recoveryElsewhere || actionError === "uncertain" || actionError === "conflict"} refresh={refresh} navigationGuard={copyNavigationGuard} />}
-        </section>
-        {mediaOn && <aside className="studio-status" aria-label={c.rehearsal}>
-          <div className="studio-status-title"><h2>{c.rehearsal}</h2><Badge tone="info">MOCK</Badge></div>
-          <p className="studio-notice">{c.localOnly}</p>
+        {(!!scene || newMode) && <SessionMetadataEditor locale={locale} c={c} form={form} shown={shown}
+          canEdit={canEdit} busy={busy} newMode={newMode} recoveryBlocked={recoveryElsewhere || recoveryGuard}
+          formDirty={formDirty} formError={formError} actionError={actionError}
+          detailMessage={currentDetail.status === "loading" && currentPage.status === "ready" ? c.detailLoading : selectedID ? statusText(currentDetail.status) : c.select}
+          showExit={!!shown && !!scene && !newMode} confirmExit={!!metadataExit && metadataExitAllowed(metadataExit)}
+          onChange={(next, clearError) => { explicitDeparture.current = false; setForm(next); if (clearError) setFormError(""); }}
+          onSave={save} onLeave={() => leaveMetadata()} onKeep={keepMetadata} onDiscard={() => leaveMetadata(metadataExit)}
+          onFieldFocus={(field) => { metadataFocus.current = field; }}>{!mediaOn && actionAlert}</SessionMetadataEditor>}
+        {(!!scene || newMode) && mediaOn && <aside className="studio-status" aria-label={c.rehearsal}>
+          <div className="studio-status-title"><h2>{c.rehearsal}</h2></div>
+          <p className="studio-notice">{p.diagnosticHint}</p>
           {shown ? <>
             <section className="studio-fact">
               <h3>{c.prepared}</h3>
@@ -744,9 +771,9 @@ export function Studio({ locale, stores, store, scene, cursor, initialError }: {
             <section className="studio-fact studio-observation">
               <h3>{c.observed}</h3>
               <div className="studio-current-state">{attempt ? <dl>
-                <div><dt>{c.operation}</dt><dd>{c.operationState[attempt.operation_state as keyof typeof c.operationState] ?? attempt.operation_state}</dd></div>
+                <div><dt>{c.operation}</dt><dd>{c.operationState[attempt.operation_state as keyof typeof c.operationState] ?? p.unavailable}</dd></div>
                 <div><dt>{c.resource}</dt><dd>{c.resourceState[attempt.resource_state]}</dd></div>
-                <div><dt>{c.transport}</dt><dd>{attempt.transport_status || c.noTransport}</dd></div>
+                <div><dt>{c.transport}</dt><dd>{attempt.transport_status ? c.unverified : c.noTransport}</dd></div>
                 <div><dt>{c.statusAt}</dt><dd>{displayTime(locale, attempt.updated_at)}</dd></div>
                 {attempt.cleanup_required && <div><dt>{c.cleanup}</dt><dd>{c.yes}</dd></div>}
                 {attempt.stop_requested && <div><dt>{c.stopRequested}</dt><dd>{c.yes}</dd></div>}

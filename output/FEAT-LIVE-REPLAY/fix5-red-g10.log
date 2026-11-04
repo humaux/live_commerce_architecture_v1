@@ -1,0 +1,2 @@
+gate (shard:g10)	Gate	2026-11-01T05:18:24.4394213Z     live_replay_test.go:123: FEAT-LIVE-REPLAY GET: status=422 want=200 body={"code":"invalid_request","message":"Request validation failed.","request_id":"f6661fa84dec5df9f767306e144f2136","retryable":false,"details":{}}
+gate (shard:g10)	Gate	2026-11-01T05:18:24.4610000Z --- FAIL: TestLiveReplayPublicationAndBuyerReads (0.50s)

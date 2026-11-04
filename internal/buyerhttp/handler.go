@@ -1,3 +1,8 @@
+// Purpose: private buyer HTTP admission and scoped command dispatch.
+// Depends on: buyer capability, domain resolver, checkout/storefront services and bounded transport helpers.
+// Used by: cmd/api buyer mount and GitHub CI transport/integration tests.
+// Invariants: BFF credential + trusted origin + full capability before after-sales requests; COMMIT before success.
+
 // Package buyerhttp owns the private, BFF-only buyer transport (catalog, cart, quote, checkout,
 // payment and claim routes). It borrows its database pools; publication and buyer authority are
 // resolved per request. It never serves the public internet directly, never trusts Host or a tenant
@@ -111,7 +116,9 @@ const (
 	storeMediaRoute      // GET /v1/buyer/media/s/{image_id} (route.image; id is empty)
 	primaryOriginRoute   // GET /v1/buyer/storefront/primary-origin (R5 store-domains D3): no buyer bearer
 	// catalog-core (catalogv2.go): public reads, no buyer bearer, origin + BFF key only.
-	collectionMediaRoute      // GET /v1/buyer/media/c/{collection_id}/{image_id}
+	collectionMediaRoute // GET /v1/buyer/media/c/{collection_id}/{image_id}
+	replayListRoute
+	replayDetailRoute
 	catalogV2ProductsRoute    // GET /v1/buyer/catalog/v2/products
 	catalogV2ProductRoute     // GET /v1/buyer/catalog/v2/products/{slug_or_id}
 	catalogV2CollectionsRoute // GET /v1/buyer/catalog/v2/collections
@@ -309,6 +316,14 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	_ = controller.SetReadDeadline(deadline)
 	_ = controller.SetWriteDeadline(deadline)
 	if forbiddenInput(r) {
+		// Replay refuses all queries with its contract's validation code; no forbidden input is admitted.
+		if r.URL != nil && (r.URL.RawQuery != "" || r.URL.ForceQuery) {
+			kind := matchRoute(r.URL.Path).kind
+			if kind == replayListRoute || kind == replayDetailRoute {
+				fail(http.StatusUnprocessableEntity, "invalid_request")
+				return
+			}
+		}
 		fail(http.StatusForbidden, "forbidden")
 		return
 	}
@@ -414,6 +429,9 @@ func (e responseError) Error() string { return e.code }
 func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.Request, selected route, storeID, token, key string) error {
 	if selected.kind == contactRoute {
 		return h.contactPost(ctx, w, r, storeID, key)
+	}
+	if selected.kind == replayListRoute || selected.kind == replayDetailRoute {
+		return h.replayGet(ctx, w, r, selected)
 	}
 	if isPaymentRoute(selected.kind) && h.payment == nil {
 		return responseError{http.StatusNotFound, "not_found"}
@@ -534,6 +552,8 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 		out, err = h.claimRequest(ctx, r, selected.kind, storeID, token, key)
 	case routeCVSSelectionOpen, routeCVSSelectionGet, routeCVSSelectionVerify, routeCVSStoreEnter:
 		out, err = h.cvsRequest(ctx, r, selected, storeID, token, key)
+	case routeReturnRequestCreate, routeReturnRequestList, routeReturnRequestDetail, routeReturnRequestWithdraw:
+		out, err = h.returnRequest(ctx, r, selected, storeID, token, key)
 	case routeTransferGet, routeTransferProof:
 		out, err = h.transferRequest(ctx, r, selected, storeID, token, key)
 	case ordersRoute:

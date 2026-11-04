@@ -1,5 +1,5 @@
 // Purpose: public guest contact admission at the private BFF-only buyer boundary.
-// Depends on: storefront contact encryption, the verified origin resolver and migration 0211's issuer definer.
+// Depends on: storefront contact encryption, the verified origin resolver and migration 0222's issuer definer.
 // Used by: handler.ServeHTTP for POST /v1/buyer/contact-messages.
 // Invariants: one transaction owns replay/throttle/persistence/outbox; 201 only after commit; no cookie, mail or PII logging.
 package buyerhttp

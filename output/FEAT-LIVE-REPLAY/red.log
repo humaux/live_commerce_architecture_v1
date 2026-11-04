@@ -1,0 +1,94 @@
+FEAT-LIVE-REPLAY causal CI RED — verified from raw job log, 2026-10-31
+
+FIX7 2026-11-01: fresh GitHub readback of Gates41281668151 at head b63aa7436fb6f26d817c908182c2b7ce29c053ed. g08/job124775984368 live_claims_schema_test.go:459 rejects commerce_replay_reader/live.offers; g10/job124775984253 live_replay_test.go:138 invalid_transition rewritten internal, :148 spoof returns400 invalid_json vs expected422, :169 no_official_video rewritten internal. HistoricalPolicy parent PASS, no edit. Integrator FIX7 expressly accepts existing RED; one implementation push only. E3 failures only; GREEN pending PR CI.
+
+FIX1 latest readback (2026-10-31): remote head remains b78ca35aaf41dfb978040edb1a148774f6f69049.
+Fresh unit job 124202749403 and direct g10 job 124202749598 logs reproduce the same new assertions;
+filtered evidence: fix1-current-unit.log and fix1-current-g10.log. Base Gates 41098492538
+is now completed/success on f59e5c5402a26021ca498d8323bc0e7ee8693c36 (GitHub run API).
+Implementation remains unpushed: exact integrator-assigned R2 pin missing; requested asynchronously.
+Browser ownership regeneration/check and git diff --check exit 0. No local behavioral tests/servers.
+WAIT_RUN: NONE (no implementation push). E3 RED failure proof only; GREEN NOT_RUN.
+PR: https://github.com/humaux/live_commerce_architecture_v1/pull/396
+FIX1 reverified 2026-10-30 18:11:46 UTC: PR checks still fail only unit124202749403,
+g10124202749598, downstream receipts124217150611 and required124218328366.
+Base Gates41098492538 success at f59e5c5402a26021ca498d8323bc0e7ee8693c36.
+Fresh fetch/merge: Already up to date. Ownership generation/check exit0, no generated diff.
+Exact R2 pin allocation still missing; requested again. No source/pin edits or push.
+Implementation WAIT_RUN NONE; GREEN NOT_RUN; E3 records RED assertions only.
+Tests-only PR head: b78ca35aaf41dfb978040edb1a148774f6f69049
+Base at RED: 2f61bf86673b3ebf4acbd3ee0ecacd54d37cf46f
+Gates run: 41093988979; attempt 1; job: 124202749403 (gate shard:unit)
+Job URL: https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41093988979/job/124202749403
+Job conclusion: failure; compiled and executed new assertions (not compile failure).
+Tested synthetic merge SHA: b009564a4522eef75a1da8ff09256f44974cbd93
+Receipt artifact: 12998100490 (receipt-gate-shard_unit), mode shard:unit, status FAIL.
+
+Observed raw failure excerpts:
+2026-10-30T17:23:05.3497263Z live_replay_test.go:42: FEAT-LIVE-REPLAY: existing official live_videos read must request permalink_url
+2026-10-30T17:23:05.3499257Z --- FAIL: TestLiveReplayOfficialPermalinkRead (0.00s)
+2026-10-30T17:23:05.3503649Z live_replay_test.go:79: safe permalink="" want="https://www.facebook.com/synthetic.page/videos/777/"
+2026-10-30T17:23:05.3522872Z --- FAIL: TestLiveReplayPermalinkTrustBoundary (0.00s)
+2026-10-30T17:29:06.7854319Z Process completed with exit code 1.
+
+Foundation run 41093988555 / job 124194858726 passed; it is a different static job,
+not behavioral GREEN for this feature. Full Gates run still had pending shards on read.
+The REAL_PG HTTP/persistence tests are NOT claimed observed RED from the unit log.
+Raw job log preserved locally at red-unit-job.log. No local tests/servers executed.
+
+Implementation prepared locally after causal RED; no implementation push yet:
+BLOCKED — card assigned migration 0213 but did not assign the R2 replacement pin.
+Current tests/foundation/r2_integration_upgrade_test.go pin remains 139, unchanged.
+Owner forbids choosing the pin; integrator assignment requested; no replacement inferred.
+GREEN: NOT_RUN. WAIT_RUN for a new implementation push: NONE (not pushed).
+
+RELAY 2 independent raw-log readback, 2026-10-31:
+PR API still reports tests-only head b78ca35aaf41dfb978040edb1a148774f6f69049.
+Local implementation commit e937748714c1cbe93026ee98ffe428f334d8b044 is NOT pushed.
+Gates 41093988979 / g10 job 124202749598 also confirms causal assertion RED:
+2026-10-30T17:26:29.0882354Z live_replay_test.go:72: FEAT-LIVE-REPLAY: successful official read must persist a durable live-video row
+2026-10-30T17:26:29.1120537Z --- FAIL: TestLiveReplayOfficialReadPersistsVideo (0.70s)
+2026-10-30T17:26:29.7121894Z live_replay_test.go:123: FEAT-LIVE-REPLAY GET: status=404 want=200
+2026-10-30T17:26:29.7279675Z --- FAIL: TestLiveReplayPublicationAndBuyerReads (0.62s)
+Tested merge b009564a4522eef75a1da8ff09256f44974cbd93; receipt artifact 12997203870.
+Raw logs: relay2-unit-job.log and relay2-g10-job.log (GitHub jobs API, exit 0).
+gh run view --log-failed refused while workflow remained in progress; jobs API succeeded.
+Fresh origin/r3/integration f59e5c5402a26021ca498d8323bc0e7ee8693c36 still pins 139.
+No exact replacement pin supplied in RELAY 2 or found by targeted Humaux lookup.
+STOP: pin allocation required under explicit never-choose-pin rule. No code edit/push this relay.
+WAIT_RUN: 41093988979 (tests-only run, g04/g06 still in progress at readback).
+No implementation/GREEN run exists. Integrator owns completion relay and pin assignment.
+
+RELAY 3 raw GitHub job readback, 2026-10-31:
+Remote PR396 head remains b78ca35aaf41dfb978040edb1a148774f6f69049.
+Local prepared implementation remains e937748714c1cbe93026ee98ffe428f334d8b044, unpushed.
+Re-read run41093988979 unit124202749403 and g10124202749598 via jobs API;
+the same new assertions fail (permalink request/normalization, durable row, replay GET404).
+gh run view --log-failed still refuses while the workflow is in progress.
+Remote integration remains f59e5c5402a26021ca498d8323bc0e7ee8693c36.
+R2 source still asserts139 at tests/foundation/r2_integration_upgrade_test.go:132;
+the card supplies no replacement value and forbids selecting one.
+PR review/issue comments contain no pin assignment. Humaux targeted lookup finds
+prior unresolved allocation c21a4839-b2ce-4990-950a-86fa9279bbdb, no new allocation.
+Async question requests the exact assigned count. No code/pin edit or push this relay.
+WAIT_RUN for implementation: NONE. GREEN NOT_RUN. E3 RED failure evidence only.
+
+RELAY 4 raw GitHub job readback, 2026-10-31:
+PR396 remote head b78ca35aaf41dfb978040edb1a148774f6f69049; local prepared head
+e937748714c1cbe93026ee98ffe428f334d8b044 remains unpushed.
+gh run view 41093988979 --log-failed --job 124202749403 reports run not complete.
+Direct GitHub jobs API logs re-confirm unit124202749403 new permalink assertions fail;
+g10124202749598 fails live_replay_test.go:72 (no durable row) and :123 (GET404 want200).
+Tested merge b009564a4522eef75a1da8ff09256f44974cbd93; E3 failure evidence only.
+Workflow API: Gates41093988979 queued/conclusion null; Foundation41093988555 success.
+Fresh integration f59e5c5402a26021ca498d8323bc0e7ee8693c36 still pins139 at line132.
+No replacement assignment in current relay/card or PR comments; explicit no-choose rule
+requires STOP. Exact pin requested. No source changes/push/new CI/local tests/servers.
+Humaux/coord unavailable; no store/canvas claimed. WAIT_RUN41093988979 is tests-only;
+implementation WAIT_RUN NONE, GREEN NOT_RUN. Integrator owns completion relay/pin assignment.
+
+2026-10-30T18:14:56.590052+00:00 FIX1 relay6: RED 41093988979 unit124202749403 (missing requested/stored permalink), g10 124202749598 (durable row absent; GET404 want200); receipts124217150611 and required124218328366 downstream. Base41098492538 f59e5c540 completed/success. Remote b78ca35aa tests-only; local e93774871 unpushed; exact R2 pin unassigned, assertion139 retained. E3 RED only; no new push or WAIT_RUN.
+
+FIX2 integrator grant 2026-10-31: re-read RED 41093988979 job124202749403 (missing field / discarded official URL); current PR checks RED Gates41106628502 plan124238049731 (dispatcher pin), Foundation41106628574 job124238049872 (BFF extraction + exact route count). Fresh extracts fix2-grant-plan.log and fix2-grant-foundation.log. One authorized consolidated repair; implementation assertion results PENDING.
+
+FIX5 2026-11-01: existing PR head bf204c0d07a5bffd9650919062d5ba3dec265dda, current causal RED before directed repair. Foundation41275260986/job124756060533: live_replay.go unclassified. Gates41275260978/job124756873935 g05: resolver closed ACL excludes required replay reader; /job124756873395 g08: six extra replay-reader SELECT columns on live.offers; /job124756873477 g10: initial merchant GET422 want200. Fresh original excerpts fix5-red-{foundation,g05,g08,g10}.log. Tests-first RED41093988979/unit124202749403 and g10/124202749598 remains preserved. Bundle07/job124756873741 CVS WebKit is BASE per FIX5, unchanged. E3 failure evidence only; GREEN pending single FIX5 push.

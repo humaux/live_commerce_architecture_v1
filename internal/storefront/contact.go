@@ -1,5 +1,5 @@
 // Purpose: validate and encrypt website contact messages and open authorized merchant details.
-// Depends on: the shared payload-key environment, AES-GCM and migration 0211's restricted definers.
+// Depends on: the shared payload-key environment, AES-GCM and migration 0222's restricted definers.
 // Used by: buyerhttp contact admission and httpapi merchant contact routes.
 // Invariants: no plaintext PII in persistence, receipts or logs; AAD binds store/message/key; no mail transport here.
 package storefront

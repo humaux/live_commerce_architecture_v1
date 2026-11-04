@@ -1,6 +1,7 @@
 // Purpose: LC-U2b inbox acceptance plus LC-U2b2 customer-link denial for the real live_operator session.
 // Depends on: real Next/BFF/Go/PG fixture, signed MOCK OIDC, native-device.ts; LC_BROWSER_INBOX_* env.
 // Used by: browser_inbox_ui_test.go via --browser-inbox on GitHub runners; live Meta remains NOT_RUN.
+// Used by: FIX-LATENT-BUNDLES 2026-11-01 to select unmodified-base --browser-inbox reproduction.
 // Invariants: unread excludes read conversations immediately and after reload; all actions use real UI controls.
 import { expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";

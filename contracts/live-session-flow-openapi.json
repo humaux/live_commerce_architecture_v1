@@ -721,6 +721,295 @@
           }
         }
       }
+    },
+    "/v1/admin/stores/{store_id}/live-sessions/{session_id}/replay": {
+      "get": {
+        "operationId": "getLiveReplay",
+        "x-permission": "live:read",
+        "security": [
+          {
+            "merchantBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "invalid_json"
+          },
+          "401": {
+            "description": "unauthorized"
+          },
+          "403": {
+            "description": "forbidden"
+          },
+          "404": {
+            "description": "not_found"
+          },
+          "405": {
+            "description": "method_not_allowed"
+          },
+          "409": {
+            "description": "version_conflict | invalid_transition | no_official_video"
+          },
+          "415": {
+            "description": "json_required"
+          },
+          "422": {
+            "description": "invalid_request"
+          },
+          "503": {
+            "description": "unavailable | retry_later"
+          },
+          "200": {
+            "description": "Private no-store replay publication state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplayState"
+                }
+              }
+            }
+          }
+        },
+        "description": "FEAT-LIVE-REPLAY (0213). Server scope only; no query/body on GET. PUT requires ENDED, stored official permalink when public, separate publication CAS; authenticated idempotent receipt. See live-console-v1 amendment."
+      },
+      "put": {
+        "operationId": "setLiveReplay",
+        "x-permission": "live:manage",
+        "security": [
+          {
+            "merchantBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_.:-]{8,128}$"
+            }
+          }
+        ],
+        "responses": {
+          "400": {
+            "description": "invalid_json"
+          },
+          "401": {
+            "description": "unauthorized"
+          },
+          "403": {
+            "description": "forbidden"
+          },
+          "404": {
+            "description": "not_found"
+          },
+          "405": {
+            "description": "method_not_allowed"
+          },
+          "409": {
+            "description": "version_conflict | invalid_transition | no_official_video"
+          },
+          "415": {
+            "description": "json_required"
+          },
+          "422": {
+            "description": "invalid_request"
+          },
+          "503": {
+            "description": "unavailable | retry_later"
+          },
+          "200": {
+            "description": "Private no-store replay publication state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReplayState"
+                }
+              }
+            }
+          }
+        },
+        "description": "FEAT-LIVE-REPLAY (0213). Server scope only; no query/body on GET. PUT requires ENDED, stored official permalink when public, separate publication CAS; authenticated idempotent receipt. See live-console-v1 amendment.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplayInput"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/buyer/replays": {
+      "get": {
+        "operationId": "listBuyerReplays",
+        "x-permission": "public published store",
+        "security": [
+          {
+            "buyerBffKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Commerce-Storefront-Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Verified origin supplied only by the trusted BFF; server resolves tenant/store."
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "unauthorized BFF key"
+          },
+          "403": {
+            "description": "forbidden buyer credential/input"
+          },
+          "404": {
+            "description": "not_found"
+          },
+          "405": {
+            "description": "method_not_allowed"
+          },
+          "422": {
+            "description": "invalid_request"
+          },
+          "503": {
+            "description": "unavailable"
+          },
+          "200": {
+            "description": "Public ENDED replay projection, no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "items"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "maxItems": 50,
+                      "items": {
+                        "$ref": "#/components/schemas/BuyerReplaySummary"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "description": "FEAT-LIVE-REPLAY; no query/body/Idempotency-Key/buyer credentials. Only public ENDED sessions with a persisted official permalink. See storefront-v2 amendment."
+      }
+    },
+    "/v1/buyer/replays/{session_id}": {
+      "get": {
+        "operationId": "getBuyerReplay",
+        "x-permission": "public published store",
+        "security": [
+          {
+            "buyerBffKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-Commerce-Storefront-Origin",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uri"
+            },
+            "description": "Verified origin supplied only by the trusted BFF; server resolves tenant/store."
+          },
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "unauthorized BFF key"
+          },
+          "403": {
+            "description": "forbidden buyer credential/input"
+          },
+          "404": {
+            "description": "not_found"
+          },
+          "405": {
+            "description": "method_not_allowed"
+          },
+          "422": {
+            "description": "invalid_request"
+          },
+          "503": {
+            "description": "unavailable"
+          },
+          "200": {
+            "description": "Public ENDED replay projection, no-store",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BuyerReplayDetail"
+                }
+              }
+            }
+          }
+        },
+        "description": "FEAT-LIVE-REPLAY; no query/body/Idempotency-Key/buyer credentials. Only public ENDED sessions with a persisted official permalink. See storefront-v2 amendment."
+      }
     }
   },
   "components": {
@@ -729,6 +1018,11 @@
         "type": "http",
         "scheme": "bearer",
         "description": "Opaque short-lived merchant session; server stores hash only."
+      },
+      "buyerBffKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Commerce-Buyer-BFF-Key"
       }
     },
     "schemas": {
@@ -1198,6 +1492,11 @@
           "started_at": {
             "type": "string",
             "description": "Raw Meta creation_time (bounded by the worker; its +0000 offset is not RFC 3339)."
+          },
+          "permalink_url": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "Optional official Graph-supplied Facebook video permalink; absent when unusable. Never inferred."
           }
         }
       },
@@ -1229,6 +1528,138 @@
           "details": {
             "type": "object",
             "additionalProperties": true
+          }
+        }
+      },
+      "ReplayState": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "session_id",
+          "public",
+          "version"
+        ],
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "public": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        }
+      },
+      "ReplayInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "public",
+          "expected_version"
+        ],
+        "properties": {
+          "public": {
+            "type": "boolean"
+          },
+          "expected_version": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740990
+          }
+        }
+      },
+      "BuyerReplaySummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "session_id",
+          "title",
+          "ended_at",
+          "permalink_url"
+        ],
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "ended_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "permalink_url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048
+          }
+        }
+      },
+      "BuyerReplayDetail": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "session_id",
+          "title",
+          "ended_at",
+          "permalink_url",
+          "embed_url",
+          "offers"
+        ],
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "ended_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "permalink_url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "embed_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Only Facebook official embedded video player with encoded stored permalink."
+          },
+          "offers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "offer_id",
+                "sku_id",
+                "product"
+              ],
+              "properties": {
+                "offer_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "sku_id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "product": {
+                  "type": "object",
+                  "description": "Exact existing storefront-v2 catalog detail, with CURRENT price/stock/publication; never historical offer money."
+                }
+              }
+            }
           }
         }
       }

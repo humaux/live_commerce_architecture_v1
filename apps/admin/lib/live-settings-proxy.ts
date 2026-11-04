@@ -198,11 +198,11 @@ export async function liveSettingsProxy(
         return denied(503, "retry_later");
       if (
         body !== undefined &&
-        (route.kind === "settings" || route.kind === "templates" || route.kind === "profile")
+        (route.kind === "settings" || route.kind === "templates" || route.kind === "profile" || route.kind === "replay")
       ) {
         const sent = JSON.parse(body) as Record<string, unknown>;
         const fields =
-          route.kind === "profile"
+          route.kind === "replay" ? ["public"] : route.kind === "profile"
             ? ["name", "contact_email"]
             : route.kind === "settings"
             ? ["enabled", "template_id", "template_version"]
@@ -210,7 +210,7 @@ export async function liveSettingsProxy(
         // A 200 with a different receipt is still UNKNOWN: never advance to a new command from it.
         if (
           fields.some((key) => projected[key] !== sent[key]) ||
-          ((route.kind === "settings" || route.kind === "profile") &&
+          ((route.kind === "settings" || route.kind === "profile" || route.kind === "replay") &&
             projected.version !== Number(sent.expected_version) + 1) ||
           (route.kind === "profile" && projected.contact_phone !== (sent.contact_phone ?? "")) ||
           (route.kind === "templates" &&

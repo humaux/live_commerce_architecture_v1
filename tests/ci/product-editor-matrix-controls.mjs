@@ -16,7 +16,7 @@ export function bulkControlIssues(source, cases) {
           if (seen.has(id)) issues.push(`Duplicate actionable ${id}`);
           seen.add(id);
           const verb = { select: 'select', input: 'fill', button: 'click' }[tag];
-          if (!cases.some(c => c.page === 'mobile matrix bulk' && c.control === id && c.action.includes(verb)))
+          if (!cases.some(c => ['mobile matrix bulk', 'mobile matrix bulk code set', 'mobile matrix bulk compare set'].includes(c.page) && c.control === id && c.action.includes(verb)))
             issues.push(`Missing rendered ${tag} action ${id}`);
         }
       }
@@ -35,10 +35,23 @@ export function bulkInventoryBindingIssues(source) {
   const host = ts.createCompilerHost({ noResolve: true, noLib: true });
   host.getSourceFile = name => name === filename ? file : undefined;
   const checker = ts.createProgram([filename], { noResolve: true, noLib: true }, host).getTypeChecker();
-  const issues = []; let calls = 0;
+  const issues = [], calls = new Map();
+  const states = new Map([
+    ['create-price', 'mobile matrix bulk code set'], ['create-code', 'mobile matrix bulk code set'],
+    ['edit-price', 'mobile matrix bulk'], ['edit-keyword', 'mobile matrix bulk'],
+    ['edit-quantity', 'mobile matrix bulk'], ['edit-compare', 'mobile matrix bulk compare set'],
+  ]);
   function visit(node) {
     if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && node.expression.text === 'matrixRendered') {
-      calls++;
+      const [page, inventory, state] = node.arguments;
+      const name = state && ts.isStringLiteral(state) ? state.text : '';
+      calls.set(name, (calls.get(name) ?? 0) + 1);
+      if (node.arguments.length !== 3 || !page || !ts.isStringLiteral(page) || states.get(name) !== page.text)
+        issues.push('Bulk DOM inventory requires its exact declared state/page');
+      const inventoryBindings = inventory && ts.isIdentifier(inventory) ? checker.getSymbolAtLocation(inventory)?.declarations ?? [] : [];
+      const inventorySource = inventoryBindings.length === 1 && ts.isVariableDeclaration(inventoryBindings[0]) ? inventoryBindings[0].initializer?.getText(file) : '';
+      const expectedInventory = 'await page.getByTestId("bulk-dialog").locator("select, input, button").evaluateAll(nodes => nodes.map(node => ({ control: node.getAttribute("data-testid"), tag: node.tagName.toLowerCase(), disabled: (node as HTMLInputElement).disabled })))';
+      if (inventorySource !== expectedInventory) issues.push('Bulk DOM inventory must sample actual control identity, tag and disabled state');
       const bindings = checker.getSymbolAtLocation(node.expression)?.declarations ?? [];
       const binding = bindings.length === 1 ? bindings[0] : undefined;
       const variable = binding?.parent?.parent, init = variable?.initializer;
@@ -53,7 +66,8 @@ export function bulkInventoryBindingIssues(source) {
     ts.forEachChild(node, visit);
   }
   visit(file);
-  if (calls !== 1) issues.push('Exactly one real bulk DOM inventory call must exist in the locale flow');
+  if (calls.size !== states.size || [...states.keys()].some(state => calls.get(state) !== 1))
+    issues.push('Exactly one real bulk DOM inventory call per required state must exist in the locale flow');
   return issues;
 }
 
