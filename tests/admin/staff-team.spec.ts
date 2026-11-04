@@ -5,7 +5,7 @@
 // packaged Next admin BFF, an in-process Go api (staff routes + the real SMTP adapter against the loopback fake) and real PG, started by
 // tests/foundation/browser_staff_team_test.go (`bash scripts/dev/test-local.sh --browser-password-auth`). Password login on, OIDC off.
 // Written from the contract and the brief, not from Team.tsx / TeamInvite.tsx: the chain is the one the brief names, driven by
-// data-testid hooks the brief lists for the Team page (team-invite-*, member-*, invite-*) and by type/autocomplete attributes of the
+// signed Team layout (entry button, role radios, review/done screens; team-invite-*, member-*, invite-* hooks) and by type/autocomplete of the
 // existing sign-up form (tests/admin/password-auth.spec.ts is the template for mailbox + sign-up mechanics).
 // One serial chain per (locale x viewport) in {zh-TW, en} x {desktop 1586, mobile 390}; each chain has its OWN owner and invitee:
 //   owner signs up and creates a store -> owner invites a FULFILMENT user from the Team page -> the invitation mail is captured
@@ -22,7 +22,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { expect, test, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type BrowserContext, type Locator, type Page } from "@playwright/test";
 
 function requiredOrigin(name: string) {
   const value = process.env[name];
@@ -120,8 +120,7 @@ async function noHorizontalScroll(page: Page, what: string) {
   expect(overflow, `${what}: no horizontal page scroll`).toBeLessThanOrEqual(0);
 }
 
-async function unobscuredMemberRole(page: Page, testId: string) {
-  const control = page.getByTestId(testId);
+async function unobscuredMemberRole(page: Page, control: Locator) {
   // Real table scrolling is allowed; forcing clicks or injecting CSS would hide a sticky-column regression.
   await control.scrollIntoViewIfNeeded();
   await expect.poll(() => control.evaluate((element) => {
@@ -186,6 +185,14 @@ function watch(page: Page): Net {
 // nav-team / nav-billing (the visible labels differ from the page titles and between locales, so the ids are the stable handle).
 const navEntry = (page: Page, id: "team" | "billing") => page.locator("[data-shell-rail]").getByTestId(`nav-${id}`);
 const roleWord = { en: "Fulfilment", "zh-TW": "履約" } as const;
+// Signed Team layout (FRAME-COPY / packages/i18n/src/team-parity.ts; the spec pins the visible words): an entry button opens the
+// invite form, five role radios carry the role code as value, and member changes go through review and done screens.
+const teamUi = {
+  "zh-TW": { invite: "邀請員工", empty: "目前只有你一位員工", back: "回到員工", edit: "變更角色", next: "繼續", confirmRole: "確認變更", remove: "移除", confirmRemove: "確認移除", viewerJoined: "僅供檢視 · 加入" },
+  en: { invite: "Invite staff", empty: "You are the only team member", back: "Back to staff", edit: "Change role", next: "Continue", confirmRole: "Confirm change", remove: "Remove", confirmRemove: "Confirm removal", viewerJoined: "Viewer · Joined" },
+} as const;
+const teamButton = (scope: Page | Locator, name: string) => scope.getByRole("button", { name, exact: true });
+const roleRadio = (page: Page, role: string) => page.locator(`input[type="radio"][name="team-role"][value="${role}"]`);
 const subjectRe = { en: /invited/i, "zh-TW": /邀請/ } as const;
 const routeForbidden = {
   en: /This link cannot be opened, or your account cannot use this feature\./,
@@ -215,8 +222,8 @@ for (const { locale, vp, first } of chains) {
       const storeId = await createStore(owner.page, locale);
       await owner.page.goto(`/${locale}/team?store=${storeId}`);
       await expect(owner.page.getByTestId("team-page")).toBeVisible();
-      await expect(owner.page.getByTestId("team-invite-email")).toBeVisible();
-      await expect(owner.page.getByTestId("team-members")).toBeVisible();
+      await expect(teamButton(owner.page, teamUi[locale].invite)).toBeVisible();
+      await expect(owner.page.getByTestId("team-page")).toContainText(teamUi[locale].empty);
       await noHorizontalScroll(owner.page, "team page (owner)");
       // the owner is offered Team and Billing
       await expect(navEntry(owner.page, "team")).toHaveCount(1);
@@ -225,8 +232,9 @@ for (const { locale, vp, first } of chains) {
 
       // ---- owner invites a fulfilment user from the Team page -------------------------------------------------------------
       const inviteeEmail = newEmail();
+      await teamButton(owner.page, teamUi[locale].invite).click();
       await owner.page.getByTestId("team-invite-email").fill(inviteeEmail);
-      await owner.page.getByTestId("team-invite-role").selectOption("fulfilment");
+      await roleRadio(owner.page, "fulfilment").check();
       const [inviteResponse] = await Promise.all([
         owner.page.waitForResponse((r) => new URL(r.url()).pathname === "/api/team/invite"),
         owner.page.getByTestId("team-invite-send").click(),
@@ -234,6 +242,7 @@ for (const { locale, vp, first } of chains) {
       expect(inviteResponse.status()).toBe(201);
       expect(await inviteResponse.text(), "the invite answer never carries the token").not.toMatch(/[A-Za-z0-9_-]{43}/);
       await expect(owner.page.getByTestId("team-notice")).toBeVisible();
+      await teamButton(owner.page, teamUi[locale].back).click();
       await expect(owner.page.getByTestId("team-invites")).toContainText(inviteeEmail);
       await shot(owner.page, "team-owner-invited", locale, vp);
 
@@ -356,13 +365,17 @@ for (const { locale, vp, first } of chains) {
       const member = (listed.body.members as { principal_id: string; email: string; role: string }[]).find((m) => m.email === inviteeEmail);
       expect(member?.role).toBe("fulfilment");
       await expect(owner.page.getByTestId(`member-${member!.principal_id}`)).toContainText(inviteeEmail);
-      await unobscuredMemberRole(owner.page, `member-role-${member!.principal_id}`);
+      const memberCard = owner.page.getByTestId(`member-${member!.principal_id}`);
+      await unobscuredMemberRole(owner.page, teamButton(memberCard, teamUi[locale].edit));
+      await roleRadio(owner.page, "viewer").check();
+      await teamButton(owner.page, teamUi[locale].next).click();
       const [roleResponse] = await Promise.all([
         owner.page.waitForResponse((r) => new URL(r.url()).pathname === "/api/team/set-role"),
-        owner.page.getByTestId(`member-role-${member!.principal_id}`).selectOption("viewer"),
+        teamButton(owner.page, teamUi[locale].confirmRole).click(),
       ]);
       expect(roleResponse.status()).toBe(204);
-      await expect(owner.page.getByTestId(`member-role-${member!.principal_id}`)).toHaveValue("viewer");
+      await teamButton(owner.page, teamUi[locale].back).click();
+      await expect(memberCard).toContainText(teamUi[locale].viewerJoined);
       await shot(owner.page, "team-owner-viewer", locale, vp);
       expect(await browserJSON(invitee.page, `/api/stores/${storeId}/order-actions`)).toEqual({
         status: 200, body: { refund: false, fulfillment_write: false, orders_export: false },
@@ -374,13 +387,15 @@ for (const { locale, vp, first } of chains) {
       expect((await browserJSON(invitee.page, `/api/stores/${storeId}/orders`)).status, "viewer keeps orders:read").toBe(200);
 
       // ---- owner removes the member in the UI (with confirmation); the invitee's next request is refused ----------------------
-      await owner.page.getByTestId(`member-remove-${member!.principal_id}`).click();
-      await owner.page.getByTestId(`member-remove-yes-${member!.principal_id}`).waitFor();
+      await teamButton(memberCard, teamUi[locale].remove).click();
+      await teamButton(owner.page, teamUi[locale].confirmRemove).waitFor();
       const [removeResponse] = await Promise.all([
         owner.page.waitForResponse((r) => new URL(r.url()).pathname === "/api/team/remove"),
-        owner.page.getByTestId(`member-remove-yes-${member!.principal_id}`).click(),
+        teamButton(owner.page, teamUi[locale].confirmRemove).click(),
       ]);
       expect(removeResponse.status()).toBe(204);
+      await teamButton(owner.page, teamUi[locale].back).click();
+      await expect(owner.page.getByTestId("team-page")).toContainText(teamUi[locale].empty);
       await expect(owner.page.getByTestId(`member-${member!.principal_id}`)).toHaveCount(0);
       await shot(owner.page, "team-owner-removed", locale, vp);
       const afterStores = await browserJSON(invitee.page, "/api/stores");
