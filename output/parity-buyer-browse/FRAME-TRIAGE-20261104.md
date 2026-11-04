@@ -87,3 +87,11 @@ b-cart: 12 REACHABLE, 6 BLOCKED.
 
 RED then GREEN for 4:9192, 4:9296, 6:19933, 6:19984 on the real routes, three locales × 1440×900 / 390×844, existing money/stock/privacy checks kept.
 1253:17135 / 1253:17159 stay BLOCKED with the evidence above.
+
+## RED witness (b-home)
+
+| Head | Run / job | Result |
+|---|---|---|
+| `b02cb6de4` (RED, tests only) | Gates 41834320978, gate (bundle:02) job 126591642589 | INVALID RED: `TestBrowserStorefront` killed at `browser_storefront_test.go:393` (`signal: killed`, 723.08s); missing controls waited out Playwright's default 30s per action. No manifest written. First directed fix → `bba5a337c`. |
+| `bba5a337c` (RED, tests only) | Gates 41839460034, gate (bundle:02) job 126609241540, artifact `gate-browser-storefront` 13329527479 | Causal RED: `TestBrowserStorefront` FAIL 341.47s, `exit status 1` from the parity assertion. Manifest: `COVERED 26 · NOT_COVERED 37 · DEFERRED 4 · BLOCKED 6 of 73 frames; 275/287 ledger operations passed`. The only 12 FAIL rows are the new anchors: `4:9192`/`4:9296` "home search field" and `6:19933`/`6:19984` "collection search field" × zh-TW/zh-CN/en (`expect(locator('main').getByRole('searchbox', { name: '搜尋商品' })).toBeVisible()` timeout). 18 dependent subcases NOT_RUN by design. 1253:17135/17159 BLOCKED. |
+| `bba5a337c` | same run, gate (bundle:07) job 126609240011 | `TestBrowserSettingsWizardRealChain` FAIL (25.64s). Not in this diff (tests-only storefront spec change); the same bundle passed at `b02cb6de4`. Cause UNKNOWN, not touched (other module). |
