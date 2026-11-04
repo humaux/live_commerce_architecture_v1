@@ -6,7 +6,7 @@ worktree `.worktrees/w6-01b-customer-tags-notes`（branch `unit/w6-01b-customer-
 先读：PREAMBLE → AGENTS.md → PROCESS.md → 本文件；合同只读 `contracts/customers-billing-v1.md` §2、§3.1、§5、§6、§7、§12；架构 §6.1、§14.3–14.4。
 
 ## Integrator 裁决（覆盖正文）
-- owner 暂定：会员/积分/分润**不进首版**；客户标签 + 备注先做（直播后跟进熟客）。
+- owner 暂定：~~会员/积分/分润**不进首版**~~（积分部分已被 owner 2026-11-05 取代 → `contracts/loyalty-points-v1.md`；会员等级与分润仍不进首版）；客户标签 + 备注先做（直播后跟进熟客）。
 - 标签是**商家手打**的事实标签，不是推断标签：不做自动打标、不做 RFM、不做受众导出（架构 §14.3 推断标签另立合同）。
 - 新权限 `customers:write`（加标签/写备注）；`customers:read` 可看。备注属于买家个人资料：**删除（erasure）必须连同删除**，买家自助导出包含备注（见 OPEN-1）。
 - 必须在 W5-02B 之前合并（两者都 REPLACE `identity.read_merchant_customers`）；W5-02B 基于本单元的新函数体再改。

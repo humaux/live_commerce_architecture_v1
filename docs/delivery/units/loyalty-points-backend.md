@@ -11,9 +11,9 @@ Role `commerce_worker`；worktree `.worktrees/loyalty-points-backend`（branch `
 - LP-2（UI）在本单元合并、路由冻结后才开始。
 
 ## 范围
-1. `migrations/0223_loyalty_points.sql`：`loyalty` schema、`members`（含 `entry_count`）、`point_entries`（reason 仅 `manual_order_award` / `manual_adjust`，CHECK 无 `[erased]` 逃逸分支）、不可变触发器（仅允许 LP11：已清除会员的非 NULL note → `[erased]`）、RLS ENABLE+FORCE、定义者（合同 §1 表）、权限 CHECK 重导加 `customers:points`、owner/admin 角色包种子 + 回填。**无**每表幂等键列。
-2. Go 包 `internal/loyalty`（新）：输入校验（NFC、长度、控制字元）、每个写操作在同一事务里 `command.Run`（operation `loyalty.member.create|update|export|erase`、`loyalty.points.adjust`）+ 定义者调用、错误映射到合同 §2 拒绝码（23514 不得出现在 HTTP）；文件头注释写职责/依赖/调用方/不变量。
-3. `internal/merchanttools/manual.go`：可选 `member_award` 进入 `command.Run` 请求哈希；**在任何管线写入之前**调用 `loyalty.precheck_award`（权限、会员存在且同店、未清除、上限），失败直接返回拒绝码、不下单；在 §G3 最终商家事务里、`mark_order_merchant_manual` 之后调用 `loyalty.try_award_manual_order`，它只返回 `awarded|not_awarded` 状态、绝不抛错（LP18），结果写入 receipt 与 `order.manual_created.details.member_award`（只含 id、数字、状态）。`for-buyer` 拒绝此键（LP16）。
+1. `migrations/0223_loyalty_points.sql`：`loyalty` schema、`members`、`point_entries`（reason 仅 `manual_order_award` / `manual_adjust`，CHECK 无 `[erased]` 逃逸分支）、不可变触发器（仅允许 LP11：已清除会员的非 NULL note → `[erased]`）、RLS ENABLE+FORCE、定义者（合同 §1 表）、权限 CHECK 重导加 `customers:points`、owner/admin 角色包种子 + 回填。**无**每表幂等键列。
+2. Go 包 `internal/loyalty`（新）：输入校验（NFC、长度、控制字元）、每个写操作在同一事务里 `command.Run`（operation `loyalty.member.create|update|export|erase`、`loyalty.points.adjust`）+ 定义者调用、receipt 的 response 只存 id/数字/版本/状态（不存姓名、联系备注、备注、账本备注），HTTP 回应由同事务读取当前行构建；会员导出超过 1 MiB 拒绝 `export_too_large`；错误映射到合同 §2 拒绝码（23514 不得出现在 HTTP）；文件头注释写职责/依赖/调用方/不变量。
+3. `internal/merchanttools/manual.go`：可选 `member_award` 进入 `command.Run` 请求哈希；**在任何管线写入之前**调用 `loyalty.precheck_award`（权限、会员存在且同店、未清除、上限），**仅在 probe 未找到 receipt 时执行**（重放永远返回已存 receipt），失败直接返回拒绝码、不下单；在 §G3 最终商家事务里、`mark_order_merchant_manual` 之后调用 `loyalty.try_award_manual_order`，它只返回 `awarded|not_awarded` 状态、绝不抛错（LP18），结果写入 receipt 与 `order.manual_created.details.member_award`（只含 id、数字、状态）。`for-buyer` 拒绝此键（LP16）。
 4. HTTP：`internal/httpapi/members.go`（新）挂合同 §2 的八条 `/members**` 路由（搜索为 `POST /members/search`，body 传 `q`）；`orders/manual` 解析加可选键。
 5. 合同修订：`contracts/merchant-identity-v1.md` 加 Amendment LP（`customers:points`，owner/admin）；`contracts/storefront-v2.md` 加 Amendment LP（`member_award` 键与 `state`）；`contracts/loyalty-points-v1.md` 状态行只改证据标签。
 

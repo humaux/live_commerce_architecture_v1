@@ -10,7 +10,7 @@
 
 ## 范围
 1. 會員列表 `apps/admin/app/[locale]/members/page.tsx`：搜索（名字或联系备注，经 `POST /members/search` body 发送，**不进 URL**）、积分余额、游标「載入更多」、「新增會員」。
-2. 會員详情 `apps/admin/app/[locale]/members/[member]/page.tsx`：资料、积分明细（时间、±点数、原因、订单链接、备注、员工）、「加點 / 扣點」对话框（整数、必填原因、可选订单引用）、编辑、匯出、清除（确认框说明「點數保留、姓名移除」）。
+2. 會員详情 `apps/admin/app/[locale]/members/[member]/page.tsx`：资料、积分明细（时间、±点数、原因、订单链接、备注、员工）、「加點 / 扣點」对话框（整数、必填原因、可选订单引用）、编辑、匯出、清除（确认框文案按合同 §3：点数保留、姓名与备注移除、已建订单上的订购人姓名不变）。
 3. 手工單：可选会员选择器（搜索 + 内联新增）与「本單贈送積分」整数，默认空；空则不发送 `member_award` 键；选会员可预填订购人姓名（可改）；回应 `member_award.state='not_awarded'` 时在已建订单旁显示「積分未贈送」及原因。
 4. 订单详情：「本單積分」面板（`GET members/entries?order_id=`）+ 「扣回本單積分」= 预填的手动扣点（会员 = 该单赠点会员、点数 = −赠点、可改、订单引用 = 本单、必填原因）；无上限逻辑，余额不足时显示「積分不足」。
 5. BFF `apps/admin/app/api/stores/[store]/members/**`，客户端 `apps/admin/lib/members-client.ts`；Idempotency-Key 由调用方生成、重试复用；BFF 不记录 body。
