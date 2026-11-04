@@ -27,7 +27,7 @@ const translate = (text, locale) => {
 };
 const suffixRole = (state, fallback) => Object.keys(roles).find(role => state.endsWith(`-${role}`)) ?? fallback;
 
-function fixtureState(state, store) {
+function fixtureState(state, store, locale = "zh-TW") {
   const member = { principal_id: syntheticID(2), email: "ari@example.test", role: "admin", joined_at: "2026-10-12T06:00:00Z", is_me: false };
   const owner = { principal_id: syntheticID(1), email: state === "list-owner-no-email" ? null : "owner@example.test", role: "owner", joined_at: "2026-10-01T06:00:00Z", is_me: true };
   const invitation = { id: syntheticID(3), email: "mei@example.test", role: apiRoles[suffixRole(state, "admin")], created_at: "2026-10-30T06:00:00Z", expires_at: "2026-11-02T06:00:00Z", expired: false, mail_state: "SENT" };
@@ -63,7 +63,7 @@ function fixtureState(state, store) {
         if (unknownStates.has(state)) return json(503, { code: "retry_later" });
         if (state.startsWith("reauth")) return json(403, { code: "reauth_required" });
         if (action === "invite") {
-          assert.deepEqual(body, { store_id: store, email: "mei@example.test", role: invitation.role, locale: "zh-TW" });
+          assert.deepEqual(body, { store_id: store, email: "mei@example.test", role: invitation.role, locale });
           if (inviteErrors[state]) return json(inviteErrors[state][0], { code: inviteErrors[state][1] });
           invitation.mail_state = state === "mail-failed" ? "FAILED" : "SENT";
           team.invitations = [invitation];
@@ -183,8 +183,8 @@ export function registerTeamParity({ session, origin, store, output, sha }) {
       if (noChange) {
         await expect(button(page, "繼續"), "signed unchanged-role control is disabled").toBeDisabled();
         assert.equal(f.writes.length, 0, "unchanged role never sends set-role");
-        // No forced click: role-confirm-admin/role-done-admin have no approved reachable path.
-        // Their signed content assertions remain a visible blocker for the integrator guard, not fake coverage.
+        // No forced click: the signed role-edit-admin frame disables Continue and the signed prototype links nothing to
+        // role-confirm-admin/role-done-admin, so they have no reachable path; their content assertions stay a visible blocker.
         if (state === "list-updated-admin") { await click(page, "取消"); await page.reload(); }
       } else {
         if (!state.startsWith("role-edit")) await click(page, "繼續");
@@ -217,6 +217,8 @@ export function registerTeamParity({ session, origin, store, output, sha }) {
     const names = new Set(frame.text);
     for (const text of ["員工名單", "待接受邀請", "邀請員工", "變更角色", "移除", "撤回", "取消", "送出邀請", "繼續", "確認變更", "確認移除", "確認撤回", "查看最新名單", "接受邀請"]) {
       if (!names.has(text)) continue;
+      // A frame's first string is its page heading (邀請員工 / 變更角色 / 待接受邀請 screens), not a button of that screen.
+      if (text === frame.text[0]) { await expect(scope.getByRole("heading", { name: translate(text, locale), exact: true })).toBeVisible(); continue; }
       const target = scope.getByRole("button", { name: translate(text, locale), exact: true });
       await expect(target).toBeVisible();
       if (["password-off", "mail-failed"].includes(frame.state) && text === "邀請員工" || frame.state === "invitee-off" && text === "接受邀請") await expect(target).toBeDisabled();
@@ -370,10 +372,10 @@ export function registerTeamParity({ session, origin, store, output, sha }) {
   });
 
   // ROUND 3 additions only. Original RED journeys and their assertions above remain verbatim.
-  // The legacy send-success/no-op-result expectations remain visible until the integrator reconciles scope.
-  for (const locale of ["zh-TW", "zh-CN", "en"]) for (const viewport of viewports) test(`PARITY-TEAM R3 paused send ${locale} ${viewport.name}`, { timeout: 15000 }, async () => {
+  // Owner lifted the invite pause 2026-11-04: submit sends once through the invite API and lands on the signed invite-sent frame.
+  for (const locale of ["zh-TW", "zh-CN", "en"]) for (const viewport of viewports) test(`PARITY-TEAM R3 invite send ${locale} ${viewport.name}`, { timeout: 15000 }, async () => {
     const { context, page } = await session({ width: viewport.width, height: viewport.height });
-    const f = fixtureState("list", store);
+    const f = fixtureState("list", store, locale);
     const firstClick = clicks.length; let completed = false;
     try {
       await f.install(page);
@@ -382,14 +384,14 @@ export function registerTeamParity({ session, origin, store, output, sha }) {
       await page.getByRole("textbox", { name: translate("電子郵件", locale), exact: true }).fill("mei@example.test");
       await page.getByRole("radio", { name: translate(roleLines[1], locale), exact: true }).check();
       await click(page, translate("送出邀請", locale));
-      await expect(page.getByRole("heading", { name: translate("邀請郵件未送出", locale), exact: true })).toBeVisible();
-      await expect(page.getByText(translate("郵件服務暫時無法使用，現在無法邀請。", locale), { exact: true })).toBeVisible();
-      await expect(button(page, translate("邀請員工", locale))).toBeDisabled();
-      assert.equal(f.writes.length, 0, "paused send never calls SMTP or manufactures an invitation");
+      await content(page, oracle.frames.find(frame => frame.state === "invite-sent"), locale); // signed 1468:75217 / 1468:75260
+      await expect(button(page, translate("送出邀請", locale)), "a sent invitation cannot be submitted again").toHaveCount(0);
+      assert.deepEqual(f.writes, [{ action: "invite", role: "admin" }], "submit sends exactly one invitation through the invite API");
       await click(page, translate("回到員工", locale));
+      await expect(page.locator("main").getByText("mei@example.test", { exact: true }), "回到員工 opens the pending list").toBeVisible();
       await page.reload();
       await expect(button(page, translate("員工名單", locale))).toBeVisible();
-      assert.equal(f.writes.length, 0, "refresh cannot submit a paused invitation");
+      assert.equal(f.writes.length, 1, "refresh never resends the invitation");
       completed = true;
     } finally {
       for (const row of clicks.slice(firstClick)) if (row.result === "clicked") row.result = completed ? "pass" : "fail";
@@ -399,9 +401,10 @@ export function registerTeamParity({ session, origin, store, output, sha }) {
     }
   });
 
-  for (const viewport of viewports) test(`PARITY-TEAM R3 admin promotion unavailable ${viewport.name}`, { timeout: 15000 }, async () => {
+  // Owner decision 2026-11-04: admin promotion uses set-role like any other change; Go's owner check stays the authority.
+  for (const viewport of viewports) test(`PARITY-TEAM R3 admin promotion ${viewport.name}`, { timeout: 15000 }, async () => {
     const { context, page } = await session({ width: viewport.width, height: viewport.height });
-    const f = fixtureState("list", store);
+    const f = fixtureState("role-done-admin", store); // SETUP only: the -admin suffix makes the fixture expect set-role {role: "admin"}.
     const firstClick = clicks.length; let completed = false;
     f.team.members[1].role = "viewer"; // SETUP only: existing DTO, another current role; no product state mutation.
     try {
@@ -409,12 +412,16 @@ export function registerTeamParity({ session, origin, store, output, sha }) {
       await page.goto(`${origin()}/zh-TW/team?store=${store}`);
       await click(page, "變更角色");
       await selectRole(page, "admin");
-      await expect(button(page, "繼續")).toBeDisabled();
-      assert.equal(f.writes.length, 0, "admin promotion has no submit path");
-      await click(page, "取消");
+      await click(page, "繼續");
+      await expect(page.locator("main").getByText("僅供檢視改為管理員。", { exact: true })).toBeVisible();
+      assert.equal(f.writes.length, 0, "review is read-only");
+      await click(page, "確認變更");
+      await expect(page.locator("main").getByRole("heading", { name: "角色已變更", exact: true })).toBeVisible();
+      assert.deepEqual(f.writes, [{ action: "set-role", role: "admin" }], "promotion is one set-role write");
+      await click(page, "回到員工");
       await page.reload();
-      await expect(page.getByText("僅供檢視 · 加入 10/12", { exact: true })).toBeVisible();
-      assert.equal(f.writes.length, 0);
+      await expect(page.getByText("管理員 · 加入 10/12", { exact: true })).toBeVisible();
+      assert.equal(f.writes.length, 1, "refresh never repeats the promotion");
       completed = true;
     } finally {
       for (const row of clicks.slice(firstClick)) if (row.result === "clicked") row.result = completed ? "pass" : "fail";
