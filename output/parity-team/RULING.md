@@ -1,5 +1,20 @@
 # PARITY-TEAM ROUND 3 ruling implementation
 
+## RELAY 5 — integration merge, overflow hardening, oracle items (2026-11-04)
+
+Merged `origin/r3/integration` (merge `d06f6c925`): kept #531 seeded fixture data and `registerTeamParity` in `tests/admin/parity-shell-browser.mjs` (only the header comment conflicted); `browser-ownership.json` regenerated, `--check` exit 0. Team uses its own `page.route("**/api/team/*")`, so seeding does not touch Team frames.
+
+- bundle:09 `shell-architecture.test.mjs:11` and bundle:01 `ds-hex-ratchet.test.mjs:88`: already fixed by `98b265b46` (no `Intl`/`toLocale*` in Team.tsx; 0 hex literals in team.css). Static grep only.
+- Mobile overflow (`parity-team.mjs:238`): every failing frame renders the two-store selector `Team.tsx:43`. The CI run was on `3eb0e63a`, before `98b265b46` let the select shrink. This relay also makes `.team-store` (team.css:32-33) wrap and gives it `min-width: 0`. NOT_RUN locally (CI only).
+- Invite still submits to the paused view (`Team.tsx:148`) and admin Continue stays disabled (`:89,161`).
+
+### Needs separate reviewed oracle correction (not edited here)
+
+1. `tests/admin/parity-team.mjs:214` with `tests/admin/parity-team-frames.json:467,665`: the nav frame requires the old module-shell text `設定與員工` inside `[data-ui-shell]`. The approved shared shell shows `設定` > `員工`.
+2. `tests/admin/parity-team.mjs:217-224`: `content()` requires a `button` role for every matching frame string, including the headings `邀請員工` (invite entry), `變更角色` (role editor/review) and `待接受邀請` (empty pending).
+
+Suite SHA-256 is unchanged: `7ff876032ca732452330e152eed4513d45cc7b504eb4920ef9656d7e5e8d18c6`.
+
 ## RELAY 4 — acceptance conflict revalidated; no push (2026-11-01)
 
 Fetched origin and merged origin/r3/integration first: exit 0, already current at `c52b65283a5ac738d0c527a464d0cccc9523b1f4`. Entry/local head `4fad602dbce4139b568502780fd28de7bc7eafc6`; PR #476 head remains `3eb0e63a0d34dd1e351cf2b09961e170e240bb15`. Existing fix `98b265b46` remains unpushed. No additional product fix attempt, commit or CI push.
