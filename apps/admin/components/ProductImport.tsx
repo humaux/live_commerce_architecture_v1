@@ -70,7 +70,7 @@ export function ProductImport({
     setPhase(mode === "preview" ? "checking" : "committing");
     const outcome = await sendImport(store.id, mode, file, boundary);
     if (!outcome.ok) {
-      if (mode === "commit" && outcome.uncertain) { setUnknown(true); setProblem(d.pendingHelp); }
+      if (mode === "commit" && outcome.uncertain) { setUnknown(true); setProblem(d.productPending); }
       else setProblem(errorFor(outcome.code));
       setPhase(mode === "preview" ? "idle" : "checked");
       return;
@@ -168,7 +168,7 @@ export function ProductImport({
           </> : <>
             <p>{dataOpsText(d.productRows, { file: file?.name ?? "", n: result.rows })}</p><p>{d.productPreviewRule}</p>
             <dl className="ops-stats"><div><dt>{d.newProducts}</dt><dd>{result.created_products}</dd></div><div><dt>{d.updatedProducts}</dt><dd>{result.updated_products}</dd></div><div><dt>{d.stockAdjustments}</dt><dd>{result.stock_adjustments}</dd></div></dl>
-            <div className="ops-actions"><button onClick={reset} disabled={unknown || phase === "committing"}>{d.importHome}</button><button className="primary" data-testid="import-commit" disabled={!!commitReason} onClick={() => void run("commit")}>{phase === "committing" ? c.committing : c.commit}</button></div>
+            <div className="ops-actions"><button onClick={reset} disabled={unknown || phase === "committing"}>{d.importHome}</button><button className="primary" data-testid="import-commit" disabled={!!commitReason} onClick={() => void run("commit")}>{phase === "committing" ? c.committing : unknown ? d.productRetry : c.commit}</button></div>
           </>}
         </section>}
         {phase === "done" && result && <section className="ops-card" data-testid="import-result">

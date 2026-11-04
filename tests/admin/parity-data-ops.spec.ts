@@ -136,6 +136,35 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
       }
     });
 
+    // #543 A: a lost commit reply keeps the selected bytes, says the result is unconfirmed (product copy, not the customer mapping copy)
+    // and offers a retry of the same import. MOCK transport loss only: the real Go handler commits before its reply is dropped.
+    test(`product import ${viewport.width}: unconfirmed commit retries the same import`, async ({ page }) => {
+      await page.setViewportSize(viewport); await login(page);
+      await page.goto(root("zh-TW", "products/import")); await heading(page, "商品匯入與匯出");
+      const data = `handle,title,sku,price\nparity-unknown-${viewport.width},未確認小包,PARITY-UNKNOWN-${viewport.width},500\n`;
+      await action(page, "商品資料檔案", "setInputFiles", "selected filename is visible", async () => {
+        await page.getByLabel("商品資料檔案", { exact: true }).setInputFiles({ name: "products.csv", mimeType: "text/csv", buffer: Buffer.from(data) });
+        await expect(page.getByText("products.csv", { exact: true }).first()).toBeVisible();
+      });
+      await click(page, "預覽檔案", "server preview before any write", () => heading(page, "預覽商品匯入"));
+      const commits: (string | null)[] = [];
+      await page.route(`**/api/stores/${store}/tools/products/import/commit`, async route => {
+        commits.push(route.request().postData());
+        if (commits.length === 1) { const result = await route.fetch(); expect(result.status()).toBe(200); await route.abort("connectionreset"); }
+        else await route.continue();
+      });
+      await action(page, "import-commit", "click", "lost reply shows the product UNKNOWN state", async () => {
+        await page.getByTestId("import-commit").click();
+        await expect(page.getByTestId("import-page").getByRole("alert")).toHaveText("尚未確認匯入結果。重試會再次送出同一份檔案，系統不會重複建立商品或規格。");
+      });
+      await expect(page.getByRole("button", { name: "回到匯入中心", exact: true })).toBeDisabled();
+      await click(page, "重試同一份匯入", "the same bytes replay the committed import", async () => {
+        await heading(page, "匯入結果");
+        await expect(page.getByText("這個檔案先前已匯入過，沒有任何變更。", { exact: true })).toBeVisible();
+      });
+      expect(commits).toHaveLength(2); expect(commits[1]).toEqual(commits[0]);
+    });
+
     for (const outcome of ["review", "result", "conflict", "unknown", "discard"] as const) test(`inventory ${viewport.width}: ${outcome}`, async ({ page }) => {
       await page.setViewportSize(viewport); await login(page);
       await page.goto(root("zh-TW", "inventory")); await heading(page, "庫存");
@@ -147,8 +176,13 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
       });
       await expect(page.getByRole("heading", { name: "調整原因（必填）", level: 2, exact: true })).toBeVisible();
       await capture(page, frame("6:19050", "6:19202"));
-      await click(page, "增加 3", "preview reflects positive three", () => expect(page.getByText("27", { exact: true }).first()).toBeVisible());
-      await click(page, "到貨補錄", "reason selected before review", () => expect(page.getByRole("button", { name: "核對調整", exact: true })).toBeEnabled());
+      // #543 B: frame 6:19050's +3 is demo data. The draft starts empty, and a reason alone never enables review.
+      await expect(page.getByRole("spinbutton", { name: "調整件數", exact: true })).toHaveValue("");
+      await click(page, "到貨補錄", "reason alone keeps review disabled", () => expect(page.getByRole("button", { name: "核對調整", exact: true })).toBeDisabled());
+      await click(page, "增加 3", "preview reflects positive three", async () => {
+        await expect(page.getByText("27", { exact: true }).first()).toBeVisible();
+        await expect(page.getByRole("button", { name: "核對調整", exact: true })).toBeEnabled();
+      });
       if (outcome === "discard") {
         await click(page, "取消", "discard confirmation retains unsent values", async () => {
           await heading(page, "放棄本次調整？");

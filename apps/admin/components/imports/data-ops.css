@@ -11,6 +11,8 @@
 .data-ops button, .data-ops .ops-link { min-height: 44px; padding: 10px 24px; border: 1px solid var(--ds-sig-line); background: var(--ds-surface); border-radius: 5px; color: var(--ds-ink); font: inherit; font-weight: 500; text-align: center; text-decoration: none; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
 .data-ops button:hover:not(:disabled), .data-ops .ops-link:hover { background: var(--ui-primary-soft); }
 .data-ops button.primary { color: var(--ds-on-primary); background: var(--ui-primary); border-color: var(--ui-primary); }
+/* #543 H: the soft hover above would put the white primary label on pale mint; primaries darken instead. */
+.data-ops button.primary:hover:not(:disabled) { background: var(--ui-primary-hover); border-color: var(--ui-primary-hover); }
 .data-ops button.ops-inventory-search-submit { background: var(--ds-ink); border-color: var(--ds-ink); }
 .data-ops button:disabled { opacity: .55; cursor: not-allowed; }
 .data-ops :is(input, select, textarea) { min-height: 44px; max-width: 100%; border: 1px solid var(--ds-sig-line); border-radius: 5px; padding: 10px 12px; background: var(--ds-surface); color: inherit; font: inherit; }

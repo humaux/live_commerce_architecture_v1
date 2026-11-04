@@ -28,7 +28,7 @@ export function InventoryView({ locale, initial, state, setState, selected, sele
   const balances = selected ? [[c.onHand, selected.on_hand], [c.reserved, selected.reserved], [c.allocated, selected.allocated], [c.unavailable, selected.unavailable], [c.available, selected.available]] as const : [];
   // These are drafts, never persisted stock or a client-derived command total. Go checks the version and stock invariants.
   const forecast = selected && Number.isSafeInteger(quantity) ? <>{state === "edit" && <h2>{c.beforeAfter}</h2>}{[[c.onHand, selected.on_hand], [c.available, selected.available]].map(([label, before]) => <div className="ops-balance" key={label}><span>{label}</span><strong>{before}</strong><span>→</span><strong>{Number(before) + quantity}</strong></div>)}</> : null;
-  const choose = (row: LedgerRow) => { select(row.sku_id); setDelta("3"); setReason(""); setState("edit"); };
+  const choose = (row: LedgerRow) => { select(row.sku_id); setDelta(""); setReason(""); setState("edit"); };
   return <div className="data-ops" data-testid="inventory-page">
     <header><h1>{title}</h1>{state === "list" && <a className="ops-link" href={`/${locale}/products${initial.storeID ? `?store=${initial.storeID}` : ""}`}>{c.backProducts}</a>}</header>
     {state === "list" ? <>
@@ -46,6 +46,8 @@ export function InventoryView({ locale, initial, state, setState, selected, sele
       </div><div className="ops-actions">{[["all", c.all], ["available", c.availableOnly], ["empty", c.soldOut]].map(([value, label]) => <button key={value} aria-pressed={filter === value} disabled={locked || filter === value} onClick={() => setFilter(value)}>{label}</button>)}</div>
         <button disabled={locked} onClick={() => setState("search")}>{c.searchSKU}</button>
       </div>
+      {/* ponytail: the ledger API has no availability parameter (contracts/admin-ledger-v1.md), so the chips filter this page only. */}
+      {initial.rows.next_cursor && <p className="ops-note">{c.loadedFilter}</p>}
       <h2>{c.allStock}</h2><div className="ops-card"><div className="table-scroll ops-stock-scroll"><table className="ops-stock-table"><thead><tr>{[c.skuProduct, c.onHand, c.reserved, c.allocated, c.unavailable, c.available, c.action].map(label => <th key={label}>{label}</th>)}</tr></thead><tbody>
         {initial.rows.items.filter(row => filter === "all" || (filter === "available" ? row.available > 0 : row.available === 0)).map(row => <tr key={row.sku_id}>
           <td>{row.code} · <button className="product-name" disabled={locked} onClick={() => choose(row)}>{row.product_name}</button></td>{[row.on_hand, row.reserved, row.allocated, row.unavailable, row.available].map((n, i) => <td key={i} data-label={[c.onHand, c.reserved, c.allocated, c.unavailable, c.available][i]} className={i === 4 ? "available-value" : undefined}>{n}</td>)}
@@ -53,7 +55,7 @@ export function InventoryView({ locale, initial, state, setState, selected, sele
         </tr>)}
       </tbody></table></div>{children}</div>
       <p className="ops-note">{c.stockEquation}</p>
-      {initial.rows.next_cursor && <button disabled={locked} onClick={() => navigate({ cursor: initial.rows.next_cursor })}>{c.allStock}</button>}
+      {initial.rows.next_cursor && <button disabled={locked} onClick={() => navigate({ cursor: initial.rows.next_cursor })}>{c.loadMoreStock}</button>}
     </> : state === "search" ? <section className="ops-card"><form onSubmit={event => { event.preventDefault(); navigate({ q: query }); setState("list"); }}>
       <label>{c.skuOrName}<input type="text" value={query} onChange={event => setQuery(event.target.value)} maxLength={120} /></label>
       <div className="ops-actions"><button className="primary ops-inventory-search-submit" type="submit">{c.search}</button><button type="button" onClick={() => setState("list")}>{c.cancel}</button></div>

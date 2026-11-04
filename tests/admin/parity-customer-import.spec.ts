@@ -140,6 +140,19 @@ test.describe("PARITY-DATA-OPS C6 customer import", () => {
         // F03-BEGIN preview-check: after the original capture; keep its viewport and all old actions intact.
         await f03SignedRows(page, "zh-TW", [{ row: 3, outcome: "failed", code: "required" }, { row: 1, outcome: "created" }, { row: 2, outcome: "updated" }]);
         // F03-END preview-check
+        // #543 H, READ/MEASURE only: a hovered enabled primary keeps a readable label (WCAG AA 4.5:1), not white on the pale hover fill.
+        const confirm = page.getByRole("button", { name: "確認匯入 2 筆", exact: true });
+        await confirm.hover();
+        const contrast = await confirm.evaluate(button => {
+          const style = getComputedStyle(button);
+          const luminance = (css: string) => {
+            const [r, g, b] = (css.match(/[\d.]+/g) ?? []).slice(0, 3).map(n => { const v = Number(n) / 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; });
+            return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          };
+          const [light, dark] = [luminance(style.color), luminance(style.backgroundColor)].sort((a, b) => b - a);
+          return { ratio: (light + 0.05) / (dark + 0.05), color: style.color, background: style.backgroundColor };
+        });
+        expect(contrast.ratio, `hovered 確認匯入 2 筆 label ${JSON.stringify(contrast)}`).toBeGreaterThanOrEqual(4.5);
         await action(page, "返回調整欄位", "click", "column choices are retained", async () => {
           await page.locator(".ops-card").filter({ has: page.getByTestId("import-back") }).getByRole("button", { name: "返回調整欄位", exact: true }).click();
           await expect(page.getByRole("combobox", { name: "電話 · 選填", exact: true })).toHaveValue("phone");
@@ -154,11 +167,16 @@ test.describe("PARITY-DATA-OPS C6 customer import", () => {
           await capture(page, frame("1028:7221", "1028:7299"));
           // #475 visual P1 (1028:7221 / 1028:7299), READ/MEASURE only: the 選擇的檔案 card must not sit under the sticky footer,
           // and the shell app bar must be on screen on this route like on every other frame of the flow.
-          const card = await page.getByRole("heading", { name: "選擇的檔案", exact: true }).boundingBox();
-          const footer = await page.locator(".ops-footer").filter({ has: page.getByRole("button", { name: "返回預覽", exact: true }) }).boundingBox();
-          expect(card, "選擇的檔案 heading is laid out").toBeTruthy(); expect(footer, "errors footer is laid out").toBeTruthy();
-          expect(card!.y + card!.height <= footer!.y || footer!.y + footer!.height <= card!.y, `選擇的檔案 heading ${JSON.stringify(card)} must not intersect the footer ${JSON.stringify(footer)}`).toBe(true);
           await expect(page.locator("header[data-shell-topbar]")).toBeInViewport();
+          // #543 I(iii): after the scroll to top, screen-reader focus lands on the new route heading, not on body.
+          await expect(page.getByRole("heading", { level: 1, name: "回原檔修正這一筆", exact: true })).toBeFocused();
+          // #543 I(i): measure the whole card that owns 選擇的檔案, scrolled into view, so 390x844 cannot pass with it below the fold.
+          const owner = page.locator("section.ops-card").filter({ has: page.getByRole("heading", { name: "選擇的檔案", exact: true }) });
+          await owner.scrollIntoViewIfNeeded();
+          const card = await owner.boundingBox();
+          const footer = await page.locator(".ops-footer").filter({ has: page.getByRole("button", { name: "返回預覽", exact: true }) }).boundingBox();
+          expect(card, "選擇的檔案 card is laid out").toBeTruthy(); expect(footer, "errors footer is laid out").toBeTruthy();
+          expect(card!.y + card!.height, `選擇的檔案 card ${JSON.stringify(card)} must end above the footer ${JSON.stringify(footer)}`).toBeLessThanOrEqual(footer!.y);
         });
         await click(page, "返回預覽", "original preview is retained", () => heading(page, "確認前，再核對一次"));
         return;

@@ -74,6 +74,8 @@ node --test --experimental-strip-types tests/admin/import-wire-model.test.ts tes
   tests/admin/import-client.test.mjs tests/admin/import-history-model.test.ts tests/admin/import-history-client.test.mjs \
   tests/admin/import-history-bff.test.mjs tests/admin/import-history-ui.test.mjs tests/admin/import-view.test.ts \
   tests/admin/import-integration.test.ts tests/admin/import-coordinator.test.mjs tests/admin/import-readiness.test.mjs
+# #543 C inventory next-page label and loaded-rows filter note on the real InventoryView source (no browser/PG).
+node --test --experimental-strip-types tests/admin/inventory-view.test.mjs
 
 # CI speed-up (2026-10-07): LC_SWEEP_SHARD partition + whole-run aggregate (click sweep, visual lint), the foundation shard plan and the gates.yml matrix planner. No browser, no PG.
 # The matrix source gate runs before the gallery seam gate so a broken matrix viewport binding

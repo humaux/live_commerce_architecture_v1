@@ -73,7 +73,7 @@
     "tests/admin/guarded-read-logout.test.mjs": "5a70f3f46ad3340fd693bae276b660b2aa0edf4157431e81e481e05479369ef9",
     "tests/admin/home-cod.spec.ts": "cd7e13636c1860a3cf20f5a713270e12c1c582ddffe3f3089daa5f54881ce53f",
     "tests/admin/import-client.test.mjs": "d7876e23e222ab6ba9a715f35bb82286c8ccc2352b55392ba90bd549467695a1",
-    "tests/admin/import-coordinator.test.mjs": "3ab5ed0fee3eed3d303101e93d1d0f14b8a0bd581c3e6107436e164483e7a9fe",
+    "tests/admin/import-coordinator.test.mjs": "2abf1e234eb4ed94cd5776007c895a325a510f7e37e5f2172e970ebd619f0760",
     "tests/admin/import-history-bff.test.mjs": "a9410e5984c9d66ec6383cdcd7996c83a67e9a0e5d4a029b02e6aeab650a55e5",
     "tests/admin/import-history-client.test.mjs": "490106b956176cafe64f9b1c4daf61cea72f1c53a56bf85b8c57b7b3d836be84",
     "tests/admin/import-history-model.test.ts": "adbf29ecbba29887450fc39b80b89edb5ad7e60112cc5ade267d538dfddad250",
@@ -112,6 +112,7 @@
     "tests/admin/inbox-v2-ui.spec.ts": "4dee9f20a2b6a6c90a1f582d6823ee64baea6c3ec52655842ae8f74af476736e",
     "tests/admin/inbox-window.test.ts": "c99a6a0abf01263434288211c040763fc37f0f5e3d4167bdcd05f85705f26156",
     "tests/admin/input-delivery.spec.ts": "7e27d34fe5736e3d1ee9dcf56ec32df36f387cac4914d4eaa7f593d667a11f39",
+    "tests/admin/inventory-view.test.mjs": "b2df0169ecb77699f0d1545576a356a9b4739ba568f1bec83b2063bdc88ef455",
     "tests/admin/invite-next.test.ts": "641a704b4833fa8c85cc257061cb37ea4417853ffaf5e9f068de9001ee359a57",
     "tests/admin/ledger.spec.ts": "0eb1a3d0f62865e5275727cd0ba621e094c458e9db016dd9cee91a1ba943dc92",
     "tests/admin/live-console-bff.test.ts": "a20322ab400e8b94fce460d800affbe69cdd2c2a15d8ef03956403c97168606f",
@@ -153,9 +154,9 @@
     "tests/admin/parcels-model.test.ts": "4af0a4b7881802004e29343b7361076ae333fcc50a89b2b8fd527254685148ff",
     "tests/admin/parcels-request.test.ts": "2e6b5ce176f30a273a9eeb9aee7fef931676c8bcee2569842b361ed1bcf8957f",
     "tests/admin/parcels-scope.test.ts": "01a84682b27f95d14665813cbb8c0b1189bbdd8cb2f3d26fa5939fdec71a0257",
-    "tests/admin/parity-customer-import.spec.ts": "b6327dda3d96cce4e33e94497778474a8dcde2cafe4d80168dfb8c9fcb3298fe",
+    "tests/admin/parity-customer-import.spec.ts": "ab0ef6431f0ac6627cb29a1612a9784a520b3589ccb8dd80e8ca54a25e67e06a",
     "tests/admin/parity-data-ops-support.ts": "d6fa97eb8040fc1efd61c688165d5307534829e3cd4cd840e858d596e17d7999",
-    "tests/admin/parity-data-ops.spec.ts": "3f8ece67dbbd720da608313945dd9516bb7a75ca844ee2990dbfb167ede4c502",
+    "tests/admin/parity-data-ops.spec.ts": "d792c601100b13063b1e0fff3886b6a980799e4263e8da1321e6f22bf4ea3a95",
     "tests/admin/parity-entry-dashboard.ts": "f099136e2273212106002fc8a6d1cf4f366d32b925f79f0cbd901384b9b1075d",
     "tests/admin/parity-entry.spec.ts": "6b11d4a2c5796aab411121d42509c69cf991505d7665bef5eaa64cfcaffab2b3",
     "tests/admin/parity-leftovers.spec.ts": "063db8408830126af6dc5f15a91f50d22251518554ff4ae95da15fc52d17b179",
@@ -263,7 +264,7 @@
     "tests/foundation/browser_buyer_chain_test.go": "a7bdee104acee6ed6fc32594e6a33abae0f2a6a5b1b724054620c787c44aa8ed",
     "tests/foundation/browser_buyer_comms_test.go": "4e7ab136ef2e5ac637e487e853fd6285301c190a57d3036c6ca26430b2908e61",
     "tests/foundation/browser_card_payments_test.go": "6904038cf08495111a962d1a22b60db5c4cfc06085ba4b808930548264d67b68",
-    "tests/foundation/browser_catalog_core_test.go": "ecb81f35cab8e5c60ac073173df91fc729dd3cfc8bef5abfc00a824348665768",
+    "tests/foundation/browser_catalog_core_test.go": "4d2beaa7dc67986f012755219dc48d1020159c304ed4d256cb6396fde88dc037",
     "tests/foundation/browser_catalog_media_test.go": "d7a727165f4cc4e1d6ca57fc54292a686c3b7950164cdcfef8ec673a06207b2c",
     "tests/foundation/browser_checkout_offline_test.go": "6199cd3dd28ce70a726ebc6883db06a74795f767c6c5eebe3a35fc77b6ceedaf",
     "tests/foundation/browser_claim_checkout_test.go": "d0b7d2eb285373130f715ae81cca5e5b2bdd718bc6fc6569ea8235dc9c941605",
@@ -810,7 +811,7 @@
     "packages/format/package.json": "0a52b62b35e640298589968137e2d8899151bbcb2e0714f3f9204afc70beb3ed",
     "packages/i18n/package.json": "096562b66a71f0479808557beb6490deef65c7cf1626867ec23cffbdaedebfce",
     "packages/ui/package.json": "85891954909057d1783e4a0b8585e5b8f4609f9259116ae808ce34f1f4347078",
-    "scripts/dev/test-node.sh": "c98030fc67da2fbfd334370edbc4860edee433a940360b683a9ac64166d45d24"
+    "scripts/dev/test-node.sh": "10da75e33edbed243596533cd37a5fdd66dfbf97d5c52b8bf112450309c4b78a"
   },
   "modes": {
     "--browser-inbox": {
