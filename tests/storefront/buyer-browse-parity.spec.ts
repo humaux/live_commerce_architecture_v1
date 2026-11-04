@@ -100,6 +100,14 @@ const copy = {
     viewAllProducts: "查看所有商品",
     collectionCount: "系列商品 · {n} 件",
     legacyViewAll: "查看全部",
+    viewCart: "查看購物車",
+    checkout: "前往結帳",
+    entryBack: "商品詳情",
+    entryTitle: "購物車 · {title}",
+    entrySpec: "規格",
+    entrySubtotal: "商品小計",
+    entryRemove: "移除商品",
+    entryShip: "運費依配送方式於結帳時計算。",
     standard: "標準款",
     buyNote: "商品規格與金額以本頁選擇為準；收件資料在結帳時填寫。",
     delivery: "配送方式",
@@ -146,6 +154,14 @@ const copy = {
     viewAllProducts: "查看所有商品",
     collectionCount: "系列商品 · {n} 件",
     legacyViewAll: "查看全部",
+    viewCart: "查看购物车",
+    checkout: "前往结账",
+    entryBack: "商品详情",
+    entryTitle: "购物车 · {title}",
+    entrySpec: "规格",
+    entrySubtotal: "商品小计",
+    entryRemove: "移除商品",
+    entryShip: "运费依配送方式于结账时计算。",
     standard: "标准款",
     buyNote: "商品规格与金额以本页选择为准；收件资料在结账时填写。",
     delivery: "配送方式",
@@ -192,6 +208,14 @@ const copy = {
     viewAllProducts: "View all products",
     collectionCount: "Products in this collection · {n}",
     legacyViewAll: "View all",
+    viewCart: "View cart",
+    checkout: "Checkout",
+    entryBack: "Product details",
+    entryTitle: "Cart · {title}",
+    entrySpec: "Option",
+    entrySubtotal: "Item subtotal",
+    entryRemove: "Remove item",
+    entryShip: "Shipping depends on the delivery method and is calculated at checkout.",
     standard: "Standard",
     buyNote: "Options and amount are as selected on this page; delivery details are entered at checkout.",
     delivery: "Delivery",
@@ -255,18 +279,18 @@ export const PARITY_FRAMES: FrameSpec[] = [
   { frameId: "66:1749", name: "Buyer Mobile · 已在購物車中", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "390x844", screenshotFile: "parity/66-1749.png", deliveryPng: "after-66-1749.png", plan: "DEFERRED", reason: "C8 /claim ownership, integrator transfer", deferredTo: "later claim-parity unit (C8)" },
   { frameId: "66:1750", name: "Buyer Desktop · 目前無法購買", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "1440x900", screenshotFile: "parity/66-1750.png", deliveryPng: "after-66-1750.png", plan: "DEFERRED", reason: "C8 /claim ownership, integrator transfer", deferredTo: "later claim-parity unit (C8)" },
   { frameId: "66:1751", name: "Buyer Mobile · 目前無法購買", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "390x844", screenshotFile: "parity/66-1751.png", deliveryPng: "after-66-1751.png", plan: "DEFERRED", reason: "C8 /claim ownership, integrator transfer", deferredTo: "later claim-parity unit (C8)" },
-  { frameId: "102:2267", name: "Buyer Desktop · 購物車 · 日常斜背小包入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "1440x900", screenshotFile: "parity/102-2267.png", deliveryPng: "after-102-2267.png", plan: "NOT_COVERED", reason: "frame shows a demo product's cart entry; the sandbox fixtures have no such product" },
-  { frameId: "102:2324", name: "Buyer Mobile · 購物車 · 日常斜背小包入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "390x844", screenshotFile: "parity/102-2324.png", deliveryPng: "after-102-2324.png", plan: "NOT_COVERED", reason: "frame shows a demo product's cart entry; the sandbox fixtures have no such product" },
-  { frameId: "104:2313", name: "Buyer Desktop · 購物車 · 輕量帆布托特包入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "1440x900", screenshotFile: "parity/104-2313.png", deliveryPng: "after-104-2313.png", plan: "NOT_COVERED", reason: "frame shows a demo product's cart entry; the sandbox fixtures have no such product" },
-  { frameId: "104:2371", name: "Buyer Mobile · 購物車 · 輕量帆布托特包入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "390x844", screenshotFile: "parity/104-2371.png", deliveryPng: "after-104-2371.png", plan: "NOT_COVERED", reason: "frame shows a demo product's cart entry; the sandbox fixtures have no such product" },
-  { frameId: "104:2657", name: "Buyer Desktop · 購物車 · 迷你收納袋入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "1440x900", screenshotFile: "parity/104-2657.png", deliveryPng: "after-104-2657.png", plan: "NOT_COVERED", reason: "frame shows a demo product's cart entry; the sandbox fixtures have no such product" },
-  { frameId: "104:2715", name: "Buyer Mobile · 購物車 · 迷你收納袋入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "390x844", screenshotFile: "parity/104-2715.png", deliveryPng: "after-104-2715.png", plan: "NOT_COVERED", reason: "frame shows a demo product's cart entry; the sandbox fixtures have no such product" },
-  { frameId: "104:3176", name: "Buyer Desktop · 購物車 · 簡約提袋入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "1440x900", screenshotFile: "parity/104-3176.png", deliveryPng: "after-104-3176.png", plan: "NOT_COVERED", reason: "frame shows a demo product's cart entry; the sandbox fixtures have no such product" },
-  { frameId: "104:3234", name: "Buyer Mobile · 購物車 · 簡約提袋入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "390x844", screenshotFile: "parity/104-3234.png", deliveryPng: "after-104-3234.png", plan: "NOT_COVERED", reason: "frame shows a demo product's cart entry; the sandbox fixtures have no such product" },
-  { frameId: "104:3520", name: "Buyer Desktop · 購物車 · 米白托特包入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "1440x900", screenshotFile: "parity/104-3520.png", deliveryPng: "after-104-3520.png", plan: "NOT_COVERED", reason: "frame shows a demo product's cart entry; the sandbox fixtures have no such product" },
-  { frameId: "104:3578", name: "Buyer Mobile · 購物車 · 米白托特包入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "390x844", screenshotFile: "parity/104-3578.png", deliveryPng: "after-104-3578.png", plan: "NOT_COVERED", reason: "frame shows a demo product's cart entry; the sandbox fixtures have no such product" },
-  { frameId: "104:3862", name: "Buyer Desktop · 購物車 · 輕便收納包入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "1440x900", screenshotFile: "parity/104-3862.png", deliveryPng: "after-104-3862.png", plan: "NOT_COVERED", reason: "frame shows a demo product's cart entry; the sandbox fixtures have no such product" },
-  { frameId: "104:3920", name: "Buyer Mobile · 購物車 · 輕便收納包入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "390x844", screenshotFile: "parity/104-3920.png", deliveryPng: "after-104-3920.png", plan: "NOT_COVERED", reason: "frame shows a demo product's cart entry; the sandbox fixtures have no such product" },
+  { frameId: "102:2267", name: "Buyer Desktop · 購物車 · 日常斜背小包入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "1440x900", screenshotFile: "parity/102-2267.png", deliveryPng: "after-102-2267.png", plan: "assert" },
+  { frameId: "102:2324", name: "Buyer Mobile · 購物車 · 日常斜背小包入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "390x844", screenshotFile: "parity/102-2324.png", deliveryPng: "after-102-2324.png", plan: "assert" },
+  { frameId: "104:2313", name: "Buyer Desktop · 購物車 · 輕量帆布托特包入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "1440x900", screenshotFile: "parity/104-2313.png", deliveryPng: "after-104-2313.png", plan: "assert" },
+  { frameId: "104:2371", name: "Buyer Mobile · 購物車 · 輕量帆布托特包入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "390x844", screenshotFile: "parity/104-2371.png", deliveryPng: "after-104-2371.png", plan: "assert" },
+  { frameId: "104:2657", name: "Buyer Desktop · 購物車 · 迷你收納袋入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "1440x900", screenshotFile: "parity/104-2657.png", deliveryPng: "after-104-2657.png", plan: "assert" },
+  { frameId: "104:2715", name: "Buyer Mobile · 購物車 · 迷你收納袋入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "390x844", screenshotFile: "parity/104-2715.png", deliveryPng: "after-104-2715.png", plan: "assert" },
+  { frameId: "104:3176", name: "Buyer Desktop · 購物車 · 簡約提袋入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "1440x900", screenshotFile: "parity/104-3176.png", deliveryPng: "after-104-3176.png", plan: "assert" },
+  { frameId: "104:3234", name: "Buyer Mobile · 購物車 · 簡約提袋入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "390x844", screenshotFile: "parity/104-3234.png", deliveryPng: "after-104-3234.png", plan: "assert" },
+  { frameId: "104:3520", name: "Buyer Desktop · 購物車 · 米白托特包入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "1440x900", screenshotFile: "parity/104-3520.png", deliveryPng: "after-104-3520.png", plan: "assert" },
+  { frameId: "104:3578", name: "Buyer Mobile · 購物車 · 米白托特包入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "390x844", screenshotFile: "parity/104-3578.png", deliveryPng: "after-104-3578.png", plan: "assert" },
+  { frameId: "104:3862", name: "Buyer Desktop · 購物車 · 輕便收納包入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "1440x900", screenshotFile: "parity/104-3862.png", deliveryPng: "after-104-3862.png", plan: "assert" },
+  { frameId: "104:3920", name: "Buyer Mobile · 購物車 · 輕便收納包入口", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "390x844", screenshotFile: "parity/104-3920.png", deliveryPng: "after-104-3920.png", plan: "assert" },
   { frameId: "105:2439", name: "Buyer Desktop · 購物車空白", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "1440x900", screenshotFile: "parity/105-2439.png", deliveryPng: "verified-empty.png", plan: "assert" },
   { frameId: "105:2468", name: "Buyer Mobile · 購物車空白", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "390x844", screenshotFile: "parity/105-2468.png", deliveryPng: "mobile-empty-final.png", plan: "assert" },
   { frameId: "782:3904", name: "Buyer Desktop · 結帳 · 共用購物車脈絡", bucket: "U:b-cart", route: "/[locale]/cart", viewport: "1440x900", screenshotFile: "parity/782-3904.png", deliveryPng: "verified-desktop-checkout.png", plan: "DEFERRED", reason: "owned by PARITY-CHECKOUT (integrator ruling 2026-11-04)", deferredTo: "PARITY-CHECKOUT" },
@@ -296,7 +320,8 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
       const f = (desktop: string, mobile: string) => (isMobile ? mobile : desktop);
 
       const context = await browser.newContext(ctxOpts({ ignoreHTTPSErrors: true, viewport: { width, height }, locale }));
-      const page = await context.newPage();
+      // `let`: the b-cart entry frames re-point page at their own context (fresh cart) at the end of this iteration.
+      let page = await context.newPage();
 
       // One ledger row per operation that really ran; the callback returns what it observed.
       const step = async (frame: string, route: string, control: string, operation: string, expected: string, perform: () => Promise<string | void>) => {
@@ -1558,6 +1583,95 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
           await expect(page.getByRole("heading", { name: c.productRemoved })).toBeVisible({ timeout: T });
         });
         await shot(removedFrame, removedRoute);
+
+        // ===== b-cart entry frames (round b): the cart entered from a product page by a real add-to-cart click, then 「查看購物車」.
+        // Frame -> fixture mapping as the b-product round (FRAME-TRIAGE-20261104.md). Own context = fresh cart, so the 4:9668/4:9746
+        // one-line baseline above is untouched; the cart grows by one line per product. The entry panel anchors the layout (bounded
+        // like the b-product back link): when the first product lacks it, the rest are NOT_RUN instead of each waiting out T.
+        const entryMap: [string, string, string][] = [
+          ["102:2267", "102:2324", "dripper"], ["104:2313", "104:2371", "item01"], ["104:2657", "104:2715", "item02"],
+          ["104:3176", "104:3234", "item03"], ["104:3520", "104:3578", "scarf"], ["104:3862", "104:3920", "item04"],
+        ];
+        const entryContext = await browser.newContext(ctxOpts({ ignoreHTTPSErrors: true, viewport: { width, height }, locale }));
+        try {
+          page = await entryContext.newPage();
+          let entrySigned = true;
+          let lines = 0;
+          for (const [i, [desktopFrame, mobileFrame, key]] of entryMap.entries()) {
+            const frame = f(desktopFrame, mobileFrame);
+            const item = (facts?.products ?? []).find((x: any) => x.key === key);
+            if (!entrySigned) {
+              notRun.push({ frame, locale, subcase: `${viewport} ${key} cart entry`, reason: "cart entry panel absent on the first mapped product; dependent cart entry frames not run" });
+              continue;
+            }
+            const productRoute = `/${locale}/products/${item?.slug ?? key}`;
+            await page.goto(`${origin}${productRoute}`);
+            let inCart = false;
+            await step(frame, productRoute, `"${c.addToCart}" then drawer link "${c.viewCart}"`, "click + click", "the add lands in the cart and the drawer link opens the cart page", async () => {
+              assert(item, `facts.products ${key} missing`);
+              const single = !item.axes?.length;
+              const add = isMobile && single ? page.getByTestId("product-dock-add").getByRole("button", { name: c.addToCart, exact: true }) : page.getByTestId("product-buy").getByTestId("add-to-cart");
+              await add.click({ timeout: T });
+              await page.getByTestId("cart-drawer").getByRole("link", { name: c.viewCart, exact: true }).click({ timeout: T });
+              await expect(page).toHaveURL(new RegExp(`/${locale}/cart$`), { timeout: T });
+              lines += 1;
+              await expect(page.getByTestId("cart-page").getByTestId("cart-line")).toHaveCount(lines, { timeout: T });
+              inCart = true;
+              return page.url();
+            });
+            if (!inCart) {
+              notRun.push({ frame, locale, subcase: `${viewport} ${key} cart entry panel, back, remove`, reason: "add-to-cart / view-cart did not reach the cart page; dependent steps not run" });
+              continue;
+            }
+            const variant = item.variants.filter((v: any) => v.stock > 0).sort((a: any, b: any) => a.price_minor - b.price_minor)[0];
+            const entry = page.getByTestId("cart-entry");
+            const backLink = () => entry.getByRole("link", { name: c.entryBack });
+            await step(frame, cartRoute, "cart entry panel", "assert", `"‹ ${c.entryBack}", heading "${fmt(c.entryTitle, { title: item.title })}", the added line (${c.entrySpec}, ${c.quantity} 1, ${c.entrySubtotal}, "${c.entryRemove}"), note "${c.entryShip}", "${c.checkout}", then the cart list`, async () => {
+              await expect(entry.getByRole("heading", { name: fmt(c.entryTitle, { title: item.title }), exact: true })).toBeVisible({ timeout: T });
+              await expect(backLink()).toHaveAttribute("href", new RegExp(`/${locale}/products/${item.slug}$`));
+              const line = entry.getByTestId("cart-entry-line");
+              await expect(line.getByText(item.title, { exact: true })).toBeVisible();
+              await expect(line.getByTestId("cart-entry-spec")).toContainText(c.entrySpec);
+              await expect(line.getByTestId("cart-entry-spec")).toContainText(item.axes?.length ? variant.values[0] : c.standard);
+              await expect(line.getByTestId("cart-entry-qty")).toContainText(c.quantity);
+              await expect(line.getByTestId("cart-entry-qty")).toContainText("1");
+              await expect(line.getByTestId("cart-entry-subtotal")).toContainText(c.entrySubtotal);
+              assert.equal(num(await line.getByTestId("cart-entry-subtotal").innerText()), variant.price_minor / 100, "entry subtotal must be the server variant price x 1");
+              await expect(line.getByRole("button", { name: c.entryRemove, exact: true })).toBeEnabled();
+              await expect(entry.getByText(c.entryShip, { exact: true })).toBeVisible();
+              await expect(entry.getByRole("link", { name: c.checkout })).toHaveAttribute("href", new RegExp(`/${locale}/checkout$`));
+              const order = [await box(backLink()), await box(line), await box(entry.getByRole("link", { name: c.checkout })), await box(page.getByTestId("cart-page"))];
+              assert(order.every((b, n) => n === 0 || order[n - 1].y < b.y), `entry order must be back < line < checkout < cart list, got ${order.map((b) => Math.round(b.y)).join(", ")}`);
+              return `subtotal ${variant.price_minor / 100}; y ${order.map((b) => Math.round(b.y)).join(" < ")}`;
+            });
+            if (!(await entry.isVisible())) {
+              entrySigned = false;
+              notRun.push({ frame, locale, subcase: `${viewport} ${key} cart entry back, remove, reload`, reason: "cart entry panel absent; dependent steps not run" });
+              continue;
+            }
+            await shot(frame, cartRoute);
+            if (i < entryMap.length - 1) {
+              await step(frame, cartRoute, `link "‹ ${c.entryBack}"`, "click", "opens the product the cart was entered from", async () => {
+                await backLink().click({ timeout: T });
+                await expect(page).toHaveURL(new RegExp(`/${locale}/products/${item.slug}$`), { timeout: T });
+                await expect(page.getByRole("heading", { level: 1, name: item.title, exact: true })).toBeVisible({ timeout: T });
+              });
+              continue;
+            }
+            await step(frame, cartRoute, `button "${c.entryRemove}" + reload`, "click + reload", "the entered line leaves the cart list and stays removed after refresh", async () => {
+              const listed = page.getByTestId("cart-page").locator(`[data-testid="cart-line"][data-sku="${variant.sku_id}"]`);
+              await expect(listed).toHaveCount(1, { timeout: T });
+              await entry.getByTestId("cart-entry-line").getByRole("button", { name: c.entryRemove, exact: true }).click({ timeout: T });
+              await expect(listed).toHaveCount(0, { timeout: T });
+              await expect(page.getByTestId("cart-page").getByTestId("cart-line")).toHaveCount(lines - 1, { timeout: T });
+              await page.reload();
+              await expect(page.getByTestId("cart-page").getByTestId("cart-line")).toHaveCount(lines - 1, { timeout: T });
+              await expect(listed).toHaveCount(0);
+            });
+          }
+        } finally {
+          await entryContext.close();
+        }
       } finally {
         await context.close();
       }
