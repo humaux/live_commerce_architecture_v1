@@ -38,7 +38,7 @@ Existing tests retain their business checks and fixtures. Current docs, three-la
 - Allowed namespace: `packages/i18n/src/data-ops.ts`; generated `output/ci-select-backend-browser/browser-ownership.json`; own `output/parity-data-ops/*` evidence.
 - Existing browser mappings: `tests/admin/catalog-core.spec.ts`, `ledger.spec.ts`, `import-wizard.spec.ts`; required closure/harness update: `tests/admin/import-coordinator.test.mjs`; allowed wrong-selector repair in `parity-customer-import.spec.ts`.
 - **Integrator approval/review required for shared browser helpers:** `tests/storefront/merchant-product.mjs`, `tests/storefront/catalog-media-gate.mjs`. They only map inventory search/details to signed controls and retain the same price/image/archived/purchase assertions.
-- No other app/backend, OpenAPI, schema/migration, Go dependency/lockfile or protected baseline/dispatcher changes. Dependency-map regenerated with no diff.
+- Integrator-owned paths changed by implementation commits, now explicitly owned by the integrator (`output/parity-data-ops/RULING.md`): `.github/workflows/gates.yml` (5d9701ab4, dispatch-only import field mutation injector), `scripts/dev/contractdrift/baseline.json` (3c7d8056b, four GO_ONLY entries removed because the routes are now in the contract, which tightens the baseline) and `contracts/migration-import-v1.md` (3c7d8056b, 07a722f73: full route paths and the frozen §4.1/§6.1 opt-in row-error capability). No OpenAPI, schema/migration, Go dependency or lockfile change. Dependency map regenerated with no diff.
 
 ## Parity sheet — implementation CI captures NOT_RUN
 
@@ -104,3 +104,5 @@ Static E1: node syntax checks, targeted strict tsc, static design detector, owne
 Raw downloaded logs/artifacts uncommitted; run/job/member SHA256 manifest in output/parity-data-ops/FIX1-evidence-manifest.json. Rollback: revert this FIX1 commit through the integrator, no production or data changes.
 
 🤖 Generated with Codex (dispatched by Claude Code integrator).
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
