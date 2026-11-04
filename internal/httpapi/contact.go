@@ -2,6 +2,7 @@
 // Depends on: platform scope, command receipts/audit, storefront encryption and migration 0222's restricted definers.
 // Used by: NewHandler and the authenticated admin contact BFF.
 // Invariants: inbox permissions rechecked after waits/replay; receipts contain opaque metadata only; private no-store responses.
+
 package httpapi
 
 import (

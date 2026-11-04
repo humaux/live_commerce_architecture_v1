@@ -175,7 +175,7 @@ Package buyer owns the anonymous buyer capability boundary: issuing short-lived 
 
 ## `internal/buyerhttp`
 
-Purpose: public guest contact admission at the private BFF-only buyer boundary.
+Package buyerhttp owns the private, BFF-only buyer transport (catalog, cart, quote, checkout, payment and claim routes).
 
 - Depends on (internal): `internal/attribution`, `internal/buyer`, `internal/checkout`, `internal/claims`, `internal/command`, `internal/customers`, `internal/design`, `internal/domains`, `internal/fulfillment`, `internal/httperror`, `internal/integrations/meta`, `internal/pagination`, `internal/platform`, `internal/pricing`, `internal/promotions`, `internal/returns`, `internal/storefront`, `internal/storefrontdomains`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
@@ -271,7 +271,7 @@ Purpose: Per-market delivery allocation (which warehouses serve a delivery servi
 
 ## `internal/httpapi`
 
-Purpose: merchant contact list/detail and the one versioned mark-handled command.
+Purpose: httpapi owns the composition layer for authenticated merchant/admin routes — routing, bearer resolution, request bounds and error mapping.
 
 - Depends on (internal): `internal/ads`, `internal/billing`, `internal/catalog`, `internal/claims`, `internal/command`, `internal/customers`, `internal/design`, `internal/fulfillment`, `internal/httperror`, `internal/inbox`, `internal/integrations/accounts`, `internal/integrations/core`, `internal/inventory`, `internal/live`, `internal/merchantorders`, `internal/merchanttools`, `internal/metaconnect`, `internal/migrationimport`, `internal/msgtemplates`, `internal/notify`, `internal/pagination`, `internal/payments`, `internal/payments/platformstripe`, `internal/payments/settlement`, `internal/platform`, `internal/pricing`, `internal/promotions`, `internal/quickstart`, `internal/reporting`, `internal/returns`, `internal/storefront`, `internal/storefrontadmin`, `internal/storefrontdomains`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
