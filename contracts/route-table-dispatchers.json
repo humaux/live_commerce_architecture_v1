@@ -36,7 +36,7 @@
   },
   {
     "table": "buyerhttp.Routes",
-    "dispatcher_sha256": "a816f2699027fc26ca5fa3b7c87258e8b809ebb3c97e24baff797f88b9e9ba30",
+    "dispatcher_sha256": "dd3843222577142f0990853a9b3a68cb59fd8205c6ce17b74af911dbf7aa0241",
     "functions": [
       "RouteTable.HasPrefix",
       "admittedPaymentMethod",
@@ -77,6 +77,7 @@
       "handler.privacyGet",
       "handler.quoteWithCodDue",
       "handler.replayGet",
+      "handler.returnRequest",
       "handler.storeMedia",
       "handler.transferRequest",
       "handler.viewOnly",
@@ -130,6 +131,7 @@
       "const maxJSON",
       "const orderLinkPath,routeOrderLink",
       "const routeCVSSelectionGet,routeCVSSelectionOpen,routeCVSSelectionVerify,routeCVSStoreEnter",
+      "const routeReturnRequestCreate,routeReturnRequestDetail,routeReturnRequestList,routeReturnRequestWithdraw",
       "const routeTransferGet,routeTransferProof",
       "const v2DefaultLimit,v2MaxLimit,v2MaxMinorMoney,v2MaxOffset,v2MaxQuery,v2Prefix",
       "func RouteTable.HasPrefix",
@@ -171,6 +173,7 @@
       "func handler.privacyGet",
       "func handler.quoteWithCodDue",
       "func handler.replayGet",
+      "func handler.returnRequest",
       "func handler.storeMedia",
       "func handler.transferRequest",
       "func handler.viewOnly",
@@ -278,6 +281,6 @@
       "var linkTokenPattern",
       "var v2Slug"
     ],
-    "reviewed": "2026-11-01 integrator + independent review (Claude Opus closure read: quote DTO adds adjustments only; output/buyer-route-table/review-manual-discount-pin.md)"
+    "reviewed": "2026-11-04 integrator + independent closure review (Opus 5.5 output/issue-107/review-395-35c4a9a6c.md; Gemini output/issue-107/review-395-35c4a9a6c-delta.md); request output/buyer-route-table/review-buyer-rma-pin-request.md"
   }
 ]
