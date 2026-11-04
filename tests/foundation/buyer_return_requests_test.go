@@ -221,16 +221,19 @@ func TestBuyerReturnRequests(t *testing.T) {
 		if len(list["items"].([]any)) != 0 {
 			t.Fatal("buyer list crossed owner")
 		}
-		for _, store := range []string{e.p.f.storeA2, e.p.f.storeB} {
+		// e.p.f is psSetupItemsOn's copy: its tenantA/tokens are the order store's own, so foreign stores and their
+		// merchant sessions come from the seeded base fixture (storeA2 in base tenantA, storeB in tenantB).
+		base := e.r.f
+		for _, store := range []string{base.storeA2, base.storeB} {
 			foreignOrigin := "https://br-" + store + ".example"
-			tenant := e.p.f.tenantA
-			token := e.p.f.tokens["a2"]
-			if store == e.p.f.storeB {
-				tenant = e.p.f.tenantB
-				token = e.p.f.tokens["b"]
+			tenant := base.tenantA
+			token := base.tokens["a2"]
+			if store == base.storeB {
+				tenant = base.tenantB
+				token = base.tokens["b"]
 			}
 			var principal string
-			if err := e.p.f.owner.QueryRow(ctx, `SELECT principal_id::text FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND permission='store:read' ORDER BY principal_id LIMIT 1`, tenant, store).Scan(&principal); err != nil {
+			if err := base.owner.QueryRow(ctx, `SELECT principal_id::text FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND permission='store:read' ORDER BY principal_id LIMIT 1`, tenant, store).Scan(&principal); err != nil {
 				t.Fatal(err)
 			}
 			for _, permission := range []string{"orders:read", "fulfillment:write"} {

@@ -2,16 +2,7 @@
 // Depends on: signed cookie/context helpers, closed contract validators and private Go buyer transport.
 // Used by: /api/buyer catch-all route and CI BFF tests.
 // Invariants: server-resolved scope, no generic proxy, no credential disclosure or mutation retry.
-import {
-  type BuyerReturnBody,
-  type BuyerReturnFields,
-  RETURN_REQUEST_CODES,
-  buyerReturnBodies,
-  buyerReturnRoute,
-  isBuyerReturnMutation,
-  validBuyerReturnBody,
-  validBuyerReturnResponse,
-} from "./buyer-returns.ts";
+import { type BuyerReturnBody, type BuyerReturnFields, RETURN_REQUEST_CODES, buyerReturnBodies, buyerReturnRoute, isBuyerReturnMutation, validBuyerReturnBody, validBuyerReturnResponse } from "./buyer-returns.ts";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
 import { readAdSignals, readAdTouch } from "./ad-touch.ts";

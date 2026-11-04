@@ -166,6 +166,8 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"lines_incomplete":    "Every item of the return must be listed exactly once.",
 		"nothing_received":    "No units were received.",
 		"refund_mismatch":     "The refund does not belong to this order.",
+		// FEAT-BUYER-RMA (0221): buyer return request already open for an item (409). Ruling 15: unlisted codes become "internal".
+		"request_open": "A return request for this item is already open.",
 		// manual-fulfilment-v1 Amendment W3-02B (pick list, unit w3-02b-picklist): > 500 order_ids.
 		"too_many": "Too many orders.",
 		// taiwan-cvs-logistics-v1 §8 / §5.2 / §16 (unit cvs-core). Ruling 15: an unknown code would be rewritten to "internal".
