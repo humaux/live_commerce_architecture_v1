@@ -1,0 +1,3 @@
+gate (--browser-click-sweep@7/10)	UNKNOWN STEP	2026-10-30T13:30:30.4917954Z     browser_click_sweep_test.go:558: click sweep FAILED (exit: exit status 1); the ledger and the failing controls are in /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.pZts2ZJb/ui-click-sweep (ledger.md, DEFECTS in the runner log /home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/output/playwright/run.pZts2ZJb/click-sweep/20261030T131417.290145074/click-sweep.mjs.log)
+gate (--browser-click-sweep@7/10)	UNKNOWN STEP	2026-10-30T13:30:30.5261688Z --- FAIL: TestBrowserClickSweep (973.24s)
+gate (--browser-click-sweep@7/10)	UNKNOWN STEP	2026-10-30T13:30:31.7574643Z --- FAIL: TestBrowserClickSweep (973.24s)

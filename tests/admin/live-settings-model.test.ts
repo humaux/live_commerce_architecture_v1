@@ -15,6 +15,22 @@ import {
 import { liveSettingsCopy } from "../../apps/admin/lib/live-settings-copy.ts";
 import { modeEntries, planPr } from "../../scripts/dev/pr-modes.mjs";
 const sid = "a1111111-1111-4111-8111-111111111111";
+test("store contact grammar preserves literal text and exact transition/receipt bounds", () => {
+  assert.deepEqual(settingsResource("contact-messages"), {kind:"contactList",methods:["GET"]});
+  assert.deepEqual(settingsResource(`contact-messages/${sid}/handled`), {kind:"contactHandled",methods:["POST"]});
+  assert.equal(settingsResource(`contact-messages/${sid}/reply`), null);
+  assert.equal(settingsQuery("contactList", "GET", new URL("https://x/?limit=100")), true);
+  for (const query of ["limit=101", "limit=2&limit=3", "email=buyer@example.test", "cursor=wrong"])
+    assert.equal(settingsQuery("contactList", "GET", new URL(`https://x/?${query}`)), false);
+  assert.equal(settingsBody("contactHandled", '{"expected_version":0}'), true);
+  for (const raw of ['{}','{"expected_version":1}','{"expected_version":null}','{"expected_version":0,"store_id":"forged"}'])
+    assert.equal(settingsBody("contactHandled", raw), false);
+  const detail = {id:sid,name:"Synthetic buyer",email:"buyer@example.test",order_number:"",message:"<b>literal</b>",status:"open",version:0};
+  assert.deepEqual(settingsData("contactDetail", "GET", detail), detail);
+  assert.deepEqual(settingsData("contactList", "GET", {items:[detail],next_cursor:null}), {items:[detail],next_cursor:null});
+  for (const invalid of [{...detail,version:1},{...detail,ciphertext:"internal"},{...detail,status:"sent"}])
+    assert.throws(() => settingsData("contactDetail", "GET", invalid));
+});
 test("only frozen session-scoped manual operations are available", () => {
   assert.deepEqual(settingsResource(`live-sessions/${sid}/reminders`), {
     kind: "reminders",

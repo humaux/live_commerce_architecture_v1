@@ -1,12 +1,14 @@
-// Purpose: private buyer BFF with closed endpoint/body/response admission, including after-sales requests.
-// Depends on: signed cookie/context helpers, closed contract validators and private Go buyer transport.
-// Used by: /api/buyer catch-all route and CI BFF tests.
-// Invariants: server-resolved scope, no generic proxy, no credential disclosure or mutation retry.
-import { type BuyerReturnBody, type BuyerReturnFields, RETURN_REQUEST_CODES, buyerReturnBodies, buyerReturnRoute, isBuyerReturnMutation, validBuyerReturnBody, validBuyerReturnResponse } from "./buyer-returns.ts";
+// Purpose: private buyer BFF with closed endpoint/body/response admission, including after-sales requests and cookie-free keyed store-contact submissions.
+// Depends on: signed cookie/context helpers, strict JSON, closed contract validators and private Go buyer transport.
+// Used by: /api/buyer catch-all route (app/api/buyer/[...path]/route.ts) and CI BFF tests.
+// Invariants: server-resolved published origin and scope; no generic proxy, client scope, raw diagnostics, PII logs, credential disclosure or mutation/contact retry.
+import { type BuyerReturnBody, type BuyerReturnFields, buyerReturnBodies, buyerReturnRoute, isBuyerReturnMutation, validBuyerReturnBody, validBuyerReturnResponse } from "./buyer-returns.ts";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
 import { readAdSignals, readAdTouch } from "./ad-touch.ts";
 import { strictJSON } from "./strict-json.ts";
+import { messages } from "./refusal-messages.ts";
+import { contactReceipt, contactRetryAfter, validContactBody, validContactKey } from "./contact-contract.ts";
 import {
   validHostedHandoff,
   validOrderPayment,
@@ -14,8 +16,8 @@ import {
   validPaymentSignal,
   type PaymentMethodCode,
 } from "./payment-contract.ts";
-// storefront-v2 §F: the closed discount-code refusals (422 of the quote request and of checkout) and the promo_code mirror.
-import { PROMO_CODE_SHAPE, PROMO_ERROR_CODES } from "./promo-contract.ts";
+// storefront-v2 §F: the promo_code mirror (the discount-code refusal codes are admitted through refusal-messages.ts).
+import { PROMO_CODE_SHAPE } from "./promo-contract.ts";
 import {
   CLAIM_TOKEN,
   validClaimPreview,
@@ -31,7 +33,6 @@ import {
   validErasureSummary,
 } from "./privacy-contract.ts";
 import {
-  TRANSFER_ERROR_CODES,
   validBuyerEmail,
   validProofBody,
   validProofResult,
@@ -40,7 +41,6 @@ import {
 import { validLookupBody, validLookupResult } from "./lookup-contract.ts";
 import { validLinkBody, validLinkResult } from "./order-link-contract.ts";
 import {
-  CVS_ERROR_CODES,
   DEFINITE_CVS_CODES,
   isPaymentMode,
   validBuyerStore,
@@ -71,6 +71,7 @@ type Session = {
   expires_at: string | null;
 };
 type Route = {
+  contact?: boolean;
   method: string;
   privatePath: string;
   body?:
@@ -88,6 +89,7 @@ type Route = {
     | "transferProof"
     | "lookup"
     | "link"
+    | "contact"
     | BuyerReturnBody;
   query?: "catalog" | "options" | "orders";
   session?: string;
@@ -107,38 +109,6 @@ type Route = {
   // Manual-order buyer link exchange (storefront-v2 G3): same cookie-less, mint-a-token handling as the guest lookup, other private path and body.
   link?: boolean;
 } & BuyerReturnFields;
-
-const messages: Record<string, string> = {
- ...Object.fromEntries(RETURN_REQUEST_CODES.map(code=>[code,"Request refused."])),
-  unauthorized: "Session unavailable.",
-  forbidden: "Request not permitted.",
-  not_found: "Resource not found.",
-  method_not_allowed: "Method not allowed.",
-  invalid_request: "Request validation failed.",
-  invalid_json: "Malformed JSON body.",
-  json_required: "JSON content type required.",
-  context_changed: "Buyer session changed. Reload before continuing.",
-  conflict: "Request conflicts with current state.",
-  insufficient_inventory: "Insufficient available inventory.",
-  rate_limited: "Too many requests.",
-  unavailable: "Temporarily unavailable.",
-  erased: "This data was erased.",
-  erasure_blocked: "Erasure is blocked while a payment may still be open.",
-  export_too_large: "The export is too large for one file.",
-  idempotency_conflict: "Request conflicts with an earlier one.",
-  // taiwan-cvs-logistics-v1 §5.2/§16 refusals; the UI maps the code to text, these are generic fallbacks.
-  ...Object.fromEntries(
-    CVS_ERROR_CODES.map((code) => [code, "Request refused."]),
-  ),
-  // storefront-v2 §C bank-transfer refusals (422 from the buyer definers); the UI maps the code to text.
-  ...Object.fromEntries(
-    TRANSFER_ERROR_CODES.map((code) => [code, "Request refused."]),
-  ),
-  // storefront-v2 §F discount-code refusals (422 from the quote request / BeginCheckout); the UI maps the code to text.
-  ...Object.fromEntries(
-    PROMO_ERROR_CODES.map((code) => [code, "Request refused."]),
-  ),
-};
 
 function headers(extra?: HeadersInit) {
   const result = new Headers(extra);
@@ -374,6 +344,7 @@ function route(
     };
   }
   const exact: Record<string, Record<string, Omit<Route, "method">>> = {
+    "contact-messages": { POST: { privatePath: "contact-messages", body: "contact", contact: true } },
     catalog: { GET: { privatePath: "catalog", query: "catalog" } },
     "checkout-options": {
       GET: { privatePath: "checkout-options", query: "options" },
@@ -637,6 +608,7 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
     paid_at: "string",
   },
   lookup: { order_ref: "string", contact: "string" },
+  contact: { name: "string", email: "string", order_number: "string", message: "string", website: "string" },
   link: { order_id: "string", token: "string", proof: "string" },
   cvsSelection: {
     cart_version: "integer",
@@ -686,6 +658,7 @@ const UUID_TEXT =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 function extraShapeOK(shape: Shape, parsed: unknown): boolean {
   const v = parsed as Record<string, unknown>;
+  if (shape === shapes.contact) return validContactBody(v);
   if (shape === shapes.quote)
     return (
       v.promo_code === undefined ||
@@ -728,14 +701,14 @@ async function bodyJSON(
     return { error: failure(415, "json_required", nonretryable) };
   const length = request.headers.get("content-length");
   if (length !== null && (!/^[0-9]+$/.test(length) || +length > MAX_JSON))
-    return { error: failure(422, "invalid_request", nonretryable) };
+    return { error: failure(shape === shapes.contact && length !== null && /^[0-9]+$/.test(length) && +length > MAX_JSON ? 413 : 422, "invalid_request", nonretryable) };
   let bytes: Uint8Array | null;
   try {
     bytes = await readBounded(request.body, MAX_JSON, INBOUND_DEADLINE);
   } catch {
     return { error: failure(503, "unavailable", nonretryable) };
   }
-  if (!bytes) return { error: failure(422, "invalid_request", nonretryable) };
+  if (!bytes) return { error: failure(shape === shapes.contact ? 413 : 422, "invalid_request", nonretryable) };
   let text: string;
   try {
     text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
@@ -801,8 +774,8 @@ async function upstream(
     Accept: "application/json",
     "X-Commerce-Buyer-BFF-Key": config.bff,
     "X-Commerce-Storefront-Origin": origin,
-    Authorization: `Bearer ${token}`,
   });
+  if (token) outbound.set("Authorization", `Bearer ${token}`);
   if (body !== undefined) outbound.set("Content-Type", "application/json");
   if (key) outbound.set("Idempotency-Key", key);
   if (claimToken) outbound.set("X-Commerce-Claim-Token", claimToken);
@@ -1059,6 +1032,24 @@ function forbiddenHeaders(request: Request): boolean {
   ].some((name) => request.headers.has(name));
 }
 
+// Guest contact never bootstraps or mutates a buyer session. One keyed request; an uncertain response
+// retains the caller's key for explicit replay, with no automatic retry or diagnostic forwarding.
+async function contactMessage(request: Request, cfg: Config, origin: string): Promise<Response> {
+  const key = request.headers.get("idempotency-key");
+  if (!validContactKey(key)) return failure(422, "invalid_request", true);
+  const parsed = await bodyJSON(request, shapes.contact, true);
+  if (parsed.error) return parsed.error;
+  const response = await upstream(request, cfg, origin, "", "contact-messages", "POST", parsed.body, key, undefined, forwardedIP(request));
+  if (response.status !== 201) {
+    const error = await upstreamError(response, true);
+    const retry = contactRetryAfter(error.status, response.headers.get("retry-after"));
+    if (retry) error.headers.set("Retry-After", retry);
+    return error;
+  }
+  const receipt = contactReceipt(await upstreamJSON(response, true));
+  return receipt ? Response.json(receipt, { status: 201, headers: headers() }) : failure(503, "unavailable", true);
+}
+
 export async function handleBuyerRequest(request: Request): Promise<Response> {
   const pathname = new URL(request.url).pathname;
   // Classify before config/auth: even an early failure must not invite a second
@@ -1099,6 +1090,7 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
   const isMutation = request.method !== "GET";
   if (isMutation && request.headers.get("origin") !== origin)
     return fail(403, "forbidden");
+  if (target.contact) return contactMessage(request, cfg, origin);
   if (target.lookup) return lookup(request, cfg, origin);
   if (target.link) return orderLink(request, cfg, origin);
   const found = identify(request, cfg, origin);

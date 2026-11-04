@@ -1,0 +1,72 @@
+card=FEAT-CONTACT-STORE
+phase=tests-only BFF RED confirmed; STOP pin/scope handoff
+base_sha=3ea359f796d36153bb4b8aa7259e4e0c27676b86
+branch=unit/feat-contact-store
+evidence=E3 causal BFF RED only; feature incomplete; author verdict is E0
+local_tests=NOT_RUN (owner CI-only requirement)
+local_servers=NOT_RUN
+red_source_sha=ca5a55e5926391aeb1a8eb8c55832e706a3f9d53
+pr=https://github.com/humaux/live_commerce_architecture_v1/pull/375
+red_gates_workflow_run=41056798358
+red_gates_url=https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41056798358
+red_gates_status=queued
+red_gates_test_job=PENDING (plan is not test evidence)
+red_foundation_workflow_run=41056798375
+red_foundation_url=https://github.com/humaux/live_commerce_architecture_v1/actions/runs/41056798375
+red_foundation_job=124066257869
+red_foundation_status=failure
+red_assertion_result=CONFIRMED BFF ONLY: six new ERR_ASSERTION failures; missing endpoint404, expected201/400/405/503/429; no compile failure
+green_workflow_run=NOT_RUN
+WAIT_RUN=41056798358 (Gates workflow, not plan job)
+completed_run=41056798375 (Foundation failure; job124066257869)
+previous_handoff=Relay received; Foundation assertion RED confirmed. Receipt update stays local for the eventual implementation batch.
+
+relay1=Foundation raw failed log re-read on2026-10-30; no code edits or push
+STOP=Card omits assigned numeric R2 pin; existing pin139 is not permission to choose140. Existing notify renderer has no contact kind; unowned backend package edits require integrator scope.
+green_result=NOT_RUN; implementation not started
+next=Integrator supplies R2 numeric target and notify ownership handoff; retain evidence for implementation batch. Gates41056798358 still pending, integrator completion relay owns wakeup.
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1978607Z ✖ failing tests:
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1978775Z
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1979124Z test at apps/storefront/tests/contact-messages.test.mjs:43:1
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1980209Z ✖ contact BFF admits a guest once without a buyer cookie or context and returns only the committed receipt (54.587055ms)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1981231Z   AssertionError [ERR_ASSERTION]: public contact endpoint must exist before buyer login
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1981806Z
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1982062Z   404 !== 201
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1982323Z
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1983433Z       at file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/storefront/tests/contact-messages.test.mjs:46:12
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1984854Z       at async mock (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/storefront/tests/contact-messages.test.mjs:40:9)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1986053Z       at async TestContext.<anonymous> (file:///home/runner/work/live_commerce_architecture_v1/live_commerce_architecture_v1/apps/storefront/tests/contact-messages.test.mjs:44:3)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1986835Z       at async Test.run (node:internal/test_runner/test:1409:7)
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1987366Z       at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1987758Z     generatedMessage: false,
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1988006Z     code: 'ERR_ASSERTION',
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1988236Z     actual: 404,
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1988452Z     expected: 201,
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1988685Z     operator: 'strictEqual',
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1988903Z     diff: 'simple'
+foundation	Node unit suites (storefront, i18n)	2026-10-30T12:45:33.1989088Z   }
+
+RELAY2 REVALIDATION: gh pr view375 confirms head ca5a55e5926391aeb1a8eb8c55832e706a3f9d53 into r3/integration. gh run view41056798375 confirms completed/failure at same head; log-failed job124066257869 repeats six new contact BFF ERR_ASSERTION HTTP404 failures. Gates41056798358 queued. Existing raw excerpt above remains the assertion evidence. No new push; STOP missing assigned numeric R2 pin and unowned internal/notify extension.
+
+RELAY3 REVALIDATION 2026-10-30: same exact PR head and base; PR comments empty. Foundation41056798375/job124066257869 completed/failure; six new contact BFF assertions HTTP404 versus201/400/405/503/429. Gates41056798358 queued at same head. No new run or push. Current card still omits numeric R2 assignment and internal/notify ownership handoff; current source pin139 and unknown-kind refusal re-read. Escalate these assignments to integrator, not another repeat of this Foundation result. GREEN/Go-PG-RED/local-tests/local-servers=NOT_RUN. Humaux store/canvas unavailable; no shared-memory mutation claimed.
+
+RELAY4 REVALIDATION 2026-10-30: gh pr checks375 and failed job124066257869 re-read; same head ca5a55e5926391aeb1a8eb8c55832e706a3f9d53. Foundation41056798375 failure: six new contact BFF assertions HTTP404 versus201/400/405/503/429; 506 tests,500pass,6fail. PR comments=[]; Gates41056798358 pending, bundle:03/job124070185543 in_progress, other gate jobs queued. E3=BFF causal RED only. STOP=missing assigned numeric R2 target and internal/notify ownership/interface; current pin139 and contract sectionE/render/worker re-read. No code/test/gate changes or new push/run. GREEN/Go-PG-RED/independent-review/local-tests/local-servers=NOT_RUN. WAIT_RUN=41056798358 (existing workflow; integrator completion relay). Humaux unavailable; no store/canvas update claimed.
+
+FIX1 2026-10-31: merged origin/r3/integration 2f61bf866 into local f56d48ce0 (not pushed). Gates41056798358 completed/failure: g10/job124070185925 has eight new Go contact assertion failures HTTP404 vs201/422; browser/job124070185645 has admin todo-stock no-effect after3s. Foundation41056798375/job124066257869 has six BFF HTTP assertion failures. Full table output/FIX1.md. STOP migration/R2/contract/notify assignments absent and admin failure outside owned module. Base41078151280 has no browser job; cannot classify browser as identical-on-base. Ownership generation/check exit0, no artifact diff. GREEN=NOT_RUN; WAIT_RUN=NONE (no new push; both old runs completed). Humaux unavailable.
+
+FIX1_2026_10_31_CURRENT:
+previous_STOP=superseded by integrator 2026-10-31 migration/pin/notify ruling
+base_sha=629f42152f864621a99ac2247c3baf5d751a422f
+rollback_merge=69f1762277c2061ace7f23694356485d10e58276
+red_gates_status=completed failure
+red_go_job=124070185925 (eight contact parents including validation and UNKNOWN; HTTP 404 vs own expected 201/422)
+red_browser_job=124070185645 (todo-stock no-effect; c-candidate, integrator reruns)
+red_receipts_job=124098833489 (only browser/g10 failures)
+red_aggregate_job=124098833372
+red_required_job=124099371779
+red_foundation_status=completed failure; job=124066257869; six BFF own assertions
+implementation=one FIX1 batch, current CI PENDING after push; no GREEN claim
+evidence=E3 historical causal RED; E1 static checks; author E0
+local_tests=NOT_RUN
+local_servers=NOT_RUN
+wake_owner=integrator relays current push Gates/Foundation completion; no >10 minute polling

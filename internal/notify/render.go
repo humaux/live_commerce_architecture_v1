@@ -3,6 +3,10 @@ package notify
 // render.go is the pure renderer: claimed Payload in, one mail.Message per recipient out. No clock, no network, no database. Copy
 // exists for zh-TW (default), zh-CN and en; every dynamic value is HTML-escaped in the HTML part and control characters are stripped
 // before it reaches a header (the mail adapter refuses CR/LF in a Subject rather than sanitising it).
+// Purpose: render claimed order and merchant notices, including the PII-free store-contact notice.
+// Depends on: mail.Message and the frozen three-locale copy; no transport or persistence.
+// Used by: notify.Worker after SQL claims an outbox batch.
+// Invariants: one message per authorized recipient; HTML escaping and header control stripping.
 
 import (
 	"html"
@@ -15,13 +19,14 @@ import (
 
 // Kinds are the notify.outbox.kind values (migration 0090) and notify.merchant_alerts.kind (migration 0125).
 const (
-	KindPlaced      = "placed"
-	KindPaid        = "paid"
-	KindShipped     = "shipped"
-	KindCancelled   = "cancelled"
-	KindRefunded    = "refunded"
-	KindMerchantNew = "merchant_new"
-	KindMetaHealth  = "meta_health"
+	KindPlaced       = "placed"
+	KindPaid         = "paid"
+	KindShipped      = "shipped"
+	KindCancelled    = "cancelled"
+	KindRefunded     = "refunded"
+	KindMerchantNew  = "merchant_new"
+	KindMetaHealth   = "meta_health"
+	KindStoreContact = "store_contact"
 )
 
 // DefaultLocale is used when the order carries no known locale: merchant-created orders (never placed through buyer
@@ -276,7 +281,20 @@ func Render(p Payload) []mail.Message {
 	var subject, intro string
 	var lines []line
 	var link, linkLabel string
-	if p.Kind == KindMetaHealth {
+	if p.Kind == KindStoreContact {
+		if len(p.To) != 1 {
+			return nil
+		}
+		// The notice deliberately contains no buyer PII or message text. The authenticated
+		// contact detail is the sole read surface; no buyer mail or new transport is introduced.
+		copy := map[string][2]string{
+			"zh-TW": {"店鋪收到新留言", "請到管理後台查看並處理店鋪留言。"},
+			"zh-CN": {"店铺收到新留言", "请到管理后台查看并处理店铺留言。"},
+			"en":    {"New store message", "Open your admin to review and handle the store message."},
+		}[loc]
+		subject, intro = "["+store+"] "+copy[0], copy[1]
+		c.lbl.auto = map[string]string{"zh-TW": "這是系統自動寄出的店鋪留言通知，請勿直接回覆。", "zh-CN": "这是系统自动发送的店铺留言通知，请勿直接回复。", "en": "This is an automatic store-message notification. Please do not reply."}[loc]
+	} else if p.Kind == KindMetaHealth {
 		if len(p.To) == 0 {
 			return nil
 		}
