@@ -55,7 +55,7 @@ export function TeamInvite({ locale, token, signedIn, passwordLogin }: { locale:
   }
   const signInLink = <a className="orders-export" href={`/${locale}/${next}`} onClick={event => void signInAgain(event)}>{c.signIn}</a>;
   const openStore = <a className="orders-export" href={`/${locale}/`} data-testid="invite-open">{c.openStore}</a>;
-  const [title, help, actions] = phase === "joined" ? [c.joined, c.joinedHelp.replace("{role}", role ? c.roleNames[role] : ""), openStore]
+  const [title, help, actions] = phase === "joined" ? [c.inviteeJoined, c.joinedHelp.replace("{role}", role ? c.roleNames[role] : ""), openStore]
     : phase === "checking" ? [c.checking, c.acceptChecking, null]
     : phase === "invalid" ? [c.inviteInvalid, c.inviteInvalidHelp, signInLink]
     : phase === "member" ? [c.inviteeMember, c.inviteeMemberHelp, openStore]
