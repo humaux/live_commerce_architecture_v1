@@ -353,81 +353,88 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
         const published = (facts?.collections ?? []).filter((x: any) => x.active_products > 0);
         const main = page.locator("main");
         const box = async (locator: ReturnType<Page["locator"]>) => {
-          const b = await locator.boundingBox();
+          const b = await locator.boundingBox({ timeout: T });
           if (!b) throw new Error("element has no layout box");
           return b;
         };
         await page.goto(`${origin}${homeRoute}`);
         await settle();
-        await step(homeFrame, homeRoute, "home welcome title", "goto + assert", `title "${fmt(c.welcome, { name: storeName })}" visible above the search field`, async () => {
-          assert(storeName && heroHeading, "facts.design.name / facts.design.hero missing");
-          await expect(main.getByText(fmt(c.welcome, { name: storeName }), { exact: true })).toBeVisible({ timeout: T });
-        });
         await step(homeFrame, homeRoute, "home search field", "assert", `label "${c.searchLabel}", placeholder "${c.searchHint}"`, async () => {
+          assert(storeName && heroHeading, "facts.design.name / facts.design.hero missing");
           const field = main.getByRole("searchbox", { name: c.searchLabel, exact: true });
           await expect(field).toBeVisible({ timeout: T });
           await expect(field).toHaveAttribute("placeholder", c.searchHint);
           await expect(main.getByText(c.searchLabel, { exact: true })).toBeVisible();
         });
-        await step(homeFrame, homeRoute, "home layout order", "assert", "welcome title < search < inset hero card < chips < product grid, hero card inset in the page gutter with rounded corners", async () => {
-          const title = await box(main.getByText(fmt(c.welcome, { name: storeName }), { exact: true }));
-          const search = await box(main.getByRole("searchbox", { name: c.searchLabel, exact: true }));
-          const hero = await box(page.getByTestId("section-hero"));
-          const chips = await box(main.getByTestId("collection-chips").filter({ visible: true }));
-          const grid = await box(page.getByTestId("section-product-grid"));
-          assert(title.y < search.y && search.y < hero.y && hero.y < chips.y && chips.y < grid.y, `order title ${title.y} search ${search.y} hero ${hero.y} chips ${chips.y} grid ${grid.y}`);
-          assert(hero.x >= 15.5 && hero.x + hero.width <= width - 15.5, `hero card must sit inside the gutter, got x=${hero.x} w=${hero.width}`);
-          const radius = await page.getByTestId("section-hero").evaluate((el) => parseFloat(getComputedStyle(el).borderTopLeftRadius)); // read-only measurement
-          assert(radius >= 8, `hero card corner radius ${radius}`);
-          return `title ${title.y} search ${search.y} hero ${hero.x},${hero.y} ${hero.width}w r${radius} chips ${chips.y} grid ${grid.y}`;
-        });
-        await step(homeFrame, homeRoute, "home hero card", "assert", `published hero heading "${heroHeading}" and its CTA inside the card`, async () => {
-          const hero = page.getByTestId("section-hero");
-          await expect(hero.getByRole("heading", { name: heroHeading, exact: true })).toBeVisible({ timeout: T });
-          await expect(hero.getByRole("link")).toHaveCount(1);
-        });
-        await step(homeFrame, homeRoute, "home chips", "assert", `chips "${c.homeAllProducts}", every published collection, "${c.allCollections}"`, async () => {
-          const chips = main.getByTestId("collection-chips").filter({ visible: true });
-          await expect(chips.getByRole("link", { name: c.homeAllProducts, exact: true })).toBeVisible({ timeout: T });
-          for (const col of published) await expect(chips.getByRole("link", { name: col.title, exact: true })).toHaveAttribute("href", new RegExp(`/${locale}/collections/${col.slug}$`));
-          await expect(chips.getByRole("link", { name: c.allCollections, exact: true })).toHaveAttribute("href", new RegExp(`/${locale}/collections$`));
-          return `${published.length} collection chips`;
-        });
-        await step(homeFrame, homeRoute, "home legacy grid link gone", "assert", `product grid head has no "${c.legacyViewAll}" link; "${c.viewAllProducts}" sits below the grid`, async () => {
-          const grid = page.getByTestId("section-product-grid");
-          await expect(grid.getByRole("link", { name: c.legacyViewAll, exact: true })).toHaveCount(0);
-          const button = await box(grid.getByRole("link", { name: c.viewAllProducts, exact: true }));
-          const lastCard = await box(grid.getByTestId("product-card").last());
-          assert(button.y >= lastCard.y + lastCard.height, `view-all button ${button.y} must be below the last card ${lastCard.y + lastCard.height}`);
-        });
-        await shot(homeFrame, homeRoute);
-        await step(homeFrame, homeRoute, "home search field", "fill + Enter", `query "${candle.title}" opens the search results`, async () => {
-          await main.getByRole("searchbox", { name: c.searchLabel, exact: true }).fill(candle.title);
-          await main.getByRole("searchbox", { name: c.searchLabel, exact: true }).press("Enter");
-          await page.waitForURL(new RegExp(`/${locale}/search\\?`), { timeout: T });
-          assert.equal(urlParams().get("q"), candle.title);
-          await expect(page.getByTestId("product-card").filter({ hasText: candle.title }).first()).toBeVisible({ timeout: T });
-          return page.url();
-        });
-        await page.goto(`${origin}${homeRoute}`);
-        await step(homeFrame, homeRoute, `hero CTA link`, "click", "the published CTA (all_products) opens the product list", async () => {
-          await page.getByTestId("section-hero").getByRole("link").click();
-          await expect(page).toHaveURL(new RegExp(`/${locale}/products/?$`), { timeout: T });
-          return page.url();
-        });
-        await page.goto(`${origin}${homeRoute}`);
-        await step(homeFrame, homeRoute, `chip "${c.allCollections}"`, "click", "opens the collections overview", async () => {
-          await main.getByTestId("collection-chips").filter({ visible: true }).getByRole("link", { name: c.allCollections, exact: true }).click();
-          await expect(page).toHaveURL(new RegExp(`/${locale}/collections$`), { timeout: T });
-          await expect(page.getByRole("heading", { name: c.collectionsOverview })).toBeVisible({ timeout: T });
-          return page.url();
-        });
-        await page.goto(`${origin}${homeRoute}`);
-        await step(homeFrame, homeRoute, `button "${c.viewAllProducts}"`, "click", "opens the product list", async () => {
-          await page.getByTestId("section-product-grid").getByRole("link", { name: c.viewAllProducts, exact: true }).click();
-          await expect(page).toHaveURL(new RegExp(`/${locale}/products/?$`), { timeout: T });
-          return page.url();
-        });
+        // The signed search field anchors this layout: without it every later home step would only wait out its timeout, so they are
+        // recorded NOT_RUN (the frame stays NOT_COVERED through the failed anchor row) instead of being run.
+        const homeSigned = await main.getByRole("searchbox", { name: c.searchLabel, exact: true }).isVisible();
+        if (!homeSigned) notRun.push({ frame: homeFrame, locale, subcase: `${viewport} home layout, hero, chips, clicks`, reason: "signed search field absent; dependent steps not run" });
+        else {
+          await step(homeFrame, homeRoute, "home welcome title", "goto + assert", `title "${fmt(c.welcome, { name: storeName })}" visible above the search field`, async () => {
+            assert(storeName && heroHeading, "facts.design.name / facts.design.hero missing");
+            await expect(main.getByText(fmt(c.welcome, { name: storeName }), { exact: true })).toBeVisible({ timeout: T });
+          });
+          await step(homeFrame, homeRoute, "home layout order", "assert", "welcome title < search < inset hero card < chips < product grid, hero card inset in the page gutter with rounded corners", async () => {
+            const title = await box(main.getByText(fmt(c.welcome, { name: storeName }), { exact: true }));
+            const search = await box(main.getByRole("searchbox", { name: c.searchLabel, exact: true }));
+            const hero = await box(page.getByTestId("section-hero"));
+            const chips = await box(main.getByTestId("collection-chips").filter({ visible: true }));
+            const grid = await box(page.getByTestId("section-product-grid"));
+            assert(title.y < search.y && search.y < hero.y && hero.y < chips.y && chips.y < grid.y, `order title ${title.y} search ${search.y} hero ${hero.y} chips ${chips.y} grid ${grid.y}`);
+            assert(hero.x >= 15.5 && hero.x + hero.width <= width - 15.5, `hero card must sit inside the gutter, got x=${hero.x} w=${hero.width}`);
+            const radius = await page.getByTestId("section-hero").evaluate((el) => parseFloat(getComputedStyle(el).borderTopLeftRadius)); // read-only measurement
+            assert(radius >= 8, `hero card corner radius ${radius}`);
+            return `title ${title.y} search ${search.y} hero ${hero.x},${hero.y} ${hero.width}w r${radius} chips ${chips.y} grid ${grid.y}`;
+          });
+          await step(homeFrame, homeRoute, "home hero card", "assert", `published hero heading "${heroHeading}" and its CTA inside the card`, async () => {
+            const hero = page.getByTestId("section-hero");
+            await expect(hero.getByRole("heading", { name: heroHeading, exact: true })).toBeVisible({ timeout: T });
+            await expect(hero.getByRole("link")).toHaveCount(1);
+          });
+          await step(homeFrame, homeRoute, "home chips", "assert", `chips "${c.homeAllProducts}", every published collection, "${c.allCollections}"`, async () => {
+            const chips = main.getByTestId("collection-chips").filter({ visible: true });
+            await expect(chips.getByRole("link", { name: c.homeAllProducts, exact: true })).toBeVisible({ timeout: T });
+            for (const col of published) await expect(chips.getByRole("link", { name: col.title, exact: true })).toHaveAttribute("href", new RegExp(`/${locale}/collections/${col.slug}$`));
+            await expect(chips.getByRole("link", { name: c.allCollections, exact: true })).toHaveAttribute("href", new RegExp(`/${locale}/collections$`));
+            return `${published.length} collection chips`;
+          });
+          await step(homeFrame, homeRoute, "home legacy grid link gone", "assert", `product grid head has no "${c.legacyViewAll}" link; "${c.viewAllProducts}" sits below the grid`, async () => {
+            const grid = page.getByTestId("section-product-grid");
+            await expect(grid.getByRole("link", { name: c.legacyViewAll, exact: true })).toHaveCount(0);
+            const button = await box(grid.getByRole("link", { name: c.viewAllProducts, exact: true }));
+            const lastCard = await box(grid.getByTestId("product-card").last());
+            assert(button.y >= lastCard.y + lastCard.height, `view-all button ${button.y} must be below the last card ${lastCard.y + lastCard.height}`);
+          });
+          await shot(homeFrame, homeRoute);
+          await step(homeFrame, homeRoute, "home search field", "fill + Enter", `query "${candle.title}" opens the search results`, async () => {
+            await main.getByRole("searchbox", { name: c.searchLabel, exact: true }).fill(candle.title, { timeout: T });
+            await main.getByRole("searchbox", { name: c.searchLabel, exact: true }).press("Enter", { timeout: T });
+            await page.waitForURL(new RegExp(`/${locale}/search\\?`), { timeout: T });
+            assert.equal(urlParams().get("q"), candle.title);
+            await expect(page.getByTestId("product-card").filter({ hasText: candle.title }).first()).toBeVisible({ timeout: T });
+            return page.url();
+          });
+          await page.goto(`${origin}${homeRoute}`);
+          await step(homeFrame, homeRoute, `hero CTA link`, "click", "the published CTA (all_products) opens the product list", async () => {
+            await page.getByTestId("section-hero").getByRole("link").click({ timeout: T });
+            await expect(page).toHaveURL(new RegExp(`/${locale}/products/?$`), { timeout: T });
+            return page.url();
+          });
+          await page.goto(`${origin}${homeRoute}`);
+          await step(homeFrame, homeRoute, `chip "${c.allCollections}"`, "click", "opens the collections overview", async () => {
+            await main.getByTestId("collection-chips").filter({ visible: true }).getByRole("link", { name: c.allCollections, exact: true }).click({ timeout: T });
+            await expect(page).toHaveURL(new RegExp(`/${locale}/collections$`), { timeout: T });
+            await expect(page.getByRole("heading", { name: c.collectionsOverview })).toBeVisible({ timeout: T });
+            return page.url();
+          });
+          await page.goto(`${origin}${homeRoute}`);
+          await step(homeFrame, homeRoute, `button "${c.viewAllProducts}"`, "click", "opens the product list", async () => {
+            await page.getByTestId("section-product-grid").getByRole("link", { name: c.viewAllProducts, exact: true }).click({ timeout: T });
+            await expect(page).toHaveURL(new RegExp(`/${locale}/products/?$`), { timeout: T });
+            return page.url();
+          });
+        }
 
         // ===== Collection detail: /[locale]/collections/home-fragrance (6:19933 / 6:19984), the merchant's collection in the signed layout.
         const collectionFrame = f("6:19933", "6:19984");
@@ -435,55 +442,60 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
         const collectionRoute = `/${locale}/collections/home-fragrance`;
         await page.goto(`${origin}${collectionRoute}`);
         await settle();
-        await step(collectionFrame, collectionRoute, "collection title + count", "goto + assert", `h1 = collection title; heading "${c.collectionCount}" with the real product count = rendered cards`, async () => {
-          assert(fragrance, "facts.collections home-fragrance missing");
-          await expect(page.getByRole("heading", { level: 1 })).toHaveText(fragrance.title, { timeout: T });
-          const expected = fmt(c.collectionCount, { n: fragrance.active_products });
-          await expect(main.getByRole("heading", { name: expected, exact: true })).toBeVisible({ timeout: T });
-          await expect(page.getByTestId("product-card")).toHaveCount(fragrance.active_products, { timeout: T });
-          return expected;
-        });
         await step(collectionFrame, collectionRoute, "collection search field", "assert", `label "${c.searchLabel}", placeholder "${c.searchHint}"`, async () => {
+          assert(fragrance, "facts.collections home-fragrance missing");
           const field = main.getByRole("searchbox", { name: c.searchLabel, exact: true });
           await expect(field).toBeVisible({ timeout: T });
           await expect(field).toHaveAttribute("placeholder", c.searchHint);
         });
-        await step(collectionFrame, collectionRoute, "collection chips", "assert", `"${c.allProducts}", this collection current, "${c.allCollections}"`, async () => {
-          const chips = main.getByTestId("collection-chips").filter({ visible: true });
-          await expect(chips.getByRole("link", { name: c.allProducts, exact: true })).not.toHaveAttribute("aria-current", "page");
-          await expect(chips.getByRole("link", { name: fragrance.title, exact: true })).toHaveAttribute("aria-current", "page");
-          await expect(chips.getByRole("link", { name: c.allCollections, exact: true })).toBeVisible();
-        });
-        await step(collectionFrame, collectionRoute, "collection layout order", "assert", "title < search < chips < count heading < grid < view-all button", async () => {
-          const title = await box(page.getByRole("heading", { level: 1 }));
-          const search = await box(main.getByRole("searchbox", { name: c.searchLabel, exact: true }));
-          const chips = await box(main.getByTestId("collection-chips").filter({ visible: true }));
-          const count = await box(main.getByRole("heading", { name: fmt(c.collectionCount, { n: fragrance.active_products }), exact: true }));
-          const card = await box(page.getByTestId("product-card").last());
-          const button = await box(main.getByRole("link", { name: c.viewAllProducts, exact: true }));
-          assert(title.y < search.y && search.y < chips.y && chips.y < count.y && count.y < card.y && card.y + card.height <= button.y,
-            `order title ${title.y} search ${search.y} chips ${chips.y} count ${count.y} card ${card.y} button ${button.y}`);
-        });
-        await shot(collectionFrame, collectionRoute);
-        await step(collectionFrame, collectionRoute, `button "${c.viewAllProducts}"`, "click", "opens the product list", async () => {
-          await main.getByRole("link", { name: c.viewAllProducts, exact: true }).click();
-          await expect(page).toHaveURL(new RegExp(`/${locale}/products/?$`), { timeout: T });
-          return page.url();
-        });
-        await page.goto(`${origin}${collectionRoute}`);
-        await step(collectionFrame, collectionRoute, `chip "${c.allCollections}"`, "click", "opens the collections overview", async () => {
-          await main.getByTestId("collection-chips").filter({ visible: true }).getByRole("link", { name: c.allCollections, exact: true }).click();
-          await expect(page).toHaveURL(new RegExp(`/${locale}/collections$`), { timeout: T });
-          return page.url();
-        });
-        await page.goto(`${origin}${collectionRoute}`);
-        await step(collectionFrame, collectionRoute, "collection search field", "fill + Enter", `query "${candle.title}" opens the search results`, async () => {
-          await main.getByRole("searchbox", { name: c.searchLabel, exact: true }).fill(candle.title);
-          await main.getByRole("searchbox", { name: c.searchLabel, exact: true }).press("Enter");
-          await page.waitForURL(new RegExp(`/${locale}/search\\?`), { timeout: T });
-          assert.equal(urlParams().get("q"), candle.title);
-          return page.url();
-        });
+        const collectionSigned = await main.getByRole("searchbox", { name: c.searchLabel, exact: true }).isVisible();
+        if (!collectionSigned) notRun.push({ frame: collectionFrame, locale, subcase: `${viewport} collection count, chips, layout, clicks`, reason: "signed search field absent; dependent steps not run" });
+        else {
+          await step(collectionFrame, collectionRoute, "collection title + count", "goto + assert", `h1 = collection title; heading "${c.collectionCount}" with the real product count = rendered cards`, async () => {
+            assert(fragrance, "facts.collections home-fragrance missing");
+            await expect(page.getByRole("heading", { level: 1 })).toHaveText(fragrance.title, { timeout: T });
+            const expected = fmt(c.collectionCount, { n: fragrance.active_products });
+            await expect(main.getByRole("heading", { name: expected, exact: true })).toBeVisible({ timeout: T });
+            await expect(page.getByTestId("product-card")).toHaveCount(fragrance.active_products, { timeout: T });
+            return expected;
+          });
+          await step(collectionFrame, collectionRoute, "collection chips", "assert", `"${c.allProducts}", this collection current, "${c.allCollections}"`, async () => {
+            const chips = main.getByTestId("collection-chips").filter({ visible: true });
+            await expect(chips.getByRole("link", { name: c.allProducts, exact: true })).not.toHaveAttribute("aria-current", "page");
+            await expect(chips.getByRole("link", { name: fragrance.title, exact: true })).toHaveAttribute("aria-current", "page");
+            await expect(chips.getByRole("link", { name: c.allCollections, exact: true })).toBeVisible();
+          });
+          await step(collectionFrame, collectionRoute, "collection layout order", "assert", "title < search < chips < count heading < grid < view-all button", async () => {
+            const title = await box(page.getByRole("heading", { level: 1 }));
+            const search = await box(main.getByRole("searchbox", { name: c.searchLabel, exact: true }));
+            const chips = await box(main.getByTestId("collection-chips").filter({ visible: true }));
+            const count = await box(main.getByRole("heading", { name: fmt(c.collectionCount, { n: fragrance.active_products }), exact: true }));
+            const card = await box(page.getByTestId("product-card").last());
+            const button = await box(main.getByRole("link", { name: c.viewAllProducts, exact: true }));
+            assert(title.y < search.y && search.y < chips.y && chips.y < count.y && count.y < card.y && card.y + card.height <= button.y,
+              `order title ${title.y} search ${search.y} chips ${chips.y} count ${count.y} card ${card.y} button ${button.y}`);
+          });
+          await shot(collectionFrame, collectionRoute);
+          await step(collectionFrame, collectionRoute, `button "${c.viewAllProducts}"`, "click", "opens the product list", async () => {
+            await main.getByRole("link", { name: c.viewAllProducts, exact: true }).click({ timeout: T });
+            await expect(page).toHaveURL(new RegExp(`/${locale}/products/?$`), { timeout: T });
+            return page.url();
+          });
+          await page.goto(`${origin}${collectionRoute}`);
+          await step(collectionFrame, collectionRoute, `chip "${c.allCollections}"`, "click", "opens the collections overview", async () => {
+            await main.getByTestId("collection-chips").filter({ visible: true }).getByRole("link", { name: c.allCollections, exact: true }).click({ timeout: T });
+            await expect(page).toHaveURL(new RegExp(`/${locale}/collections$`), { timeout: T });
+            return page.url();
+          });
+          await page.goto(`${origin}${collectionRoute}`);
+          await step(collectionFrame, collectionRoute, "collection search field", "fill + Enter", `query "${candle.title}" opens the search results`, async () => {
+            await main.getByRole("searchbox", { name: c.searchLabel, exact: true }).fill(candle.title, { timeout: T });
+            await main.getByRole("searchbox", { name: c.searchLabel, exact: true }).press("Enter", { timeout: T });
+            await page.waitForURL(new RegExp(`/${locale}/search\\?`), { timeout: T });
+            assert.equal(urlParams().get("q"), candle.title);
+            return page.url();
+          });
+        }
 
         // ===== Search with results: type the fixture product's title into the search box and submit ===================================
         const searchFrame = f("26:624", "26:921");
