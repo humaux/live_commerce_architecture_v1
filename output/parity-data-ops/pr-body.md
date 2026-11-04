@@ -2,7 +2,7 @@
 
 Implement the signed product CSV, inventory, collection and customer CSV task screens on their real routes. Replace the old kind/step pickers and ledger layout while retaining server scope, atomicity, privacy-safe previews, optimistic versions and immutable request recovery. Base `4b8c04c7213025c173e260db6f9c81cb5b818c61` is the fetched integration ancestor; CATALOG-PEOPLE #363 is merged.
 
-**E1 static structure only; author assessment E0. GREEN / independent parity acceptance NOT_RUN.** There is one known unsupported RED assertion below; do not merge until resolved and CI/review are green. No local tests/servers, production, merge or auto-merge.
+**Status 2026-11-04:** CI was all green at a857d03b3 (46 pass, 1 skipping). Base 3696e21e3 merged at cb780a11c; CI on the new head is pending. Integrator rulings for every BLOCKED/DEFERRED frame are in `output/parity-data-ops/RULING.md`, with follow-up issue #542. An independent review is pending. SANDBOX/LIVE NOT_RUN.
 
 ## RED and validation
 
@@ -24,15 +24,14 @@ Implement the signed product CSV, inventory, collection and customer CSV task sc
 
 Existing tests retain their business checks and fixtures. Current docs, three-language copy table, required-field desktop/mobile/review matrix, UI process sections and CI click-ledger contract: `output/parity-data-ops/DELIVERY.md`.
 
-## BLOCKED / DEFERRED
+## BLOCKED / DEFERRED — integrator ruling 2026-11-04 (`output/parity-data-ops/RULING.md`)
 
-- **BLOCKED source-specific customer required error (1028:7221 / 1028:7299):** existing `rows[].code=required` means either missing external_id (`internal/migrationimport/customers_csv.go:229`) or missing name (:238). No safe `rows[].field` exists. Product shows the truthful generic reason. The new RED still expects “第 3 筆 · 缺少來源編號” and its repair text. That assertion is unchanged; integrator must authorize deferring it or supply a separately RED-tested additive non-PII field. Ruling requested, no answer assumed.
-- 6:22818 / 6:22986: no historical inventory rows/actor/source/before-after read contract; no fabricated history or dead controls.
-- 5:15211 / 5:15352 recent-task rows: no product jobs/list API; no local fabricated history.
-- 30:1441 / 30:1528 named row preview: DTO has aggregate counts/errors, no per-row product name/outcome/description; real aggregate preview retained.
-- 6:19278 / 6:19486 tag/source rules and collection drag order: current automatic API supports created_at/within_days only; no collection-position write contract. Existing creation-time rules implemented; no fabricated tags/ranks.
-- 1028:7087 / 1028:7165: prototype-only demo chooser intentionally excluded; actual native CSV picker implemented.
-- FRAME-COPY says 44/44 exported, none Not exported. No prototype notices/switches copied into product UI. Exact translated-frame approval, runtime density, screenshot comparison, independent review and LIVE/SANDBOX provider verification remain NOT_RUN.
+- **RESOLVED** 1028:7221 / 1028:7299: the preview-only `ErrorField` (field name only, no PII) distinguishes a missing external_id from a missing name (`internal/migrationimport/customers_csv.go:94,231,241`, `customers.go:298-299`, `customers_test.go:290-298`).
+- **SUPERSEDED** 1028:7087 / 1028:7165: prototype-only demo chooser; the real native CSV picker is implemented and covered.
+- **DEFERRED** 6:22818 / 6:22986 inventory history: needs a scoped ledger-history read contract (#542 item 1); no fabricated history or dead controls.
+- **PARTIAL** 5:15211 / 5:15352 (no 最近任務 rows: no import jobs API, #542 item 2); 30:1441 / 30:1528 (aggregate preview, no named rows: #542 item 3); 6:19278 / 6:19486 (creation-time rules only: no tag/source rules or position write, #542 item 4).
+- Shared browser helpers `tests/storefront/merchant-product.mjs` and `tests/storefront/catalog-media-gate.mjs`: integrator-approved (same facts, read from the signed SKU inspector; every caller updated).
+- FRAME-COPY says 44/44 frames exported and none "Not exported". No prototype notices or switches were copied into the product UI.
 
 ## Files outside literal component paths
 
