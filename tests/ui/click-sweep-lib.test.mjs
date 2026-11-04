@@ -10,6 +10,25 @@ import { runInNewContext } from "node:vm";
 import { INIT_SCRIPT, listControls, monitor, sweepControl, settle, restore } from "./click-sweep-lib.mjs";
 import { classKey, isCartLineRemoval, isDestructive, isIrreversible, isSignOut, matchKnown, renderMarkdown, CANCEL_RE, protocolHrefOK } from "./click-sweep-lib.mjs";
 
+test("native file picker is an observed effect on existing and newly opened pages", () => {
+  const handlers = new Map();
+  const page = { on: (event, handler) => handlers.set(event, handler), url: () => "https://admin.example.invalid/en/customers/import" };
+  let attach;
+  const context = { pages: () => [page], on: (event, handler) => { assert.equal(event, "page"); attach = handler; }, route: () => {} };
+  const mon = monitor(context, { allowedHosts: new Set(["admin.example.invalid"]) });
+  const start = mon.mark();
+  assert.deepEqual(mon.since(start), [], "a file-picker label or click alone earns no effect");
+  handlers.get("filechooser")();
+  assert.deepEqual(mon.since(start).map(({ type, text }) => ({ type, text })), [{ type: "filechooser", text: "native file picker opened" }]);
+  const nextHandlers = new Map();
+  attach({ on: (event, handler) => nextHandlers.set(event, handler), opener: () => null });
+  const next = mon.mark();
+  nextHandlers.get("filechooser")();
+  assert.equal(mon.since(next)[0].type, "filechooser");
+  handlers.get("pageerror")(new Error("synthetic failure"));
+  assert.equal(mon.since(next)[1].type, "pageerror", "native effects never suppress browser errors");
+});
+
 // A deterministic read-only DOM/clock double: no browser, timer sleeps or server.
 function readinessFixture(t, { readyAt = 1200, marker = "busy" } = {}) {
   let now = 0;

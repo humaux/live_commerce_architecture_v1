@@ -174,3 +174,142 @@ test('Big5 bytes pass unchanged to upstream and real422 import envelope surfaces
   assert.deepEqual(result,{kind:'error',code:'encoding_not_utf8',uncertain:false});assert.equal(browserResponses[0].status,422);assert.equal(browserResponses[0].headers.get('cache-control'),'private, no-store');
  },{upstream:(_url,init)=>{assert.deepEqual([...init.body],[...bytes]);return json({code:'encoding_not_utf8'},422);}});
 });
+
+// migration-import-v1 §§4.1/6.1: drive the existing exported route, real grammar/auth/proxy/projection.
+// No invented client option or helper signature: browser opt-in is a later rollout card.
+const fieldRaw={...raw,rows_total:4,failed_rows:3,rows:[raw.rows[0],
+ {row:2,external_id:'',outcome:'failed',code:'required',error_field:'external_id'},
+ {row:3,external_id:'',outcome:'failed',code:'required',error_field:'name'},
+ {row:4,external_id:'',outcome:'failed',code:'required'}]};
+const fieldSafe={...fieldRaw,rows:[{row:1,outcome:'created'},
+ {row:2,outcome:'failed',code:'required',error_field:'external_id'},
+ {row:3,outcome:'failed',code:'required',error_field:'name'},
+ {row:4,outcome:'failed',code:'required'}]};
+function fieldRequest(action='preview',marker='row_errors=field-v1',param='customers'){
+ // A commit expecting zero produces the fresh stale preview with one applicable row.
+ const query=[`mapping=${encodeURIComponent(JSON.stringify(raw.mapping))}`,...(action==='commit'?['expected_apply_rows=0']:[]),...(marker?[marker]:[])].join('&');
+ return new Request(`${origin}/api/stores/${id}/imports/${param}/${action}?${query}`,{method:'POST',headers:{Origin:origin,Cookie:cookie(),'X-CSRF-Token':csrf,'Content-Type':'text/csv'},body:new Uint8Array([239,187,191,65,13,10,255])});
+}
+for(const [action,status]of [['preview',200],['commit',409]]){
+ test(`field-v1 real ${action} ${status} projects explicit fields, preserves request bytes/mapping/N and privacy`,async()=>{
+  const before=structuredClone(fieldRaw);
+  await seam(async({calls})=>{
+   const request=fieldRequest(action),original=new Uint8Array(await request.clone().arrayBuffer());
+   const response=await route.POST(request,context('customers',action));
+   assert.equal(response.status,status);assert.equal(response.headers.get('cache-control'),'private, no-store');
+   assert.deepEqual(await response.json(),fieldSafe);assert.equal(calls.length,2);
+   const sent=calls[1],query=new URL(sent.url).searchParams;
+   assert.deepEqual(query.getAll('row_errors'),['field-v1']);assert.deepEqual(JSON.parse(query.get('mapping')),raw.mapping);
+   assert.equal(query.get('expected_apply_rows'),action==='commit'?'0':null);assert.deepEqual([...sent.init.body],[...original]);
+   assert.equal(sent.init.headers.Authorization,`Bearer ${token}`);assert.equal(sent.init.headers['Idempotency-Key'],undefined);
+  },{upstream:()=>json(fieldRaw,status)});
+  assert.deepEqual(fieldRaw,before);
+ });
+ test(`no-marker real ${action} ${status} remains exact frozen legacy safe shape with no inferred field`,async()=>{
+  const legacy={...fieldRaw,rows:[raw.rows[0],{row:2,external_id:'',outcome:'failed',code:'required'},{row:3,external_id:'',outcome:'failed',code:'required'},{row:4,external_id:'',outcome:'failed',code:'required'}]};
+  const oldSafe={...legacy,rows:[{row:1,outcome:'created'},{row:2,outcome:'failed',code:'required'},{row:3,outcome:'failed',code:'required'},{row:4,outcome:'failed',code:'required'}]};
+  await seam(async({calls})=>{
+   const response=await route.POST(fieldRequest(action,''),context('customers',action));assert.equal(response.status,status);
+   const value=await response.json();assert.deepEqual(value,oldSafe);assert.deepEqual(model.parseImportPreview(value,'customers'),oldSafe);
+   assert.equal(JSON.stringify(value).includes('external_id":"synthetic-source'),false);
+   assert.equal(new URL(calls[1].url).searchParams.has('row_errors'),false);
+  },{upstream:()=>json(legacy,status)});
+ });
+ test(`unmarked metadata producer is rejected on actual ${status} path`,async()=>{
+  await seam(async({calls})=>{
+   const response=await route.POST(fieldRequest(action,''),context('customers',action));assert.equal(response.status,503);
+   assert.equal((await response.json()).code,'retry_later');assert.equal(calls.length,2);
+  },{upstream:()=>json(fieldRaw,status)});
+ });
+ test(`marked ${status} rejects enum/cross-field/source-cell metadata via the real proxy`,async(t)=>{
+  const invalid=[null,'','phone','Customer ID','synthetic-source',1,{},['name']].map(error_field=>({label:JSON.stringify(error_field),row:{...fieldRaw.rows[1],error_field}}));
+  invalid.push({label:'successful row',row:{row:2,external_id:'synthetic-source',outcome:'created',error_field:'name'}},
+   {label:'wrong code',row:{...fieldRaw.rows[1],code:'invalid_external_id'}},
+   {label:'failed raw ID',row:{...fieldRaw.rows[1],external_id:'synthetic-private-cell'}});
+  for(const {label,row}of invalid)await t.test(label,async()=>{
+   // Keep counters coherent so the cross-field case cannot pass for an unrelated count mismatch.
+   const value={...fieldRaw,...(row.outcome==='created'?{new_rows:2,apply_rows:2,failed_rows:2}:{}),rows:[fieldRaw.rows[0],row,...fieldRaw.rows.slice(2)]};
+   await seam(async({calls})=>{
+    const response=await route.POST(fieldRequest(action),context('customers',action));assert.equal(response.status,503);
+    assert.equal((await response.json()).code,'retry_later');assert.equal(calls.length,2);
+   },{upstream:()=>json(value,status)});
+  });
+ });
+}
+test('actual route rejects invalid/duplicate/encodedduplicate markers before auth or import effects',async(t)=>{
+ for(const marker of ['row_errors=','row_errors=unknown','row_errors=FIELD-V1','row_errors=field-v1%20','row_errors=field-v1,legacy',
+  'row_errors=field-v1&row_errors=field-v1','row_errors=field-v1&%72ow_errors=field-v1','row_errors=field%ZZv1'])
+  for(const action of ['preview','commit'])await t.test(`${action} ${marker}`,async()=>{
+   await seam(async({calls})=>{const response=await route.POST(fieldRequest(action,marker),context('customers',action));assert.equal(response.status,422);assert.equal(calls.length,0);});
+  });
+ for(const action of ['preview','commit'])await t.test(`orders ${action}`,async()=>{
+  await seam(async({calls})=>{const response=await route.POST(fieldRequest(action,'row_errors=field-v1','orders'),context('orders',action));assert.equal(response.status,422);assert.equal(calls.length,0);});
+ });
+ await t.test('result CSV',async()=>{await seam(async({calls})=>{
+  const request=new Request(`${origin}/api/stores/${id}/imports/${id}/results.csv?only=failed&row_errors=field-v1`,{headers:{Origin:origin,Cookie:cookie(),'X-CSRF-Token':csrf}});
+  assert.equal((await route.GET(request,context(id,'results.csv'))).status,422);assert.equal(calls.length,0);
+ });});
+});
+test('marked commit old-server422 and lost ACK each dispatch once without marker-removal fallback',async(t)=>{
+ for(const mode of ['old-server422','lost-ACK'])await t.test(mode,async()=>{
+  await seam(async({calls})=>{
+   const response=await route.POST(fieldRequest('commit'),context('customers','commit'));
+   assert.equal(response.status,mode==='old-server422'?422:503);assert.equal((await response.json()).code,mode==='old-server422'?'invalid_request':'retry_later');
+   await Promise.resolve();assert.equal(calls.length,2);assert.deepEqual(new URL(calls[1].url).searchParams.getAll('row_errors'),['field-v1']);
+  },{upstream:()=>{if(mode==='lost-ACK')throw Error('synthetic lost ACK');return json({code:'invalid_request'},422);}});
+ });
+});
+test('encoded valid capability reaches actual upstream and commit receipts remain exactly five fields',async()=>{
+ await seam(async({calls})=>{
+  const response=await route.POST(fieldRequest('preview','%72ow_errors=field%2Dv1'),context());
+  assert.equal(response.status,200);assert.deepEqual(await response.json(),fieldSafe);
+  assert.deepEqual(new URL(calls[1].url).searchParams.getAll('row_errors'),['field-v1']);
+ },{upstream:()=>json(fieldRaw)});
+ const zeroReceipt={...receipt,created:0};
+ await seam(async({calls})=>{
+  const response=await route.POST(fieldRequest('commit'),context('customers','commit'));
+  assert.equal(response.status,200);assert.deepEqual(await response.json(),zeroReceipt);assert.equal(calls.length,2);
+ },{upstream:()=>json(zeroReceipt)});
+});
+
+test('actual sendImport opts in only explicitly: customer preview, stale commit and receipt keep one marker and original command',async()=>{
+ for(const [action,status,expectedRows] of [['preview',200,undefined],['commit',409,0],['commit',200,1]])await seam(async({calls,browserRequests})=>{
+  const data=await input({action,expectedApplyRows:expectedRows,rowErrors:'field-v1'}),bytes=new Uint8Array(await data.file.arrayBuffer());
+  const answer=await client.sendImport(data);
+  assert.equal(browserRequests.length,1);assert.equal(calls.length,2);
+  for(const requestURL of [browserRequests[0].url,calls[1].url]){
+   const query=new URL(requestURL).searchParams;
+   assert.deepEqual(query.getAll('row_errors'),['field-v1']);
+   assert.deepEqual(JSON.parse(query.get('mapping')),data.mapping);
+   assert.equal(query.get('expected_apply_rows'),action==='commit'?String(expectedRows):null);
+  }
+  assert.deepEqual([...calls[1].init.body],[...bytes]);
+  assert.equal(calls[1].init.headers['Idempotency-Key'],undefined);
+  assert.equal(answer.kind,action==='preview'?'preview':status===409?'stale':'receipt');
+  assert.deepEqual(answer.value,status===200&&action==='commit'?receipt:fieldSafe);
+ },{upstream:()=>json(status===200&&action==='commit'?receipt:fieldRaw,status)});
+});
+
+test('actual sendImport defaults stay unmarked for both domains; bad or order-only runtime capability refuses before effect',async()=>{
+ const orderMapping={order_id:'order',customer_id:'customer',ordered_at:'when',status:'state',total:'total'};
+ for(const kind of ['customers','orders'])for(const action of ['preview','commit'])await seam(async({calls,browserRequests})=>{
+  await client.sendImport(await input({kind,action,mapping:kind==='orders'?orderMapping:raw.mapping,expectedApplyRows:action==='commit'?1:undefined}));
+  assert.equal(browserRequests.length,1);assert.equal(calls.length,2);
+  for(const requestURL of [browserRequests[0].url,calls[1].url])assert.equal(new URL(requestURL).searchParams.has('row_errors'),false);
+ },{upstream:()=>json(kind==='customers'?raw:{code:'invalid_request'},kind==='customers'?200:422)});
+ for(const [kind,rowErrors] of [['customers','field-v2'],['orders','field-v1']])for(const action of ['preview','commit'])await seam(async({calls,browserRequests})=>{
+  const answer=await client.sendImport(await input({kind,action,rowErrors,mapping:kind==='orders'?orderMapping:raw.mapping,expectedApplyRows:action==='commit'?1:undefined}));
+  assert.deepEqual(answer,{kind:'error',code:'invalid_request',uncertain:false});
+  assert.equal(calls.length,0);assert.equal(browserRequests.length,0);
+ });
+});
+
+test('marked sendImport old-server 422 and lost ACK each dispatch once without silently removing the marker',async()=>{
+ for(const mode of ['old-server422','lost-ACK'])await seam(async({calls,browserRequests})=>{
+  const answer=await client.sendImport(await input({rowErrors:'field-v1'}));
+  assert.equal(browserRequests.length,1);assert.equal(calls.length,2);
+  assert.deepEqual(new URL(browserRequests[0].url).searchParams.getAll('row_errors'),['field-v1']);
+  assert.deepEqual(new URL(calls[1].url).searchParams.getAll('row_errors'),['field-v1']);
+  assert.deepEqual(answer,mode==='old-server422'?{kind:'error',code:'invalid_request',uncertain:false}:{kind:'error',code:'retry_later',uncertain:true});
+ },{upstream:()=>{if(mode==='lost-ACK')throw Error('synthetic lost ACK');return json({code:'invalid_request'},422);}});
+});

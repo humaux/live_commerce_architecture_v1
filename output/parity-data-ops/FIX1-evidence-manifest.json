@@ -1,0 +1,151 @@
+[
+  {
+    "kind": "raw Actions job log, NOT COMMITTED",
+    "run": 41256591992,
+    "job": "124701685425",
+    "sha256": "d51e09b7aa49a563d13ad66ed08bda8776539d559321779af5bcb2ab6c5cc584"
+  },
+  {
+    "kind": "raw Actions job log, NOT COMMITTED",
+    "run": 41288104889,
+    "job": "124793465579",
+    "sha256": "16a2729a0ea981997a10c732c721939aea6884baafff403356ca46f32d3108f9"
+  },
+  {
+    "kind": "raw Actions job log, NOT COMMITTED",
+    "run": 41288104896,
+    "job": "124794932547",
+    "sha256": "ae1bafe863500f92f6dd32932fd2c6e9925a39f22713b46da75dcbc60335c78f"
+  },
+  {
+    "kind": "raw Actions job log, NOT COMMITTED",
+    "run": 41288104896,
+    "job": "124794932562",
+    "sha256": "f12712afd1961e84c9dcd3a448c97a6eedc67c2e1914c235113a74f9b5dff7da"
+  },
+  {
+    "kind": "raw Actions job log, NOT COMMITTED",
+    "run": 41288104896,
+    "job": "124794932607",
+    "sha256": "d3684a622fe6c1be44b6300ee0d7f0db09964800358c2d35c4bd7d497862f9c0"
+  },
+  {
+    "kind": "raw Actions job log, NOT COMMITTED",
+    "run": 41288104896,
+    "job": "124794932611",
+    "sha256": "7c2bef513fe5fc138841f28b6494f87a47d7fe58dbd6fe850784f3525b0e01ba"
+  },
+  {
+    "kind": "raw Actions job log, NOT COMMITTED",
+    "run": 41288104896,
+    "job": "124794932630",
+    "sha256": "f87664e5a472a805f633d1a12258c9e2a3a8df970b43d2361d3d162bbb507683"
+  },
+  {
+    "kind": "raw Actions job log, NOT COMMITTED",
+    "run": 41288104896,
+    "job": "124794932634",
+    "sha256": "7bcd16c411f3aa4152aceafb194885315854315721639828a6af0eaed8f07408"
+  },
+  {
+    "kind": "raw Actions job log, NOT COMMITTED",
+    "run": 41288104896,
+    "job": "124794932733",
+    "sha256": "5a0bbd3aae75611e354817da2e1c7f8903d8a63f895b95622dbd49805a937b93"
+  },
+  {
+    "kind": "raw Actions job log, NOT COMMITTED",
+    "run": 41288104896,
+    "job": "124794932768",
+    "sha256": "5588ac42960b50d705d1d8b9f9c946405d0279bd49b47eb579620b14a6c8a7e6"
+  },
+  {
+    "kind": "raw Actions job log, NOT COMMITTED",
+    "run": 41288104896,
+    "job": "124794932776",
+    "sha256": "889008a8e53ad7b648749ff4240ed33f5e7e035f85bf485712ee865d53893bb9"
+  },
+  {
+    "kind": "raw Actions job log, NOT COMMITTED",
+    "run": 41288104896,
+    "job": "124794932874",
+    "sha256": "5cb5f7cc576a0f2aebf71cee447d8b873e2696f1449a738f6bb4d2136476f40f"
+  },
+  {
+    "kind": "raw Actions job log, NOT COMMITTED",
+    "run": 41288104896,
+    "job": "124794932904",
+    "sha256": "bc73cdc642ab8130ce670b01e02125943cff97ea6d6e53733ce49ece7ac4308e"
+  },
+  {
+    "kind": "raw Actions job log, NOT COMMITTED",
+    "run": 41288104896,
+    "job": "124794932929",
+    "sha256": "dea3e64d6e02e266512b05c709be6442095c0be094ef4a154b85e22187f839a7"
+  },
+  {
+    "kind": "raw Actions job log, NOT COMMITTED",
+    "run": 41288104896,
+    "job": "124794932933",
+    "sha256": "729c26e0046bbca9013d3b71c60088e20a9d471c3251b5abd58d77b47c7ee89d"
+  },
+  {
+    "kind": "raw Actions job log, NOT COMMITTED",
+    "run": 41288104896,
+    "job": "124794932945",
+    "sha256": "078fc05a6dcc01ea173b1e8d509748380c1ab3af97da5a552bc904b57b78784e"
+  },
+  {
+    "kind": "raw Actions job log, NOT COMMITTED",
+    "run": 41288104896,
+    "job": "124794932977",
+    "sha256": "9b9f780393d9f9fa23e96267ed171c7c93aa7add7bce150c8981f2a052709bb0"
+  },
+  {
+    "kind": "artifact member, NOT COMMITTED",
+    "run": 41256591992,
+    "artifact": "gate-browser-identity",
+    "member": "playwright/settings-real-20261101T004621.374573085/playwright.log",
+    "sha256": "d58c11a03d8c4cff33f2e8ca2692d3e8c462d7120387b5ed13b5f2f9962b8746"
+  },
+  {
+    "kind": "artifact member, NOT COMMITTED",
+    "run": 41288104896,
+    "artifact": "gate-browser-identity",
+    "member": "playwright/settings-real-20261101T083542.484080454/playwright.log",
+    "sha256": "92567b3e575cdbc99ad54a4eb20c9a4ade94d142cc4b909dade2c7b396755d43"
+  },
+  {
+    "kind": "static E1 only, no runtime tests",
+    "commands": {
+      "node --check (six changed mjs files)": 0,
+      "targeted strict tsc (C6 + visual-states)": 0,
+      "static design detector": 0,
+      "ownership generation and --check": 0,
+      "depmap generation (no diff)": 0,
+      "packet structure check": 0,
+      "git diff --check": 0
+    },
+    "NOT_RUN": [
+      "product-editor acceptance full type closure: local axe-core absent",
+      "all local tests/servers prohibited",
+      "new-head GitHub CI and independent review pending"
+    ],
+    "source_sha256": {
+      "apps/admin/components/CollectionManager.tsx": "12042c356c3174b71116facea8aabf44e279bb08e8bbf6f7cc5cb8e45d220ca5",
+      "apps/admin/components/ImportWizard.tsx": "2063ea43b8ca3871d2c65f45ce6487c3ca0a752f19e56f3530eec4771e1e2a30",
+      "apps/admin/components/imports/data-ops.css": "a0cc71bde75c8defdfbcad8856ee002474b6fde8067937cb45a970470e119e8a",
+      "apps/admin/components/inventory/InventoryView.tsx": "dc90df59df168c87004384a963788a612013bc9d4ffacdab08d5448b0eb40469",
+      "tests/admin/ledger.spec.ts": "815d9e5eba37e1b911bcc28bf8271e45093729d2c86a0b5f703aa812ec295650",
+      "tests/admin/parity-data-ops.spec.ts": "8e80df4622ef492e37e00c009ef21488f9064c716c9fdac6b0099a41a4b8aae0",
+      "tests/admin/product-editor.acceptance.ts": "d915298ad8675a44b6918033790a2e691b08483cdca61d190ec6bbdca9e31460",
+      "tests/admin/visual-states.spec.ts": "cf5cf618e75fac4dea53426c93e06d77b9b367b182c3d6f35a3344b278dbbb8b",
+      "tests/storefront/merchant-buyer-gate.mjs": "099c2bf813e0f216fe0b41d77ff48f51619bcf0aff9ce6d41b436a2645dbd9a4",
+      "tests/storefront/merchant-product.mjs": "2c36a724923195cdb9a5dac5397f986457a47612a24d0e31387a5b43de252c16",
+      "tests/storefront/storefront-publish-gate.mjs": "ab10d5c9778d074d998a1538bf92181b3d7fc2acbbbe3f7b75eb1a88532070a0",
+      "tests/ui/click-sweep-lib.mjs": "4ef61dc64bcd00438b8849c3faa78806f4b775206eafb07b0e0b2291431c4eb4",
+      "tests/ui/click-sweep-lib.test.mjs": "ae3be66cdcd699b1bec0f606ee905d4dcfcb87eeb111fe0672548301c9cb66d6",
+      "tests/ui/click-sweep.mjs": "4edc4bfd0feea8c49c3d1d1d8e4bd8104e6a0fbdcc6f7f81820d0e7149d5dc8d"
+    }
+  }
+]

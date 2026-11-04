@@ -437,6 +437,11 @@ func oaNotificationSignedConversation(t *testing.T, e *lbuEnv) (miTest, string, 
 	if err = client.Start(context.Background()); err != nil {
 		t.Fatal(err)
 	}
+	defer func() {
+		if t.Failed() {
+			oaNotificationConsumerDiagnostic(t, m.f.owner, workerPool, consumerPool, client.ID(), client.Stopped())
+		}
+	}()
 	t.Cleanup(func() {
 		stop, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 		defer cancel()

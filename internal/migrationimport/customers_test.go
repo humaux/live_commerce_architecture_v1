@@ -7,6 +7,7 @@
 package migrationimport
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -233,5 +234,72 @@ func TestPreviewCountsAndConsentIgnored(t *testing.T) {
 	}
 	if !pv.Rows[0].ConsentIgnored || pv.Rows[1].ConsentIgnored || pv.Rows[2].Code != "required" {
 		t.Fatalf("rows: %+v", pv.Rows)
+	}
+}
+
+// Contract §4.1: inspect the real domain preview on the wire without depending on
+// a future Go field name. Missing metadata must fail an assertion, not compilation.
+func TestCustomerRequiredErrorFieldWire(t *testing.T) {
+	for _, tc := range []struct {
+		name, record, code, field string
+		rows                      int
+	}{
+		{"missing ID", ",Synthetic Name,,", "required", "external_id", 1},
+		{"missing name", "FIELD-NAME,,,", "required", "name", 1},
+		{"both missing nonblank", ",,0900000099,", "required", "external_id", 1},
+		{"blank skipped", ",,,", "", "", 0},
+		{"invalid ID before missing name", "invalid@example.test,,,", "invalid_external_id", "", 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := rowsOf(t, "customer_id,name,phone,email\n"+tc.record+"\n", nil)
+			wire, err := json.Marshal(buildPreview("synthetic-digest", p))
+			if err != nil {
+				t.Fatal(err)
+			}
+			var preview struct {
+				Rows []map[string]json.RawMessage `json:"rows"`
+			}
+			if err := json.Unmarshal(wire, &preview); err != nil {
+				t.Fatal(err)
+			}
+			if len(preview.Rows) != tc.rows {
+				t.Fatalf("rows=%d want=%d", len(preview.Rows), tc.rows)
+			}
+			if tc.rows == 0 {
+				return
+			}
+			row := preview.Rows[0]
+			var code string
+			if err := json.Unmarshal(row["code"], &code); err != nil || code != tc.code {
+				t.Fatalf("code=%q want=%q err=%v", code, tc.code, err)
+			}
+			field, present := row["error_field"]
+			if tc.field == "" {
+				if present {
+					t.Fatalf("unexpected error_field=%s", field)
+				}
+			} else if string(field) != fmt.Sprintf("%q", tc.field) {
+				t.Fatalf("error_field=%s want=%q", field, tc.field)
+			}
+		})
+	}
+}
+
+func TestCustomerPreviewFieldCrossfieldAndInputPurity(t *testing.T) {
+	for _, row := range []customerRow{
+		{n: 1, outcome: outcomeCreated, errorField: "external_id"},
+		{n: 1, outcome: outcomeFailed, code: "invalid_name", errorField: "name"},
+		{n: 1, outcome: outcomeFailed, code: "required", errorField: "synthetic-header"},
+		{n: 1, outcome: outcomeFailed, code: "required"},
+	} {
+		p := parsedCustomers{rows: []customerRow{row}}
+		preview := buildPreview("synthetic-digest", p)
+		if preview.Rows[0].ErrorField != "" {
+			t.Errorf("illegal metadata leaked for outcome=%q code=%q field=%q", row.outcome, row.code, row.errorField)
+		}
+		preview.Rows[0].Code = "synthetic-mutation"
+		if p.rows[0] != row {
+			t.Fatal("preview mutated parsed input")
+		}
 	}
 }

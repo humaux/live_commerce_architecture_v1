@@ -181,7 +181,127 @@ async function density(picker, states, state) {
   states.push({ state, blocks: count[0], chars: count[1] });
 }
 
-export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, ledger, densities }) {
+// READ/MEASURE only. Node/page sequence numbers are observer delivery order, never a causal clock.
+async function observePicker(page) {
+  await page.evaluate(() => {
+    const codes = { FAMI: "024793", HILIFE: "2656", OKMART: "000005", UNIMART: "231196" };
+    const events = [], snapshots = [], nodes = new WeakMap();
+    let brand = "none", iteration = 0, sequence = 0, generation = 0, inputCount = 0, truncated = false, captureFailed = false;
+    let beforeNode = null, inputNode = null, quoteID = "", beforeModes = [], beforeQuotes = [], lastState = "";
+    const storage = () => {
+      const modes = Object.keys(sessionStorage).filter(key => key.startsWith("commerce-checkout-mode-v2:"));
+      const quotes = Object.keys(sessionStorage).filter(key => key.startsWith("commerce-checkout-review-v2:"))
+        .map(key => JSON.parse(sessionStorage.getItem(key) ?? "null")?.id).filter(id => typeof id === "string");
+      return { modes, quotes };
+    };
+    const state = () => {
+      const picker = document.querySelector('[data-testid="cvs-picker"]'), node = document.querySelector('[data-testid="cvs-picker-query"]');
+      if (node && !nodes.has(node)) nodes.set(node, ++generation);
+      const pressed = Object.keys(codes).filter(value => picker?.querySelector(`[data-testid="cvs-brand-${value}"]`)?.getAttribute("aria-pressed") === "true");
+      let reviewMatchesResponse = false, modeKeyMatchesResponse = false, modeKeyExistedBefore = false, storageUnavailable = false;
+      try {
+        const current = storage();
+        reviewMatchesResponse = !!quoteID && current.quotes.includes(quoteID);
+        modeKeyMatchesResponse = !!quoteID && current.modes.some(key => key.endsWith(`:${quoteID}`));
+        modeKeyExistedBefore = !!quoteID && beforeModes.some(key => key.endsWith(`:${quoteID}`));
+      } catch { storageUnavailable = true; }
+      return { generation: node ? nodes.get(node) : 0, attached: !!node?.isConnected, visible: node?.checkVisibility() ?? false,
+        disabled: node?.matches(":disabled") ?? false, beforeNodeConnected: !!beforeNode?.isConnected,
+        sameNodeAsBeforeBrand: !!node && node === beforeNode, sameNodeAsInput: !!node && node === inputNode,
+        queryState: !node ? "absent" : node.value === "" ? "empty" : node.value === codes[brand] ? "expected" : "other",
+        pressedBrand: pressed.length === 1 ? pressed[0] : pressed.length ? "multiple" : "none", pickerOpen: !!picker?.open,
+        resultBusy: !!picker?.querySelector('[aria-busy="true"]'), resultAlertPresent: !!picker?.querySelector('[role="alert"]'),
+        candidateCount: picker?.querySelectorAll('[data-testid^="cvs-candidate-"]').length ?? 0,
+        expectedCandidatePresent: !!codes[brand] && !!picker?.querySelector(`[data-testid="cvs-candidate-${codes[brand]}"]`),
+        inputCount, quoteMatchState: quoteID ? "observed" : "UNKNOWN", responseIdentityChanged: !!quoteID && !beforeQuotes.includes(quoteID),
+        reviewMatchesResponse, modeKeyMatchesResponse, modeKeyExistedBefore, storageUnavailable };
+    };
+    const emit = (kind, extra = {}) => {
+      if (!iteration) return;
+      const value = state();
+      if (kind === "mutation" && JSON.stringify(value) === lastState) return;
+      lastState = JSON.stringify(value);
+      if (events.length === 40) { events.shift(); truncated = true; }
+      events.push({ domain: "page", sequence: ++sequence, kind, brand, iteration, ...value, ...extra });
+    };
+    const guard = callback => (...args) => { try { callback(...args); } catch { captureFailed = true; } };
+    const click = guard(event => {
+      const target = event.target.closest?.('[data-testid^="cvs-brand-"]');
+      const next = target?.getAttribute("data-testid")?.slice("cvs-brand-".length);
+      if (!Object.hasOwn(codes, next) || iteration === 4) return;
+      brand = next; iteration++; quoteID = ""; beforeNode = document.querySelector('[data-testid="cvs-picker-query"]'); inputNode = null;
+      try { const current = storage(); beforeModes = current.modes; beforeQuotes = current.quotes; } catch { beforeModes = []; beforeQuotes = []; }
+      snapshots.push({ phase: "start", brand, iteration, ...state() }); emit("brand_click", { trusted: event.isTrusted });
+    });
+    const input = guard(event => {
+      if (!event.target.matches?.('[data-testid="cvs-picker-query"]')) return;
+      inputNode = event.target; inputCount++; emit("input", { trusted: event.isTrusted });
+    });
+    const observer = new MutationObserver(guard(records => {
+      if (!iteration) return;
+      const node = document.querySelector('[data-testid="cvs-picker-query"]');
+      if (node !== beforeNode || records.some(record => record.target.closest?.('[data-testid="cvs-picker"]'))) emit("mutation");
+    }));
+    document.addEventListener("click", click, true); document.addEventListener("input", input, true);
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["aria-pressed", "aria-busy", "disabled", "open", "hidden"] });
+    window.__lcCvsDiagnostic = {
+      quote: guard((id, cycle) => { if (cycle === iteration) { quoteID = id; emit("quote_match"); } }),
+      failure() { try { if (iteration) snapshots.push({ phase: "failure", brand, iteration, ...state() }); } catch { captureFailed = true; } return { events, snapshots, truncated, captureFailed }; },
+      dispose() { observer.disconnect(); document.removeEventListener("click", click, true); document.removeEventListener("input", input, true); delete window.__lcCvsDiagnostic; },
+    };
+  });
+  const events = [], requests = new WeakMap();
+  let sequence = 0, iteration = 0, brand = "none", ordinal = 0, inflight = 0, pending = 0, closed = false, truncated = false, captureFailed = false;
+  const emit = value => { if (events.length === 40) { events.shift(); truncated = true; } events.push({ domain: "node", sequence: ++sequence, ...value }); };
+  const classify = request => {
+    const pathname = new URL(request.url()).pathname;
+    if (request.method() === "POST" && pathname === "/api/buyer/quotes") return { resource: "quote", brand };
+    const match = /^\/cvs\/(unimart|unimartfreeze|fami|hilife|okmart)-20261028\.json$/.exec(pathname);
+    return request.method() === "GET" && match ? { resource: "directory", brand: match[1].toUpperCase() } : null;
+  };
+  const guard = callback => (...args) => { try { callback(...args); } catch { captureFailed = true; } };
+  const request = guard(value => {
+    const resource = classify(value); if (!resource) return;
+    const entry = { ...resource, iteration, ordinal: ++ordinal }; requests.set(value, entry);
+    if (entry.resource === "quote") inflight++;
+    emit({ ...entry, kind: "request", quoteInflight: inflight });
+  });
+  const response = guard(value => {
+    const entry = requests.get(value.request()); if (!entry) return;
+    emit({ ...entry, kind: "response", status: value.status() });
+    if (entry.resource !== "quote") return;
+    pending++;
+    // Passive private comparison only: no body/identifier escapes, and actions never await this parse.
+    void value.json().then(body => {
+      if (closed) return;
+      if (typeof body?.id !== "string" || !/^[0-9a-f-]{36}$/.test(body.id)) { captureFailed = true; return; }
+      return page.evaluate(({ id, cycle }) => window.__lcCvsDiagnostic?.quote(id, cycle), { id: body.id, cycle: entry.iteration });
+    }).catch(() => { captureFailed = true; }).finally(() => { pending--; });
+  });
+  const terminal = (value, kind) => {
+    const entry = requests.get(value); if (!entry) return;
+    if (entry.resource === "quote") inflight--;
+    emit({ ...entry, kind, ...(kind === "failed" ? { failed: true } : {}) });
+  };
+  const finished = guard(value => terminal(value, "finished")), failed = guard(value => terminal(value, "failed"));
+  page.on("request", request); page.on("response", response); page.on("requestfinished", finished); page.on("requestfailed", failed);
+  return {
+    phase: guard((phase, next) => { if (next) { brand = next; iteration++; } emit({ kind: "phase", phase, brand, iteration }); }),
+    async failure() {
+      let observed = { events: [], snapshots: [], truncated: false };
+      try { observed = await page.evaluate(() => window.__lcCvsDiagnostic.failure()); } catch { captureFailed = true; }
+      // settled describes diagnostic task completion only, never React or quote readiness.
+      return { pageEvents: observed.events, networkEvents: events, snapshots: observed.snapshots,
+        truncated: truncated || observed.truncated, captureFailed: captureFailed || !!observed.captureFailed, quoteCaptureState: pending ? "UNKNOWN" : "settled" };
+    },
+    async dispose() {
+      closed = true; page.off("request", request); page.off("response", response); page.off("requestfinished", finished); page.off("requestfailed", failed);
+      await page.evaluate(() => window.__lcCvsDiagnostic?.dispose());
+    },
+  };
+}
+
+export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, ledger, densities, onDiagnostic }) {
   const c = localeCopy[locale], posts = [], apiReads = [];
   const request = (r) => {
     const url = new URL(r.url());
@@ -211,6 +331,7 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
     assert.equal(posts.length, before, "entering review never posts a store");
   };
   const measure = async (state) => { if (mobile && locale === "zh-TW") await density(picker, densities, state); };
+  let diagnostic, diagnosticFailed = false;
   try {
     const deliveryKey = await openCheckout();
     await exerciseSignedCvsParity({ page, locale, ledger, densities });
@@ -375,20 +496,25 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
       if (directoryAttempts === 1) await route.fulfill({ status: 503, body: "" });
       else await route.continue();
     });
+    try { diagnostic = await observePicker(page); } catch { diagnosticFailed = true; }
     await page.getByTestId("cvs-open-picker").click();
     for (const [brand, code] of [["FAMI", "024793"], ["HILIFE", "2656"], ["OKMART", "000005"], ["UNIMART", "231196"]]) {
+      diagnostic?.phase("before_brand", brand);
       // The brand switch recomputes the quote over POST /api/buyer/quotes and then commits the new
       // delivery kind (aria-pressed). A real user waits for that processing to finish before typing
       // the next code; without it the earlier quote commit can still replace this picker instance.
       const quoteWrite = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST");
       await page.getByTestId(`cvs-brand-${brand}`).click();
       await quoteWrite;
+      diagnostic?.phase("quote_wait_returned");
       await expect(page.getByTestId(`cvs-brand-${brand}`)).toHaveAttribute("aria-pressed", "true");
+      diagnostic?.phase("pressed_returned");
       if (brand === "OKMART") {
         await picker.getByRole("button", { name: locale === "en" ? "Retry" : locale === "zh-CN" ? "重试" : "重試", exact: true }).click();
         await expect.poll(() => directoryAttempts, { message: "directory only retried by an explicit click" }).toBe(2);
       }
       await query.fill(code);
+      diagnostic?.phase("fill_returned");
       await expect(choose(code)).toBeVisible();
       await expect(picker.locator('[data-testid^="cvs-candidate-"]')).toHaveCount(1);
       await expect(page.getByTestId("cvs-picker-confirm")).toHaveCount(0);
@@ -449,7 +575,16 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
     assert.equal(persisted.recipient_name, "王小明");
     assert.equal(persisted.phone, "0912345678");
     record("refresh / persisted resumed destination", "server retains the explicitly confirmed CVS contact B, not older home contact A");
-  } finally { page.off("request", request); }
+  } catch (error) {
+    let report = { captureFailed: true, quoteCaptureState: "UNKNOWN" };
+    try { if (diagnostic) report = await diagnostic.failure(); } catch { diagnosticFailed = true; }
+    try { await onDiagnostic?.({ ...report, captureFailed: diagnosticFailed || report.captureFailed }); }
+    catch { console.log("CVS_DIAGNOSTIC_WRITE_FAILED", true); }
+    throw error;
+  } finally {
+    page.off("request", request);
+    try { await diagnostic?.dispose(); } catch { console.log("CVS_DIAGNOSTIC_CLEANUP_FAILED", true); }
+  }
 }
 
 export function assertPickerDensity(states) {

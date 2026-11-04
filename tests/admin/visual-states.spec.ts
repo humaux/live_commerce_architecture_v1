@@ -1,6 +1,7 @@
 // Purpose: Checks fixture-driven inventory visual states and long-SKU overflow; writes browser evidence.
 // Depends on: ./fixtures/ledger-identity, node:fs/promises, @playwright/test; harness env: COMMERCE_FIXTURE_STORE_ID
 // Used by: tests/foundation/browser_admin_legacy_test.go
+// Invariants: signed search and stock surfaces are reached with real controls; selection/caret/overflow bounds remain measured.
 import { browserEvidenceDirectory } from "../browser-evidence.mjs";
 import { test, expect } from "./fixtures/ledger-identity";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -45,8 +46,9 @@ test("ledger selection caret and scroll surface are authored and active", async 
   const longSKU = await createLongSkuFixture(request);
   await mkdir(reviewEvidence, { recursive: true });
   await page.goto("/en/inventory");
-  await expect(page.getByRole("radio", { name: `Select ${longSKU}`, exact: true })).toBeVisible();
-  const input = page.locator(".search-field input");
+  await expect(page.getByRole("row").filter({ hasText: longSKU })).toBeVisible();
+  await page.getByRole("button", { name: "Search SKU", exact: true }).click();
+  const input = page.getByRole("textbox", { name: "SKU or product name", exact: true });
   await input.fill("Visible selection");
   await input.selectText();
   const styles = await input.evaluate((element) => {
@@ -85,6 +87,7 @@ test("ledger selection caret and scroll surface are authored and active", async 
     caret: "initial",
   });
   await input.fill("");
+  await page.getByRole("button", { name: "Cancel", exact: true }).click();
 
   // Use real responsive widths; never inject a fake overflow or scrollbar.
   const table = page.locator(".table-scroll");

@@ -142,8 +142,8 @@ try {
   // 0094 (merchant-tools, storefront-v2 G1): the sign-in landing is the dashboard; the product ledger moved to /[locale]/inventory.
   await expect(merchant.getByTestId("dashboard-page")).toBeVisible();
   await merchant.goto(`${adminOrigin}/en/inventory`);
-  // stop-bleed D01: "Add product" on the inventory page is a link to the full editor now (no inline quick-add panel)
-  await expect(merchant.getByRole("link", { name: "Add product", exact: true })).toBeVisible();
+  // Signed C6: Back to products leads to the existing New product editor; the shared helper clicks both controls.
+  await expect(merchant.getByRole("link", { name: "Back to products", exact: true })).toBeVisible();
   assert(sawIssuer, "real signed MOCK IdP browser redirect required");
   const name = `Publish gate product ${Date.now()}`, code = `PUB-${Date.now()}`;
   // the product and its first SKU go through the product editor, the only creation UI (price typed in major units: 123.45 = 12345 minor)

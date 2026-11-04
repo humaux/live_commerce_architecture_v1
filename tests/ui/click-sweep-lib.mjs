@@ -160,7 +160,7 @@ export const INIT_SCRIPT = `(() => {
 export const protocolHrefOK = (href) => /^tel:\+?[0-9][0-9 ()\-]{5,24}$/i.test(href) && href.replace(/\D/g, "").length >= 7 && href.replace(/\D/g, "").length <= 15
   || /^mailto:[^@\s?]+@[^@\s?]+\.[^@\s?]+$/i.test(href);
 
-// ---- monitor: console / page errors / 5xx / dialogs / popups / downloads / external navigation, per context ----------------------------------------------------
+// ---- monitor: console / page errors / 5xx / dialogs / popups / downloads / native file chooser / external navigation, per context ------------------------------
 export function monitor(context, { allowedHosts, onExternal }) {
   const m = { events: [], inflight: new Map(), seen: new Set(), seenAt: new Map() };
   const push = (e) => m.events.push({ ...e, at: Date.now() });
@@ -183,6 +183,7 @@ export function monitor(context, { allowedHosts, onExternal }) {
     });
     page.on("dialog", async (d) => { push({ type: "dialog", text: `${d.type()}: ${d.message()}`.slice(0, 200) }); await d.dismiss().catch(() => {}); });
     page.on("download", (d) => push({ type: "download", text: d.suggestedFilename() }));
+    page.on("filechooser", () => push({ type: "filechooser", text: "native file picker opened" }));
     page.on("request", (r) => {
       m.inflight.set(r, Date.now());
       if (/^(fetch|xhr)$/.test(r.resourceType()) && !r.url().includes("_rsc=")) { const k = r.method() + " " + new URL(r.url()).pathname; (m.seenAt.get(k) ?? m.seenAt.set(k, []).get(k)).push(Date.now()); }
@@ -347,7 +348,7 @@ export async function sweepControl(ctx, desc, classSize, opts = {}) {
       && Number.isFinite(after.documentTimeOrigin) && after.documentTimeOrigin > 0
       && after.documentTimeOrigin !== before.documentTimeOrigin;
     if (documentChanged || after.url !== before.url) effects.push(after.url !== before.url ? `url ${before.url.replace(/^https?:\/\/[^/]+/, "")} -> ${after.url.replace(/^https?:\/\/[^/]+/, "")}` : "page reloaded");
-    for (const e of ev) if (["dialog", "popup", "download", "external"].includes(e.type)) effects.push(`${e.type}: ${e.text}`);
+    for (const e of ev) if (["dialog", "popup", "download", "filechooser", "external"].includes(e.type)) effects.push(`${e.type}: ${e.text}`);
     if (after.layers !== before.layers) effects.push(after.layers > before.layers ? `layer opened (${after.layerNames.join(",")})` : "layer closed");
     if (after.mut > before.mut) effects.push(`DOM changed (${after.mut - before.mut} mutations)`);
     if (after.invalid > before.invalid || after.ariaInvalid > before.ariaInvalid || (after.activeInvalid && !before.activeInvalid)) effects.push("validation shown");

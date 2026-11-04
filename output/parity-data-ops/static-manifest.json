@@ -1,0 +1,24 @@
+{
+  "evidence_level": "E1",
+  "scope": "static only; no local tests/servers",
+  "files": {
+    "apps/admin/components/ProductImport.tsx": "6e69321c166fc2b4adf4a7338db59988349277be6097007d665b7cbe17e394a8",
+    "apps/admin/components/Ledger.tsx": "a2562674efd482117da7073ff9411a85631bccb1e033cc66f394dbfac6c8f216",
+    "apps/admin/components/CollectionManager.tsx": "0c560bc0194091e3e8526eab2a6713e69b3aee555beef83834d52079a96026ba",
+    "apps/admin/components/ImportWizard.tsx": "afe86c13146d5576866ea4c76367f885cb26a6ab11992f86fa771af56f879117",
+    "apps/admin/components/ImportWizardSteps.tsx": "cd2e58a3c732a96cf5e4c0382b530cd907bf4038bd391b58dc5e4689a26a6977",
+    "apps/admin/components/inventory/InventoryView.tsx": "7d814113018f22d5895b3e502d598aa61fbff18eccebe978892940cc6b6c0e93",
+    "apps/admin/components/collections/read.ts": "3afd4bc344a1eb7692ed8e1d4f69f815b6d98254006d020531cfd6eb6e16bee3",
+    "apps/admin/components/imports/data-ops.css": "0afcef1abb02f9942badb02ebe855f27a8745ccae704b0982393797bd178c505",
+    "packages/i18n/src/data-ops.ts": "259e824b6219c6fe1b8d683d6411d59cebe810a2695e6987fe36cc37cf109ec2",
+    "tests/admin/import-wizard.spec.ts": "ad88b91c50e5d8c3ba5189afeeb8bd2849a0b0d2f497e4ef73362077e993e9a4",
+    "tests/admin/ledger.spec.ts": "b6dd23479560825345d2b33e296061442f877db5efe1760720d28f610e9dbf78",
+    "tests/admin/catalog-core.spec.ts": "962f1b46b833fbd181099c91ba0c320f39fbc17525806272a8a29ac5384ef450",
+    "tests/admin/import-coordinator.test.mjs": "c6b87befb3d0a535ab2ede1f808c21a884962a1de072ab2f69b29b4225c358ec",
+    "tests/storefront/merchant-product.mjs": "328340b34c342822c262d70d3033f8730c25a228827413bc4f751d6722fd96a5",
+    "tests/storefront/catalog-media-gate.mjs": "51fbdbfef1151f4b9e650a63d4ee4a0b3bd1d4515da224e7fedb4c4fbce659ae",
+    "tests/admin/parity-customer-import.spec.ts": "9305985efa68641380cc7add43d7e1fd0f085f49525924538f0d608b0c5d9966",
+    "output/ci-select-backend-browser/browser-ownership.json": "c700f423a1f1eafd730ac8b68d632ce6a47e9ae969b731ed047d59a2e553b140"
+  },
+  "signed_copy_sha256": "66a31a3b8a38b4c61ddb0cc597ae512c5415123e9c2a3f900abedd90311c9514"
+}

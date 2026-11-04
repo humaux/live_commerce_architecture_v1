@@ -420,9 +420,10 @@ async function journeyProduct(state, journeys) {
       const editURL=page.url(), codes=await Promise.all([0,1].map(i=>page.getByTestId(`matrix-code-${i}`).inputValue()));
       for(const [index,qty] of [[0,9],[1,7]]){
         await page.goto(u("/inventory"));
-        await page.locator(".ledger-card .search-field input").fill(codes[index]);
-        await page.locator('.ledger-card .search-field button[type="submit"]').click();
-        await expect(page.locator("tbody tr").filter({has:page.getByText(codes[index],{exact:true})}).locator(".available-value")).toHaveText(String(qty));
+        await page.getByRole("button", { name: "搜尋貨號", exact: true }).click();
+        await page.getByRole("textbox", { name: "貨號或商品名稱", exact: true }).fill(codes[index]);
+        await page.getByRole("button", { name: "搜尋", exact: true }).click();
+        await expect(page.locator("tbody tr").filter({has:page.getByRole("cell",{name:`${codes[index]} · ${title}`,exact:true})}).locator(".available-value")).toHaveText(String(qty));
       }
       await page.goto(editURL);
     }, page);

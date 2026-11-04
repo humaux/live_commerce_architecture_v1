@@ -1,0 +1,22 @@
+task_id: 53ea9f21-sub-import-field-backend
+parent_task_id: 53ea9f21-3f3b-4626-87ab-42dc853507b9
+role: backend implementation; actual model/reasoning: UNKNOWN (parent dispatch is authority)
+base_commit: 3672a617cbcf2ad5eb1d6f217d2cef9b7f2aeacc
+code_commit: dc2ae234e99a13ad7669ae03fb1b31ff97f6634e
+evidence_level: E1 STATIC_ONLY; runtime NOT_RUN
+authority: contracts/migration-import-v1.md sections 3/4.1/6.1 at base; freeze 692f69f4-2b7d-41c0-9849-b280342a491d
+commands_observed:
+gofmt -w internal/migrationimport/customers.go internal/migrationimport/customers_csv.go internal/migrationimport/customers_test.go internal/httpapi/imports.go internal/httpapi/imports_test.go => exit 0
+git diff --check => exit 0
+go vet ./internal/migrationimport ./internal/httpapi => exit 0
+git add [five paths listed below] => exit 0
+git commit -m fix(import): negotiate customer required-field preview metadata => exit 0
+NOT_RUN: all runtime tests, PG, browser, GitHub CI, mutation RED/GREEN, independent review; no push
+scope: Go backend supports closed customer-only row_errors=field-v1 and copies 200/409 preview rows; absent capability omits metadata. Domain first-defect order retained. Persistence/receipt/CSV/idempotency code unchanged.
+remaining: BFF safe projection and UI opt-in are separate blocked cards; author cannot be sole acceptance reviewer.
+file_sha256:
+da16de3cde48ac43a993c64069a8679d1c1cc8e261748ad04d0c360f3258ffae  internal/httpapi/imports.go
+a6642d66bd6ebf70e8c4003827a6f268f2f64aa183787d228e342381b683fb38  internal/httpapi/imports_test.go
+8a7dffd749e21d9ac10b8572ff7516823a7528b652c19fdaac9f32693bb3207b  internal/migrationimport/customers.go
+7b4eccc4d650fe97d58becb95b0bcf7cdaaa82075f1fb4f73323aca324465d71  internal/migrationimport/customers_csv.go
+808c7a731ce57210b15962046d22bf6d0e1adb21563d484179a775bb43b1725d  internal/migrationimport/customers_test.go

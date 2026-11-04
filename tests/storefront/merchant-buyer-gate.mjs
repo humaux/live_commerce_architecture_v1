@@ -125,24 +125,23 @@ try {
   // 0094 (merchant-tools, storefront-v2 G1): the sign-in landing is the dashboard and the product ledger (Add product, SKU rows, purchase entry) moved to /[locale]/inventory.
   await expect(merchant.getByTestId("dashboard-page")).toBeVisible();
   await merchant.goto(`${adminOrigin}/en/inventory`);
-  // stop-bleed D01: "Add product" on the inventory page is a link to the full editor now (no inline quick-add panel)
-  await expect(merchant.getByRole("link", {name: "Add product", exact: true})).toBeVisible();
+  // Signed C6: Back to products leads to the existing New product editor; the shared helper clicks both controls.
+  await expect(merchant.getByRole("link", {name: "Back to products", exact: true})).toBeVisible();
   assert(sawIssuer, "real signed MOCK IdP browser redirect required");
   const name = `Joint browser product ${Date.now()}`, code = `JOINT-${Date.now()}`;
   // the product and its first SKU go through the product editor, the only creation UI (price typed in major units: 123.45 = 12345 minor)
   const {product, sku} = await createProductInEditor(merchant, {adminOrigin, store: process.env.LC_JOINT_STORE, name, description: "Synthetic merchant-created joint acceptance product", code, price: "123.45"});
   assert.equal(sku.price_minor, 12345);
   // back on the stock ledger: the new product has zero balance, and its purchase entry is the buyer URL
-  const ledgerRow = await selectLedgerRow(merchant, {adminOrigin, code});
-  await expect(ledgerRow.locator(".available-value")).toHaveText("0");
+  const ledgerBalance = await selectLedgerRow(merchant, {adminOrigin, code});
+  await expect(ledgerBalance).toHaveText("0");
   await expect(merchant.getByTestId("purchase-entry").locator("input")).toHaveValue(`${buyerOrigin}/en/products/${product.id}`);
   pass("signed MOCK IdP and actual merchant product/SKU saves returned real scoped receipts");
   const afterSaves = await control("facts");
   const locales = ["en", "zh-CN", "zh-TW"], urls = {};
   for (const locale of locales) {
     if (locale !== "en") {
-      await merchant.goto(`${adminOrigin}/${locale}/inventory`);
-      await merchant.getByRole("button", {name, exact: true}).click();
+      await selectLedgerRow(merchant, {adminOrigin, locale, code});
     }
     const input = merchant.getByTestId("purchase-entry").locator("input");
     await expect(input).toHaveValue(`${buyerOrigin}/${locale}/products/${product.id}`);
@@ -158,8 +157,7 @@ try {
   }
   assert.deepEqual(await control("facts"), afterSaves);
   pass("all three configured locale URLs serve actual Next documents with zero crawler effects");
-  await merchant.goto(`${adminOrigin}/en/inventory`);
-  await merchant.getByRole("button", {name, exact: true}).click();
+  await selectLedgerRow(merchant, {adminOrigin, code});
   await expect(merchant.getByTestId("purchase-entry").locator("input")).toHaveValue(urls.en);
   const buyer = await context.newPage();
   for (const locale of locales) {
@@ -222,8 +220,7 @@ try {
   await expect(buyer.getByTestId("store-closed")).toBeVisible();
   await expect(buyer.getByTestId("product-buy")).toHaveCount(0);
   assert.equal((await buyer.request.get(buyer.url())).status(), 404);
-  await merchant.goto(`${adminOrigin}/en/inventory`);
-  await merchant.getByRole("button", {name, exact: true}).click();
+  await selectLedgerRow(merchant, {adminOrigin, code});
   await expect(merchant.getByTestId("purchase-entry").getByRole("status")).toHaveText("No verified, published storefront address is available.");
   await expect(merchant.getByTestId("purchase-entry").locator("input")).toHaveCount(0);
   await expect(merchant.getByRole("button", {name: "Open purchase page", exact: true})).toHaveCount(0);

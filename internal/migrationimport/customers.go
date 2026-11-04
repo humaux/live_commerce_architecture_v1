@@ -36,6 +36,7 @@ type PreviewRow struct {
 	ExternalID     string `json:"external_id"`
 	Outcome        string `json:"outcome"` // created | updated | failed
 	Code           string `json:"code,omitempty"`
+	ErrorField     string `json:"error_field,omitempty"` // preview-only; HTTP exposes it only for row_errors=field-v1
 	ConsentIgnored bool   `json:"consent_ignored,omitempty"`
 }
 
@@ -293,7 +294,11 @@ func buildPreview(digest string, p parsedCustomers) CustomerPreview {
 		if r.code == "erased" {
 			out.ErasedRows++
 		}
-		out.Rows = append(out.Rows, PreviewRow{Row: r.n, ExternalID: r.externalID, Outcome: r.outcome, Code: r.code, ConsentIgnored: r.consentIgnored})
+		row := PreviewRow{Row: r.n, ExternalID: r.externalID, Outcome: r.outcome, Code: r.code, ConsentIgnored: r.consentIgnored}
+		if r.outcome == outcomeFailed && r.code == "required" && (r.errorField == fieldExternalID || r.errorField == fieldName) {
+			row.ErrorField = r.errorField
+		}
+		out.Rows = append(out.Rows, row)
 	}
 	return out
 }
