@@ -1,7 +1,7 @@
 // Purpose: Owns studio claim controls, source binding and one-time cart-link presentation.
 // Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/settings-client, @/lib/studio-client, @/lib/studio-model, @/lib/client, @/lib/claims-client, @/lib/claim-source-model, @/lib/claims-request, @/lib/claims-model, @/lib/catalog-v2-model, @/lib/orders-model, @/lib/claims-copy, @/lib/studio-copy, @/lib/meta-connect-copy, @/lib/meta-connect-client, @/lib/orders-client, @/lib/meta-page-source, ./WorkspaceFrame, ./AdminPageHeader, ./claims.css, ./live-sessions/{claim-fields,SessionTasks,SessionProducts,session-tasks.module.css}
 // Used by: apps/admin/app/[locale]/studio/claims/page.tsx
-// Invariants: Go owns matching, source eligibility and versions; private links remain memory-only.
+// Invariants: Go owns matching, source eligibility and versions; private links remain memory-only; a forbidden/not-found read drops held facts and nothing renders or writes until status is ready.
 "use client";
 import { Field, sourceFormOf } from "./live-sessions/claim-fields";
 import { useSessionTask } from "./live-sessions/SessionTasks";
@@ -166,7 +166,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
       if (current !== epoch.current || abort.signal.aborted) return false;
       const code = codeOf(error);
       if (code === "signed-out") signOut();
-      else setStatus(code);
+      else { if (code === "forbidden" || code === "not-found") setFacts(null); setStatus(code); } // #383: a refused read keeps no stale facts
       return false;
     }
   }, [initialError, storeID, scene, signOut, locale]);
@@ -287,7 +287,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
   const activeOffers = board?.offers.filter((offer) => offer.active) ?? [];
   const keywordForPrompt = activeOffers.some((offer) => offer.keyword === promptKeyword) ? promptKeyword : activeOffers[0]?.keyword ?? "";
   const prompt = keywordForPrompt && claimWindow ? hostPrompt(promptLanguage, claimWindow.match_mode, keywordForPrompt) : "";
-  const blocked = !canManage || !!busy || pending.current !== null;
+  const blocked = status !== "ready" || !canManage || !!busy || pending.current !== null;
 
   const source = facts?.source ?? null;
   const sourceSaved = sourceFormOf(source, locale);
@@ -465,7 +465,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
 
   if (task === "products" || task.startsWith("stock-")) return <WorkspaceFrame locale={locale} storeName={store?.name ?? shared.noStore} active="live"><div data-testid="merchant-claims"><SessionProducts key={`${storeID}:${scene}`} locale={locale} store={storeID} scene={scene} /></div></WorkspaceFrame>;
   const keywordEntries = [...(facts?.library ?? []), ...(board?.offers ?? []).filter(offer => !facts?.library?.some(entry => entry.sku_id === offer.sku_id)).map(offer => ({ sku_id: offer.sku_id, product_name: offer.product_name, keyword: "", version: 0 }))];
-  const keywordEntry = keywordEntries.find(entry => entry.sku_id === keywordSKU);
+  const keywordEntry = status === "ready" && facts ? keywordEntries.find(entry => entry.sku_id === keywordSKU) : undefined;
   if (task === "library") return <WorkspaceFrame locale={locale} storeName={store?.name ?? shared.noStore} active="live"><section className={taskStyle.page} data-testid="merchant-claims">
     <h1>{keywordEntry ? p.keyword : p.library}</h1>
     {keywordEntry ? <div className={taskStyle.card}><h2>{keywordEntry.product_name}</h2><p>{p.currentKeyword}</p><p>{keywordEntry.keyword || "—"}</p>
@@ -474,7 +474,7 @@ export function StudioClaims({ locale, store, scene, initialError }: {
       <div className={taskStyle.footer}><button type="button" disabled={blocked || !/^[A-Za-z0-9０-９Ａ-Ｚａ-ｚ]{1,16}$/.test(keywordDraft)} onClick={() => setKeywordPreview("save")}>{p.preview}</button><button type="button" disabled={blocked || keywordEntry.version === 0} onClick={() => setKeywordPreview("remove")}>{p.remove}</button></div>
       {keywordPreview && <div className={taskStyle.note}><p>{keywordPreview === "save" ? keywordDraft : p.keywordRemoved}</p><button className="primary" type="button" disabled={blocked} onClick={() => { const entry = keywordEntry; const keyword = keywordPreview === "remove" ? "" : keywordDraft; void perform("library", async (key, current) => { await setLibraryKeyword(storeID, scene, entry.sku_id, { keyword, expected_version: entry.version }, key, current); setKeywordSKU(""); setKeywordPreview(null); }); }}>{p.save}</button></div>}
       {alert("library")}<button type="button" disabled={!!busy || pending.current !== null} onClick={() => { setKeywordSKU(""); setKeywordPreview(null); }}>{p.libraryBack}</button>
-    </div> : keywordEntries.map(entry => <article className={taskStyle.card} key={entry.sku_id}><h2>{entry.product_name}</h2><p>{entry.keyword || "—"}</p><button type="button" disabled={blocked} onClick={() => { setKeywordSKU(entry.sku_id); setKeywordDraft(entry.keyword); setKeywordPreview(null); }}>{p.keyword}</button></article>)}
+    </div> : status !== "ready" || !facts ? <p className="claims-status" role={status === "loading" ? "status" : "alert"}>{statusText(status === "ready" ? "loading" : status)}</p> : keywordEntries.map(entry => <article className={taskStyle.card} key={entry.sku_id}><h2>{entry.product_name}</h2><p>{entry.keyword || "—"}</p><button type="button" disabled={blocked} onClick={() => { setKeywordSKU(entry.sku_id); setKeywordDraft(entry.keyword); setKeywordPreview(null); }}>{p.keyword}</button></article>)}
     {!keywordEntry && <button type="button" onClick={() => { window.location.hash = "preflight"; }}>{p.preflight}</button>}
   </section></WorkspaceFrame>;
 
