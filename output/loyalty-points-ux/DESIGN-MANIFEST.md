@@ -8,9 +8,10 @@
 - Frames: **77** (38 desktop 1440×900 + 39 mobile 390×844); exports in `figma/<node-id>.png` (git-ignored by `output/**/figma/`; hashes in `PNG-SHA256SUMS.txt`, largest file < 1 MiB, ADR-20261031)
 - Generator: `figma-src/lib.js` + `figma-src/screens.js` (idempotent: re-running a key replaces the frame with the same name), QA probe `figma-src/qa.js`
 
-> **2026-11-05 update in progress (integrator rulings on U1–U7, contract #549 head `e0d3e9686`): BLOCKED.**
-> The Figma bridge lost the plugin connection (`figma_status` → `documents: []`) during the first rebuild batch (C1–C7). That batch's outcome is unknown and was not replayed. Done before the disconnect: A11 `1554:79479` / `1554:79554` (no `customers:points`: no 會員與積分 card) and A12 `1554:79596` / `1554:79683` (姓名 prefilled from the member, editable).
-> The generator (`figma-src/screens.js`) already contains all ruling changes. Still to run once the owner re-runs Plugins > Development > Fleet Bridge · Local: `C1–C17, D1–D7, E1, E2, E4, E5, E6` (this also deletes the 「扣回本單積分 · 超過贈送」 frames). Then re-export, re-run `qa.js`, and refresh the frame table below. **Until then the C, D and E rows below are stale.**
+> **2026-11-05 update in progress (integrator rulings on U1–U7, contract #549 head `e0d3e9686`): BLOCKED, second plugin disconnect.**
+> Built so far: A11 `1554:79479` / `1554:79554`, A12 `1554:79596` / `1554:79683`, and rebuilt C1 `1556:80238` / `1556:80351`, C2 `1556:80406` / `1556:80486`, C3 `1556:80531` / `1556:80666`, C4 `1556:80743` / `1556:80868`, C5 `1556:80937` / `1556:81006`, C6 `1556:81040` / `1556:81108`.
+> Disconnect 1 hit batch C1–C7; disconnect 2 hit batch C7+C8 (connection `7f43f326…`, `Figma disconnected. Operation was not replayed`). Both batches contained C7, so C7 is a suspect. The C7/C8 outcome is unknown; no write was replayed.
+> Still to run (≤ 4 roots per call, start with C8 alone, then C7 alone): `C7–C17, D1–D7, E1, E2, E4, E5, E6`. Then export, run `qa.js` and refresh the table below. **Until then the C7+, D and E rows below are stale, and the ids of C1–C6 in the table are superseded by the ones above.**
 
 ## Templates and component reuse
 

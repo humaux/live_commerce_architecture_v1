@@ -131,6 +131,7 @@ S.C16={g:2,c:15,n:'會員 · 匯出資料 · 失敗',...CL,b:async sh=>exportDlg
 S.C17={g:2,c:16,n:'會員 · 編輯資料 · 已被他人修改',...CL,b:async sh=>{await detail(sh);const d=OVERLAY(sh,'編輯會員資料');add(d,T('這位會員剛被其他人修改，你的變更沒有儲存。請重新讀取最新資料後再修改。',{c:'color/danger',name:'Inline error'}),true);await memberForm(sh,d,{name:'王小美',contact:'LINE：mei0412',note:'尺寸 M'});await ACTIONS(sh,d,[['pri','重新讀取'],['sec','取消']]);PLACE(sh,d);}};
 const DEL=['DESIGN · Admin Desktop · 手工單 · 扣回本單積分 · 超過贈送','DESIGN · Admin Mobile · 手工單 · 扣回本單積分 · 超過贈送'];
 for(const nm of DEL)for(const o of SEC.children.filter(n=>n.name===nm))o.remove();
+for(const o of SEC.children.filter(n=>n.name.startsWith('Action ·')||n.name.startsWith('Tag /')))o.remove(); // strays left by an interrupted batch
 // ---------- runner ----------
 const res=[];
 for(const k of KEYS){const s=S[k];const x=s.c*2000,y=s.g*1100;
