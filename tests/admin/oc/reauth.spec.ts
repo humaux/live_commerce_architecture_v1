@@ -5,7 +5,7 @@
 // Depends on: the harness env (LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_INSPECT_ORIGIN, LC_BROWSER_EVIDENCE_DIR) and its inspection
 //   listener: GET /mail?to=, POST /age?email= (session authenticated 2 h ago).
 // Used by: tests/foundation/browser_oc_test.go only. Written from the contract and the card, driven by data-testid="reauth-dialog"
-//   (with data-step), the existing Team page hooks (team-invite-*) and the sign-up form's type/autocomplete attributes.
+//   (with data-step), the signed Team layout (invite entry, team-invite-*, role radios) and the sign-up form's type/autocomplete attributes.
 // Asserts: a stale session gets 403 reauth_required (never 503 retry_later) on every guarded BFF route file (team, catch-all stores
 //   proxy, reports) and stays signed in; the dialog opens instead of a sign-out; password -> emailed code -> complete replays the
 //   original request exactly once with the same Idempotency-Key and body; wrong password = 403 reauth_failed and still signed in;
@@ -43,6 +43,14 @@ const copy: Record<Locale, { title: string; oidc: string; useOidc: string; usePa
   "zh-CN": { title: "确认是你本人", oidc: "通过身份提供方登录", useOidc: "改用身份提供方", usePassword: "改用密码", mailUnavailable: "暂时无法发送邮件", oidcHint: "你也可以改用身份提供方确认。" },
   en: { title: "Confirm it's you", oidc: "Sign in with identity provider", useOidc: "Use identity provider instead", usePassword: "Use password instead", mailUnavailable: "We cannot send email right now", oidcHint: "You can confirm with your identity provider instead." },
 };
+
+// Signed Team layout (packages/i18n/src/team-parity.ts): an entry button opens the invite form; SENT shows a single 回到員工 action.
+const teamUi: Record<Locale, { invite: string; back: string }> = {
+  "zh-TW": { invite: "邀請員工", back: "回到員工" },
+  "zh-CN": { invite: "邀请员工", back: "返回员工页" },
+  en: { invite: "Invite staff", back: "Back to staff" },
+};
+const teamButton = (page: Page, name: string) => page.getByRole("button", { name, exact: true });
 
 // ---- sentinels, mailbox, helpers --------------------------------------------------------------------------------------------------
 const remember = (value: string) => { appendFileSync(join(evidenceDir!, "canaries.txt"), value + "\n"); return value; };
@@ -227,10 +235,11 @@ async function inviteThroughDialog(page: Page, locale: Locale, store: string, ow
   const sent: { body: string | null }[] = [];
   page.on("request", (r) => { if (new URL(r.url()).pathname === "/api/team/invite") sent.push({ body: r.postData() }); });
   await page.goto(`/${locale}/team?store=${store}`);
+  await teamButton(page, teamUi[locale].invite).click();
   await expect(page.getByTestId("team-invite-email")).toBeVisible();
   await age(owner);
   await page.getByTestId("team-invite-email").fill(invitee);
-  await page.getByTestId("team-invite-role").selectOption("viewer");
+  await page.locator('input[type="radio"][name="team-role"][value="viewer"]').check();
   await page.getByTestId("team-invite-send").click();
   await expect(dialog(page)).toBeVisible();
   await expect(modal(page)).toContainText(copy[locale].title);
@@ -239,10 +248,13 @@ async function inviteThroughDialog(page: Page, locale: Locale, store: string, ow
   await signedIn(page);
   return { invitee, sent, finish: async () => {
     await passwordReauth(page, owner, password, mailIndex);
-    await expect(page.getByTestId("team-invites")).toContainText(invitee);
+    await expect(page.getByTestId("team-notice")).toContainText(invitee);
     expect(sent, "the refused invite is replayed exactly once").toHaveLength(2);
     expect(sent[1].body, "the replay sends the original bytes").toBe(sent[0].body);
-    await expect(page.getByTestId("team-invite-send"), "focus returns to the control that started the request").toBeFocused();
+    // Send unmounts on the SENT screen (invite-sent 1468:75217 / 1468:75260); focus moves to that frame's only action.
+    await expect(teamButton(page, teamUi[locale].back), "focus lands on the action of the screen the replay opened").toBeFocused();
+    await teamButton(page, teamUi[locale].back).click();
+    await expect(page.getByTestId("team-invites")).toContainText(invitee);
   } };
 }
 

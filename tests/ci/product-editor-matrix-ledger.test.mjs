@@ -278,7 +278,7 @@ function assertLocatorIdentity({ identity, locale, actions: operated, reads, met
       if ((same && direct[pendingOutcome.method]?.includes(event.matcher)) || effect) pendingOutcome = undefined;
     }
     assert.ok(!pendingOutcome && events.some((event) => event.type === "observed"), "missing outcome assertion before the observed return");
-    const grammar = { fill: ["fill"], "fill cancel": ["fill"], check: ["check"], select: ["selectOption"], "select select": ["selectOption", "selectOption"], "fill Enter": ["fill", "press"], Escape: ["press"],
+    const grammar = { fill: ["fill"], "fill step amount": ["fill"], "fill cancel": ["fill"], check: ["check"], select: ["selectOption"], "select after all scope": ["selectOption"], "select select": ["selectOption", "selectOption"], "fill Enter": ["fill", "press"], Escape: ["press"],
       "check uncheck": ["check", "uncheck"], "uncheck check": ["uncheck", "check"], uncheck: ["uncheck"], accept: ["accept"] };
     let expectedMethods = grammar[declaration.action];
     if (declaration.action.includes("click")) expectedMethods = ["click"];
@@ -519,7 +519,7 @@ test("shared table has only complete meaningful unique declarations", () => {
           else assert.ok(typeof segment[1] === "string" && segment[1].length > 0);
         }
         assert.ok(effect.matchers.length > 0 && effect.matchers.every((matcher) =>
-          ["toHaveCount", "toContainText", "toBeEnabled", "toBeVisible", "toHaveAttribute"].includes(matcher)));
+          ["toHaveCount", "toContainText", "toBeEnabled", "toBeVisible", "toHaveAttribute", "toHaveValue"].includes(matcher)));
         if (effect.attribute !== undefined) {
           assert.ok(effect.matchers.every((matcher) => matcher === "toHaveAttribute"));
           assert.equal(typeof effect.attribute, "string");
@@ -587,4 +587,64 @@ test("in-flight action cannot masquerade as complete or admit a concurrent dupli
   await running;
   assert.equal(ledger.length, cases.length);
   recorder.assertComplete();
+});
+
+// PR473: real-source mutations preserve exact button outcomes and create/edit separation.
+for (const [name, before, after] of [
+  ["create code has no click", 'await page.getByTestId("bulk-field-code").click();', ''],
+  ["edit code has no disabled observation", 'await expect(page.getByTestId("bulk-field-code")).toBeDisabled();', ''],
+  ["edit disabled observation names a different control", 'await expect(page.getByTestId("bulk-field-code")).toBeDisabled();', 'await expect(page.getByTestId("bulk-field-price")).toBeDisabled();'],
+  ["field click has no canonical pressed assertion", 'await expect(page.getByTestId("bulk-field-code")).toHaveAttribute("aria-pressed", "true");', ''],
+  ["step outcome has wrong value", 'await expect(page.getByTestId("bulk-value")).toHaveValue("20");', 'await expect(page.getByTestId("bulk-value")).toHaveValue("21");'],
+  ["fake PASS cannot replace create code action", 'await page.getByTestId("bulk-field-code").click();', 'ledger.push({ actual: "PASS", observed: "code selected" });'],
+]) test(`PR473 ${name} is RED`, () => {
+  // The edit disabled mutation targets the callback, not an unrelated earlier disabled read.
+  const start = name.startsWith("edit ") ? spec.indexOf('control: "bulk-field-code", action: "verify existing SKU code disabled"') : 0;
+  assert.ok(start >= 0);
+  const tail = spec.slice(start), changed = tail.replace(before, after);
+  assert.notEqual(changed, tail, "mutation must change the real source");
+  assert.ok(uncoveredActions(spec.slice(0, start) + changed).length, name);
+});
+
+// PR473 source-binding regression: mutate only the new read-only callback, so
+// matching assertions elsewhere cannot mask a broken scalar or locator proof.
+function mutateBulkCodeReadback(text, mutate) {
+  const marker = 'await matrixStep({ page: "mobile matrix bulk", control: "bulk-field-code", action: "verify existing SKU code disabled" }, async () => {';
+  const start = text.indexOf(marker), end = text.indexOf('await matrixStep(', start + marker.length);
+  assert.ok(start >= 0 && end > start, "the real read-only bulk-code callback must exist");
+  assert.equal(text.indexOf(marker, start + 1), -1, "read-only mutation anchor must be unique");
+  const original = text.slice(start, end), changed = mutate(original);
+  assert.notEqual(changed, original, "mutation must change the real read-only callback");
+  return text.slice(0, start) + changed + text.slice(end);
+}
+const bulkCodeVisible = 'await expect(page.getByTestId("bulk-field-code")).toBeVisible();';
+const bulkCodeDisabled = 'await expect(page.getByTestId("bulk-field-code")).toBeDisabled();';
+const bulkCodeSnapshot = 'const localWriteStart = writes.length;';
+const bulkCodeZeroWrite = 'expect(writes.length).toBe(localWriteStart);';
+const bulkCanonicalFailure = /canonical expected claim.*missing reached assertion expect\(writes\.length\)\.toBe\(localWriteStart\);/;
+const bulkDisabledFailure = /canonical expected claim.*missing UI matcher\/operand.*bulk-field-code.*toBeDisabled/;
+for (const [name, mutate, diagnostic] of [
+  ["deleted zero-write fact", block => block.replace(bulkCodeZeroWrite, ''), bulkCanonicalFailure],
+  ["changed zero-write counter", block => block.replace(bulkCodeZeroWrite, 'expect(writes.length).toBe(localWriteStart + 1);'), bulkCanonicalFailure],
+  ["literal snapshot", block => block.replace(bulkCodeSnapshot, 'const localWriteStart = 0;'), /canonical expected claim.*binding localWriteStart has the wrong value\/source/],
+  ["shadow collector", block => block.replace(bulkCodeSnapshot, 'const writes: unknown[] = []; ' + bulkCodeSnapshot), /canonical expected claim.*binding writes must use the real preexisting observation collector/],
+  ["deleted disabled proof", block => block.replace(bulkCodeDisabled, ''), bulkDisabledFailure],
+  ["negated disabled proof", block => block.replace(bulkCodeDisabled, bulkCodeDisabled.replace('.toBeDisabled()', '.not.toBeDisabled()')), bulkDisabledFailure],
+  ["wrong disabled target", block => block.replace(bulkCodeDisabled, bulkCodeDisabled.replace('bulk-field-code', 'bulk-field-price')), bulkDisabledFailure],
+  ["changed saved code", block => block.replace('`${mobileMatrixTag}-A${localeIndex}-0`', '`${mobileMatrixTag}-A${localeIndex}-99`'), /canonical expected claim.*missing UI matcher\/operand.*matrix-row-0.*matrix-code-0.*toHaveValue/],
+  ["wrong saved code row", block => block.replace('bulkWhite.getByTestId("matrix-code-0")', 'bulkBlack.getByTestId("matrix-code-0")'), /canonical expected claim.*missing UI matcher\/operand.*matrix-row-0.*matrix-code-0.*toHaveValue/],
+  ["unused closure DOM donor", block => block.replace(bulkCodeVisible, `const unusedBulkCodeProof = async () => { ${bulkCodeVisible} ${bulkCodeDisabled} };`).replace('\n          ' + bulkCodeDisabled, ''), /missing declared DOM read.*bulk-field-code/],
+  ["unknown mandatory locator factory", block => block.replace(bulkCodeDisabled, 'await expect(unknownReadbackLocator()).toBeDisabled();'), /unsupported source binding: unknown locator factory: unknownReadbackLocator/],
+  ["mutable mandatory locator", block => block.replace(bulkCodeSnapshot, bulkCodeSnapshot + ' let codeLocator = page.getByTestId("bulk-field-code");').replace(bulkCodeDisabled, 'await expect(codeLocator).toBeDisabled();'), /unsupported source binding: mutable source locator\/data binding is not supported/],
+  ["shadowed mandatory locator factory", block => block.replace(bulkCodeDisabled, '{ const page = shadowReadbackLocator(); await expect(page.getByTestId("bulk-field-code")).toBeDisabled(); }'), /unsupported source binding: unknown locator factory: shadowReadbackLocator/],
+]) test(`read-only bulk-code ${name} is rejected for its precise reason`, () => {
+  const failures = uncoveredActions(mutateBulkCodeReadback(spec, mutate));
+  assert.ok(failures.some(line => diagnostic.test(line)), `${name}: expected ${diagnostic}; actual ${failures.join("\n")}`);
+});
+test("removing a checked-state negation still reaches its exact canonical rejection", () => {
+  const before = 'await expect(selected).not.toBeChecked();';
+  const changed = spec.replace(before, 'await expect(selected).toBeChecked();');
+  assert.notEqual(changed, spec, "negative-state mutation must change the real source");
+  const failures = uncoveredActions(changed);
+  assert.ok(failures.some(line => /canonical expected claim.*missing UI matcher\/operand.*matrix-select-0.*toBeChecked.*negated/.test(line)), failures.join("\n"));
 });

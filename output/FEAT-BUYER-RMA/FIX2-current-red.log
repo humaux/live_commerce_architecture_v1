@@ -1,0 +1,6 @@
+plan	Contract drift (Go routes x contracts x BFF)	2026-10-30T17:23:43.0000429Z ERROR (dispatcher freeze) UNRESOLVED PUT /v1/buyer/orders/{}/bank-transfer/proof internal/buyerhttp/routes.go:71 route-table dispatcher changed or unpinned: buyerhttp.Routes aff6d24766226f455bea9be08b2de8abad3643a71951ad05ede717c28c127c05 want bfbb4441b77afb0b48f0c3bd0c326b75e276a528fa54e588a645cbe0f814c43a; review the dispatcher and update contracts/route-table-dispatchers.json
+foundation	Package docs and gate map are current	2026-10-30T17:17:44.0511187Z --- FAIL: TestGoRepositoryInventory (0.20s)
+foundation	Package docs and gate map are current	2026-10-30T17:17:44.0513173Z     go_extract_test.go:283: real inventory routes=293 unresolved=78 notes=95
+foundation	Package docs and gate map are current	2026-10-30T17:17:44.0513600Z     go_extract_test.go:320: internal/buyerhttp/routes.go rows=50 want46
+foundation	Package docs and gate map are current	2026-10-30T17:17:44.0514291Z FAIL	livecommerce/scripts/dev/contractdrift	155.273s
+required	Run echo "plan=$PLAN build=$BUILD (expected $BUILD_EXPECTED) gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED) receipts=$RECEIPTS"	2026-10-30T17:24:31.2892237Z plan=failure build=skipped (expected false) gate=skipped aggregate=skipped (expected false) deploy=skipped (expected false) receipts=skipped

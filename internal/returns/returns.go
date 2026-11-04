@@ -42,6 +42,7 @@ var ErrUnavailable = errors.New("returns unavailable")
 var codes = map[string]int{
 	"not_shipped": 409, "not_returnable": 409, "version_changed": 409, "invalid_state": 409, "not_restockable": 409, "has_returns": 409,
 	"already_cancelled": 409, "state_changed": 409, "payment_in_flight": 409, "refund_first": 409, "already_shipped": 409,
+	"window_closed": 409, "request_open": 409, "invalid_request": 422,
 	"cvs_attempt_in_flight": 409, "payment_review_open": 409,
 	"retry_later":  503, // the order joined a parcel group while the cancel waited for its lock: retry (locks group -> order)
 	"unknown_line": 422, "ambiguous_line": 422, "exceeds_shipped": 422, "exceeds_registered": 422, "invalid_quantities": 422,

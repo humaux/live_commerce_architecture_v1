@@ -1,5 +1,5 @@
 // Purpose: signed MOCK comment -> direct claim checkout -> payment/shipment/refund end-to-end regression.
-// Depends on: production admin/storefront, real PG, fake Meta/Stripe and owned worker fixtures.
+// Depends on: production admin/storefront, real PG, fake Meta/Stripe, owned worker fixtures and ../admin/parity-live-sessions.
 // Used by: --browser-e2e TestBrowserE2EDealLoop; no LIVE money or messages.
 // T12 (docs/delivery/units/t12-e2e.md): the core deal loop in one real-browser chain. Started only by
 // tests/foundation/browser_e2e_test.go (TestBrowserE2EDealLoop), which owns every process (admin + storefront production
@@ -14,6 +14,7 @@
 // BFF routes exercised: /api/onboarding/initial-store, /api/stores/{store}/live-sessions, .../claim-source, .../claim-window
 // and offers, .../orders, .../orders/{id}/shipment, .../orders/{id}/refunds (admin); /api/buyer/session, cart, quotes,
 // destinations, orders, orders/{id}/payment/* (storefront). Go endpoints sit behind them.
+import { createClaimSession } from "../admin/parity-live-sessions";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
@@ -137,18 +138,7 @@ test("T12 deal loop: wizard store, Studio, claim source, signed Meta comment, pr
   pass("merchant signs in (signed MOCK IdP), the wizard creates the store through create_initial_store; Go confirms the 0065 grants and provisions catalog, stock, pricing, delivery, Stripe, Meta and the buyer origin for THAT store");
 
   // ------------------------------------------------------------------------------------------------ 2. Studio: scene, window, offer, source
-  await merchant.goto(`${admin}/en/studio?store=${store}`);
-  await expect(merchant.getByTestId("merchant-studio")).toBeVisible();
-  await merchant.getByRole("button", { name: /New scene/ }).click();
-  await merchant.getByLabel("Scene name").fill("T12 deal loop scene");
-  await merchant.getByRole("button", { name: "Create draft" }).click();
-  await merchant.waitForURL(/scene=[0-9a-f-]{36}/);
-  const scene = new URL(merchant.url()).searchParams.get("scene") as string;
-  // R1 deploy shape (ruling G2): planning-only Studio, no rehearsal column or controls.
-  await expect(merchant.locator(".studio-surface.studio-planning-only")).toBeVisible();
-  await expect(merchant.getByRole("button", { name: /MOCK rehearsal|Request stop/ })).toHaveCount(0);
-  await merchant.getByTestId("studio-open-claims").click();
-  await expect(merchant.getByTestId("merchant-claims")).toBeVisible();
+  const scene = await createClaimSession(merchant, admin, store, "en", "T12 deal loop scene");
   await merchant.getByRole("button", { name: "Open claim window" }).click();
   await expect(merchant.getByTestId("claims-window-state")).toHaveText("Open");
   const offerForm = merchant.locator(".claims-offer-form");

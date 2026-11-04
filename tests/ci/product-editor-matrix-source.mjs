@@ -105,15 +105,6 @@ export function locatorIdentities(source, start, end, { specPath, actions, produ
       }
     }
   });
-  walk(source, (node) => {
-    if (!inRegion(node) || !call(node, "expect")) return;
-    const step = parentStep(node), receiver = node.arguments[0];
-    if (step && receiver && (!step.operations.length || text(receiver) === "field.control")) {
-      // Read-only declarations have no operated locator; bind their actual DOM reads.
-      reads.set(node, receiver);
-      need(receiver);
-    }
-  });
   // Only a direct awaited DOM/Page matcher in this exact callback is an outcome.
   // Branch-only assertions, unused closures and nested steps cannot lend proof.
   const uiMatchers = new Set(["toHaveValue", "toHaveText", "toContainText", "toHaveCount", "toBeChecked",
@@ -128,9 +119,18 @@ export function locatorIdentities(source, start, end, { specPath, actions, produ
     let expectation = matcher.expression.expression;
     if (ts.isPropertyAccessExpression(expectation) && expectation.name.text === "not") expectation = expectation.expression;
     if (!call(expectation, "expect") || !expectation.arguments[0]) return;
-    const receiver = expectation.arguments[0], previous = new Set(needed);
+    const receiver = expectation.arguments[0];
+    const requiredRead = !steps.get(callbackOwner(node)).operations.length || text(receiver) === "field.control";
+    if (requiredRead) {
+      // Only this callback's awaited UI matcher donates a DOM read. Scalar facts
+      // stay in canonicalClaims; a mandatory locator must fail closed before the
+      // supplemental-assertion fallback can discard an unresolved dependency.
+      need(receiver);
+      reads.set(expectation, receiver);
+    }
+    const previous = new Set(needed);
     let resolved = true;
-    try { need(receiver); for (const argument of matcher.arguments) need(argument); }
+    try { if (!requiredRead) need(receiver); for (const argument of matcher.arguments) need(argument); }
     catch {
       // A supplemental assertion may use an awaited SKU ID outside the pure slice.
       // It cannot certify an action. Keep the known dependencies uncontaminated.

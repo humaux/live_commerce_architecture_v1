@@ -1,0 +1,14 @@
+Evidence: E1 static only, 2026-11-01. No local tests or servers.
+tsc --project apps/admin/tsconfig.json --noEmit --incremental false: exit 0
+node --check tests/admin/parity-team.mjs: exit 0
+python3 scripts/check_packet.py: exit 0 (packet structure only)
+bash scripts/dev/depmap.sh: exit 0, no diff
+node scripts/dev/derive-browser-ownership.mjs: exit 0
+node scripts/dev/derive-browser-ownership.mjs --check: exit 0
+
+SHA-256:
+6c54520fd9bef98a28dde6b09b61d0aff57a789f7ffce7bb01599503aa4db141  apps/admin/components/Team.tsx
+c0d9a5dc27f64c10ebc7f6f0bb19a8024c792fa6980e3f8f603518ff282fedfa  apps/admin/components/team.css
+87f902d9042fbcccca26fb1fb94ad76ea78258114c98c4df6a4b7d1aa91905c6  apps/admin/lib/team-copy.ts
+47c01e3ae1f2e02a46547ac2684e794e6becec5d013bb4493baed631f62f3c11  packages/i18n/src/team-parity.ts
+7ff876032ca732452330e152eed4513d45cc7b504eb4920ef9656d7e5e8d18c6  tests/admin/parity-team.mjs
