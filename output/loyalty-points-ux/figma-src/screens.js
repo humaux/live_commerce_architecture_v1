@@ -1,6 +1,6 @@
 const MEMBERS=[['王小美','LINE：mei0412（週三直播常客，喜歡帆布系列）','120 點','11/05 14:20'],['陳大明','IG：@daming.chen','45 點','11/02 20:11'],['張雅婷','LINE：yating_tw · 只收超商取貨','300 點','10/30 21:05'],['黃志豪','電話：0900-000-123','0 點','10/29 09:40'],['林佳蓉','—','0 點','—']];
 const LEDGER=[['11/05 14:20','+50','本單贈送','#M1031','—','小安'],['11/03 10:05','−30','手動調整','—','兌換小禮物（現場）','小安'],['10/28 19:40','+100','手動調整','—','舊會員卡點數轉入','店長 Amy']];
-const TONE={'本單贈送':'success','手動調整':'neutral','沖正':'warning'};
+const TONE={'本單贈送':'success','手動調整':'neutral'};
 // ---------- manual order (A) ----------
 function recipient(sh){const c=CARD(sh,'Recipient',sh.D?12:8);
  if(sh.D){add(c,FIELD('姓名','測試買家'),true);add(c,FIELD('電話','0900000000'),true);}
@@ -50,7 +50,7 @@ S.B8={g:1,c:7,n:'會員 · 新增會員 · 名稱未填',...BL,b:async sh=>{awai
 const CL={cr:'顧客 / 會員 / 王小美',t:'王小美',nav:'members'};
 async function header(sh,o={}){const c=CARD(sh,'Member header',sh.D?16:8);const bal=AL('v',{name:'Balance',gap:0});add(bal,T('積分餘額',{size:13,c:'color/muted'}),true);add(bal,T(o.bal||'120 點',{size:28,w:'Medium',name:'Balance value'}),true);add(bal,T('最後異動 '+(o.last||'11/05 14:20'),{size:13,c:'color/muted'}),true);
  if(sh.D){const acts=AL('h',{name:'Header actions',gap:8});acts.appendChild(await BTN('pri','調整積分',{w:160}));acts.appendChild(await BTN('sec','編輯資料',{w:160}));SPLIT(c,bal,acts,{align:'MIN'});bal.layoutGrow=1;}else add(c,bal,true);
- add(c,T('聯絡備註：'+(o.contact||'LINE：mei0412（週三直播常客，喜歡帆布系列）'),{size:14,name:'Contact note'}),true);add(c,T('備註：'+(o.note||'尺寸 M，偏好帆布系列'),{size:14,c:'color/muted',name:'Member note'}),true);return c;}
+ add(c,T('聯絡備註：'+(o.contact||'LINE：mei0412（週三直播常客，喜歡帆布系列）'),{size:14,name:'Contact note'}),true);add(c,T('備註：'+(o.note||'尺寸 M，偏好帆布系列'),{size:14,c:'color/muted',name:'Member note'}),true);if(!o.noPrivacy){const pl=AL('h',{name:'Privacy actions',gap:24});add(c,pl,true);pl.appendChild(T('匯出資料',{c:'color/teal',w:'Medium',u:true,name:'Link · 匯出資料'}));pl.appendChild(T('刪除資料',{c:'color/danger',w:'Medium',u:true,name:'Link · 刪除資料'}));}return c;}
 const LDW=[110,70,100,80,0,90];
 async function ledger(sh,rows,o={}){const c=CARD(sh,'Points ledger',sh.D?8:4);add(c,T('積分紀錄',{size:16,w:'Medium'}),true);add(c,T('紀錄只能新增，不能修改或刪除；記錯時請用手動調整更正。',{size:13,c:'color/muted'}),true);
  if(!rows.length){add(c,T('尚無積分紀錄。可以用「調整積分」記入第一筆，或在手工單贈送。',{c:'color/muted',name:'Ledger empty'}),true);return c;}
@@ -77,19 +77,21 @@ S.D7={g:3,c:6,n:'會員 · 調整積分 · 未記入',...CL,b:async sh=>{const d
 // ---------- order detail (E) ----------
 const EL={cr:'訂單 / 手工單 / #M1031',t:'訂單 #M1031',nav:'manual'};
 async function orderCard(sh){const c=CARD(sh,'Order facts',8);for(const l of ['帆布袋／原色 ×2 · NT$3,000','測試買家 · 0900000000','合計 NT$4,100 · 待付款'])add(c,T(l),true);}
-async function pointsCard(sh,st){const c=CARD(sh,'Member points',8);const top=AL('h',{gap:8,align:'CENTER'});top.appendChild(T('會員與積分',{size:16,w:'Medium'}));if(st==='reversed')top.appendChild(await TAG('warning','已全數扣回'));add(c,top,true);
+async function pointsCard(sh,st){const c=CARD(sh,'Member points',8);const top=AL('h',{gap:8,align:'CENTER'});top.appendChild(T('會員與積分',{size:16,w:'Medium'}));if(st==='reversed')top.appendChild(await TAG('neutral','已扣回 50 點'));add(c,top,true);
  add(c,T('會員：王小美',{name:'Member'}),true);add(c,T('查看會員紀錄',{c:'color/teal',w:'Medium',u:true,name:'Link · 會員詳情'}),true);
+ add(c,T('本單相關積分紀錄',{size:13,c:'color/muted',name:'Order entries label'}),true);
  add(c,T('本單贈送 +50 點 · 11/05 14:20 · 小安',{c:'color/teal',name:'Award line'}),true);
- if(st==='reversed'){add(c,T('已扣回 −50 點 · 11/05 16:02 · 店長 Amy · 買家退貨',{name:'Reversal line'}),true);add(c,T('可扣回 0 點 · 會員目前餘額 70 點',{c:'color/muted'}),true);}
- else{add(c,T('可扣回 50 點 · 會員目前餘額 120 點',{c:'color/muted'}),true);const r=AL('h',{});add(c,r,true);r.appendChild(await BTN('danger','扣回本單積分',{w:sh.D?200:326}));}}
+ if(st==='reversed'){add(c,T('手動調整 −50 點 · 11/05 16:02 · 店長 Amy · 買家退貨',{name:'Deduct line (manual adjust)'}),true);add(c,T('本單相關合計 0 點 · 會員目前餘額 70 點',{c:'color/muted'}),true);}
+ else add(c,T('會員目前餘額 120 點',{c:'color/muted'}),true);
+ const r=AL('h',{});add(c,r,true);r.appendChild(await BTN('danger','扣回本單積分',{w:sh.D?200:326}));}
 async function orderBase(sh,st){await orderCard(sh);await pointsCard(sh,st);await DOCK(sh,[]);}
 async function revDialog(sh,o){await orderBase(sh);const d=OVERLAY(sh,o.title||'扣回本單積分');return d;}
 S.E1={g:4,c:0,n:'手工單 · 訂單詳情 · 含積分',...EL,b:async sh=>{await orderBase(sh);}};
-S.E2={g:4,c:1,n:'手工單 · 扣回本單積分 · 確認',...EL,b:async sh=>{const d=await revDialog(sh,{});add(d,FIELD('扣回點數','50',{suffix:'點',help:'最多可扣回 50 點（本單贈送 50 點，已扣回 0 點）。'}),true);add(d,FIELD('說明（必填）','買家退貨',{tall:sh.D}),true);add(d,T('王小美的餘額：120 → 70 點',{size:16,w:'Medium',name:'Preview'}),true);add(d,T('送出後會新增一筆「沖正」紀錄，不能修改或刪除。',{size:13,c:'color/muted'}),true);await ACTIONS(sh,d,[['pri','確認扣回'],['sec','取消']]);PLACE(sh,d);}};
-S.E3={g:4,c:2,n:'手工單 · 扣回本單積分 · 超過贈送',...EL,b:async sh=>{const d=await revDialog(sh,{});add(d,FIELD('扣回點數','60',{suffix:'點',err:'不能超過本單可扣回的 50 點。'}),true);add(d,FIELD('說明（必填）','買家退貨',{tall:sh.D}),true);await ACTIONS(sh,d,[['dis','確認扣回'],['sec','取消']]);PLACE(sh,d);}};
-S.E4={g:4,c:3,n:'手工單 · 扣回本單積分 · 餘額不足',...EL,b:async sh=>{const d=await revDialog(sh,{});add(d,FIELD('扣回點數','50',{suffix:'點',err:'王小美目前只剩 20 點，扣回 50 點會讓餘額小於 0。最多可扣回 20 點。'}),true);add(d,FIELD('說明（必填）','買家退貨',{tall:sh.D}),true);await ACTIONS(sh,d,[['dis','確認扣回'],['sec','取消']]);PLACE(sh,d);}};
+function deductFields(sh,d,amt,o={}){add(d,T('會員：王小美 · 目前 '+(o.bal||'120')+' 點'),true);add(d,T('原因：手動調整 · 關聯訂單 #M1031',{c:'color/muted',name:'Reason and order'}),true);add(d,FIELD('扣除點數',amt,{suffix:'點',err:o.err,help:o.err?null:'已帶入本單贈送的 50 點，可以修改。'}),true);add(d,FIELD('說明（必填）','買家退貨',{tall:sh.D}),true);}
+S.E2={g:4,c:1,n:'手工單 · 扣回本單積分 · 確認',...EL,b:async sh=>{const d=await revDialog(sh,{});deductFields(sh,d,'50');add(d,T('王小美的餘額：120 → 70 點',{size:16,w:'Medium',name:'Preview'}),true);add(d,T('送出後會新增一筆「手動調整」紀錄並關聯這張訂單，不能修改或刪除。',{size:13,c:'color/muted'}),true);await ACTIONS(sh,d,[['pri','確認扣除'],['sec','取消']]);PLACE(sh,d);}};
+S.E4={g:4,c:3,n:'手工單 · 扣回本單積分 · 餘額不足',...EL,b:async sh=>{const d=await revDialog(sh,{});deductFields(sh,d,'50',{bal:'20',err:'王小美目前只剩 20 點，扣除 50 點會讓餘額小於 0。最多可扣 20 點。'});await ACTIONS(sh,d,[['dis','確認扣除'],['sec','取消']]);PLACE(sh,d);}};
 S.E5={g:4,c:4,n:'手工單 · 訂單詳情 · 已扣回',...EL,b:async sh=>{await orderBase(sh,'reversed');}};
-S.E6={g:4,c:5,n:'手工單 · 扣回本單積分 · 結果待確認',...EL,b:async sh=>{const d=await revDialog(sh,{title:'結果待確認'});d.appendChild(await TAG('warning','待確認'));add(d,T('網路回應中斷，扣回 50 點可能已經記入。請先重新讀取本單與會員積分，勿再次送出。'),true);add(d,T('重新讀取只會查詢，不會重送。',{size:13,c:'color/muted'}),true);await ACTIONS(sh,d,[['pri','重新讀取']]);PLACE(sh,d);}};
+S.E6={g:4,c:5,n:'手工單 · 扣回本單積分 · 結果待確認',...EL,b:async sh=>{const d=await revDialog(sh,{title:'結果待確認'});d.appendChild(await TAG('warning','待確認'));add(d,T('網路回應中斷，扣除 50 點可能已經記入。請先重新讀取本單與會員積分，勿再次送出。'),true);add(d,T('重新讀取只會查詢，不會重送。',{size:13,c:'color/muted'}),true);await ACTIONS(sh,d,[['pri','重新讀取']]);PLACE(sh,d);}};
 // ---------- nav (F) ----------
 S.F1={g:5,c:0,mobileOnly:true,n:'會員 · 選單',custom:async(x,y)=>{const name=DN('M','會員 · 選單');for(const o of SEC.children.filter(n=>n.name===name))o.remove();const f=(await figma.getNodeByIdAsync('1470:165651')).clone();SEC.appendChild(f);f.name=name;f.x=x;f.y=y;
  const surf=f.findOne(n=>n.name==='Task surface');const byLabel=l=>surf.children.find(n=>n.name==='Manual action · '+l);
@@ -103,6 +105,32 @@ S.F1={g:5,c:0,mobileOnly:true,n:'會員 · 選單',custom:async(x,y)=>{const nam
 S.A10={g:0,c:9,n:'手工單 · 已建立 · 積分未贈送',cr:'訂單 / 手工單',t:'手工單已建立',nav:'manual',b:async sh=>{const c=CARD(sh,'Created facts',12);add(c,T('#M1031 · 待付款'),true);for(const l of ORDER_FACTS.slice(0,sh.D?6:2))add(c,T(l,{c:l.startsWith('折扣')?'color/teal':'color/ink'}),true);add(c,T('合計 NT$4,100',{size:20,w:'Medium'}),true);
  const m=CARD(sh,'Member and points · not awarded',8);m.appendChild(await TAG('warning','積分未贈送'));add(m,T('訂單已建立，但 +50 點沒有記入：這位會員已被刪除資料。',{name:'Not awarded reason'}),true);add(m,T('需要的話，可以到會員頁用「調整積分」補記，並關聯這張訂單。',{size:13,c:'color/muted'}),true);await DOCK(sh,[['pri','複製連結'],['sec','查看訂單連結']]);}};
 S.C7={g:2,c:6,n:'會員 · 詳情 · 唯讀',...CL,b:async sh=>{const c=CARD(sh,'Member header · read only',sh.D?16:8);const bal=AL('v',{name:'Balance',gap:0});add(c,bal,true);add(bal,T('積分餘額',{size:13,c:'color/muted'}),true);add(bal,T('120 點',{size:28,w:'Medium',name:'Balance value'}),true);add(bal,T('最後異動 11/05 14:20',{size:13,c:'color/muted'}),true);add(c,T('聯絡備註：LINE：mei0412（週三直播常客，喜歡帆布系列）'),true);add(c,T('你的帳號可以查看會員，但不能調整積分或編輯資料。需要權限請聯絡店長。',{size:13,c:'color/muted',name:'Read-only note'}),true);await ledger(sh,sh.D?LEDGER:LEDGER.slice(0,2));await DOCK(sh,[]);}};
+
+// ---------- 2026-11-05 integrator rulings (U1-U6) ----------
+S.A11={g:0,c:10,n:'手工單 · 收件資料 · 無積分權限',cr:'訂單 / 手工單',t:'收件資料',nav:'manual',b:async sh=>{const c=CARD(sh,'Recipient',sh.D?12:8);add(c,FIELD('姓名','測試買家'),true);add(c,FIELD('電話','0900000000'),true);add(c,FIELD('電子郵件（選填）','請填寫',{ph:true}),true);await DOCK(sh,[['pri','下一步'],['sec','返回商品']]);}};
+S.A12={g:0,c:11,n:'手工單 · 會員 · 帶入姓名',cr:'訂單 / 手工單',t:'收件資料',nav:'manual',b:async sh=>{const r=CARD(sh,'Recipient',sh.D?12:8);add(r,FIELD('姓名','王小美',{focus:true,help:'已從會員帶入，可以修改；只改這張訂單，不會改會員資料。'}),true);if(sh.D)add(r,FIELD('電話','0900000000'),true);const c=memberCard(sh);add(c,T('會員',{size:13,c:'color/muted'}),true);chosen(c,sh);add(c,FIELD('本單贈送積分','例如 50',{ph:true,suffix:'點',help:sh.D?PTS_HELP:null}),true);await DOCK(sh,[['pri','下一步'],['sec','返回商品']]);}};
+const LEDGER2=[['11/05 16:02','−50','手動調整','#M1031','買家退貨','店長 Amy'],...LEDGER];
+async function moreRow(sh,c,err){if(err){add(c,T('暫時無法載入更早的紀錄。請檢查連線後重新讀取。',{size:13,c:'color/danger',name:'Inline error'}),true);}else add(c,T('已顯示最新 50 筆，還有更早的紀錄。',{size:13,c:'color/muted',name:'Page note'}),true);const r=AL('h',{justify:'CENTER'});add(c,r,true);r.appendChild(await BTN('sec',err?'重新讀取':'載入更多紀錄',{w:sh.D?200:326}));}
+S.C8={g:2,c:7,n:'會員 · 詳情 · 載入更多',...CL,b:async sh=>{await header(sh,{bal:'70 點',last:'11/05 16:02'});const l=await ledger(sh,sh.D?LEDGER2:LEDGER2.slice(0,1));await moreRow(sh,l,false);await DOCK(sh,sh.D?[]:[['pri','調整積分'],['sec','編輯資料']]);}};
+S.C9={g:2,c:8,n:'會員 · 詳情 · 載入更多失敗',...CL,b:async sh=>{await header(sh,{bal:'70 點',last:'11/05 16:02'});const l=await ledger(sh,sh.D?LEDGER2:LEDGER2.slice(0,1));await moreRow(sh,l,true);await DOCK(sh,sh.D?[]:[['pri','調整積分'],['sec','編輯資料']]);}};
+const ERASE_LINES=['會刪除：顯示名稱、聯絡備註、備註，以及積分紀錄裡的說明文字。','會保留：每筆積分的點數、原因、關聯訂單、經手人與時間，餘額不變。','不會改變：已建立訂單上的買家姓名。例如 #M1031 已帶入的「王小美」會留在那張訂單上。','刪除後無法復原，這位會員也不能再記積分。'];
+S.C10={g:2,c:9,n:'會員 · 刪除資料 · 確認',...CL,b:async sh=>{await detail(sh);const d=OVERLAY(sh,'刪除王小美的會員資料？');for(const l of ERASE_LINES)add(d,T(l,{name:'Erase line'}),true);await ACTIONS(sh,d,[['danger','刪除資料'],['sec','取消']]);PLACE(sh,d);}};
+S.C11={g:2,c:10,n:'會員 · 刪除資料 · 結果待確認',...CL,b:async sh=>{await detail(sh);const d=OVERLAY(sh,'刪除結果未確認');d.appendChild(await TAG('warning','待確認'));add(d,T('網路回應中斷，會員資料可能已經刪除。請先重新讀取，勿再次刪除。'),true);add(d,T('重新讀取只會查詢，不會重送。',{size:13,c:'color/muted'}),true);await ACTIONS(sh,d,[['pri','重新讀取']]);PLACE(sh,d);}};
+S.C12={g:2,c:11,n:'會員 · 已刪除資料',...CL,cr:'顧客 / 會員 / 已刪除的會員',t:'已刪除的會員',b:async sh=>{const c=CARD(sh,'Member header · erased',sh.D?16:8);c.appendChild(await TAG('neutral','已刪除資料'));const bal=AL('v',{name:'Balance',gap:0});add(c,bal,true);add(bal,T('積分餘額',{size:13,c:'color/muted'}),true);add(bal,T('70 點',{size:28,w:'Medium',name:'Balance value'}),true);add(c,T('名稱、聯絡備註、備註與積分說明已刪除；點數與訂單上的買家姓名保留。這位會員不能再記積分。',{size:13,c:'color/muted',name:'Erased note'}),true);
+ const er=LEDGER2.map(e=>[e[0],e[1],e[2],e[3],e[4]==='—'?'—':'（已刪除）',e[5]]);await ledger(sh,sh.D?er:er.slice(0,2));await DOCK(sh,[]);}};
+async function exportDlg(sh,state){await detail(sh);const d=OVERLAY(sh,'匯出會員資料');add(d,T('下載王小美的會員資料與全部積分紀錄（JSON 檔）。檔案不含員工姓名。'),true);
+ if(state==='ready'){add(d,T('檔案可能含有個人資料，請妥善保存。',{size:13,c:'color/muted'}),true);await ACTIONS(sh,d,[['pri','下載'],['sec','取消']]);}
+ if(state==='busy'){add(d,T('正在準備檔案…',{size:13,c:'color/muted'}),true);await ACTIONS(sh,d,[['dis','準備中…'],['dis','取消']]);}
+ if(state==='done'){d.appendChild(await TAG('success','已下載'));add(d,T('已下載 member-export.json（4 筆紀錄）。',{name:'Export done'}),true);await ACTIONS(sh,d,[['pri','完成']]);}
+ if(state==='fail'){add(d,T('下載沒有完成。可以再試一次，不會重複記錄匯出。',{c:'color/danger',name:'Inline error'}),true);await ACTIONS(sh,d,[['pri','再試一次'],['sec','關閉']]);}
+ PLACE(sh,d);}
+S.C13={g:2,c:12,n:'會員 · 匯出資料',...CL,b:async sh=>exportDlg(sh,'ready')};
+S.C14={g:2,c:13,n:'會員 · 匯出資料 · 準備中',...CL,b:async sh=>exportDlg(sh,'busy')};
+S.C15={g:2,c:14,n:'會員 · 匯出資料 · 已下載',...CL,b:async sh=>exportDlg(sh,'done')};
+S.C16={g:2,c:15,n:'會員 · 匯出資料 · 失敗',...CL,b:async sh=>exportDlg(sh,'fail')};
+S.C17={g:2,c:16,n:'會員 · 編輯資料 · 已被他人修改',...CL,b:async sh=>{await detail(sh);const d=OVERLAY(sh,'編輯會員資料');add(d,T('這位會員剛被其他人修改，你的變更沒有儲存。請重新讀取最新資料後再修改。',{c:'color/danger',name:'Inline error'}),true);await memberForm(sh,d,{name:'王小美',contact:'LINE：mei0412',note:'尺寸 M'});await ACTIONS(sh,d,[['pri','重新讀取'],['sec','取消']]);PLACE(sh,d);}};
+const DEL=['DESIGN · Admin Desktop · 手工單 · 扣回本單積分 · 超過贈送','DESIGN · Admin Mobile · 手工單 · 扣回本單積分 · 超過贈送'];
+for(const nm of DEL)for(const o of SEC.children.filter(n=>n.name===nm))o.remove();
 // ---------- runner ----------
 const res=[];
 for(const k of KEYS){const s=S[k];const x=s.c*2000,y=s.g*1100;

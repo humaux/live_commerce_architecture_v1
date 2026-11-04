@@ -8,6 +8,10 @@
 - Frames: **77** (38 desktop 1440×900 + 39 mobile 390×844); exports in `figma/<node-id>.png` (git-ignored by `output/**/figma/`; hashes in `PNG-SHA256SUMS.txt`, largest file < 1 MiB, ADR-20261031)
 - Generator: `figma-src/lib.js` + `figma-src/screens.js` (idempotent: re-running a key replaces the frame with the same name), QA probe `figma-src/qa.js`
 
+> **2026-11-05 update in progress (integrator rulings on U1–U7, contract #549 head `e0d3e9686`): BLOCKED.**
+> The Figma bridge lost the plugin connection (`figma_status` → `documents: []`) during the first rebuild batch (C1–C7). That batch's outcome is unknown and was not replayed. Done before the disconnect: A11 `1554:79479` / `1554:79554` (no `customers:points`: no 會員與積分 card) and A12 `1554:79596` / `1554:79683` (姓名 prefilled from the member, editable).
+> The generator (`figma-src/screens.js`) already contains all ruling changes. Still to run once the owner re-runs Plugins > Development > Fleet Bridge · Local: `C1–C17, D1–D7, E1, E2, E4, E5, E6` (this also deletes the 「扣回本單積分 · 超過贈送」 frames). Then re-export, re-run `qa.js`, and refresh the frame table below. **Until then the C, D and E rows below are stale.**
+
 ## Templates and component reuse
 
 | Used | Source (signed) | How |
@@ -224,7 +228,55 @@ Method: every frame exported with `get_screenshot` (scale 1) and inspected in mo
 
 Not done: no prototype reactions were wired between the new frames (cloned reactions were cleared so no button points to the wrong frame); no Code Connect.
 
-## Open questions (UNKNOWN)
+## Integrator rulings 2026-11-05 (the contract is the authority where it differs from the brief)
+
+- U1 → contract LP10/LP19: no 「沖正」 reason. 「扣回本單積分」 opens a prefilled manual deduct: reason 手動調整, linked to the order, amount editable (prefilled with the award), **no cap**, never below 0 (the 餘額不足 state stays). The ledger row shows 手動調整 + the order link. The order page lists 「本單相關積分紀錄」 (`GET members/entries?order_id=`) instead of 「可扣回」. Removed: the over-award frame and the copy keys `ord.reverse.err.exceeds`, `ord.reverse.amount`, `ord.reversed`, `ledger.reason=沖正`.
+- U2 → a creator without `customers:points` sees no 會員與積分 card (A11).
+- U3 → ledger 「載入更多紀錄」, 50 per page, plus its read error (C8, C9).
+- U4 → erase confirm, erase UNKNOWN, erased state (C10–C12); export ready / preparing / downloaded / failed (C13–C16); edit conflict (409 `conflict`, stale `expected_version`) → 重新讀取 (C17). Header gets 匯出資料 / 刪除資料 links (`customers:privacy`).
+- U5 accepted · U6 → A12 · U7 accepted (會員).
+
+New and changed copy (zh-TW · zh-CN · en):
+
+| Key | zh-TW | zh-CN | en |
+|---|---|---|---|
+| mo.prefill.help | 已從會員帶入，可以修改；只改這張訂單，不會改會員資料。 | 已从会员带入，可以修改；只改这张订单，不会改会员资料。 | Filled in from the member. You can edit it; it only changes this order, not the member. |
+| ord.entries.label | 本單相關積分紀錄 | 本单相关积分记录 | Points entries for this order |
+| ord.entries.deduct | 手動調整 −{n} 點 · {time} · {staff} · {note} | 手动调整 −{n} 点 · {time} · {staff} · {note} | Manual adjustment −{n} pts · {time} · {staff} · {note} |
+| ord.entries.total | 本單相關合計 {n} 點 · 會員目前餘額 {b} 點 | 本单相关合计 {n} 点 · 会员当前余额 {b} 点 | Net for this order {n} pts · member balance {b} pts |
+| ord.reverse.reason | 原因：手動調整 · 關聯訂單 #{order} | 原因：手动调整 · 关联订单 #{order} | Reason: manual adjustment · order #{order} |
+| ord.reverse.amount | 扣除點數 · 已帶入本單贈送的 {n} 點，可以修改。 | 扣除点数 · 已带入本单赠送的 {n} 点，可以修改。 | Points to deduct · Prefilled with this order's {n} pts; you can change it. |
+| ord.reverse.warn | 送出後會新增一筆「手動調整」紀錄並關聯這張訂單，不能修改或刪除。 | 提交后会新增一笔「手动调整」记录并关联这张订单，不能修改或删除。 | This adds a "Manual adjustment" entry linked to this order; it can't be edited or deleted. |
+| ord.reverse.confirm | 確認扣除 | 确认扣除 | Deduct |
+| ord.reverse.err.balance | {name}目前只剩 {b} 點，扣除 {n} 點會讓餘額小於 0。最多可扣 {b} 點。 | {name}当前只剩 {b} 点，扣除 {n} 点会让余额小于 0。最多可扣 {b} 点。 | {name} has only {b} pts; deducting {n} would go below 0. You can deduct up to {b}. |
+| ord.reversed.tag | 已扣回 {n} 點 | 已扣回 {n} 点 | {n} pts taken back |
+| ledger.more | 已顯示最新 50 筆，還有更早的紀錄。 · 載入更多紀錄 | 已显示最新 50 笔，还有更早的记录。 · 加载更多记录 | Showing the latest 50 entries; there are older ones. · Load more |
+| ledger.more.error | 暫時無法載入更早的紀錄。請檢查連線後重新讀取。 | 暂时无法加载更早的记录。请检查连接后重新读取。 | Couldn't load older entries. Check your connection and reload. |
+| privacy.links | 匯出資料 / 刪除資料 | 导出资料 / 删除资料 | Export data / Erase data |
+| erase.title | 刪除{name}的會員資料？ | 删除{name}的会员资料？ | Erase {name}'s member data? |
+| erase.deletes | 會刪除：顯示名稱、聯絡備註、備註，以及積分紀錄裡的說明文字。 | 会删除：显示名称、联系备注、备注，以及积分记录里的说明文字。 | Deleted: display name, contact note, notes, and the notes on points entries. |
+| erase.keeps | 會保留：每筆積分的點數、原因、關聯訂單、經手人與時間，餘額不變。 | 会保留：每笔积分的点数、原因、关联订单、经手人与时间，余额不变。 | Kept: each entry's points, reason, linked order, staff and time; the balance stays. |
+| erase.orders | 不會改變：已建立訂單上的買家姓名。例如 #M1031 已帶入的「王小美」會留在那張訂單上。 | 不会改变：已创建订单上的买家姓名。例如 #M1031 已带入的「王小美」会留在那张订单上。 | Not changed: the buyer name already on past orders. For example, "Amy Wang" stays on order #M1031. |
+| erase.final | 刪除後無法復原，這位會員也不能再記積分。 · 刪除資料 | 删除后无法恢复，这位会员也不能再记积分。 · 删除资料 | This can't be undone, and no more points can be recorded for this member. · Erase data |
+| erase.unknown | 刪除結果未確認 · 網路回應中斷，會員資料可能已經刪除。請先重新讀取，勿再次刪除。 | 删除结果未确认 · 网络响应中断，会员资料可能已经删除。请先重新读取，勿再次删除。 | Erase unconfirmed · The connection dropped; the data may already be erased. Reload first; don't erase again. |
+| erase.done | 已刪除的會員 · 已刪除資料 · 名稱、聯絡備註、備註與積分說明已刪除；點數與訂單上的買家姓名保留。這位會員不能再記積分。 · （已刪除） | 已删除的会员 · 已删除资料 · 名称、联系备注、备注与积分说明已删除；点数与订单上的买家姓名保留。该会员不能再记积分。 · （已删除） | Erased member · Data erased · Name, contact note, notes and entry notes were erased; points and buyer names on orders are kept. No more points can be recorded. · (erased) |
+| export.title | 匯出會員資料 · 下載{name}的會員資料與全部積分紀錄（JSON 檔）。檔案不含員工姓名。 | 导出会员资料 · 下载{name}的会员资料与全部积分记录（JSON 文件）。文件不含员工姓名。 | Export member data · Download {name}'s record and full points history (JSON). Staff names are not included. |
+| export.ready | 檔案可能含有個人資料，請妥善保存。 · 下載 | 文件可能含有个人资料，请妥善保存。 · 下载 | The file may contain personal data; keep it safe. · Download |
+| export.busy | 正在準備檔案… · 準備中… | 正在准备文件… · 准备中… | Preparing the file… · Preparing… |
+| export.done | 已下載 · 已下載 {file}（{n} 筆紀錄）。 · 完成 | 已下载 · 已下载 {file}（{n} 笔记录）。 · 完成 | Downloaded · Downloaded {file} ({n} entries). · Done |
+| export.fail | 下載沒有完成。可以再試一次，不會重複記錄匯出。 · 再試一次 | 下载没有完成。可以再试一次，不会重复记录导出。 · 再试一次 | The download didn't finish. You can try again; the export won't be logged twice. · Try again |
+| edit.conflict | 這位會員剛被其他人修改，你的變更沒有儲存。請重新讀取最新資料後再修改。 | 这位会员刚被其他人修改，你的更改没有保存。请重新读取最新资料后再修改。 | Someone else just changed this member, so your changes were not saved. Reload the latest data before editing. |
+
+Export 「再試一次」 resends the same Idempotency-Key, which the contract allows: a replay returns a fresh export and writes no second audit row. Every other write stays 重新讀取-only.
+
+## For the D5 Figma sweep (signed-frame defects, outside this lane)
+
+1. The 「繁中」 label in Shell A / header sits at y=0 and is clipped at the top on every signed desktop frame (e.g. `1470:166550`). Fixed only in this section's frames.
+2. Disabled Primary = teal at 50% opacity with a white label: low contrast (e.g. `1470:166598`, `1470:166624`).
+3. The mobile 選單 `1470:165651` lists only 4 destinations (訂單, 手工單, 商品與庫存, 訊息中心).
+4. Placeholder 「請填寫」 in signed fields uses `color/ink`, so it reads as a value; and `color/muted` (3:5) on `color/subtle` is 4.30:1.
+
+## Open questions (UNKNOWN) — round 1, all ruled on 2026-11-05 (see above)
 
 - **U1 · Reversal rule (brief vs contract).** The brief says a reversal of an order's award is its own reason 「沖正」 and can't exceed the award. Contract draft `e0d3e968` LP9 (integrator ruling P2-7, 2026-11-05) **withdrew** that: 扣回本單積分 = a prefilled `manual_adjust` with `order_id`, editable, **no cap**; reasons are only `manual_order_award` / `manual_adjust`. The frames follow the brief (沖正 tag, frame 「扣回本單積分 · 超過贈送」). If the contract wins: drop that frame and that error, show the reversal as 手動調整 + order link, and compute 「可扣回」 from the entries of that order or remove the line. Needs the owner's or the integrator's word.
 - **U2 · Who may award/adjust.** Contract LP13 adds `customers:points` (owner/admin). The frames cover no read right (列表 · 無權限) and read-only (詳情 · 唯讀). Not drawn: a manual-order creator without `customers:points` — proposal: hide the 會員與積分 card. Needs confirmation.
