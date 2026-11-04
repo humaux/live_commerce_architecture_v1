@@ -93,10 +93,11 @@ if (process.env.LC_BROWSER_PARITY_DENIED !== "1") test.describe("PARITY-LEFTOVER
       await expect(page.getByText("聯絡電話", { exact: true })).toBeVisible();
       await expect(page.getByText("請填寫可聯絡買家的電話。", { exact: true })).toBeVisible();
       await expect(page.getByText("超商品牌與門市號碼", { exact: true })).toBeVisible();
-      await expect(page.getByText("請確認超商品牌與門市號碼；店名、地址可不填。", { exact: true })).toBeVisible();
+      // Integrator copy decision 2026-11-04: the signed 「店名、地址可不填」 contradicts the server rule (manual.go:250), so the hint asks for them.
+      await expect(page.getByText("請確認超商品牌與門市號碼，並填寫店名與門市地址。", { exact: true })).toBeVisible();
       await expect(page.getByText("資料完整後才能取得正式報價；付款狀態會依實際收款結果更新。", { exact: true })).toBeVisible();
       await expect(page.getByRole("button", { name: "返回草稿補填", exact: true })).toBeVisible();
-      await expect(page.getByTestId("manual-order-submit")).toHaveCount(0);
+      await expect(page.getByTestId("manual-order-form"), "the panel replaces the form: nothing can be placed from here").toHaveCount(0);
 
       await screenshot(page, mobile ? "750:3596" : "750:3454");
       await action(page, "返回草稿補填", "click", "draft returns with its line and buyer intact", async () => {
@@ -150,7 +151,8 @@ if (process.env.LC_BROWSER_PARITY_DENIED !== "1") test.describe("PARITY-LEFTOVER
         await addImagesButton.click();
         await expect(page.getByRole("heading", { name: "選擇要加入的圖片", exact: true })).toBeVisible();
       });
-      await expect(page.getByText("JPG、PNG 或 WebP；每張不超過 5 MB。加入後仍需儲存商品。", { exact: true })).toBeVisible();
+      // Integrator copy decision 2026-11-04: moves and uploads commit at once, so the signed 「加入後仍需儲存商品」 is replaced.
+      await expect(page.getByText("JPG、PNG 或 WebP；每張不超過 5 MB。加入後立即存入商品圖片。", { exact: true })).toBeVisible();
       // prototype placeholder, owner-delegated design rule: never assert placeholder content.
       // The signed tiles 商品正面 · 示意 / 商品背面 · 示意 / 材質細節 · 示意 are prototype placeholders (integrator ruling 2026-11-04);
       // the picker lists this product's real images from the image-list contract (MOCK: one detail image, labelled like gallery tiles).
@@ -451,6 +453,66 @@ if (process.env.LC_BROWSER_PARITY_DENIED !== "1") test.describe("PARITY-LEFTOVER
       expect(writes).toEqual([]);
     });
   }
+
+  // Real-click write path of the 媒体上传 picker (AGENTS.md UI acceptance): 加入所選圖片 on a separate MOCK product whose one
+  // detail image the fixture moves for real (POST images/{id}/move). The first move is refused (409 conflict) and changes nothing,
+  // the second lands in 主圖; both outcomes are re-read after a reload.
+  test("媒体上传 zh-TW 1440x900: 加入所選圖片 moves the image to 主圖; a refused move changes nothing", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await login(page);
+    const writeProduct = id("800"), movePath = `/products/${writeProduct}/images/${id("802")}/move`;
+    const writes: string[] = [], moves: number[] = [];
+    page.on("request", (request) => {
+      if (!["GET", "HEAD"].includes(request.method())) writes.push(`${request.method()} ${new URL(request.url()).pathname}`);
+    });
+    page.on("response", (response) => {
+      if (response.request().method() === "POST" && new URL(response.url()).pathname.endsWith(movePath)) moves.push(response.status());
+    });
+    const openImages = async (expected: string) => {
+      await page.goto(`${origin}/zh-TW/products/${writeProduct}?store=${store}`);
+      await action(page, "商品圖片", "click", expected, async () => {
+        await page.getByRole("button", { name: "商品圖片", exact: true }).click();
+        await expect(page.getByRole("heading", { name: "商品圖片", exact: true })).toBeVisible();
+      });
+    };
+    const choose = async () => {
+      await action(page, "加入圖片", "click", "media picker opens", async () => {
+        await page.getByRole("button", { name: "加入圖片", exact: true }).click();
+        await expect(page.getByRole("heading", { name: "選擇要加入的圖片", exact: true })).toBeVisible();
+      });
+      await action(page, "選擇此圖片", "click", "tile selected", async () => {
+        await page.getByTestId("media-add-tile").getByRole("button", { name: "選擇此圖片", exact: true }).click();
+        await expect(page.getByRole("button", { name: "加入所選圖片", exact: true })).toBeEnabled();
+      });
+    };
+
+    await openImages("image screen: the image is still a detail image");
+    await expect(page.getByRole("heading", { name: "主圖 0/4 · 上架必填", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "詳情圖 1/20", exact: true })).toBeVisible();
+    await choose();
+    await action(page, "加入所選圖片", "click", "refused move: failure note, picker stays open", async () => {
+      await page.getByRole("button", { name: "加入所選圖片", exact: true }).click();
+      await expect(page.getByText("圖片未能儲存。請按「重新讀取圖片」確認清單，再重試。", { exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "選擇要加入的圖片", exact: true })).toBeVisible();
+    });
+    expect(moves, "one refused move").toEqual([409]);
+
+    await openImages("after reload: nothing moved");
+    await expect(page.getByRole("heading", { name: "主圖 0/4 · 上架必填", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "詳情圖 1/20", exact: true })).toBeVisible();
+    await choose();
+    await action(page, "加入所選圖片", "click", "image moved to 主圖; back on the image screen", async () => {
+      await page.getByRole("button", { name: "加入所選圖片", exact: true }).click();
+      await expect(page.getByRole("heading", { name: "主圖 1/4 · 上架必填", exact: true })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "詳情圖 0/20", exact: true })).toBeVisible();
+    });
+    expect(moves, "then one accepted move").toEqual([409, 200]);
+
+    await openImages("after reload: the image is still in 主圖 (persisted)");
+    await expect(page.getByRole("heading", { name: "主圖 1/4 · 上架必填", exact: true })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "詳情圖 0/20", exact: true })).toBeVisible();
+    expect(writes, "only the two move commands were sent").toEqual([`POST /api/stores/${store}${movePath}`, `POST /api/stores/${store}${movePath}`]);
+  });
 });
 
 if (process.env.LC_BROWSER_PARITY_DENIED === "1") test.describe("PARITY-LEFTOVERS denied live management (real signed identity, MOCK read)", () => {

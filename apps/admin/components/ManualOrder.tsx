@@ -97,7 +97,7 @@ export function ManualOrder({
   async function submit(event: FormEvent) {
     event.preventDefault();
     if (!store || mapOnly || busy) return;
-    if (gaps.length) { setMissing(true); return; } // submission stays blocked until the recipient is complete
+    if (gaps.length) { setMissing(true); setReviewing(false); return; } // submission stays blocked until the recipient is complete
     if (problem) return;
     if (!reviewing) { setReviewing(true); return; }
     const body = manualBody(draft);

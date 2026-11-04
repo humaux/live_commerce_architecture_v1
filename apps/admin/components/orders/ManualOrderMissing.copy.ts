@@ -1,4 +1,4 @@
-// Purpose: typed three-locale copy of the signed 訂單缺少收件資料 frame (750:3454 / 750:3596); zh-TW is the signed text verbatim.
+// Purpose: typed three-locale copy of the signed 訂單缺少收件資料 frame (750:3454 / 750:3596); zh-TW is the signed text verbatim except storeHint (integrator copy decision 2026-11-04: the server requires store name and address).
 // Depends on: Locale from @live-commerce/i18n.
 // Used by: ManualOrderMissing.
 import type { Locale } from "@live-commerce/i18n";
@@ -10,7 +10,7 @@ export const manualOrderMissingCopy = {
     phone: "聯絡電話",
     phoneHint: "請填寫可聯絡買家的電話。",
     store: "超商品牌與門市號碼",
-    storeHint: "請確認超商品牌與門市號碼；店名、地址可不填。",
+    storeHint: "請確認超商品牌與門市號碼，並填寫店名與門市地址。",
     note: "資料完整後才能取得正式報價；付款狀態會依實際收款結果更新。",
     back: "返回草稿補填",
   },
@@ -21,7 +21,7 @@ export const manualOrderMissingCopy = {
     phone: "联系电话",
     phoneHint: "请填写可联系买家的电话。",
     store: "便利店品牌与门店编号",
-    storeHint: "请确认便利店品牌与门店编号；店名、地址可不填。",
+    storeHint: "请确认便利店品牌与门店编号，并填写店名与门店地址。",
     note: "信息完整后才能取得正式报价；付款状态会依实际收款结果更新。",
     back: "返回草稿补填",
   },
@@ -32,7 +32,7 @@ export const manualOrderMissingCopy = {
     phone: "Contact phone",
     phoneHint: "Enter a phone number the buyer can be reached on.",
     store: "Convenience store brand and store number",
-    storeHint: "Confirm the convenience store brand and store number; the store name and address are optional.",
+    storeHint: "Confirm the convenience store brand and store number, and enter the store name and address.",
     note: "The final quote is available once the details are complete; the payment status follows the actual payment.",
     back: "Back to the draft",
   },

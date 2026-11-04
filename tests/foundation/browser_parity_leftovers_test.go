@@ -3,7 +3,7 @@
 // Purpose: register the twelve original PARITY-LEFTOVERS signed-frame checks on real admin routes.
 // Depends on: isolated PG identity, brfStartAdmin/brfPlaywright and current read DTO parsers; business projections are MOCK.
 // Used by: scripts/dev/test-local.sh --browser-live-settings; no product implementation is supplied here.
-// Invariants: I01/I11; signed login and server-side scope stay real, only allowlisted GET projections are mocked.
+// Invariants: I01/I11; signed login and server-side scope stay real, only allowlisted GET projections are mocked, plus one MOCK image move (catalog:write, real request shape) on a separate write-path product so the picker's 加入所選圖片 is really clicked.
 package foundation_test
 
 import (
@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -29,6 +30,11 @@ const bplSKU = "90000000-0000-4000-8000-000000000601"
 const bplImage = "90000000-0000-4000-8000-000000000602"
 const bplMarket = "90000000-0000-4000-8000-000000000700"
 
+// The write-path product: only the 媒体上传 apply test touches it, so the read-only frame checks never see its moved image.
+const bplWriteProduct = "90000000-0000-4000-8000-000000000800"
+const bplWriteSKU = "90000000-0000-4000-8000-000000000801"
+const bplWriteImage = "90000000-0000-4000-8000-000000000802"
+
 // bplPNG is an 8x8 neutral PNG served as the MOCK detail image bytes (no real photo or asset is shipped).
 var bplPNG, _ = base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEUlEQVR42mO4cXgpVsQwtCQAUNCQAb9k4poAAAAASUVORK5CYII=")
 
@@ -39,7 +45,7 @@ func TestBrowserParityLeftovers(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 700*time.Second)
 	defer cancel()
 	f := pwIsolatedFixture(t)
-	for _, permission := range []string{"orders:read", "catalog:read", "inbox:reply", "live:manage", "inventory:reserve"} {
+	for _, permission := range []string{"orders:read", "catalog:read", "catalog:write", "inbox:reply", "live:manage", "inventory:reserve"} {
 		mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4)`, f.tenantA, f.storeA1, f.principalA, permission)
 	}
 	// A separate merchant identity keeps the denied path stable while signed frames use live:manage.
@@ -132,11 +138,51 @@ console.log('PASS: current product/media/order/manual-order/template DTO parsers
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("MOCK fixture contract preflight failed: %v; evidence=%s", err, evidence)
 	}
+	// The one MOCK write: the picker's real move of the write-path product's detail image (Go POST images/{id}/move, catalog:write,
+	// body {"role":"main"}, Idempotency-Key). The first move is refused with the real 409 conflict code and changes nothing; the
+	// next moves the image to main. The write-path image list GET reads that state, so a reload shows what the server holds.
+	var moveMu sync.Mutex
+	moveCalls, moved := 0, false
+	writeImages := "products/" + bplWriteProduct + "/images"
 	stack := brfStartAdmin(t, ctx, e, f.principalA, evidence, func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			prefix := "/v1/admin/stores/" + f.storeA1 + "/"
 			resource := strings.TrimPrefix(r.URL.Path, prefix)
+			if r.Method == http.MethodPost && r.URL.Path == prefix+writeImages+"/"+bplWriteImage+"/move" {
+				var in map[string]any
+				if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1024)).Decode(&in); err != nil || len(in) != 1 || in["role"] != "main" || r.Header.Get("Idempotency-Key") == "" {
+					consoleJSON(w, http.StatusUnprocessableEntity, map[string]any{"code": "invalid_request"})
+					return
+				}
+				if err := platform.WithScope(r.Context(), f.runtime, strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "), f.storeA1, "catalog:write", func(_ pgx.Tx, s platform.Scope) error {
+					if s.TenantID != f.tenantA || s.StoreID != f.storeA1 {
+						return platform.ErrForbidden
+					}
+					return nil
+				}); err != nil {
+					consoleJSON(w, http.StatusForbidden, map[string]any{"code": "forbidden"})
+					return
+				}
+				moveMu.Lock()
+				moveCalls++
+				refused := moveCalls == 1
+				moved = moved || !refused
+				moveMu.Unlock()
+				if refused {
+					consoleJSON(w, http.StatusConflict, map[string]any{"code": "conflict"})
+					return
+				}
+				consoleJSON(w, http.StatusOK, bplWriteImages("main", 2))
+				return
+			}
 			body, ok := projections[resource]
+			if resource == writeImages {
+				moveMu.Lock()
+				if moved {
+					body = bplWriteImages("main", 2)
+				}
+				moveMu.Unlock()
+			}
 			if !strings.HasPrefix(r.URL.Path, prefix) || !ok || r.Method != http.MethodGet {
 				next.ServeHTTP(w, r)
 				return
@@ -258,6 +304,15 @@ func bplProjections() map[string]any {
 	options := map[string]any{"options": []any{map[string]any{"option_key": bplMarket + "|TW|cvs_711", "market_id": bplMarket, "country": "TW", "delivery_code": "cvs_711", "delivery_kind": "cvs_711", "mode": "MANUAL", "name_hans": "7-ELEVEN", "name_hant": "7-ELEVEN", "name_en": "7-ELEVEN", "currency": "USD", "service_version": 1, "allocation_version": 1, "payment_modes": []string{"bank_transfer"}, "pickup_selection": "buyer_entered"}}}
 	summaryRow := map[string]any{"id": bplProduct, "slug": "mock-leftover", "name": "Synthetic item", "status": "draft", "version": 1, "cover_image_id": nil, "price_min_minor": 1200, "price_max_minor": 1200, "currency": "USD", "sku_count": 1, "available": 10, "keyword": "", "inventory_tracked": true, "updated_at": "2026-10-25T00:00:00Z"}
 	catalogPage := map[string]any{"items": []any{summaryRow}, "next_cursor": "", "total": 1, "status_counts": map[string]int{"draft": 1, "active": 0, "archived": 0}}
+	skuW, productW := map[string]any{}, map[string]any{}
+	for k, v := range sku {
+		skuW[k] = v
+	}
+	for k, v := range product {
+		productW[k] = v
+	}
+	skuW["id"], skuW["code"] = bplWriteSKU, "MOCK-LEFTOVER-W"
+	productW["id"], productW["slug"], productW["skus"] = bplWriteProduct, "mock-leftover-write", []any{skuW}
 	images := map[string]any{"items": []any{map[string]any{"id": bplImage, "product_id": bplProduct, "role": "detail", "position": 0, "content_type": "image/png", "size_bytes": len(bplPNG), "width": 8, "height": 8, "version": 1}}, "image_axis": nil, "option_images": []any{}}
 	templates := []any{}
 	for i, name := range []string{"關鍵字協助", "結帳說明", "物流查詢", "人工回覆說明", "退款說明", "直播預告"} {
@@ -275,5 +330,10 @@ func bplProjections() map[string]any {
 		}
 		templates = append(templates, map[string]any{"template_id": fmt.Sprintf("parity-leftovers/%d", i+1), "version": version, "name": name, "kinds": kinds, "public_safe": i == 5, "created_at": fmt.Sprintf("2026-10-%02dT00:00:00Z", 25-i)})
 	}
-	return map[string]any{"orders": map[string]any{"items": []any{row}, "next_cursor": "", "total": 1, "counts": counts, "sessions": []any{}}, "orders/" + bplOrder: detail, "orders/" + bplOrder + "/shipment/history": map[string]any{"items": []any{}}, "order-actions": map[string]any{"refund": false, "fulfillment_write": false, "orders_export": true}, "products/" + bplProduct: product, "products/" + bplProduct + "/images": images, "products/" + bplProduct + "/images/" + bplImage: bplPNG, "orders/manual/options": options, "catalog-products": catalogPage, "collections": map[string]any{"items": []any{}, "next_cursor": ""}, "warehouses": map[string]any{"items": []any{}}, "message-templates": map[string]any{"items": templates}}
+	return map[string]any{"orders": map[string]any{"items": []any{row}, "next_cursor": "", "total": 1, "counts": counts, "sessions": []any{}}, "orders/" + bplOrder: detail, "orders/" + bplOrder + "/shipment/history": map[string]any{"items": []any{}}, "order-actions": map[string]any{"refund": false, "fulfillment_write": false, "orders_export": true}, "products/" + bplProduct: product, "products/" + bplProduct + "/images": images, "products/" + bplProduct + "/images/" + bplImage: bplPNG, "products/" + bplWriteProduct: productW, "products/" + bplWriteProduct + "/images": bplWriteImages("detail", 1), "products/" + bplWriteProduct + "/images/" + bplWriteImage: bplPNG, "orders/manual/options": options, "catalog-products": catalogPage, "collections": map[string]any{"items": []any{}, "next_cursor": ""}, "warehouses": map[string]any{"items": []any{}}, "message-templates": map[string]any{"items": templates}}
+}
+
+// bplWriteImages is the write-path product's MOCK image list: its one image in role at version (current image-list DTO).
+func bplWriteImages(role string, version int) map[string]any {
+	return map[string]any{"items": []any{map[string]any{"id": bplWriteImage, "product_id": bplWriteProduct, "role": role, "position": 0, "content_type": "image/png", "size_bytes": len(bplPNG), "width": 8, "height": 8, "version": version}}, "image_axis": nil, "option_images": []any{}}
 }
