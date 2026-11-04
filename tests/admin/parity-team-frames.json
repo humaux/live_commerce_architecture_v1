@@ -27,6 +27,22 @@
         "mobile": "1468:96420"
       },
       "reason": "owner-delegated design decision 2026-11-04: shared ReauthDialog (OC-04) replaces in-page re-auth"
+    },
+    {
+      "state": "role-confirm-admin",
+      "ids": {
+        "desktop": "1468:78293",
+        "mobile": "1468:78333"
+      },
+      "reason": "owner-delegated design decision 2026-11-04: no-op admin change is blocked at role-edit (Continue disabled, 目前已是管理員，無須變更); no confirm/done screen for an unsent request"
+    },
+    {
+      "state": "role-done-admin",
+      "ids": {
+        "desktop": "1468:78348",
+        "mobile": "1468:78392"
+      },
+      "reason": "owner-delegated design decision 2026-11-04: no-op admin change is blocked at role-edit (Continue disabled, 目前已是管理員，無須變更); no confirm/done screen for an unsent request"
     }
   ],
   "locales": {

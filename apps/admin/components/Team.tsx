@@ -192,6 +192,8 @@ function Sections({ team, store, boundary, refresh, locale, c }: {
     {screen === "review" && <>
       <section className="team-card"><p className="team-person">{person}</p>
         <p>{action === "role" ? format(role === "viewer" ? c.viewerReview : c.roleReview, { from: c.roleNames[member!.role], to: c.roleNames[role] }) : action === "remove" ? c.removeWarning : c.withdrawWarning}</p>
+        {/* Promotion to admin restates the signed admin powers line (integrator decision 2026-11-04). */}
+        {action === "role" && role === "admin" && <p className="team-help">{c.roleLines.admin}</p>}
         {action === "revoke" && invitation && <p>{c.roleNames[invitation.role]}</p>}
       </section>
       <div className="team-actions">{button(c.cancel, () => action === "role" ? setScreen("edit") : action === "revoke" ? setScreen("pending") : back())}{button(action === "role" ? c.confirmRole : action === "remove" ? c.confirmRemove : c.confirmWithdraw, () => void submit(), true)}</div>

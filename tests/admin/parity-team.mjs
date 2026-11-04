@@ -1,4 +1,4 @@
-// Purpose: Assert the 164 signed staff frames on real routes (6 owner-superseded re-auth ids skip visibly) and capture honest parity/click receipts.
+// Purpose: Assert the 164 signed staff frames on real routes (10 owner-superseded ids skip visibly) and capture honest parity/click receipts.
 // Depends on: node:test, Playwright, frozen FRAME-COPY oracle and admin-parity's existing MOCK session/server.
 // Used by: parity-shell-browser.mjs / --browser-admin-parity; independent reviewers consume parity images.
 // Invariants: fixture responses are MOCK, not backend acceptance; no gallery, DOM writes, forced clicks or live mail.
@@ -11,9 +11,10 @@ import { expect as baseExpect } from "@playwright/test";
 import oracle from "./parity-team-frames.json" with { type: "json" };
 
 const expect = baseExpect.configure({ timeout: 1500 });
-// Owner-delegated design decision 2026-11-04 (output/parity-team/DESIGN-DECISIONS.md): the shared ReauthDialog (OC-04,
-// tests/admin/oc/reauth.spec.ts) replaces exactly these signed in-page re-auth frame ids. Each stays registered as a visible skip
-// with its reason; every other frame stays required, and the frozen-oracle test pins this list to the three re-auth states.
+// Owner-delegated design decisions 2026-11-04 (output/parity-team/DESIGN-DECISIONS.md): the shared ReauthDialog (OC-04,
+// tests/admin/oc/reauth.spec.ts) replaces the in-page re-auth frames, and the role-edit-admin guard replaces the no-op admin
+// confirm/done frames. Each superseded id stays registered as a visible skip with its reason; every other frame stays required,
+// and the frozen-oracle test pins this list to exactly those five states and reasons.
 const superseded = new Map(oracle.superseded.flatMap(item => Object.values(item.ids).map(id => [id, item.reason])));
 const viewports = [{ name: "desktop", width: 1440, height: 900 }, { name: "mobile", width: 390, height: 844 }];
 const roles = { owner: "店主", admin: "管理員", live: "直播人員", fulfilment: "出貨人員", viewer: "僅供檢視" };
@@ -187,8 +188,8 @@ export function registerTeamParity({ session, origin, store, output, sha }) {
       if (noChange) {
         await expect(button(page, "繼續"), "signed unchanged-role control is disabled").toBeDisabled();
         assert.equal(f.writes.length, 0, "unchanged role never sends set-role");
-        // No forced click: the signed role-edit-admin frame disables Continue and the signed prototype links nothing to
-        // role-confirm-admin/role-done-admin, so they have no reachable path; their content assertions stay a visible blocker.
+        // No forced click: role-edit-admin opens 變更角色 on the admin member, keeps 管理員 selected and asserts Continue disabled;
+        // role-confirm-admin/role-done-admin are superseded (owner-delegated 2026-11-04) because an unsent no-op has no review/result.
         if (state === "list-updated-admin") { await click(page, "取消"); await page.reload(); }
       } else {
         if (!state.startsWith("role-edit")) await click(page, "繼續");
@@ -418,6 +419,8 @@ export function registerTeamParity({ session, origin, store, output, sha }) {
       await selectRole(page, "admin");
       await click(page, "繼續");
       await expect(page.locator("main").getByText("僅供檢視改為管理員。", { exact: true })).toBeVisible();
+      // Integrator decision 2026-11-04: a promotion review explains admin powers with the signed role line, verbatim.
+      await expect(page.locator("main").getByText("管理員 · 管理業務，不含訂閱帳單與員工", { exact: true })).toBeVisible();
       assert.equal(f.writes.length, 0, "review is read-only");
       await click(page, "確認變更");
       await expect(page.locator("main").getByRole("heading", { name: "角色已變更", exact: true })).toBeVisible();
@@ -440,12 +443,15 @@ export function registerTeamParity({ session, origin, store, output, sha }) {
     assert.equal(createHash("sha256").update(source).digest("hex"), oracle.source_sha256);
     assert.equal(oracle.frames.length, 82);
     assert.equal(new Set(oracle.frames.flatMap(frame => Object.values(frame.ids))).size, 164);
-    // Only the owner-delegated re-auth frames may leave the required set, each by its exact signed ids and reason.
-    assert.deepEqual(oracle.superseded.map(item => item.state), ["reauth", "reauth-signin", "reauth-verify"]);
+    // Only the owner-delegated frames may leave the required set, each by its exact signed ids and reason.
+    const reauth = "owner-delegated design decision 2026-11-04: shared ReauthDialog (OC-04) replaces in-page re-auth";
+    const noop = "owner-delegated design decision 2026-11-04: no-op admin change is blocked at role-edit (Continue disabled, 目前已是管理員，無須變更); no confirm/done screen for an unsent request";
+    const reasons = { "reauth": reauth, "reauth-signin": reauth, "reauth-verify": reauth, "role-confirm-admin": noop, "role-done-admin": noop };
+    assert.deepEqual(oracle.superseded.map(item => item.state), Object.keys(reasons));
     for (const item of oracle.superseded) {
       assert.deepEqual(item.ids, oracle.frames.find(frame => frame.state === item.state).ids, `superseded ${item.state} names its signed ids`);
-      assert.equal(item.reason, "owner-delegated design decision 2026-11-04: shared ReauthDialog (OC-04) replaces in-page re-auth");
+      assert.equal(item.reason, reasons[item.state]);
     }
-    assert.equal(superseded.size, 6);
+    assert.equal(superseded.size, 10);
   });
 }
