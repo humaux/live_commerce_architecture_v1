@@ -18,6 +18,8 @@ package foundation_test
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -37,6 +39,7 @@ import (
 	"livecommerce/internal/identity"
 	"livecommerce/internal/identityhttp"
 	"livecommerce/internal/oidclogin"
+	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
 )
 
@@ -353,4 +356,49 @@ func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
 	}
 	cbbrShots(t, evidence, 16, "en", "zh-TW")
 	t.Logf("CC12 BROWSER+REAL_PG: admin catalog v2 pages passed (desktop+390px, en+zh-TW); screenshots hashed; evidence=%s", evidence)
+	ccbMultiWarehousePhase(t, ctx, f, stack, env, tenant, store)
+}
+
+// ccbMultiWarehousePhase (#475 review P1): the signed inventory toolbar keeps the warehouse selector, the active/archived
+// status filter, Refresh and the cursor reset. It runs only after every one-warehouse spec and readback above, because the
+// §g target_qty UI needs exactly one active warehouse. FIXTURE (owner, synthetic): a second active warehouse, the C6
+// spec's own parity-c08 product archived, and a real filter-bound ledger cursor (second warehouse, q=A12, status=active,
+// after A12) so the spec can prove that changing warehouse or status drops it.
+func ccbMultiWarehousePhase(t *testing.T, ctx context.Context, f *testFixture, stack *brfStack, base map[string]string, tenant, store string) {
+	t.Helper()
+	const second = "Parity second warehouse"
+	var primaryID, primary, secondID, a12 string
+	if err := f.owner.QueryRow(ctx, `SELECT id::text,name FROM inventory.warehouses WHERE tenant_id=$1 AND store_id=$2 AND active`, tenant, store).Scan(&primaryID, &primary); err != nil {
+		t.Fatalf("multi-warehouse phase: the one active warehouse: %v", err)
+	}
+	if err := f.owner.QueryRow(ctx, `INSERT INTO inventory.warehouses(tenant_id,store_id,name) VALUES($1,$2,$3) RETURNING id::text`, tenant, store, second).Scan(&secondID); err != nil {
+		t.Fatalf("multi-warehouse phase: second warehouse: %v", err)
+	}
+	mustExec(t, f.owner, `UPDATE catalog.products SET status='archived' WHERE tenant_id=$1 AND store_id=$2 AND slug='parity-c08'`, tenant, store)
+	if err := f.owner.QueryRow(ctx, `SELECT id::text FROM catalog.skus WHERE tenant_id=$1 AND store_id=$2 AND code='A12'`, tenant, store).Scan(&a12); err != nil {
+		t.Fatalf("multi-warehouse phase: the C6 A12 SKU: %v", err)
+	}
+	hash := sha256.Sum256([]byte("A12\x00active")) // internal/catalog/ledger.go: normalized query NUL normalized status
+	cursor, err := pagination.Encode(pagination.Binding{TenantID: tenant, StoreID: store, Collection: "catalog-ledger", ParentID: secondID, Filter: hex.EncodeToString(hash[:])}, []string{a12})
+	if err != nil {
+		t.Fatal(err)
+	}
+	env := map[string]string{"LC_BROWSER_PHASE": "multi-warehouse", "LC_BROWSER_PARITY_PRIMARY": primary, "LC_BROWSER_PARITY_PRIMARY_ID": primaryID,
+		"LC_BROWSER_PARITY_SECOND": second, "LC_BROWSER_PARITY_SECOND_ID": secondID, "LC_BROWSER_PARITY_CURSOR": cursor}
+	for k, v := range base {
+		if _, set := env[k]; !set {
+			env[k] = v
+		}
+	}
+	brfPlaywright(t, ctx, stack, []string{"parity-data-ops.spec.ts"}, env)
+	// The spec sets A12 to 24 (primary) and 5 then 6 (second) by fixture CSV, then adjusts +3 through the UI in the second warehouse only.
+	for _, want := range []struct {
+		warehouse string
+		onHand    int
+	}{{primaryID, 24}, {secondID, 9}} {
+		if n := countRows(t, f.owner, `SELECT count(*) FROM inventory.balances WHERE tenant_id=$1 AND store_id=$2 AND warehouse_id=$3 AND sku_id=$4 AND on_hand=$5`, tenant, store, want.warehouse, a12, want.onHand); n != 1 {
+			t.Fatalf("multi-warehouse phase: A12 in warehouse %s is not %d after the UI adjustment (matches=%d)", want.warehouse, want.onHand, n)
+		}
+	}
+	t.Logf("PASS #475 inventory controls: second warehouse, archived filter, refresh and cursor reset by real selects/clicks; evidence=%s", stack.evidence)
 }

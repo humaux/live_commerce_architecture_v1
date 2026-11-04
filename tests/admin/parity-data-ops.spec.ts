@@ -1,11 +1,12 @@
 // Purpose: C6 signed product-import, inventory and collection acceptance on production routes (MOCK identity, isolated PG).
 // Depends on: signed FRAME-COPY.md, catalog-core's real BFF/Go fixture and parity-data-ops-support.
-// Used by: TestBrowserCatalogCore; generated browser ownership routes this spec to catalog-core/product-editor.
+// Used by: TestBrowserCatalogCore (one-warehouse phase, then LC_BROWSER_PHASE=multi-warehouse); generated browser ownership routes this spec to catalog-core/product-editor.
 // Invariants: fixture preparation is explicit; UI writes use real clicks; no gallery, client stock math or production access.
 import { expect, test, type Page } from "@playwright/test";
 import { action, capture, click, heading, login, origin, recordEvidence } from "./parity-data-ops-support";
 
 const store = process.env.LC_BROWSER_STORE!;
+const multiWarehouse = process.env.LC_BROWSER_PHASE === "multi-warehouse";
 const root = (locale: string, route: string) => `${origin}/${locale}/${route}?store=${store}`;
 const signed = {
   "zh-TW": { product: "商品匯入與匯出", preview: "預覽檔案", export: "匯出商品 CSV", inventory: "庫存", collections: "集合與分類", create: "+ 新建集合", legacyProduct: "匯入與匯出商品", legacyPreview: "檢查檔案", legacyInventory: "商品與庫存", legacyCollection: "分類" },
@@ -39,8 +40,25 @@ async function prepare(page: Page) {
   expect(response.body.committed).toBe(true);
 }
 
+// FIXTURE PREPARATION ONLY: set A12's target on-hand per named warehouse through the real BFF CSV import (same transport as prepare).
+async function stock(page: Page, targets: Record<string, number>) {
+  const cookie = (await page.context().cookies()).find(c => c.name === "__Host-commerce_csrf" || c.name === "commerce_csrf");
+  expect(cookie, "fixture session established by real OIDC click").toBeTruthy();
+  const names = Object.keys(targets);
+  const csv = `handle,title,sku,price,description,${names.map(name => `stock:${name}`).join(",")}\nparity-a12,焦糖托特包,A12,1280,${test.info().testId},${names.map(name => targets[name]).join(",")}\n`;
+  const response = await page.evaluate(async ({ store, csv, csrf }) => {
+    const response = await fetch(`/api/stores/${store}/tools/products/import/commit`, {
+      method: "POST", headers: { "Content-Type": "text/csv", "X-CSRF-Token": csrf }, body: csv,
+    });
+    return { status: response.status, body: await response.json() };
+  }, { store, csv, csrf: cookie!.value });
+  expect(response.status, "synthetic stock fixture commit").toBe(200);
+  expect(response.body.committed).toBe(true);
+}
+
 recordEvidence();
 test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
+  test.skip(multiWarehouse, "one-warehouse C6 frames already ran in the first TestBrowserCatalogCore phase");
   for (const mobile of [false, true]) {
     const viewport = mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 };
     const frame = (desktop: string, phone: string) => mobile ? phone : desktop;
@@ -206,6 +224,93 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         await expect(page.getByText("A12 · 焦糖托特包", { exact: true })).toHaveCount(0);
         await page.reload(); await expect(page.getByText("C08 · 帆布收納袋", { exact: true })).toBeVisible();
         await expect(page.getByText("A12 · 焦糖托特包", { exact: true })).toHaveCount(0);
+      });
+    });
+  }
+});
+
+// #475 review P1: the signed toolbar keeps the business controls of the base ledger. The Go harness runs this group alone
+// after the one-warehouse phase, with a second active warehouse, the archived parity-c08 product and a real cursor.
+test.describe("PARITY-DATA-OPS inventory warehouse, status, refresh and cursor controls", () => {
+  test.skip(!multiWarehouse, "needs the Go-seeded second active warehouse (LC_BROWSER_PHASE=multi-warehouse)");
+  const primary = process.env.LC_BROWSER_PARITY_PRIMARY!, primaryID = process.env.LC_BROWSER_PARITY_PRIMARY_ID!;
+  const second = process.env.LC_BROWSER_PARITY_SECOND!, secondID = process.env.LC_BROWSER_PARITY_SECOND_ID!;
+  const cursor = process.env.LC_BROWSER_PARITY_CURSOR!;
+  for (const mobile of [false, true]) {
+    const viewport = mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 };
+    test(`inventory ${viewport.width}: second warehouse, archived filter, refresh and cursor reset`, async ({ page }) => {
+      await page.setViewportSize(viewport); await login(page);
+      await page.goto(root("zh-TW", "inventory")); await heading(page, "庫存");
+      await stock(page, { [primary]: 24, [second]: 5 });
+      await page.goto(`${root("zh-TW", "inventory")}&q=A12`); await heading(page, "庫存");
+      const warehouse = page.getByRole("combobox", { name: "倉庫", exact: true });
+      const status = page.getByRole("combobox", { name: "狀態", exact: true });
+      const onHand = () => page.getByRole("row").filter({ hasText: "A12 · 焦糖托特包" }).locator("td").nth(1);
+      const empty = page.getByRole("heading", { name: "沒有符合條件的 SKU", exact: true });
+      await expect(warehouse).toBeVisible(); await expect(status).toBeVisible();
+
+      // (a) a real select switches to the second warehouse, shows its rows and the adjustment targets it.
+      await action(page, "倉庫", "selectOption", "primary warehouse balance", async () => {
+        await warehouse.selectOption({ label: primary }); await expect(onHand()).toHaveText("24");
+      });
+      await action(page, "倉庫", "selectOption", "second warehouse balance, no cursor", async () => {
+        await warehouse.selectOption({ label: second });
+        await expect(page).toHaveURL(url => url.searchParams.get("warehouse") === secondID && !url.searchParams.has("cursor"));
+        await expect(warehouse).toHaveValue(secondID); await expect(onHand()).toHaveText("5");
+      });
+      // (c) FIXTURE change on the server; the page shows it only after Refresh re-reads.
+      await stock(page, { [second]: 6 });
+      await expect(onHand()).toHaveText("5");
+      await click(page, "重新整理", "refresh re-reads the second warehouse", async () => {
+        await expect(onHand()).toHaveText("6");
+        await expect(page).toHaveURL(url => url.searchParams.get("warehouse") === secondID);
+      });
+      await action(page, "A12 / 調整庫存", "click", "second-warehouse adjustment opens", async () => {
+        await page.getByRole("row").filter({ hasText: "A12 · 焦糖托特包" }).getByRole("button", { name: "調整庫存", exact: true }).click();
+        await heading(page, "調整庫存"); await expect(page.getByText(second, { exact: true }).first()).toBeVisible();
+      });
+      await click(page, "增加 3", "forecast starts from the second warehouse", () => expect(page.getByText("9", { exact: true }).first()).toBeVisible());
+      await click(page, "到貨補錄", "reason selected before review", () => expect(page.getByRole("button", { name: "核對調整", exact: true })).toBeEnabled());
+      await click(page, "核對調整", "review the second-warehouse adjustment", () => heading(page, "核對庫存調整"));
+      const sent = page.waitForRequest(request => request.method() === "POST" && new URL(request.url()).pathname === `/api/stores/${store}/inventory/adjustments`);
+      await click(page, "確認調整", "the command carries the second warehouse", async () => {
+        expect((await sent).postDataJSON().warehouse_id).toBe(secondID); await heading(page, "庫存已調整");
+      });
+      await click(page, "返回庫存", "second warehouse keeps the adjusted balance after reload", async () => {
+        await page.reload(); await expect(warehouse).toHaveValue(secondID); await expect(onHand()).toHaveText("9");
+      });
+      await action(page, "倉庫", "selectOption", "primary warehouse is untouched", async () => {
+        await warehouse.selectOption({ label: primary });
+        await expect(page).toHaveURL(url => url.searchParams.get("warehouse") === primaryID); await expect(onHand()).toHaveText("24");
+      });
+
+      // (b) archived shows the archived SKU, active hides it.
+      await page.goto(`${root("zh-TW", "inventory")}&q=C08`); await heading(page, "庫存");
+      await action(page, "狀態", "selectOption", "archived shows the archived C08", async () => {
+        await status.selectOption({ label: "已封存" });
+        await expect(page).toHaveURL(url => url.searchParams.get("status") === "archived");
+        await expect(page.getByText("C08 · 帆布收納袋", { exact: true })).toBeVisible();
+      });
+      await action(page, "狀態", "selectOption", "active hides the archived C08", async () => {
+        await status.selectOption({ label: "販售中" });
+        await expect(page).toHaveURL(url => url.searchParams.get("status") === "active");
+        await expect(empty).toBeVisible(); await expect(page.getByText("C08 · 帆布收納袋", { exact: true })).toHaveCount(0);
+      });
+
+      // (d) a real Go-encoded cursor (second warehouse, q=A12, active, after A12) is dropped by either selector.
+      const paged = `${root("zh-TW", "inventory")}&warehouse=${secondID}&q=A12&status=active&cursor=${cursor}`;
+      await page.goto(paged); await heading(page, "庫存");
+      await expect(empty).toBeVisible(); await expect(page.getByRole("alert")).toHaveCount(0);
+      await action(page, "狀態", "selectOption", "status change drops the cursor", async () => {
+        await status.selectOption({ label: "全部狀態" });
+        await expect(page).toHaveURL(url => url.searchParams.get("status") === "all" && !url.searchParams.has("cursor"));
+        await expect(onHand()).toHaveText("9");
+      });
+      await page.goto(paged); await heading(page, "庫存"); await expect(empty).toBeVisible();
+      await action(page, "倉庫", "selectOption", "warehouse change drops the cursor", async () => {
+        await warehouse.selectOption({ label: primary });
+        await expect(page).toHaveURL(url => url.searchParams.get("warehouse") === primaryID && !url.searchParams.has("cursor"));
+        await expect(onHand()).toHaveText("24");
       });
     });
   }
