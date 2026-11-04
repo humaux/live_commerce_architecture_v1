@@ -198,6 +198,8 @@ function ImportForm({ locale, store, boundary, onSignedOut, onUnconfirmed }: {
     finally { inflight.current = false; if (mounted.current) setBusy(false); }
   }
   const rowFailures = receipt?.failed ?? preview?.failed_rows ?? 0;
+  // The repair route is much shorter than the preview it opens from: start at the top so the shell app bar and heading are on screen.
+  const showErrors = () => { setStage("errors"); globalThis.scrollTo?.(0, 0); }; // optional: node render harnesses have no window
   if (kind === "customers") {
     const title = unknown ? d.pendingTitle : stage === "result" ? d.customerResult : stage === "errors" ? d.customerErrors : stage === "preview" || stage === "confirm" ? d.reviewCustomers : d.customerTitle;
     const filePicker = <section className="ops-card"><h2>{d.selectedFile}</h2>{file && <p>{file.name}</p>}<p className="ops-note">{d.customerLimits}</p>
@@ -226,7 +228,7 @@ function ImportForm({ locale, store, boundary, onSignedOut, onUnconfirmed }: {
         <p className="ops-note">{d.previewStep}</p>{notice && <section className="ops-warning"><p>{notice}</p><p>{d.staleHelp}</p></section>}
         <div className="ops-columns"><div><section className="ops-card"><h2>{notice ? d.latestPreview : file?.name}</h2><p>{dataOpsText(d.customerTotals, { new: preview.new_rows, updated: preview.update_rows, failed: preview.failed_rows })}</p><p className="ops-note">{d.applyHelp}</p></section>
           <section className="ops-card">{impact}<button type="button" data-testid="import-back" disabled={locked} onClick={() => { setPreview(null); setNotice(""); setStage("mapping"); }}>{d.backMapping}</button></section>
-        </div><aside><section className="ops-card"><h2>{d.rowOutcomes}</h2><p className="ops-note">{d.privateRows}</p><ImportVerdictTable key={previewVersion} locale={locale} preview={preview} signed />{preview.failed_rows > 0 && <button type="button" onClick={() => setStage("errors")}>{d.viewReasons}</button>}</section><section className="ops-callout"><h2>{d.recheck}</h2><p>{d.recheckHelp}</p></section></aside></div>
+        </div><aside><section className="ops-card"><h2>{d.rowOutcomes}</h2><p className="ops-note">{d.privateRows}</p><ImportVerdictTable key={previewVersion} locale={locale} preview={preview} signed />{preview.failed_rows > 0 && <button type="button" onClick={showErrors}>{d.viewReasons}</button>}</section><section className="ops-callout"><h2>{d.recheck}</h2><p>{d.recheckHelp}</p></section></aside></div>
         <details><summary>{d.rowOutcomes}</summary><ImportPreviewCounts locale={locale} kind={kind} preview={preview} /></details>
         <div className="ops-footer"><button type="button" disabled={locked} onClick={() => { setPreview(null); setNotice(""); setStage("mapping"); }}>{d.backMapping}</button><button type="button" className="primary" data-testid="import-confirm" disabled={locked || preview.apply_rows === 0} onClick={() => void execute("commit")}>{notice ? d.confirm : dataOpsText(d.confirmImport, { n: preview.apply_rows })}</button></div>
       </>}
@@ -240,14 +242,14 @@ function ImportForm({ locale, store, boundary, onSignedOut, onUnconfirmed }: {
             {row.code === "required" && <p>{source ? dataOpsText(d.sourceRepair, { column }) : d.requiredRepair}</p>}
           </section>;
         })}<p className="ops-note">{d.errorPrivacy}</p><button type="button" data-testid="import-download-failed" disabled={locked || rowFailures === 0} onClick={() => void download()}>{c.failedDownload}</button></section>
-        <div className="ops-footer"><button type="button" onClick={() => setStage("preview")}>{d.backPreview}</button><button type="button" onClick={() => fileInput.current?.click()}>{d.correctedFile}</button></div>{filePicker}
+        {filePicker}<div className="ops-footer"><button type="button" onClick={() => setStage("preview")}>{d.backPreview}</button><button type="button" onClick={() => fileInput.current?.click()}>{d.correctedFile}</button></div>
       </>}
       {!unknown && stage === "result" && receipt && <>
         <section className="ops-card" data-testid="import-receipt">
           <h2>{dataOpsText(d.importedRows, { n: receipt.created + receipt.updated })}</h2><p>{dataOpsText(d.receiptTotals, { new: receipt.created, updated: receipt.updated, failed: receipt.failed })}</p><p>{file?.name}</p>
           {receiptMismatch && <p role="alert" data-testid="import-terminal-mismatch">{v.receiptMismatch}</p>}
           {receipt.replayed && <p data-testid="import-replayed">{c.replayed}</p>}
-          {receipt.failed > 0 && <><h2>{d.remaining}</h2><p>{d.repairCustomer}</p><button type="button" onClick={() => setStage("errors")}>{d.viewReasons}</button><button type="button" data-testid="import-download-failed" disabled={locked} onClick={() => void download()}>{c.failedDownload}</button></>}
+          {receipt.failed > 0 && <><h2>{d.remaining}</h2><p>{d.repairCustomer}</p><button type="button" onClick={showErrors}>{d.viewReasons}</button><button type="button" data-testid="import-download-failed" disabled={locked} onClick={() => void download()}>{c.failedDownload}</button></>}
           <details><summary>{d.rowOutcomes}</summary><dl className="import-counts"><div><dt>{c.created}</dt><dd>{receipt.created}</dd></div><div><dt>{c.updated}</dt><dd>{receipt.updated}</dd></div><div><dt>{c.failed}</dt><dd>{receipt.failed}</dd></div></dl></details>
         </section>
         {customerDone && <details><summary>{c.ordersKind}</summary><p>{c.historyNotice}</p><button type="button" data-testid="import-type-orders" disabled={locked || !customerDone} onClick={() => reset("orders")}>{c.ordersKind}</button></details>}
