@@ -100,6 +100,11 @@ const copy = {
     viewAllProducts: "查看所有商品",
     collectionCount: "系列商品 · {n} 件",
     legacyViewAll: "查看全部",
+    standard: "標準款",
+    buyNote: "商品規格與金額以本頁選擇為準；收件資料在結帳時填寫。",
+    delivery: "配送方式",
+    deliveryMethods: "可用方式依收貨地點而定，請以結帳時確認的選項為準。",
+    deliveryFee: "運費於結帳顯示，最終金額以訂單確認為準。",
   },
   "zh-CN": {
     termsHeading: "购物条款",
@@ -141,6 +146,11 @@ const copy = {
     viewAllProducts: "查看所有商品",
     collectionCount: "系列商品 · {n} 件",
     legacyViewAll: "查看全部",
+    standard: "标准款",
+    buyNote: "商品规格与金额以本页选择为准；收件资料在结账时填写。",
+    delivery: "配送方式",
+    deliveryMethods: "可用方式依收货地点而定，请以结账时确认的选项为准。",
+    deliveryFee: "运费于结账显示，最终金额以订单确认为准。",
   },
   en: {
     termsHeading: "Terms & Conditions",
@@ -182,6 +192,11 @@ const copy = {
     viewAllProducts: "View all products",
     collectionCount: "Products in this collection · {n}",
     legacyViewAll: "View all",
+    standard: "Standard",
+    buyNote: "Options and amount are as selected on this page; delivery details are entered at checkout.",
+    delivery: "Delivery",
+    deliveryMethods: "Available methods depend on your destination and are confirmed at checkout.",
+    deliveryFee: "Shipping is shown at checkout; the order confirmation has the final amount.",
   },
 };
 
@@ -210,21 +225,21 @@ export const PARITY_FRAMES: FrameSpec[] = [
   { frameId: "26:676", name: "Buyer Desktop · 沒有符合的商品 · SHOPLINE", bucket: "U:b-product", route: "/[locale]/search?q=no_match_xyz", viewport: "1440x900", screenshotFile: "parity/26-676.png", deliveryPng: "after-26-676.png", plan: "assert" },
   { frameId: "26:968", name: "Buyer Mobile · 沒有符合的商品 · SHOPLINE", bucket: "U:b-product", route: "/[locale]/search?q=no_match_xyz", viewport: "390x844", screenshotFile: "parity/26-968.png", deliveryPng: "after-26-968.png", plan: "assert" },
   { frameId: "51:1380", name: "DESIGN · Buyer Mobile · 規格選擇 · bottom-sheet composition", bucket: "U:b-product", route: "/[locale]/products/caramel-tote", viewport: "390x844", screenshotFile: "parity/51-1380.png", deliveryPng: "after-51-1380.png", plan: "assert" },
-  { frameId: "51:1381", name: "DESIGN · Buyer Mobile · 商品說明與配送", bucket: "U:b-product", route: "/[locale]/products/caramel-tote", viewport: "390x844", screenshotFile: "parity/51-1381.png", deliveryPng: "after-51-1381.png", plan: "NOT_COVERED", reason: "product page has no spec bottom-sheet / details-and-shipping block matching this frame" },
+  { frameId: "51:1381", name: "DESIGN · Buyer Mobile · 商品說明與配送", bucket: "U:b-product", route: "/[locale]/products/caramel-tote", viewport: "390x844", screenshotFile: "parity/51-1381.png", deliveryPng: "after-51-1381.png", plan: "assert" },
   { frameId: "66:1752", name: "Buyer Desktop · 部分商品可購買", bucket: "U:b-product", route: "/[locale]/products/caramel-tote", viewport: "1440x900", screenshotFile: "parity/66-1752.png", deliveryPng: "after-66-1752.png", plan: "DEFERRED", reason: "C8 /claim ownership, integrator transfer", deferredTo: "later claim-parity unit (C8)" },
   { frameId: "66:1753", name: "Buyer Mobile · 部分商品可購買", bucket: "U:b-product", route: "/[locale]/products/caramel-tote", viewport: "390x844", screenshotFile: "parity/66-1753.png", deliveryPng: "after-66-1753.png", plan: "DEFERRED", reason: "C8 /claim ownership, integrator transfer", deferredTo: "later claim-parity unit (C8)" },
-  { frameId: "102:2163", name: "Buyer Desktop · 日常斜背小包", bucket: "U:b-product", route: "/[locale]/products/crossbody", viewport: "1440x900", screenshotFile: "parity/102-2163.png", deliveryPng: "after-102-2163.png", plan: "NOT_COVERED", reason: "frame shows a demo product; the sandbox fixtures have no such product" },
-  { frameId: "102:2232", name: "Buyer Mobile · 日常斜背小包", bucket: "U:b-product", route: "/[locale]/products/crossbody", viewport: "390x844", screenshotFile: "parity/102-2232.png", deliveryPng: "after-102-2232.png", plan: "NOT_COVERED", reason: "frame shows a demo product; the sandbox fixtures have no such product" },
-  { frameId: "104:2209", name: "Buyer Desktop · 輕量帆布托特包", bucket: "U:b-product", route: "/[locale]/products/canvas-tote", viewport: "1440x900", screenshotFile: "parity/104-2209.png", deliveryPng: "after-104-2209.png", plan: "NOT_COVERED", reason: "frame shows a demo product; the sandbox fixtures have no such product" },
-  { frameId: "104:2278", name: "Buyer Mobile · 輕量帆布托特包", bucket: "U:b-product", route: "/[locale]/products/canvas-tote", viewport: "390x844", screenshotFile: "parity/104-2278.png", deliveryPng: "after-104-2278.png", plan: "NOT_COVERED", reason: "frame shows a demo product; the sandbox fixtures have no such product" },
-  { frameId: "104:2553", name: "Buyer Desktop · 迷你收納袋", bucket: "U:b-product", route: "/[locale]/products/mini-pouch", viewport: "1440x900", screenshotFile: "parity/104-2553.png", deliveryPng: "after-104-2553.png", plan: "NOT_COVERED", reason: "frame shows a demo product; the sandbox fixtures have no such product" },
-  { frameId: "104:2622", name: "Buyer Mobile · 迷你收納袋", bucket: "U:b-product", route: "/[locale]/products/mini-pouch", viewport: "390x844", screenshotFile: "parity/104-2622.png", deliveryPng: "after-104-2622.png", plan: "NOT_COVERED", reason: "frame shows a demo product; the sandbox fixtures have no such product" },
-  { frameId: "104:3072", name: "Buyer Desktop · 簡約提袋", bucket: "U:b-product", route: "/[locale]/products/simple-tote", viewport: "1440x900", screenshotFile: "parity/104-3072.png", deliveryPng: "after-104-3072.png", plan: "NOT_COVERED", reason: "frame shows a demo product; the sandbox fixtures have no such product" },
-  { frameId: "104:3141", name: "Buyer Mobile · 簡約提袋", bucket: "U:b-product", route: "/[locale]/products/simple-tote", viewport: "390x844", screenshotFile: "parity/104-3141.png", deliveryPng: "after-104-3141.png", plan: "NOT_COVERED", reason: "frame shows a demo product; the sandbox fixtures have no such product" },
-  { frameId: "104:3416", name: "Buyer Desktop · 米白托特包", bucket: "U:b-product", route: "/[locale]/products/beige-tote", viewport: "1440x900", screenshotFile: "parity/104-3416.png", deliveryPng: "after-104-3416.png", plan: "NOT_COVERED", reason: "frame shows a demo product; the sandbox fixtures have no such product" },
-  { frameId: "104:3485", name: "Buyer Mobile · 米白托特包", bucket: "U:b-product", route: "/[locale]/products/beige-tote", viewport: "390x844", screenshotFile: "parity/104-3485.png", deliveryPng: "after-104-3485.png", plan: "NOT_COVERED", reason: "frame shows a demo product; the sandbox fixtures have no such product" },
-  { frameId: "104:3758", name: "Buyer Desktop · 輕便收納包", bucket: "U:b-product", route: "/[locale]/products/compact-pouch", viewport: "1440x900", screenshotFile: "parity/104-3758.png", deliveryPng: "after-104-3758.png", plan: "NOT_COVERED", reason: "frame shows a demo product; the sandbox fixtures have no such product" },
-  { frameId: "104:3827", name: "Buyer Mobile · 輕便收納包", bucket: "U:b-product", route: "/[locale]/products/compact-pouch", viewport: "390x844", screenshotFile: "parity/104-3827.png", deliveryPng: "after-104-3827.png", plan: "NOT_COVERED", reason: "frame shows a demo product; the sandbox fixtures have no such product" },
+  { frameId: "102:2163", name: "Buyer Desktop · 日常斜背小包", bucket: "U:b-product", route: "/[locale]/products/ceramic-dripper-set", viewport: "1440x900", screenshotFile: "parity/102-2163.png", deliveryPng: "after-102-2163.png", plan: "assert" },
+  { frameId: "102:2232", name: "Buyer Mobile · 日常斜背小包", bucket: "U:b-product", route: "/[locale]/products/ceramic-dripper-set", viewport: "390x844", screenshotFile: "parity/102-2232.png", deliveryPng: "after-102-2232.png", plan: "assert" },
+  { frameId: "104:2209", name: "Buyer Desktop · 輕量帆布托特包", bucket: "U:b-product", route: "/[locale]/products/item-01", viewport: "1440x900", screenshotFile: "parity/104-2209.png", deliveryPng: "after-104-2209.png", plan: "assert" },
+  { frameId: "104:2278", name: "Buyer Mobile · 輕量帆布托特包", bucket: "U:b-product", route: "/[locale]/products/item-01", viewport: "390x844", screenshotFile: "parity/104-2278.png", deliveryPng: "after-104-2278.png", plan: "assert" },
+  { frameId: "104:2553", name: "Buyer Desktop · 迷你收納袋", bucket: "U:b-product", route: "/[locale]/products/item-02", viewport: "1440x900", screenshotFile: "parity/104-2553.png", deliveryPng: "after-104-2553.png", plan: "assert" },
+  { frameId: "104:2622", name: "Buyer Mobile · 迷你收納袋", bucket: "U:b-product", route: "/[locale]/products/item-02", viewport: "390x844", screenshotFile: "parity/104-2622.png", deliveryPng: "after-104-2622.png", plan: "assert" },
+  { frameId: "104:3072", name: "Buyer Desktop · 簡約提袋", bucket: "U:b-product", route: "/[locale]/products/item-03", viewport: "1440x900", screenshotFile: "parity/104-3072.png", deliveryPng: "after-104-3072.png", plan: "assert" },
+  { frameId: "104:3141", name: "Buyer Mobile · 簡約提袋", bucket: "U:b-product", route: "/[locale]/products/item-03", viewport: "390x844", screenshotFile: "parity/104-3141.png", deliveryPng: "after-104-3141.png", plan: "assert" },
+  { frameId: "104:3416", name: "Buyer Desktop · 米白托特包", bucket: "U:b-product", route: "/[locale]/products/wool-knit-scarf", viewport: "1440x900", screenshotFile: "parity/104-3416.png", deliveryPng: "after-104-3416.png", plan: "assert" },
+  { frameId: "104:3485", name: "Buyer Mobile · 米白托特包", bucket: "U:b-product", route: "/[locale]/products/wool-knit-scarf", viewport: "390x844", screenshotFile: "parity/104-3485.png", deliveryPng: "after-104-3485.png", plan: "assert" },
+  { frameId: "104:3758", name: "Buyer Desktop · 輕便收納包", bucket: "U:b-product", route: "/[locale]/products/item-04", viewport: "1440x900", screenshotFile: "parity/104-3758.png", deliveryPng: "after-104-3758.png", plan: "assert" },
+  { frameId: "104:3827", name: "Buyer Mobile · 輕便收納包", bucket: "U:b-product", route: "/[locale]/products/item-04", viewport: "390x844", screenshotFile: "parity/104-3827.png", deliveryPng: "after-104-3827.png", plan: "assert" },
   { frameId: "782:3907", name: "Buyer Desktop · 所有商品 · price_asc", bucket: "U:b-product", route: "/[locale]/products?sort=price_asc", viewport: "1440x900", screenshotFile: "parity/782-3907.png", deliveryPng: "verified-desktop-sort-asc.png", plan: "assert" },
   { frameId: "782:3967", name: "Buyer Desktop · 所有商品 · price_desc", bucket: "U:b-product", route: "/[locale]/products?sort=price_desc", viewport: "1440x900", screenshotFile: "parity/782-3967.png", deliveryPng: "verified-desktop-sort-desc.png", plan: "assert" },
   { frameId: "782:4027", name: "Buyer Desktop · 所有商品 · title", bucket: "U:b-product", route: "/[locale]/products?sort=title", viewport: "1440x900", screenshotFile: "parity/782-4027.png", deliveryPng: "verified-desktop-sort-title.png", plan: "assert" },
@@ -1180,8 +1195,8 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
           }
         }
 
-        // ===== 51:1381 PARTIAL: description entry/content/return only; delivery and whole-frame parity remain NOT_COVERED ==============
-        // Root freeze fcb50a14; original source 06f274c4. No full-frame screenshot or delivery/fee/guest claim belongs to this unit.
+        // ===== 51:1381: description entry/content/return plus the delivery section (integrator ruling 2026-11-04, round b-product) ======
+        // Root freeze fcb50a14; original source 06f274c4. The delivery copy stays generic: which methods a store enabled is only known at checkout.
         if (isMobile) {
           const frame = "51:1381";
           const params = new URLSearchParams();
@@ -1206,7 +1221,7 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
             | "url-preservation" | "zero-writes" | "readback-get" | "readback-data" | "merchant-content" | "layout"
             | "header-return" | "dock-return" | "escape-return" | "dialog-closed" | "entry-focus"
             | "options-entry" | "options-heading" | "options-selection" | "options-quantity" | "options-return" | "options-closed" | "options-focus"
-            | "draft-base" | "draft-reopened" = "setup-product-get";
+            | "draft-base" | "draft-reopened" | "delivery" = "setup-product-get";
           // Reuse the ledger, but never serialize raw Playwright/request/assertion errors (which can include preview/session data).
           const descriptionStep = (control: string, operation: string, expected: string, perform: () => Promise<string | void>) =>
             step(frame, productRoute, control, operation, expected, async () => {
@@ -1322,6 +1337,19 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
                   assert(Math.abs(dock.y - 760) <= 1 && Math.abs(dock.height - 84) <= 1, "description dock occupies y=760..844");
                   await unchanged();
                 });
+                await descriptionStep("description delivery section", "inspect task delivery section", `heading "${c.delivery}", generic methods note, pickup note and fee note "${c.deliveryFee}"; zero writes`, async () => {
+                  phase = "delivery";
+                  const delivery = task().getByTestId("product-description-delivery");
+                  await expect(delivery.getByRole("heading", { name: c.delivery, exact: true })).toBeVisible({ timeout: T });
+                  await expect(delivery.getByText(c.deliveryMethods, { exact: true })).toBeVisible();
+                  await expect(delivery.getByText(c.specPickup, { exact: true })).toBeVisible();
+                  await expect(delivery.getByText(c.deliveryFee, { exact: true })).toBeVisible();
+                  const description = await task().getByText(detail!.description, { exact: true }).boundingBox();
+                  const heading = await delivery.getByRole("heading", { name: c.delivery, exact: true }).boundingBox();
+                  assert(description && heading && description.y + description.height <= heading.y, "delivery section must follow the merchant description");
+                  await unchanged();
+                });
+                await shot(frame, productRoute);
                 let returned = true;
                 for (const method of ["header", "dock", "Escape"] as const) {
                   if (!returned) {
@@ -1405,6 +1433,121 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
               page.off("request", observeWrite);
             }
           }
+        }
+
+        // ===== b-product single-SKU / one-axis frames (integrator ruling 2026-11-04): ONE buy card on every product (add-to-cart AND
+        // buy-now), plus the frames' default-variant tag, quantity, note, description card, desktop back link, mobile header bar and mobile
+        // bottom action. Demo products are a data gap: each frame pair maps to a real fixture product of the same shape (mapping table in
+        // output/parity-buyer-browse/FRAME-TRIAGE-20261104.md). Runs after every cart baseline above; no later step reads this context's cart.
+        const productMap: [string, string, string][] = [
+          ["102:2163", "102:2232", "dripper"], ["104:2209", "104:2278", "item01"], ["104:2553", "104:2622", "item02"],
+          ["104:3072", "104:3141", "item03"], ["104:3758", "104:3827", "item04"], ["104:3416", "104:3485", "scarf"],
+        ];
+        const backNav = () => page.getByTestId("product-back");
+        const backLink = () => backNav().getByRole("link", { name: c.allProducts, exact: true });
+        let productSigned = true;
+        for (const [desktopFrame, mobileFrame, key] of productMap) {
+          const frame = f(desktopFrame, mobileFrame);
+          const item = (facts?.products ?? []).find((x: any) => x.key === key);
+          const route = `/${locale}/products/${item?.slug ?? key}`;
+          if (!productSigned) {
+            notRun.push({ frame, locale, subcase: `${viewport} ${key} product page`, reason: "signed back link absent on the first mapped product; dependent product frames not run" });
+            continue;
+          }
+          await page.goto(`${origin}/${locale}/search?q=${encodeURIComponent(item?.title ?? key)}`);
+          let opened = false;
+          await step(frame, route, `search result card "${item?.title ?? key}"`, "click", "the card opens this product's page", async () => {
+            assert(item, `facts.products ${key} missing`);
+            await page.getByTestId("product-card").filter({ hasText: item.title }).first().getByRole("link").click({ timeout: T });
+            await expect(page).toHaveURL(new RegExp(`/${locale}/products/${item.slug}$`), { timeout: T });
+            await expect(page.getByTestId("product-buy")).toBeVisible({ timeout: T });
+            opened = true;
+            return page.url();
+          });
+          if (!opened) {
+            notRun.push({ frame, locale, subcase: `${viewport} ${key} product page`, reason: "product page not reached by the card click; dependent steps not run" });
+            continue;
+          }
+          await settle();
+          // The signed back link anchors this layout (bounded like the home/collection anchors): when the first mapped product lacks it,
+          // every later mapped product is NOT_RUN instead of each waiting out its timeout.
+          await step(frame, route, "back link", "assert", `"‹ ${c.allProducts}" link to the product list, above the product title`, async () => {
+            await expect(backLink()).toBeVisible({ timeout: T });
+            await expect(backLink()).toHaveAttribute("href", new RegExp(`/${locale}/products$`));
+            const back = await box(backNav());
+            const title = await box(page.getByRole("heading", { level: 1, name: item.title, exact: true }));
+            assert(back.y + back.height <= title.y, `back nav ${back.y}+${back.height} must sit above the title ${title.y}`);
+          });
+          if (!(await backLink().isVisible())) {
+            productSigned = false;
+            notRun.push({ frame, locale, subcase: `${viewport} ${key} buy card, description card, header bar, bottom action, clicks`, reason: "signed back link absent; dependent steps not run" });
+            continue;
+          }
+          const single = !item.axes?.length;
+          const variant = item.variants.filter((v: any) => v.stock > 0).sort((a: any, b: any) => a.price_minor - b.price_minor)[0];
+          const buy = page.getByTestId("product-buy");
+          await step(frame, route, "one buy card", "assert", `title, price, ${single ? `tag "${c.standard}"` : "the selected option chip"}, "${c.quantity}" 1, note "${c.buyNote}", then "${c.addToCart}" and "${c.buyNow}", both enabled`, async () => {
+            await expect(page.getByRole("heading", { level: 1, name: item.title, exact: true })).toBeVisible({ timeout: T });
+            const shown = num(await buy.getByTestId("variant-price").innerText({ timeout: T }));
+            assert.equal(shown, variant.price_minor / 100, "displayed price must be the server variant price");
+            const pick = single ? buy.getByTestId("default-variant-tag") : buy.getByRole("radio", { name: variant.values[0], exact: true });
+            if (single) await expect(pick).toHaveText(c.standard, { timeout: T });
+            else {
+              await expect(pick).toBeChecked({ timeout: T });
+              await expect(buy.getByTestId("default-variant-tag")).toHaveCount(0);
+            }
+            await expect(buy.getByText(c.quantity, { exact: true })).toBeVisible();
+            await expect(buy.getByTestId("qty-input")).toHaveValue("1");
+            await expect(buy.getByTestId("product-buy-note")).toHaveText(c.buyNote);
+            for (const [id, label] of [["add-to-cart", c.addToCart], ["buy-now", c.buyNow]]) {
+              await expect(buy.getByTestId(id)).toHaveText(label);
+              await expect(buy.getByTestId(id)).toBeEnabled();
+            }
+            const order = [await box(pick), await box(buy.getByTestId("qty-input")), await box(buy.getByTestId("product-buy-note")), await box(buy.getByTestId("add-to-cart")), await box(buy.getByTestId("buy-now"))];
+            assert(order.every((b, i) => i === 0 || order[i - 1].y < b.y), `buy card order must be tag < quantity < note < add < buy-now, got ${order.map((b) => Math.round(b.y)).join(", ")}`);
+            return `price ${shown}; y ${order.map((b) => Math.round(b.y)).join(" < ")}`;
+          });
+          await step(frame, route, "description card", "assert", `card "${c.descriptionTitle}" with the merchant description, below the ${isMobile ? "buy card" : "gallery"}`, async () => {
+            const card = page.getByTestId("product-description-card");
+            await expect(card.getByRole("heading", { name: c.descriptionTitle, exact: true })).toBeVisible({ timeout: T });
+            await expect(card.getByText(item.description, { exact: true })).toBeVisible();
+            const above = await box(isMobile ? buy.getByTestId("buy-now") : page.getByTestId("product-gallery").first());
+            const own = await box(card);
+            assert(own.y >= above.y + above.height, `description card ${own.y} must sit below ${above.y + above.height}`);
+          });
+          await step(frame, route, isMobile ? "mobile header bar" : "desktop back link shape", "assert", isMobile ? `full-width bar: 44px back control and the title "${item.title}"` : `visible text "${c.allProducts}", no bar title`, async () => {
+            const link = await box(backLink());
+            const title = backNav().getByTestId("product-back-title");
+            if (isMobile) {
+              await expect(title).toHaveText(item.title, { timeout: T });
+              const bar = await box(backNav());
+              assert(link.width >= 44 && link.height >= 44, `back control ${link.width}x${link.height} below 44px`);
+              assert(Math.abs(bar.x) <= 1 && Math.abs(bar.width - width) <= 1, `bar must span the viewport, got x=${bar.x} w=${bar.width}`);
+            } else {
+              await expect(backLink()).toContainText(c.allProducts);
+              await expect(title).toBeHidden();
+            }
+          });
+          await shot(frame, route);
+          const add = () => (isMobile && single ? page.getByTestId("product-dock-add").getByRole("button", { name: c.addToCart, exact: true }) : buy.getByTestId("add-to-cart"));
+          if (isMobile) await step(frame, route, "mobile bottom action", "assert", single ? `fixed bottom "${c.addToCart}"` : `fixed bottom "${c.chooseSpec}" (master 4:9532 dock wins, P2 #546)`, async () => {
+            const action = single ? add() : page.getByTestId("product-options-dock-entry").getByRole("button", { name: c.chooseSpec, exact: true });
+            await expect(action).toBeVisible({ timeout: T });
+            const b = await box(action);
+            assert(b.y + b.height <= height + 1 && b.y >= height - 84, `bottom action must sit in the bottom 84px, got y=${b.y} h=${b.height}`);
+          });
+          await step(frame, route, isMobile && single ? "bottom add-to-cart" : "add-to-cart button", "click + Escape", "the cart drawer opens with its checkout action; Escape closes it", async () => {
+            await add().click({ timeout: T });
+            await expect(page.getByTestId("cart-checkout")).toBeVisible({ timeout: T });
+            await page.keyboard.press("Escape");
+            await expect(page.getByTestId("cart-drawer")).not.toBeVisible({ timeout: T });
+          });
+          await step(frame, route, isMobile ? "header back control" : `link "‹ ${c.allProducts}"`, "click", "opens the product list", async () => {
+            await backLink().click({ timeout: T });
+            await expect(page).toHaveURL(new RegExp(`/${locale}/products/?$`), { timeout: T });
+            await expect(page.getByRole("heading", { level: 1, name: c.allProducts, exact: true })).toBeVisible({ timeout: T });
+            return page.url();
+          });
         }
 
         // ===== Removed / unknown product ===============================================================================================
