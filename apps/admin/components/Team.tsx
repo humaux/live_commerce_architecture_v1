@@ -1,7 +1,8 @@
-// Purpose: Owns the signed staff lists, role review, removal and invitation-withdrawal flows.
+// Purpose: Owns the signed staff lists, invitation, role review, removal and invitation-withdrawal flows.
 // Depends on: react, @live-commerce/i18n, @live-commerce/format, @/lib/model, @/lib/customers-client, @/lib/team-client, @/lib/team-model, @/lib/team-copy, ./WorkspaceFrame, ./team.css
 // Used by: apps/admin/app/[locale]/team/page.tsx
-// Invariants: server scopes every read/write; invites remain paused; admin promotion is unavailable; uncertain writes never replay.
+// Invariants: server scopes every read/write; invites use the existing invite BFF (owner lifted the pause 2026-11-04; re-auth is the
+//   shared ReauthDialog fetch wrapper); admin promotion is unavailable; uncertain writes never replay.
 "use client";
 
 import { useRef, useState } from "react";
@@ -9,7 +10,7 @@ import type { Locale } from "@live-commerce/i18n";
 import { instantToTaipei } from "@live-commerce/format";
 import type { Store } from "@/lib/model";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
-import { readTeam, removeMember, revokeInvite, setMemberRole } from "@/lib/team-client";
+import { inviteMember, readTeam, removeMember, revokeInvite, setMemberRole } from "@/lib/team-client";
 import { roles, type Role, type Member, type Invitation, type Team as TeamData } from "@/lib/team-model";
 import { teamCopy, teamParityCopy, type TeamParityCopy } from "@/lib/team-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -60,8 +61,9 @@ export function Team({ locale, stores, store, initialError, renderKey }: {
   </WorkspaceFrame>;
 }
 
-type Action = "role" | "remove" | "revoke";
-type Screen = "list" | "pending" | "invite" | "paused" | "edit" | "review" | "done" | "checking" | "unresolved" | "error";
+type Action = "role" | "remove" | "revoke" | "invite";
+const reauthCodes = ["unauthorized", "reauth_required", "reauth_failed"];
+type Screen = "list" | "pending" | "invite" | "sent" | "paused" | "edit" | "review" | "done" | "checking" | "unresolved" | "error";
 
 /** Keeps one local review snapshot; completion and reconciliation depend on existing server responses. */
 function Sections({ team, store, boundary, refresh, locale, c }: {
@@ -74,11 +76,12 @@ function Sections({ team, store, boundary, refresh, locale, c }: {
   const [email, setEmail] = useState("");
   const [action, setAction] = useState<Action>("role");
   const [problem, setProblem] = useState("");
+  const [sentId, setSentId] = useState("");
   const [busy, setBusy] = useState(false);
   const sending = useRef(false);
   const back = () => { setScreen("list"); setMember(null); setInvitation(null); setProblem(""); };
-  const person = action === "revoke" ? invitation?.email : member ? identity(member, c) : "";
-  const inviteEntry = () => { setEmail(""); setRole("viewer"); setScreen("invite"); };
+  const person = action === "invite" ? email : action === "revoke" ? invitation?.email : member ? identity(member, c) : "";
+  const inviteEntry = () => { setEmail(""); setRole("viewer"); setAction("invite"); setProblem(""); setScreen("invite"); };
   const roleChoices = <fieldset className="team-roles" aria-label={teamCopy[locale].colRole}>
     {roles.map(item => <label key={item}>
       <input type="radio" name="team-role" value={item} checked={role === item} onChange={() => setRole(item)} />
@@ -97,27 +100,45 @@ function Sections({ team, store, boundary, refresh, locale, c }: {
     else { setProblem(result.code); setScreen("error"); }
     sending.current = false; setBusy(false);
   }
+  async function sendInvite() {
+    if (sending.current) return;
+    sending.current = true; setBusy(true);
+    const result = await inviteMember(store, email.trim(), role, locale, boundary);
+    // SENT/FAILED are server facts; UNKNOWN mail or a lost answer is only re-read, never resent.
+    if (result.ok && result.value.mail_state !== "UNKNOWN") {
+      setSentId(result.value.id);
+      setScreen(!(await refresh()) ? "checking" : result.value.mail_state === "SENT" ? "sent" : "paused");
+    } else if (result.ok || ["retry_later", "unavailable"].includes(result.code)) setScreen("checking");
+    else { setProblem(result.code); setScreen("error"); }
+    sending.current = false; setBusy(false);
+  }
   async function reconcile() {
     if (sending.current) return;
     sending.current = true; setBusy(true);
     // A latest-list read can confirm a change, but never resends an uncertain mutation.
     try {
       const latest = await readTeam(store, AbortSignal.timeout(8000));
-      const confirmed = latest.my_role === "owner" && (action === "role"
+      const found = action === "invite" ? latest.invitations.find(item => item.email.toLowerCase() === email.trim().toLowerCase() && item.role === role) : undefined;
+      if (found) setSentId(found.id);
+      const confirmed = latest.my_role === "owner" && (action === "invite" ? found?.mail_state === "SENT" || found?.mail_state === "FAILED" : action === "role"
         ? latest.members.some(item => item.principal_id === member?.principal_id && item.role === role)
         : action === "remove" ? !latest.members.some(item => item.principal_id === member?.principal_id)
         : !latest.invitations.some(item => item.id === invitation?.id));
-      setScreen(await refresh() && confirmed ? "done" : "unresolved");
+      setScreen(await refresh() && confirmed ? action !== "invite" ? "done" : found?.mail_state === "SENT" ? "sent" : "paused" : "unresolved");
     } catch { await refresh(); setScreen("unresolved"); }
     sending.current = false; setBusy(false);
   }
   const button = (text: string, onClick: () => void, primary = false, disabled = false) => <button type="button" className={primary ? "primary" : ""} onClick={onClick} disabled={busy || disabled}>{text}</button>;
   const invitationTime = (item: Invitation) => format(c.sentExpiry, { sent: date(item.created_at, true), expiry: date(item.expires_at, true) });
-  const title = screen === "invite" ? c.invite : screen === "paused" ? c.mailFailed : screen === "edit" || screen === "review" && action === "role" ? c.edit
+  const sentItem = team.invitations.find(item => item.id === sentId);
+  const [problemTitle, problemHelp] = problem === "last_owner" ? [c.lastOwner, c.protected] : problem === "owner_role_disabled" ? [c.ownerDisabled, c.ownerDisabledHelp]
+    : problem === "invalid_email" ? [c.invalidEmail, c.invalidEmailHelp] : problem === "already_member" ? [c.alreadyMember, c.alreadyMemberHelp]
+    : problem === "too_many_invitations" ? [c.inviteLimit, c.inviteLimitHelp] : reauthCodes.includes(problem) ? [c.reauth, c.reauthHelp] : [c.loadingError, c.loadingHelp];
+  const title = screen === "invite" ? c.invite : screen === "sent" ? c.sent : screen === "paused" ? c.mailFailed : screen === "edit" || screen === "review" && action === "role" ? c.edit
     : screen === "review" ? action === "remove" ? c.removeTitle : c.withdrawTitle
     : screen === "done" ? action === "role" ? c.roleDone : action === "remove" ? c.removeDone : c.withdrawDone
     : screen === "checking" || screen === "unresolved" ? c.checking
-    : screen === "error" ? problem === "last_owner" ? c.lastOwner : problem === "owner_role_disabled" ? c.ownerDisabled : ["unauthorized", "reauth_required", "reauth_failed"].includes(problem) ? c.reauth : c.loadingError
+    : screen === "error" ? problemTitle
     : screen === "pending" && team.invitations.length === 0 ? c.pending : c.title;
   return <>
     <h1>{title}</h1>
@@ -145,14 +166,20 @@ function Sections({ team, store, boundary, refresh, locale, c }: {
       </>}
       <div className="team-actions">{button(c.invite, inviteEntry, true)}{screen === "pending" && team.invitations.length === 0 && button(c.back, back)}</div>
     </>}
-    {screen === "invite" && <form onSubmit={event => { event.preventDefault(); setScreen("paused"); }}>
+    {screen === "invite" && <form onSubmit={event => { event.preventDefault(); void sendInvite(); }}>
       <section className="team-card">
         <label className="team-email" htmlFor="team-invite-email">{c.email}
           <input id="team-invite-email" data-testid="team-invite-email" type="email" required maxLength={254} autoComplete="off" value={email} onChange={event => setEmail(event.target.value)} />
         </label>{roleChoices}
       </section>
-      <div className="team-actions">{button(c.cancel, back)}<button type="submit" className="primary" data-testid="team-invite-send">{c.send}</button></div>
+      <div className="team-actions">{button(c.cancel, back)}<button type="submit" className="primary" data-testid="team-invite-send" disabled={busy}>{c.send}</button></div>
     </form>}
+    {screen === "sent" && <>
+      <section className="team-card" role="status" data-testid="team-notice"><p className="team-person">{sentItem?.email ?? email}</p><p>{c.roleNames[sentItem?.role ?? role]}</p>
+        {sentItem && <p className="team-help">{invitationTime(sentItem)}</p>}<p>{c.sentState}</p><p className="team-help">{c.validFor}</p>
+      </section>
+      <div className="team-actions">{button(c.back, () => { back(); setScreen("pending"); }, true)}</div>
+    </>}
     {screen === "paused" && <><section className="team-card"><p className="team-person">{email}</p><p>{c.mailFailedHelp}</p></section><div className="team-actions">{button(c.invite, inviteEntry, true, true)}{button(c.back, back)}</div></>}
     {screen === "edit" && member && <>
       <section className="team-card"><p className="team-person">{identity(member, c)}</p>
@@ -178,8 +205,8 @@ function Sections({ team, store, boundary, refresh, locale, c }: {
       {screen === "checking" && <div className="team-actions">{button(c.latest, () => void reconcile(), true)}</div>}
     </>}
     {screen === "error" && <>
-      <section className="team-card" role="alert"><p>{problem === "last_owner" ? c.protected : problem === "owner_role_disabled" ? c.ownerDisabledHelp : ["unauthorized", "reauth_required", "reauth_failed"].includes(problem) ? c.reauthHelp : c.loadingHelp}</p></section>
-      <div className="team-actions">{["unauthorized", "reauth_required", "reauth_failed"].includes(problem) ? <a href={`/${locale}/`}>{c.signIn}</a> : button(c.back, back, true)}</div>
+      <section className="team-card" role="alert"><p>{problemHelp}</p></section>
+      <div className="team-actions">{reauthCodes.includes(problem) ? <a href={`/${locale}/`}>{c.signIn}</a> : action === "invite" ? button(c.return, () => { setProblem(""); setScreen("invite"); }, true) : button(c.back, back, true)}</div>
     </>}
   </>;
 }

@@ -1,5 +1,28 @@
 # PARITY-TEAM ROUND 3 ruling implementation
 
+## RELAY 6 — owner lifted invite pause 2026-11-04
+
+Owner decision 2026-11-04 (relayed via AskUserQuestion: 「現在解除暫停」): the staff-invite pause is lifted. Backend, outbox, migrations, BFF route, tests and oracle files are untouched.
+
+What changed:
+- `apps/admin/components/Team.tsx:103-114` `sendInvite()` calls the existing `inviteMember` (`apps/admin/lib/team-client.ts:59`, BFF `/api/team/invite`) as base does; `:169` the form submits there instead of the paused view; `:175` Send is disabled while busy. SENT → `sent` screen (`:177-183`, `data-testid="team-notice"`; 回到員工 opens the pending tab), FAILED → existing mail-failed screen, UNKNOWN mail / `retry_later` / `unavailable` → checking (read-only reconcile, never resent; `:115-129` matches the invitation by email+role).
+- `:134-136` error copy per code (`invalid_email`, `already_member`, `too_many_invitations`, `owner_role_disabled`, re-auth codes); `:209` invite errors offer 返回 back to the filled form.
+- Re-auth: like base, 403 `reauth_required` is handled by the shared `ReauthDialog` fetch wrapper (one dialog, one replay); Team adds no own re-auth flow.
+- `packages/i18n/src/team-parity.ts:78-88,162-172,246-256`: 11 keys per locale, copied verbatim from the signed oracle translations (FRAME-COPY).
+- Unchanged: admin promotion Continue stays disabled (`Team.tsx:92,188`); this decision does not cover it.
+
+Now reachable by real clicks (CI NOT_RUN): `invite-sent`, `invite-sent-{owner,live,fulfilment,viewer}`, `mail-failed` (real FAILED answer), `invalid-email`, `already-member`, `invite-limit`, `owner-disabled`, `invite-checking`, `checking-unresolved`.
+
+Still blocked:
+1. Admin `role-confirm-admin` / `role-done-admin` (4 frames): still blocked by the Continue-disabled ruling.
+2. `reauth`, `reauth-signin`, `reauth-verify`: the shared ReauthDialog (OC-04, required by `tests/admin/oc/reauth.spec.ts`) catches 403 `reauth_required` before Team does, so the in-page 重新登入 *button* + sign-in copy 「重新登入後，先查看最新名單。」 that the oracle expects never show. The oracle and the OC-04 contract conflict here.
+3. `/invite/[token]` states (`link`…`invitee-off`): `TeamInvite.tsx` has none of the signed copy (no 加入團隊). That is a separate parity unit outside this card's Team.tsx scope, so it is not attempted here.
+4. Real-chain specs: the restored invite API covers the SMTP/replay counts *only* once the specs can reach it. `tests/admin/staff-team.spec.ts:218,229,236-237,362,377-381` and `tests/admin/oc/reauth.spec.ts:230-245` drive the legacy layout: an always-visible email field on the landing page, `<select data-testid="team-invite-role">`, `member-role-*` select, `member-remove(-yes)-*`, the notice and the invites table shown together, and focus returning to Send after the replay. `parity-team.mjs:112-125,227,231` require the signed flow instead: an entry button, five radios, and no 角色 combobox. One page cannot satisfy both without gaming one of them, so `browser_staff_team_test.go:197-217` / `browser_oc_test.go:259,279` are expected to stay red until the integrator reconciles the specs. No spec or oracle was edited.
+5. `parity-team.mjs:214` nav: the signed Figma frame copy itself contains `設定與員工` (FRAME-COPY `1466:74190` and `1468:74244`), next to `設定` / `員工`. It is a stale module-shell label left in the signed frame. The approved shared shell (`設定` > `員工`) is correct, so the frame copy and the oracle that inherits it are the side that is wrong.
+6. `parity-team.mjs:217-224` heading-as-button lookup: unchanged from RELAY 5.
+
+E1 only: ownership regenerate + `--check` exit 0. No local tests/tsc/server. GREEN, parity, SANDBOX and LIVE are NOT_RUN. Own PASS = E0.
+
 ## RELAY 5 — integration merge, overflow hardening, oracle items (2026-11-04)
 
 Merged `origin/r3/integration` (merge `d06f6c925`): kept #531 seeded fixture data and `registerTeamParity` in `tests/admin/parity-shell-browser.mjs` (only the header comment conflicted); `browser-ownership.json` regenerated, `--check` exit 0. Team uses its own `page.route("**/api/team/*")`, so seeding does not touch Team frames.

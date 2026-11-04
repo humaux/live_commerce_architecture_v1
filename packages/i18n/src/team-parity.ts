@@ -74,7 +74,18 @@ export const teamParityCopy = {
     "revokeChecking": "{role}邀請撤回尚未確認，請查看名單，勿再次送出。",
     "roleUnresolved": "變更為{role}尚未確認，請稍後再查看。",
     "removeUnresolved": "移除結果尚未確認，請稍後再查看。",
-    "revokeUnresolved": "{role}邀請撤回尚未確認，請稍後再查看。"
+    "revokeUnresolved": "{role}邀請撤回尚未確認，請稍後再查看。",
+    "sent": "邀請已送出",
+    "sentState": "已送出",
+    "validFor": "邀請 72 小時內有效",
+    "invalidEmail": "請檢查電子郵件",
+    "invalidEmailHelp": "請輸入完整有效的電子郵件。",
+    "alreadyMember": "這位員工已在名單中",
+    "alreadyMemberHelp": "請回到名單查看目前角色。",
+    "inviteLimit": "目前無法新增邀請",
+    "inviteLimitHelp": "先查看待接受邀請，稍後再試。",
+    "inviteChecking": "{role}邀請尚未確認，請查看名單，勿再次送出。",
+    "inviteUnresolved": "{role}邀請尚未確認，請稍後再查看。"
   },
   "zh-CN": {
     "title": "员工",
@@ -147,7 +158,18 @@ export const teamParityCopy = {
     "revokeChecking": "撤回{role}邀请尚未确认，请查看名单，不要再次提交。",
     "roleUnresolved": "改为{role}尚未确认，请稍后再查看。",
     "removeUnresolved": "移除结果尚未确认，请稍后再查看。",
-    "revokeUnresolved": "撤回{role}邀请尚未确认，请稍后再查看。"
+    "revokeUnresolved": "撤回{role}邀请尚未确认，请稍后再查看。",
+    "sent": "邀请已发送",
+    "sentState": "已发送",
+    "validFor": "邀请 72 小时内有效",
+    "invalidEmail": "请检查电子邮箱",
+    "invalidEmailHelp": "请输入完整有效的邮箱地址。",
+    "alreadyMember": "该员工已在名单中",
+    "alreadyMemberHelp": "请返回名单查看当前角色。",
+    "inviteLimit": "暂时无法新增邀请",
+    "inviteLimitHelp": "请先查看待接受邀请，稍后再试。",
+    "inviteChecking": "{role}邀请尚未确认，请查看名单，不要再次提交。",
+    "inviteUnresolved": "{role}邀请尚未确认，请稍后再查看。"
   },
   "en": {
     "title": "Staff",
@@ -220,7 +242,18 @@ export const teamParityCopy = {
     "revokeChecking": "Withdrawal of the {role} invitation is unconfirmed. Check the list; do not submit again.",
     "roleUnresolved": "The change to {role} is unconfirmed. Check again later.",
     "removeUnresolved": "Removal is unconfirmed. Check again later.",
-    "revokeUnresolved": "Withdrawal of the {role} invitation is unconfirmed. Check again later."
+    "revokeUnresolved": "Withdrawal of the {role} invitation is unconfirmed. Check again later.",
+    "sent": "Invitation sent",
+    "sentState": "Sent",
+    "validFor": "Invitation valid for 72 hours",
+    "invalidEmail": "Check the email address",
+    "invalidEmailHelp": "Enter a complete, valid email address.",
+    "alreadyMember": "This person is already a member",
+    "alreadyMemberHelp": "Return to the list to check their current role.",
+    "inviteLimit": "Cannot add invitations now",
+    "inviteLimitHelp": "Review pending invitations and try later.",
+    "inviteChecking": "The {role} invitation is unconfirmed. Check the list; do not submit again.",
+    "inviteUnresolved": "The {role} invitation is unconfirmed. Check again later."
   }
 };
 export type TeamParityCopy = typeof teamParityCopy.en;
