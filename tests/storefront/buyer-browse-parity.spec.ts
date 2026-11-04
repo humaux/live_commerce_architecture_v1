@@ -92,6 +92,14 @@ const copy = {
     increase: "增加數量",
     specLimit: "每次購買數量依商品庫存限制。",
     specPickup: "門市取貨：結帳時選擇超商品牌，填寫門市號碼（店名、地址可不填）。",
+    welcome: "歡迎來到{name}",
+    searchLabel: "搜尋商品",
+    searchHint: "搜尋商品名稱或關鍵字",
+    homeAllProducts: "全部商品",
+    allCollections: "所有系列",
+    viewAllProducts: "查看所有商品",
+    collectionCount: "系列商品 · {n} 件",
+    legacyViewAll: "查看全部",
   },
   "zh-CN": {
     termsHeading: "购物条款",
@@ -125,6 +133,14 @@ const copy = {
     increase: "增加数量",
     specLimit: "每次购买数量依商品库存限制。",
     specPickup: "门店取货：结账时选择便利店品牌，填写门店号码（店名、地址可不填）。",
+    welcome: "欢迎来到{name}",
+    searchLabel: "搜索商品",
+    searchHint: "搜索商品名称或关键词",
+    homeAllProducts: "全部商品",
+    allCollections: "所有系列",
+    viewAllProducts: "查看所有商品",
+    collectionCount: "系列商品 · {n} 件",
+    legacyViewAll: "查看全部",
   },
   en: {
     termsHeading: "Terms & Conditions",
@@ -158,17 +174,25 @@ const copy = {
     increase: "Increase quantity",
     specLimit: "Purchase quantity is limited by product stock.",
     specPickup: "For convenience-store pickup, choose a chain at checkout and enter the store number (name and address are optional).",
+    welcome: "Welcome to {name}",
+    searchLabel: "Search products",
+    searchHint: "Search by product name or keyword",
+    homeAllProducts: "All products",
+    allCollections: "All collections",
+    viewAllProducts: "View all products",
+    collectionCount: "Products in this collection · {n}",
+    legacyViewAll: "View all",
   },
 };
 
 // Complete inventory of the 73 Appendix A frames. `plan: "assert"` frames are only COVERED after their assertions pass.
 export const PARITY_FRAMES: FrameSpec[] = [
-  { frameId: "4:9192", name: "Buyer Desktop · 歡迎來到大夢甄選 · SHOPLINE", bucket: "U:b-home", route: "/[locale]", viewport: "1440x900", screenshotFile: "parity/4-9192.png", deliveryPng: "after-4-9192.png", plan: "NOT_COVERED", reason: "home hero removed: the signed hero copy is one demo brand's text (DaWan Selection), not tenant data, so it cannot ship in a multi-tenant home page" },
-  { frameId: "4:9296", name: "Buyer Mobile · 歡迎來到大夢甄選 · SHOPLINE", bucket: "U:b-home", route: "/[locale]", viewport: "390x844", screenshotFile: "parity/4-9296.png", deliveryPng: "after-4-9296.png", plan: "NOT_COVERED", reason: "home hero removed: the signed hero copy is one demo brand's text (DaWan Selection), not tenant data, so it cannot ship in a multi-tenant home page" },
+  { frameId: "4:9192", name: "Buyer Desktop · 歡迎來到大夢甄選 · SHOPLINE", bucket: "U:b-home", route: "/[locale]", viewport: "1440x900", screenshotFile: "parity/4-9192.png", deliveryPng: "after-4-9192.png", plan: "assert" },
+  { frameId: "4:9296", name: "Buyer Mobile · 歡迎來到大夢甄選 · SHOPLINE", bucket: "U:b-home", route: "/[locale]", viewport: "390x844", screenshotFile: "parity/4-9296.png", deliveryPng: "after-4-9296.png", plan: "assert" },
   { frameId: "5:15580", name: "Buyer Desktop · 購物條款 · SHOPLINE", bucket: "U:b-home", route: "/[locale]/legal/terms", viewport: "1440x900", screenshotFile: "parity/5-15580.png", deliveryPng: "after-5-15580.png", plan: "assert" },
   { frameId: "5:15658", name: "Buyer Mobile · 購物條款 · SHOPLINE", bucket: "U:b-home", route: "/[locale]/legal/terms", viewport: "390x844", screenshotFile: "parity/5-15658.png", deliveryPng: "after-5-15658.png", plan: "assert" },
-  { frameId: "6:19933", name: "Buyer Desktop · 日常隨行系列 · SHOPLINE", bucket: "U:b-home", route: "/[locale]/collections/daily", viewport: "1440x900", screenshotFile: "parity/6-19933.png", deliveryPng: "verified-daily-series.png", plan: "NOT_COVERED", reason: "frame shows the demo series title; the page shows the merchant's own collection name (tenant data), so the frame copy is not assertable" },
-  { frameId: "6:19984", name: "Buyer Mobile · 日常隨行系列 · SHOPLINE", bucket: "U:b-home", route: "/[locale]/collections/daily", viewport: "390x844", screenshotFile: "parity/6-19984.png", deliveryPng: "verified-daily-series.png", plan: "NOT_COVERED", reason: "frame shows the demo series title; the page shows the merchant's own collection name (tenant data), so the frame copy is not assertable" },
+  { frameId: "6:19933", name: "Buyer Desktop · 日常隨行系列 · SHOPLINE", bucket: "U:b-home", route: "/[locale]/collections/daily", viewport: "1440x900", screenshotFile: "parity/6-19933.png", deliveryPng: "verified-daily-series.png", plan: "assert" },
+  { frameId: "6:19984", name: "Buyer Mobile · 日常隨行系列 · SHOPLINE", bucket: "U:b-home", route: "/[locale]/collections/daily", viewport: "390x844", screenshotFile: "parity/6-19984.png", deliveryPng: "verified-daily-series.png", plan: "assert" },
   { frameId: "26:624", name: "Buyer Desktop · 搜尋結果 · SHOPLINE", bucket: "U:b-home", route: "/[locale]/search?q=托特包", viewport: "1440x900", screenshotFile: "parity/26-624.png", deliveryPng: "after-26-624.png", plan: "assert" },
   { frameId: "26:850", name: "Buyer Desktop · 聯絡商店 · SHOPLINE", bucket: "U:b-home", route: "/[locale]/pages/contact", viewport: "1440x900", screenshotFile: "parity/26-850.png", deliveryPng: "after-26-850.png", plan: "DEFERRED", reason: "contact route removed from this PR (submitted PII by GET into the URL, fake sent state, no backend)", deferredTo: "#375 feat-contact-store" },
   { frameId: "26:921", name: "Buyer Mobile · 搜尋結果 · SHOPLINE", bucket: "U:b-home", route: "/[locale]/search?q=托特包", viewport: "390x844", screenshotFile: "parity/26-921.png", deliveryPng: "after-26-921.png", plan: "assert" },
@@ -177,8 +201,8 @@ export const PARITY_FRAMES: FrameSpec[] = [
   { frameId: "29:670", name: "Buyer Mobile · 訊息已送出 · SHOPLINE", bucket: "U:b-home", route: "/[locale]/pages/contact?sent=true", viewport: "390x844", screenshotFile: "parity/29-670.png", deliveryPng: "after-29-670.png", plan: "DEFERRED", reason: "contact route removed from this PR (submitted PII by GET into the URL, fake sent state, no backend)", deferredTo: "#375 feat-contact-store" },
   { frameId: "782:3906", name: "Buyer Desktop · 系列總覽", bucket: "U:b-home", route: "/[locale]/collections", viewport: "1440x900", screenshotFile: "parity/782-3906.png", deliveryPng: "verified-series-overview.png", plan: "assert" },
   { frameId: "782:4089", name: "Buyer Mobile · 系列總覽", bucket: "U:b-home", route: "/[locale]/collections", viewport: "390x844", screenshotFile: "parity/782-4089.png", deliveryPng: "verified-series-overview.png", plan: "assert" },
-  { frameId: "1253:17135", name: "DESIGN · Buyer Desktop · 店鋪暫停營業 · 狀態", bucket: "U:b-home", route: "/[locale]", viewport: "1440x900", screenshotFile: "parity/1253-17135.png", deliveryPng: "after-1253-17135.png", plan: "NOT_COVERED", reason: "needs a paused-store fixture; the sandbox control endpoint has no such action" },
-  { frameId: "1253:17159", name: "DESIGN · Buyer Mobile · 店鋪暫停營業 · 狀態", bucket: "U:b-home", route: "/[locale]", viewport: "390x844", screenshotFile: "parity/1253-17159.png", deliveryPng: "after-1253-17159.png", plan: "NOT_COVERED", reason: "needs a paused-store fixture; the sandbox control endpoint has no such action" },
+  { frameId: "1253:17135", name: "DESIGN · Buyer Desktop · 店鋪暫停營業 · 狀態", bucket: "U:b-home", route: "/[locale]", viewport: "1440x900", screenshotFile: "parity/1253-17135.png", deliveryPng: "after-1253-17135.png", plan: "BLOCKED", reason: "closed store is reachable (control /unpublish) but the signed copy says the owner paused the shop: Go answers every non-open host with one 404 (contracts/storefront-v2.md:53, lib/shop-upstream.ts closed), so paused vs never-published/unbound cannot be told apart and the store name is not readable while closed; needs a contract field or an owner ruling (FRAME-TRIAGE-20261104.md)" },
+  { frameId: "1253:17159", name: "DESIGN · Buyer Mobile · 店鋪暫停營業 · 狀態", bucket: "U:b-home", route: "/[locale]", viewport: "390x844", screenshotFile: "parity/1253-17159.png", deliveryPng: "after-1253-17159.png", plan: "BLOCKED", reason: "closed store is reachable (control /unpublish) but the signed copy says the owner paused the shop: Go answers every non-open host with one 404 (contracts/storefront-v2.md:53, lib/shop-upstream.ts closed), so paused vs never-published/unbound cannot be told apart and the store name is not readable while closed; needs a contract field or an owner ruling (FRAME-TRIAGE-20261104.md)" },
   { frameId: "4:9441", name: "DESIGN · Buyer Desktop · 焦糖托特包 · SHOPLINE", bucket: "U:b-product", route: "/[locale]/products/caramel-tote", viewport: "1440x900", screenshotFile: "parity/4-9441.png", deliveryPng: "spacing-product-desktop.png", plan: "assert" },
   { frameId: "4:9532", name: "Buyer Mobile · 焦糖托特包 · touch-first", bucket: "U:b-product", route: "/[locale]/products/caramel-tote", viewport: "390x844", screenshotFile: "parity/4-9532.png", deliveryPng: "spacing-product-mobile.png", plan: "assert" },
   { frameId: "6:19772", name: "Buyer Desktop · 所有商品 · SHOPLINE", bucket: "U:b-product", route: "/[locale]/products", viewport: "1440x900", screenshotFile: "parity/6-19772.png", deliveryPng: "verified-desktop-catalog.png", plan: "assert" },
@@ -319,6 +343,147 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
           await expect(page.getByRole("heading", { name: c.collectionsOverview })).toBeVisible({ timeout: T });
         });
         await shot(overviewFrame, overviewRoute);
+
+        // ===== Home: /[locale] (4:9192 / 4:9296). Signed layout with this tenant's data: welcome title from the store name, search field,
+        // inset hero card from the published hero section, collection chips, the product grid with a bottom "view all products" button.
+        const homeFrame = f("4:9192", "4:9296");
+        const homeRoute = `/${locale}`;
+        const storeName: string = facts?.design?.name ?? "";
+        const heroHeading: string = facts?.design?.hero ?? "";
+        const published = (facts?.collections ?? []).filter((x: any) => x.active_products > 0);
+        const main = page.locator("main");
+        const box = async (locator: ReturnType<Page["locator"]>) => {
+          const b = await locator.boundingBox();
+          if (!b) throw new Error("element has no layout box");
+          return b;
+        };
+        await page.goto(`${origin}${homeRoute}`);
+        await settle();
+        await step(homeFrame, homeRoute, "home welcome title", "goto + assert", `title "${fmt(c.welcome, { name: storeName })}" visible above the search field`, async () => {
+          assert(storeName && heroHeading, "facts.design.name / facts.design.hero missing");
+          await expect(main.getByText(fmt(c.welcome, { name: storeName }), { exact: true })).toBeVisible({ timeout: T });
+        });
+        await step(homeFrame, homeRoute, "home search field", "assert", `label "${c.searchLabel}", placeholder "${c.searchHint}"`, async () => {
+          const field = main.getByRole("searchbox", { name: c.searchLabel, exact: true });
+          await expect(field).toBeVisible({ timeout: T });
+          await expect(field).toHaveAttribute("placeholder", c.searchHint);
+          await expect(main.getByText(c.searchLabel, { exact: true })).toBeVisible();
+        });
+        await step(homeFrame, homeRoute, "home layout order", "assert", "welcome title < search < inset hero card < chips < product grid, hero card inset in the page gutter with rounded corners", async () => {
+          const title = await box(main.getByText(fmt(c.welcome, { name: storeName }), { exact: true }));
+          const search = await box(main.getByRole("searchbox", { name: c.searchLabel, exact: true }));
+          const hero = await box(page.getByTestId("section-hero"));
+          const chips = await box(main.getByTestId("collection-chips").filter({ visible: true }));
+          const grid = await box(page.getByTestId("section-product-grid"));
+          assert(title.y < search.y && search.y < hero.y && hero.y < chips.y && chips.y < grid.y, `order title ${title.y} search ${search.y} hero ${hero.y} chips ${chips.y} grid ${grid.y}`);
+          assert(hero.x >= 15.5 && hero.x + hero.width <= width - 15.5, `hero card must sit inside the gutter, got x=${hero.x} w=${hero.width}`);
+          const radius = await page.getByTestId("section-hero").evaluate((el) => parseFloat(getComputedStyle(el).borderTopLeftRadius)); // read-only measurement
+          assert(radius >= 8, `hero card corner radius ${radius}`);
+          return `title ${title.y} search ${search.y} hero ${hero.x},${hero.y} ${hero.width}w r${radius} chips ${chips.y} grid ${grid.y}`;
+        });
+        await step(homeFrame, homeRoute, "home hero card", "assert", `published hero heading "${heroHeading}" and its CTA inside the card`, async () => {
+          const hero = page.getByTestId("section-hero");
+          await expect(hero.getByRole("heading", { name: heroHeading, exact: true })).toBeVisible({ timeout: T });
+          await expect(hero.getByRole("link")).toHaveCount(1);
+        });
+        await step(homeFrame, homeRoute, "home chips", "assert", `chips "${c.homeAllProducts}", every published collection, "${c.allCollections}"`, async () => {
+          const chips = main.getByTestId("collection-chips").filter({ visible: true });
+          await expect(chips.getByRole("link", { name: c.homeAllProducts, exact: true })).toBeVisible({ timeout: T });
+          for (const col of published) await expect(chips.getByRole("link", { name: col.title, exact: true })).toHaveAttribute("href", new RegExp(`/${locale}/collections/${col.slug}$`));
+          await expect(chips.getByRole("link", { name: c.allCollections, exact: true })).toHaveAttribute("href", new RegExp(`/${locale}/collections$`));
+          return `${published.length} collection chips`;
+        });
+        await step(homeFrame, homeRoute, "home legacy grid link gone", "assert", `product grid head has no "${c.legacyViewAll}" link; "${c.viewAllProducts}" sits below the grid`, async () => {
+          const grid = page.getByTestId("section-product-grid");
+          await expect(grid.getByRole("link", { name: c.legacyViewAll, exact: true })).toHaveCount(0);
+          const button = await box(grid.getByRole("link", { name: c.viewAllProducts, exact: true }));
+          const lastCard = await box(grid.getByTestId("product-card").last());
+          assert(button.y >= lastCard.y + lastCard.height, `view-all button ${button.y} must be below the last card ${lastCard.y + lastCard.height}`);
+        });
+        await shot(homeFrame, homeRoute);
+        await step(homeFrame, homeRoute, "home search field", "fill + Enter", `query "${candle.title}" opens the search results`, async () => {
+          await main.getByRole("searchbox", { name: c.searchLabel, exact: true }).fill(candle.title);
+          await main.getByRole("searchbox", { name: c.searchLabel, exact: true }).press("Enter");
+          await page.waitForURL(new RegExp(`/${locale}/search\\?`), { timeout: T });
+          assert.equal(urlParams().get("q"), candle.title);
+          await expect(page.getByTestId("product-card").filter({ hasText: candle.title }).first()).toBeVisible({ timeout: T });
+          return page.url();
+        });
+        await page.goto(`${origin}${homeRoute}`);
+        await step(homeFrame, homeRoute, `hero CTA link`, "click", "the published CTA (all_products) opens the product list", async () => {
+          await page.getByTestId("section-hero").getByRole("link").click();
+          await expect(page).toHaveURL(new RegExp(`/${locale}/products/?$`), { timeout: T });
+          return page.url();
+        });
+        await page.goto(`${origin}${homeRoute}`);
+        await step(homeFrame, homeRoute, `chip "${c.allCollections}"`, "click", "opens the collections overview", async () => {
+          await main.getByTestId("collection-chips").filter({ visible: true }).getByRole("link", { name: c.allCollections, exact: true }).click();
+          await expect(page).toHaveURL(new RegExp(`/${locale}/collections$`), { timeout: T });
+          await expect(page.getByRole("heading", { name: c.collectionsOverview })).toBeVisible({ timeout: T });
+          return page.url();
+        });
+        await page.goto(`${origin}${homeRoute}`);
+        await step(homeFrame, homeRoute, `button "${c.viewAllProducts}"`, "click", "opens the product list", async () => {
+          await page.getByTestId("section-product-grid").getByRole("link", { name: c.viewAllProducts, exact: true }).click();
+          await expect(page).toHaveURL(new RegExp(`/${locale}/products/?$`), { timeout: T });
+          return page.url();
+        });
+
+        // ===== Collection detail: /[locale]/collections/home-fragrance (6:19933 / 6:19984), the merchant's collection in the signed layout.
+        const collectionFrame = f("6:19933", "6:19984");
+        const fragrance = (facts?.collections ?? []).find((x: any) => x.slug === "home-fragrance");
+        const collectionRoute = `/${locale}/collections/home-fragrance`;
+        await page.goto(`${origin}${collectionRoute}`);
+        await settle();
+        await step(collectionFrame, collectionRoute, "collection title + count", "goto + assert", `h1 = collection title; heading "${c.collectionCount}" with the real product count = rendered cards`, async () => {
+          assert(fragrance, "facts.collections home-fragrance missing");
+          await expect(page.getByRole("heading", { level: 1 })).toHaveText(fragrance.title, { timeout: T });
+          const expected = fmt(c.collectionCount, { n: fragrance.active_products });
+          await expect(main.getByRole("heading", { name: expected, exact: true })).toBeVisible({ timeout: T });
+          await expect(page.getByTestId("product-card")).toHaveCount(fragrance.active_products, { timeout: T });
+          return expected;
+        });
+        await step(collectionFrame, collectionRoute, "collection search field", "assert", `label "${c.searchLabel}", placeholder "${c.searchHint}"`, async () => {
+          const field = main.getByRole("searchbox", { name: c.searchLabel, exact: true });
+          await expect(field).toBeVisible({ timeout: T });
+          await expect(field).toHaveAttribute("placeholder", c.searchHint);
+        });
+        await step(collectionFrame, collectionRoute, "collection chips", "assert", `"${c.allProducts}", this collection current, "${c.allCollections}"`, async () => {
+          const chips = main.getByTestId("collection-chips").filter({ visible: true });
+          await expect(chips.getByRole("link", { name: c.allProducts, exact: true })).not.toHaveAttribute("aria-current", "page");
+          await expect(chips.getByRole("link", { name: fragrance.title, exact: true })).toHaveAttribute("aria-current", "page");
+          await expect(chips.getByRole("link", { name: c.allCollections, exact: true })).toBeVisible();
+        });
+        await step(collectionFrame, collectionRoute, "collection layout order", "assert", "title < search < chips < count heading < grid < view-all button", async () => {
+          const title = await box(page.getByRole("heading", { level: 1 }));
+          const search = await box(main.getByRole("searchbox", { name: c.searchLabel, exact: true }));
+          const chips = await box(main.getByTestId("collection-chips").filter({ visible: true }));
+          const count = await box(main.getByRole("heading", { name: fmt(c.collectionCount, { n: fragrance.active_products }), exact: true }));
+          const card = await box(page.getByTestId("product-card").last());
+          const button = await box(main.getByRole("link", { name: c.viewAllProducts, exact: true }));
+          assert(title.y < search.y && search.y < chips.y && chips.y < count.y && count.y < card.y && card.y + card.height <= button.y,
+            `order title ${title.y} search ${search.y} chips ${chips.y} count ${count.y} card ${card.y} button ${button.y}`);
+        });
+        await shot(collectionFrame, collectionRoute);
+        await step(collectionFrame, collectionRoute, `button "${c.viewAllProducts}"`, "click", "opens the product list", async () => {
+          await main.getByRole("link", { name: c.viewAllProducts, exact: true }).click();
+          await expect(page).toHaveURL(new RegExp(`/${locale}/products/?$`), { timeout: T });
+          return page.url();
+        });
+        await page.goto(`${origin}${collectionRoute}`);
+        await step(collectionFrame, collectionRoute, `chip "${c.allCollections}"`, "click", "opens the collections overview", async () => {
+          await main.getByTestId("collection-chips").filter({ visible: true }).getByRole("link", { name: c.allCollections, exact: true }).click();
+          await expect(page).toHaveURL(new RegExp(`/${locale}/collections$`), { timeout: T });
+          return page.url();
+        });
+        await page.goto(`${origin}${collectionRoute}`);
+        await step(collectionFrame, collectionRoute, "collection search field", "fill + Enter", `query "${candle.title}" opens the search results`, async () => {
+          await main.getByRole("searchbox", { name: c.searchLabel, exact: true }).fill(candle.title);
+          await main.getByRole("searchbox", { name: c.searchLabel, exact: true }).press("Enter");
+          await page.waitForURL(new RegExp(`/${locale}/search\\?`), { timeout: T });
+          assert.equal(urlParams().get("q"), candle.title);
+          return page.url();
+        });
 
         // ===== Search with results: type the fixture product's title into the search box and submit ===================================
         const searchFrame = f("26:624", "26:921");
