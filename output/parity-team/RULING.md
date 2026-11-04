@@ -240,3 +240,7 @@ The preserved tests `tests/admin/parity-team.mjs` still require invite writes, s
 One implementation push follows the already observed tests-only RED; no evidence-only commit after CI. Gates/Foundation run IDs will be recorded in a PR comment once registered, and returned as WAIT_RUN. CI queue ownership returns to the integrator for re-dispatch, with no unattended local process.
 
 STATUS: BLOCKED_ASSERTION_RULING_CONFLICT_RELAY4_NO_PUSH
+
+## Current state 2026-11-04 (integrator; supersedes the RELAY 1-4 BLOCKED notes above)
+
+The RELAY 1-4 conflicts are resolved by the owner decisions of 2026-11-04 (invite pause lifted; admin promotion and in-page re-auth built to the design; remaining frames integrator-decided). The earlier DEFERRED list no longer applies: invite-sent, the invitee states, role-edit-admin and the generic role review are required. Exactly 9 states / 18 ids are superseded (`DESIGN-DECISIONS.md` §1, §2, §4; pin `tests/admin/parity-team.mjs:483-494`). CI green at `652face84`; Opus 5.5 APPROVE (`output/issue-107/review-476-652face84.md`). Review P2s go to module issues: dialog focus-return test on a still-mounted control; invite recheck should only accept an invitation created by this send.

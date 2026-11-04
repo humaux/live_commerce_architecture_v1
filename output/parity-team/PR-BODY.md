@@ -1,59 +1,35 @@
-Implements ROUND 3 of PARITY-TEAM on the current integration base: signed staff/member and pending tabs, five described roles, reachable role/removal/withdrawal review and results, and read-only unknown-outcome reconciliation. Existing DTOs/commands only. Invitation entry is built, but submit displays the signed unavailable state and never sends mail. Continue remains disabled for admin/unchanged roles; no admin confirmation/result is built.
+PARITY-TEAM: the staff page (`/{locale}/team`) and the invitee page (`/{locale}/invite/[token]`) built to the signed Figma frames, over the existing team DTOs and commands. Frontend and browser tests only: no backend, contract, migration or lockfile change.
 
-**Current RELAY 4: BLOCKED, no new push.** Fetched/merged integration first, already current at `c52b65283`; PR head remains `3eb0e63a`, local head `4fad602db`. Fresh exact-head workflow metadata and failed logs confirm Gates `41289265846` / browser `124798201256`, bundle:08 `124798201364`, and Foundation `41289265756` / `124796913759`. Preserved assertions still require successful SMTP invitation issuance/replay and deferred admin confirmation/results, contrary to the two retained rulings. Existing local fix `98b265b46` remains unpushed and CI-unverified. STOP under the outside-card gate rule; acceptance scope needs integrator reconciliation. Report: `output/PARITY-TEAM/RULING.md`, RELAY 4. Ownership generation then --check exit 0. No product/test/fixture/threshold/backend changes, local tests/server, new commit or push. Humaux is available this relay; subordinate store/canvas updated under lock. WAIT_RUN: none.
+## What the code does now (owner decisions 2026-11-04)
 
-RELAY 1: exact implementation head `3eb0e63a0d34dd1e351cf2b09961e170e240bb15` failed Foundation `41289265756` / job `124796913759`, and Gates `41289265846` / jobs `124798201256`, `124798201299`, `124798201364`, `124798201506`. A local fix batch removes component Intl in favor of the existing shared formatter, replaces 13 literal CSS colors with DS tokens, allows the long store selector to shrink, and returns role-review cancel to its editor. No test assertion changed. **STOP before another CI push:** preserved tests require forbidden invitation sends/SMTP replay and disabled admin result states; the parity helper also mistakes signed headings for buttons (`parity-team.mjs:217-224`) and requires superseded module-shell text. Integrator must reconcile acceptance scope; no GREEN claim. Current report: `output/PARITY-TEAM/RULING.md` RELAY 1. No local tests or servers.
+- **Invite restored** (owner lifted the invitation pause): 邀請員工 → email + role → 送出邀請 calls the existing invite API (`Team.tsx:104-115`). SENT / FAILED mail are server facts; an UNKNOWN mail state or a lost answer only re-reads the list (取得最新狀態) and is never resent.
+- **Admin promotion** (owner: build to the design): Continue is disabled only when the role is unchanged (`Team.tsx:190`). Promotion goes through set-role; the review screen restates the signed admin powers line (`Team.tsx:196`).
+- **Invitee page** (`TeamInvite.tsx`): signed states over the existing accept API. 200 → joined; `invite_invalid`/`unauthorized` → one generic 邀請無法使用; `already_member` → member; `not_found` → off; anything else → 確認中 with no accept control. Sign-in / sign-up use the shared identity pages; the invite rides in the `#next=` fragment, never a query, Referer or log.
+- **Owner-only management** comes from the server read (`my_role === "owner"`), never from client state or the URL.
 
-Authority/report: `output/parity-team/RULING.md`; complete desktop/mobile frame→CI screenshot→signed PNG mapping and three-locale table are in `output/parity-team/DELIVERY.md` (historical sections explicitly marked).
+## Superseded frames (integrator, owner-delegated 2026-11-04)
 
-RED E3 (failure only): head `89452970349f92219e1b1217868611f1a73057fe`, Gates `41279053547`, browser job `124769729983`, missing signed 員工名單 at tests/admin/parity-team.mjs:171. Build and Foundation `41279053499` / `124767027990` passed. All original RED assertions stay verbatim and in order; new ruling tests only add coverage.
+Exactly 9 states / 18 ids, each with its reason in `tests/admin/parity-team-frames.json` `superseded` and pinned by `tests/admin/parity-team.mjs:483-494`. All other frames of the 82-frame / 164-id oracle are required. Details and the Figma follow-up list: `output/parity-team/DESIGN-DECISIONS.md`.
 
-Validation E1 for RELAY 1: node --check, packet structure check, depmap regeneration and browser ownership generation/--check exit 0. Local tsc is NOT_VERIFIED (temporary shared dependencies have missing/stale exports; exit 1; links removed). Earlier ROUND 3 tsc results do not validate this fix. Current GREEN, click/persistence/density parity, independent review and SANDBOX/LIVE are NOT_RUN. Own PASS is E0.
+| Decision | States superseded |
+|---|---|
+| Shared ReauthDialog (OC-04: password step-up, exact replay) replaces in-page re-auth | reauth, reauth-signin, reauth-verify |
+| No-op admin change is blocked at role-edit; no confirm/done for an unsent request | role-confirm-admin, role-done-admin |
+| Shared identity sign-in/sign-up/verify pages replace invite-local auth frames | signin, signup, verify-signin, verify-signup |
 
-**Acceptance conflict retained:** the untouched suite still asserts successful invitation writes/acceptance and unreachable role-confirm-admin/role-done-admin. Those assertions conflict with this explicit ruling. No skip, fixture/oracle edit, threshold change or test weakening was made; integrator must reconcile deferred scope. Shared-shell module-nav expectations are also untouched. This PR does not claim all frames passed.
+Shell nav: the shared breadcrumb 設定 > 員工 replaces the stale module label 設定與員工 (frame note at `parity-team-frames.json:703`).
 
-### DEFERRED
+No state is DEFERRED any more: invite-sent, the invitee states, role-edit-admin and the generic role review are required and gated.
 
-| State | Desktop / mobile | Reason |
-|---|---|---|
-| invite-sent | `1468:75217` / `1468:75260` | staff invite outbox: separate backend card |
-| invalid-email | `1468:75278` / `1468:75326` | staff invite outbox: separate backend card |
-| already-member | `1468:75349` / `1468:75393` | staff invite outbox: separate backend card |
-| invite-limit | `1468:75412` / `1468:75456` | staff invite outbox: separate backend card |
-| owner-disabled | `1468:75475` / `1468:75519` | staff invite outbox: separate backend card |
-| reauth | `1468:75538` / `1468:75582` | staff invite outbox: separate backend card |
-| invite-checking | `1468:76405` / `1468:76453` | staff invite outbox: separate backend card |
-| checking-unresolved | `1468:76689` / `1468:76734` | staff invite outbox: separate backend card |
-| link | `1468:76880` / `1468:76892` | staff invite outbox: separate backend card |
-| signin | `1468:76904` / `1468:76925` | staff invite outbox: separate backend card |
-| signup | `1468:76946` / `1468:76968` | staff invite outbox: separate backend card |
-| verify-signin | `1468:76990` / `1468:77006` | staff invite outbox: separate backend card |
-| verify-signup | `1468:77022` / `1468:77038` | staff invite outbox: separate backend card |
-| accept | `1468:77054` / `1468:77066` | staff invite outbox: separate backend card |
-| accept-checking | `1468:77078` / `1468:77097` | staff invite outbox: separate backend card |
-| joined | `1468:77116` / `1468:77134` | staff invite outbox: separate backend card |
-| expired | `1468:77152` / `1468:77170` | staff invite outbox: separate backend card |
-| revoked | `1468:77188` / `1468:77206` | staff invite outbox: separate backend card |
-| used | `1468:77224` / `1468:77242` | staff invite outbox: separate backend card |
-| wrong-account | `1468:77260` / `1468:77278` | staff invite outbox: separate backend card |
-| invitee-member | `1468:77296` / `1468:77314` | staff invite outbox: separate backend card |
-| invitee-off | `1468:77332` / `1468:77350` | staff invite outbox: separate backend card |
-| invite-sent-owner | `1468:77368` / `1468:77411` | staff invite outbox: separate backend card |
-| invite-sent-live | `1468:77496` / `1468:77539` | staff invite outbox: separate backend card |
-| invite-sent-fulfilment | `1468:77624` / `1468:77667` | staff invite outbox: separate backend card |
-| invite-sent-viewer | `1468:77752` / `1468:77795` | staff invite outbox: separate backend card |
-| mail-failed send/history journey (unavailable content implemented) | `1468:75601` / `1468:75647` | staff invite outbox: separate backend card |
-| role-confirm-admin | `1468:78293` / `1468:78333` | signed frame disables Continue |
-| role-done-admin | `1468:78348` / `1468:78392` | signed frame disables Continue |
-| reauth-signin | `1468:96313` / `1468:96358` | staff invite outbox: separate backend card |
-| reauth-verify | `1468:96378` / `1468:96420` | staff invite outbox: separate backend card |
+## Tests
 
-Invitation entry role variants and unavailable content are implemented. Historical pending invitations/withdrawals remain reachable without issuing mail. No internal/identity, migration or contracts/merchant-identity change.
+- `tests/admin/parity-team.mjs`: real-click signed parity for all required frames, 3 locales × 2 viewports, plus R3 invite send, admin promotion and the invite sign-in round-trip.
+- `tests/admin/staff-team.spec.ts`, `tests/admin/oc/reauth.spec.ts`: locators ported to the signed layout; status, token-hygiene, SMTP capture and reuse-refusal assertions unchanged. On the SENT screen the replay's starting control (送出邀請) unmounts, so focus is asserted on that screen's only action; the dialog's focus-return to a still-mounted control is a separate follow-up (review P2).
 
-### Scope disclosure
+## Evidence
 
-`packages/i18n/src/team-parity.ts` is outside dedicated team surface paths: required three-locale shared copy, integrator approval requested in review. `apps/admin/components/team.css` is an in-module style addition covered by scope pre-approval. `output/ci-select-backend-browser/browser-ownership.json` is generated and explicitly authorized. Existing additive shell-test registration from RED remains; no new shared-shell source change. Depmap regenerated, no diff. No contract/OpenAPI/go.mod/lockfile/baseline/dispatcher/R2-pin or other-app/backend changes.
+- CI: all checks green at `652face84` (45 pass, 1 skipping).
+- Independent review: Opus 5.5 APPROVE at `652face84` (`output/issue-107/review-476-652face84.md`), P0/P1 none. Codex review pending.
+- SANDBOX / LIVE: NOT_RUN. No production action.
 
-Humaux is available in RELAY 1; shared-state writes are locked and limited to this dispatched subordinate element. Existing generated ownership and dependency map were regenerated; no new diff. No new CI push while the explicit acceptance conflict blocks GREEN. Integrator owns reconciliation/re-dispatch. No production action.
-
-🤖 Generated with Codex (dispatched by Claude Code integrator).
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
