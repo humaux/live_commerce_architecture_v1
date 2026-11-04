@@ -40,6 +40,7 @@ import (
 	"livecommerce/internal/command"
 	"livecommerce/internal/domains"
 	"livecommerce/internal/fulfillment"
+	"livecommerce/internal/loyalty"
 	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
 	"livecommerce/internal/pricing"
@@ -115,6 +116,8 @@ type ManualInput struct {
 	PaymentMode string                  `json:"payment_mode"`
 	Locale      string                  `json:"locale"`
 	Discount    *pricing.ManualDiscount `json:"discount,omitempty"`
+	// MemberAward (loyalty-points-v1 LP7) is part of the hashed request; omitempty keeps every pre-LP request hash unchanged.
+	MemberAward *loyalty.Award `json:"member_award,omitempty"`
 }
 
 // ManualOption is one delivery choice of GET orders/manual/options (the buyer checkout option, card dropped).
@@ -149,6 +152,7 @@ type manualReceipt struct {
 	Currency        string                  `json:"currency"`
 	ExpiresAt       time.Time               `json:"expires_at"`
 	Discount        *pricing.ManualDiscount `json:"discount,omitempty"`
+	MemberAward     *loyalty.AwardOutcome   `json:"member_award,omitempty"` // LP18: ids, numbers, state only
 }
 
 // ManualResult is the 201 (or replayed 200) body.
@@ -186,6 +190,10 @@ type ManualOrders struct {
 	buyerPool *pgxpool.Pool
 	checkout  *checkout.Service
 	secret    []byte
+	// Test seams (nil in production, like ForBuyer.FaultAfterPlace): FaultBeforeFinal runs after the pipeline and before the final
+	// merchant transaction (the LPG06r race window); FaultAfterAward runs inside the final transaction right after the award (LPG02).
+	FaultBeforeFinal func() error
+	FaultAfterAward  func() error
 }
 
 // NewManualOrders wires the pipeline. issuer must have been built with the 30-day capability TTL; secret (>= 32 bytes) keys the HMAC that
