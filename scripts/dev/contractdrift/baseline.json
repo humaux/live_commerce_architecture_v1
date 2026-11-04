@@ -4346,38 +4346,6 @@
     {
       "kind": "GO_ONLY",
       "method": "POST",
-      "path": "/v1/admin/stores/{}/orders/for-buyer",
-      "locations": [
-        {
-          "file": "internal/httpapi/handler.go",
-          "line": 233,
-          "end": 233
-        },
-        {
-          "file": "internal/httpapi/merchanttools.go",
-          "line": 153,
-          "end": 153
-        },
-        {
-          "file": "internal/httpapi/merchanttools.go",
-          "line": 345,
-          "end": 345
-        },
-        {
-          "file": "internal/httpapi/merchanttools.go",
-          "line": 365,
-          "end": 365
-        },
-        {
-          "file": "internal/httpapi/merchanttools.go",
-          "line": 365,
-          "end": 383
-        }
-      ]
-    },
-    {
-      "kind": "GO_ONLY",
-      "method": "POST",
       "path": "/v1/admin/stores/{}/orders/manual/regenerate-link",
       "locations": [
         {

@@ -140,6 +140,7 @@ export type ShipmentVersion = Omit<Shipment, "status"> & {
   void_reason: VoidReason | null;
   principal_id: string;
 };
+export type OrderAdjustment = { kind: "manual_discount"; currency: string; name: string; amount_minor: number };
 export type OrderDetail = OrderSummary & {
   country: string;
   service_code: string;
@@ -147,6 +148,7 @@ export type OrderDetail = OrderSummary & {
   totals: OrderTotals;
   destination: Destination;
   shipment: Shipment | null;
+  adjustments?: OrderAdjustment[];
 };
 
 export const canonicalUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -306,7 +308,9 @@ export function parseOrderList(value: unknown): OrderList {
 }
 
 export function parseOrderDetail(value: unknown, requestedID: string): OrderDetail {
-  const v = object(value, [...summaryKeys, "source", "country", "service_code", "items", "totals", "destination", "shipment"]);
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("unavailable");
+  const raw = value as Record<string, unknown>;
+  const v = object(raw, [...summaryKeys, "source", "country", "service_code", "items", "totals", "destination", "shipment", ...("adjustments" in raw ? ["adjustments"] : [])]);
   const summary = parseSourcedOrderSummary(Object.fromEntries([...summaryKeys, "source"].map((key) => [key, v[key]])));
   if (summary.order_id !== requestedID || !pattern(v.country, /^[A-Z]{2}$/) ||
     !pattern(v.service_code, /^[a-z][a-z0-9_-]{0,39}$/) ||
@@ -314,6 +318,16 @@ export function parseOrderDetail(value: unknown, requestedID: string): OrderDeta
   const t = object(v.totals, ["subtotal_minor", "discount_minor", "shipping_minor", "shipping_tax_minor", "tax_minor", "total_minor"]);
   if (![t.subtotal_minor, t.discount_minor, t.shipping_minor, t.shipping_tax_minor, t.tax_minor, t.total_minor].every(money) ||
     t.total_minor !== summary.total_minor) throw new Error("unavailable");
+  let adjustments: OrderAdjustment[] | undefined;
+  if ("adjustments" in v) {
+    if (!Array.isArray(v.adjustments) || v.adjustments.length !== 1) throw new Error("unavailable");
+    adjustments = v.adjustments.map((raw) => {
+      const a = object(raw, ["kind", "currency", "name", "amount_minor"]);
+      if (a.kind !== "manual_discount" || a.currency !== summary.currency || typeof a.name !== "string" || a.name !== a.name.trim() ||
+        Array.from(a.name).length < 1 || Array.from(a.name).length > 30 || /[\p{Cc}\p{Cf}\p{Cs}\p{Zl}\p{Zp}]/u.test(a.name) || !money(a.amount_minor) || a.amount_minor === 0 || a.amount_minor !== t.discount_minor) throw new Error("unavailable");
+      return a as OrderAdjustment;
+    });
+  }
   const d = object(v.destination, ["kind", "country", "recipient_name", "phone", "home_address", "pickup"]);
   const h = object(d.home_address, ["region", "city", "postal_code", "line1", "line2"]);
   if (!oneOf(d.kind, ["home", ...cvsKinds]) || d.country !== v.country ||
@@ -360,7 +374,7 @@ export function parseOrderDetail(value: unknown, requestedID: string): OrderDeta
   const shipment = v.shipment === null ? null : parseShipmentVersion(v.shipment, false) as Shipment;
   if ((shipment !== null) !== (summary.fulfillment_state === "MERCHANT_SHIPPED")) throw new Error("unavailable");
   return { ...summary, country: v.country as string, service_code: v.service_code as string,
-    items, totals: t as OrderTotals, destination: { ...d, home_address: h, pickup } as Destination, shipment };
+    items, totals: t as OrderTotals, destination: { ...d, home_address: h, pickup } as Destination, shipment, ...(adjustments ? { adjustments } : {}) };
 }
 
 const shipmentKeys = ["version", "status", "carrier_code", "carrier_name", "tracking_number", "tracking_url", "recorded_at"];

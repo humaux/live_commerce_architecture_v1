@@ -8,6 +8,50 @@ import {
   validManualBody, validRegenerateBody, MAX_CSV_BYTES, type ManualDraft, type ManualOption,
 } from "../../apps/admin/lib/merchant-tools-model.ts";
 import { toolsCopy } from "../../apps/admin/lib/merchant-tools-copy.ts";
+import { parseSummary } from "../../apps/admin/lib/catalog-v2-model.ts";
+
+test("picker product model keeps the additive authenticated thumbnail and null without an image", () => {
+  const image = "44444444-4444-4444-8444-444444444444";
+  const row = {
+    id, slug: "synthetic-picker-product", name: "測試商品", status: "active", version: 1,
+    cover_image_id: image, cover_image_url: `/api/stores/${market}/products/${id}/images/${image}?w=360`,
+    price_min_minor: 2500, price_max_minor: 2500, currency: "TWD", sku_count: 1, available: 10,
+    keyword: "", inventory_tracked: true, updated_at: "2026-10-31T00:00:00.000000Z",
+  };
+  assert.equal((parseSummary(row) as unknown as Record<string, unknown>).cover_image_url, row.cover_image_url);
+  assert.equal((parseSummary({ ...row, cover_image_id: null, cover_image_url: null }) as unknown as Record<string, unknown>).cover_image_url, null);
+});
+
+// FEAT-MANUAL-DISCOUNT: the BFF accepts only this bounded adjustment object;
+// totals and SKU prices remain server authority. Run only in GitHub CI.
+test("named manual discount passes BFF grammar in every locale without opening price overrides", () => {
+  for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
+    const body = { ...manualBody(draft({ locale })), discount: { name: "直播優惠", amount_minor: 100 } };
+    assert.equal(validManualBody(body), true, `${locale}: named discount must reach Go`);
+    for (const discount of [
+      { name: "", amount_minor: 100 }, { name: "   ", amount_minor: 100 },
+      { name: "惠".repeat(31), amount_minor: 100 }, { name: "直播\n優惠", amount_minor: 100 },
+      { name: "直播優惠", amount_minor: 0 }, { name: "直播優惠", amount_minor: -1 },
+      { name: "直播優惠", amount_minor: 1.5 }, { name: "直播優惠", amount_minor: "100" },
+      { name: "直播優惠", amount_minor: Number.MAX_SAFE_INTEGER + 1 },
+      { name: "直播優惠", amount_minor: 100, currency: "USD" },
+      { name: "直播優惠", amount_minor: 100, unit_price_minor: 1 },
+    ]) assert.equal(validManualBody({ ...body, discount }), false, JSON.stringify(discount));
+    assert.equal(validManualBody({ ...body, total_minor: 1 }), false);
+    assert.equal(validManualBody({ ...body, tenant_id: id }), false);
+    assert.equal(validManualBody({ ...body, store_id: id }), false);
+    assert.equal(validManualBody({ ...body, items: [{ sku_id: sku, quantity: 1, unit_price_minor: 1 }] }), false);
+  }
+});
+
+test("named discount survives the strict manual-order response parser", () => {
+  const discount = { name: "直播優惠", amount_minor: 100 };
+  const parsed = parseManualResult(result({ discount }));
+  assert.deepEqual((parsed as unknown as Record<string, unknown>).discount, discount);
+  for (const bad of [{ ...discount, amount_minor: -1 }, { ...discount, name: "" }, { ...discount, currency: "USD" }]) {
+    assert.throws(() => parseManualResult(result({ discount: bad })), /unavailable/);
+  }
+});
 
 const id = "11111111-1111-4111-8111-111111111111";
 const market = "22222222-2222-4222-8222-222222222222";
