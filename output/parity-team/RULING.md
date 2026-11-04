@@ -1,5 +1,15 @@
 # PARITY-TEAM ROUND 3 ruling implementation
 
+## RELAY 4 — acceptance conflict revalidated; no push (2026-11-01)
+
+Fetched origin and merged origin/r3/integration first: exit 0, already current at `c52b65283a5ac738d0c527a464d0cccc9523b1f4`. Entry/local head `4fad602dbce4139b568502780fd28de7bc7eafc6`; PR #476 head remains `3eb0e63a0d34dd1e351cf2b09961e170e240bb15`. Existing fix `98b265b46` remains unpushed. No additional product fix attempt, commit or CI push.
+
+Fresh `gh pr checks 476`, workflow headSha/conclusion and filtered raw failed-job reads confirm E3 failure evidence on that PR head: Gates `41289265846` / `124798201364` still requires SMTP invitations >=4 (`browser_staff_team_test.go:217`); `124798201256` still evaluates deferred invitation/admin frames. Foundation `41289265756` / `124796913759` remains failed on the pre-fix formatter. This is an implementation push failure, not the original tests-only RED. Original causal RED remains `41279053547` / `124769729983`, missing 員工名單 at parity-team.mjs:171.
+
+Current source retains the explicit rulings: `Team.tsx:148` submits only to the paused view; `:89,161` reject/disable admin promotion. Preserved test `parity-team.mjs:179-185` cannot enter the admin confirmation/result states that its content oracle still demands. Foundation staff/OC tests require successful mail issuance/replay. No implementation can satisfy those assertions while preserving both rulings. STOP under the outside-card gate rule; integrator must reconcile acceptance scope. No test/fixture/threshold/exemption, backend, migration or contract edit. Suite SHA-256 stays `7ff876032ca732452330e152eed4513d45cc7b504eb4920ef9656d7e5e8d18c6`.
+
+E1: browser ownership generation then --check exit 0. This relay changes only this report and PR-BODY.md; inherited untracked files remain. No new outside-card source path. Existing shared i18n scope disclosure and DEFERRED table remain applicable. Humaux is available this relay; locked subordinate store/canvas updates are recorded there. No local test/server/background task. Own PASS = E0. NOT_RUN: GREEN for local fixes, successful click/persistence/parity/density acceptance, independent review, SANDBOX, LIVE. WAIT_RUN: none (no push).
+
 ## RELAY 3 — current dispatch cannot clear the preserved gates (2026-11-01)
 
 This section is the current handoff; earlier sections are historical. No new product fix attempt or CI push in this relay. `git fetch origin r3/integration` and `git merge --no-edit origin/r3/integration` both exit 0 (already up to date at `c52b65283a5ac738d0c527a464d0cccc9523b1f4`). Entry head is `887dbc885ef49f5fb585a81dfc2c4448634fb81d`; PR #476 remote head remains `3eb0e63a0d34dd1e351cf2b09961e170e240bb15`. The existing unpushed fix `98b265b465791f76f1415f04b29fcb933909555e` is not CI-verified.
@@ -150,4 +160,4 @@ The preserved tests `tests/admin/parity-team.mjs` still require invite writes, s
 
 One implementation push follows the already observed tests-only RED; no evidence-only commit after CI. Gates/Foundation run IDs will be recorded in a PR comment once registered, and returned as WAIT_RUN. CI queue ownership returns to the integrator for re-dispatch, with no unattended local process.
 
-STATUS: BLOCKED_ASSERTION_RULING_CONFLICT_RELAY3_NO_PUSH
+STATUS: BLOCKED_ASSERTION_RULING_CONFLICT_RELAY4_NO_PUSH
