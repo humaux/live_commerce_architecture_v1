@@ -1,5 +1,20 @@
 # PARITY-TEAM ROUND 3 ruling implementation
 
+## RELAY 8 — owner-delegated design decisions, TS1117 fix (2026-11-04)
+
+Owner, 2026-11-04: 「页内重新登录：升级管理员的确认页和完成页：你进行决定设计，符合业务。设计稿里过时的导航文字：你进行决定设计，符合业务。」 The integrator's decisions, reasons and frame ids are in `DESIGN-DECISIONS.md`. Base: `0f47d64fe`. These are local commits only and have not been pushed.
+
+Done:
+1. Re-auth: the shared ReauthDialog (OC-04) stays. `tests/admin/parity-team-frames.json:6` `superseded` lists `reauth` 1468:75538/75582, `reauth-signin` 1468:96313/96358 and `reauth-verify` 1468:96378/96420, each with the reason "owner-delegated design decision 2026-11-04: shared ReauthDialog (OC-04) replaces in-page re-auth". `parity-team.mjs:14-17,332`: those six ids register as visible skips with that reason. `:443-449`: the frozen-oracle test still requires 82 frames / 164 ids and allows only those three states, with their signed ids and this reason. `tests/admin/oc/reauth.spec.ts` is unchanged.
+2. Nav: in `parity-team-frames.json`, `nav` 1466:74190 / 1468:74244 no longer expects `設定與員工`. 設定 and 員工 (the shell breadcrumb) stay expected. Inline `note` at :703.
+3. TS1117 (CI build at `0f47d64fe`): the duplicate key `joined` at `packages/i18n/src/team-parity.ts:95/194/293`. Both values are signed copy for different screens: the member line 「{role} · 加入 {date}」 (Team.tsx:155) and the invitee heading 「已加入團隊」 (TeamInvite.tsx:58). The second key silently overrode the member line. The invitee key is renamed to `inviteeJoined`, and `TeamInvite.tsx:58` is updated to match. A per-object duplicate scan finds no other duplicates.
+
+Still blocked:
+- Admin promotion confirm/done: `role-confirm-admin` 1468:78293/78333 and `role-done-admin` 1468:78348/78392 are signed no-op frames (「角色不需變更」「目前已是管理員，無須變更。」/「角色未變更」, no 確認變更). ux-team DELIVERY:104,181-183 confirms this ("No-op role selection cannot submit", NOT_SENT). The planned promotion flow cannot show them verbatim without false copy. Promotion itself is already live since RELAY 7: `Team.tsx:93,190`, and `R3 admin promotion` drives viewer → admin through the generic review/done screens. `role-edit-admin` is reachable. A proposal is in DESIGN-DECISIONS §2.
+- Invite sign-in copy, 驗證碼 vs 確認碼 (`signin`/`signup`/`verify-signin`/`verify-signup`): proposal in DESIGN-DECISIONS §4, not implemented.
+
+E1 only: `node --check tests/admin/parity-team.mjs` exit 0; `node --experimental-strip-types --check packages/i18n/src/team-parity.ts` exit 0; frames JSON parses; ownership regenerate + `--check` exit 0. No local tests/tsc/server. GREEN, parity, SANDBOX and LIVE are NOT_RUN. Own PASS = E0.
+
 ## RELAY 7 — oracle fix, invite send test, invitee page, owner decision D (2026-11-04)
 
 Owner decisions 2026-11-04 (relayed by the coordinator): invite pause lifted (「现在解除暂停」, RELAY 6); for the two blocked groups 「两项都按设计稿做」. Backend, BFF, migrations, contracts and the ReauthDialog are untouched. Old→new test lines: SPEC-PORT.md "RELAY 7".
