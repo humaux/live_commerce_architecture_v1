@@ -1115,6 +1115,121 @@ func mdDBBoundaryContract(t *testing.T) {
 				t.Log("read_adjustments_authority actual-login call attempted: schema-or-function 42501/no data; function EXECUTE independently false by OID")
 			})
 		}
+		// The reader passes resolve_access + GUC checks, then waits on checkout.orders.
+		// Revoking only orders:read meanwhile must reach the final fence:
+		// identity.merchant_access_denied returns PT403 for a missing required grant
+		// while store:read remains (migrations/0063_manual_fulfilment.sql:253-254).
+		// An absent order without revocation is PT404 (migrations/0220_manual_order_discount.sql:161).
+		for _, tc := range []struct {
+			name             string
+			existing, revoke bool
+			want             string
+		}{
+			{"locked_absent_no_revoke", false, false, "PT404"},
+			{"locked_absent_orders_revoked", false, true, "PT403"},
+			{"locked_existing_orders_revoked", true, true, "PT403"},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				token, principal := e.member("orders:read")
+				order := randomUUID()
+				if tc.existing {
+					order, _ = place(t, true)
+				}
+				if n := e.count(`SELECT count(*) FROM checkout.orders WHERE id=$1`, order); (n == 1) != tc.existing {
+					t.Fatalf("HARNESS_FAIL order existence=%d want existing=%t", n, tc.existing)
+				}
+				lock, err := f.owner.Begin(ctx)
+				if err != nil {
+					t.Fatalf("HARNESS_FAIL begin holder: %v", err)
+				}
+				defer lock.Rollback(ctx)
+				var holderPID int
+				if err = lock.QueryRow(ctx, `SELECT pg_backend_pid()`).Scan(&holderPID); err != nil {
+					t.Fatalf("HARNESS_FAIL holder pid: %v", err)
+				}
+				if _, err = lock.Exec(ctx, `LOCK TABLE checkout.orders IN ACCESS EXCLUSIVE MODE`); err != nil {
+					t.Fatalf("HARNESS_FAIL lock orders: %v", err)
+				}
+				runCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+				defer cancel()
+				pids := make(chan int, 1)
+				type result struct{ target, wrapper error }
+				done := make(chan result, 1)
+				go func() {
+					var targetErr error
+					wrapper := platform.WithScope(runCtx, f.runtime, token, e.store(), "store:read", func(tx pgx.Tx, s platform.Scope) error {
+						var pid int
+						if err := tx.QueryRow(runCtx, `SELECT pg_backend_pid()`).Scan(&pid); err != nil {
+							return err
+						}
+						pids <- pid
+						hash := sha256.Sum256([]byte(token))
+						var raw []byte
+						targetErr = tx.QueryRow(runCtx, targetSQL, hash[:], e.store(), order).Scan(&raw)
+						return targetErr
+					})
+					done <- result{targetErr, wrapper}
+				}()
+				joined := false
+				defer func() {
+					cancel()
+					_ = lock.Rollback(context.Background())
+					if !joined {
+						select {
+						case <-done:
+						case <-time.After(time.Second):
+							t.Error("HARNESS_FAIL reader did not stop")
+						}
+					}
+				}()
+				var pid int
+				select {
+				case pid = <-pids:
+				case r := <-done:
+					joined = true
+					t.Fatalf("HARNESS_FAIL scope before reader: %v", r.wrapper)
+				case <-runCtx.Done():
+					t.Fatal("HARNESS_FAIL no reader pid")
+				}
+				deadline := time.Now().Add(800 * time.Millisecond)
+				blocked := false
+				for time.Now().Before(deadline) {
+					if err = f.owner.QueryRow(runCtx, `SELECT $2=ANY(pg_blocking_pids($1)) AND EXISTS(SELECT 1 FROM pg_locks
+  WHERE pid=$1 AND NOT granted AND locktype='relation' AND relation='checkout.orders'::regclass)`, pid, holderPID).Scan(&blocked); err != nil {
+						t.Fatalf("HARNESS_FAIL blocker check: %v", err)
+					}
+					if blocked {
+						break
+					}
+					time.Sleep(5 * time.Millisecond) // Poll interval for the witness, not synchronization.
+				}
+				if !blocked {
+					t.Fatal("HARNESS_FAIL reader never waited on checkout.orders behind holder")
+				}
+				if tc.revoke {
+					tag, err := f.owner.Exec(runCtx, `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='orders:read'`, e.tenant(), e.store(), principal)
+					if err != nil || tag.RowsAffected() != 1 {
+						t.Fatalf("HARNESS_FAIL revoke: %v rows=%d", err, tag.RowsAffected())
+					}
+				}
+				if err = lock.Commit(ctx); err != nil {
+					t.Fatalf("HARNESS_FAIL release: %v", err)
+				}
+				var got result
+				select {
+				case got = <-done:
+					joined = true
+				case <-runCtx.Done():
+					t.Fatal("HARNESS_FAIL reader did not finish")
+				}
+				if sqlState(got.target) == "55P03" {
+					t.Fatalf("HARNESS_FAIL reader lock_timeout before release: %v", got.target)
+				}
+				if sqlState(got.target) != tc.want {
+					t.Fatalf("reader after initial auth (existing=%t revoked=%t) SQLSTATE=%s wrapper=%v, want %s", tc.existing, tc.revoke, sqlState(got.target), got.wrapper, tc.want)
+				}
+			})
+		}
 	})
 
 	// Exercise the replacement SECURITY DEFINER itself: store:read opens the
