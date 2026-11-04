@@ -2,7 +2,16 @@
 // Depends on: signed cookie/context helpers, closed contract validators and private Go buyer transport.
 // Used by: /api/buyer catch-all route and CI BFF tests.
 // Invariants: server-resolved scope, no generic proxy, no credential disclosure or mutation retry.
-import * as buyerReturns from "./buyer-returns.ts";
+import {
+  type BuyerReturnBody,
+  type BuyerReturnFields,
+  RETURN_REQUEST_CODES,
+  buyerReturnBodies,
+  buyerReturnRoute,
+  isBuyerReturnMutation,
+  validBuyerReturnBody,
+  validBuyerReturnResponse,
+} from "./buyer-returns.ts";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
 import { readAdSignals, readAdTouch } from "./ad-touch.ts";
@@ -88,7 +97,7 @@ type Route = {
     | "transferProof"
     | "lookup"
     | "link"
-    | buyerReturns.BuyerReturnBody;
+    | BuyerReturnBody;
   query?: "catalog" | "options" | "orders";
   session?: string;
   payment?: "view" | "prepare" | "handoff" | "refresh" | "cancel";
@@ -106,10 +115,10 @@ type Route = {
   lookup?: boolean;
   // Manual-order buyer link exchange (storefront-v2 G3): same cookie-less, mint-a-token handling as the guest lookup, other private path and body.
   link?: boolean;
-} & buyerReturns.BuyerReturnFields;
+} & BuyerReturnFields;
 
 const messages: Record<string, string> = {
- ...Object.fromEntries(buyerReturns.RETURN_REQUEST_CODES.map(code=>[code,"Request refused."])),
+ ...Object.fromEntries(RETURN_REQUEST_CODES.map(code=>[code,"Request refused."])),
   unauthorized: "Session unavailable.",
   forbidden: "Request not permitted.",
   not_found: "Resource not found.",
@@ -422,7 +431,7 @@ function route(
       route: selected ? { ...selected, method } : undefined,
     };
   }
-  const returnRoute = buyerReturns.buyerReturnRoute(suffix, method);
+  const returnRoute = buyerReturnRoute(suffix, method);
   if (returnRoute) return returnRoute;
   const payment =
     /^orders\/([^/]+)\/payment(?:\/(prepare|handoff|refresh|cancel))?$/.exec(
@@ -630,7 +639,7 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
     expected_cod_surcharge_minor: "integer",
     buyer_email: "string",
   },
-  ...buyerReturns.buyerReturnBodies,
+  ...buyerReturnBodies,
   transferProof: {
     last5: "string",
     amount_minor: "integer",
@@ -696,7 +705,7 @@ function extraShapeOK(shape: Shape, parsed: unknown): boolean {
       (v.payment_mode === undefined || isPaymentMode(v.payment_mode)) &&
       (v.buyer_email === undefined || validBuyerEmail(v.buyer_email))
     );
-  if (!buyerReturns.validBuyerReturnBody(shape, parsed)) return false;
+  if (!validBuyerReturnBody(shape, parsed)) return false;
   if (shape === shapes.lookup) return validLookupBody(parsed);
   if (shape === shapes.link) return validLinkBody(parsed);
   if (shape === shapes.transferProof)
@@ -1072,7 +1081,7 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
     request.method === "POST" &&
     /^\/api\/buyer\/session\/(?:prepare|reset)$/.test(pathname);
   const fail = (status: number, code: string) =>
-    failure(status, code, changingCookie || handoff || buyerReturns.isBuyerReturnMutation(request));
+    failure(status, code, changingCookie || handoff || isBuyerReturnMutation(request));
   let cfg: Config | null;
   try {
     cfg = config();
@@ -1144,7 +1153,7 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
     return fail(409, "context_changed");
   let body: string | undefined;
   if (target.body) {
-    const result = await bodyJSON(request, shapes[target.body], changingCookie || buyerReturns.isBuyerReturnMutation(request));
+    const result = await bodyJSON(request, shapes[target.body], changingCookie || isBuyerReturnMutation(request));
     if (result.error) return result.error;
     // Go privacyExport takes no body (internal/buyerhttp noBody → 422); the browser hop's {} stops here.
     body = target.privatePath === "privacy/export" ? undefined : result.body;
@@ -1261,7 +1270,7 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
   const data = await upstreamJSON(response, !!target.payment || !!target.returnRequest);
   if (request.signal.aborted || data === null || typeof data !== "object")
     return fail(503, "unavailable");
-  if (!buyerReturns.validBuyerReturnResponse(target, response.status, data)) return fail(503, "unavailable");
+  if (!validBuyerReturnResponse(target, response.status, data)) return fail(503, "unavailable");
   if (
     target.cvs &&
     (![200, 201].includes(response.status) ||
