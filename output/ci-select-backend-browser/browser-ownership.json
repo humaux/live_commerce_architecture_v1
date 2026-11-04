@@ -32,7 +32,7 @@
     "tests/admin/claims-backend-parity.test.ts": "93784882a486c2be5a1cf945437dd818c5a93d290aac7d2140e5ee55dffb0335",
     "tests/admin/claims-model.test.ts": "2472e57eec9d86f4f9ae4ff32acd274b998c35d5a10c2bfd8251e34bc21e3a19",
     "tests/admin/claims-request.test.ts": "0812f41b5df04ce7eaa8d0d7885d887a5a024469e824a865ddcb7d0aafd6f391",
-    "tests/admin/claims-ui.spec.ts": "21ba06ef60e1db76209ca6a74e10fa907d56ef7dad1c09eebf67238ea1194a53",
+    "tests/admin/claims-ui.spec.ts": "4077396be94382257e553312cba99aca0f57d577a642f5b25f63c96cda281046",
     "tests/admin/code-alignment-admin-state.test.mjs": "0244c547a57cb9945201f6448ff377a8cfe25f209bc20ba998a756deef2da965",
     "tests/admin/comment-label-print.spec.ts": "daf089ec93a495f25697230778add4d299f66efb90babf4e483004e390cb9e24",
     "tests/admin/comment-label-print.test.ts": "1156d8f68891fe3ac8186a154dda09ecf3b17f370f43a60567187e7a402aa126",

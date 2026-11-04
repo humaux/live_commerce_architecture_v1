@@ -591,3 +591,55 @@ for(const locale of ["zh-CN","en"] as const)test(`C4 claims preflight locale ${l
   await page.goto(`${origin}/${locale}/studio/claims?store=${store}&scene=${session}#preflight`);
   await expect(page.getByRole("heading",{name:parityWords[locale].preflight,exact:true})).toBeVisible();
 });
+
+// #383 (MOCK answers): a refused re-read must take the keyword library off screen. The library
+// GET answers one fixed entry and the save PUT a fixed receipt; the board read is answered 403
+// on demand, which fails the whole facts read. Nothing here reaches Go's library store.
+const staleEntry = { sku_id: "00000000-0000-4000-8000-000000000383", sku_code: "SKU-383", product_name: "Stale product 383",
+  keyword: "STALE383", version: 1, sku_price_minor: 100, currency: "TWD", updated_at: "2026-11-01T00:00:00Z" };
+async function libraryRoutes(page: Page, forbidden: () => boolean) {
+  const headers = { "content-type": "application/json", "cache-control": "private, no-store" };
+  const puts: string[] = [];
+  await page.route(/\/api\/stores\/[^/]+\/live-sessions\/[^/]+\/claims$/, (route) => forbidden()
+    ? route.fulfill({ status: 403, headers, body: JSON.stringify({ code: "forbidden", message: "x", request_id: "", retryable: false, details: {} }) })
+    : route.continue());
+  await page.route(/\/api\/stores\/[^/]+\/live-sessions\/[^/]+\/claims\/library(\/[^/]+)?$/, (route) => {
+    if (route.request().method() === "GET") return route.fulfill({ status: 200, headers, body: JSON.stringify({ entries: [staleEntry] }) });
+    puts.push(route.request().url());
+    return route.fulfill({ status: 200, headers, body: JSON.stringify({ ...staleEntry, keyword: "NEW383", version: 2 }) });
+  });
+  return puts;
+}
+const libraryControls = (page: Page) =>
+  page.locator("button:enabled", { hasText: /^(Edit default comment keyword|Preview changes|Preview removal|Save changes)$/ });
+
+test("#383 keyword library drops stale facts after a 403 re-read (MOCK)", async ({ page }) => {
+  await useSignedMerchant(page);
+  let forbidden = false;
+  const puts = await libraryRoutes(page, () => forbidden);
+  await page.goto(`${origin}/en/studio/claims?store=${store}&scene=${session}#library`);
+  await expect(page.getByRole("heading", { name: "Default comment keywords", exact: true })).toBeVisible();
+  await expect(page.getByText("Stale product 383", { exact: true })).toBeVisible();
+  await expect(page.getByText("STALE383", { exact: true })).toBeVisible();
+  // The save succeeds, then its re-read is refused: the library must not keep the old facts.
+  await page.getByRole("button", { name: "Edit default comment keyword", exact: true }).first().click();
+  await page.getByLabel("New default keyword", { exact: true }).fill("NEW383");
+  await page.getByRole("button", { name: "Preview changes", exact: true }).click();
+  forbidden = true;
+  await page.getByRole("button", { name: "Save changes", exact: true }).click();
+  await expect(page.getByRole("alert").filter({ hasText: claimsCopy.en.forbidden })).toBeVisible();
+  await expect(page.getByText("Stale product 383", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("STALE383", { exact: true })).toHaveCount(0);
+  await expect(libraryControls(page)).toHaveCount(0);
+  expect(puts).toHaveLength(1);
+});
+
+test("#383 keyword library first-load 403 shows the refusal (MOCK)", async ({ page }) => {
+  await useSignedMerchant(page);
+  const puts = await libraryRoutes(page, () => true);
+  await page.goto(`${origin}/en/studio/claims?store=${store}&scene=${session}#library`);
+  await expect(page.getByRole("alert").filter({ hasText: claimsCopy.en.forbidden })).toBeVisible();
+  await expect(page.getByText("Stale product 383", { exact: true })).toHaveCount(0);
+  await expect(libraryControls(page)).toHaveCount(0);
+  expect(puts).toHaveLength(0);
+});
