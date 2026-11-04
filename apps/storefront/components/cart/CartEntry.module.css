@@ -1,0 +1,11 @@
+/* Purpose: b-cart entry panel (102:2267 family) above the cart list.
+ * Depends on: shared DS/signed tokens. Used by: components/cart/CartEntry.tsx.
+ * Invariants: panel sits between the page heading and the cart list; controls keep the 44px target from .sf-btn / .sf-link. */
+.entry { display: grid; gap: var(--ds-space-3); margin-block-end: var(--ds-space-6); padding: var(--ds-space-5); border: 1px solid var(--ds-sig-line); border-radius: var(--ds-radius-control); background: var(--ds-surface); max-width: 560px; }
+.entry > a:first-child { justify-self: start; }
+.title { margin: 0; font-size: var(--ds-text-lg); }
+.line { display: grid; gap: var(--ds-space-2); }
+.line p { display: flex; justify-content: space-between; gap: var(--ds-space-3); margin: 0; }
+.line p span { color: var(--ds-text-2); }
+.line button { justify-self: start; }
+.note { margin: 0; color: var(--ds-text-2); font-size: var(--ds-text-sm); }

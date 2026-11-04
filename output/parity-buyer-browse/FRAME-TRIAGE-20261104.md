@@ -159,3 +159,38 @@ bottom action (single SKU: 「加入購物車」 adds directly), and the 51:1381
 | Head | Run / job | Result |
 |---|---|---|
 | `b1f59ad8d` (RED, tests only) | Gates 41850176970, gate (bundle:02) job 126647604139, artifact `gate-browser-storefront` 13336252595 | Causal RED: `TestBrowserStorefront` FAIL 331.85s, `exit status 1` from the parity assertion (no kill). Manifest: `COVERED 30 · NOT_COVERED 25 · DEFERRED 14 · BLOCKED 4 of 73`; ledger 388/397 PASS. The only 9 FAIL rows are new: `102:2163` (1440x900) and `102:2232` (390x844) "back link" × zh-TW/zh-CN/en (`getByTestId('product-back').getByRole('link', { name: '所有商品' / 'All products' })` not visible, 10s), and `51:1381` "description delivery section" × zh-TW/zh-CN/en. The 10 other mapped frames are NOT_RUN by design (first-product anchor failed); 4:9441/4:9532 rows all PASS. |
+
+## Round (b) b-cart entry (12 reachable frames)
+
+Writer: ui_worker (Claude Opus 5.5), base `b79f61c4e`. Figma read: bridge `get_screenshot` of 102:2267 / 102:2324 (cached, git-ignored) and the
+frame text dump. The screenshots show only the cart list (the master 4:9668 / 4:9746 layout); the entry layer (‹ 商品詳情, 購物車 · {product},
+規格 / 數量 / 商品小計 / 移除商品, 運費依配送方式於結帳時計算。, 前往結帳) is in the text dump, so it is built as a panel above the list.
+
+### Frame -> fixture mapping (same products as round (a))
+
+| Frames (D / M) | Figma demo product | Fixture product (SFR) |
+|---|---|---|
+| 102:2267 / 102:2324 | 日常斜背小包 | `dripper` |
+| 104:2313 / 104:2371 | 輕量帆布托特包 | `item01` |
+| 104:2657 / 104:2715 | 迷你收納袋 | `item02` |
+| 104:3176 / 104:3234 | 簡約提袋 | `item03` |
+| 104:3520 / 104:3578 | 米白托特包 (規格 米白) | `scarf` (Oat) |
+| 104:3862 / 104:3920 | 輕便收納包 | `item04` |
+
+Flow per locale × viewport, in its own browser context (fresh cart; the 4:9668 / 4:9746 one-line baseline is untouched): product page →
+real add-to-cart (phone single-SKU: the bottom dock) → drawer 「查看購物車」 → entry panel asserts → 「‹ 商品詳情」 back click. The last product
+clicks 「移除商品」 and reloads (line stays removed). The entry panel is the bounded anchor; a missing panel marks the rest NOT_RUN.
+
+### RED witness (b-cart)
+
+| Head | Run / job | Result |
+|---|---|---|
+| `33fbf5cd6` (RED, tests only) | Gates 41868361592, gate (bundle:02) job 126711128890, artifact `gate-browser-storefront` 13344638359 | Causal RED: `TestBrowserStorefront` FAIL 392.39s, `exit status 1` from the parity assertion (no kill). Manifest `COVERED 43 · NOT_COVERED 12 · DEFERRED 14 · BLOCKED 4 of 73`; ledger 673/679 PASS. The only 6 FAIL rows are the new anchor `102:2267` (1440x900) / `102:2324` (390x844) "cart entry panel" × zh-TW/zh-CN/en (`getByTestId('cart-entry').getByRole('heading', { name: '購物車 · Ceramic Dripper Set' })` not found, 10s). The add-to-cart + 「查看購物車」 steps PASS; the other 10 frames NOT_RUN by design. Other jobs green (receipts / required fail downstream of bundle:02); Foundation 41868362527 success. |
+
+### P2 for #546 (b-cart)
+
+- The frames' screenshots draw no entry panel (only the text layer has it); the panel is placed above the master list, which keeps 4:9668 / 4:9746 unchanged.
+- Phone 「繼續購物」 inside the entry panel: not added; the master list already has 「繼續選購」 (4:9746).
+- The entry panel sits outside the `cart-page` host so host-scoped cart gates (order-gate, 51:1380) still see exactly the list.
+- Entry context is tab-local `sessionStorage` (one SKU id written by ProductBuy after a successful add); a plain visit to /cart in the same tab
+  after an add also shows it. No URL or API field.

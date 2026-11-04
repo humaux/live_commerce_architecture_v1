@@ -25,6 +25,7 @@ import layout from "./product/ProductLayout.module.css";
 import { fmt, shopCopy } from "../lib/shop-copy";
 import { useCart } from "./CartProvider";
 import { CartNotice } from "./CartLines";
+import { rememberCartEntry } from "./cart/CartEntry";
 import { CheckIcon, MinusIcon, PlusIcon } from "./icons";
 
 /** Render controlled variant choices and initiate the existing journalled cart add/checkout actions. */
@@ -93,6 +94,7 @@ export default function ProductBuy({ locale, product, currency, chosen, onChoose
     if (!variant || soldOut || busy) return;
     const ok = await cart.add(variant.sku_id, qty);
     if (!ok) return;
+    rememberCartEntry(variant.sku_id);
     if (destination === "checkout") router.push(checkoutPath(locale));
     else if (destination === "cart") {
       // Keep this successful add disabled while Next navigates; a second click must not compose another add.
