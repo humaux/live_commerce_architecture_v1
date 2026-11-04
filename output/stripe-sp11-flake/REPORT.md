@@ -5,11 +5,14 @@ Worktree `/Volumes/data/live_commerce_architecture_v1/.worktrees/stripe-sp11`, b
 
 ## Status
 
-**BLOCKED on the two local commits.** The DSH sandbox denies writes to the worktree's git metadata
+**Delivered as uncommitted working-tree changes, per the coordinator's instruction (no git commits
+from this terminal).** The DSH sandbox denies writes to the worktree's git metadata
 (`fatal: Unable to create '/Volumes/data/live_commerce_architecture_v1/.git/worktrees/stripe-sp11/index.lock':
-Operation not permitted`). The one-shot escalation to `danger-full-access` was rejected by the
-operator, so this terminal cannot create commits or update the index. Everything below is written
-in the working tree and compile-checked; nothing is committed or pushed.
+Operation not permitted`); the one-shot escalation to `danger-full-access` was declined, and the
+coordinator then asked for the split instead of commits. `output/stripe-sp11-flake/DIAG.md`
+("Delivery split") names the exact RED commit (one new test file) and FIX commit (two hunks in
+`stripe_start_test.go` + regenerated ownership + this evidence), including the required order:
+RED commit -> regenerate `browser-ownership.json` -> FIX commit. Nothing is committed or pushed.
 
 ## Root cause (test-harness race)
 
@@ -70,7 +73,7 @@ No product code, assertion, deadline, retry or fixture data changes.
   after the RED commit makes it tracked.
 - `NOT_RUN`: any `go test`, servers, Playwright, local CI reproduction (CI only).
 
-## Commit commands (prepared, not executed)
+## Commit commands (for the coordinator; not executed here)
 
 RED (test file only):
 
@@ -80,7 +83,14 @@ git commit -m "test(payments): force SP11 busy-lease interleaving (RED, #468)" \
   -m "Co-Authored-By: DeepSeek Flash <noreply@deepseek.com>"
 ```
 
-FIX (helper + header + this report + regenerated ownership):
+Then regenerate ownership (the new file is now tracked) and verify:
+
+```sh
+node scripts/dev/derive-browser-ownership.mjs
+node scripts/dev/derive-browser-ownership.mjs --check
+```
+
+FIX (helper hunks + evidence + regenerated ownership):
 
 ```sh
 git add tests/foundation/stripe_start_test.go output/stripe-sp11-flake output/ci-select-backend-browser/browser-ownership.json
@@ -88,8 +98,10 @@ git commit -m "fix(payments): re-arm River's short-snooze shape in the SP11 wake
   -m "Co-Authored-By: DeepSeek Flash <noreply@deepseek.com>"
 ```
 
-Re-run `node scripts/dev/derive-browser-ownership.mjs` after the RED commit (the new file becomes
-tracked) and before the last commit; `--check` must exit 0.
+The exact RED/FIX file-and-hunk split is in `output/stripe-sp11-flake/DIAG.md` ("Delivery split").
+This shell exports `GIT_CONFIG_COUNT=2` without `GIT_CONFIG_KEY_0/1`, which breaks every git
+invocation and any tool shelling out to git (including the ownership script); the coordinator's
+session should not inherit that env.
 
 ## Risks
 
@@ -100,5 +112,6 @@ tracked) and before the last commit; `--check` must exit 0.
 - The RED test asserts harness state, not end-to-end timing; it is complemented by the existing
   subtest, which must stay green in CI.
 
-STATUS: BLOCKED — local commits rejected by the sandbox (git metadata outside the session
-workspace; danger-full-access escalation declined by the operator).
+STATUS: DONE — diagnosis, RED test, fix and evidence are in the working tree and compile-checked;
+the two commits are delegated to the coordinator (no git writes from this terminal, per its
+instruction).

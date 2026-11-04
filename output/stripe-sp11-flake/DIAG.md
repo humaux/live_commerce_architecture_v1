@@ -143,10 +143,55 @@ job in each River snooze shape with owner SQL (exactly what `JobSetStateSnoozedA
 the current helper for the signal job and passes after the fix. No worker is started and no sleep
 is used for synchronization.
 
+## Delivery split — RED part vs FIX part (coordinator commits; nothing is committed here)
+
+Per the coordinator's instruction this terminal made **no** git commit and will not touch the
+working tree's git state. The two commits are:
+
+### Commit 1 — RED (tests-only)
+
+- **NEW** `tests/foundation/stripe_wake_test.go` (whole file, 88 lines): the package header comment
+  plus `TestStripeSP11BusySnoozeIsWakeable`. Nothing else belongs to this commit — no helper edit,
+  no evidence file, no ownership artifact. It must fail on the pre-fix tree because the signal job
+  is left in the `available` + future `scheduled_at` shape.
+- Message: `test(payments): force SP11 busy-lease interleaving (RED, #468)` + trailing
+  `Co-Authored-By: DeepSeek Flash <noreply@deepseek.com>`.
+
+### Commit 2 — FIX (helper + comments + evidence)
+
+- `tests/foundation/stripe_start_test.go`, exactly two hunks:
+  1. lines 15-18, the file header comment: states that the harness owns the bounded-poll wake
+     helper and the "every sleeping representation must be made due" invariant (#468);
+  2. lines 848-864, the `sstWake` doc comment (River's two snooze shapes and the starvation it
+     caused) and the single SQL predicate change:
+     `AND args->>'operation_id'=$1` / `AND (state IN ('scheduled','retryable') OR
+     (state='available' AND scheduled_at>clock_timestamp()))` replacing
+     `AND args->>'operation_id'=$1 AND state IN ('scheduled','retryable')`.
+  Nothing else in the file changes.
+- `output/ci-select-backend-browser/browser-ownership.json`: the generated artifact. **Regenerate
+  it after commit 1 and before commit 2** (`node scripts/dev/derive-browser-ownership.mjs` then
+  `--check`, both must exit 0): the artifact hashes every tracked `tests/foundation/*.go`, so the
+  working-tree copy generated now already contains the `stripe_start_test.go` hash but cannot
+  contain `stripe_wake_test.go` while that file is untracked. Committing the current copy as-is
+  would fail the CI drift check.
+- `output/stripe-sp11-flake/DIAG.md` and `output/stripe-sp11-flake/REPORT.md`: this evidence.
+- Message: `fix(payments): re-arm River's short-snooze shape in the SP11 wake helper (#468)` +
+  trailing `Co-Authored-By: DeepSeek Flash <noreply@deepseek.com>`.
+
+Order matters: RED first, then regenerate ownership, then FIX. No product code, migration,
+assertion, deadline or fixture data is in either commit.
+
+Environment note: this shell exports `GIT_CONFIG_COUNT=2` with `GIT_CONFIG_KEY_0`/`GIT_CONFIG_KEY_1`
+absent, so every `git` invocation (and any tool that shells out to git, including
+`derive-browser-ownership.mjs`) dies with `missing config key GIT_CONFIG_KEY_0`. That is a harness
+env defect, not a repo setting; the coordinator's session should not inherit it.
+
 ## Evidence level
 
 - Source/diagnosis: E1 (static reading of the exact files above + River v0.40.0 sources in the
   module cache).
-- RED/GREEN: `NOT_RUN` locally by owner rule (CI only). `gofmt -l`, `go vet` compile checks and
-  `scripts/dev/derive-browser-ownership.mjs --check` only.
+- RED/GREEN: `NOT_RUN` locally by owner rule (CI only). `gofmt -l` (no output),
+  `go vet ./tests/foundation` (exit 0), `node scripts/dev/derive-browser-ownership.mjs` and
+  `--check` (exit 0 at the time of writing, see the regeneration note above).
 - Product code, migrations, assertions, deadlines and retries: unchanged.
+- Commits: none by this terminal; the two commits above are left to the coordinator.
