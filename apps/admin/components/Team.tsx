@@ -2,7 +2,8 @@
 // Depends on: react, @live-commerce/i18n, @live-commerce/format, @/lib/model, @/lib/customers-client, @/lib/team-client, @/lib/team-model, @/lib/team-copy, ./WorkspaceFrame, ./team.css
 // Used by: apps/admin/app/[locale]/team/page.tsx
 // Invariants: server scopes every read/write; invites use the existing invite BFF (owner lifted the pause 2026-11-04; re-auth is the
-//   shared ReauthDialog fetch wrapper); admin promotion is unavailable; uncertain writes never replay.
+//   shared ReauthDialog fetch wrapper); admin promotion goes to set-role like any role change (owner decision 2026-11-04;
+//   Go's owner check is the authority, a refusal shows the error screen); an unchanged role cannot submit; uncertain writes never replay.
 "use client";
 
 import { useRef, useState } from "react";
@@ -89,7 +90,7 @@ function Sections({ team, store, boundary, refresh, locale, c }: {
     </label>)}
   </fieldset>;
   async function submit() {
-    if (sending.current || (action === "role" && (!member || role === "admin" || role === member.role))) return;
+    if (sending.current || (action === "role" && (!member || role === member.role))) return;
     if (action === "revoke" ? !invitation : !member || member.role === "owner") return;
     sending.current = true; setBusy(true);
     const result = action === "role" ? await setMemberRole(store, member!.principal_id, role, boundary)
@@ -186,7 +187,7 @@ function Sections({ team, store, boundary, refresh, locale, c }: {
       <section className="team-card"><p className="team-person">{identity(member, c)}</p>
         {role === "admin" && member.role === "admin" && <p className="team-help">{c.unchangedAdmin}</p>}{roleChoices}
       </section>
-      <div className="team-actions">{button(c.cancel, back)}{button(c.next, () => setScreen("review"), true, role === "admin" || role === member.role)}</div>
+      <div className="team-actions">{button(c.cancel, back)}{button(c.next, () => setScreen("review"), true, role === member.role)}</div>
     </>}
     {screen === "review" && <>
       <section className="team-card"><p className="team-person">{person}</p>

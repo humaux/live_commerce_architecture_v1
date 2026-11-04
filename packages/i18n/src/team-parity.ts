@@ -1,6 +1,6 @@
 // Purpose: Signed seller-facing staff copy for desktop and mobile in all three locales.
 // Depends on: ux-team DELIVERY three-language table and parity-team FRAME-COPY; no runtime dependencies.
-// Used by: apps/admin/components/Team.tsx via apps/admin/lib/team-copy.ts.
+// Used by: apps/admin/components/Team.tsx and TeamInvite.tsx via apps/admin/lib/team-copy.ts.
 // Invariants: identity, roles and dates interpolate server DTO facts; no fixture identities or permission codes.
 export const teamParityCopy = {
   "zh-TW": {
@@ -85,7 +85,22 @@ export const teamParityCopy = {
     "inviteLimit": "目前無法新增邀請",
     "inviteLimitHelp": "先查看待接受邀請，稍後再試。",
     "inviteChecking": "{role}邀請尚未確認，請查看名單，勿再次送出。",
-    "inviteUnresolved": "{role}邀請尚未確認，請稍後再查看。"
+    "inviteUnresolved": "{role}邀請尚未確認，請稍後再查看。",
+    "join": "加入團隊",
+    "joinHelp": "使用收到邀請的信箱。",
+    "signInLink": "登入",
+    "signUp": "建立帳號",
+    "accept": "接受邀請",
+    "acceptChecking": "請勿再次接受邀請，請店主確認名單。",
+    "joined": "已加入團隊",
+    "joinedHelp": "已取得{role}權限，可以進入店舖。",
+    "openStore": "進入店舖",
+    "inviteInvalid": "邀請無法使用",
+    "inviteInvalidHelp": "請使用受邀信箱登入，或請店主重新邀請。",
+    "inviteeMember": "已是這間店的員工",
+    "inviteeMemberHelp": "請從店舖清單進入。",
+    "inviteeOff": "目前無法加入團隊",
+    "inviteeOffHelp": "電子郵件登入尚未開啟，請聯絡店主。"
   },
   "zh-CN": {
     "title": "员工",
@@ -169,7 +184,22 @@ export const teamParityCopy = {
     "inviteLimit": "暂时无法新增邀请",
     "inviteLimitHelp": "请先查看待接受邀请，稍后再试。",
     "inviteChecking": "{role}邀请尚未确认，请查看名单，不要再次提交。",
-    "inviteUnresolved": "{role}邀请尚未确认，请稍后再查看。"
+    "inviteUnresolved": "{role}邀请尚未确认，请稍后再查看。",
+    "join": "加入团队",
+    "joinHelp": "请使用收到邀请的邮箱。",
+    "signInLink": "登录",
+    "signUp": "注册账号",
+    "accept": "接受邀请",
+    "acceptChecking": "请不要再次接受邀请，请店主确认名单。",
+    "joined": "已加入团队",
+    "joinedHelp": "已获得{role}权限，可以进入店铺。",
+    "openStore": "进入店铺",
+    "inviteInvalid": "邀请无法使用",
+    "inviteInvalidHelp": "请使用受邀邮箱登录，或请店主重新邀请。",
+    "inviteeMember": "已是这家店的员工",
+    "inviteeMemberHelp": "请从店铺列表进入。",
+    "inviteeOff": "目前无法加入团队",
+    "inviteeOffHelp": "邮箱登录尚未启用，请联系店主。"
   },
   "en": {
     "title": "Staff",
@@ -253,7 +283,22 @@ export const teamParityCopy = {
     "inviteLimit": "Cannot add invitations now",
     "inviteLimitHelp": "Review pending invitations and try later.",
     "inviteChecking": "The {role} invitation is unconfirmed. Check the list; do not submit again.",
-    "inviteUnresolved": "The {role} invitation is unconfirmed. Check again later."
+    "inviteUnresolved": "The {role} invitation is unconfirmed. Check again later.",
+    "join": "Join team",
+    "joinHelp": "Use the email address that received the invitation.",
+    "signInLink": "Sign in",
+    "signUp": "Create account",
+    "accept": "Accept invitation",
+    "acceptChecking": "Do not accept again. Ask the owner to check the list.",
+    "joined": "You joined the team",
+    "joinedHelp": "{role} access is ready. You can open the store.",
+    "openStore": "Open store",
+    "inviteInvalid": "Invitation unavailable",
+    "inviteInvalidHelp": "Sign in with the invited email, or ask the owner for a new invitation.",
+    "inviteeMember": "Already a member of this store",
+    "inviteeMemberHelp": "Open the store from your store list.",
+    "inviteeOff": "Cannot join the team now",
+    "inviteeOffHelp": "Email sign-in is off. Contact the store owner."
   }
 };
 export type TeamParityCopy = typeof teamParityCopy.en;
