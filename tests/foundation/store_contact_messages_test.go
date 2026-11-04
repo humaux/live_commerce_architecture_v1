@@ -431,6 +431,37 @@ func TestStoreContactUnknownMailIsNotRetried(t *testing.T) {
 	}
 }
 
+// #375 review P1: 30 contact notices in one hour (one IP at the admitted 5 per 600 s) must not use the store's
+// transactional buyer-mail hour (storeHourly 30); contact notices have their own per-store cap of 10 per rolling hour.
+func TestStoreContactNoticesNeverDeferTransactionalMail(t *testing.T) {
+	e := contactEnv(t)
+	// The placement setup of bcmSetup, without its global outbox deletes (the CI database is shared).
+	e.grantCreator("orders:read", "payments:refund", "fulfillment:write")
+	e.service("cvs_711", "MANUAL", 0)
+	e.cofEnsureSettings(0, true, false, 72)
+	m := &contactMailer{}
+	// Daily budget far above this run, so only the per-store hourly caps can hold a row back.
+	w, err := notify.NewWorker(e.p.expiry, m, 100000)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range 30 {
+		contactReceived(t, contactSubmit(t, e, t04Key("contact-flood"), bgIP(), contactInput()))
+	}
+	contactDrain(t, w)
+	order, _ := e.bcmPlace("transactional-" + e.tag + "@buyers.example.test")
+	contactDrain(t, w)
+	if state, _, _, _ := e.bcmRow(order, "placed"); state != "SENT" {
+		t.Errorf("transactional placed mail state=%s after 30 contact notices this hour, want=SENT", state)
+	}
+	if got := len(m.to(e)); got != 10 {
+		t.Errorf("contact notices sent this hour=%d, want=10 (per-store contact cap)", got)
+	}
+	if held := e.count(`SELECT count(*) FROM notify.outbox WHERE tenant_id=$1 AND store_id=$2 AND kind='store_contact' AND state='PENDING'`, e.tenant(), e.store()); held != 20 {
+		t.Errorf("contact notices held PENDING over the cap=%d, want=20", held)
+	}
+}
+
 func TestStoreContactConcurrentHandlingConflict(t *testing.T) {
 	e := contactEnv(t)
 	first := contactReceived(t, contactSubmit(t, e, t04Key("contact-handle-race"), bgIP(), contactInput()))
