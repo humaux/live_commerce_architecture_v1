@@ -483,7 +483,7 @@ export function registerTeamParity({ session, origin, store, output, sha }) {
     // Only the owner-delegated frames may leave the required set, each by its exact signed ids and reason.
     const reauth = "owner-delegated design decision 2026-11-04: shared ReauthDialog (OC-04) replaces in-page re-auth";
     const noop = "owner-delegated design decision 2026-11-04: no-op admin change is blocked at role-edit (Continue disabled, 目前已是管理員，無須變更); no confirm/done screen for an unsent request";
-    const identity = "owner-delegated design decision 2026-11-04: shared identity sign-in/sign-up/verify pages (確認碼 wording, existing auth tests) replace invite-local auth frames; the invite link round-trips via return_to";
+    const identity = "owner-delegated design decision 2026-11-04: shared identity sign-in/sign-up/verify pages (確認碼 wording, existing auth tests) replace invite-local auth frames; the invite link round-trips via the #next= fragment (no token in query, Referer or logs)";
     const reasons = { "reauth": reauth, "reauth-signin": reauth, "reauth-verify": reauth, "role-confirm-admin": noop, "role-done-admin": noop,
       "signin": identity, "signup": identity, "verify-signin": identity, "verify-signup": identity };
     assert.deepEqual(oracle.superseded.map(item => item.state), Object.keys(reasons));
