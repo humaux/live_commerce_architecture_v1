@@ -181,16 +181,22 @@ COMMENT ON TABLE storefront.store_contact_messages IS '0222: AES-GCM PII envelop
 COMMENT ON TABLE storefront.store_contact_throttle IS '0222: five per hashed IP and 100 per store in fixed 600-second windows; replay precedes throttle. Expired windows removed on admission.';
 
 -- Add only the new kind to the existing claim loop; retain 0098 fairness, 0107 COD snapshots,
--- 0143 suspension, shared caps, claim/record/UNKNOWN, staleness and retry semantics verbatim.
+-- 0143 suspension, the shared daily budget, claim/record/UNKNOWN, staleness and retry semantics verbatim.
+-- Transactional buyer mail is never deferred or capped by contact notices (#375 review P1): store_contact rows count
+-- only against their own per-store rolling-hour cap (v_contact_hourly) and transactional rows only against
+-- p_store_hourly, both in the pre-LIMIT window filter (0098 D1: a capped class contributes no row) and in the
+-- exact in-loop guard.
 GRANT SELECT(contact_email) ON control.stores TO commerce_checkout_writer;
 DO $patch$
-DECLARE v_fn text; v_needle text:='  SELECT k.owner_id,k.buyer_email'; v_branch text;
+DECLARE v_fn text; v_needle text:='  SELECT k.owner_id,k.buyer_email'; v_branch text; v_n text;
 BEGIN
  v_fn:=pg_get_functiondef('notify.claim_batch(integer,integer,integer)'::regprocedure);
- IF (length(v_fn)-length(replace(v_fn,v_needle,'')))<>length(v_needle) OR
-  (length(v_fn)-length(replace(v_fn,' -- UTC+8 day start','')))<>length(' -- UTC+8 day start') OR
-  (length(v_fn)-length(replace(v_fn,'v_locale text;','')))<>length('v_locale text;') THEN
-  RAISE EXCEPTION 'notify.claim_batch has an unexpected shape for contact notification'; END IF;
+ FOREACH v_n IN ARRAY ARRAY[v_needle,' -- UTC+8 day start','v_locale text;',
+  'h.store_id=x.store_id AND h.kind<>''merchant_new''',')<p_store_hourly',
+  'x.store_id=c.store_id AND x.kind<>''merchant_new''','CONTINUE WHEN v_h>=p_store_hourly;'] LOOP
+  IF (length(v_fn)-length(replace(v_fn,v_n,'')))<>length(v_n) THEN
+   RAISE EXCEPTION 'notify.claim_batch has an unexpected shape for contact notification'; END IF;
+ END LOOP;
  v_branch:=$branch$
   IF c.kind='store_contact' THEN
    PERFORM set_config('app.tenant_id',c.tenant_id::text,true),set_config('app.store_id',c.store_id::text,true);
@@ -208,7 +214,16 @@ BEGIN
    CONTINUE;
   END IF;
 $branch$;
- v_fn:=replace(v_fn,'v_locale text;','v_locale text; v_contact_email text;');
+ v_fn:=replace(v_fn,'v_locale text;','v_locale text; v_contact_email text;'||E'\n'||
+  ' -- 0222: store_contact notices per store per rolling hour; own cap, never counted in p_store_hourly (#375 P1)'||E'\n'||
+  ' v_contact_hourly constant integer:=10;');
+ v_fn:=replace(v_fn,'h.store_id=x.store_id AND h.kind<>''merchant_new''',
+  'h.store_id=x.store_id AND h.kind<>''merchant_new'' AND (h.kind=''store_contact'')=(x.kind=''store_contact'')');
+ v_fn:=replace(v_fn,')<p_store_hourly',')<CASE WHEN x.kind=''store_contact'' THEN v_contact_hourly ELSE p_store_hourly END');
+ v_fn:=replace(v_fn,'x.store_id=c.store_id AND x.kind<>''merchant_new''',
+  'x.store_id=c.store_id AND x.kind<>''merchant_new'' AND (x.kind=''store_contact'')=(c.kind=''store_contact'')');
+ v_fn:=replace(v_fn,'CONTINUE WHEN v_h>=p_store_hourly;',
+  'CONTINUE WHEN v_h>=CASE WHEN c.kind=''store_contact'' THEN v_contact_hourly ELSE p_store_hourly END;');
  v_fn:=replace(v_fn,' -- UTC+8 day start',E' PERFORM storefront.prune_store_contacts(100);\n -- UTC+8 day start');
  EXECUTE replace(v_fn,v_needle,v_branch||v_needle);
 END $patch$;
