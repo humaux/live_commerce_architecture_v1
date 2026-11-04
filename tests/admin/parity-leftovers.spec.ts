@@ -1,5 +1,5 @@
 // Purpose: PARITY-LEFTOVERS signed-frame acceptance on real routes for older frames with no v2 equivalent.
-// Depends on: Playwright; existing order/product/message routes and their MOCK fixtures.
+// Depends on: Playwright; existing manual-order (orders/new), order-export, product and message routes and their MOCK fixtures.
 // Used by: TestBrowserParityLeftovers's direct spec registration and generated browser ownership.
 // Invariants: fixtures prepare GETs only; never modify product code; assert signed visible copy and controls.
 // Frames: 訂單缺少收件資料 (750:3454/3596), 訂單匯出說明 (808:5618/5619), 媒体上传 (6:22038/22147),
@@ -12,7 +12,6 @@ const origin = process.env.LC_BROWSER_PUBLIC_ORIGIN!;
 const store = process.env.LC_BROWSER_STORE!;
 const evidence = process.env.LC_BROWSER_EVIDENCE!;
 const id = (suffix: string) => `90000000-0000-4000-8000-${suffix.padStart(12, "0")}`;
-const orderMissing = id("500");
 const productId = id("600");
 
 type Click = { route: string; control: string; operation: string; expected: string; actual: string };
@@ -55,7 +54,38 @@ if (process.env.LC_BROWSER_PARITY_DENIED !== "1") test.describe("PARITY-LEFTOVER
     test(`訂單缺少收件資料 zh-TW ${size}: signed visible copy`, async ({ page }) => {
       await page.setViewportSize({ width: mobile ? 390 : 1440, height: mobile ? 844 : 900 });
       await login(page);
-      await page.goto(`${origin}/zh-TW/orders/${orderMissing}?store=${store}`);
+      // Integrator ruling 2026-11-04: this frame is the pre-submit state of the real manual-order flow (orders/new), reached with a
+      // draft that has a catalog line and a buyer whose recipient is incomplete (no phone, no pickup store). Nothing may be sent.
+      const writes: string[] = [];
+      page.on("request", (request) => {
+        if (!["GET", "HEAD"].includes(request.method())) writes.push(`${request.method()} ${new URL(request.url()).pathname}`);
+      });
+      await page.goto(`${origin}/zh-TW/orders/new?store=${store}`);
+      const variant = page.getByRole("button", { name: "選取 Synthetic item · Standard", exact: true });
+      await action(page, "加入商品", "click", "catalog picker lists the MOCK product", async () => {
+        await page.getByTestId("mo-open-picker").click();
+        await expect(variant).toBeVisible();
+      });
+      await action(page, "選取 Synthetic item · Standard", "click", "variant staged for this draft", async () => {
+        await variant.click();
+        await expect(variant).toHaveAttribute("aria-pressed", "true");
+      });
+      await action(page, "套用至本單", "click", "draft keeps one line", async () => {
+        await page.getByTestId("mo-apply-picker").click();
+        await expect(page.getByTestId("mo-lines")).toContainText("Synthetic item · Standard");
+      });
+      await action(page, "收件人", "fill", "buyer named; phone left empty", async () => {
+        await page.getByTestId("mo-name").fill("Synthetic Buyer");
+        await expect(page.getByTestId("mo-phone")).toHaveValue("");
+      });
+      await action(page, "配送方式", "select", "buyer-entered 7-ELEVEN pickup chosen; no store yet", async () => {
+        await page.getByTestId("mo-option").selectOption({ index: 1 });
+        await expect(page.getByTestId("mo-store-code")).toHaveValue("");
+      });
+      await action(page, "檢查訂單", "click", "missing-recipient state replaces the review; submission blocked", async () => {
+        await page.getByRole("button", { name: "檢查訂單", exact: true }).click();
+        await expect(page.getByTestId("manual-order-missing")).toBeVisible();
+      });
 
       await expect(page.getByRole("heading", { name: "請補齊收件資料", exact: true })).toBeVisible();
       await expect(page.getByText("訂單尚未建立，也尚未收款。原商品與數量仍在草稿中。", { exact: true })).toBeVisible();
@@ -66,8 +96,15 @@ if (process.env.LC_BROWSER_PARITY_DENIED !== "1") test.describe("PARITY-LEFTOVER
       await expect(page.getByText("請確認超商品牌與門市號碼；店名、地址可不填。", { exact: true })).toBeVisible();
       await expect(page.getByText("資料完整後才能取得正式報價；付款狀態會依實際收款結果更新。", { exact: true })).toBeVisible();
       await expect(page.getByRole("button", { name: "返回草稿補填", exact: true })).toBeVisible();
+      await expect(page.getByTestId("manual-order-submit")).toHaveCount(0);
 
       await screenshot(page, mobile ? "750:3596" : "750:3454");
+      await action(page, "返回草稿補填", "click", "draft returns with its line and buyer intact", async () => {
+        await page.getByRole("button", { name: "返回草稿補填", exact: true }).click();
+        await expect(page.getByTestId("mo-lines")).toContainText("Synthetic item · Standard");
+        await expect(page.getByTestId("mo-name")).toHaveValue("Synthetic Buyer");
+      });
+      expect(writes).toEqual([]);
     });
 
     test(`訂單匯出說明 zh-TW ${size}: signed visible copy`, async ({ page }) => {
@@ -96,6 +133,10 @@ if (process.env.LC_BROWSER_PARITY_DENIED !== "1") test.describe("PARITY-LEFTOVER
     test(`媒体上传 zh-TW ${size}: signed visible copy in product editor`, async ({ page }) => {
       await page.setViewportSize({ width: mobile ? 390 : 1440, height: mobile ? 844 : 900 });
       await login(page);
+      const writes: string[] = [];
+      page.on("request", (request) => {
+        if (!["GET", "HEAD"].includes(request.method())) writes.push(`${request.method()} ${new URL(request.url()).pathname}`);
+      });
       await page.goto(`${origin}/zh-TW/products/${productId}?store=${store}`);
 
       const addImagesButton = page.getByRole("button", { name: "加入圖片", exact: true });
@@ -105,14 +146,44 @@ if (process.env.LC_BROWSER_PARITY_DENIED !== "1") test.describe("PARITY-LEFTOVER
         await expect(page.getByRole("heading", { name: "選擇要加入的圖片", exact: true })).toBeVisible();
       });
       await expect(page.getByText("JPG、PNG 或 WebP；每張不超過 5 MB。加入後仍需儲存商品。", { exact: true })).toBeVisible();
-      await expect(page.getByText("商品正面 · 示意", { exact: true })).toBeVisible();
+      // prototype placeholder, owner-delegated design rule: never assert placeholder content.
+      // The signed tiles 商品正面 · 示意 / 商品背面 · 示意 / 材質細節 · 示意 are prototype placeholders (integrator ruling 2026-11-04);
+      // the picker lists this product's real images from the image-list contract (MOCK: one detail image, labelled like gallery tiles).
+      const grid = page.getByTestId("media-add-grid");
+      await expect(grid).toBeVisible();
+      const tile = grid.getByTestId("media-add-tile");
+      await expect(tile).toHaveCount(1);
+      await expect(tile.getByText("詳情圖 1", { exact: true })).toBeVisible();
+      const thumbnail = tile.getByRole("img", { name: "詳情圖 1", exact: true });
+      await expect(thumbnail).toBeVisible();
+      await expect.poll(() => thumbnail.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
       await expect(page.getByRole("button", { name: "選擇此圖片" }).first()).toBeVisible();
-      await expect(page.getByText("商品背面 · 示意", { exact: true })).toBeVisible();
-      await expect(page.getByText("材質細節 · 示意", { exact: true })).toBeVisible();
+      const choose = tile.getByRole("button", { name: "選擇此圖片", exact: true });
+      const apply = page.getByRole("button", { name: "加入所選圖片", exact: true });
+      await expect(choose).toHaveAttribute("aria-pressed", "false");
+      await expect(apply).toBeDisabled();
+      await action(page, "選擇此圖片", "click", "tile selected and apply enabled; nothing written", async () => {
+        await choose.click();
+        await expect(choose).toHaveAttribute("aria-pressed", "true");
+        await expect(apply).toBeEnabled();
+      });
+      await action(page, "選擇此圖片", "click", "tile deselected and apply disabled again", async () => {
+        await choose.click();
+        await expect(choose).toHaveAttribute("aria-pressed", "false");
+        await expect(apply).toBeDisabled();
+      });
+      const upload = page.getByLabel("新增圖片", { exact: true });
+      await expect(upload).toBeVisible();
+      await expect(upload).toHaveAttribute("accept", "image/jpeg,image/png,image/webp");
       await expect(page.getByRole("button", { name: "取消", exact: true })).toBeVisible();
       await expect(page.getByRole("button", { name: "加入所選圖片", exact: true })).toBeVisible();
 
       await screenshot(page, mobile ? "6:22147" : "6:22038");
+      await action(page, "取消", "click", "picker closes back to the editor without a write", async () => {
+        await page.getByRole("button", { name: "取消", exact: true }).click();
+        await expect(addImagesButton).toBeVisible();
+      });
+      expect(writes).toEqual([]);
     });
 
     test(`批量填充 zh-TW ${size}: signed visible copy in product editor`, async ({ page }) => {

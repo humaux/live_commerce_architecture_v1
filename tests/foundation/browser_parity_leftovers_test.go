@@ -8,6 +8,7 @@ package foundation_test
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -25,6 +26,11 @@ import (
 const bplOrder = "90000000-0000-4000-8000-000000000500"
 const bplProduct = "90000000-0000-4000-8000-000000000600"
 const bplSKU = "90000000-0000-4000-8000-000000000601"
+const bplImage = "90000000-0000-4000-8000-000000000602"
+const bplMarket = "90000000-0000-4000-8000-000000000700"
+
+// bplPNG is an 8x8 neutral PNG served as the MOCK detail image bytes (no real photo or asset is shipped).
+var bplPNG, _ = base64.StdEncoding.DecodeString("iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEUlEQVR42mO4cXgpVsQwtCQAUNCQAb9k4poAAAAASUVORK5CYII=")
 
 func TestBrowserParityLeftovers(t *testing.T) {
 	if os.Getenv("LC_BROWSER_LIVE_SETTINGS_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
@@ -33,7 +39,7 @@ func TestBrowserParityLeftovers(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 700*time.Second)
 	defer cancel()
 	f := pwIsolatedFixture(t)
-	for _, permission := range []string{"orders:read", "catalog:read", "inbox:reply", "live:manage"} {
+	for _, permission := range []string{"orders:read", "catalog:read", "inbox:reply", "live:manage", "inventory:reserve"} {
 		mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4)`, f.tenantA, f.storeA1, f.principalA, permission)
 	}
 	// A separate merchant identity keeps the denied path stable while signed frames use live:manage.
@@ -107,15 +113,18 @@ import {validImageList} from %q;
 import {parseOrderDetail,parseOrderActions,parseShipmentHistory} from %q;
 import {parseOrderListV2} from %q;
 import {settingsData} from %q;
+import {parseManualOptions} from %q;
+import {parseSummaryPage} from %q;
 const p=JSON.parse(readFileSync(process.argv[1],'utf8'));
 parseProduct(p['products/%s']);
+if(parseManualOptions(p['orders/manual/options']).length!==1||parseSummaryPage(p['catalog-products']).items.length!==1) throw Error('invalid manual-order projection');
 if(!validImageList(p['products/%s/images'])) throw Error('invalid image projection');
 parseOrderDetail(p['orders/%s'],%q);
 parseOrderListV2(p.orders); parseOrderActions(p['order-actions']);
 parseShipmentHistory(p['orders/%s/shipment/history']);
 settingsData('templates','GET',p['message-templates']);
-console.log('PASS: current product/media/order/template DTO parsers; MOCK projections only');
-`, filepath.Join(root, "apps/admin/lib/catalog-v2-model.ts"), filepath.Join(root, "apps/admin/lib/image-list-contract.ts"), filepath.Join(root, "apps/admin/lib/orders-model.ts"), filepath.Join(root, "apps/admin/lib/orders-v2.ts"), filepath.Join(root, "apps/admin/lib/live-settings-model.ts"), bplProduct, bplProduct, bplOrder, bplOrder, bplOrder)
+console.log('PASS: current product/media/order/manual-order/template DTO parsers; MOCK projections only');
+`, filepath.Join(root, "apps/admin/lib/catalog-v2-model.ts"), filepath.Join(root, "apps/admin/lib/image-list-contract.ts"), filepath.Join(root, "apps/admin/lib/orders-model.ts"), filepath.Join(root, "apps/admin/lib/orders-v2.ts"), filepath.Join(root, "apps/admin/lib/live-settings-model.ts"), filepath.Join(root, "apps/admin/lib/merchant-tools-model.ts"), filepath.Join(root, "apps/admin/lib/catalog-v2-model.ts"), bplProduct, bplProduct, bplOrder, bplOrder, bplOrder)
 	log := browserLog(t, filepath.Join(evidence, "fixture-contract.log"))
 	cmd := exec.CommandContext(ctx, "node", "--experimental-strip-types", "--input-type=module", "-e", check, filepath.Join(evidence, "mock-projections.json"))
 	cmd.Dir = root
@@ -133,8 +142,11 @@ console.log('PASS: current product/media/order/template DTO parsers; MOCK projec
 				return
 			}
 			permission := "orders:read"
-			if strings.HasPrefix(resource, "products/") || resource == "collections" || resource == "warehouses" {
+			if strings.HasPrefix(resource, "products/") || resource == "catalog-products" || resource == "collections" || resource == "warehouses" {
 				permission = "catalog:read"
+			}
+			if resource == "orders/manual/options" {
+				permission = "inventory:reserve" // the real manual-order permission (internal/merchanttools manualPermission)
 			}
 			if resource == "message-templates" {
 				permission = "inbox:reply"
@@ -150,6 +162,12 @@ console.log('PASS: current product/media/order/template DTO parsers; MOCK projec
 				return
 			}
 			w.Header().Set("Cache-Control", "private, no-store")
+			if raw, isBytes := body.([]byte); isBytes { // image bytes: the BFF accepts only a raster content type
+				w.Header().Set("Content-Type", "image/png")
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write(raw)
+				return
+			}
 			consoleJSON(w, http.StatusOK, body)
 		})
 	})
@@ -210,8 +228,10 @@ console.log('PASS: current product/media/order/template DTO parsers; MOCK projec
 	brfPlaywright(t, ctx, stack, []string{"parity-leftovers.spec.ts"}, map[string]string{"LC_BROWSER_STORE": f.storeA1, "LC_BROWSER_PARITY_DENIED": "0"})
 }
 
-// bplProjections prepares valid current DTOs. A current order requires a complete frozen destination;
-// the missing-recipient pre-order screen has no equivalent DTO here and must fail visibly in product assertions.
+// bplProjections prepares valid current DTOs. A current order requires a complete frozen destination, so the missing-recipient
+// frame is driven through the real manual-order draft instead (integrator ruling 2026-11-04): one catalog product and one buyer-entered
+// 7-ELEVEN option; the spec leaves phone and store empty. MOCK catalog-products returns that product whatever the query says.
+// The image list carries one real-shaped detail image (bytes = bplPNG) so the media picker lists a tile from the image-list contract.
 func bplProjections() map[string]any {
 	// orders-model requires canonical microseconds and no test-mode payment flag before any attempt exists.
 	summary := map[string]any{"order_id": bplOrder, "created_at": "2026-10-25T00:00:00.000000Z", "updated_at": "2026-10-25T00:00:00.000000Z", "currency": "TWD", "total_minor": 1200, "commercial_state": "DRAFT", "fulfillment_state": "MANUAL_UNASSIGNED", "payment_state": "NOT_STARTED", "test_mode": false, "work_state": "NONE", "refunded_minor": 0, "refund_pending_minor": 0, "source": "storefront", "pickup_source": nil, "payment_mode": "card", "collection_state": nil, "cod_surcharge_minor": nil, "cod_collect_minor": nil}
@@ -235,6 +255,10 @@ func bplProjections() map[string]any {
 	counts := map[string]int{"all": 1, "unpaid": 1, "transfer_review": 0, "ready_to_ship": 0, "ready_to_consign": 0, "shipped": 0, "completed": 0, "cancelled": 0}
 	sku := map[string]any{"id": bplSKU, "code": "MOCK-LEFTOVER", "title": "Standard", "price_minor": 1200, "compare_at_minor": nil, "option_values": []string{}, "version": 1, "currency": "USD", "available": 10, "inventory_tracked": true, "max_per_order": nil, "keyword": "", "on_hand": 10, "committed": 0, "weight_grams": 100, "length_mm": 10, "width_mm": 10, "height_mm": 10, "origin_country": "TW", "customs_name": "Synthetic item", "hs_candidate": ""}
 	product := map[string]any{"id": bplProduct, "slug": "mock-leftover", "name": "Synthetic item", "description": "MOCK catalog read", "status": "draft", "version": 1, "seo_title": "", "seo_description": "", "options": []any{}, "skus": []any{sku}, "collection_ids": []any{}, "warehouse_id": nil}
+	options := map[string]any{"options": []any{map[string]any{"option_key": bplMarket + "|TW|cvs_711", "market_id": bplMarket, "country": "TW", "delivery_code": "cvs_711", "delivery_kind": "cvs_711", "mode": "MANUAL", "name_hans": "7-ELEVEN", "name_hant": "7-ELEVEN", "name_en": "7-ELEVEN", "currency": "USD", "service_version": 1, "allocation_version": 1, "payment_modes": []string{"bank_transfer"}, "pickup_selection": "buyer_entered"}}}
+	summaryRow := map[string]any{"id": bplProduct, "slug": "mock-leftover", "name": "Synthetic item", "status": "draft", "version": 1, "cover_image_id": nil, "price_min_minor": 1200, "price_max_minor": 1200, "currency": "USD", "sku_count": 1, "available": 10, "keyword": "", "inventory_tracked": true, "updated_at": "2026-10-25T00:00:00Z"}
+	catalogPage := map[string]any{"items": []any{summaryRow}, "next_cursor": "", "total": 1, "status_counts": map[string]int{"draft": 1, "active": 0, "archived": 0}}
+	images := map[string]any{"items": []any{map[string]any{"id": bplImage, "product_id": bplProduct, "role": "detail", "position": 0, "content_type": "image/png", "size_bytes": len(bplPNG), "width": 8, "height": 8, "version": 1}}, "image_axis": nil, "option_images": []any{}}
 	templates := []any{}
 	for i, name := range []string{"關鍵字協助", "結帳說明", "物流查詢", "人工回覆說明", "退款說明", "直播預告"} {
 		kinds := []string{"dm"}
@@ -251,5 +275,5 @@ func bplProjections() map[string]any {
 		}
 		templates = append(templates, map[string]any{"template_id": fmt.Sprintf("parity-leftovers/%d", i+1), "version": version, "name": name, "kinds": kinds, "public_safe": i == 5, "created_at": fmt.Sprintf("2026-10-%02dT00:00:00Z", 25-i)})
 	}
-	return map[string]any{"orders": map[string]any{"items": []any{row}, "next_cursor": "", "total": 1, "counts": counts, "sessions": []any{}}, "orders/" + bplOrder: detail, "orders/" + bplOrder + "/shipment/history": map[string]any{"items": []any{}}, "order-actions": map[string]any{"refund": false, "fulfillment_write": false, "orders_export": true}, "products/" + bplProduct: product, "products/" + bplProduct + "/images": map[string]any{"items": []any{}, "image_axis": nil, "option_images": []any{}}, "collections": map[string]any{"items": []any{}, "next_cursor": ""}, "warehouses": map[string]any{"items": []any{}}, "message-templates": map[string]any{"items": templates}}
+	return map[string]any{"orders": map[string]any{"items": []any{row}, "next_cursor": "", "total": 1, "counts": counts, "sessions": []any{}}, "orders/" + bplOrder: detail, "orders/" + bplOrder + "/shipment/history": map[string]any{"items": []any{}}, "order-actions": map[string]any{"refund": false, "fulfillment_write": false, "orders_export": true}, "products/" + bplProduct: product, "products/" + bplProduct + "/images": images, "products/" + bplProduct + "/images/" + bplImage: bplPNG, "orders/manual/options": options, "catalog-products": catalogPage, "collections": map[string]any{"items": []any{}, "next_cursor": ""}, "warehouses": map[string]any{"items": []any{}}, "message-templates": map[string]any{"items": templates}}
 }

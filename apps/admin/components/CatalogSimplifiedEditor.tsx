@@ -1,5 +1,5 @@
-// Purpose: Signed catalog edit, variant/stock checks, media, review and saved task screens.
-// Depends on: react, next/link, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/images-client, @/lib/catalog-v2-model, @/lib/catalog-v2-client, @/lib/catalog-v2-write, @/lib/product-document, @/lib/product-editor-copy, @/lib/use-product-leave-guard, ./ProductMediaManager, ./catalog/parity.css.
+// Purpose: Signed catalog edit, variant/stock checks, media, signed add-images picker (媒体上传), review and saved task screens.
+// Depends on: react, next/link, @live-commerce/i18n, @/lib/model, @/lib/client, @/lib/images-client, @/lib/catalog-v2-model, @/lib/catalog-v2-client, @/lib/catalog-v2-write, @/lib/product-document, @/lib/product-editor-copy, @/lib/use-product-leave-guard, ./ProductMediaManager, ./catalog/MediaAddPicker.copy, ./catalog/parity.css.
 // Used by: ProductEditor on the existing product route.
 // Invariants: stable SKU IDs, minimal CAS patch, no write before review; server inventory floor/atomicity authoritative; UNKNOWN fenced.
 "use client";
@@ -16,8 +16,9 @@ import { draftFromDetail, editDocument, type DraftRow } from '@/lib/product-docu
 import { productEditorCopy } from '@/lib/product-editor-copy';
 import type { ProductNavigationState } from '@/lib/use-product-leave-guard';
 import { ProductMediaManager } from './ProductMediaManager';
+import { mediaAddPickerCopy } from './catalog/MediaAddPicker.copy';
 import "./catalog/parity.css";
-type Screen = 'edit' | 'variants' | 'stock' | 'media' | 'review' | 'saved';
+type Screen = 'edit' | 'variants' | 'stock' | 'media' | 'pick' | 'review' | 'saved';
 /** Compose bounded task screens over the incumbent catalog write and media lifecycles. */
 export function CatalogSimplifiedEditor({ locale, store, detail, boundary, onNavigationChange }: {
   locale: Locale; store: Store; detail: ProductDetail; boundary: string;
@@ -103,7 +104,8 @@ export function CatalogSimplifiedEditor({ locale, store, detail, boundary, onNav
         <label className="cat-status-radio"><input type="radio" name="catalog-status" aria-label={c[baseline.status]} checked readOnly />{c[baseline.status]}</label>
       </fieldset>
       <div className="cat-editor-links"><button type="button" disabled={locked} onClick={() => setScreen('variants')}>{c.variants}</button>
-        <button type="button" disabled={locked} onClick={() => setScreen('media')}>{media ? media.items.length ? c.media : c.mediaNone : pc.loading}</button></div>
+        <button type="button" disabled={locked} onClick={() => setScreen('media')}>{media ? media.items.length ? c.media : c.mediaNone : pc.loading}</button>
+        <button type="button" disabled={locked} onClick={() => setScreen('pick')}>{mediaAddPickerCopy[locale].open}</button></div>
       <div className="cat-actions cat-save-bar" data-testid="catalog-save-bar"><Link role="button" href={`/${locale}/products?store=${store.id}`}>{c.cancel}</Link>
         <button className="product-primary" type="submit" disabled={locked}>{c.review}</button></div>
     </form> : screen === 'variants' ? <section>
@@ -130,6 +132,9 @@ export function CatalogSimplifiedEditor({ locale, store, detail, boundary, onNav
       {stockError && <p role="alert">{stockError}</p>}
       <div className="cat-actions cat-save-bar"><button type="button" disabled={locked} onClick={returnToVariants}>{stockError ? c.keep : c.backVariants}</button>
         <button type="button" disabled={locked} onClick={checkStock}>{c.checkStock}</button></div>
+    </section> : screen === 'pick' ? <section>
+      <ProductMediaManager compact locale={locale} store={store.id} productID={baseline.id} boundary={boundary} axes={baseline.options} disabled={write.busy}
+        onChanged={acceptMedia} onLocked={setMediaBusy} onPicked={() => setScreen('edit')} />
     </section> : screen === 'media' ? <section>
       <h2 ref={title} tabIndex={-1}>{c.media}</h2>
       <ProductMediaManager compact locale={locale} store={store.id} productID={baseline.id} boundary={boundary} axes={baseline.options} disabled={write.busy}

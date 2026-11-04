@@ -1,6 +1,6 @@
 // Purpose: PM-v2 committed media editing: per-role order/move, option-axis cells and normalized uploads.
-// Depends on: fenced catalog commands, /api/stores/{store}/products/{product}/images and PM-v2 action routes, photo-preprocess.
-// Used by: ProductDocumentForm and CatalogSimplifiedEditor edit; Go /v1/admin/stores/{store}/products/{product}/images remains authority.
+// Depends on: fenced catalog commands, /api/stores/{store}/products/{product}/images and PM-v2 action routes, photo-preprocess, ./catalog/MediaAddPicker.
+// Used by: ProductDocumentForm and CatalogSimplifiedEditor edit (and its signed add-images screen via onPicked); Go /v1/admin/stores/{store}/products/{product}/images remains authority.
 // Invariants: role caps, axis bindings and receipt recovery stay identical in compact and full presentation.
 "use client";
 import { useEffect, useRef, useState, useId } from "react";
@@ -31,6 +31,7 @@ import {
   type MediaRole,
 } from "@/lib/product-media-model";
 import { ProductMediaTiles } from "./ProductMediaTiles";
+import { MediaAddPicker } from "./catalog/MediaAddPicker";
 import "./product-media.css";
 type Pending =
   | {
@@ -67,8 +68,11 @@ export function ProductMediaManager({
   onChanged,
   onLocked,
   compact = false,
+  onPicked,
 }: {
   compact?: boolean;
+  /** Picking mode (signed 媒体上传): only the add-images picker is shown; called after a successful add or upload, or on cancel. */
+  onPicked?: () => void;
   locale: Locale;
   store: string;
   productID: string;
@@ -445,6 +449,28 @@ export function ProductMediaManager({
       running.current = false;
       if (alive.current) setBusy(false);
     }
+    return saved === selected.length;
+  }
+  /** Picker apply: move the chosen detail images into the main gallery one by one, stopping at the first failure. */
+  async function addToMain(ids: string[]): Promise<boolean> {
+    if (disabled || running.current || pending || lost || !list || !ids.length) return false;
+    origin.current = { block: "main" };
+    if (group("main").length + ids.length > mediaCaps.main) {
+      say(c.mainFull);
+      return false;
+    }
+    running.current = true;
+    setBusy(true);
+    setNote(null);
+    try {
+      for (const key of ids)
+        if (!(await execute({ kind: "command", request: command("POST", `products/${productID}/images/${key}/move`, { role: "main" }) })))
+          return false;
+      return true;
+    } finally {
+      running.current = false;
+      if (alive.current) setBusy(false);
+    }
   }
   const locked = disabled || busy || !!pending || lost || !list || !ready;
   const tile = (photo: ProductImageList["items"][number]) => ({
@@ -601,6 +627,11 @@ export function ProductMediaManager({
           </button>
         </div>
       )}
+      {onPicked ? <MediaAddPicker locale={locale} disabled={locked || group("main").length >= mediaCaps.main} busy={busy || !!pending}
+        tiles={group("detail").map((photo, i) => ({ key: photo.id, url: `${tile(photo).url}?w=360`, label: `${c.detail} ${i + 1}` }))}
+        accept={PHOTO_ACCEPT} uploadLabel={c.add} note={noteView("main")} onCancel={onPicked}
+        onAdd={(ids) => void addToMain(ids).then((ok) => ok && onPicked?.())}
+        onUpload={(files) => void upload(files, "main").then((ok) => ok && onPicked?.())} /> : <>
       {section("main")}
       <section aria-labelledby={`${id}-sku`}>
         <h2 id={`${id}-sku`}>{c.sku}</h2>
@@ -676,6 +707,7 @@ export function ProductMediaManager({
       </section>
       {section("detail")}
       {compact && <p className="pe-hint">{task.uploadHelp}</p>}
+      </>}
     </div>
   );
 }
