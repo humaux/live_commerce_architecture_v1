@@ -139,6 +139,11 @@ if (process.env.LC_BROWSER_PARITY_DENIED !== "1") test.describe("PARITY-LEFTOVER
       });
       await page.goto(`${origin}/zh-TW/products/${productId}?store=${store}`);
 
+      // The 加入圖片 entry lives on the 商品圖片 screen of the compact editor (integrator decision 2026-11-04).
+      await action(page, "商品圖片", "click", "image screen opens with the add-images entry", async () => {
+        await page.getByRole("button", { name: "商品圖片", exact: true }).click();
+        await expect(page.getByRole("heading", { name: "商品圖片", exact: true })).toBeVisible();
+      });
       const addImagesButton = page.getByRole("button", { name: "加入圖片", exact: true });
       await expect(addImagesButton).toBeVisible();
       await action(page, "加入圖片", "click", "media picker opens", async () => {
@@ -179,7 +184,7 @@ if (process.env.LC_BROWSER_PARITY_DENIED !== "1") test.describe("PARITY-LEFTOVER
       await expect(page.getByRole("button", { name: "加入所選圖片", exact: true })).toBeVisible();
 
       await screenshot(page, mobile ? "6:22147" : "6:22038");
-      await action(page, "取消", "click", "picker closes back to the editor without a write", async () => {
+      await action(page, "取消", "click", "picker closes back to the image screen without a write", async () => {
         await page.getByRole("button", { name: "取消", exact: true }).click();
         await expect(addImagesButton).toBeVisible();
       });

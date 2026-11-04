@@ -105,13 +105,14 @@ test("ManualOrder bank-transfer expiry uses Taipei at the year boundary", () => 
   const { ManualOrder } = compile("apps/admin/components/ManualOrder.tsx", {
     react: hooks,
     "@/lib/customers-client": { useGuardedRead: () => ({ status: "ready", data: [] }) },
-    "@/lib/merchant-tools-model": { draftProblem: () => null },
+    "@/lib/merchant-tools-model": { draftProblem: () => null, recipientGaps: () => [] },
     "@/lib/merchant-tools-copy": { toolsCopy: { "zh-TW": { manual: { created: "created", expires: "expires" } } } },
     "@/lib/client": { money: () => "NT$100" },
     "./OperationalForms.module.css": { page: "page" },
     "next/link": { default: passthrough }, "@/lib/catalog-v2-client": {}, "@/lib/merchant-tools-client": {}, "@/lib/cod-copy": {},
     "./customers.css": {}, "./merchant-tools.css": {}, "./order-ops.css": {},
     "./CvsLookup": { CvsLookup: passthrough },
+    "./orders/ManualOrderMissing": { ManualOrderMissing: passthrough },
     "@live-commerce/i18n": { orderOpsCopy: compile("packages/i18n/src/order-ops.ts", {}).orderOpsCopy },
   });
   // Compile uses the actual component; only hook state and surrounding presentation are fixtures.

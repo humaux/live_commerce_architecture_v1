@@ -104,8 +104,7 @@ export function CatalogSimplifiedEditor({ locale, store, detail, boundary, onNav
         <label className="cat-status-radio"><input type="radio" name="catalog-status" aria-label={c[baseline.status]} checked readOnly />{c[baseline.status]}</label>
       </fieldset>
       <div className="cat-editor-links"><button type="button" disabled={locked} onClick={() => setScreen('variants')}>{c.variants}</button>
-        <button type="button" disabled={locked} onClick={() => setScreen('media')}>{media ? media.items.length ? c.media : c.mediaNone : pc.loading}</button>
-        <button type="button" disabled={locked} onClick={() => setScreen('pick')}>{mediaAddPickerCopy[locale].open}</button></div>
+        <button type="button" disabled={locked} onClick={() => setScreen('media')}>{media ? media.items.length ? c.media : c.mediaNone : pc.loading}</button></div>
       <div className="cat-actions cat-save-bar" data-testid="catalog-save-bar"><Link role="button" href={`/${locale}/products?store=${store.id}`}>{c.cancel}</Link>
         <button className="product-primary" type="submit" disabled={locked}>{c.review}</button></div>
     </form> : screen === 'variants' ? <section>
@@ -134,9 +133,11 @@ export function CatalogSimplifiedEditor({ locale, store, detail, boundary, onNav
         <button type="button" disabled={locked} onClick={checkStock}>{c.checkStock}</button></div>
     </section> : screen === 'pick' ? <section>
       <ProductMediaManager compact locale={locale} store={store.id} productID={baseline.id} boundary={boundary} axes={baseline.options} disabled={write.busy}
-        onChanged={acceptMedia} onLocked={setMediaBusy} onPicked={() => setScreen('edit')} />
+        onChanged={acceptMedia} onLocked={setMediaBusy} onPicked={() => setScreen('media')} />
     </section> : screen === 'media' ? <section>
       <h2 ref={title} tabIndex={-1}>{c.media}</h2>
+      {/* The add-images picker (媒体上传) opens from the image screen, so the default edit form keeps its height (G-UI9 390 pane fit). */}
+      <button type="button" disabled={mediaBusy} onClick={() => setScreen('pick')}>{mediaAddPickerCopy[locale].open}</button>
       <ProductMediaManager compact locale={locale} store={store.id} productID={baseline.id} boundary={boundary} axes={baseline.options} disabled={write.busy}
         onChanged={acceptMedia} onLocked={setMediaBusy} />
       <button type="button" disabled={mediaBusy} onClick={() => setScreen('edit')}>{c.backEditor}</button>
