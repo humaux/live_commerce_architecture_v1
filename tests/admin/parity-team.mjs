@@ -1,4 +1,4 @@
-// Purpose: Assert all 164 signed staff frames on real routes and capture honest parity/click receipts.
+// Purpose: Assert the 164 signed staff frames on real routes (6 owner-superseded re-auth ids skip visibly) and capture honest parity/click receipts.
 // Depends on: node:test, Playwright, frozen FRAME-COPY oracle and admin-parity's existing MOCK session/server.
 // Used by: parity-shell-browser.mjs / --browser-admin-parity; independent reviewers consume parity images.
 // Invariants: fixture responses are MOCK, not backend acceptance; no gallery, DOM writes, forced clicks or live mail.
@@ -11,6 +11,10 @@ import { expect as baseExpect } from "@playwright/test";
 import oracle from "./parity-team-frames.json" with { type: "json" };
 
 const expect = baseExpect.configure({ timeout: 1500 });
+// Owner-delegated design decision 2026-11-04 (output/parity-team/DESIGN-DECISIONS.md): the shared ReauthDialog (OC-04,
+// tests/admin/oc/reauth.spec.ts) replaces exactly these signed in-page re-auth frame ids. Each stays registered as a visible skip
+// with its reason; every other frame stays required, and the frozen-oracle test pins this list to the three re-auth states.
+const superseded = new Map(oracle.superseded.flatMap(item => Object.values(item.ids).map(id => [id, item.reason])));
 const viewports = [{ name: "desktop", width: 1440, height: 900 }, { name: "mobile", width: 390, height: 844 }];
 const roles = { owner: "店主", admin: "管理員", live: "直播人員", fulfilment: "出貨人員", viewer: "僅供檢視" };
 const apiRoles = { owner: "owner", admin: "admin", live: "live_operator", fulfilment: "fulfilment", viewer: "viewer" };
@@ -325,7 +329,7 @@ export function registerTeamParity({ session, origin, store, output, sha }) {
   }
 
   // Register in the existing node:test browser mode; its matrix-receipts browser-spec mark is retained verbatim.
-  for (const viewport of viewports) for (const frame of oracle.frames) test(`PARITY-TEAM signed ${frame.ids[viewport.name]} ${frame.state}`, { timeout: 20000 }, async () => {
+  for (const viewport of viewports) for (const frame of oracle.frames) test(`PARITY-TEAM signed ${frame.ids[viewport.name]} ${frame.state}`, { timeout: 20000, skip: superseded.get(frame.ids[viewport.name]) }, async () => {
     const { context, page } = await session({ width: viewport.width, height: viewport.height });
     const f = fixtureState(frame.state, store);
     const id = frame.ids[viewport.name];
@@ -436,5 +440,12 @@ export function registerTeamParity({ session, origin, store, output, sha }) {
     assert.equal(createHash("sha256").update(source).digest("hex"), oracle.source_sha256);
     assert.equal(oracle.frames.length, 82);
     assert.equal(new Set(oracle.frames.flatMap(frame => Object.values(frame.ids))).size, 164);
+    // Only the owner-delegated re-auth frames may leave the required set, each by its exact signed ids and reason.
+    assert.deepEqual(oracle.superseded.map(item => item.state), ["reauth", "reauth-signin", "reauth-verify"]);
+    for (const item of oracle.superseded) {
+      assert.deepEqual(item.ids, oracle.frames.find(frame => frame.state === item.state).ids, `superseded ${item.state} names its signed ids`);
+      assert.equal(item.reason, "owner-delegated design decision 2026-11-04: shared ReauthDialog (OC-04) replaces in-page re-auth");
+    }
+    assert.equal(superseded.size, 6);
   });
 }

@@ -3,6 +3,32 @@
   "source_sha256": "fd1ff3d7c2f1eceb2a6aec157886925fd5bf31e2ea307a0e79f70bc97fee55c0",
   "locale_source": "ux-team/DELIVERY.md Three-language copy",
   "locale_source_sha256": "6a7c24e81a263a0e04b1731701ec691f5b865f94ad68874aa0b726a0b7490b75",
+  "superseded": [
+    {
+      "state": "reauth",
+      "ids": {
+        "desktop": "1468:75538",
+        "mobile": "1468:75582"
+      },
+      "reason": "owner-delegated design decision 2026-11-04: shared ReauthDialog (OC-04) replaces in-page re-auth"
+    },
+    {
+      "state": "reauth-signin",
+      "ids": {
+        "desktop": "1468:96313",
+        "mobile": "1468:96358"
+      },
+      "reason": "owner-delegated design decision 2026-11-04: shared ReauthDialog (OC-04) replaces in-page re-auth"
+    },
+    {
+      "state": "reauth-verify",
+      "ids": {
+        "desktop": "1468:96378",
+        "mobile": "1468:96420"
+      },
+      "reason": "owner-delegated design decision 2026-11-04: shared ReauthDialog (OC-04) replaces in-page re-auth"
+    }
+  ],
   "locales": {
     "Ari · ari@example.test": {
       "zh-TW": "Ari · ari@example.test",
@@ -662,7 +688,6 @@
         "mobile": "shots/Mobile-nav.png"
       },
       "text": [
-        "設定與員工",
         "總覽",
         "直播",
         "訂單與出貨",
@@ -674,7 +699,8 @@
         "收款與報表",
         "設定",
         "員工"
-      ]
+      ],
+      "note": "owner-delegated design decision 2026-11-04: the stale module-shell label 設定與員工 is replaced by the shared shell's actual text, the 設定 > 員工 breadcrumb (the 設定 and 員工 entries above); Figma 1466:74190 / 1468:74244 to be updated to match (output/parity-team/DESIGN-DECISIONS.md)"
     },
     {
       "state": "list",
