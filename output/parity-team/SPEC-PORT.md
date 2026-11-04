@@ -61,3 +61,18 @@ await expect(scope.getByRole("heading", { name: translate(frame.text[0], locale)
 `list`/`pending` keep 員工名單/待接受邀請/邀請員工 as buttons (their `text[0]` is 員工), and the disabled 邀請員工 in `password-off`/`mail-failed` is unaffected (their `text[0]` is the error title).
 
 Evidence: E1 (syntax check + ownership `--check`). GREEN / browser run: NOT_RUN (CI only). Author PASS = E0.
+
+## RELAY 7 — tests/admin/parity-team.mjs (owner decisions 2026-11-04)
+
+Authority: owner lifted the invite pause (「现在解除暂停」) and chose 「两项都按设计稿做」 for admin promotion. Both R3 tests below were added by this PR (not preserved base tests). Every other check is kept.
+
+| Old | New | Why (frame) |
+|---|---|---|
+| `fixtureState(state, store)`; invite body asserts `locale: "zh-TW"` | `fixtureState(state, store, locale = "zh-TW")`; asserts `locale` | the three-locale send test now reaches the invite API; zh-TW signed tests unchanged |
+| `content()` requires a button for every listed string, incl. `frame.text[0]` | `frame.text[0]` is asserted as a heading; every other string as before | `invite-*` 邀請員工, `role-edit*`/`role-confirm*` 變更角色, `pending-empty` 待接受邀請 are page headings (exactly those 15 frames; no other frame has a button name as text[0]) |
+| `R3 paused send`: heading 邀請郵件未送出 + help text | `R3 invite send`: `content(invite-sent)` in the test's locale | invite-sent `1468:75217` / `1468:75260` |
+| 邀請員工 disabled | 送出邀請 count 0 | the sent frame offers no resend |
+| writes 0 after submit | writes `[{action:"invite", role:"admin"}]` | owner-lifted pause: one real invite call |
+| click 回到員工, reload, 員工名單 visible | same + mei@example.test visible after 回到員工 (pending tab) | invite-sent → pending |
+| writes 0 after refresh | writes 1 after refresh | refresh never resends |
+| `R3 admin promotion unavailable`: 繼續 disabled, writes 0, 取消, reload shows 僅供檢視 | `R3 admin promotion`: fixture `role-done-admin` (expects set-role admin); 繼續 → review 僅供檢視改為管理員。 (writes 0) → 確認變更 → 角色已變更, writes `[set-role admin]` → 回到員工 → reload shows 管理員 · 加入 10/12, writes 1 | owner decision; Go's owner check stays the authority |

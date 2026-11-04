@@ -1,5 +1,23 @@
 # PARITY-TEAM ROUND 3 ruling implementation
 
+## RELAY 7 — oracle fix, invite send test, invitee page, owner decision D (2026-11-04)
+
+Owner decisions 2026-11-04 (relayed by the coordinator): invite pause lifted (「现在解除暂停」, RELAY 6); for the two blocked groups 「两项都按设计稿做」. Backend, BFF, migrations, contracts and the ReauthDialog are untouched. Old→new test lines: SPEC-PORT.md "RELAY 7".
+
+Done:
+- A. `tests/admin/parity-team.mjs:376` `R3 invite send` asserts the signed invite-sent frame via `content()` in all three locales, one invite write, no resend, pending list after 回到員工, no write on refresh. Fixture takes the test locale (`:30`).
+- B. `parity-team.mjs:221`: a frame's `text[0]` is asserted as a heading (15 frames: invite-*, role-edit*, role-confirm*, pending-empty); all other text/button checks unchanged.
+- C. `apps/admin/components/TeamInvite.tsx` renders the signed invitee copy (`packages/i18n/src/team-parity.ts:89-103,188-202,287-301`, verbatim oracle translations) over the existing accept API: signed out → link (登入 / 建立帳號, invite-next fragment); signed in → 接受邀請 + 重新登入 (ends the session with the shell's existing `logoutWorkspace`, then sign-in with invite-next); 200 → joined (role from the accept answer); 404 invite_invalid / unauthorized → 邀請無法使用 (one generic text for expired/revoked/used/wrong-account, as before); 409 already_member → invitee-member; 404 not_found (BFF: email sign-in off) → invitee-off with 接受邀請 disabled; anything else → 確認中, no accept button, never re-accepted. Existing testids kept for staff-team.spec.ts.
+- D1. Admin promotion: `apps/admin/components/Team.tsx:93,190` Continue/submit refuse only an unchanged role; promotion goes through the existing set-role; Go's owner check decides and a refusal shows the existing error screen. `parity-team.mjs:405` `R3 admin promotion` now drives viewer → admin through review, 確認變更 and refresh.
+
+Still blocked (not faked):
+1. `role-confirm-admin` / `role-done-admin` (1468:78293/78333, 1468:78348/78392): the signed role-edit-admin frame shows Continue disabled for an unchanged role, ux-team DELIVERY marks all three "client unchanged-role guard — NOT_SENT", and `ux-team/prototype-links.json` has no link into either frame. With admin promotion enabled the fixture's admin member selecting admin is still a no-op, so no real click reaches them. Needs a ux-team ruling on how a no-op selection reaches these frames.
+2. In-page re-auth `reauth` / `reauth-signin` / `reauth-verify` (1468:75538/75582, 96313/96358, 96378/96420): NOT implemented. The two acceptance sources contradict on behaviour, not locators: the parity oracle signs in with email+password through `/api/auth/password/login` → `verify` and requires `writes == 1` after verify ("fresh auth returns to a list read without automatically repeating the write", `parity-team.mjs` recovery `reauth-verify`); OC-04 (`tests/admin/oc/reauth.spec.ts:232-257,292-300,324-347`) requires password-only `/api/auth/password/reauth/start|complete`, a replay of the original invite exactly once with the same body, focus trapped in `dialog[open]`, and the OIDC route returning to `/team#reauth-done`. No locator-only port of the OC spec can keep "replayed once" while the oracle forbids the replay. Owner/integrator must pick one behaviour.
+3. `/invite/[token]` `signin`, `signup`, `verify-signin`, `verify-signup`: after the invite page's links the frames are the shared PasswordAuth entry page, which renders the signed entry-parity copy (確認碼, 請查看信箱) that differs from these team frames (驗證碼, 查看信箱驗證碼, 傳送驗證碼). The invite page itself now passes the `加入團隊` step; the rest needs an entry/team copy ruling on the shared component.
+4. `nav` (1466:74190 / 1468:74244): unchanged from RELAY 6 item 5 (`設定與員工` in the signed frame vs the approved shared shell).
+
+E1 only: `node --check tests/admin/parity-team.mjs` exit 0; i18n key sets equal across locales; ownership regenerate + `--check` exit 0. No local tests/tsc/server. GREEN, parity, SANDBOX and LIVE are NOT_RUN. Own PASS = E0.
+
 ## RELAY 6 — owner lifted invite pause 2026-11-04
 
 Owner decision 2026-11-04 (relayed via AskUserQuestion: 「現在解除暫停」): the staff-invite pause is lifted. Backend, outbox, migrations, BFF route, tests and oracle files are untouched.
