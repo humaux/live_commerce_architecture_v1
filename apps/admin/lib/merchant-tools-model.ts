@@ -130,12 +130,22 @@ export function parseManualOptions(value: unknown): ManualOption[] {
   });
 }
 
+export type ManualDiscount = { name: string; amount_minor: number };
+const validDiscount = (v: unknown): v is ManualDiscount => {
+ if (!v || typeof v !== "object" || Array.isArray(v)) return false;
+ const d = v as Record<string, unknown>;
+ return Object.keys(d).sort().join(",") === "amount_minor,name" && typeof d.name === "string" &&
+  Array.from(d.name.trim()).length >= 1 && Array.from(d.name.trim()).length <= 30 && !/[\p{Cc}\p{Cf}\p{Cs}\p{Zl}\p{Zp}]/u.test(d.name) && money(d.amount_minor) && (d.amount_minor as number) > 0;
+};
 export type ManualResult = {
   order_id: string; commercial_state: "AWAITING_TRANSFER" | "CONFIRMED" | "AWAITING_COLLECTION"; payment_mode: ManualPaymentMode; total_minor: number; currency: string;
-  expires_at: string; buyer_link: string | null; link_state: "configured" | "storefront_unavailable" | "domain_selection_required"; source: "merchant_manual";
+  expires_at: string; buyer_link: string | null; link_state: "configured" | "storefront_unavailable" | "domain_selection_required"; source: "merchant_manual"; discount?: ManualDiscount;
 };
 export function parseManualResult(value: unknown): ManualResult {
-  const v = object(value, ["order_id", "commercial_state", "payment_mode", "total_minor", "currency", "expires_at", "buyer_link", "link_state", "source"]);
+  if (!value || typeof value !== "object" || Array.isArray(value)) throw fail();
+  const raw = value as Record<string, unknown>;
+  if ("discount" in raw && (!validDiscount(raw.discount) || raw.discount.name !== raw.discount.name.trim())) throw fail();
+  const v = object(raw, ["order_id", "commercial_state", "payment_mode", "total_minor", "currency", "expires_at", "buyer_link", "link_state", "source", ...("discount" in raw ? ["discount"] : [])]);
   if (typeof v.order_id !== "string" || !canonicalUUID.test(v.order_id) ||
     !(manualPaymentModes as readonly string[]).includes(String(v.payment_mode)) || v.commercial_state !== placementState[v.payment_mode as ManualPaymentMode] ||
     !money(v.total_minor) || !/^[A-Z]{3}$/.test(String(v.currency)) ||
@@ -220,14 +230,16 @@ export function toolsRoute(method: string, path: string): ToolsRoute | null {
 export function validManualBody(body: unknown): boolean {
   if (!body || typeof body !== "object" || Array.isArray(body)) return false;
   const keys = Object.keys(body).sort().join(",");
-  if (keys !== "customer,delivery,items,locale,payment_mode") return false;
+  const raw = body as Record<string, unknown>;
+  if (keys !== "customer,delivery,items,locale,payment_mode" && keys !== "customer,delivery,discount,items,locale,payment_mode") return false;
+  if ("discount" in raw && !validDiscount(raw.discount)) return false;
   const forbidden = /(price|amount|total|discount|shipping|tax|tenant|store_id)/i;
   const walk = (value: unknown): boolean => {
     if (Array.isArray(value)) return value.every(walk);
     if (value && typeof value === "object") return Object.entries(value).every(([k, v]) => !forbidden.test(k) && walk(v));
     return true;
   };
-  return walk(body);
+  return walk(Object.fromEntries(Object.entries(raw).filter(([key]) => key !== "discount")));
 }
 /** A regenerate-link body is JSON with exactly {order_id, locale}; the order id is a canonical UUID, the locale one of the three. */
 export function validRegenerateBody(body: unknown): boolean {

@@ -51,6 +51,9 @@ func isCatalogV2(kind routeKind) bool {
 
 // isPublicRoute: routes answered without a buyer capability (origin + BFF key only).
 func isPublicRoute(kind routeKind) bool {
+	if kind == replayListRoute || kind == replayDetailRoute {
+		return true
+	}
 	return kind == mediaRoute || kind == collectionMediaRoute || isCatalogV2(kind) || kind == primaryOriginRoute
 }
 

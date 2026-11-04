@@ -1,6 +1,7 @@
 // Purpose: console middle-column comments and session-scoped inbox views; reuse the existing buyer panel.
-// Depends on: A2/A8 inbox transport, privacy hook, transient comment model and W0 presentation tokens.
-// Used by: LiveConsole; names/text live only in visible component memory, never URLs or storage.
+// Depends on: A2/A8 transport, A13 BuyerPanel facts, privacy hook, transient comment model and console tokens.
+// Used by: LiveConsole; names/text live only in authorised component memory, never URLs or storage.
+// Invariants: drafts are buyer/channel scoped and cleared on privacy/epoch loss; order/payment facts never derive from claims.
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
@@ -9,7 +10,7 @@ import type { Store } from "@/lib/model";
 import type { ConversationList, ConversationItem } from "@/lib/inbox-types";
 import { inboxRead, InboxError } from "@/lib/inbox-client";
 import { permitted } from "@/src/features/messages/privacy";
-import type { ConsoleCapabilities } from "@/src/features/live/console-model";
+import type { ConsoleCapabilities, ConsoleOffer } from "@/src/features/live/console-model";
 import { commentCopy, commentReason } from "@/src/features/live/comment-copy";
 import {
   commentViewResource,
@@ -32,6 +33,7 @@ export function CommentStream({
   platform,
   capabilities,
   calibration = false,
+  offers = [], limits = [], mobileTab = "comments",
 }: {
   locale: Locale;
   store: Store;
@@ -39,13 +41,17 @@ export function CommentStream({
   platform: "facebook" | "instagram";
   capabilities: ConsoleCapabilities;
   calibration?: boolean;
+  offers?: ConsoleOffer[]; limits?: { offer_id: string; max_quantity_per_claim: number }[]; mobileTab?: string;
 }) {
   const c = commentCopy(locale),
     [filter, setFilter] = useState<CommentFilter>("all"),
     [conversations, setConversations] = useState<ConversationList | null>(null),
     [listError, setListError] = useState("");
+  const [panelFacts, setPanelFacts] = useState<{ bundle: string; orderCount: number | null; unpaid: boolean } | null>(null);
+  const drafts = useRef(new Map<string, { private: string; public: string }>());
   const request = useRef(0), paginated = useRef(false), paging = useRef(false);
   const clearConversations = useCallback(() => {
+    drafts.current.clear(); setPanelFacts(null);
     request.current++; paginated.current = false; paging.current = false;
     setConversations(null); setListError("");
   }, []);
@@ -117,7 +123,14 @@ export function CommentStream({
   const chosen = selection?.ref
     ? stream.buffer.items.find((row) => row.ref === selection.ref)
     : null;
+  const selectedOffer = offers.find((offer) => chosen?.marks.claim?.status === "ACCEPTED" && offer.offer_id === chosen.marks.claim.offer_id);
+  const selectedLimit = limits.find((offer) => offer.offer_id === selectedOffer?.offer_id)?.max_quantity_per_claim;
   const bundle = chosen?.marks.claim?.bundle_id ?? selection?.bundle;
+  const facts = panelFacts && panelFacts.bundle === bundle ? panelFacts : null;
+  const registered = facts?.unpaid ? c.registered : c.registeredShort;
+  // Privacy removal also drops draft text. No old/deleted comment retains a hidden draft.
+  const present = new Set(stream.buffer.items.map((row) => row.ref));
+  for (const ref of drafts.current.keys()) if (!present.has(ref) || !privacy.visible || privacy.blocked.current || !permitted(store, "live:read")) drafts.current.delete(ref);
   const chooseConversation = (item: ConversationItem) => {
     select(item.bundle_id ? { bundle: item.bundle_id } : null);
   };
@@ -150,9 +163,9 @@ export function CommentStream({
     <CommentLabelPrint key={`${store.id}:${session}:${stream.resetGeneration}:${privacy.visible}:${privacy.revision}`}
       locale={locale} store={store.id} session={session} rows={stream.buffer.items}
       allowed={permitted(store, "live:manage")} active={privacy.visible && !privacy.blocked.current && !resource} onDenied={privacy.expire}>
-    <div className="comment-workspace" data-testid="comment-workspace">
+    <div className="comment-workspace" data-testid="comment-workspace" data-mobile-tab={mobileTab}>
       <section
-        className="comment-stream"
+        className="comment-stream" id="live-panel-comments"
         data-testid="comment-stream"
         aria-label={c.title}
       >
@@ -176,7 +189,6 @@ export function CommentStream({
                 data-testid={`comment-filter-${f}`}
                 aria-pressed={filter === f}
                 onClick={() => {
-                  select(null);
                   setFilter(f);
                 }}
               >
@@ -247,9 +259,7 @@ export function CommentStream({
                   data-selected={chosen?.ref === row.ref || undefined}
                 >
                   <div className="comment-byline">
-                    <strong data-private="comment-author">
-                      {row.author_name ?? c.unnamed}
-                    </strong>
+                    <button type="button" data-testid={`comment-select-${row.ref}`} data-private="comment-author" aria-pressed={chosen?.ref === row.ref} onClick={() => select({ ref: row.ref })}><span className="live-selection-dot" aria-hidden="true" />{row.author_name ?? c.unnamed}</button>
                     <time>{displayTime(locale, row.created_at)}</time>
                   </div>
                   <p data-private="comment-text">{row.text}</p>
@@ -275,16 +285,9 @@ export function CommentStream({
                     )}
                   {row.marks.private_reply && (
                     <p className="live-helper" data-testid={`comment-send-state-${row.ref}`}>
-                      {commentReason(locale, commentSendState(row.marks.private_reply.state))}
+                      {commentReason(locale, `delivery_${commentSendState(row.marks.private_reply.state)}`)}
                     </p>
                   )}
-                  <button
-                    type="button"
-                    data-testid={`comment-select-${row.ref}`}
-                    onClick={() => select({ ref: row.ref })}
-                  >
-                    {c.select}
-                  </button>
                   <CommentLabelAction row={row} />
                 </li>
               ))}
@@ -299,35 +302,35 @@ export function CommentStream({
                 {c.older}
               </button>
             )}
-            {stream.buffer.items.length >= 1000 && <p className="live-helper">{locale === "en" ? "1,000 comments in memory. Refresh to return to the recent window before loading earlier comments." : locale === "zh-CN" ? "已载入 1,000 条评论。请刷新回到最近评论，再载入较早评论。" : "已載入 1,000 則留言。請重新整理回到最近留言，再載入較早留言。"}</p>}
+            {stream.buffer.items.length >= 1000 && <p className="live-helper">{c.memoryLimit}</p>}
           </>
         )}
-        {privacy.visible && chosen && (
-          <CommentReply
-            key={`${session}:${chosen.ref}:${stream.resetGeneration}`}
-            store={store}
-            session={session}
-            comment={chosen}
-            locale={locale}
-            platform={platform}
-            capabilities={capabilities}
-            onSent={stream.refresh}
-            onDenied={privacy.expire}
-          />
-        )}
       </section>
-      <aside className="comment-buyer" data-testid="comment-buyer">
-        {privacy.visible && bundle && permitted(store, "inbox:read") ? (
-          <BuyerPanel
-            key={`${store.id}:${bundle}`}
-            store={store}
-            bundleId={bundle}
-            sessionId={session}
-            onUnauthorized={privacy.expire}
-          />
-        ) : (
-          <p>{chosen ? c.noBundle : c.selectBuyer}</p>
-        )}
+      <aside className="comment-buyer" id="live-panel-buyer" data-testid="comment-buyer">
+        <div className="live-buyer-context">
+          {privacy.visible && chosen ? <>
+            <h3 data-private="comment-author">{chosen.author_name ?? c.unnamed}</h3>
+            <p>{c.original}: <span data-private="comment-text">{chosen.text}</span></p>
+            {selectedOffer && <>
+              <p className="comment-mark">{selectedOffer.product_name} {chosen.marks.claim?.quantity} {c.units} · {registered}</p>
+              <p className="live-helper">{c.stock} {selectedOffer.stock.tracked ? selectedOffer.stock.sellable : "—"} · {c.soldCount} {selectedOffer.paid_qty}</p>
+              <p className="live-helper">{selectedOffer.keyword} · {c.cap} {selectedLimit ?? "—"} · {c.reserved} {selectedOffer.stock.reserved}<br />{c.stockHelper}</p>
+            </>}
+            {facts && facts.orderCount !== null && <p className="live-helper">{facts.orderCount === 0 ? c.buyerOrders : c.recentOrders} {facts.orderCount}</p>}
+            <h4>{c.history}</h4><p><span data-private="comment-author">{chosen.author_name ?? c.unnamed}</span>: <span data-private="comment-text">{chosen.text}</span></p>
+          </> : <p>{c.noSelection}</p>}
+          {privacy.visible && bundle && permitted(store, "inbox:read") && <details data-live-buyer-details>
+            <summary>{c.buyerDetails}</summary>
+            <BuyerPanel key={`${store.id}:${bundle}`} store={store} bundleId={bundle} sessionId={session} onUnauthorized={privacy.expire} onFacts={(data) => setPanelFacts(data ? { bundle, orderCount: data.orders === undefined ? null : data.orders.length, unpaid: data.orders?.length === 0 } : null)} compact />
+          </details>}
+        </div>
+        {privacy.visible && chosen && <div className="live-sticky-reply">
+          <div data-testid="live-reply-summary" className="live-reply-summary">
+            <strong data-private="comment-author">{chosen.author_name ?? c.unnamed}</strong> · <span data-private="comment-text">{chosen.text}</span>
+            {selectedOffer && <><br />{selectedOffer.product_name} {chosen.marks.claim?.quantity} {c.units} · {registered}{facts && facts.orderCount !== null && <> · {facts.orderCount === 0 ? c.buyerOrders : c.recentOrders} {facts.orderCount}</>}<br />{c.stock} {selectedOffer.stock.tracked ? selectedOffer.stock.sellable : "—"} · {c.soldCount} {selectedOffer.paid_qty} · {c.cap} {selectedLimit ?? "—"} · {c.reserved} {selectedOffer.stock.reserved}</>}
+          </div>
+          <CommentReply key={`${session}:${chosen.ref}:${stream.resetGeneration}`} store={store} session={session} comment={chosen} locale={locale} platform={platform} capabilities={capabilities} offer={selectedOffer} drafts={drafts.current} onSent={stream.refresh} onDenied={privacy.expire} />
+        </div>}
       </aside>
     </div>
     </CommentLabelPrint>

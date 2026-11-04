@@ -51,7 +51,7 @@
   },
   {
     "id": "I11",
-    "rule": "令牌/密钥/地址/聊天正文不得进入公开日志、URL或共享缓存。",
+    "rule": "令牌/密钥/地址/聊天正文不得进入公开日志、URL或共享缓存。唯一URL例外：contracts/storefront-v2.md#d-i11-staff-invitation-link-exception 规定的受限员工邀请链接；其令牌及完整链接仍不得进入任何日志、缓存或Referrer。",
     "severity": "P0"
   },
   {

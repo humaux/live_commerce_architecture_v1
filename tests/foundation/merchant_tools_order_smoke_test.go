@@ -139,6 +139,7 @@ var (
 )
 
 func TestMerchantToolsManualOrder(t *testing.T) {
+	t.Run("FEAT-MANUAL-DISCOUNT", mdManualContract)
 	e, a, cvsCode := mtOrderEnv(t)
 	sku := e.p.stock.skus[0].ID
 	var homeKey, cvsKey string

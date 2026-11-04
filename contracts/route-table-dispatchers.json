@@ -36,7 +36,7 @@
   },
   {
     "table": "buyerhttp.Routes",
-    "dispatcher_sha256": "aff6d24766226f455bea9be08b2de8abad3643a71951ad05ede717c28c127c05",
+    "dispatcher_sha256": "dd3843222577142f0990853a9b3a68cb59fd8205c6ce17b74af911dbf7aa0241",
     "functions": [
       "RouteTable.HasPrefix",
       "admittedPaymentMethod",
@@ -76,6 +76,7 @@
       "handler.privacyExport",
       "handler.privacyGet",
       "handler.quoteWithCodDue",
+      "handler.replayGet",
       "handler.returnRequest",
       "handler.storeMedia",
       "handler.transferRequest",
@@ -85,7 +86,6 @@
       "isKeylessPaymentRoute",
       "isPaymentRoute",
       "isPublicRoute",
-      "isReturnRequestRoute",
       "keyFor",
       "keylessPaymentPath",
       "lookupClientIP",
@@ -124,7 +124,7 @@
       "writeOK"
     ],
     "declarations": [
-      "const bootstrapRoute,cartRoute,catalogRoute,catalogV2CollectionRoute,catalogV2CollectionsRoute,catalogV2ProductRoute,catalogV2ProductsRoute,checkoutRoute,claimLinkRoute,claimRedeemRoute,collectionMediaRoute,consentsRoute,designPreviewRoute,designPublishedRoute,destinationItemRoute,destinationRoute,mediaRoute,optionsRoute,orderRoute,ordersRoute,paymentCancelRoute,paymentHandoffRoute,paymentPrepareRoute,paymentRefreshRoute,paymentRoute,primaryOriginRoute,privacyErasureRoute,privacyExportRoute,privacyRoute,quoteRoute,quotesRoute,retireRoute,sessionRoute,storeMediaRoute,unknownRoute",
+      "const bootstrapRoute,cartRoute,catalogRoute,catalogV2CollectionRoute,catalogV2CollectionsRoute,catalogV2ProductRoute,catalogV2ProductsRoute,checkoutRoute,claimLinkRoute,claimRedeemRoute,collectionMediaRoute,consentsRoute,designPreviewRoute,designPublishedRoute,destinationItemRoute,destinationRoute,mediaRoute,optionsRoute,orderRoute,ordersRoute,paymentCancelRoute,paymentHandoffRoute,paymentPrepareRoute,paymentRefreshRoute,paymentRoute,primaryOriginRoute,privacyErasureRoute,privacyExportRoute,privacyRoute,quoteRoute,quotesRoute,replayDetailRoute,replayListRoute,retireRoute,sessionRoute,storeMediaRoute,unknownRoute",
       "const claimDerivedKeyPrefix,claimLinkPath,claimRedeemPath,claimTokenHeader",
       "const designPreviewPath,designPublishedPath,previewTokenHeader",
       "const lookupPath,lookupWindow,routeLookup",
@@ -172,6 +172,7 @@
       "func handler.privacyExport",
       "func handler.privacyGet",
       "func handler.quoteWithCodDue",
+      "func handler.replayGet",
       "func handler.returnRequest",
       "func handler.storeMedia",
       "func handler.transferRequest",
@@ -181,7 +182,6 @@
       "func isKeylessPaymentRoute",
       "func isPaymentRoute",
       "func isPublicRoute",
-      "func isReturnRequestRoute",
       "func keyFor",
       "func keylessPaymentPath",
       "func lookupClientIP",
@@ -256,6 +256,8 @@
       "type quoteAmountResponse",
       "type quoteLineResponse",
       "type quoteResponse",
+      "type replayItem",
+      "type replayOffer",
       "type responseError",
       "type route",
       "type routeEntry",
@@ -279,6 +281,6 @@
       "var linkTokenPattern",
       "var v2Slug"
     ],
-    "reviewed": "pending independent review; output/buyer-route-table/FEAT-BUYER-RMA-FIX2-pin-candidate.md"
+    "reviewed": "pending independent review (closure needs independent review): output/buyer-route-table/review-buyer-rma-pin-request.md"
   }
 ]

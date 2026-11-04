@@ -1,6 +1,7 @@
-// Purpose: server-only reads of the public storefront design and catalog-v2 lists (Fetched ok/missing/down).
-// Depends on: lib/public-upstream.ts, lib/design.ts, lib/shop-contract.ts, next/headers, react cache; Go /v1/buyer/design/*, catalog/v2/*.
+// Purpose: server-only reads of the public storefront design, catalog-v2 lists and replay data (Fetched ok/missing/down).
+// Depends on: lib/public-upstream.ts, lib/design.ts, lib/shop-contract.ts, next/headers, react cache; Go /v1/buyer/design/*, catalog/v2/*, replays/*.
 // Used by: app/[locale] layout and pages, app/api/shop/*, app/sitemap.xml, app/robots.txt; apps/storefront/tests/upstream-body-cancel.test.mjs.
+// Invariants: server-only BFF credentials and verified Host origin; no caller authority, cross-request cache or write retries.
 // Server-only reads of the public storefront data (React server components and app/api/shop/*): the store design
 // document and the catalog-v2 lists. BFF routes it reaches: none of /api/buyer/* (that is the session-bound cart BFF);
 // this is the same cookie-less trust shape as app/media/p/[productID]/[imageID]/route.ts: the BFF key plus the verified
@@ -163,3 +164,7 @@ export async function allProducts(maxPages = 50): Promise<Fetched<ProductList["p
   return { state: "ok", value: out };
 }
 
+
+// Replay data is already closed by the Go transport; this server-only read forwards no caller authority.
+export const listReplays = async (): Promise<Fetched<unknown>> => getJSON("replays");
+export const getReplay = async (session: string): Promise<Fetched<unknown>> => getJSON(`replays/${encodeURIComponent(session)}`);

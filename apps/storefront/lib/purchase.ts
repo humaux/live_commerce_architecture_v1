@@ -230,6 +230,10 @@ const validQuoteSummary = (v: unknown): v is Order["snapshot"]["quote"] =>
       integer(x.unit_price_minor, 0, MAX_AMOUNT),
   ) &&
   (v.promotion === undefined || validPromotion(v.promotion)) &&
+  (v.adjustments === undefined || (v.promotion === undefined && Array.isArray(v.adjustments) && v.adjustments.length === 1 && v.adjustments.every((a) =>
+    record(a) && Object.keys(a).sort().join(",") === "amount_minor,currency,kind,name" && a.kind === "manual_discount" && a.currency === v.currency &&
+    typeof a.name === "string" && a.name === a.name.trim() && Array.from(a.name).length >= 1 && Array.from(a.name).length <= 30 &&
+    !/[\p{Cc}\p{Cf}\p{Cs}\p{Zl}\p{Zp}]/u.test(a.name) && integer(a.amount_minor, 1, MAX_AMOUNT) && record(v.amount) && a.amount_minor === v.amount.discount_minor))) &&
   record(v.amount) &&
   [
     "subtotal_minor",

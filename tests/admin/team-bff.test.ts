@@ -16,6 +16,7 @@
 // Run: node --test --experimental-strip-types tests/admin/team-bff.test.ts
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
+import { readFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { registerHooks } from "node:module";
 import type { AddressInfo } from "node:net";
@@ -238,4 +239,42 @@ test("Go failures are rebuilt locally from allow-listed codes, never retried, an
   answer = { status: 200, body: JSON.stringify({ ok: true }) };
   assert.equal((await call("remove")).status, 503);
   answer = { status: 204, body: "" };
+});
+
+// I11-SI: this is a contract/BFF boundary regression, not a claim that edge access logs or real browser headers were tested.
+// The latter remain SG06 + the staff-team browser gate and deployment evidence in storefront-v2.md §D.
+test("I11-SI: the only URL exception links to the owner-approved staff contract", () => {
+  const root = new URL("../../", import.meta.url);
+  const invariants = JSON.parse(readFileSync(new URL("contracts/invariants.json", root), "utf8"));
+  const i11 = invariants.find((entry: { id: string }) => entry.id === "I11");
+  assert.equal(i11.severity, "P0");
+  assert.ok(i11.rule.startsWith("令牌/密钥/地址/聊天正文不得进入公开日志、URL或共享缓存。"), "the general prohibition stays intact");
+  assert.ok(i11.rule.includes("唯一URL例外"), "the approved narrow exception must be explicit, not inferred from source comments");
+  assert.ok(i11.rule.includes("contracts/storefront-v2.md#d-i11-staff-invitation-link-exception"));
+  const contract = readFileSync(new URL("contracts/storefront-v2.md", root), "utf8");
+  assert.ok(contract.includes('id="d-i11-staff-invitation-link-exception"'));
+  assert.ok(contract.includes("42086c79-d536-4769-990f-417115a458a0"), "keep the actual approval provenance");
+});
+
+test("I11-SI: invite links do not permit invitation, session or provider credentials in API URLs or responses", async () => {
+  const inviteToken = b64();
+  const fullLink = `${publicOrigin}/en/invite/${inviteToken}`;
+  const before = seen.length;
+  for (const [name, value] of [["token", inviteToken], ["access_token", b64()], ["session", session], ["api_key", bffKey], ["next", fullLink]]) {
+    const r = await call("accept", { query: `?${name}=${encodeURIComponent(value)}`, body: { token: inviteToken } });
+    assert.equal(r.status, 403, name);
+    assert.equal(r.headers.get("cache-control"), "no-store", name);
+    assert.ok(!r.text.includes(value), name);
+  }
+  assert.equal(seen.length, before, "no URL credential reaches the identity upstream");
+  answer = { status: 404, body: JSON.stringify({ code: "invite_invalid", message: fullLink, details: { token: inviteToken, access_token: session } }) };
+  try {
+    const r = await call("accept", { body: { token: inviteToken } });
+    assert.equal(r.status, 404);
+    assert.equal(r.headers.get("cache-control"), "no-store");
+    for (const forbidden of [inviteToken, fullLink, session]) assert.ok(!r.text.includes(forbidden), "upstream secrets are never echoed");
+    assert.equal(seen.at(-1)?.url, "/v1/identity/staff/accept");
+  } finally {
+    answer = { status: 204, body: "" };
+  }
 });
