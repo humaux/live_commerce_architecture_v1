@@ -1,0 +1,74 @@
+/* Purpose: signed 訂單缺少收件資料 composition (750:3454 / 750:3596). Depends on DS tokens only; used by ManualOrderMissing; no global selectors. */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  min-width: 0;
+  color: var(--ds-sig-label);
+  font-size: var(--ds-text-md);
+}
+.page h1 {
+  margin: 0;
+  font-size: var(--ds-text-3xl);
+  font-weight: 500;
+  line-height: 38px;
+}
+.lead {
+  margin: 0;
+  color: var(--ds-sig-muted);
+  font-size: var(--ds-text-sm);
+}
+.card {
+  max-width: 760px;
+  padding: var(--ds-space-5) var(--ds-space-5) var(--ds-space-4);
+  background: var(--ds-surface);
+  border: 1px solid var(--ds-sig-line);
+  border-radius: var(--ds-radius-lg);
+}
+.card h2 {
+  margin: 0 0 var(--ds-space-4);
+  font-size: var(--ds-text-lg);
+  font-weight: 500;
+}
+.card dl {
+  margin: 0;
+}
+.card dt {
+  color: var(--ds-sig-error-text);
+  font-size: var(--ds-text-sm);
+  font-weight: 500;
+}
+.card dd {
+  margin: var(--ds-space-3) 0 var(--ds-space-4);
+  font-size: var(--ds-text-sm);
+}
+.note {
+  margin: 0;
+  color: var(--ds-sig-muted);
+  font-size: var(--ds-text-xs);
+}
+.dock {
+  margin-top: var(--ds-space-6);
+  padding-top: var(--ds-space-3);
+  border-top: 1px solid var(--ds-sig-line);
+}
+.dock button {
+  min-width: 300px;
+  min-height: var(--ds-target);
+  border: 0;
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-ink);
+  color: var(--ds-on-primary);
+  font: inherit;
+  cursor: pointer;
+}
+.dock button:focus-visible {
+  outline: var(--ds-focus-width) solid var(--ds-focus);
+  outline-offset: var(--ds-focus-offset);
+}
+@media (max-width: 900px) {
+  .dock button {
+    width: 100%;
+    min-width: 0;
+  }
+}

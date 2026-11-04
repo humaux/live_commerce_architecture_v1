@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  csvFileProblem, draftProblem, manualBody, parseDashboard, parseImportResult, parseManualOptions, parseManualResult, parseRegenerateResult, rowErrorCodes, toolsRoute,
+  csvFileProblem, draftProblem, manualBody, recipientGaps, parseDashboard, parseImportResult, parseManualOptions, parseManualResult, parseRegenerateResult, rowErrorCodes, toolsRoute,
   validManualBody, validRegenerateBody, MAX_CSV_BYTES, type ManualDraft, type ManualOption,
 } from "../../apps/admin/lib/merchant-tools-model.ts";
 import { toolsCopy } from "../../apps/admin/lib/merchant-tools-copy.ts";
@@ -210,6 +210,20 @@ test("manual result: link is https with the order id and a 43-char capability in
 const draft = (over: Partial<ManualDraft> = {}): ManualDraft => ({
   lines: [{ sku_id: sku, quantity: 2 }], name: "Wang", phone: "0912-345-678", email: "", option: option(), mode: "bank_transfer",
   home: { region: "", city: "Taipei", postal_code: "", line1: "1 Road", line2: "" }, cvs: { store_code: "", store_name: "", store_address: "" }, locale: "zh-TW", ...over,
+});
+
+test("draft: recipient gaps (signed 訂單缺少收件資料) only when everything else is sendable", () => {
+  const cvs = option({ delivery_kind: "cvs_711", payment_modes: ["bank_transfer"], pickup_selection: "buyer_entered" });
+  const store = { store_code: "123456", store_name: "S", store_address: "Taipei City" };
+  assert.deepEqual(recipientGaps(draft()), []);
+  assert.deepEqual(recipientGaps(draft({ phone: "" })), ["phone"]);
+  assert.deepEqual(recipientGaps(draft({ option: cvs, phone: "" })), ["phone", "store"]);
+  assert.deepEqual(recipientGaps(draft({ option: cvs })), ["store"]);
+  assert.deepEqual(recipientGaps(draft({ option: cvs, cvs: { ...store, store_name: "" } })), ["store"]); // the server needs all three
+  assert.deepEqual(recipientGaps(draft({ option: cvs, cvs: store })), []);
+  // Any other problem keeps the ordinary hint: no recipient panel for an empty cart, a missing name or an unchosen delivery.
+  for (const over of [{ lines: [] }, { name: "" }, { option: null }, { mode: "" as const }]) assert.deepEqual(recipientGaps(draft({ ...over, phone: "" })), []);
+  assert.equal(draftProblem(draft({ option: cvs, phone: "" })), "phone"); // still not sendable
 });
 
 test("draft: first problem, and the body has no price-like field at all", () => {

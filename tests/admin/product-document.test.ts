@@ -27,7 +27,7 @@ test("PE13 Cartesian matrix is local, preserves edits and deduplicates values", 
   assert.equal(rows.length, 12);
   rows[0].price = "60";
   assert.equal(syncMatrix(axes, rows)[0].price, "60");
-  const filled = applyBulk(rows, "price", "80", "empty", "set");
+  const filled = Reflect.apply(applyBulk, undefined, [rows, "price", "80", "empty", "set", "TWD"]);
   assert.equal(filled.rows[0].price, "60");
   assert.equal(filled.rows[11].price, "80");
 });
@@ -35,10 +35,118 @@ test("PE13 bulk quantity skips negative rows without modifying them", () => {
   const rows = [newRow(["A"]), newRow(["B"])];
   rows[0].quantity = "2";
   rows[1].quantity = "8";
-  const result = applyBulk(rows, "quantity", "5", "all", "subtract");
+  const result = Reflect.apply(applyBulk, undefined, [rows, "quantity", "5", "all", "subtract", "TWD"]);
   assert.equal(result.skipped, 1);
   assert.equal(result.rows[0].quantity, "2");
   assert.equal(result.rows[1].quantity, "3");
+});
+// c5.1: invoke the required sixth currency argument through the public function.
+// Reflect.apply keeps this RED card executable against the old five-argument API;
+// failure must be a wrong draft result, never a compile error. Oracles are literals.
+test("PE13 bulk price set/add/subtract uses the actual currency", () => {
+  for (const [currency, base, operation, value, expected] of [
+    ["TWD", "60", "set", "70", "70"],
+    ["TWD", "60", "add", "10", "70"],
+    ["TWD", "60", "subtract", "10", "50"],
+    ["USD", "60.15", "set", "70.25", "70.25"],
+    ["USD", "60.15", "add", "0.10", "60.25"],
+    ["USD", "60.15", "subtract", "0.10", "60.05"],
+    ["JPY", "60", "set", "70", "70"],
+    ["JPY", "60", "add", "10", "70"],
+    ["JPY", "60", "subtract", "10", "50"],
+  ] as const) {
+    const row = { ...newRow([currency]), price: base, quantity: "8", code: "KEEP", keyword: "KEEP" };
+    const result: ReturnType<typeof applyBulk> = Reflect.apply(applyBulk, undefined, [[row], "price", value, "all", operation, currency]);
+    assert.deepEqual(result, { rows: [{ ...row, price: expected }], skipped: 0 }, `${currency} ${operation}`);
+    assert.equal(row.price, base, "bulk never mutates its input");
+  }
+});
+test("PE13 bulk price refuses negative, overflow and currency precision without clamping", () => {
+  for (const [currency, base, operation, value] of [
+    ["TWD", "5", "subtract", "10"],
+    ["TWD", "10000000000", "add", "1"],
+    ["USD", "10000000000.00", "add", "0.01"],
+    ["JPY", "999999999999", "add", "2"],
+    ["JPY", "999999999999", "add", "1"], // Existing parser refuses a 13-digit whole part on Save.
+    ["TWD", "60", "set", "60.5"],
+    ["USD", "60.00", "add", "0.001"],
+    ["JPY", "60", "subtract", "0.1"],
+    ["TWD", "60", "add", "-10"],
+    ["TWD", "60", "set", "10000000001"],
+  ] as const) {
+    const row = { ...newRow([]), price: base };
+    const result = Reflect.apply(applyBulk, undefined, [[row], "price", value, "all", operation, currency]);
+    assert.deepEqual(result, { rows: [row], skipped: 1 }, `${currency} ${base} ${operation} ${value}`);
+  }
+});
+test("PE13 bulk price permits zero and the largest round-trippable currency amounts", () => {
+  for (const [currency, base, operation, value, expected] of [
+    ["TWD", "10", "subtract", "10", "0"],
+    ["TWD", "60", "add", "0", "60"],
+    ["USD", "60.15", "subtract", "0", "60.15"],
+    ["TWD", "9999999999", "add", "1", "10000000000"],
+    ["USD", "9999999999.99", "add", "0.01", "10000000000.00"],
+    ["JPY", "999999999998", "add", "1", "999999999999"],
+  ] as const) {
+    const row = { ...newRow([]), price: base };
+    const result = Reflect.apply(applyBulk, undefined, [[row], "price", value, "all", operation, currency]);
+    assert.deepEqual(result, { rows: [{ ...row, price: expected }], skipped: 0 });
+  }
+});
+test("PE13 bulk set repairs blank or malformed old prices but arithmetic requires a valid base", () => {
+  for (const base of ["", "   ", "oops", "-1", "60.5"]) {
+    const row = { ...newRow([]), price: base, compare: "100" };
+    assert.deepEqual(Reflect.apply(applyBulk, undefined, [[row], "price", "70", "all", "set", "TWD"]),
+      { rows: [{ ...row, price: "70" }], skipped: 0 });
+    for (const operation of ["add", "subtract"] as const)
+      assert.deepEqual(Reflect.apply(applyBulk, undefined, [[row], "price", "10", "all", operation, "TWD"]),
+        { rows: [row], skipped: 1 }, `${operation} requires base ${JSON.stringify(base)}`);
+  }
+});
+test("PE13 bulk validates the candidate against unchanged compare-at and skips only invalid rows", () => {
+  for (const [base, compare, operation, value, expected, skipped] of [
+    ["60", "70", "add", "10", "60", 1],
+    ["60", "65", "add", "10", "60", 1],
+    ["60", "oops", "set", "50", "60", 1],
+    ["60", "60.5", "set", "50", "60", 1],
+    ["60", "50", "subtract", "20", "40", 0],
+    ["60", "100", "add", "10", "70", 0],
+  ] as const) {
+    const row = { ...newRow([]), price: base, compare };
+    assert.deepEqual(Reflect.apply(applyBulk, undefined, [[row], "price", value, "all", operation, "TWD"]),
+      { rows: [{ ...row, price: expected }], skipped });
+  }
+  const rows = [{ ...newRow(["valid"]), price: "60" }, { ...newRow(["conflict"]), price: "60", compare: "70" }];
+  assert.deepEqual(Reflect.apply(applyBulk, undefined, [rows, "price", "10", "all", "add", "TWD"]),
+    { rows: [{ ...rows[0], price: "70" }, rows[1]], skipped: 1 });
+});
+test("PE13 bulk empty scope trims blanks, preserves zero and excludes inactive rows from skips", () => {
+  const rows = [
+    { ...newRow(["blank"]), price: "  " },
+    { ...newRow(["zero"]), price: "0" },
+    { ...newRow(["filled"]), price: "60" },
+    { ...newRow(["inactive"]), price: "", active: false },
+  ];
+  assert.deepEqual(Reflect.apply(applyBulk, undefined, [rows, "price", "70", "empty", "set", "TWD"]),
+    { rows: [{ ...rows[0], price: "70" }, rows[1], rows[2], rows[3]], skipped: 0 });
+  for (const operation of ["add", "subtract"] as const)
+    assert.deepEqual(Reflect.apply(applyBulk, undefined, [rows, "price", "10", "empty", operation, "TWD"]),
+      { rows, skipped: 1 });
+});
+test("PE13 bulk all scope changes active rows only, preserving inactive fields without counting them", () => {
+  for (const field of ["price", "quantity", "compare", "code", "keyword"] as const) {
+    const row = { ...newRow([]), price: "60", quantity: "8", compare: "100", code: "KEEP", keyword: "KEEP", active: false };
+    assert.deepEqual(Reflect.apply(applyBulk, undefined, [[row], field, "10", "all", "set", "TWD"]),
+      { rows: [row], skipped: 0 }, field);
+  }
+});
+test("PE13 bulk invalid delta does not overwrite a valid price", () => {
+  for (const value of ["", "  ", "oops", "NaN", "Infinity", "1e2"]) {
+    const row = { ...newRow([]), price: "60" };
+    for (const operation of ["set", "add", "subtract"] as const)
+      assert.deepEqual(Reflect.apply(applyBulk, undefined, [[row], "price", value, "all", operation, "TWD"]),
+        { rows: [row], skipped: 1 }, `${operation} ${JSON.stringify(value)}`);
+  }
 });
 test("PE12 untracked document uses whole currency and per-order cap, never quantity", () => {
   const row = newRow([]);

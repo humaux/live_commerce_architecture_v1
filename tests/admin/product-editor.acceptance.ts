@@ -378,10 +378,7 @@ export function registerProductEditorAcceptance() {
       await page.getByTestId("new-price-0").fill("60");
       await page.getByTestId("new-price-1").fill("");
       await page.getByTestId("bulk-open").click();
-      await page
-        .getByRole("region", { name: "Bulk fill Price" })
-        .getByRole("combobox", { name: "Bulk fill", exact: true })
-        .selectOption("empty");
+      await page.getByTestId("bulk-scope-empty").click();
       await page.getByTestId("bulk-value").fill("80");
       await page.getByTestId("bulk-value").press("Enter");
       await expect(page.getByTestId("new-price-0")).toHaveValue("60");
@@ -391,7 +388,8 @@ export function registerProductEditorAcceptance() {
       await page.getByTestId("bulk-value").press("Escape");
       await expect(page.getByTestId("bulk-open")).toBeFocused();
       await page.getByTestId("bulk-open").click();
-      await page.getByTestId("bulk-field").selectOption("quantity");
+      await page.getByTestId("bulk-cancel").click();
+      await page.getByTestId("bulk-open-quantity").click();
       await page.getByTestId("bulk-value").fill("5");
       await page.getByTestId("bulk-apply").click();
       await page.getByText("Shipping", { exact: true }).last().click();
@@ -1218,18 +1216,124 @@ export function registerProductEditorAcceptance() {
           );
         }
         await expect(page.locator('[data-testid^="matrix-row-"]')).toHaveCount(2);
-        // #127: bulk code exists only before the first save (edit mode hides it); read back on the rows.
+        // #127: bulk code is editable only before the first save; edit mode shows it disabled.
         await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-open", action: "click" }, async () => {
           const localWriteStart = writes.length;
           await page.getByTestId("bulk-open").click();
-          await expect(page.getByTestId("bulk-field")).toBeVisible();
+          await expect(page.getByTestId("bulk-dialog")).toBeVisible();
+          const createPriceControls = await page.getByTestId("bulk-dialog").locator("select, input, button").evaluateAll(nodes => nodes.map(node => ({ control: node.getAttribute("data-testid"), tag: node.tagName.toLowerCase(), disabled: (node as HTMLInputElement).disabled })));
+          matrixRendered("mobile matrix bulk code set", createPriceControls, "create-price");
           expect(writes.length).toBe(localWriteStart);
           return { observed: { dialog: "open" } };
         });
-        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-field", action: "select" }, async () => {
+        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-field-keyword", action: "click" }, async () => {
           const localWriteStart = writes.length;
-          await page.getByTestId("bulk-field").selectOption("code");
-          await expect(page.getByTestId("bulk-field")).toHaveValue("code");
+          await page.getByTestId("bulk-field-keyword").click();
+          await expect(page.getByTestId("bulk-field-keyword")).toHaveAttribute("aria-pressed", "true");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Create bulk-field-keyword visibly selected; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-field-price", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-field-price").click();
+          await expect(page.getByTestId("bulk-field-price")).toHaveAttribute("aria-pressed", "true");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Create bulk-field-price visibly selected; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-scope-empty", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-scope-empty").click();
+          await expect(page.getByTestId("bulk-scope-empty")).toHaveAttribute("aria-pressed", "true");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Create bulk-scope-empty visibly selected; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-scope-all", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-scope-all").click();
+          await expect(page.getByTestId("bulk-scope-all")).toHaveAttribute("aria-pressed", "true");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Create bulk-scope-all visibly selected; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-operation-subtract", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-operation-subtract").click();
+          await expect(page.getByTestId("bulk-operation-subtract")).toHaveAttribute("aria-pressed", "true");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Create bulk-operation-subtract visibly selected; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-operation-add", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-operation-add").click();
+          await expect(page.getByTestId("bulk-operation-add")).toHaveAttribute("aria-pressed", "true");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Create bulk-operation-add visibly selected; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-operation-set", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-operation-set").click();
+          await expect(page.getByTestId("bulk-operation-set")).toHaveAttribute("aria-pressed", "true");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Create bulk-operation-set visibly selected; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-value", action: "fill step amount" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-value").fill("10");
+          await expect(page.getByTestId("bulk-value")).toHaveValue("10");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Create step amount 10 visible; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-step-up", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-step-up").click();
+          await expect(page.getByTestId("bulk-value")).toHaveValue("20");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Create step up yields 20; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-step-down", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-step-down").click();
+          await expect(page.getByTestId("bulk-value")).toHaveValue("10");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Create step down yields 10; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-back", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-back").click();
+          await expect(page.getByTestId("bulk-dialog")).toHaveCount(0);
+          await expect(page.getByTestId("bulk-open")).toBeFocused();
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Create bulk-back closes panel and restores focus; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-open", action: "click after bulk-back" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-open").click();
+          await expect(page.getByTestId("bulk-dialog")).toBeVisible();
+          await expect(page.getByTestId("bulk-value")).toHaveValue("");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Create panel reopened empty after bulk-back; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-cancel", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-cancel").click();
+          await expect(page.getByTestId("bulk-dialog")).toHaveCount(0);
+          await expect(page.getByTestId("bulk-open")).toBeFocused();
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Create bulk-cancel closes panel and restores focus; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-open", action: "click after bulk-cancel" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-open").click();
+          await expect(page.getByTestId("bulk-dialog")).toBeVisible();
+          await expect(page.getByTestId("bulk-value")).toHaveValue("");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Create panel reopened empty after bulk-cancel; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk code set", control: "bulk-field-code", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-field-code").click();
+          await expect(page.getByTestId("bulk-field-code")).toHaveAttribute("aria-pressed", "true");
+          const createCodeControls = await page.getByTestId("bulk-dialog").locator("select, input, button").evaluateAll(nodes => nodes.map(node => ({ control: node.getAttribute("data-testid"), tag: node.tagName.toLowerCase(), disabled: (node as HTMLInputElement).disabled })));
+          matrixRendered("mobile matrix bulk code set", createCodeControls, "create-code");
           expect(writes.length).toBe(localWriteStart);
           return { observed: { field: "code" } };
         });
@@ -1384,11 +1488,86 @@ export function registerProductEditorAcceptance() {
         await matrixStep({"page":"mobile matrix bulk","row":"","control":"bulk-open","action":"click"}, async () => {
           const localWriteStart = writes.length;
           await page.getByTestId("bulk-open").click();
-          await expect(page.getByTestId("bulk-field")).toBeVisible();
-          const renderedBulkControls = await page.getByTestId("bulk-dialog").locator("select, input, button").evaluateAll(nodes => nodes.map(node => ({ control: node.getAttribute("data-testid"), tag: node.tagName.toLowerCase() })));
-          matrixRendered("mobile matrix bulk", renderedBulkControls);
+          await expect(page.getByTestId("bulk-dialog")).toBeVisible();
+          const renderedBulkControls = await page.getByTestId("bulk-dialog").locator("select, input, button").evaluateAll(nodes => nodes.map(node => ({ control: node.getAttribute("data-testid"), tag: node.tagName.toLowerCase(), disabled: (node as HTMLInputElement).disabled })));
+          matrixRendered("mobile matrix bulk", renderedBulkControls, "edit-price");
           expect(writes.length).toBe(localWriteStart);
           return { observed: "Bulk controls are rendered and independently checked against real DOM actions" };
+        });
+        await matrixStep({ page: "mobile matrix bulk", control: "bulk-field-code", action: "verify existing SKU code disabled" }, async () => {
+          const localWriteStart = writes.length;
+          await expect(page.getByTestId("bulk-field-code")).toBeVisible();
+          await expect(page.getByTestId("bulk-field-code")).toBeDisabled();
+          await expect(bulkWhite.getByTestId("matrix-code-0")).toHaveValue(`${mobileMatrixTag}-A${localeIndex}-0`);
+          await expect(bulkBlack.getByTestId("matrix-code-1")).toHaveValue(`${mobileMatrixTag}-A${localeIndex}-1`);
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Existing SKU code is visibly disabled; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk", control: "bulk-field-keyword", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-field-keyword").click();
+          await expect(page.getByTestId("bulk-field-keyword")).toHaveAttribute("aria-pressed", "true");
+          await expect(page.getByTestId("bulk-value")).toBeFocused();
+          const editKeywordControls = await page.getByTestId("bulk-dialog").locator("select, input, button").evaluateAll(nodes => nodes.map(node => ({ control: node.getAttribute("data-testid"), tag: node.tagName.toLowerCase(), disabled: (node as HTMLInputElement).disabled })));
+          matrixRendered("mobile matrix bulk", editKeywordControls, "edit-keyword");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Keyword field selected and its input focused; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk", control: "bulk-field-price", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-field-price").click();
+          await expect(page.getByTestId("bulk-field-price")).toHaveAttribute("aria-pressed", "true");
+          await expect(page.getByTestId("bulk-value")).toBeFocused();
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Price field selected and its input focused; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk", control: "bulk-value", action: "fill step amount" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-value").fill("10");
+          await expect(page.getByTestId("bulk-value")).toHaveValue("10");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Step amount 10 is visible; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk", control: "bulk-step-up", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-step-up").click();
+          await expect(page.getByTestId("bulk-value")).toHaveValue("20");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Price amount steps from 10 to 20; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk", control: "bulk-step-down", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-step-down").click();
+          await expect(page.getByTestId("bulk-value")).toHaveValue("10");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Price amount steps from 20 to 10; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk", control: "bulk-operation-set", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-operation-set").click();
+          await expect(page.getByTestId("bulk-operation-set")).toHaveAttribute("aria-pressed", "true");
+          await expect(page.getByTestId("bulk-operation-summary")).toHaveText(productEditorCopy[locale].set);
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Set mode has an independent visible summary; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk", control: "bulk-back", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-back").click();
+          await expect(page.getByTestId("bulk-dialog")).toHaveCount(0);
+          await expect(page.getByTestId("bulk-open")).toBeFocused();
+          await expect(bulkWhite.getByTestId("matrix-quantity-0")).toHaveValue("3");
+          await expect(bulkBlack.getByTestId("matrix-quantity-1")).toHaveValue("4");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Return discards bulk edits and restores trigger focus; quantities stay 3 and 4; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk", control: "bulk-open", action: "click after return" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-open").click();
+          await expect(page.getByTestId("bulk-dialog")).toBeVisible();
+          await expect(page.getByTestId("bulk-value")).toBeFocused();
+          await expect(page.getByTestId("bulk-value")).toHaveValue("");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Reopen after Return starts an empty focused value; no document write" };
         });
         await matrixStep({"page":"mobile matrix bulk","row":"","control":"bulk-value","action":"fill cancel"}, async () => {
           const localWriteStart = writes.length;
@@ -1411,15 +1590,24 @@ export function registerProductEditorAcceptance() {
         await matrixStep({"page":"mobile matrix bulk","row":"","control":"bulk-open","action":"click reopen"}, async () => {
           const localWriteStart = writes.length;
           await page.getByTestId("bulk-open").click();
-          await expect(page.getByTestId("bulk-field")).toBeVisible();
+          await expect(page.getByTestId("bulk-dialog")).toBeVisible();
           await expect(page.getByTestId("bulk-value")).toHaveValue("");
           expect(writes.length).toBe(localWriteStart);
           return { observed: "Reopened bulk is visible with empty value after Cancel; no document write" };
         });
-        await matrixStep({"page":"mobile matrix bulk","row":"","control":"bulk-field","action":"select"}, async () => {
+        await matrixStep({ page: "mobile matrix bulk", control: "bulk-cancel", action: "click before quantity" }, async () => {
           const localWriteStart = writes.length;
-          await page.getByTestId("bulk-field").selectOption("quantity");
-          await expect(page.getByTestId("bulk-field")).toHaveValue("quantity");
+          await page.getByTestId("bulk-cancel").click();
+          await expect(page.getByTestId("bulk-dialog")).toHaveCount(0);
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Main panel closes before quantity; no document write" };
+        });
+        await matrixStep({"page":"mobile matrix bulk","row":"","control":"bulk-open-quantity","action":"click"}, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-open-quantity").click();
+          await expect(page.getByTestId("bulk-dialog")).toHaveAttribute("aria-label", `${productEditorCopy[locale].bulk} ${productEditorCopy[locale].quantity}`);
+          const editQuantityControls = await page.getByTestId("bulk-dialog").locator("select, input, button").evaluateAll(nodes => nodes.map(node => ({ control: node.getAttribute("data-testid"), tag: node.tagName.toLowerCase(), disabled: (node as HTMLInputElement).disabled })));
+          matrixRendered("mobile matrix bulk", editQuantityControls, "edit-quantity");
           expect(writes.length).toBe(localWriteStart);
           return { observed: "Quantity field selected; no document write" };
         });
@@ -1432,23 +1620,41 @@ export function registerProductEditorAcceptance() {
           expect(writes.length).toBe(localWriteStart);
           return { observed: "Target changes all to selected; no document write" };
         });
-        await matrixStep({"page":"mobile matrix bulk","row":"","control":"bulk-scope","action":"select select"}, async () => {
+        await matrixStep({ page: "mobile matrix bulk", control: "bulk-scope-empty", action: "click" }, async () => {
           const localWriteStart = writes.length;
-          await page.getByTestId("bulk-scope").selectOption("empty");
-          await expect(page.getByTestId("bulk-scope")).toHaveValue("empty");
-          await page.getByTestId("bulk-scope").selectOption("all");
-          await expect(page.getByTestId("bulk-scope")).toHaveValue("all");
+          await page.getByTestId("bulk-scope-empty").click();
+          await expect(page.getByTestId("bulk-scope-empty")).toHaveAttribute("aria-pressed", "true");
           expect(writes.length).toBe(localWriteStart);
-          return { observed: "Scope changes empty to all; no document write" };
+          return { observed: "Scope becomes empty; no document write" };
         });
-        await matrixStep({"page":"mobile matrix bulk","row":"","control":"bulk-operation","action":"select select"}, async () => {
+        await matrixStep({ page: "mobile matrix bulk", control: "bulk-scope-all", action: "click" }, async () => {
           const localWriteStart = writes.length;
-          await page.getByTestId("bulk-operation").selectOption("subtract");
-          await expect(page.getByTestId("bulk-operation")).toHaveValue("subtract");
-          await page.getByTestId("bulk-operation").selectOption("add");
-          await expect(page.getByTestId("bulk-operation")).toHaveValue("add");
+          await page.getByTestId("bulk-scope-all").click();
+          await expect(page.getByTestId("bulk-scope-all")).toHaveAttribute("aria-pressed", "true");
+          await expect(page.getByTestId("bulk-target")).toHaveValue("all");
           expect(writes.length).toBe(localWriteStart);
-          return { observed: "Operation changes subtract to add; no document write" };
+          return { observed: "Scope returns to all; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk", control: "bulk-target", action: "select after all scope" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-target").selectOption("selected");
+          await expect(page.getByTestId("bulk-target")).toHaveValue("selected");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Selected target restored after explicit all scope; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk", control: "bulk-operation-subtract", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-operation-subtract").click();
+          await expect(page.getByTestId("bulk-operation-subtract")).toHaveAttribute("aria-pressed", "true");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Operation becomes subtract; no document write" };
+        });
+        await matrixStep({ page: "mobile matrix bulk", control: "bulk-operation-add", action: "click" }, async () => {
+          const localWriteStart = writes.length;
+          await page.getByTestId("bulk-operation-add").click();
+          await expect(page.getByTestId("bulk-operation-add")).toHaveAttribute("aria-pressed", "true");
+          expect(writes.length).toBe(localWriteStart);
+          return { observed: "Operation becomes add; no document write" };
         });
         await matrixStep({"page":"mobile matrix bulk","row":"","control":"bulk-value","action":"fill"}, async () => {
           const localWriteStart = writes.length;
@@ -1635,22 +1841,66 @@ export function registerProductEditorAcceptance() {
           await matrixStep({ page: bulkPage, control: "bulk-open", action: "click" }, async () => {
             const localWriteStart = writes.length;
             await page.getByTestId("bulk-open").click();
-            await expect(page.getByTestId("bulk-field")).toBeVisible();
+            await expect(page.getByTestId("bulk-dialog")).toBeVisible();
             expect(writes.length).toBe(localWriteStart);
             return { observed: { dialog: "open" } };
           });
-          await matrixStep({ page: bulkPage, control: "bulk-field", action: "select" }, async () => {
-            const localWriteStart = writes.length;
-            await page.getByTestId("bulk-field").selectOption(field);
-            await expect(page.getByTestId("bulk-field")).toHaveValue(field);
-            expect(writes.length).toBe(localWriteStart);
-            return { observed: { field } };
-          });
-          if (operation !== "set") {
-            await matrixStep({ page: bulkPage, control: "bulk-operation", action: "select" }, async () => {
+          if (field === "compare" || field === "quantity") {
+            await matrixStep({ page: bulkPage, control: "bulk-cancel", action: "click before column" }, async () => {
               const localWriteStart = writes.length;
-              await page.getByTestId("bulk-operation").selectOption(operation);
-              await expect(page.getByTestId("bulk-operation")).toHaveValue(operation);
+              await page.getByTestId("bulk-cancel").click();
+              await expect(page.getByTestId("bulk-dialog")).toHaveCount(0);
+              expect(writes.length).toBe(localWriteStart);
+              return { observed: { closedBeforeField: field } };
+            });
+            await matrixStep({ page: bulkPage, control: `bulk-open-${field}`, action: "click" }, async () => {
+              const localWriteStart = writes.length;
+              await page.getByTestId(`bulk-open-${field}`).click();
+              await expect(page.getByTestId("bulk-dialog")).toHaveAttribute("aria-label", `${productEditorCopy[locale].bulk} ${productEditorCopy[locale][field]}`);
+              if (field === "compare") {
+                const editCompareControls = await page.getByTestId("bulk-dialog").locator("select, input, button").evaluateAll(nodes => nodes.map(node => ({ control: node.getAttribute("data-testid"), tag: node.tagName.toLowerCase(), disabled: (node as HTMLInputElement).disabled })));
+                matrixRendered("mobile matrix bulk compare set", editCompareControls, "edit-compare");
+              }
+              expect(writes.length).toBe(localWriteStart);
+              return { observed: { field } };
+            });
+          } else {
+            await matrixStep({ page: bulkPage, control: "bulk-field-price", action: "click" }, async () => {
+              const localWriteStart = writes.length;
+              await page.getByTestId("bulk-field-price").click();
+              await expect(page.getByTestId("bulk-field-price")).toHaveAttribute("aria-pressed", "true");
+              expect(writes.length).toBe(localWriteStart);
+              return { observed: { field } };
+            });
+          }
+          if (field === "compare") {
+            await matrixStep({ page: "mobile matrix bulk compare set", control: "bulk-scope-empty", action: "click" }, async () => {
+              const localWriteStart = writes.length;
+              await page.getByTestId("bulk-scope-empty").click();
+              await expect(page.getByTestId("bulk-scope-empty")).toHaveAttribute("aria-pressed", "true");
+              expect(writes.length).toBe(localWriteStart);
+              return { observed: "Compare bulk-scope-empty selected; no document write" };
+            });
+            await matrixStep({ page: "mobile matrix bulk compare set", control: "bulk-scope-all", action: "click" }, async () => {
+              const localWriteStart = writes.length;
+              await page.getByTestId("bulk-scope-all").click();
+              await expect(page.getByTestId("bulk-scope-all")).toHaveAttribute("aria-pressed", "true");
+              expect(writes.length).toBe(localWriteStart);
+              return { observed: "Compare bulk-scope-all selected; no document write" };
+            });
+            await matrixStep({ page: "mobile matrix bulk compare set", control: "bulk-operation-set", action: "click" }, async () => {
+              const localWriteStart = writes.length;
+              await page.getByTestId("bulk-operation-set").click();
+              await expect(page.getByTestId("bulk-operation-set")).toHaveAttribute("aria-pressed", "true");
+              expect(writes.length).toBe(localWriteStart);
+              return { observed: "Compare bulk-operation-set selected; no document write" };
+            });
+          }
+          if (operation !== "set") {
+            await matrixStep({ page: bulkPage, control: `bulk-operation-${operation}`, action: "click" }, async () => {
+              const localWriteStart = writes.length;
+              await page.getByTestId(`bulk-operation-${operation}`).click();
+              await expect(page.getByTestId(`bulk-operation-${operation}`)).toHaveAttribute("aria-pressed", "true");
               expect(writes.length).toBe(localWriteStart);
               return { observed: { operation } };
             });
@@ -1783,16 +2033,16 @@ export function registerProductEditorAcceptance() {
         await matrixStep({ page: "mobile axis remove", control: "bulk-open", action: "click" }, async () => {
           const localWriteStart = writes.length;
           await page.getByTestId("bulk-open").click();
-          await expect(page.getByTestId("bulk-field")).toBeVisible();
-          await expect(page.getByTestId("bulk-field").locator('option[value="code"]')).toHaveCount(0);
+          await expect(page.getByTestId("bulk-dialog")).toBeVisible();
+          await expect(page.getByTestId("bulk-field-code")).toBeDisabled();
           expect(writes.length).toBe(localWriteStart);
-          return { observed: { codeOption: "absent" } };
+          return { observed: { codeButton: "disabled" } };
         });
-        await expect(page.getByTestId("bulk-field").locator('option[value="code"]')).toHaveCount(0);
-        await matrixStep({ page: "mobile axis remove", control: "bulk-field", action: "Escape" }, async () => {
+        await expect(page.getByTestId("bulk-field-code")).toBeDisabled();
+        await matrixStep({ page: "mobile axis remove", control: "bulk-value", action: "Escape" }, async () => {
           const localWriteStart = writes.length;
-          await page.getByTestId("bulk-field").press("Escape");
-          await expect(page.getByTestId("bulk-field")).toHaveCount(0);
+          await page.getByTestId("bulk-value").press("Escape");
+          await expect(page.getByTestId("bulk-dialog")).toHaveCount(0);
           await expect(page.getByTestId("bulk-open")).toBeFocused();
           expect(writes.length).toBe(axisRemoveStart);
           expect(writes.length).toBe(localWriteStart);
@@ -1896,14 +2146,14 @@ export function registerProductEditorAcceptance() {
         await matrixStep({ page: "mobile matrix bulk keyword set", control: "bulk-open", action: "click" }, async () => {
           const localWriteStart = writes.length;
           await page.getByTestId("bulk-open").click();
-          await expect(page.getByTestId("bulk-field")).toBeVisible();
+          await expect(page.getByTestId("bulk-dialog")).toBeVisible();
           expect(writes.length).toBe(localWriteStart);
           return { observed: { dialog: "open" } };
         });
-        await matrixStep({ page: "mobile matrix bulk keyword set", control: "bulk-field", action: "select" }, async () => {
+        await matrixStep({ page: "mobile matrix bulk keyword set", control: "bulk-field-keyword", action: "click" }, async () => {
           const localWriteStart = writes.length;
-          await page.getByTestId("bulk-field").selectOption("keyword");
-          await expect(page.getByTestId("bulk-field")).toHaveValue("keyword");
+          await page.getByTestId("bulk-field-keyword").click();
+          await expect(page.getByTestId("bulk-field-keyword")).toHaveAttribute("aria-pressed", "true");
           expect(writes.length).toBe(localWriteStart);
           return { observed: { field: "keyword" } };
         });

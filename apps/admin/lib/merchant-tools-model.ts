@@ -171,20 +171,33 @@ export type ManualDraft = {
 export type DraftProblem = "lines" | "name" | "phone" | "email" | "delivery" | "mode" | "address" | "store";
 const phoneOK = (s: string) => /^[0-9+() -]{6,32}$/.test(s) && s.replace(/\D/g, "").length >= 6 && s.replace(/\D/g, "").length <= 20;
 
-/** First problem of a draft (null = sendable). The server re-validates everything; this keeps an obviously wrong form from being sent. */
-export function draftProblem(d: ManualDraft): DraftProblem | null {
+/** First problem of a draft (null = sendable). The server re-validates everything; this keeps an obviously wrong form from being sent.
+ *  `skipRecipient` leaves out the two recipient checks (phone, CVS store) so recipientGaps can tell a recipient-only gap apart. */
+export function draftProblem(d: ManualDraft, skipRecipient = false): DraftProblem | null {
   if (d.lines.length < 1 || d.lines.length > 50 || d.lines.some((l) => !canonicalUUID.test(l.sku_id) || !Number.isInteger(l.quantity) || l.quantity < 1 || l.quantity > 1000) ||
     new Set(d.lines.map((l) => l.sku_id)).size !== d.lines.length) return "lines";
   if (d.name.trim().length < 1 || Array.from(d.name.trim()).length > 120) return "name";
-  if (!phoneOK(d.phone.trim())) return "phone";
+  if (!skipRecipient && !phoneOK(d.phone.trim())) return "phone";
   if (d.email.trim() !== "" && !(d.email.trim().length <= 254 && /^[^\s@]+@[^\s@]+$/.test(d.email.trim()))) return "email";
   if (!d.option) return "delivery";
   if (d.mode === "" || !d.option.payment_modes.includes(d.mode)) return "mode";
   if (d.mode === "cash_on_delivery" && d.option.delivery_kind !== "home") return "mode"; // COD is home delivery only
   if (d.option.delivery_kind === "home") {
     if (d.home.city.trim() === "" || d.home.line1.trim() === "") return "address";
-  } else if (d.cvs.store_code.trim() === "" || d.cvs.store_name.trim() === "" || Array.from(d.cvs.store_address.trim()).length < 5) return "store";
+  } else if (!skipRecipient && !cvsComplete(d.cvs)) return "store";
   return null;
+}
+const cvsComplete = (c: ManualDraft["cvs"]) => c.store_code.trim() !== "" && c.store_name.trim() !== "" && Array.from(c.store_address.trim()).length >= 5;
+
+export type RecipientGap = "phone" | "store";
+/** The signed 訂單缺少收件資料 pre-submit state: the recipient fields still missing when everything else in the draft is sendable
+ *  (empty = no recipient-only gap; the ordinary first-problem hint covers every other case). Same rules as draftProblem, no new field. */
+export function recipientGaps(d: ManualDraft): RecipientGap[] {
+  if (draftProblem(d, true) !== null) return [];
+  const gaps: RecipientGap[] = [];
+  if (!phoneOK(d.phone.trim())) gaps.push("phone");
+  if (d.option!.delivery_kind !== "home" && !cvsComplete(d.cvs)) gaps.push("store");
+  return gaps;
 }
 
 /** The exact POST body. It has no price, discount, shipping or tenant field: the quote is the only price and the bearer is the only scope. */
