@@ -158,9 +158,11 @@ BEGIN
   RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403'; END IF;
  SELECT coalesce(o.snapshot#>'{quote,adjustments}','[]'::jsonb) INTO v_result FROM checkout.orders o
   WHERE o.tenant_id=s.tenant_id AND o.store_id=p_store AND o.id=p_order;
- IF NOT FOUND THEN RAISE EXCEPTION 'not found' USING ERRCODE='PT404'; END IF;
+ -- The read can wait on checkout.orders; fence before reporting existence so a revoked caller gets the same denial either way.
+ IF NOT FOUND THEN v_result:=NULL; END IF;
  v_auth_error:=identity.merchant_access_denied(p_hash,p_store,ARRAY['orders:read'],s.tenant_id,s.principal_id,s.authz_revision);
  IF v_auth_error IS NOT NULL THEN RAISE EXCEPTION 'adjustment read denied' USING ERRCODE=v_auth_error; END IF;
+ IF v_result IS NULL THEN RAISE EXCEPTION 'not found' USING ERRCODE='PT404'; END IF;
  RETURN v_result;
 END $$;
 ALTER FUNCTION identity.read_order_adjustments(bytea,uuid,uuid) OWNER TO commerce_auth;

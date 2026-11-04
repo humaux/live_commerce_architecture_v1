@@ -1119,7 +1119,7 @@ func mdDBBoundaryContract(t *testing.T) {
 		// Revoking only orders:read meanwhile must reach the final fence:
 		// identity.merchant_access_denied returns PT403 for a missing required grant
 		// while store:read remains (migrations/0063_manual_fulfilment.sql:253-254).
-		// An absent order without revocation is PT404 (migrations/0220_manual_order_discount.sql:161).
+		// An absent order without revocation is PT404 (migrations/0220_manual_order_discount.sql:165).
 		for _, tc := range []struct {
 			name             string
 			existing, revoke bool
