@@ -1,0 +1,162 @@
+{
+  "recorded_at": "2026-10-30T14:48:53.996972+00:00",
+  "incoming_head": "765b71d970efa1172f9ec0f670801f8189fe8855",
+  "evidence": "E1 only; runtime acceptance remains CI-only",
+  "checks": [
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/claims-ui.spec.ts"
+      ],
+      "exit_code": 0,
+      "log": "relay-3-syntax-claims-ui.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/meta-connect.spec.ts"
+      ],
+      "exit_code": 0,
+      "log": "relay-3-syntax-meta-connect.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/meta-connect-gate.spec.ts"
+      ],
+      "exit_code": 0,
+      "log": "relay-3-syntax-meta-connect-gate.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "--check",
+        "tests/admin/parity-live-sessions.ts"
+      ],
+      "exit_code": 0,
+      "log": "relay-3-syntax-parity-live-sessions.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "scripts/dev/derive-browser-ownership.mjs"
+      ],
+      "exit_code": 0,
+      "log": "relay-3-ownership-generate.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "scripts/dev/derive-browser-ownership.mjs",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "relay-3-ownership-check.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "node",
+        "node_modules/typescript/bin/tsc",
+        "-p",
+        "output/parity-live-sessions/tsconfig.relay-3.json",
+        "--noEmit",
+        "--incremental",
+        "false"
+      ],
+      "exit_code": 1,
+      "log": "relay-3-tsc.log",
+      "evidence": "NOT_RUN_COMPILER_UNAVAILABLE_AT_WORKTREE_PATH"
+    },
+    {
+      "command": [
+        "node",
+        "/Volumes/data/live_commerce_architecture_v1/node_modules/typescript/bin/tsc",
+        "-p",
+        "output/parity-live-sessions/tsconfig.relay-3.json",
+        "--noEmit",
+        "--incremental",
+        "false"
+      ],
+      "exit_code": 1,
+      "log": "relay-3-tsc-resolved.log",
+      "evidence": "E1_ENVIRONMENT_FAILURE",
+      "note": "Before types=[node] was explicitly selected"
+    },
+    {
+      "command": [
+        "node",
+        "/Volumes/data/live_commerce_architecture_v1/node_modules/typescript/bin/tsc",
+        "-p",
+        "output/parity-live-sessions/tsconfig.relay-3.json",
+        "--noEmit",
+        "--incremental",
+        "false"
+      ],
+      "exit_code": 1,
+      "log": "relay-3-tsc-missing-css.log",
+      "evidence": "E1_ENVIRONMENT_FAILURE",
+      "note": "Before including the installed official Next global CSS type declarations for the component scope"
+    },
+    {
+      "command": [
+        "node",
+        "/Volumes/data/live_commerce_architecture_v1/node_modules/typescript/bin/tsc",
+        "-p",
+        "output/parity-live-sessions/tsconfig.relay-3.json",
+        "--noEmit",
+        "--incremental",
+        "false"
+      ],
+      "exit_code": 0,
+      "log": "relay-3-tsc-final.log",
+      "evidence": "E1_STATIC_ONLY"
+    },
+    {
+      "command": [
+        "bash",
+        "scripts/dev/depmap.sh"
+      ],
+      "exit_code": 0,
+      "evidence": "E1_STATIC_ONLY",
+      "result": "Generated dependency-map.md has no diff"
+    },
+    {
+      "command": [
+        "python3",
+        "scripts/check_packet.py"
+      ],
+      "exit_code": 0,
+      "log": "relay-3-packet.log",
+      "evidence": "E1_PACKET_STRUCTURE_ONLY",
+      "result": "Timestamp-only generated report restored to clean incoming content"
+    }
+  ],
+  "changed_source_hashes": {
+    "tests/admin/claims-ui.spec.ts": "a339df4ac42a012bdbfeb82f6d31c177101c6f91fbac1065879a67e13eb37e80",
+    "tests/admin/meta-connect.spec.ts": "bb040b04c32fc55281ee26072ac7ee54cfed75f6ca474012be30511223e9625b",
+    "tests/admin/meta-connect-gate.spec.ts": "daca84b561d86cabe28610263a012948ce488002198fda6a08ec76938571bc2e",
+    "tests/admin/parity-live-sessions.ts": "5a9b6da8836669a8a5ccdebca717f458425c669576464e81c32417787c455cb0",
+    "output/ci-select-backend-browser/browser-ownership.json": "ab68e3921568295ed954b06d180d37f5da9e7dea66ff19b26b01f2a830774326",
+    "apps/admin/components/MetaConnect.tsx": "fd94c71db462843c26c9f3e8d1d9dc91fd07de59a41009f0a781f183b5f85b42"
+  },
+  "not_run": [
+    "local tests",
+    "local servers",
+    "local browser",
+    "PG",
+    "containers",
+    "current-head CI GREEN",
+    "independent E4",
+    "Humaux/coord/canvas/code-index"
+  ],
+  "typecheck_scope": "Four changed specs/helper plus MetaConnect.tsx; existing installed Node and official Next ambient declarations; final exit 0"
+}
