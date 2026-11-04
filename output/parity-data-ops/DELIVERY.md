@@ -68,6 +68,10 @@ No local tests or servers. The full-app static attempt used mismatched shared wo
 | Customer kind/step picker | Direct file/mapping → safe preview → explicit confirm | Same file bytes/mapping/count, rollback, erasure, PII/consent/storage/session and CSV checks |
 | Customer orders selector on entry | Post-customer-receipt archive disclosure | Archive import, no money/revenue mutation, paging/retry/persistence checks remain |
 
+Customer confirm step (#543 F, 2026-11-04): the signed customer design merges preview and confirm. The preview footer primary 確認匯入 N 筆 (`import-confirm`) is the explicit confirmation, and it sends the previewed apply count; if the count changed, nothing is written and the merchant confirms the new preview (確認). There is no separate customer confirm stage. `tests/admin/import-wizard.spec.ts:72-76` `review()` clicks `import-confirm-next` only when it exists because the historical-orders archive keeps its separate preview → confirm stage. Both paths still require a real click on `import-confirm`; the helper does not skip a confirmation.
+
+#543 removed the unused keys `recent`, `order` and `missingSource`; #542 re-adds them with the deferred frames.
+
 ## Required facts across desktop/mobile/review
 
 | Module | Desktop facts | Mobile / review / receipt |
@@ -153,7 +157,6 @@ All new namespace strings below; dynamic product names/warehouses/filenames/numb
 | importHome | 回到匯入中心 | 返回导入中心 | Back to import center |
 | viewProducts | 查看商品 | 查看商品 | View products |
 | customerImport | 顧客匯入 | 客户导入 | Customer import |
-| recent | 最近任務 | 最近任务 | Recent tasks |
 | file | 檔案 | 文件 | File |
 | type | 類型 | 类型 | Type |
 | status | 狀態 | 状态 | Status |
@@ -169,6 +172,8 @@ All new namespace strings below; dynamic product names/warehouses/filenames/numb
 | skuOrName | 貨號或商品名稱 | 货号或商品名称 | SKU or product name |
 | search | 搜尋 | 搜索 | Search |
 | allStock | 全部庫存 | 全部库存 | All inventory |
+| loadMoreStock | 載入更多庫存 | 加载更多库存 | Load more inventory |
+| loadedFilter | 篩選只套用到目前已載入的庫存列。 | 筛选仅适用于当前已加载的库存行。 | Filters apply only to the inventory rows loaded so far. |
 | skuProduct | 貨號 / 商品 | 货号 / 商品 | SKU / Product |
 | onHand | 現有 | 现有 | On hand |
 | reserved | 保留 | 保留 | Reserved |
@@ -222,7 +227,6 @@ All new namespace strings below; dynamic product names/warehouses/filenames/numb
 | collection | 集合 | 集合 | Collections |
 | rules | 規則 | 规则 | Rules |
 | productCount | 商品數 | 商品数 | Product count |
-| order | 排序 | 排序 | Order |
 | collectionSavedHelp | 保存後進入商品排序；不自動發佈到首頁。 | 保存后进入商品排序；不会自动发布到首页。 | Save to arrange products; this does not publish to the homepage. |
 | deleteCollectionHelp | 刪除集合只刪映射，不刪商品。 | 删除集合只移除关联，不删除商品。 | Deleting a collection removes membership, not products. |
 | manageManual | 管理手動集合 | 管理手动集合 | Manage manual collections |
@@ -259,7 +263,6 @@ All new namespace strings below; dynamic product names/warehouses/filenames/numb
 | willCreate | 第 {n} 筆 · 將新增 | 第 {n} 行 · 将新增 | Row {n} · Will create |
 | willUpdate | 第 {n} 筆 · 將更新 | 第 {n} 行 · 将更新 | Row {n} · Will update |
 | willSkip | 第 {n} 筆 · 不匯入：{reason} | 第 {n} 行 · 不导入：{reason} | Row {n} · Excluded: {reason} |
-| missingSource | 缺少來源編號 | 缺少来源编号 | Missing source ID |
 | viewReasons | 查看不匯入原因 | 查看排除原因 | View exclusion reasons |
 | recheck | 提交前會再次核對 | 提交前会再次核对 | Checked again before submission |
 | recheckHelp | 若可套用筆數已改變，這次不會寫入；必須重新預覽並由你確認。 | 若可应用行数变化，本次不会写入；需重新预览并由你确认。 | If the applicable count changes, nothing is written. Review and confirm the new preview. |
@@ -279,6 +282,8 @@ All new namespace strings below; dynamic product names/warehouses/filenames/numb
 | retainedRequest | 已保留的請求 | 已保留的请求 | Retained request |
 | retryImport | 重試同一次匯入 | 重试同一次导入 | Retry the same import |
 | retryStale | 重試同一份匯入 | 重试同一份导入 | Retry the original import |
+| productPending | 尚未確認匯入結果。重試會再次送出同一份檔案，系統不會重複建立商品或規格。 | 尚未确认导入结果。重试会再次提交同一个文件，系统不会重复创建商品或规格。 | The import result is not confirmed. Retrying sends the same file again; no products or variants are created twice. |
+| productRetry | 重試同一份匯入 | 重试同一份导入 | Retry the same import |
 | staleUnknown | 匯入結果尚未確認，可用下方按鈕重試同一份匯入；請勿更換檔案或設定。 | 导入结果尚未确认，请用下方按钮重试同一份导入；请勿更换文件或设置。 | The result is still unconfirmed. Retry the original import below; keep the file and settings unchanged. |
 | latestPreview | 最新預覽 | 最新预览 | Latest preview |
 | staleHelp | 這次沒有匯入任何資料。從你預覽到按下確認之間，店內顧客資料有變動，所以數量已重新計算。 | 本次未导入数据。预览后店内顾客资料发生变化，数量已重新计算。 | Nothing was imported. Store data changed after your preview, so the counts were recalculated. |

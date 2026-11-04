@@ -80,7 +80,10 @@ function ImportForm({ locale, store, boundary, onSignedOut, onUnconfirmed }: {
   const mounted = useRef(true), revision = useRef(0), active = useRef<AbortController | null>(null), inflight = useRef(false);
   const pending = useRef<Attempt | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
   const [staleUnknown, setStaleUnknown] = useState(false);
+  // After showErrors' scroll to top, screen-reader focus lands on the new route heading instead of body (the clicked button unmounts).
+  useEffect(() => { if (stage === "errors") heading.current?.focus(); }, [stage]);
   useEffect(() => { mounted.current = true;
     return () => {
       // Keep only a boolean notice outside the private form: abort/drop does not prove a dispatched commit had no effect.
@@ -209,7 +212,7 @@ function ImportForm({ locale, store, boundary, onSignedOut, onUnconfirmed }: {
       {!mapping.email && <><p>{d.noEmail}</p><p className="ops-note">{d.keepEmail}</p></>}
       <p>{d.consentSummary}</p></>;
     return <div className="data-ops" data-stage={stage}>
-      <header><h1>{title}</h1></header>
+      <header><h1 ref={heading} tabIndex={-1}>{title}</h1></header>
       {!unknown && !["preview", "confirm", "result", "errors"].includes(stage) && <>
         <p className="ops-note">{d.customerSteps}</p><div className="ops-columns"><div>{filePicker}<section className="ops-card">
           <h2>{d.customerMap}</h2><p className="ops-note">{d.customerMatch}</p>
@@ -218,7 +221,7 @@ function ImportForm({ locale, store, boundary, onSignedOut, onUnconfirmed }: {
               <option value="">{field === "email" ? d.noEmail : c.unmapped}</option>{headers.map(header => <option key={header} value={header}>{header}</option>)}
             </select></label><small className="ops-note">{field === "external_id" ? c.sourceIdHint : field === "phone" && mapping.phone ? d.clearPhone : field === "email" && !mapping.email ? d.keepEmail : ""}</small>
           </div>)}
-          {file && headers.length > 4 && <details data-testid="import-advanced"><summary>{d.noConsent}</summary><label>{c.fieldLabels.consent}<select data-testid="import-map-consent" value={mapping.consent ?? ""} disabled={locked} onChange={event => setMapping(current => ({ ...current, consent: event.target.value }))}><option value="">{c.unmapped}</option>{headers.map(header => <option key={header} value={header}>{header}</option>)}</select></label></details>}
+          {file && (headers.length > 4 || !!guessImportMapping(kind, headers).consent) && <details data-testid="import-advanced"><summary>{d.noConsent}</summary><label>{c.fieldLabels.consent}<select data-testid="import-map-consent" value={mapping.consent ?? ""} disabled={locked} onChange={event => setMapping(current => ({ ...current, consent: event.target.value }))}><option value="">{c.unmapped}</option>{headers.map(header => <option key={header} value={header}>{header}</option>)}</select></label></details>}
           {file && <button type="button" data-testid="import-guess" disabled={locked} onClick={() => setMapping(guessImportMapping(kind, headers))}>{c.guess}</button>}
           {file && (missing || duplicate) && <p>{c.requiredMapping}</p>}
         </section></div><aside><section className="ops-callout"><h2>{d.beforeImport}</h2><p>{d.mappedHelp}</p></section><section className="ops-callout"><h2>{d.noConsent}</h2><p>{d.consentHelp}</p></section></aside></div>

@@ -112,6 +112,7 @@
     "tests/admin/inbox-v2-ui.spec.ts": "4dee9f20a2b6a6c90a1f582d6823ee64baea6c3ec52655842ae8f74af476736e",
     "tests/admin/inbox-window.test.ts": "c99a6a0abf01263434288211c040763fc37f0f5e3d4167bdcd05f85705f26156",
     "tests/admin/input-delivery.spec.ts": "7e27d34fe5736e3d1ee9dcf56ec32df36f387cac4914d4eaa7f593d667a11f39",
+    "tests/admin/inventory-view.test.mjs": "6fb2954f89823fee457773cd700634080d368e6d9e88b06f2a9c11468e0877b4",
     "tests/admin/invite-next.test.ts": "641a704b4833fa8c85cc257061cb37ea4417853ffaf5e9f068de9001ee359a57",
     "tests/admin/ledger.spec.ts": "0eb1a3d0f62865e5275727cd0ba621e094c458e9db016dd9cee91a1ba943dc92",
     "tests/admin/live-console-bff.test.ts": "a20322ab400e8b94fce460d800affbe69cdd2c2a15d8ef03956403c97168606f",
