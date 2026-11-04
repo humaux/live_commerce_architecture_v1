@@ -38,6 +38,8 @@ const messages = {
   row: ['第 {n} 筆資料 · {field}', '第 {n} 行数据 · {field}', 'Row {n} · {field}'],
   inventory: ['庫存', '库存', 'Inventory'], backProducts: ['返回商品', '返回商品', 'Back to products'],
   all: ['全部', '全部', 'All'], availableOnly: ['有可售', '有可售', 'Available'], soldOut: ['缺貨', '缺货', 'Out of stock'],
+  warehouse: ['倉庫', '仓库', 'Warehouse'], selectWarehouse: ['請選擇倉庫', '请选择仓库', 'Choose a warehouse'], moreWarehouses: ['更多倉庫', '更多仓库', 'More warehouses'],
+  allStatuses: ['全部狀態', '全部状态', 'All statuses'], active: ['販售中', '在售', 'Active'], archived: ['已封存', '已归档', 'Archived'], refresh: ['重新整理', '刷新', 'Refresh'],
   searchSKU: ['搜尋貨號', '搜索货号', 'Search SKU'], inventorySearch: ['搜尋庫存', '搜索库存', 'Search inventory'],
   skuOrName: ['貨號或商品名稱', '货号或商品名称', 'SKU or product name'], search: ['搜尋', '搜索', 'Search'],
   allStock: ['全部庫存', '全部库存', 'All inventory'], skuProduct: ['貨號 / 商品', '货号 / 商品', 'SKU / Product'],

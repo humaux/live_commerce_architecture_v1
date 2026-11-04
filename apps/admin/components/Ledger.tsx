@@ -438,7 +438,9 @@ export function Ledger({
       busy={busy} locked={locked} query={query} setQuery={setQuery} navigate={navigate}
       submit={() => adjust({ preventDefault() {} } as FormEvent)} retry={() => { if (pending) void submit(pending); }}
       reload={() => { setError(null); setView("edit"); setReason(""); router.refresh(); }}
-      error={initial.error || error ? errorText(error ?? initial.error!, c) : ""}>
+      error={initial.error || error ? errorText(error ?? initial.error!, c) : ""}
+      warehouses={warehouseChoices} warehouseLoading={warehouseLoading} status={search.get("status") ?? "all"}
+      moreWarehouses={warehouseCursor ? () => void moreWarehouses() : undefined} refresh={() => router.refresh()}>
       {view === "list" && initial.fixture && <p className="ops-note">{c.fixture}</p>}
       {view === "list" && !initial.rows.items.length && <div className="empty-state"><h2>{initial.error ? c.noSession : c.empty}</h2><p>{initial.error ? c.noSessionHint : c.emptyHint}</p></div>}
       {view === "edit" && selected && <details className="ops-card" data-testid="inventory-product-details"><summary>{c.product}</summary><label>{c.reason}<input type="text" value={reason} disabled={locked || selected.status !== "active"} maxLength={240} onChange={event => setReason(event.target.value)} /></label>            <section className="inspector" aria-label={c.selected}>

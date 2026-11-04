@@ -49,6 +49,9 @@
 .data-ops .ops-balance strong { font-size: 22px; }
 .data-ops .ops-inventory-tools { max-width: 560px; margin: 24px 0; }
 .data-ops .ops-inventory-tools .ops-actions { margin-bottom: 24px; }
+.data-ops .ops-inventory-scope { display: flex; flex-wrap: wrap; gap: 12px; align-items: end; margin-bottom: 24px; }
+.data-ops .ops-inventory-scope label { flex: 1 1 160px; min-width: 0; }
+.data-ops .ops-inventory-scope select { width: 100%; }
 .data-ops .ops-chip { background: var(--ui-primary-soft); color: var(--ds-sig-go-text); border-radius: 4px; padding: 4px 10px; }
 .data-ops input.ops-hidden-input { display: none; }
 .data-ops .ops-stock-scroll { overflow-x: auto; scrollbar-color: var(--ui-muted) var(--ui-page); scrollbar-width: thin; }

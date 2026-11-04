@@ -1,28 +1,30 @@
 // Purpose: Signed inventory page states and quantity/reason review; no writes originate here.
-// Depends on: React, data-ops namespace and server-owned LedgerRow balances.
+// Depends on: React, data-ops namespace, server-owned LedgerRow balances and the caller's warehouse page.
 // Used by: Ledger, which owns journal durability, scope and adjustment submission.
-// Invariants: forecasts are display-only; submission uses server version, delta and reason; unknown requests are immutable.
+// Invariants: forecasts are display-only; submission uses server version, delta and reason; unknown requests are immutable;
+//   warehouse and status change the URL (navigate drops the cursor) and Refresh re-reads the server page.
 "use client";
 import { useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
-import type { LedgerRow, WorkspaceData } from "../../lib/model";
+import type { LedgerRow, Warehouse, WorkspaceData } from "../../lib/model";
 import { dataOpsCopy } from "../../../../packages/i18n/src/data-ops";
 
 export type InventoryState = "list" | "search" | "edit" | "review" | "result" | "conflict" | "unknown" | "discard";
 /** Render signed content using the caller's scoped snapshots and explicit state transitions. */
-export function InventoryView({ locale, initial, state, setState, selected, select, delta, setDelta, reason, setReason, busy, locked, query, setQuery, navigate, submit, retry, reload, error, children }: {
+export function InventoryView({ locale, initial, state, setState, selected, select, delta, setDelta, reason, setReason, busy, locked, query, setQuery, navigate, submit, retry, reload, error, warehouses, moreWarehouses, warehouseLoading, status, refresh, children }: {
   locale: Locale; initial: WorkspaceData; state: InventoryState; setState: (value: InventoryState) => void;
   selected?: LedgerRow; select: (id: string) => void; delta: string; setDelta: (value: string) => void;
   reason: string; setReason: (value: string) => void; busy: boolean; locked: boolean;
   query: string; setQuery: (value: string) => void; navigate: (values: Record<string, string>) => void;
-  submit: () => void; retry: () => void; reload: () => void; error: string; children?: React.ReactNode;
+  submit: () => void; retry: () => void; reload: () => void; error: string;
+  warehouses: Warehouse[]; moreWarehouses?: () => void; warehouseLoading: boolean; status: string; refresh: () => void; children?: React.ReactNode;
 }) {
   const c = dataOpsCopy(locale);
   const [filter, setFilter] = useState("all");
   const title = { list: c.inventory, search: c.inventorySearch, edit: c.adjust, review: c.reviewTitle, result: c.adjusted, conflict: c.conflict, unknown: c.unknown, discard: c.discardTitle }[state];
   const draftLocked = locked || selected?.status !== "active";
   const quantity = Number(delta), valid = Number.isSafeInteger(quantity) && quantity !== 0 && !!reason.trim();
-  const warehouse = initial.warehouses.find(item => item.id === (selected?.warehouse_id ?? initial.warehouseID));
+  const warehouse = warehouses.find(item => item.id === (selected?.warehouse_id ?? initial.warehouseID));
   const balances = selected ? [[c.onHand, selected.on_hand], [c.reserved, selected.reserved], [c.allocated, selected.allocated], [c.unavailable, selected.unavailable], [c.available, selected.available]] as const : [];
   // These are drafts, never persisted stock or a client-derived command total. Go checks the version and stock invariants.
   const forecast = selected && Number.isSafeInteger(quantity) ? <>{state === "edit" && <h2>{c.beforeAfter}</h2>}{[[c.onHand, selected.on_hand], [c.available, selected.available]].map(([label, before]) => <div className="ops-balance" key={label}><span>{label}</span><strong>{before}</strong><span>→</span><strong>{Number(before) + quantity}</strong></div>)}</> : null;
@@ -31,7 +33,17 @@ export function InventoryView({ locale, initial, state, setState, selected, sele
     <header><h1>{title}</h1>{state === "list" && <a className="ops-link" href={`/${locale}/products${initial.storeID ? `?store=${initial.storeID}` : ""}`}>{c.backProducts}</a>}</header>
     {state === "list" ? <>
       {warehouse && <p className="ops-note">{warehouse.name}</p>}
-      <div className="ops-inventory-tools"><div className="ops-actions">{[["all", c.all], ["available", c.availableOnly], ["empty", c.soldOut]].map(([value, label]) => <button key={value} aria-pressed={filter === value} disabled={locked || filter === value} onClick={() => setFilter(value)}>{label}</button>)}</div>
+      <div className="ops-inventory-tools"><div className="ops-inventory-scope">
+        <label><span>{c.warehouse}</span><select aria-label={c.warehouse} disabled={locked || !warehouses.length} value={initial.warehouseID} onChange={event => navigate({ warehouse: event.target.value })}>
+          {!warehouses.length && <option value="">{c.selectWarehouse}</option>}
+          {warehouses.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+        </select></label>
+        {moreWarehouses && <button type="button" disabled={locked || warehouseLoading} onClick={moreWarehouses}>{c.moreWarehouses}</button>}
+        <label><span>{c.status}</span><select aria-label={c.status} disabled={locked} value={status} onChange={event => navigate({ status: event.target.value })}>
+          {[["all", c.allStatuses], ["active", c.active], ["archived", c.archived]].map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+        </select></label>
+        <button type="button" disabled={locked} onClick={refresh}>{c.refresh}</button>
+      </div><div className="ops-actions">{[["all", c.all], ["available", c.availableOnly], ["empty", c.soldOut]].map(([value, label]) => <button key={value} aria-pressed={filter === value} disabled={locked || filter === value} onClick={() => setFilter(value)}>{label}</button>)}</div>
         <button disabled={locked} onClick={() => setState("search")}>{c.searchSKU}</button>
       </div>
       <h2>{c.allStock}</h2><div className="ops-card"><div className="table-scroll ops-stock-scroll"><table className="ops-stock-table"><thead><tr>{[c.skuProduct, c.onHand, c.reserved, c.allocated, c.unavailable, c.available, c.action].map(label => <th key={label}>{label}</th>)}</tr></thead><tbody>
