@@ -36,7 +36,7 @@
   },
   {
     "table": "buyerhttp.Routes",
-    "dispatcher_sha256": "dd3843222577142f0990853a9b3a68cb59fd8205c6ce17b74af911dbf7aa0241",
+    "dispatcher_sha256": "592b3c50a7298250c073d368757686783fa8eeec8ece8fe33eb82c3f5dc5672d",
     "functions": [
       "RouteTable.HasPrefix",
       "admittedPaymentMethod",
@@ -49,6 +49,7 @@
       "catalogRequest",
       "claimToken",
       "classify",
+      "contactDatabaseError",
       "contactDigest",
       "cvsHTTPError",
       "decodeExact",
@@ -63,6 +64,7 @@
       "handler.claimRequest",
       "handler.collectionMediaGet",
       "handler.consentPut",
+      "handler.contactPost",
       "handler.cvsRequest",
       "handler.cvsServe",
       "handler.designGet",
@@ -126,6 +128,7 @@
     "declarations": [
       "const bootstrapRoute,cartRoute,catalogRoute,catalogV2CollectionRoute,catalogV2CollectionsRoute,catalogV2ProductRoute,catalogV2ProductsRoute,checkoutRoute,claimLinkRoute,claimRedeemRoute,collectionMediaRoute,consentsRoute,designPreviewRoute,designPublishedRoute,destinationItemRoute,destinationRoute,mediaRoute,optionsRoute,orderRoute,ordersRoute,paymentCancelRoute,paymentHandoffRoute,paymentPrepareRoute,paymentRefreshRoute,paymentRoute,primaryOriginRoute,privacyErasureRoute,privacyExportRoute,privacyRoute,quoteRoute,quotesRoute,replayDetailRoute,replayListRoute,retireRoute,sessionRoute,storeMediaRoute,unknownRoute",
       "const claimDerivedKeyPrefix,claimLinkPath,claimRedeemPath,claimTokenHeader",
+      "const contactRoute",
       "const designPreviewPath,designPublishedPath,previewTokenHeader",
       "const lookupPath,lookupWindow,routeLookup",
       "const maxJSON",
@@ -145,6 +148,7 @@
       "func catalogRequest",
       "func claimToken",
       "func classify",
+      "func contactDatabaseError",
       "func contactDigest",
       "func cvsHTTPError",
       "func decodeExact",
@@ -159,6 +163,7 @@
       "func handler.claimRequest",
       "func handler.collectionMediaGet",
       "func handler.consentPut",
+      "func handler.contactPost",
       "func handler.cvsRequest",
       "func handler.cvsServe",
       "func handler.designGet",
@@ -281,6 +286,6 @@
       "var linkTokenPattern",
       "var v2Slug"
     ],
-    "reviewed": "2026-11-04 integrator + independent closure review (Opus 5.5 output/issue-107/review-395-35c4a9a6c.md; Gemini output/issue-107/review-395-35c4a9a6c-delta.md); request output/buyer-route-table/review-buyer-rma-pin-request.md"
+    "reviewed": "2026-11-04 integrator + independent closure review (Claude Fable 5.1: approved at bad142733 and re-confirmed on the f26edfdbc delta, output/issue-107/review-375-bad142733-fable.md and review-375-f26edfdbc-fable-delta.md; CodeBuddy Hy4 supplementary read concurred); request: output/buyer-route-table/review-contact-store-pin-request.md"
   }
 ]

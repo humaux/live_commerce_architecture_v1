@@ -245,6 +245,7 @@ func NewHandler(pool *pgxpool.Pool, options ...Options) http.Handler {
 	registerMerchantToolsRoutes(mux, pool, configured.ManualOrders, configured.ForBuyer) // unit merchant-tools: storefront-v2 section G, merchanttools.go
 	registerPromotionRoutes(mux, pool)
 	registerNotifySettingsRoutes(mux, pool)
+	registerContactRoutes(mux, pool)
 	registerInboxRoutes(mux, pool, configured.Inbox)
 	registerInboxSendRoutes(mux, pool, configured.Inbox, configured.CommentStream) // LC-B4: A4/A5/A6/A12
 	registerReminderRoutes(mux, pool, configured.Inbox, configured.ManualOrders)   // W3-03B: checkout reminders (reminders.go)

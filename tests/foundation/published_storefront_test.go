@@ -231,7 +231,10 @@ func TestPublishedStorefrontAuthorityAndConstraints(t *testing.T) {
 		  -- 0087 store-design (contracts/storefront-v2.md §B): the published design document is resolved by verified origin too.
 		  'commerce_design_reader'::regrole,
 		  -- 0219 FEAT-LIVE-REPLAY: origin-scoped buyer_replays resolves publication through this function only.
-		  'commerce_replay_reader'::regrole))
+		  'commerce_replay_reader'::regrole,
+		  -- 0222 FEAT-CONTACT-STORE (contracts/storefront-v2.md contact amendment): the owner of storefront.admit_store_contact
+		  -- resolves the freshly verified published origin through this function only.
+		  'commerce_store_contact_writer'::regrole))
 		FROM pg_proc p WHERE p.oid='buyer.resolve_published_store(text)'::regprocedure`).Scan(&safe)
 	if err != nil || !safe {
 		t.Fatalf("function owner/ACL/search_path: %v", err)

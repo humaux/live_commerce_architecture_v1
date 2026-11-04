@@ -20,7 +20,7 @@ func routeSample(pattern string) string {
 }
 
 func TestRouteTableEntriesAreDispatched(t *testing.T) {
-	if len(routeRows) != 52 { // 46 frozen legacy rows plus two FEAT-LIVE-REPLAY reads and four FEAT-BUYER-RMA return-request rows.
+	if len(routeRows) != 53 { // 46 frozen legacy rows plus two FEAT-LIVE-REPLAY reads, four FEAT-BUYER-RMA return-request rows and one FEAT-CONTACT-STORE contact POST.
 		t.Fatalf("inventory changed: %d entries", len(routeRows))
 	}
 	seen := map[string]bool{}
@@ -78,15 +78,18 @@ func TestRouteTableMatchesLegacy(t *testing.T) {
 	for path := range paths {
 		got, want := matchRoute(path), legacyMatchRoute(path)
 		// Keep the immutable legacy oracle unchanged. Independently specify the additive
-		// return-request and replay paths, including the existing matcher's deferred UUID validation and strict segments.
+		// return-request, replay and contact paths, including the existing matcher's deferred UUID validation and strict segments.
 		if want.kind == unknownRoute {
 			want = returnRequestOracle(path)
 		}
-		replay := false
+		replay, contact := false, false
 		if path == "/v1/buyer/replays" {
 			want, replay = route{kind: replayListRoute}, true
 		} else if id, ok := strings.CutPrefix(path, "/v1/buyer/replays/"); ok && id != "" && !strings.Contains(id, "/") {
 			want, replay = route{kind: replayDetailRoute, id: id}, true
+		} else if path == "/v1/buyer/contact-messages" {
+			// This exact new path has its own contract (storefront-v2 contact amendment); its cleaning aliases keep the old oracle.
+			want, contact = route{kind: contactRoute}, true
 		}
 		if got != want {
 			t.Errorf("path %q: got %+v want %+v", path, got, want)
@@ -95,6 +98,9 @@ func TestRouteTableMatchesLegacy(t *testing.T) {
 			wantMethod := legacyAllowed(want.kind, method) || returnRequestOracleAllowed(want.kind, method)
 			if replay {
 				wantMethod = method == http.MethodGet
+			}
+			if contact {
+				wantMethod = method == http.MethodPost
 			}
 			if allowed(got.kind, method) != wantMethod {
 				t.Errorf("method drift: %s %s", method, path)

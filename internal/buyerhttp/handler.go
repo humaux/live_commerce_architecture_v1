@@ -365,7 +365,16 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	token := ""
-	if issue {
+	if selected.kind == contactRoute {
+		// A buyer bearer is optional and never selects scope or creates a session. Validate syntax
+		// when supplied, then use precisely the same guest authority (published origin + BFF key).
+		if len(r.Header.Values("Authorization")) != 0 {
+			if _, ok := bearer(r); !ok {
+				fail(http.StatusUnauthorized, "unauthorized")
+				return
+			}
+		}
+	} else if issue {
 		if len(r.Header.Values("Authorization")) != 0 {
 			fail(http.StatusUnauthorized, "unauthorized")
 			return
@@ -418,6 +427,9 @@ type responseError struct {
 func (e responseError) Error() string { return e.code }
 
 func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.Request, selected route, storeID, token, key string) error {
+	if selected.kind == contactRoute {
+		return h.contactPost(ctx, w, r, storeID, key)
+	}
 	if selected.kind == replayListRoute || selected.kind == replayDetailRoute {
 		return h.replayGet(ctx, w, r, selected)
 	}
