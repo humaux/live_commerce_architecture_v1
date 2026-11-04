@@ -281,6 +281,6 @@
       "var linkTokenPattern",
       "var v2Slug"
     ],
-    "reviewed": "pending independent review (closure needs independent review): output/buyer-route-table/review-buyer-rma-pin-request.md"
+    "reviewed": "2026-11-04 integrator + independent closure review (Opus 5.5 output/issue-107/review-395-35c4a9a6c.md; Gemini output/issue-107/review-395-35c4a9a6c-delta.md); request output/buyer-route-table/review-buyer-rma-pin-request.md"
   }
 ]
