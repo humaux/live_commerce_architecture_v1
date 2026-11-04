@@ -152,6 +152,13 @@ test.describe("PARITY-DATA-OPS C6 customer import", () => {
           await expect(page.getByText("第 3 筆 · 缺少來源編號", { exact: true })).toBeVisible();
           await expect(page.getByText("在原檔的 source_id 欄位填入穩定且唯一的來源編號。不要填電話或電子郵件。", { exact: true })).toBeVisible();
           await capture(page, frame("1028:7221", "1028:7299"));
+          // #475 visual P1 (1028:7221 / 1028:7299), READ/MEASURE only: the 選擇的檔案 card must not sit under the sticky footer,
+          // and the shell app bar must be on screen on this route like on every other frame of the flow.
+          const card = await page.getByRole("heading", { name: "選擇的檔案", exact: true }).boundingBox();
+          const footer = await page.locator(".ops-footer").filter({ has: page.getByRole("button", { name: "返回預覽", exact: true }) }).boundingBox();
+          expect(card, "選擇的檔案 heading is laid out").toBeTruthy(); expect(footer, "errors footer is laid out").toBeTruthy();
+          expect(card!.y + card!.height <= footer!.y || footer!.y + footer!.height <= card!.y, `選擇的檔案 heading ${JSON.stringify(card)} must not intersect the footer ${JSON.stringify(footer)}`).toBe(true);
+          await expect(page.locator("header[data-shell-topbar]")).toBeInViewport();
         });
         await click(page, "返回預覽", "original preview is retained", () => heading(page, "確認前，再核對一次"));
         return;
