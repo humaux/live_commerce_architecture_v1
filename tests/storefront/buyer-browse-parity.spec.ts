@@ -1659,7 +1659,8 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
               continue;
             }
             await step(frame, cartRoute, `button "${c.entryRemove}" + reload`, "click + reload", "the entered line leaves the cart list and stays removed after refresh", async () => {
-              const listed = page.getByTestId("cart-page").locator(`[data-testid="cart-line"][data-sku="${variant.sku_id}"]`);
+              // facts variants carry no sku_id: the listed line is the one titled with this product (one line per product in this cart).
+              const listed = page.getByTestId("cart-page").getByTestId("cart-line").filter({ hasText: item.title });
               await expect(listed).toHaveCount(1, { timeout: T });
               await entry.getByTestId("cart-entry-line").getByRole("button", { name: c.entryRemove, exact: true }).click({ timeout: T });
               await expect(listed).toHaveCount(0, { timeout: T });
