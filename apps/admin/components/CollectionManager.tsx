@@ -1,6 +1,7 @@
 // Purpose: Owns catalog collection management and ordered product selection.
-// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/customers-client, @/lib/catalog-v2-client, @/lib/catalog-v2-model, @/lib/catalog-v2-copy, @/lib/catalog-v2-write, ./WorkspaceFrame, ./AdminPageHeader, ./orders.css, ./ProductAdmin.css
+// Depends on: react, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/customers-client, @/lib/catalog-v2-client, @/lib/catalog-v2-model, @/lib/catalog-v2-copy, @/lib/catalog-v2-write, ./collections/create, ./WorkspaceFrame, data-ops locale namespace and styles, ./orders.css, ./ProductAdmin.css
 // Used by: apps/admin/app/[locale]/collections/page.tsx
+// Invariants: store-scoped reads/writes; deletion preserves products; uncertain requests retain their original command.
 "use client";
 
 // Merchant collections page body (/{locale}/collections): a list of the store's collections beside one editor (create,
@@ -10,6 +11,10 @@
 // POST collections/{id}/delete, POST|GET collections/{id}/image and POST collections/{id}/image/delete; the product search
 // uses GET catalog-products. Owns: the editor drafts and one idempotency key per user action (lib/catalog-v2-write.ts).
 // Never decides validity or order: the server answers and the screen re-reads (version bump after every write).
+import { readCollectionRows } from "./collections/read";
+import { useCollectionCreate, type CollectionCreator, type CollectionCreateBody } from "./collections/create";
+import { dataOpsCopy, dataOpsText } from "../../../packages/i18n/src/data-ops";
+import "./imports/data-ops.css";
 import {
   useCallback,
   useEffect,
@@ -46,7 +51,6 @@ import {
 } from "@/lib/catalog-v2-copy";
 import { useWrite } from "@/lib/catalog-v2-write";
 import { WorkspaceFrame } from "./WorkspaceFrame";
-import { AdminPageHeader } from "./AdminPageHeader";
 import "./orders.css";
 import "./ProductAdmin.css";
 
@@ -67,10 +71,14 @@ export function CollectionManager({
   renderKey: string;
 }) {
   const c = catalogCopy[locale].collections;
+  const d = dataOpsCopy(locale);
+  const [name, setName] = useState("");
+  const [membershipMode, setMembershipMode] = useState<"manual" | "automatic">("manual");
+  const quickInput = useRef<HTMLInputElement>(null);
   const [selected, setSelected] = useState("");
   const list = useGuardedRead(
     `${renderKey}|${locale}|${store?.id ?? ""}`,
-    store ? (signal) => readCollections(store.id, signal) : null,
+    store ? (signal) => readCollectionRows(store.id, signal) : null,
     initialError,
   );
   const failure =
@@ -83,105 +91,46 @@ export function CollectionManager({
           : list.status === "unavailable"
             ? c.unavailable
             : "";
-  return (
-    <WorkspaceFrame
-      locale={locale}
-      storeName={store?.name ?? c.noStore}
-      active="collections"
-    >
-      <div
-        className="orders-page product-admin collections-page"
-        data-testid="collections-page"
-      >
-        <AdminPageHeader
-          locale={locale}
-          description={
-            c.subtitle + (stores.length > 1 && store ? ` — ${store.name}` : "")
-          }
-          actions={
-            store && (
-              <button
-                type="button"
-                className="product-primary"
-                data-testid="collection-new"
-                onClick={() => setSelected(NEW)}
-              >
-                {c.newCollection}
-              </button>
-            )
-          }
-        />
-        {(list.status === "loading" || list.status === "hidden") && (
-          <p className="orders-message" role="status">
-            {c.loading}
-          </p>
-        )}
-        {failure && (
-          <div className="orders-message" role="status">
-            <p>{failure}</p>
-            <button type="button" onClick={list.reload}>
-              {c.retry}
+  const quick = useCollectionCreate(store?.id ?? "", list.boundary, list.status === "ready", c,
+    code => errorText(catalogCopy[locale], code), id => { setName(""); void list.refresh(); setSelected(id); });
+  const quickBlocked = quick.blocked;
+  const selectedID = !quick.ready ? "" : quick.draft && !Object.hasOwn(quick.draft, "membership_mode") ? NEW : selected;
+  const quickName = quick.ready ? quick.draft?.title ?? name : "";
+  const quickMode = quick.draft?.membership_mode ?? membershipMode;
+  const selectCollection = (id: string) => { if (quick.mayLeave()) setSelected(id); };
+  const create = () => {
+    if (!quick.mayLeave()) return;
+    if (!store || !name.trim()) { quickInput.current?.focus(); return; }
+    const body: CollectionCreateBody = { title: name.trim(), description: "", sort_mode: membershipMode === "manual" ? "manual" : "newest", status: "active", membership_mode: membershipMode };
+    if (membershipMode === "automatic") body.rules = { match: "all", conditions: [{ field: "created_at", operator: "within_days", days: 7 }] };
+    quick.create(body);
+  };
+  return <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="collections" onBeforeNavigate={quick.mayLeave}>
+    <div className="data-ops collections-page" data-testid="collections-page">
+      <header><div><h1>{d.collections}</h1><p className="ops-note">{d.collectionsHelp}</p></div><div className="ops-actions"><button data-testid="collection-manage-new" disabled={quickBlocked} onClick={() => selectCollection(NEW)}>{d.manageManual}</button><button className="primary" data-testid="collection-new" disabled={quickBlocked || !store} type="submit" form="collections-quick-create" onClick={event => { if (!quick.mayLeave() || selectedID) { event.preventDefault(); selectCollection(""); } }}>{d.newCollection}</button></div></header>
+      {(list.status === "loading" || list.status === "hidden") && <p role="status">{c.loading}</p>}
+      {failure && <div role="status"><p>{failure}</p><button onClick={list.reload}>{c.retry}</button></div>}
+      {list.status === "ready" && list.data && store && <div className="ops-columns">
+        <section className="ops-card"><div className="ops-collection-heading"><span>{d.collection}</span><span>{d.type}</span><span>{d.rules}</span><span>{d.productCount}</span><span>{d.status}</span></div>
+          {!list.data.items.length && <p>{c.empty}</p>}
+          <ul className="collections-list ops-collection-list" data-testid="collections-list">{list.data.items.map(item => <li key={item.id}>
+            <button data-testid={`collection-item-${item.id}`} disabled={quickBlocked} onClick={() => selectCollection(item.id)} aria-current={selectedID === item.id ? "true" : undefined}>
+              <strong><span>{item.title}</span><span className="sr-only"> /{item.slug}</span></strong><span>{item.membership_mode === "automatic" ? d.automatic : d.manual}</span><span>{item.membership_mode === "automatic" && item.ruleDays.length ? dataOpsText(d.createdDays, { n: Math.max(...item.ruleDays) }) : "—"}</span><span>{item.product_count}</span><span>{item.status === "active" ? c.visible : c.hidden}</span>
             </button>
-          </div>
-        )}
-        {list.status === "ready" && list.data && store && (
-          <div className="collections-layout">
-            <nav aria-label={c.title}>
-              {list.data.items.length === 0 && (
-                <p className="orders-message">{c.empty}</p>
-              )}
-              <ul className="collections-list" data-testid="collections-list">
-                {list.data.items.map((item) => (
-                  <li key={item.id}>
-                    <button
-                      type="button"
-                      className={selected === item.id ? "active" : ""}
-                      aria-current={selected === item.id ? "true" : undefined}
-                      data-testid={`collection-item-${item.id}`}
-                      onClick={() => setSelected(item.id)}
-                    >
-                      <strong>{item.title}</strong>
-                      <small>
-                        /{item.slug} · {c.count(item.product_count)}
-                        {item.status === "hidden" ? ` · ${c.hidden}` : ""}
-                      </small>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-            {!selected && (
-              <section
-                className="collections-empty"
-                aria-label={catalogPresentationCopy[locale].chooseCollection}
-              >
-                <h2>{catalogPresentationCopy[locale].chooseCollection}</h2>
-                <p>{catalogPresentationCopy[locale].collectionHelp}</p>
-              </section>
-            )}
-            {selected && (
-              <CollectionEditor
-                key={selected}
-                locale={locale}
-                store={store}
-                id={selected}
-                boundary={list.boundary}
-                onChanged={() => void list.refresh()}
-                onCreated={(id) => {
-                  void list.refresh();
-                  setSelected(id);
-                }}
-                onDeleted={() => {
-                  void list.refresh();
-                  setSelected("");
-                }}
-              />
-            )}
-          </div>
-        )}
-      </div>
-    </WorkspaceFrame>
-  );
+          </li>)}</ul><p className="ops-note">{d.deleteCollectionHelp}</p>
+        </section>
+        {selectedID ? <CollectionEditor key={`${store.id}|${list.boundary}|${selectedID}`} locale={locale} store={store} id={selectedID} boundary={list.boundary} creator={quick} onChanged={() => void list.refresh()} onDeleted={() => { void list.refresh(); setSelected(""); }} /> : <aside>
+          <section className="ops-card"><h2>{d.createCollection}</h2><form id="collections-quick-create" className="ops-form-grid" onSubmit={event => { event.preventDefault(); create(); }}>
+            <label>{d.name}<input ref={quickInput} value={quickName} maxLength={limits.collectionTitle} disabled={quickBlocked} onChange={event => { if (quick.mayLeave()) setName(event.target.value); }} required /></label>
+            <fieldset className="ops-radio" disabled={quickBlocked}><legend>{d.type}</legend><label><input type="radio" name="collection-kind" value="manual" checked={quickMode === "manual"} onChange={() => { if (quick.mayLeave()) setMembershipMode("manual"); }} />{d.manual}</label><label><input type="radio" name="collection-kind" value="automatic" checked={quickMode === "automatic"} onChange={() => { if (quick.mayLeave()) setMembershipMode("automatic"); }} />{d.automatic}</label></fieldset>
+            {quickMode === "automatic" && <p className="ops-note">{dataOpsText(d.createdDays, { n: 7 })}</p>}<p className="ops-note">{d.collectionSavedHelp}</p>
+            {quick.message && <p role={quick.message.kind === "success" ? "status" : "alert"}>{quick.message.text}</p>}
+            {(quick.message?.kind === "uncertain" || (quick.busy && quick.canRetry)) && <button type="button" disabled={quick.busy || !quick.canRetry} onClick={() => { if (!quick.busy && quick.canRetry) void quick.retry(); }}>{catalogCopy[locale].edit.retry}</button>}
+          </form></section><section className="ops-card"><h2>{d.rules}</h2><p>{d.manualHelp}</p><p className="ops-note">{d.deleteCollectionHelp}</p></section>
+        </aside>}
+      </div>}
+    </div>
+  </WorkspaceFrame>;
 }
 
 function CollectionEditor({
@@ -190,7 +139,7 @@ function CollectionEditor({
   id,
   boundary,
   onChanged,
-  onCreated,
+  creator,
   onDeleted,
 }: {
   locale: Locale;
@@ -198,7 +147,7 @@ function CollectionEditor({
   id: string;
   boundary: string;
   onChanged: () => void;
-  onCreated: (id: string) => void;
+  creator: CollectionCreator;
   onDeleted: () => void;
 }) {
   const cc = catalogCopy[locale];
@@ -234,7 +183,7 @@ function CollectionEditor({
         onChanged();
         return ok;
       }}
-      onCreated={onCreated}
+      creator={creator}
       onDeleted={onDeleted}
     />
   );
@@ -246,7 +195,7 @@ function CollectionForm({
   detail,
   boundary,
   refresh,
-  onCreated,
+  creator,
   onDeleted,
 }: {
   locale: Locale;
@@ -255,20 +204,22 @@ function CollectionForm({
   detail: CollectionDetail | null;
   boundary: string;
   refresh: () => Promise<boolean>;
-  onCreated: (id: string) => void;
+  creator: CollectionCreator;
   onDeleted: () => void;
 }) {
   const cc = catalogCopy[locale];
   const c = cc.collections;
   const errors = useCallback((code: string) => errorText(cc, code), [cc]);
-  const write = useWrite(store.id, boundary, errors, c.uncertain);
-  const [title, setTitle] = useState(detail?.title ?? "");
-  const [slug, setSlug] = useState(detail?.slug ?? "");
-  const [description, setDescription] = useState(detail?.description ?? "");
+  const localWrite = useWrite(store.id, boundary, errors, c.uncertain);
+  const write = detail ? localWrite : creator;
+  const createBlocked = !detail && creator.blocked;
+  const [title, setTitle] = useState(detail?.title ?? creator.draft?.title ?? "");
+  const [slug, setSlug] = useState(detail?.slug ?? creator.draft?.slug ?? "");
+  const [description, setDescription] = useState(detail?.description ?? creator.draft?.description ?? "");
   const [sort, setSort] = useState<CollectionSort>(
-    detail?.sort_mode ?? "manual",
+    detail?.sort_mode ?? creator.draft?.sort_mode ?? "manual",
   );
-  const [status, setStatus] = useState(detail?.status ?? "active");
+  const [status, setStatus] = useState(detail?.status ?? creator.draft?.status ?? "active");
   const [members, setMembers] = useState<CollectionMember[]>(
     detail?.products ?? [],
   );
@@ -276,23 +227,19 @@ function CollectionForm({
 
   function save(event: FormEvent) {
     event.preventDefault();
+    if (!detail && !creator.mayLeave()) return;
     if (!title.trim() || Array.from(title).length > limits.collectionTitle)
       return write.fail(c.invalidTitle);
     if (slug && !slugPattern.test(slug)) return write.fail(c.invalidSlug);
     if (!detail) {
-      const body: Record<string, string> = {
+      const body: CollectionCreateBody = {
         title: title.trim(),
         description,
         sort_mode: sort,
         status,
       };
       if (slug) body.slug = slug;
-      void write.run(
-        command("POST", "collections", body),
-        parseCreated,
-        (created) => onCreated(created.id),
-        c.saved,
-      );
+      creator.create(body);
       return;
     }
     const body: Record<string, unknown> = { expected_version: detail.version };
@@ -302,7 +249,7 @@ function CollectionForm({
     if (sort !== detail.sort_mode) body.sort_mode = sort;
     if (status !== detail.status) body.status = status;
     if (Object.keys(body).length === 1) return; // nothing changed
-    void write.run(
+    void localWrite.run(
       command("PATCH", `collections/${detail.id}`, body),
       parseCreated,
       () => void refresh(),
@@ -317,6 +264,7 @@ function CollectionForm({
           {c.name}
           <input
             data-testid="collection-title"
+            disabled={createBlocked}
             value={title}
             maxLength={limits.collectionTitle}
             onChange={(e) => setTitle(e.target.value)}
@@ -327,6 +275,7 @@ function CollectionForm({
           {c.slug}
           <input
             data-testid="collection-slug"
+            disabled={createBlocked}
             value={slug}
             maxLength={limits.slug}
             onChange={(e) => setSlug(e.target.value)}
@@ -336,6 +285,7 @@ function CollectionForm({
           {c.description}
           <textarea
             data-testid="collection-description"
+            disabled={createBlocked}
             value={description}
             maxLength={limits.collectionDescription}
             rows={3}
@@ -347,6 +297,7 @@ function CollectionForm({
             {c.sort}
             <select
               data-testid="collection-sort"
+              disabled={createBlocked}
               value={sort}
               onChange={(e) => setSort(e.target.value as CollectionSort)}
             >
@@ -363,6 +314,7 @@ function CollectionForm({
             {c.visibility}
             <select
               data-testid="collection-status"
+              disabled={createBlocked}
               value={status}
               onChange={(e) => setStatus(e.target.value as "active" | "hidden")}
             >
@@ -381,13 +333,13 @@ function CollectionForm({
             {msg.kind === "uncertain" && (
               <button
                 type="button"
-                disabled={write.busy}
+                disabled={write.busy || (!detail && !creator.canRetry)}
                 onClick={() => void write.retry()}
               >
                 {cc.edit.retry}
               </button>
             )}
-            {msg.kind !== "success" && (
+            {msg.kind !== "success" && (detail || !creator.blocked) && (
               <button type="button" onClick={write.dismiss}>
                 {c.dismiss}
               </button>
@@ -399,7 +351,7 @@ function CollectionForm({
             className="product-primary"
             type="submit"
             data-testid="collection-save"
-            disabled={write.busy}
+            disabled={write.busy || createBlocked}
             aria-describedby={write.busy ? "collection-save-reason" : undefined}
           >
             {detail ? c.save : c.create}
@@ -433,7 +385,7 @@ function CollectionForm({
               data-testid="collection-delete-confirm"
               disabled={write.busy}
               onClick={() =>
-                void write.run(
+                void localWrite.run(
                   command("POST", `collections/${detail.id}/delete`, {
                     expected_version: detail.version,
                   }),
@@ -460,7 +412,7 @@ function CollectionForm({
             boundary={boundary}
             refresh={refresh}
           />
-          <Members
+          {detail.membership_mode === "manual" ? <Members
             locale={locale}
             store={store}
             detail={detail}
@@ -468,7 +420,7 @@ function CollectionForm({
             setMembers={setMembers}
             boundary={boundary}
             refresh={refresh}
-          />
+          /> : <section className="product-section"><h2>{dataOpsCopy(locale).automatic}</h2><ul>{detail.products.map(product => <li key={product.product_id}>{product.name}</li>)}</ul></section>}
         </>
       )}
     </div>
@@ -548,7 +500,7 @@ function ImageBlock({
           accept="image/jpeg,image/png,image/webp"
           data-testid="collection-image-input"
           disabled={busy}
-          onChange={(e) => void upload(e.target.files?.[0])}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => void upload(e.target.files?.[0])}
         />
         {detail.image_id && (
           <button

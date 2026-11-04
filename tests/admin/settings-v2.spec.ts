@@ -4,6 +4,7 @@
 // Invariants: clicks/fills drive writes; refresh checks persisted receipts; faults are explicitly MOCK;
 // no provider calls, fixture tenant authority, forced clicks, DOM writes or direct API mutations.
 import { expect, type Page, type TestInfo } from "@playwright/test";
+import { writeFile } from "node:fs/promises";
 import { selectProductForCopy } from "./catalog-document-driver";
 
 const copy = {
@@ -1156,7 +1157,12 @@ async function marketSelectionAcceptance(source: Page, store: string, testInfo: 
       }
     } catch (error) {
       await capture("failure");
-      try { await testInfo.attach("market-selection-diagnostic.json", { body: JSON.stringify(observations), contentType: "application/json" }); } catch { /* Keep the original failure. */ }
+      try {
+        // The list reporter needs a persisted path for this JSON to reach CI artifacts.
+        const diagnosticPath = testInfo.outputPath("market-selection-diagnostic.json");
+        await writeFile(diagnosticPath, JSON.stringify(observations));
+        await testInfo.attach("market-selection-diagnostic.json", { path: diagnosticPath, contentType: "application/json" });
+      } catch { /* Keep the original failure. */ }
       throw error;
     } finally {
       await page.unroute(pattern);

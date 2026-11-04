@@ -3,7 +3,7 @@
 // Purpose: independent W5-U1 signed HTTPS browser import acceptance, actual Go/PG writes and bounded transport faults.
 // Depends on: foundation fixture/lcPrincipal, identity/httpapi, synthetic CSV, production Next, Playwright;
 // LC_MIUI_ACCEPTANCE and LC_TEST_DATABASE_ALLOWED. No successful import DTO mocks or injected session cookies.
-// Used by: GitHub --browser-migration-import; miui helpers are isolated from W6 and existing import fixtures.
+// Used by: GitHub --browser-migration-import; import-wizard.spec.ts and parity-customer-import.spec.ts share the isolated signed fixture.
 // Invariants: I01/I02/I05/I06/I09/I11/I18; pure archive import, no provider or production acceptance.
 package foundation_test
 
@@ -497,7 +497,7 @@ func TestMiuiDropWrapper(t *testing.T) {
 
 func miuiSpec(t *testing.T, ctx context.Context, root, evidence, origin, control, key, store string) {
 	config := filepath.Join(evidence, "playwright.miui.config.ts")
-	body := fmt.Sprintf(`import {defineConfig} from "@playwright/test";export default defineConfig({testDir:%q,testMatch:"import-wizard.spec.ts",workers:1,retries:0,timeout:180000,expect:{timeout:15000},reporter:[["list"]],outputDir:%q,use:{baseURL:%q,headless:true,ignoreHTTPSErrors:true,trace:"retain-on-failure",screenshot:"only-on-failure"}});`, filepath.Join(root, "tests/admin"), filepath.Join(evidence, "results"), origin)
+	body := fmt.Sprintf(`import {defineConfig} from "@playwright/test";export default defineConfig({testDir:%q,testMatch:["import-wizard.spec.ts","parity-customer-import.spec.ts"],workers:1,retries:0,timeout:180000,expect:{timeout:15000},reporter:[["list"]],outputDir:%q,use:{baseURL:%q,headless:true,ignoreHTTPSErrors:true,trace:"retain-on-failure",screenshot:"only-on-failure"}});`, filepath.Join(root, "tests/admin"), filepath.Join(evidence, "results"), origin)
 	if e := os.WriteFile(config, []byte(body), 0600); e != nil {
 		t.Fatal(e)
 	}

@@ -9,12 +9,73 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"strings"
 	"testing"
 
 	"livecommerce/internal/httperror"
 	"livecommerce/internal/migrationimport"
 )
+
+// §4.1/6.1: one projection serves preview 200 and fresh stale 409; neither capability may alter its domain input.
+func TestImportPreviewResponseCapabilityAndCopy(t *testing.T) {
+	preview := migrationimport.CustomerPreview{Rows: []migrationimport.PreviewRow{
+		{Row: 1, Outcome: "failed", Code: "required", ErrorField: "external_id"},
+		{Row: 2, Outcome: "failed", Code: "required", ErrorField: "name", ConsentIgnored: true},
+		{Row: 3, Outcome: "created", ErrorField: "external_id"},
+		{Row: 4, Outcome: "failed", Code: "invalid_name", ErrorField: "name"},
+		{Row: 5, Outcome: "failed", Code: "required", ErrorField: "synthetic-header"},
+		{Row: 6, Outcome: "failed", Code: "required"}, // legacy absence remains valid
+	}}
+	before, err := json.Marshal(preview)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, enabled := range []bool{false, true} {
+		got := importPreviewResponse(preview, enabled).(migrationimport.CustomerPreview)
+		wire, err := json.Marshal(got)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var raw struct {
+			Rows []map[string]json.RawMessage `json:"rows"`
+		}
+		if err := json.Unmarshal(wire, &raw); err != nil {
+			t.Fatal(err)
+		}
+		for i, row := range raw.Rows {
+			want := ""
+			if enabled && i < 2 {
+				want = []string{`"external_id"`, `"name"`}[i]
+			}
+			if string(row["error_field"]) != want {
+				t.Errorf("enabled=%v row=%d error_field=%s want=%s", enabled, i+1, row["error_field"], want)
+			}
+		}
+		if !enabled {
+			row, _ := json.Marshal(got.Rows[0])
+			if string(row) != `{"row":1,"external_id":"","outcome":"failed","code":"required"}` {
+				t.Errorf("legacy row shape changed: %s", row)
+			}
+		}
+		got.Rows[0].Code = "synthetic-mutation"
+		after, err := json.Marshal(preview)
+		if err != nil || string(after) != string(before) {
+			t.Fatalf("projection mutated input: enabled=%v err=%v", enabled, err)
+		}
+	}
+	for _, result := range []any{migrationimport.CustomerCommitResult{BatchID: "synthetic-batch"}, migrationimport.OrderPreview{}} {
+		if !reflect.DeepEqual(importPreviewResponse(result, true), result) {
+			t.Fatalf("non-customer-preview changed: %T", result)
+		}
+	}
+	for _, rows := range [][]migrationimport.PreviewRow{nil, {}} {
+		input := migrationimport.CustomerPreview{Rows: rows}
+		if !reflect.DeepEqual(importPreviewResponse(input, false), input) {
+			t.Fatal("nil/empty rows shape changed")
+		}
+	}
+}
 
 func TestCustomerImportRoutesTransportRules(t *testing.T) {
 	h := NewHandler(nil) // the whole router: route conflicts panic at registration
@@ -94,6 +155,93 @@ func TestCustomerImportRoutesTransportRules(t *testing.T) {
 			}
 			if tc.status != 405 && w.Header().Get("Cache-Control") != "private, no-store" {
 				t.Fatalf("Cache-Control=%q", w.Header().Get("Cache-Control"))
+			}
+		})
+	}
+}
+
+// A canonical synthetic bearer passes the outer route guard before query
+// validation. Valid queries then reach the nil-pool scope refusal (401), while
+// invalid queries return 422. Without a bearer the outer guard always returns 401.
+func TestCustomerImportRowErrorsCapabilityTransport(t *testing.T) {
+	h := NewHandler(nil)
+	base := "/v1/admin/stores/" + custStore + "/imports"
+	for _, endpoint := range []string{"/customers/preview", "/customers/commit?expected_apply_rows=1"} {
+		sep := "?"
+		if strings.Contains(endpoint, "?") {
+			sep = "&"
+		}
+		for _, query := range []string{"row_errors=field-v1", "row_errors=unknown"} {
+			t.Run("no bearer"+endpoint+"/"+query, func(t *testing.T) {
+				r := httptest.NewRequest("POST", base+endpoint+sep+query, strings.NewReader("customer_id,name\nFIELD-1,Synthetic\n"))
+				r.Header.Set("Content-Type", "text/csv")
+				w := httptest.NewRecorder()
+				h.ServeHTTP(w, r)
+				var envelope httperror.Envelope
+				if err := json.Unmarshal(w.Body.Bytes(), &envelope); err != nil || w.Code != 401 || envelope.Code != "unauthorized" {
+					t.Fatalf("missing bearer: status=%d code=%q err=%v", w.Code, envelope.Code, err)
+				}
+				if w.Header().Get("Cache-Control") != "private, no-store" {
+					t.Fatal("private cache policy changed")
+				}
+			})
+		}
+		for _, tc := range []struct {
+			query  string
+			status int
+		}{
+			{"row_errors=field-v1", 401},
+			{"row%5Ferrors=field-v1", 401},
+			{"row_errors=%66ield-v1", 401},
+			{"row_errors=", 422},
+			{"row_errors=unknown", 422},
+			{"row_errors=FIELD-V1", 422},
+			{"row_errors=%20field-v1", 422},
+			{"row_errors=field-v1%20", 422},
+			{"Row_errors=field-v1", 422},
+			{"row_errors%5B%5D=field-v1", 422},
+			{"row_errors=field-v1,other", 422},
+			{"row_errors=field-v1&row_errors=field-v1", 422},
+			{"row_errors=field-v1&row%5Ferrors=field-v1", 422},
+			{"row_errors=field-v1&row_errors=other", 422},
+			{"row_errors=%ZZ", 422},
+			{"row_errors=field-v1&x=1", 422},
+			{"row_errors=" + strings.Repeat("a", 4097), 422},
+		} {
+			t.Run(endpoint+"/"+tc.query, func(t *testing.T) {
+				r := httptest.NewRequest("POST", base+endpoint+sep+tc.query, strings.NewReader("customer_id,name\nFIELD-1,Synthetic\n"))
+				r.Header.Set("Authorization", custBearer)
+				r.Header.Set("Content-Type", "text/csv")
+				w := httptest.NewRecorder()
+				h.ServeHTTP(w, r)
+				var envelope httperror.Envelope
+				wantCode := "invalid_request"
+				if tc.status == 401 {
+					wantCode = "unauthorized"
+				}
+				if err := json.Unmarshal(w.Body.Bytes(), &envelope); err != nil || w.Code != tc.status || envelope.Code != wantCode {
+					t.Fatalf("status=%d code=%q want=%d/%s err=%v", w.Code, envelope.Code, tc.status, wantCode, err)
+				}
+				if w.Header().Get("Cache-Control") != "private, no-store" {
+					t.Fatal("private cache policy changed")
+				}
+			})
+		}
+	}
+	for _, endpoint := range []string{"/orders/preview?", "/orders/commit?expected_apply_rows=1&", "/" + custID + "/results.csv?"} {
+		t.Run("unsupported"+endpoint, func(t *testing.T) {
+			method := "POST"
+			if strings.Contains(endpoint, "results.csv") {
+				method = "GET"
+			}
+			r := httptest.NewRequest(method, base+endpoint+"row_errors=field-v1", strings.NewReader("order_id,name\nFIELD-1,Synthetic\n"))
+			r.Header.Set("Authorization", custBearer)
+			r.Header.Set("Content-Type", "text/csv")
+			w := httptest.NewRecorder()
+			h.ServeHTTP(w, r)
+			var envelope httperror.Envelope
+			if err := json.Unmarshal(w.Body.Bytes(), &envelope); err != nil || w.Code != 422 || envelope.Code != "invalid_request" {
+				t.Fatalf("unsupported capability: %d %s", w.Code, w.Body.String())
 			}
 		})
 	}
