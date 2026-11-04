@@ -33,12 +33,14 @@ import (
 	"livecommerce/internal/inbox"
 	"livecommerce/internal/merchantorders"
 	"livecommerce/internal/platform"
+	"livecommerce/internal/pricing"
 	"livecommerce/internal/storefront"
 )
 
 const (
-	forBuyerOperation = "merchanttools.order.for_buyer"
-	maxForBuyerBundle = 5
+	forBuyerOperation      = "merchanttools.order.for_buyer"
+	forBuyerBeginOperation = "merchanttools.order.for_buyer.begin"
+	maxForBuyerBundle      = 5
 	// maxGrantAuditBytes keeps one claims.merchant_origin_granted detail under command.AuditDetails' 1024-byte cap.
 	maxGrantAuditBytes = 900
 	// maxGrantAuditLines is how many lines (full offer id, SKU id, quantity, unit price actually charged) one audit event lists; line_count is the total.
@@ -52,15 +54,16 @@ type ForBuyerTarget struct {
 	ConversationID *string  `json:"conversation_id"`
 }
 
-// ForBuyerInput is the exact POST orders/for-buyer body. There is no price, discount or tenant field.
+// ForBuyerInput is the exact POST orders/for-buyer body. There is no item-price or tenant field; the optional discount is a named quote adjustment.
 type ForBuyerInput struct {
-	Items           []ManualItem   `json:"items"`
-	Customer        ManualCustomer `json:"customer"`
-	Delivery        ManualDelivery `json:"delivery"`
-	PaymentMode     string         `json:"payment_mode"`
-	Locale          string         `json:"locale"`
-	For             ForBuyerTarget `json:"for"`
-	SendPaymentLink bool           `json:"send_payment_link"`
+	Items           []ManualItem            `json:"items"`
+	Customer        ManualCustomer          `json:"customer"`
+	Delivery        ManualDelivery          `json:"delivery"`
+	PaymentMode     string                  `json:"payment_mode"`
+	Locale          string                  `json:"locale"`
+	Discount        *pricing.ManualDiscount `json:"discount,omitempty"`
+	For             ForBuyerTarget          `json:"for"`
+	SendPaymentLink bool                    `json:"send_payment_link"`
 }
 
 // ForBuyerSend is the DM outcome: {operation_id, state:"queued"} when planned, else {state:"not_sent", reason} (the UI offers copy-link).
@@ -159,7 +162,7 @@ func (f *ForBuyer) Place(ctx context.Context, token, storeID, key string, in For
 		return ForBuyerResult{}, false, ErrManualDisabled
 	}
 	m := f.manual
-	manualIn, err := ValidateManual(ManualInput{Items: in.Items, Customer: in.Customer, Delivery: in.Delivery, PaymentMode: in.PaymentMode, Locale: in.Locale})
+	manualIn, err := ValidateManual(ManualInput{Items: in.Items, Customer: in.Customer, Delivery: in.Delivery, PaymentMode: in.PaymentMode, Locale: in.Locale, Discount: in.Discount})
 	if err != nil {
 		return ForBuyerResult{}, false, err
 	}
@@ -258,6 +261,15 @@ func (f *ForBuyer) placeOrder(ctx context.Context, token, storeID, key string, m
 	var lines []claims.ForBuyerLine
 	err = platform.WithScope(ctx, m.pool, token, storeID, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
 		var inner error
+		// I02: even an empty bundle set needs a durable full-request binding before
+		// Place can commit independently; a failed begin rolls this receipt back.
+		var binding struct{}
+		if inner = command.Run(ctx, tx, scope, forBuyerBeginOperation, key, request, &binding, func() error { return nil }); inner != nil {
+			if errors.Is(inner, command.ErrConflict) {
+				return &claims.ForBuyerError{Status: http.StatusConflict, Code: "idempotency_conflict"}
+			}
+			return inner
+		}
 		// Calls claims.for_buyer_begin (0129; live-console-v1 §5.1 3a+3b): reservation rows, fail-closed buyer comparison, grants.
 		if begun, inner = claims.BeginForBuyer(ctx, tx, keyHash[:], requestHash[:], target.ConversationID, target.BundleIDs, buyerOwner); inner != nil {
 			return inner

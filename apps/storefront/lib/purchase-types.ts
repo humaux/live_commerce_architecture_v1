@@ -102,6 +102,7 @@ export type Quote = {
   };
   // storefront-v2 §F: present only when a discount code applied (the server quote already carries its discount_minor).
   promotion?: QuotePromotion;
+  adjustments?: { kind: "manual_discount"; currency: string; name: string; amount_minor: number }[];
   // OC-09b: the server's cash due on delivery for this quote (total + COD surcharge); absent when COD is not selectable. Shown verbatim.
   cod_due_minor?: number;
 };
@@ -228,7 +229,7 @@ export type Order = {
   cvs_shipment?: BuyerCvsShipment | null;
   hold_expires_at?: string;
   snapshot: {
-    quote: Pick<Quote, "currency" | "lines" | "amount" | "promotion">;
+    quote: Pick<Quote, "currency" | "lines" | "amount" | "promotion" | "adjustments">;
     destination: DestinationDetails;
     service: {
       code: string;

@@ -302,6 +302,11 @@ jobs:
             [[ "$kv" =~ ^LC_[A-Z0-9_]+=[A-Za-z0-9._:-]*$ ]] || { echo "refusing extra_env entry: $kv" >&2; exit 2; }
             export "$kv"; echo "extra_env: ${kv%%=*} set"
           done
+          # One closed manual-discount fault; normal gates retain their commands and exit.
+          if [[ -n "${LC_MANUAL_DISCOUNT_MUTATION:-}" ]]; then
+            [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]] || exit 2
+            python3 tests/foundation/manual_discount_mutation.py
+          fi
           # Explicit dispatch only: inject a real source fault before native PG
           # setup. The ordinary gate keeps its verdict and must go red.
           if [[ -n "${LC_OA_MUTATION:-}" ]]; then

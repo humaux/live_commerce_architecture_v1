@@ -132,7 +132,8 @@ type Detail struct {
 	Totals      Totals      `json:"totals"`
 	Destination Destination `json:"destination"`
 	// Shipment is the current SHIPPED head (manual-fulfilment-v1 §4.1); null otherwise.
-	Shipment *Shipment `json:"shipment"`
+	Shipment    *Shipment            `json:"shipment"`
+	Adjustments []pricing.Adjustment `json:"adjustments,omitempty"`
 }
 
 func List(ctx context.Context, tx pgx.Tx, scope platform.Scope, token string, in ListRequest) (pagination.Page[Summary], error) {
@@ -214,6 +215,24 @@ func Get(ctx context.Context, tx pgx.Tx, scope platform.Scope, token, orderID st
 		return Detail{}, err
 	}
 	item.Summary = one[0]
+	// Only merchant-created orders can carry the named manual adjustment.
+	// Storefront orders retain their existing projection and authorization reads.
+	if item.Source != "merchant_manual" {
+		return item, nil
+	}
+	hash := sha256.Sum256([]byte(token))
+	var adjustments []byte
+	if err = tx.QueryRow(ctx, `SELECT identity.read_order_adjustments($1,$2::uuid,$3::uuid)`, hash[:], scope.StoreID, orderID).Scan(&adjustments); err != nil {
+		return Detail{}, mapError(err)
+	}
+	if json.Unmarshal(adjustments, &item.Adjustments) != nil || len(item.Adjustments) > 1 {
+		return Detail{}, ErrUnavailable
+	}
+	for _, d := range item.Adjustments {
+		if d.Kind != "manual_discount" || d.Currency != item.Currency || !pricing.ValidManualDiscount(d.ManualDiscount) || d.AmountMinor != item.Totals.DiscountMinor {
+			return Detail{}, ErrUnavailable
+		}
+	}
 	return item, nil
 }
 
