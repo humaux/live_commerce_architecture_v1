@@ -11,6 +11,7 @@ import { shopCopy } from "../lib/shop-copy";
 import ListControls from "./ListControls";
 import ProductGrid from "./ProductGrid";
 import CollectionChips from "./CollectionChips";
+import styles from "./browse/browse.module.css";
 
 export default function ListBody({
   locale,
@@ -19,6 +20,7 @@ export default function ListBody({
   params,
   loaded,
   searching = false,
+  heading,
 }: {
   locale: Locale;
   preview: string | null;
@@ -26,6 +28,8 @@ export default function ListBody({
   params: SearchParams;
   loaded: Loaded;
   searching?: boolean;
+  // Signed collection count heading (Figma 6:19933), shown between the controls and the grid.
+  heading?: string;
 }) {
   const copy = shopCopy[locale];
   const list = must(loaded.list);
@@ -44,6 +48,7 @@ export default function ListBody({
       {showControls && <ListControls locale={locale} action={path} hidden={hidden} values={loaded.form} currency={list.store.currency} filtered={loaded.filtered} clearHref={clearHref} />}
       {list.products.length > 0 ? (
         <>
+          {heading && <h2 className={styles.count}>{heading}</h2>}
           <ProductGrid locale={locale} initial={list.products} next={list.next} currency={list.store.currency} query={clientQuery(loaded.query)} preview={preview} />
           {list.next && (
             <noscript>

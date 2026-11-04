@@ -1,0 +1,30 @@
+/* Purpose: signed browse layout pieces (Figma 4:9192/4:9296 home, 6:19933/6:19984 collection): welcome title, search field,
+   inset hero card, chip band, count heading, bottom "view all products" button.
+   Depends on: shop.css tokens (--sf-gutter, --sf-ink, --sf-line, --sf-mute) and globals.css --ink; .sf-hero/.sf-chips from shop.css.
+   Used by: components/HomeSections.tsx, components/browse/BrowseSearch.tsx, components/CollectionChips.tsx, components/ListBody.tsx,
+   app/[locale]/collections/[slug]/page.tsx. Invariant: no merchant colour is overridden except the hero card surface. */
+.top { max-width: 1280px; margin: 0 auto; padding: 32px var(--sf-gutter) 0; }
+.welcome { font-size: 28px; line-height: 1.3; font-weight: 700; color: var(--sf-ink); margin-bottom: 24px; text-wrap: balance; }
+
+.search { display: grid; gap: 8px; margin-bottom: 24px; }
+.search label { font-size: 14px; font-weight: 600; color: var(--sf-ink); }
+.search input { width: 100%; min-height: 44px; padding: 0 12px; border: 1px solid var(--sf-line); border-radius: 6px; background: #fff; font-size: 16px; color: var(--sf-ink); }
+.search input::placeholder { color: var(--sf-mute); }
+
+/* The published hero becomes an inset card (signed frame), keeping the merchant photo when there is one. */
+.heroWrap { max-width: 1280px; margin: 0 auto; padding: 0 var(--sf-gutter); }
+.heroWrap > :global(.sf-hero) { min-height: 216px; border-radius: 12px; background: var(--ink, #142942); color: #fff; }
+.heroWrap :global(.sf-hero__copy) { padding: 32px 28px; gap: 16px; }
+.heroWrap :global(.sf-hero__copy) h1, .heroWrap :global(.sf-hero__copy) h2 { font-size: clamp(28px, 6vw, 40px); font-weight: 700; }
+.heroWrap :global(.sf-hero__copy) p { font-size: 16px; }
+
+.band { max-width: 1280px; margin: 0 auto; padding: 0 var(--sf-gutter); }
+.chips :global(a[data-on]) { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+
+.count { font-size: 20px; line-height: 1.3; font-weight: 700; margin: 8px 0 16px; }
+.more { margin: 24px 0 8px; }
+@media (max-width: 719px) {
+  .top { padding-top: 24px; }
+  .heroWrap :global(.sf-hero__copy) { padding: 24px 28px; }
+  .more :global(.sf-btn) { width: 100%; }
+}
