@@ -1,0 +1,150 @@
+gate-browser-live-console/playwright/run.XVuydJiH/live-console-3292982055/results/live-console-LC-U1-MOCK-contract-real-clicks-en-1586/error-context.md
+# Test info
+
+- Name: live-console.spec.ts >> LC-U1 MOCK contract real clicks en-1586
+- Location: tests/admin/live-console.spec.ts:301:3
+
+# Error details
+
+```
+Test timeout of 110000ms exceeded.
+```
+
+```
+Error: locator.click: Test timeout of 110000ms exceeded.
+Call log:
+  - waiting for locator('[data-live-tools]:not([open]) > summary').nth(1)
+
+```
+
+
+gate-browser-live-console/playwright/run.XVuydJiH/live-console-3292982055/results/live-console-LC-U1-MOCK-contract-real-clicks-en-390/error-context.md
+# Test info
+
+- Name: live-console.spec.ts >> LC-U1 MOCK contract real clicks en-390
+- Location: tests/admin/live-console.spec.ts:301:3
+
+# Error details
+
+```
+Test timeout of 110000ms exceeded.
+```
+
+```
+Error: locator.click: Test timeout of 110000ms exceeded.
+Call log:
+  - waiting for locator('[data-live-tools]:not([open]) > summary').nth(1)
+
+```
+
+
+gate-browser-live-console/playwright/run.XVuydJiH/live-console-3292982055/results/live-console-LC-U1-MOCK-contract-real-clicks-zh-CN-1586/error-context.md
+# Test info
+
+- Name: live-console.spec.ts >> LC-U1 MOCK contract real clicks zh-CN-1586
+- Location: tests/admin/live-console.spec.ts:301:3
+
+# Error details
+
+```
+Test timeout of 110000ms exceeded.
+```
+
+```
+Error: locator.click: Test timeout of 110000ms exceeded.
+Call log:
+  - waiting for locator('[data-live-tools]:not([open]) > summary').nth(1)
+
+```
+
+
+gate-browser-live-console/playwright/run.XVuydJiH/live-console-3292982055/results/live-console-LC-U1-MOCK-contract-real-clicks-zh-TW-1586/error-context.md
+# Test info
+
+- Name: live-console.spec.ts >> LC-U1 MOCK contract real clicks zh-TW-1586
+- Location: tests/admin/live-console.spec.ts:301:3
+
+# Error details
+
+```
+Test timeout of 110000ms exceeded.
+```
+
+```
+Error: locator.click: Test timeout of 110000ms exceeded.
+Call log:
+  - waiting for locator('[data-live-tools]:not([open]) > summary').nth(1)
+
+```
+
+
+gate-browser-live-console/playwright/run.XVuydJiH/live-console-3292982055/results/live-console-LC-U1-MOCK-contract-real-clicks-zh-TW-390/error-context.md
+# Test info
+
+- Name: live-console.spec.ts >> LC-U1 MOCK contract real clicks zh-TW-390
+- Location: tests/admin/live-console.spec.ts:301:3
+
+# Error details
+
+```
+Test timeout of 110000ms exceeded.
+```
+
+```
+Error: locator.click: Test timeout of 110000ms exceeded.
+Call log:
+  - waiting for locator('[data-live-tools]:not([open]) > summary').nth(1)
+
+```
+
+
+{"path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-0e9f70141aef6876257e.json", "status": "failed", "errors": [{"locations": ["live-settings.spec.ts:170:113"]}], "last_step": [{"control": "blocklist-remove/confirm", "operation": "click", "expected": "keyed bodyless delete persists", "actual": "observed expected result", "result": "PASS"}]}
+{"path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-26833dde50dfa41c9c1d.json", "status": "failed", "errors": [{"locations": ["live-settings.spec.ts:421:202", "live-settings.spec.ts:56:3", "live-settings.spec.ts:420:35"]}], "last_step": [{"control": "comment-select-700_801", "operation": "click", "expected": "selected row shows buyer panel without claiming unsent reply delivered", "actual": "pending", "result": "FAIL"}]}
+{"path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-2bcbc818559511cf08d7.json", "status": "failed", "errors": [{"locations": ["live-settings.spec.ts:421:202", "live-settings.spec.ts:56:3", "live-settings.spec.ts:420:35"]}], "last_step": [{"control": "comment-select-700_801", "operation": "click", "expected": "selected row shows buyer panel without claiming unsent reply delivered", "actual": "pending", "result": "FAIL"}]}
+{"path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-5e41410600f360fc3c9e.json", "status": "failed", "errors": [{"locations": ["live-settings.spec.ts:170:113"]}], "last_step": [{"control": "blocklist-remove/confirm", "operation": "click", "expected": "keyed bodyless delete persists", "actual": "observed expected result", "result": "PASS"}]}
+{"path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-9bb0f3355a0fba72faf6.json", "status": "failed", "errors": [{"locations": ["live-settings.spec.ts:170:113"]}], "last_step": [{"control": "blocklist-remove/confirm", "operation": "click", "expected": "keyed bodyless delete persists", "actual": "observed expected result", "result": "PASS"}]}
+{"path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-a73559725de640e92199.json", "status": "failed", "errors": [{"locations": ["live-settings.spec.ts:421:202", "live-settings.spec.ts:56:3", "live-settings.spec.ts:420:35"]}], "last_step": [{"control": "comment-select-700_801", "operation": "click", "expected": "selected row shows buyer panel without claiming unsent reply delivered", "actual": "pending", "result": "FAIL"}]}
+{"path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-b01536bd95164c1e8def.json", "status": "failed", "errors": [{"locations": ["live-settings.spec.ts:170:113"]}], "last_step": [{"control": "blocklist-remove/confirm", "operation": "click", "expected": "keyed bodyless delete persists", "actual": "observed expected result", "result": "PASS"}]}
+{"path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-b718a163b1d1750f50c2.json", "status": "failed", "errors": [{"locations": ["live-settings.spec.ts:170:113"]}], "last_step": [{"control": "blocklist-remove/confirm", "operation": "click", "expected": "keyed bodyless delete persists", "actual": "observed expected result", "result": "PASS"}]}
+{"path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-c0816670e00920ce6bd7.json", "status": "failed", "errors": [{"locations": ["live-settings.spec.ts:421:202", "live-settings.spec.ts:56:3", "live-settings.spec.ts:420:35"]}], "last_step": [{"control": "comment-select-700_801", "operation": "click", "expected": "selected row shows buyer panel without claiming unsent reply delivered", "actual": "pending", "result": "FAIL"}]}
+{"path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-e4dc7bada60f97f2d2c4.json", "status": "failed", "errors": [{"locations": ["live-settings.spec.ts:421:202", "live-settings.spec.ts:56:3", "live-settings.spec.ts:420:35"]}], "last_step": [{"control": "comment-select-700_801", "operation": "click", "expected": "selected row shows buyer panel without claiming unsent reply delivered", "actual": "pending", "result": "FAIL"}]}
+{"path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-f2d46312747ef5ac937c.json", "status": "failed", "errors": [{"locations": ["live-settings.spec.ts:170:113"]}], "last_step": [{"control": "blocklist-remove/confirm", "operation": "click", "expected": "keyed bodyless delete persists", "actual": "observed expected result", "result": "PASS"}]}
+{"path": "gate-browser-live-settings/playwright/run.h3cSwoOZ/live-settings/20261030T143026.561815156Z/click-ledger-9469f302ec04ac4bc9aa-fc8f4f9f76569bb163a0.json", "status": "failed", "errors": [{"locations": ["live-settings.spec.ts:421:202", "live-settings.spec.ts:56:3", "live-settings.spec.ts:420:35"]}], "last_step": [{"control": "comment-select-700_801", "operation": "click", "expected": "selected row shows buyer panel without claiming unsent reply delivered", "actual": "pending", "result": "FAIL"}]}
+foundation.log: foundation	UNKNOWN STEP	2026-10-30T13:57:21.8417782Z test at tests/ui/ds-hex-ratchet.test.mjs:87:1
+foundation.log: foundation	UNKNOWN STEP	2026-10-30T13:57:21.8420702Z   +   'total hex colours 410 > baseline 386',
+foundation.log: foundation	UNKNOWN STEP	2026-10-30T13:57:21.8421711Z   +   'apps/admin/components/studio/live-console.css: 24 hex colours > baseline 0 (use a --ds-* token from packages/ui/src/tokens.css)'
+foundation.log: foundation	UNKNOWN STEP	2026-10-30T13:57:21.8429717Z     actual: [ 'total hex colours 410 > baseline 386', 'apps/admin/components/studio/live-console.css: 24 hex colours > baseline 0 (use a --ds-* token from packages/ui/src/tokens.css)' ],
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:30:18.9795740Z test at tests/ui/ds-hex-ratchet.test.mjs:87:1
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:30:18.9800096Z   +   'total hex colours 410 > baseline 386',
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:30:18.9801682Z   +   'apps/admin/components/studio/live-console.css: 24 hex colours > baseline 0 (use a --ds-* token from packages/ui/src/tokens.css)'
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:30:18.9813204Z     actual: [ 'total hex colours 410 > baseline 386', 'apps/admin/components/studio/live-console.css: 24 hex colours > baseline 0 (use a --ds-* token from packages/ui/src/tokens.css)' ],
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:30:18.9903313Z bundle member --browser-ui-gallery: failure
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:30:19.0410699Z bundle member --browser-ui-gallery: receipt receipt-browser-ui-gallery.json is not PASS
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:33:01.9368004Z     browser_live_settings_test.go:222: 12 failed
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:33:01.9370575Z         failed live-settings.spec.ts:101:3
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:33:01.9371812Z         failed live-settings.spec.ts:101:3
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:33:01.9372899Z         failed live-settings.spec.ts:101:3
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:33:01.9373947Z         failed live-settings.spec.ts:101:3
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:33:01.9374987Z         failed live-settings.spec.ts:101:3
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:33:01.9376086Z         failed live-settings.spec.ts:101:3
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:33:01.9377038Z         failed live-settings.spec.ts:406:3
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:33:01.9377957Z         failed live-settings.spec.ts:406:3
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:33:01.9379022Z         failed live-settings.spec.ts:406:3
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:33:01.9379843Z         failed live-settings.spec.ts:406:3
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:33:01.9380657Z         failed live-settings.spec.ts:406:3
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:33:01.9381421Z         failed live-settings.spec.ts:406:3
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:33:01.9758010Z --- FAIL: TestBrowserLiveSettingsUIRealChain (158.10s)
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:33:02.2228789Z bundle member --browser-live-settings: failure
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:33:02.2772782Z bundle member --browser-live-settings: receipt receipt-browser-live-settings.json is not PASS
+bundle01.log: gate (bundle:01)	UNKNOWN STEP	2026-10-30T14:33:52.9102780Z --- FAIL: TestBrowserLiveSettingsUIRealChain (158.10s)
+receipts-filtered.log
+receipts	UNKNOWN STEP	2026-10-30T15:08:36.3045655Z   receipt --browser-live-console: FAIL test_count=1 run=41065893191/1 sha=4ab11bbbb9a1149f1861be4256ce03952dcee10d
+receipts	UNKNOWN STEP	2026-10-30T15:08:36.3047023Z   receipt --browser-live-settings: FAIL test_count=71 run=41065893191/1 sha=4ab11bbbb9a1149f1861be4256ce03952dcee10d
+receipts	UNKNOWN STEP	2026-10-30T15:08:36.3085947Z   receipt --browser-ui-gallery: FAIL test_count=41 run=41065893191/1 sha=4ab11bbbb9a1149f1861be4256ce03952dcee10d
+receipts	UNKNOWN STEP	2026-10-30T15:08:36.3121819Z ##[error]Process completed with exit code 1.
+
+required-filtered.log
+required	UNKNOWN STEP	2026-10-30T15:09:00.0746083Z   AGG: success
+required	UNKNOWN STEP	2026-10-30T15:09:00.0747865Z   RECEIPTS: failure
+required	UNKNOWN STEP	2026-10-30T15:09:00.0935518Z plan=success build=success (expected true) gate=failure aggregate=success (expected true) deploy=skipped (expected false) receipts=failure
+

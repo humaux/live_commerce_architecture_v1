@@ -65,7 +65,7 @@ function fixture() {
     mounted = { get view() { return view; }, render, stop: () => { alive = false; for (const e of effects) e?.cleanup?.(); } };
     return mounted;
   }
-  return { hooks, studio, load, document, window, saved, calls, mount, stop: () => mounted?.stop(), setExecute: (fn: typeof execute) => { execute = fn; } };
+  return { hooks, studio, load, document, window, saved, calls, mount, stop: () => mounted?.stop(), setBoundary: (fn: () => Promise<string>) => { settings.sessionBoundary = fn; }, setExecute: (fn: typeof execute) => { execute = fn; } };
 }
 
 test("A1 failures back off 3/6/12/24/30 seconds and success resets to five seconds", async (t) => {
@@ -101,6 +101,138 @@ test("secondary reads are mount/refresh only, independent from A1 and non-fatal"
   h.view.refresh(); await flush(); assert.equal(reads, 2);
 });
 
+test("explicit same-scope refresh keeps the owner mounted while its verified read is pending", async (t) => {
+  const f = fixture(); t.after(f.stop);
+  const original = { title: "PRIVATE" }; let reads = 0, finish!: (value: unknown) => void, owners = 0, present = false;
+  const h = f.mount(() => {
+    const view = f.hooks.useLiveRead(scope, true, async () => ++reads === 1 ? original : new Promise(resolve => { finish = resolve; }), true);
+    if (view.data && !present) owners++;
+    present = !!view.data;
+    return view;
+  });
+  await flush(); assert.equal(h.view.data, original); assert.equal(owners, 1);
+  h.view.refresh(); await flush(); assert.equal(reads, 2); assert.equal(h.view.data, original);
+  finish({ title: "UPDATED" }); await flush(); assert.equal(h.view.data.title, "UPDATED"); assert.equal(owners, 1);
+});
+
+test("refresh cannot retain across scope, enabled, polling policy or CSRF changes", async () => {
+  for (const change of ["scope", "enabled", "poll", "csrf"] as const) {
+    const f = fixture(); let activeScope = scope, enabled = true, poll = true, reads = 0;
+    const h = f.mount(() => f.hooks.useLiveRead(activeScope, enabled, async () => ++reads === 1 ? { title: "PRIVATE" } : new Promise(() => {}), poll));
+    try {
+      await flush(); assert.equal(h.view.data.title, "PRIVATE");
+      if (change === "scope") activeScope += ":other";
+      if (change === "enabled") enabled = false;
+      if (change === "poll") poll = false;
+      if (change === "csrf") f.document.cookie = "different-csrf";
+      h.render();
+      if (change !== "poll") assert.equal(h.view.data, null, `${change} conceals on the changed render`);
+      await flush(); h.view.refresh(); await flush(); assert.equal(h.view.data, null, change);
+    } finally { f.stop(); }
+  }
+});
+
+test("a changed pre-read session boundary conceals the old identity before the new read", async (t) => {
+  const f = fixture(); t.after(f.stop); let reads = 0, finish!: (value: unknown) => void;
+  const h = f.mount(() => f.hooks.useLiveRead(scope, true, async () => {
+    if (++reads === 1) return { title: "OLD IDENTITY" };
+    return new Promise(resolve => { finish = resolve; });
+  }));
+  await flush(); assert.equal(h.view.data.title, "OLD IDENTITY");
+  f.setBoundary(async () => "session-two"); h.view.refresh(); await flush();
+  assert.equal(reads, 2); assert.equal(h.view.data, null); assert.equal(h.view.boundary, "");
+  finish({ title: "NEW IDENTITY" }); await flush(); assert.equal(h.view.data.title, "NEW IDENTITY"); assert.equal(h.view.boundary, "session-two");
+});
+
+test("refresh keeps unavailable semantics but forbidden and session changes stay fail-closed", async () => {
+  for (const refusal of ["unavailable", "forbidden", "session"] as const) {
+    const f = fixture(); let reads = 0, finish!: (value: unknown) => void;
+    const original = { title: "PRIVATE" };
+    const h = f.mount(() => f.hooks.useLiveRead(scope, true, async () => {
+      if (++reads === 1) return original;
+      if (refusal !== "session") throw new f.studio.StudioError(refusal);
+      return new Promise(resolve => { finish = resolve; });
+    }, true));
+    try {
+      await flush(); h.view.refresh(); await flush();
+      if (refusal === "session") { f.setBoundary(async () => "session-two"); finish({ title: "STALE" }); await flush(); }
+      assert.equal(h.view.error, refusal === "session" ? "signed-out" : refusal);
+      assert.equal(h.view.data, refusal === "unavailable" ? original : null);
+      if (refusal !== "unavailable") { h.view.refresh(); await flush(); assert.equal(h.view.data, null); assert.equal(reads, 2); }
+    } finally { f.stop(); }
+  }
+});
+
+for (const [code, status] of [["not-found", 404], ["unavailable", 503]] as const) test(`explicit retained refresh ${status} ${code} conceals only a terminal snapshot`, async (t) => {
+  const f = fixture(); t.after(f.stop);
+  const original = { title: "PRIVATE" }; let reads = 0, rejectRead!: (error: unknown) => void;
+  const h = f.mount(() => f.hooks.useLiveRead(scope, true, async () => {
+    if (++reads === 1) return original;
+    return new Promise((_, reject) => { rejectRead = reject; });
+  }));
+  await flush(); assert.equal(h.view.data, original); assert.equal(h.view.boundary, "session-one");
+  h.view.refresh(); await flush();
+  assert.equal(reads, 2); assert.equal(h.view.data, original); assert.equal(h.view.boundary, "session-one");
+  rejectRead(new f.studio.StudioError(code, "", 0, status)); await flush();
+  assert.equal(h.view.error, code);
+  assert.equal(h.view.data, code === "not-found" ? null : original, `${status} snapshot policy`);
+  assert.equal(h.view.boundary, code === "not-found" ? "" : "session-one", `${status} write boundary policy`);
+});
+
+test("an older retained refresh completion cannot revive a snapshot concealed by 404", async (t) => {
+  const f = fixture(); t.after(f.stop);
+  let reads = 0, finishOld!: (value: unknown) => void, rejectCurrent!: (error: unknown) => void;
+  const h = f.mount(() => f.hooks.useLiveRead(scope, true, async () => {
+    if (++reads === 1) return { title: "PRIVATE" };
+    if (reads === 2) return new Promise(resolve => { finishOld = resolve; });
+    return new Promise((_, reject) => { rejectCurrent = reject; });
+  }));
+  await flush(); assert.equal(h.view.data.title, "PRIVATE"); assert.equal(h.view.boundary, "session-one");
+  h.view.refresh(); await flush(); assert.equal(reads, 2); assert.equal(h.view.data.title, "PRIVATE");
+  h.view.refresh(); await flush(); assert.equal(reads, 3); assert.equal(h.view.data.title, "PRIVATE");
+  rejectCurrent(new f.studio.StudioError("not-found", "", 0, 404)); await flush();
+  assert.equal(h.view.error, "not-found"); assert.equal(h.view.data, null); assert.equal(h.view.boundary, "");
+  finishOld({ title: "STALE PRIVATE" }); await flush();
+  assert.equal(h.view.error, "not-found"); assert.equal(h.view.data, null); assert.equal(h.view.boundary, "");
+});
+
+test("hide or logout during a retained refresh conceals and rejects late success", async () => {
+  for (const action of ["hide", "logout"] as const) {
+    const f = fixture(); let reads = 0, finish!: (value: unknown) => void;
+    const h = f.mount(() => f.hooks.useLiveRead(scope, true, async () => ++reads === 1 ? { title: "PRIVATE" } : new Promise(resolve => { finish = resolve; }), true));
+    try {
+      await flush(); h.view.refresh(); await flush(); assert.equal(h.view.data.title, "PRIVATE");
+      if (action === "hide") { f.document.visibilityState = "hidden"; f.document.dispatchEvent(new Event("visibilitychange")); }
+      else f.window.dispatchEvent(new Event("commerce-session-logout"));
+      await flush(); assert.equal(h.view.data, null); finish({ title: "STALE" }); await flush(); assert.equal(h.view.data, null);
+    } finally { f.stop(); }
+  }
+});
+
+// Hold the second boundary check after the read completed, not the earlier read promise.
+// A late old-scope success must neither revive concealed data nor replace the next scene's view.
+for (const action of ["hide", "logout", "scope"] as const) test(`post-read boundary completion cannot revive an invalidated ${action} view`, async (t) => {
+  const f = fixture(); t.after(f.stop);
+  const nextScope = `${store}:33333333-3333-4333-8333-333333333333`;
+  const privateData = { title: "PRIVATE" }, nextData = { title: "NEXT SCENE" };
+  let activeScope = scope, checks = 0, finishBoundary!: (boundary: string) => void;
+  const h = f.mount(() => f.hooks.useLiveRead(activeScope, true, async () => activeScope === scope ? privateData : nextData));
+  await flush(); assert.equal(h.view.data, privateData); assert.equal(h.view.boundary, "session-one");
+  f.setBoundary(async () => ++checks === 2 ? new Promise<string>(resolve => { finishBoundary = resolve; }) : "session-one");
+  h.view.refresh(); await flush(); assert.equal(checks, 2); assert.equal(h.view.data, privateData);
+  if (action === "hide") { f.document.visibilityState = "hidden"; f.document.dispatchEvent(new Event("visibilitychange")); }
+  else if (action === "logout") f.window.dispatchEvent(new Event("commerce-session-logout"));
+  else { activeScope = nextScope; h.render(); }
+  await flush();
+  assert.equal(h.view.data, action === "scope" ? nextData : null, `${action} establishes the replacement view first`);
+  if (action === "logout") assert.equal(h.view.boundary, "");
+  const concealedBoundary = h.view.boundary, concealedError = h.view.error;
+  finishBoundary("session-one"); await flush();
+  assert.equal(h.view.data, action === "scope" ? nextData : null, `${action} rejects the old PRIVATE completion`);
+  assert.equal(h.view.boundary, concealedBoundary, `${action} rejects a late identity restoration`);
+  assert.equal(h.view.error, concealedError, `${action} retains its concealment result`);
+});
+
 test("UNKNOWN journal restores the exact key/method/path/body and explicit retry after reload", async (t) => {
   const f = fixture(); f.setExecute(async () => { throw new f.studio.StudioError("uncertain"); });
   let h = f.mount(() => f.hooks.useLiveCommand(scope, "session-one", () => {})); t.after(f.stop); await flush();
@@ -110,6 +242,32 @@ test("UNKNOWN journal restores the exact key/method/path/body and explicit retry
   f.setExecute(async () => ({ ok: true })); await h.view.retry(); await flush();
   assert.equal(f.calls[1].key, f.calls[0].key); assert.equal(f.calls[1].body, f.calls[0].body); assert.equal(f.calls[1].path, f.calls[0].path);
   assert.equal(f.saved.size, 0);
+});
+
+test("window UNKNOWN durably fences other commands and reload retries its exact descriptor until receipt", async (t) => {
+  const f = fixture(); t.after(f.stop);
+  const input = { method: "POST", path: path.replace("/lifecycle", "/claims/window"), body: JSON.stringify({ expected_version: 0, state: "CLOSED", match_mode: "KEYWORD_QTY_CONTAINS" }) };
+  let persistedAtDispatch: string | undefined;
+  f.setExecute(async () => { persistedAtDispatch = f.saved.get(`live-workspace-command:${scope}`); throw new f.studio.StudioError("uncertain"); });
+  let h = f.mount(() => f.hooks.useLiveCommand(scope, "session-one", () => {})); await flush();
+  await h.view.run(input); await flush();
+  const stored = f.saved.get(`live-workspace-command:${scope}`)!;
+  assert.equal(persistedAtDispatch, stored);
+  assert.equal(JSON.parse(stored).key, f.calls[0].key);
+  assert.equal(JSON.parse(stored).body, input.body);
+  assert.equal(JSON.parse(stored).mayHaveCommitted, true); assert.equal(h.view.blocked, true);
+  await h.view.run(request); assert.equal(f.calls.length, 1);
+  f.stop(); h = f.mount(() => f.hooks.useLiveCommand(scope, "session-one", () => {})); await flush();
+  assert.equal(h.view.canRetry, true); assert.equal(f.calls.length, 1);
+  let finish!: (value: unknown) => void;
+  f.setExecute(() => new Promise(resolve => { finish = resolve; }));
+  const pending = h.view.retry(); await flush();
+  assert.equal(f.calls.length, 2);
+  for (const field of ["method", "path", "body", "key", "boundary"]) assert.equal(f.calls[1][field], f.calls[0][field], `replay preserves ${field}`);
+  assert.equal(f.calls[1].mayHaveCommitted, true);
+  assert.equal(f.calls[1].body, input.body); assert.equal(f.saved.get(`live-workspace-command:${scope}`), stored);
+  finish({ state: "CLOSED" }); await pending; await flush();
+  assert.equal(f.saved.size, 0); assert.equal(h.view.blocked, false);
 });
 
 test("first definite 403 clears journal but locks commands; late success after navigation clears only its own key", async (t) => {
@@ -170,6 +328,44 @@ function element(tree: any, predicate: (node: any) => boolean): any {
   if (Array.isArray(tree)) { for (const child of tree) { const found = element(child, predicate); if (found) return found; } return null; }
   return predicate(tree) ? tree : element(tree.props?.children, predicate);
 }
+
+test("window preparation blocks sibling commands and rejects late reads after privacy or identity loss", async () => {
+  for (const action of ["current", "hide", "logout", "scope", "boundary", "csrf", "unmount", "legacy", "legacy-journal"] as const) {
+    const f = fixture(); let selectedScene = scene, boundary = "session-one", boardReads = 0, finish!: (value: unknown) => void;
+    const snapshot = { session: { id: scene, title: "Synthetic", lifecycle: "live", version: 1 }, window: { state: "OPEN" }, stats: { comments: { total: 0, source: "graph_summary" }, keyword_comments: 0, buyers: 0, orders: { count: 0, amount_minor: 0 }, paid: { count: 0, amount_minor: 0 }, currency: "TWD", as_of: "2026-11-01T00:00:00Z" }, stream: { source_platform: "facebook", state: "live" }, offers: [], capabilities: {} };
+    f.hooks.useLiveRead = (s: string) => ({ data: s.endsWith(":detail") ? { can_manage: true } : s.endsWith(":source") ? { source: null } : s.endsWith(":controls") ? [] : snapshot, boundary, error: "", refresh: () => {} });
+    f.load("apps/admin/lib/claims-client.ts").readClaimsBoard = () => { boardReads++; return new Promise(resolve => { finish = resolve; }); };
+    if (action.startsWith("legacy")) f.saved.set(`live-console-window:${scope}`, "1");
+    if (action === "legacy-journal") f.saved.set(`live-workspace-command:${scope}`, JSON.stringify({ method: "POST", path: path.replace("/lifecycle", "/claims/window"), body: JSON.stringify({ expected_version: 0, state: "CLOSED", match_mode: "EXACT" }), key: "44444444-4444-4444-8444-444444444444", mayHaveCommitted: true }));
+    const initialSaved = [...f.saved];
+    const { LiveConsole } = f.load("apps/admin/components/LiveConsole.tsx");
+    const h = f.mount(() => LiveConsole({ locale: "en", store: { id: store, role: "owner" }, sessionID: selectedScene, navigationGuard: { current: () => true } }));
+    try {
+      await flush();
+      const pause = element(h.view, n => n.type === "button" && n.props.children === "Pause orders");
+      const primary = element(h.view, n => n.props?.["data-testid"] === "live-primary-action");
+      if (action.startsWith("legacy")) {
+        assert.equal(pause.props.disabled, true); assert.equal(primary.props.disabled, true);
+        assert.equal(element(h.view, n => n.props?.["data-testid"] === "live-command-retry"), null);
+        pause.props.onClick(); primary.props.onClick(); await flush();
+        assert.equal(boardReads, 0); assert.equal(f.calls.length, 0); assert.deepEqual([...f.saved], initialSaved); continue;
+      }
+      assert.equal(pause.props.disabled, false); assert.equal(primary.props.disabled, false);
+      pause.props.onClick(); pause.props.onClick(); primary.props.onClick(); await flush();
+      assert.equal(boardReads, 1); assert.equal(f.calls.length, 0);
+      assert.equal(element(h.view, n => n.props?.["data-testid"] === "live-primary-action").props.disabled, true);
+      if (action === "hide") { f.document.visibilityState = "hidden"; f.document.dispatchEvent(new Event("visibilitychange")); }
+      if (action === "logout") f.window.dispatchEvent(new Event("commerce-session-logout"));
+      if (action === "scope") { selectedScene = "33333333-3333-4333-8333-333333333333"; h.render(); }
+      if (action === "boundary") { boundary = "session-two"; h.render(); }
+      if (action === "csrf") f.document.cookie = "changed-csrf";
+      if (action === "unmount") f.stop();
+      await flush(); finish({ window: { version: 1, state: "OPEN", match_mode: "EXACT" } }); await flush();
+      assert.equal(f.calls.length, action === "current" ? 1 : 0, action);
+      if (action === "current") assert.equal(f.calls[0].body, JSON.stringify({ expected_version: 1, state: "CLOSED", match_mode: "EXACT" }));
+    } finally { f.stop(); }
+  }
+});
 
 test("SessionCopy resyncs closed same-ID titles, preserves open edits and cancels to latest draft", async (t) => {
   const f = fixture(), { SessionCopy } = f.load("apps/admin/src/features/live/SessionCopy.tsx");

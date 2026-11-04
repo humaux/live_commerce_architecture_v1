@@ -351,7 +351,7 @@ test("stock client reuses catalog transport/key/parser and fences a changed logi
   assert.equal(fetch.mock.callCount(), 5);
 });
 
-test("journal replay sends the exact original method/path/body/key for all five commands", async (t) => {
+test("journal replay sends the exact original method/path/body/key for all closed commands", async (t) => {
   const original = Object.getOwnPropertyDescriptor(globalThis, "document");
   Object.defineProperty(globalThis, "document", { configurable: true, value: { cookie: `__Host-commerce_csrf=${"c".repeat(43)}` } });
   t.after(() => { if (original) Object.defineProperty(globalThis, "document", original); else Reflect.deleteProperty(globalThis, "document"); });
@@ -365,6 +365,7 @@ test("journal replay sends the exact original method/path/body/key for all five 
     liveRequest(store, sid, "copy", "POST", { title: "Next", scheduled_at: null, expected_version: 1 }),
     liveRequest(store, sid, `claims/offers/${oid}/recommend`, "POST", { expected_version: 1, post_comment: false }),
     liveRequest(store, sid, `claims/offers/${oid}`, "PATCH", { expected_version: 1, active: false, max_quantity_per_claim: 7 }),
+    liveRequest(store, sid, "claims/window", "POST", { expected_version: 0, state: "CLOSED", match_mode: "KEYWORD_QTY_CONTAINS" }),
     liveRequest(store, sid, "inventory/adjustments", "POST", { warehouse_id: oid, sku_id: sid, delta: 2, expected_version: 0, reason: "live_console_edit" }),
   ];
   for (const command of commands) {
@@ -384,4 +385,46 @@ test("journal replay sends the exact original method/path/body/key for all five 
   for (const poisoned of [{ ...commands[0], path: "https://attacker.invalid" }, { ...commands[0], method: "DELETE" }, { ...commands[0], body: '{"expected_version":1,"action":"start"}' }])
     assert.equal(validLiveRequest(poisoned, `${store}:${sid}`), false);
   assert.equal(parseLiveJournal(JSON.stringify({ ...commands[0], key: oid, mayHaveCommitted: true }), `${oid}:${sid}`), null);
+});
+
+test("window journals admit only exact scoped CAS/state/match-mode commands and preserve their receipt transport", async (t) => {
+  const original = Object.getOwnPropertyDescriptor(globalThis, "document");
+  Object.defineProperty(globalThis, "document", { configurable: true, value: { cookie: `__Host-commerce_csrf=${"c".repeat(43)}` } });
+  t.after(() => { if (original) Object.defineProperty(globalThis, "document", original); else Reflect.deleteProperty(globalThis, "document"); });
+  const boundary = await sessionBoundary(), scope = `${store}:${sid}`;
+  let seen = 0;
+  const fetch = t.mock.method(globalThis, "fetch", async (path: unknown, init?: RequestInit) => {
+    seen++; assert.equal(path, `/api/stores/${store}/${root}/claims/window`); assert.equal(init?.method, "POST");
+    assert.equal(new Headers(init?.headers).get("idempotency-key"), oid);
+    const body = JSON.parse(init?.body as string);
+    return Response.json({ session_id: sid, state: body.state, generation: 1, version: body.expected_version + 1, match_mode: body.match_mode, opened_at: at, closed_at: body.state === "CLOSED" ? at : null }, { headers: { "cache-control": "private, no-store" } });
+  });
+  for (const expected_version of [0, 1]) for (const state of ["OPEN", "CLOSED"] as const) for (const match_mode of ["EXACT", "KEYWORD_QTY_ONLY", "KEYWORD_QTY_CONTAINS"] as const) {
+    const body = { expected_version, state, match_mode }, command = liveRequest(store, sid, "claims/window", "POST", body);
+    const journal = JSON.stringify({ ...command, key: oid, mayHaveCommitted: true }), restored = parseLiveJournal(journal, scope)!;
+    assert.ok(restored); assert.equal(restored.body, JSON.stringify(body));
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const receipt: any = await client.executeLiveRequest(restored, restored.key, boundary);
+      assert.equal(receipt.state, state); assert.equal(receipt.match_mode, match_mode);
+      assert.equal(fetch.mock.calls.at(-1)?.arguments[1]?.body, command.body);
+    }
+    assert.equal(parseLiveJournal(journal, `${oid}:${sid}`), null);
+    assert.equal(parseLiveJournal(journal, `${store}:${oid}`), null);
+  }
+  const valid = liveRequest(store, sid, "claims/window", "POST", { expected_version: 0, state: "OPEN", match_mode: "EXACT" });
+  const body = JSON.parse(valid.body), before = seen;
+  for (const poisoned of [
+    ...[-1, 0.5, Number.MAX_SAFE_INTEGER + 1, "1", null].map(expected_version => ({ ...valid, body: JSON.stringify({ ...body, expected_version }) })),
+    ...["PAUSED", "open", null, true].map(state => ({ ...valid, body: JSON.stringify({ ...body, state }) })),
+    ...["UNKNOWN", "exact", null].map(match_mode => ({ ...valid, body: JSON.stringify({ ...body, match_mode }) })),
+    { ...valid, body: JSON.stringify({ ...body, tenant_id: store }) },
+    { ...valid, body: JSON.stringify({ state: "OPEN", expected_version: 0, match_mode: "EXACT" }) },
+    { ...valid, method: "PATCH" }, { ...valid, path: `https://attacker.invalid${valid.path}` },
+    { ...valid, path: `${valid.path}?tenant_id=${store}` },
+  ]) {
+    assert.equal(validLiveRequest(poisoned, scope), false);
+    assert.equal(parseLiveJournal(JSON.stringify({ ...poisoned, key: oid, mayHaveCommitted: true }), scope), null);
+    assert.throws(() => client.executeLiveRequest(poisoned as any, oid, boundary));
+  }
+  assert.equal(seen, before);
 });

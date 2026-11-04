@@ -3,6 +3,7 @@
 // Used by: LiveWorkspace and LiveConsole; each user submit owns its supplied idempotency key.
 // Invariants: I01/I02/I03/I05/I06/I11/I14; no automatic retries, secret storage or client inventory truth.
 import { read, write, StudioError } from "../../../lib/studio-client";
+import { setClaimWindow } from "../../../lib/claims-client";
 import { parseOffer, type Offer } from "../../../lib/claims-model.ts";
 import { parseBalance } from "../../../lib/catalog-v2-model.ts";
 import { send } from "../../../lib/catalog-v2-client";
@@ -112,6 +113,7 @@ export function executeLiveRequest(request: LiveRequest, key: string, boundary: 
   if (!validLiveRequest(request, `${store}:${scene}`)) throw new StudioError("invalid");
   if (request.path.endsWith("/copy")) return copySession(store, scene, body, key, boundary);
   if (request.path.endsWith("/lifecycle")) return changeLifecycle(store, scene, body.action, body.expected_version, key, boundary);
+  if (request.path.endsWith("/claims/window")) return setClaimWindow(store, scene, body, key, boundary);
   const offer = /\/claims\/offers\/([^/]+)(\/recommend)?$/.exec(request.path)!;
   return offer[2] ? recommendOffer(store, scene, offer[1], body.expected_version, key, boundary) :
     toggleOffer(store, scene, offer[1], body.expected_version, body.active, body.max_quantity_per_claim, key, boundary);
