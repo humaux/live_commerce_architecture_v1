@@ -1,9 +1,10 @@
 // Purpose: per-Page capability states and explicit recheck scheduling; missing identifiers remain unknown.
 // Depends on: B1 health rows, keyless B2, sessionBoundary, existing displayTime and plain locale copy.
 // Used by: MetaConnect connected Page cards; no provider send or automatic write retry.
+// Invariants: scoped server facts and original security assertions remain authoritative; no LIVE effect or test-budget relaxation.
 "use client";
 import { useEffect,useRef,useState } from "react";
-import type { Locale } from "@live-commerce/i18n";
+import { liveSessionsCopy, type Locale } from "@live-commerce/i18n";
 import { capabilities,type HealthPage } from "@/lib/meta-health-model";
 import { metaHealthCopy,capabilityAdvice } from "@/lib/meta-health-copy";
 import { recheckMetaHealth,refreshMetaHealth } from "@/lib/meta-health-client";
@@ -11,7 +12,7 @@ import { displayTime } from "@/lib/orders-model";
 import "./meta-health.css";
 /** Displays identified capabilities without promoting test access; a recheck receipt only means scheduled. */
 export function MetaHealthCapabilities({store,page,locale,canManage,boundary,failed}:{store:string;page:HealthPage|undefined;locale:Locale;canManage:boolean;boundary:string;failed:boolean}) {
- const c=metaHealthCopy[locale],working=useRef(false),live=useRef(true);
+ const c=metaHealthCopy[locale],p=liveSessionsCopy[locale],working=useRef(false),live=useRef(true);
  const [busy,setBusy]=useState(false),[message,setMessage]=useState<"scheduled"|"tooSoon"|"forbidden"|"signedOut"|"uncertain"|"failed"|null>(null);
  useEffect(()=>{live.current=true;return()=>{live.current=false;};},[]);
  async function recheck(){
@@ -26,7 +27,7 @@ export function MetaHealthCapabilities({store,page,locale,canManage,boundary,fai
  const unidentified=page.capabilities.some(row=>!row.capability);
  const rows=[...page.capabilities].sort((a,b)=>a.provider.localeCompare(b.provider)||capabilities.indexOf(a.capability!) -capabilities.indexOf(b.capability!));
  return <section className="meta-health-details" aria-label={c.abilities} data-testid={`meta-health-page-${page.page_id}`}>
-  <div className="meta-health-heading"><h4>{c.abilities}</h4>{canManage?<button type="button" data-testid="meta-health-recheck" disabled={busy||!boundary} onClick={()=>void recheck()}>{busy?c.checking:c.recheck}</button>:<p>{c.readOnly}</p>}</div>
+  <div className="meta-health-heading"><h4>{c.abilities}</h4>{canManage?<button type="button" data-testid="meta-health-recheck" disabled={busy||!boundary} onClick={()=>void recheck()}>{busy?c.checking:p.recheck}</button>:<p>{c.readOnly}</p>}</div>
   {message&&<p role="status" data-testid="meta-health-recheck-result">{c[message]}</p>}
   {unidentified?<p data-testid="meta-health-unidentified">{c.incomplete}</p>:<dl className="meta-health-rows">{rows.map(row=><div key={`${row.binding_id}:${row.capability}`} data-testid={`meta-health-capability-${row.provider}-${row.capability}`}>
    <dt>{row.provider==="facebook"?"Facebook":"Instagram"} · {c.capability[row.capability!]}</dt>
