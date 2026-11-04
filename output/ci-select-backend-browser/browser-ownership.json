@@ -155,7 +155,7 @@
     "tests/admin/parcels-scope.test.ts": "01a84682b27f95d14665813cbb8c0b1189bbdd8cb2f3d26fa5939fdec71a0257",
     "tests/admin/parity-customer-import.spec.ts": "b6327dda3d96cce4e33e94497778474a8dcde2cafe4d80168dfb8c9fcb3298fe",
     "tests/admin/parity-data-ops-support.ts": "d6fa97eb8040fc1efd61c688165d5307534829e3cd4cd840e858d596e17d7999",
-    "tests/admin/parity-data-ops.spec.ts": "75320cef388f96d61f6a26389941ef9050199f715795a96f489ae42ac7c77c98",
+    "tests/admin/parity-data-ops.spec.ts": "3f8ece67dbbd720da608313945dd9516bb7a75ca844ee2990dbfb167ede4c502",
     "tests/admin/parity-entry-dashboard.ts": "f099136e2273212106002fc8a6d1cf4f366d32b925f79f0cbd901384b9b1075d",
     "tests/admin/parity-entry.spec.ts": "6b11d4a2c5796aab411121d42509c69cf991505d7665bef5eaa64cfcaffab2b3",
     "tests/admin/parity-leftovers.spec.ts": "063db8408830126af6dc5f15a91f50d22251518554ff4ae95da15fc52d17b179",
