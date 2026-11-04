@@ -178,7 +178,8 @@ function Sections({ team, store, boundary, refresh, locale, c }: {
       <section className="team-card" role="status" data-testid="team-notice"><p className="team-person">{sentItem?.email ?? email}</p><p>{c.roleNames[sentItem?.role ?? role]}</p>
         {sentItem && <p className="team-help">{invitationTime(sentItem)}</p>}<p>{c.sentState}</p><p className="team-help">{c.validFor}</p>
       </section>
-      <div className="team-actions">{button(c.back, () => { back(); setScreen("pending"); }, true)}</div>
+      {/* Send is gone once the invite is sent, so focus moves to the frame's only control (1468:75217) instead of the page body. */}
+      <div className="team-actions"><button type="button" className="primary" autoFocus onClick={() => { back(); setScreen("pending"); }} disabled={busy}>{c.back}</button></div>
     </>}
     {screen === "paused" && <><section className="team-card"><p className="team-person">{email}</p><p>{c.mailFailedHelp}</p></section><div className="team-actions">{button(c.invite, inviteEntry, true, true)}{button(c.back, back)}</div></>}
     {screen === "edit" && member && <>
