@@ -1,6 +1,7 @@
 // Purpose: adversarial health DTO/request examples, including the actual backend's omitted capability identifier.
 // Depends on: Node test/assert/fs/child_process/vm, pure health model/request, MetaConnect/Badge JSX and typescript-api; no browser/PG/provider.
 // Used by: test-node.sh, --browser-meta-health-ui and independent acceptance.
+// Invariants: scoped server facts and original security assertions remain authoritative; no LIVE effect or test-budget relaxation.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { parseMetaHealth, parseRecheck, healthReason } from "../../apps/admin/lib/meta-health-model.ts";
@@ -9,6 +10,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { runInNewContext } from "node:vm";
 import ts from "typescript-api";
+import { liveSessionsCopy } from "../../packages/i18n/src/live-sessions.ts";
 import { metaConnectCopy } from "../../apps/admin/lib/meta-connect-copy.ts";
 const id = "00000000-0000-4000-8000-000000000001";
 const cap = { binding_id: id, provider: "facebook", capability: "read_comment", state: "review_required", reason: "standard_access", evidence: "MOCK" };
@@ -101,6 +103,7 @@ runInNewContext(ts.transpileModule(readFileSync(new URL("../../apps/admin/compon
       ++renderStateCalls === 1 ? "ready" : renderStateCalls === 2 ? status : initial,
     ) };
     if (name === "@live-commerce/ui") return presentation;
+    if (name === "@live-commerce/i18n") return { liveSessionsCopy };
     if (name === "@/lib/meta-connect-copy") return { metaConnectCopy };
     if (name === "@/lib/meta-health-hook") return { useMetaHealth: () => ({ data: null, failed: false }) };
     if (name === "@/lib/orders-model") return { displayTime: (_locale: string, value: string) => value };

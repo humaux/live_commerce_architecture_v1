@@ -1,5 +1,9 @@
 //go:build browser
 
+// Purpose: Real browser attribution and C4 Studio report parity against isolated PG.
+// Depends on: atReportEnv, mabStartAdmin, brfPlaywright and the signed MOCK provider fixtures.
+// Used by: scripts/dev/test-local.sh --browser-ads-attribution.
+// Invariants: real BFF/Go reads; no intercepted report DTOs or invented paid-order facts.
 package foundation_test
 
 // AT5 / AT7 / AT9: no browser response interception. Actual production Next
@@ -85,7 +89,7 @@ func TestBrowserAdsAttributionReport(t *testing.T) {
 	mustExec(t, x.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'integration:read') ON CONFLICT DO NOTHING`, x.f.tenantA, x.store, x.creator)
 	root, _ := filepath.Abs("../..")
 	evidence := brfEvidence(t, root, "ads-attribution-report")
-	stack := mabStartAdmin(t, ctx, x.f, x.creator, evidence, httpapi.Options{SessionStoreList: true, Ads: x.svc})
+	stack := mabStartAdmin(t, ctx, x.f, x.creator, evidence, httpapi.Options{SessionStoreList: true, Studio: true, Ads: x.svc})
 	brfPlaywright(t, ctx, stack, []string{"attribution.spec.ts"}, map[string]string{"LC_BROWSER_STORE": x.store, "LC_ATTRIBUTION_FIXTURE": mustJSON(t, x.browserFixture())})
 	atBrowserShots(t, evidence)
 	// R11: distinct HTTP keys may acknowledge an existing completed read.

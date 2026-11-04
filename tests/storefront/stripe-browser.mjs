@@ -186,15 +186,119 @@ async function context(mobile=false){
   c.on("page",p=>{attach(p);attachStep(p);});
   return c;
 }
+// SU07 fourth newOrder only: passive provenance, never handler/lock acceptance evidence.
+// ponytail: two bounded local event streams; no trace, response bodies, product hooks or new requests.
+const su07DiagnosticPages=new WeakMap();
+function startSU07Diagnostic(page){
+  const out={schema:1,pageOrdinal:1,events:[],snapshots:[],truncated:false,captureFailed:false,
+    handlerAccepted:"UNKNOWN",lockAcquired:"UNKNOWN",cartVersionSame:"UNKNOWN",cartVersionNewer:"UNKNOWN"};
+  let sequence=0,documentOrdinal=0,nextDocumentOrdinal=0,navigationOrdinal=0,requestOrdinal=0,phase=0,stopped=false;
+  const requests=new WeakMap();
+  const note=(kind,fields={})=>{if(stopped)return;if(out.events.length>=80){out.truncated=true;return;}
+    out.events.push({sequence:++sequence,phase,documentOrdinal,navigationOrdinal,kind,...fields});};
+  const route=p=>p==="/api/buyer/session"?"/api/buyer/session":p==="/api/buyer/cart"?"/api/buyer/cart":
+    /^\/api\/buyer\/orders\/[0-9a-f-]{36}$/.test(p)?"/api/buyer/orders/:id":
+    /^\/api\/buyer\/orders\/[0-9a-f-]{36}\/payment$/.test(p)?"/api/buyer/orders/:id/payment":
+    /^\/api\/buyer\/orders\/[0-9a-f-]{36}\/payment\/prepare$/.test(p)?"/api/buyer/orders/:id/payment/prepare":
+    /^\/api\/buyer\/orders\/[0-9a-f-]{36}\/payment\/handoff$/.test(p)?"/api/buyer/orders/:id/payment/handoff":
+    /^\/api\/buyer\/orders\/[0-9a-f-]{36}\/payment\/refresh$/.test(p)?"/api/buyer/orders/:id/payment/refresh":
+    /^\/api\/buyer\/orders\/[0-9a-f-]{36}\/payment\/cancel$/.test(p)?"/api/buyer/orders/:id/payment/cancel":
+    /^\/(?:en|zh-CN|zh-TW)\/checkout$/.test(p)?"/:locale/checkout":"other";
+  const onNavigation=f=>{if(f===page.mainFrame()){navigationOrdinal++;documentOrdinal=0;note("navigation");}};
+  const onRequest=r=>{try{
+    if(requestOrdinal>=160){out.truncated=true;return;}
+    const u=new URL(r.url());if(u.origin!==origin||r.frame()!==page.mainFrame())return;
+    const method=["GET","POST","PUT","DELETE","PATCH","HEAD","OPTIONS"].includes(r.method())?r.method():"OTHER";
+    const entry={requestOrdinal:++requestOrdinal,requestDocumentOrdinal:r.isNavigationRequest()?0:documentOrdinal,requestNavigationOrdinal:navigationOrdinal+(r.isNavigationRequest()?1:0),method,route:route(u.pathname)};
+    requests.set(r,entry);note("request",entry);
+  }catch{out.captureFailed=true;}};
+  const onResponse=r=>{try{const entry=requests.get(r.request());if(entry)note("response",{...entry,status:r.status()});
+    else if(new URL(r.url()).origin===origin&&r.request().frame()===page.mainFrame())note("untracked-response",{requestOrdinal:0,requestDocumentOrdinal:0,method:["GET","POST","PUT","DELETE","PATCH","HEAD","OPTIONS"].includes(r.request().method())?r.request().method():"OTHER",status:r.status(),route:route(new URL(r.url()).pathname)});
+  }catch{out.captureFailed=true;}};
+  const onFailed=r=>{try{const entry=requests.get(r);if(entry){const raw=r.failure()?.errorText??"";
+    note("requestfailed",{...entry,failure:/abort|cancel/i.test(raw)?"aborted":/timeout/i.test(raw)?"timeout":"network-or-other"});}}catch{out.captureFailed=true;}};
+  page.on("framenavigated",onNavigation);page.on("request",onRequest);page.on("response",onResponse);page.on("requestfailed",onFailed);
+  const sample=async(name)=>{try{
+    phase++;note(name);
+    // G-UI8 audit [READ/MEASURE]: booleans/enums only; listeners do not prevent, synthesize or change a click.
+    const data=await within(page.evaluate(({name,phase,documentOrdinal})=>{
+      const q=t=>document.querySelector(`[data-testid="${t}"]`),button=q("continue-shopping");
+      let d=window.__su07ContinuationDiagnostic;
+      if(!d){
+        d={events:[],sequence:0,phase,documentOrdinal,truncated:false};
+        const record=kind=>event=>{if(!event.target?.closest?.('[data-testid="continue-shopping"]'))return;
+          if(d.events.length>=24){d.truncated=true;return;}
+          const b=q("continue-shopping");d.events.push({sequence:++d.sequence,phase:d.phase,documentOrdinal:d.documentOrdinal,kind,
+            disabled:!!b?.disabled,orderPresent:!!q("order-id"),trusted:event.isTrusted===true});};
+        d.capture=record("capture");d.bubble=record("bubble");
+        document.addEventListener("click",d.capture,{capture:true,passive:true});document.addEventListener("click",d.bubble,{passive:true});
+        window.__su07ContinuationDiagnostic=d;
+      }
+      d.phase=phase;
+      let locatorPresent=false,locatorMatchesOrder=false,journalPresent=null,journalKind="unknown",storageReadable=true;
+      try{
+        if(localStorage.length>64)throw new Error();
+        const visible=(q("order-id")?.textContent??"").trim();
+        for(let i=0;i<localStorage.length;i++){
+          const k=localStorage.key(i);if(!k?.startsWith("commerce-purchase-order-v1:"))continue;
+          locatorPresent=true;const raw=localStorage.getItem(k);if(!raw||raw.length>1024)continue;
+          const locator=JSON.parse(raw);if(!visible||locator.order_id!==visible)continue;
+          locatorMatchesOrder=true;
+          const pending=localStorage.getItem(k.replace("commerce-purchase-order-v1:","commerce-purchase-pending-v1:"));
+          journalPresent=pending!==null;
+          if(pending===null)journalKind="none";
+          else if(pending.length<=65536){const v=JSON.parse(pending);journalKind=["cart","next-cart","quote","destination","checkout"].includes(v.kind)?v.kind:"other";}
+        }
+      }catch{storageReadable=false;}
+      const result={documentOrdinal:d.documentOrdinal,buttonPresent:!!button,disabled:button?!!button.disabled:null,orderPresent:!!q("order-id"),
+        emptyPresent:!!q("checkout-empty"),errorPresent:!!document.querySelector(".purchase-error"),
+        checkoutBusy:document.querySelector("main.purchase-main")?.getAttribute("aria-busy")==="true",
+        paymentBusy:q("order-payment")?.getAttribute("aria-busy")==="true",documentReady:document.readyState==="complete",
+        locatorPresent,locatorMatchesOrder,journalPresent,journalKind,storageReadable,
+        clickEvents:d.events.slice(0,24).map(e=>({sequence:e.sequence,phase:e.phase,documentOrdinal:e.documentOrdinal,kind:e.kind,disabled:e.disabled,orderPresent:e.orderPresent,trusted:e.trusted})),clickTruncated:d.truncated};
+      if(name==="finish"){document.removeEventListener("click",d.capture,true);document.removeEventListener("click",d.bubble);delete window.__su07ContinuationDiagnostic;}
+      return result;
+    },{name,phase,documentOrdinal:nextDocumentOrdinal+1}),1000,null);
+    if(!data||!Number.isSafeInteger(data.documentOrdinal)||data.documentOrdinal<1||data.documentOrdinal>8){out.captureFailed=true;return;}
+    documentOrdinal=data.documentOrdinal;nextDocumentOrdinal=Math.max(nextDocumentOrdinal,documentOrdinal);
+    // Project page data into a closed scalar schema; never serialize an arbitrary page object/error.
+    const snapshot={phase,documentOrdinal,navigationOrdinal,name};
+    for(const k of ["buttonPresent","disabled","orderPresent","emptyPresent","errorPresent","checkoutBusy","paymentBusy","documentReady","locatorPresent","locatorMatchesOrder","journalPresent","storageReadable","clickTruncated"])
+      snapshot[k]=typeof data[k]==="boolean"?data[k]:null;
+    snapshot.journalKind=["unknown","none","cart","next-cart","quote","destination","checkout","other"].includes(data.journalKind)?data.journalKind:"unknown";
+    snapshot.clickEvents=Array.isArray(data.clickEvents)?data.clickEvents.slice(0,24).filter(e=>e&&["capture","bubble"].includes(e.kind)&&[e.sequence,e.phase,e.documentOrdinal].every(n=>Number.isSafeInteger(n)&&n>=0&&n<=1000)).map(e=>({sequence:e.sequence,phase:e.phase,documentOrdinal:e.documentOrdinal,kind:e.kind,disabled:e.disabled===true,orderPresent:e.orderPresent===true,trusted:e.trusted===true})):[];
+    if(out.snapshots.length<8)out.snapshots.push(snapshot);else out.truncated=true;
+  }catch{out.captureFailed=true;}};
+  const diagnostic={sample,finish:async()=>{
+    await sample("finish");stopped=true;
+    try{page.off("framenavigated",onNavigation);page.off("request",onRequest);page.off("response",onResponse);page.off("requestfailed",onFailed);}catch{out.captureFailed=true;}
+    su07DiagnosticPages.delete(page);
+    try{const raw=JSON.stringify(out);if(hits(raw).length){say("SU07 diagnostic privacy rejected");return;}
+      await writeFile(path.join(evidence,"su07-continuation-diagnostic.json"),raw,{mode:0o600});
+    }catch{say("SU07 diagnostic write failed");}
+  }};
+  su07DiagnosticPages.set(page,diagnostic);return diagnostic;
+}
 // ---- store-tab helpers ----
 const requestIs=(response,suffix,method)=>new URL(response.url()).pathname===`/api/buyer/${suffix}`&&response.request().method()===method;
 async function newOrder(page,{pay=true}={}){
   // After a reload the restored order mounts asynchronously: wait for whichever of the two entry points
   // exists rather than counting once (count() is 0 while the page is still hydrating).
   // Storefront shell: the checkout page shows the previous order (continue-shopping) or an empty cart; then product page -> Add to cart (2) -> checkout.
+  const diagnostic=su07DiagnosticPages.get(page);
+  try{
   await page.goto(checkout);
   await ex(page.getByTestId("continue-shopping").or(page.getByTestId("checkout-empty")).first()).toBeVisible({timeout:20000});
-  if(await page.getByTestId("continue-shopping").count()){await page.getByTestId("continue-shopping").click();await ex(page.getByTestId("checkout-empty")).toBeVisible();} // let the continuation settle before navigating away
+  if(diagnostic)await diagnostic.sample("existing-restore-UI-ready");
+  if(await page.getByTestId("continue-shopping").count()){
+    if(diagnostic)await diagnostic.sample("click-before");
+    await page.getByTestId("continue-shopping").click();
+    if(diagnostic)await diagnostic.sample("click-after");
+    await ex(page.getByTestId("checkout-empty")).toBeVisible();
+  } // let the continuation settle before navigating away
+  if(diagnostic)await diagnostic.sample("empty-or-error");
+  }catch(error){if(diagnostic)await diagnostic.sample("failure");throw error;}
+  finally{if(diagnostic)await diagnostic.finish();}
   await reachCheckout(page,origin,"en",process.env.LC_STRIPE_PRODUCT,{quantity:2});
   await page.getByRole("button",{name:"Choose delivery",exact:true}).click();
   const quotation=page.waitForResponse(r=>requestIs(r,"quotes","POST"));
@@ -290,6 +394,7 @@ async function scanSurfaces(pages,ctxs){
   for(const c of ctxs)s.cookies+=JSON.stringify(await c.cookies().catch(()=>[]));
   s.url_history+=JSON.stringify(histCalls);
   s["next.log"]=await readFile(path.join(evidence,"next.log"),"utf8").catch(()=>"");
+  if(cfg.kind==="SU07")s["su07-continuation-diagnostic.json"]=await readFile(path.join(evidence,"su07-continuation-diagnostic.json"),"utf8").catch(()=>"");
   const found={};for(const [k,v] of Object.entries(s)){const h=hits(v);if(h.length)found[k]=h;}
   return {clean:Object.keys(found).length===0,found,surfaces:Object.keys(s)};
 }
@@ -490,6 +595,7 @@ async function su07(){
   passed("SU07 double click + second tab => 1 prepare, 1 session");
   // 4. reload while CREATING => no POST
   await act("worker-stop");
+  startSU07Diagnostic(page);
   id=await newOrder(page);
   pop=page.waitForEvent("popup");await payBtn(page,l).click();child=await pop;
   await until(()=>paymentCalls(id,"prepare").length===1,30000,"prepare while the worker is stopped");

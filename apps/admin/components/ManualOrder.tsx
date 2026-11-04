@@ -1,5 +1,5 @@
 // Purpose: Owns the merchant manual-order entry workflow.
-// Depends on: @live-commerce/format (Taipei store timestamps), react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/catalog-v2-client, @/lib/catalog-v2-model, @/lib/settings-client, @/lib/merchant-tools-client, @/lib/merchant-tools-model, @/lib/merchant-tools-copy, @/lib/cod-copy, ./WorkspaceFrame, ./AdminPageHeader, ./CvsLookup, ./order-ops.css, ./OperationalForms.module.css, ./orders.css, ./customers.css, ./merchant-tools.css
+// Depends on: @live-commerce/format (Taipei store timestamps), react, next/link, @live-commerce/i18n, @live-commerce/ui, @/lib/model, @/lib/client, @/lib/customers-client, @/lib/catalog-v2-client, @/lib/catalog-v2-model, @/lib/settings-client, @/lib/merchant-tools-client, @/lib/merchant-tools-model, @/lib/merchant-tools-copy, @/lib/cod-copy, ./WorkspaceFrame, ./AdminPageHeader, ./CvsLookup, ./orders/ManualOrderMissing, ./order-ops.css, ./OperationalForms.module.css, ./orders.css, ./customers.css, ./merchant-tools.css
 // Used by: apps/admin/app/[locale]/orders/new/page.tsx
 // Invariants: catalog prices and server quotes remain authoritative; draft/picker actions never reserve or place orders.
 "use client";
@@ -23,12 +23,13 @@ import { readProduct, readProducts } from "@/lib/catalog-v2-client";
 import type { ProductDetail } from "@/lib/catalog-v2-model";
 import { sessionBoundary } from "@/lib/settings-client";
 import { placeManualOrder, readManualOptions, regenerateManualLink } from "@/lib/merchant-tools-client";
-import { draftProblem, manualBody, type ManualDraft, type ManualOption, type ManualPaymentMode, type ManualResult } from "@/lib/merchant-tools-model";
+import { draftProblem, manualBody, recipientGaps, type ManualDraft, type ManualOption, type ManualPaymentMode, type ManualResult } from "@/lib/merchant-tools-model";
 import { toolsCopy } from "@/lib/merchant-tools-copy";
 import { codCopy } from "@/lib/cod-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
 import { CvsLookup } from "./CvsLookup";
+import { ManualOrderMissing } from "./orders/ManualOrderMissing";
 import "./order-ops.css";
 import s from "./OperationalForms.module.css";
 import "./orders.css";
@@ -76,6 +77,7 @@ export function ManualOrder({
   const regen = useRef<{ body: string; key: string } | null>(null);
 
   const [reviewing, setReviewing] = useState(false);
+  const [missing, setMissing] = useState(false); // signed 訂單缺少收件資料: shown instead of the review while recipient fields are missing
   const [choosingCVS, setChoosingCVS] = useState(false);
   const available: ManualOption[] = options.data ?? [];
   const option = available.find((item) => item.option_key === optionKey) ?? null;
@@ -84,6 +86,8 @@ export function ManualOrder({
   const mapOnly = !!option && option.delivery_kind !== "home" && option.pickup_selection !== "buyer_entered";
   const draft: ManualDraft = { lines, name, phone, email, option, mode, home, cvs, locale: buyerLocale };
   const problem = draftProblem(draft);
+  const gaps = recipientGaps(draft); // non-empty only when the recipient is the sole thing missing
+  const showMissing = missing && gaps.length > 0;
 
   function selectOption(key: string) {
     setOptionKey(key); setCVS(blankCVS); setReviewing(false);
@@ -92,7 +96,9 @@ export function ManualOrder({
   }
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!store || problem || mapOnly || busy) return;
+    if (!store || mapOnly || busy) return;
+    if (gaps.length) { setMissing(true); setReviewing(false); return; } // submission stays blocked until the recipient is complete
+    if (problem) return;
     if (!reviewing) { setReviewing(true); return; }
     const body = manualBody(draft);
     const text = JSON.stringify(body);
@@ -143,7 +149,7 @@ export function ManualOrder({
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="orders">
       <div className={`orders-page customers-page ops-task ${s.page}`} data-testid="manual-order-page">
-        <AdminPageHeader locale={locale} title={signed.manual} description={placed ? c.created : signed.quote} />
+        {!showMissing && <AdminPageHeader locale={locale} title={signed.manual} description={placed ? c.created : signed.quote} />}
         {stores.length > 1 && (
           <div className="orders-controls">
             <label>
@@ -197,7 +203,8 @@ export function ManualOrder({
           </section>
         )}
         {/* The form stays mounted while the delivery choices (re)load: a guarded re-read must never wipe what the merchant typed. */}
-        {!placed && store && !listFailure && (
+        {!placed && store && !listFailure && showMissing && <ManualOrderMissing locale={locale} gaps={gaps} onBack={() => setMissing(false)} />}
+        {!placed && store && !listFailure && !showMissing && (
           <form className="mt-form" onSubmit={(event) => void submit(event)} data-testid="manual-order-form" noValidate>
             {reviewing ? <section className="ops-review" aria-label={signed.review}>
               <h2>{signed.review}</h2>
@@ -281,7 +288,7 @@ export function ManualOrder({
             {problem && <p className="mt-note" data-testid="manual-order-hint">{c.problems[problem]}</p>}
             <div className="mt-actions">
               {/* Both steps submit through the guarded handler: changing a clicked button's type can place before review. */}
-              <button type="submit" className="primary" data-testid={reviewing ? "manual-order-submit" : undefined} disabled={!!problem || mapOnly || busy || !boundary}>
+              <button type="submit" className="primary" data-testid={reviewing ? "manual-order-submit" : undefined} disabled={(!!problem && gaps.length === 0) || mapOnly || busy || !boundary}>
                 {reviewing ? busy ? c.submitting : uncertain ? c.retryButton : c.submit : signed.review}
               </button>
               <Link href={`/${locale}/orders${storeQuery}`}>{c.back}</Link>

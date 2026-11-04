@@ -18,7 +18,7 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
   await noMarketAcceptance(page, store, testInfo);
   await duplicateMarketAcceptance(page, store, "denied");
   await duplicateMarketAcceptance(page, store, "lost");
-  await marketSelectionAcceptance(page, store);
+  await marketSelectionAcceptance(page, store, testInfo);
   const path = `/en/settings?store=${store}`;
   await page.setViewportSize({ width: 390, height: 844 });
   for (const [locale, c] of Object.entries(copy)) {
@@ -1040,7 +1040,7 @@ async function deliverySwitches(page: Page, store: string, path: string) {
 }
 
 /** RVFIX P1-1/P1-2: hidden-market selection rules (b tw, c single active, d none) and the existing-tw guard, MOCK on the real route. */
-async function marketSelectionAcceptance(source: Page, store: string) {
+async function marketSelectionAcceptance(source: Page, store: string, testInfo: TestInfo) {
   const row = (id: string, code: string, over: Record<string, unknown> = {}) =>
     ({ id, code, name: code, currency: "TWD", active: true, version: 1, created_at: `2026-10-0${id.slice(-1)}T00:00:00Z`, ...over });
   const A = "80000000-0000-4000-8000-000000000041", B = "80000000-0000-4000-8000-000000000042", C = "80000000-0000-4000-8000-000000000043";
@@ -1058,6 +1058,64 @@ async function marketSelectionAcceptance(source: Page, store: string) {
   for (const k of cases) {
     const page = await source.context().newPage();
     const writes: Array<{ method: string; path: string; body: Record<string, unknown> }> = [];
+    // READ/MEASURE only: persisted/DOM observations are not React state; GET receipt is not hydration acknowledgement.
+    const reads: Array<{ resource: string; status?: number; failed?: true }> = [];
+    let truncated = false;
+    const resourceOf = (url: string) => {
+      const path = new URL(url).pathname.split(`/api/stores/${store}/`)[1] ?? "";
+      if (path === "markets") return "markets";
+      if (/^markets\/[^/]+\/countries\/[^/]+\/delivery-services$/.test(path)) return "services";
+      if (/^markets\/[^/]+\/countries\/[^/]+\/delivery-services\/[^/]+\/policy$/.test(path)) return "policy";
+      if (/^markets\/[^/]+\/countries\/[^/]+\/delivery-services\/[^/]+$/.test(path)) return "service";
+      return null;
+    };
+    const record = (entry: (typeof reads)[number]) => { if (reads.length < 40) reads.push(entry); else truncated = true; };
+    page.on("response", response => {
+      const resource = resourceOf(response.url());
+      if (response.request().method() === "GET" && resource) record({ resource, status: response.status() });
+    });
+    page.on("requestfailed", request => {
+      const resource = resourceOf(request.url());
+      if (request.method() === "GET" && resource) record({ resource, failed: true });
+    });
+    const observations: unknown[] = [];
+    const capture = async (phase: "start" | "failure") => {
+      try {
+        const state = await page.evaluate(({ store, target }) => {
+          let journalPresent = false, journalUncertain = false, journalMalformed = false;
+          let policyObservationPresent = false, policyVersionPresent = false, policyVersionNonnegative = false, targetMatchesCase = false, storageUnavailable = false;
+          let referenceNonempty = false, serviceCodeValid = false;
+          try {
+            for (const key of Object.keys(localStorage).filter(key => key.startsWith(`commerce-settings-command:${store}:`))) {
+              journalPresent = true;
+              try {
+                const v = JSON.parse(localStorage.getItem(key) ?? "null");
+                journalMalformed ||= !v || typeof v.key !== "string" || !["POST", "PUT"].includes(v.method) || typeof v.resource !== "string" || typeof v.body !== "string";
+                journalUncertain ||= v?.uncertain === true;
+              } catch { journalMalformed = true; }
+            }
+            for (const key of Object.keys(sessionStorage).filter(key => key.startsWith(`commerce-settings-draft:${store}:`))) {
+              const draft = JSON.parse(sessionStorage.getItem(key) ?? "null")?.draft, v = draft?.policyObservation;
+              policyObservationPresent ||= !!v;
+              policyVersionPresent ||= typeof v?.version === "number";
+              policyVersionNonnegative ||= typeof v?.version === "number" && v.version >= 0;
+              targetMatchesCase ||= !!target && v?.target === `${target}:TW:home`;
+              referenceNonempty ||= typeof draft?.reference === "string" && !!draft.reference.trim();
+              serviceCodeValid ||= typeof draft?.serviceCode === "string" && /^[a-z][a-z0-9_-]{0,39}$/.test(draft.serviceCode);
+            }
+          } catch { storageUnavailable = true; }
+          const control = (selector: string) => {
+            const el = document.querySelector(selector);
+            return { present: !!el, visible: el?.checkVisibility() ?? false, disabled: el?.matches(":disabled") ?? false };
+          };
+          return { journalPresent, journalUncertain, journalMalformed, policyObservationPresent, policyVersionPresent, policyVersionNonnegative, targetMatchesCase, referenceNonempty, serviceCodeValid, storageUnavailable,
+            wizard: control('[data-testid="settings-wizard"]'), form: control('[data-testid="settings-policy-form"]'),
+            save: control('[data-testid="settings-policy-form"] button[type="submit"]'), pendingPanel: control('[data-testid="settings-pending"]'),
+            loading: control('.settings-form-area > .message:not(.pending)[role="status"]'), alert: control('[data-testid="settings-wizard"] [role="alert"]') };
+        }, { store, target: k.target === "new" ? C : k.target });
+        observations.push({ case: k.name, phase, ...state, reads: [...reads], truncated });
+      } catch { observations.push({ case: k.name, phase, captureFailed: true }); }
+    };
     const pattern = `**/api/stores/${store}/markets**`;
     await page.route(pattern, async route => {
       const request = route.request(), path = new URL(request.url()).pathname.split(`/api/stores/${store}/`)[1];
@@ -1074,6 +1132,7 @@ async function marketSelectionAcceptance(source: Page, store: string) {
     });
     try {
       await page.goto(`/en/settings?store=${store}`);
+      await capture("start");
       await page.getByRole("button", { name: "Edit settings", exact: true }).click();
       await page.getByRole("button", { name: "Continue", exact: true }).click();
       await page.getByRole("button", { name: "Continue", exact: true }).click();
@@ -1095,6 +1154,10 @@ async function marketSelectionAcceptance(source: Page, store: string) {
         // still unprocessed leaves the journal set, and the next case then loads with a pending command and a disabled Save.
         await expect.poll(() => page.evaluate(() => Object.keys(localStorage).some(key => key.startsWith("commerce-settings-command:"))), `${k.name}: command journal settled before the page closes`).toBe(false);
       }
+    } catch (error) {
+      await capture("failure");
+      try { await testInfo.attach("market-selection-diagnostic.json", { body: JSON.stringify(observations), contentType: "application/json" }); } catch { /* Keep the original failure. */ }
+      throw error;
     } finally {
       await page.unroute(pattern);
       await page.close();

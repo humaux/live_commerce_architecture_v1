@@ -89,15 +89,45 @@ export function applyBulk(
   value: string,
   scope: "all" | "empty",
   operation: "set" | "add" | "subtract",
+  currency: string,
 ): { rows: DraftRow[]; skipped: number } {
   let skipped = 0;
   const next = rows.map((row, i) => {
+    if (!row.active) return row;
     if (scope === "empty" && row[field].trim()) return row;
     if (field === "quantity" && !row.tracked) {
       skipped++;
       return row;
     }
     let result = field === "code" ? `${value}${i + 1}` : value;
+    if (field === "price") {
+      const amount = toMinor(value, currency);
+      const current = operation === "set" ? 0 : toMinor(row.price, currency);
+      if (amount === null || current === null) {
+        skipped++;
+        return row;
+      }
+      const n =
+        operation === "set"
+          ? amount
+          : operation === "add"
+            ? current + amount
+            : current - amount;
+      if (!Number.isSafeInteger(n) || n < 0) {
+        skipped++;
+        return row;
+      }
+      result = fromMinor(n, currency);
+      const compare = row.compare.trim() ? toMinor(row.compare, currency) : null;
+      // Save must accept the generated input, including its whole-part limit.
+      if (
+        toMinor(result, currency) !== n ||
+        (row.compare.trim() && (compare === null || compare <= n))
+      ) {
+        skipped++;
+        return row;
+      }
+    }
     if (field === "quantity") {
       const amount = /^\d+$/.test(value) ? Number(value) : NaN;
       const current = /^\d+$/.test(row.quantity) ? Number(row.quantity) : NaN;

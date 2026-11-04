@@ -288,7 +288,6 @@ test("W3-U5 returns page: RMA list, state filter links and the refund-gap row su
 });
 
 test("W3-U5 a member without fulfillment:write sees the returns but no action; the server refuses a forged write", async ({ page, context }) => {
-  await signedLogin(page);
   await asToken(context, restrictedToken);
   const detail = await openOrder(page, "en", shippedOrder);
   const returns = detail.getByTestId("order-returns");

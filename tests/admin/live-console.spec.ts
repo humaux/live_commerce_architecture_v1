@@ -1,7 +1,8 @@
 // Purpose: LC-U1 real-click workspace contract gate in three locales and two viewport sizes.
-// Depends on: @playwright/test, shared real-click console controls, node:fs/promises, node:crypto; signed OIDC/Next/PG harness env LC_BROWSER_CONSOLE_*.
+// Depends on: @playwright/test, shared real-click console controls, node:fs/promises, node:crypto; signed OIDC/Next/PG harness env LC_BROWSER_CONSOLE_*; ./parity-live-sessions (C4 independent oracle); read-only React host fibers for CONSOLE diagnostics.
 // Used by: browser_live_console_test.go and test-local.sh --browser-live-console.
 // Invariants: I01/I02/I06/I10/I11/I14/I18; Console upstream/receipts are explicitly MOCK, never SQL/provider acceptance.
+import { parityWords, parityViewports, parityClick, parityShot as c4ParityShot } from "./parity-live-sessions";
 import { expect, type Page, type APIRequestContext, type BrowserContext } from "@playwright/test";
 import { test } from "./inbox-private-evidence";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -62,6 +63,105 @@ async function fault(request: APIRequestContext, scene: string, mode: string) {
   // G-UI8 audit [FIXTURE/SETUP]: loopback-only fault control never patches product DOM/API responses in the browser.
   const response = await request.post(`${api}/__test/live-console/fault`, { headers: { "X-Console-Control": control }, data: { scene, mode } });
   expect(response.status()).toBe(200);
+}
+
+/** CONSOLE diagnostics only: observe real events and allowlisted primitives; never change product state. */
+async function observeStockDispatch(page: Page, offer: string, name: string) {
+  const network: { event: string; pathname: string; status: number | null; delta?: number; expected_version?: number }[] = [];
+  const inventoryPost = (request: { method(): string; url(): string }) => request.method() === "POST" &&
+    new URL(request.url()).pathname === `/api/stores/${store}/inventory/adjustments`;
+  const onRequest = (request: Awaited<ReturnType<Page["waitForRequest"]>>) => {
+    // Body parsing stays in memory; only the two numeric stock fields may enter the artifact.
+    if (!inventoryPost(request)) return;
+    let body: Record<string, unknown> = {};
+    try { body = request.postDataJSON() ?? {}; } catch { /* No raw body/error logging. */ }
+    network.push({ event: "request", pathname: new URL(request.url()).pathname, status: null,
+      ...(typeof body.delta === "number" && Number.isFinite(body.delta) ? { delta: body.delta } : {}),
+      ...(typeof body.expected_version === "number" && Number.isSafeInteger(body.expected_version) ? { expected_version: body.expected_version } : {}) });
+  };
+  const onResponse = (response: Awaited<ReturnType<Page["waitForResponse"]>>) => {
+    if (inventoryPost(response.request())) network.push({ event: "response", pathname: new URL(response.url()).pathname, status: response.status() });
+  };
+  page.on("request", onRequest);
+  page.on("response", onResponse);
+  // READ-ONLY MEASUREMENT: native event listeners + current React state. No DOM writes,
+  // synthetic events, handler replacement, credentials, journal values or free-form text.
+  await page.evaluate((offer) => {
+    const rows: Record<string, unknown>[] = [];
+    const ids = new WeakMap<Element, number>(); let nextID = 0;
+    const nodeID = (node: Element | null) => { if (!node) return null; if (!ids.has(node)) ids.set(node, ++nextID); return ids.get(node); };
+    const number = (value: unknown) => typeof value === "number" && Number.isFinite(value) ? value : null;
+    const snapshot = (event: string, native?: Event) => {
+      if (rows.length >= 64) return;
+      const row = document.querySelector(`[data-testid="live-offer-${offer}"]`);
+      const consoleNode = document.querySelector('[data-testid="live-console"]');
+      const input = row?.querySelector<HTMLInputElement>(`[data-testid="live-stock-${offer}"]`);
+      const save = row?.querySelector<HTMLButtonElement>(`[data-testid="live-stock-save-${offer}"]`);
+      const confirm = row?.querySelector(`[data-testid="live-stock-confirm-${offer}"]`);
+      // React's DOM pointer can reference an old alternate. Search the committed root
+      // for these exact host nodes, then read only their owning function's hook values.
+      const key = consoleNode && Object.keys(consoleNode).find(key => key.startsWith("__reactFiber$"));
+      let root = key ? (consoleNode as any)[key] : null;
+      for (let depth = 0; root?.return && depth < 100; depth++) root = root.return;
+      const stack = root?.stateNode?.current ? [root.stateNode.current] : [];
+      let rowOwner: any = null, consoleOwner: any = null;
+      for (let visited = 0; stack.length && visited < 10000; visited++) {
+        const fiber = stack.pop();
+        if (row && fiber.stateNode === row || consoleNode && fiber.stateNode === consoleNode) {
+          let owner = fiber.return;
+          while (owner && typeof owner.type !== "function") owner = owner.return;
+          if (row && fiber.stateNode === row) rowOwner = owner;
+          if (consoleNode && fiber.stateNode === consoleNode) consoleOwner = owner;
+        }
+        if (rowOwner && consoleOwner) break;
+        if (fiber.sibling) stack.push(fiber.sibling);
+        if (fiber.child) stack.push(fiber.child);
+      }
+      const values: any[] = [];
+      for (let hook = consoleOwner?.memoizedState; hook && values.length < 64; hook = hook.next) values.push(hook.memoizedState);
+      // Source-bound useLiveCommand signature: busy/error/fenced/reason, pending ref,
+      // lifetime ref, callback/effect, active ref, identity ref. Fail UNKNOWN on drift.
+      const at = values.findIndex((value, i) => typeof value === "boolean" && typeof values[i + 1] === "string" &&
+        typeof values[i + 2] === "boolean" && typeof values[i + 3] === "string" &&
+        values[i + 4] && Object.hasOwn(values[i + 4], "current") && typeof values[i + 5]?.current === "number" &&
+        typeof values[i + 8]?.current === "boolean" && typeof values[i + 9]?.current === "string");
+      const read = values.find(value => value && typeof value === "object" && Object.hasOwn(value, "scope") && Object.hasOwn(value, "boundary") && Object.hasOwn(value, "data"));
+      const edit = rowOwner?.memoizedState?.memoizedState;
+      const stock = rowOwner?.memoizedProps?.offer?.stock;
+      const baseline = edit?.stock ?? stock;
+      const target = native?.target instanceof Element ? native.target : null;
+      const rect = save?.getBoundingClientRect();
+      const hit = rect ? document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2) : null;
+      rows.push({ event, at_ms: Math.round(performance.now()), row_mount: nodeID(row), console_mount: nodeID(consoleNode),
+        target: target === save || !!target && !!save?.contains(target) ? "save" : target === confirm || !!target && !!confirm?.contains(target) ? "confirm" : target === input ? "stock-input" : "other",
+        submit_reached: native?.type === "submit", default_prevented: native?.defaultPrevented ?? null,
+        draft: input && /^-?\d{1,9}$/.test(input.value) ? Number(input.value) : null,
+        draft_version: number(edit?.stock?.balance_version), baseline_version: number(baseline?.balance_version),
+        server_version: number(stock?.balance_version), baseline_sellable: number(baseline?.sellable), server_sellable: number(stock?.sellable),
+        save_disabled: save?.disabled ?? null, save_center_hits_save: !!save && !!hit && (hit === save || save.contains(hit)), confirm_present: !!confirm,
+        hook_shape_found: at >= 0, busy: at < 0 ? null : values[at], fenced: at < 0 ? null : values[at + 2],
+        pending: at < 0 ? null : !!values[at + 4].current, active: at < 0 ? null : values[at + 8].current,
+        blocked: at < 0 ? null : values[at] || values[at + 2] || !!values[at + 4].current || ["forbidden", "signed-out"].includes(values[at + 1]),
+        boundary_present: read ? !!read.boundary && !values.some(value => value?.error === "signed-out") : null });
+    };
+    const capture = (event: Event) => snapshot(`${event.type}:capture`, event);
+    const bubble = (event: Event) => snapshot(`${event.type}:after-react`, event);
+    for (const type of ["pointerdown", "pointerup", "click", "submit"]) document.addEventListener(type, capture, true);
+    for (const type of ["click", "submit"]) document.addEventListener(type, bubble);
+    snapshot("installed");
+    (window as any).__stockDispatchDiagnostics = () => {
+      snapshot("finished");
+      for (const type of ["pointerdown", "pointerup", "click", "submit"]) document.removeEventListener(type, capture, true);
+      for (const type of ["click", "submit"]) document.removeEventListener(type, bubble);
+      return rows;
+    };
+  }, offer);
+  return async () => {
+    let browser: unknown = { observer_unavailable: true };
+    try { browser = await page.evaluate(() => (window as any).__stockDispatchDiagnostics?.() ?? { observer_unavailable: true }); } catch { /* Preserve the original assertion on page loss. */ }
+    page.off("request", onRequest); page.off("response", onResponse);
+    await writeFile(`${evidence}/${name}-stock-dispatch.json`, JSON.stringify({ class: "MOCK", network, browser }, null, 2));
+  };
 }
 async function refreshList(page: Page, status: number) {
   // Match the list's exact GET path, not A1 or an implicit background poll.
@@ -366,11 +466,16 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await expect.poll(async () => (await facts(request)).scenes[scene]!.Active).toBe(true);
 
     await showLiveTools(page);
+    const finishInitialStockDiagnostics = await observeStockDispatch(page, offer, `${name}-initial`);
+    try {
     await page.getByTestId(`live-stock-${offer}`).fill("17");
     await page.getByTestId(`live-stock-save-${offer}`).click();
     await expect.poll(async () => (await facts(request)).scenes[scene]!.Stock).toBe(17);
     const stockReceipt = (await facts(request)).receipts.at(-1)!;
     expect(stockReceipt.input).toMatchObject({ delta: 5, expected_version: 1, reason: "live_console_edit" });
+    } finally {
+      await finishInitialStockDiagnostics();
+    }
     await page.reload();
     await phase(page, "live");
     await expect(page.getByTestId(`live-stock-${offer}`)).toHaveValue("17");
@@ -391,6 +496,8 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     // Idle rows follow polled stock without any refresh button.
     await externalStock(1, 2);
     const stockInput = page.getByTestId(`live-stock-${offer}`);
+    const finishStockDiagnostics = await observeStockDispatch(page, offer, name);
+    try {
     await expect(stockInput).toHaveValue("18");
     await stockInput.fill("23");
     const changedPoll = page.waitForResponse(async (response) =>
@@ -413,6 +520,9 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await page.getByTestId(`live-stock-save-${offer}`).click();
     await expect.poll(async () => (await facts(request)).scenes[scene]!.Stock).toBe(23);
     expect((await facts(request)).receipts.at(-1)!.input).toMatchObject({ delta: 3, expected_version: 4, reason: "live_console_edit" });
+    } finally {
+      await finishStockDiagnostics();
+    }
     await page.reload();
     await phase(page, "live");
     await expect(stockInput).toHaveValue("23");
@@ -492,13 +602,29 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await expect(page.getByTestId(`live-session-results-${scene}`)).toContainText(workspaceCopy[locale].paidOrders);
     // Cover the separate A5 list-copy surface once; every locale/size still exercises console copy below.
     if (index === 0) {
-      await page.getByTestId("live-copy-session").click();
-      await page.getByLabel(workspaceCopy[locale].name, { exact: true }).fill("LC-U1 copied from session list");
-      await page.getByRole("button", { name: workspaceCopy[locale].confirmCopy, exact: true }).click();
-      await phase(page, "draft");
+      // Own this case's source scene; the unordered MOCK list may otherwise select a later case's lane.
+      const sourceRow = page.getByTestId(`live-session-results-${scene}`).locator("xpath=ancestor::button");
+      await sourceRow.click();
+      await expect.poll(() => new URL(page.url()).searchParams.get("scene")).toBe(scene);
+      await expect(page.getByRole("heading", { name: parityWords[locale].prepare, exact: true })).toBeVisible();
+      await expect(page.getByTestId("merchant-studio").getByRole("link", { name: parityWords[locale].console, exact: true }))
+        .toHaveAttribute("href", `/${locale}/studio/console?store=${store}&scene=${scene}`);
+      // Selection opens preparation and unmounts the list. Exercise its existing same-scene edit route for list-copy.
+      await page.goto(`${origin}/${locale}/studio?store=${store}&scene=${scene}#edit`);
+      await expect(sourceRow).toHaveAttribute("aria-current", "true");
+      await expect.poll(() => new URL(page.url()).searchParams.get("scene")).toBe(scene);
+      await page.getByRole("button", { name: parityWords[locale].copyLast, exact: true }).click();
+      await page.getByLabel(parityWords[locale].copyName, { exact: true }).fill("LC-U1 copied from session list");
+      await page.getByRole("button", { name: parityWords[locale].copyReview, exact: true }).click();
+      await expect(page.getByRole("heading", { name: parityWords[locale].copied, exact: true })).toBeVisible();
+      expect((await facts(request)).receipts.at(-1)).toMatchObject({ scene, action: "copy", status: 200, effect: true });
       const listCopy = new URL(page.url()).searchParams.get("scene");
       expect(listCopy).not.toBe(scene);
       expect((await facts(request)).scenes[listCopy!]!.Title).toBe("LC-U1 copied from session list");
+      expect((await facts(request)).scenes[listCopy!]!.Phase).toBe("draft");
+      await page.reload();
+      await expect(page.getByRole("heading", { name: parityWords[locale].copied, exact: true })).toBeVisible();
+      await expect(page.getByText("LC-U1 copied from session list", { exact: true })).toBeVisible();
       await screenshot(page, "en-1586-session-list-copy");
     }
     await page.goto(route(locale, scene));
@@ -686,6 +812,64 @@ for (const [index, locale] of locales.entries()) {
     } finally { await context.close(); }
   });
 }
+
+const parityScenes: string[] = JSON.parse(required("LC_BROWSER_CONSOLE_PARITY_SCENES"));
+// C4 uses this existing isolated session/stock/copy/lifecycle fixture. Console source remains owned by PARITY-LIVE.
+for (const viewport of parityViewports) test(`C4 preparation copy next-draft and post-live ${viewport.width}`, async ({page}) => {
+  const c=parityWords["zh-TW"], scene=scenes[0]!;
+  await page.setViewportSize(viewport); await login(page);
+  await page.goto(`${origin}/zh-TW/studio?store=${store}&scene=${scene}#preparation`);
+  await expect(page.getByRole("heading",{name:c.prepare,exact:true})).toBeVisible();
+  for(const title of [c.source,c.device,c.productsCheck]) await expect(page.getByText(title,{exact:true})).toBeVisible();
+  for(const name of [c.console,c.connections,c.settings,c.templates]) await expect(page.getByRole("button",{name,exact:true}).or(page.getByRole("link",{name,exact:true}))).toBeVisible();
+  await c4ParityShot(page,evidence,"zh-TW",viewport.width===1440?"5:17701":"5:17826");
+  await page.goto(`${origin}/zh-TW/studio?store=${store}&scene=${scene}#post-live`);
+  await expect(page.getByRole("heading",{name:c.after,exact:true})).toBeVisible();
+  await expect(page.getByText("認領與付款分開計算。結束抓單不會把未付款訂單變成已付款，也不代表平台已結算。",{exact:true})).toBeVisible();
+  await c4ParityShot(page,evidence,"zh-TW",viewport.width===1440?"19:374":"19:376");
+  await parityClick(page,c.copy,()=>expect(page.getByRole("heading",{name:c.copy,exact:true})).toBeVisible());
+  await page.getByLabel(c.copyName,{exact:true}).fill(`C4 copy ${viewport.width}`);
+  await expect(page.getByText("活動商品與直播價。",{exact:true})).toBeVisible();
+  await expect(page.getByText("貼文來源、已發生的認領、付款連結。新場次的認領窗口為關閉。",{exact:true})).toBeVisible();
+  await c4ParityShot(page,evidence,"zh-TW",viewport.width===1440?"30:1977":"30:2030");
+  await parityClick(page,c.copyReview,()=>expect(page.getByRole("heading",{name:c.copied,exact:true})).toBeVisible());
+  await expect(page.getByText(`C4 copy ${viewport.width}`,{exact:true})).toBeVisible();
+  await c4ParityShot(page,evidence,"zh-TW",viewport.width===1440?"1336:17336":"1336:17337");
+  await page.reload();
+  await expect(page.getByText(`C4 copy ${viewport.width}`,{exact:true})).toBeVisible();
+  await parityClick(page,c.openPrep,()=>expect(page.getByRole("heading",{name:c.preflight,exact:true})).toBeVisible());
+});
+for (const viewport of parityViewports) test(`C4 session products stock and end confirmation ${viewport.width}`,async({page,request})=>{
+  const c=parityWords["zh-TW"], scene=parityScenes[viewport.width===1440?0:1]!, fixture=(await facts(request)).scenes[scene]!;
+  await page.setViewportSize(viewport);await login(page);
+  await page.goto(`${origin}/zh-TW/studio/claims?store=${store}&scene=${scene}#products`);
+  await expect(page.getByRole("heading",{name:c.products,exact:true})).toBeVisible();
+  if(viewport.width===390) await c4ParityShot(page,evidence,"zh-TW","52:1385");
+  await expect(page.getByRole("button",{name:c.stock,exact:true}).first()).toBeVisible();
+  await page.getByRole("button",{name:c.stock,exact:true}).first().click();
+  await expect(page.getByRole("heading",{name:c.stock,exact:true})).toBeVisible();
+  await expect(page.getByText(c.available,{exact:true})).toBeVisible();
+  await expect(page.getByText(c.adjusted,{exact:true})).toBeVisible();
+  const before=(await facts(request)).scenes[scene]!.Stock;
+  await parityClick(page,c.plus,()=>expect(page.getByTestId("session-stock-available")).toHaveText(String(before+1)));
+  await parityClick(page,c.minus,()=>expect(page.getByTestId("session-stock-available")).toHaveText(String(before)));
+  await c4ParityShot(page,evidence,"zh-TW",viewport.width===1440?"1336:17329":"52:1388");
+  await page.reload();await expect(page.getByTestId("session-stock-available")).toHaveText(String(before));
+  expect((await facts(request)).scenes[scene]!.SKU).toBe(fixture.SKU);
+  await parityClick(page,c.products,()=>expect(page.getByRole("heading",{name:c.products,exact:true})).toBeVisible());
+  await page.goto(`${origin}/zh-TW/studio?store=${store}&scene=${scene}#end`);
+  await expect(page.getByRole("heading",{name:c.end,exact:true})).toBeVisible();
+  await expect(page.getByText("結束本場留言收單？平台上的直播不會因此停止。",{exact:true})).toBeVisible();
+  await expect(page.getByText("既有認領、訂單及付款狀態不會被當作已完成。",{exact:true})).toBeVisible();
+  await expect(page.getByRole("button",{name:c.confirmEnd,exact:true})).toBeVisible();
+  await c4ParityShot(page,evidence,"zh-TW",viewport.width===1440?"1336:17332":"1336:17333");
+  await parityClick(page,c.continue,()=>expect(page.getByRole("heading",{name:c.end,exact:true})).toHaveCount(0));
+  await page.goto(`${origin}/zh-TW/studio?store=${store}&scene=${scene}#end`);
+  await expect(page.getByRole("button",{name:c.confirmEnd,exact:true})).toBeVisible();
+  await parityClick(page,c.confirmEnd,()=>expect(page.getByRole("heading",{name:c.after,exact:true})).toBeVisible());
+  expect((await facts(request)).scenes[scene]!.Phase).toBe("ended");
+  await page.reload();await expect(page.getByRole("heading",{name:c.after,exact:true})).toBeVisible();
+});
 
 // PARITY-LIVE: v3 is the current DELIVERY section; its 37 predecessor roots are explicitly superseded.
 // All responses below are MOCK fixtures for EXISTING DTOs. Authentication stays real. No provider send escapes.
@@ -1229,4 +1413,566 @@ test.describe("PARITY-LIVE current Figma route parity (MOCK)", () => {
     await expect(send).toBeDisabled();
     expect(mock.posts()).toBe(0);
   });
+});
+
+
+// C4 metadata freeze: independent literals from review-c4-backfix2-delta.md, not production i18n.
+// Append-only: MOCK proves navigation/copy receipts only; metadata PATCH belongs to REAL PG.
+const c4MetadataWords = {
+  en: { edit: "Edit draft", name: "Scene name", schedule: "Scheduled time (Taipei time, optional)", aspect: "Canvas ratio", success: "Next session draft created.", notice: "Post source, existing claims and payment links are not copied. The new session’s claim window is closed.", unknown: "Result awaiting confirmation", unknownHelp: "The result cannot be confirmed yet. Reload and check again.", retry: "Retry original request", discard: "Discard changes" },
+  "zh-TW": { edit: "編輯草稿", name: "場次名稱", schedule: "預定時間（台北時間，選填）", aspect: "畫面比例", success: "已建立下一場草稿。", notice: "貼文來源、認領紀錄與付款連結不會複製。新場次的認領窗口為關閉。", unknown: "結果待確認", unknownHelp: "提交結果暫無法確認，請重新整理後核對。", retry: "依原請求重試", discard: "放棄變更" },
+  "zh-CN": { edit: "编辑草稿", name: "场次名称", schedule: "计划时间（台北时间，可选）", aspect: "画幅", success: "已创建下一场草稿。", notice: "帖子来源、认领记录和付款链接不会复制。新场次的认领窗口为关闭。", unknown: "结果待确认", unknownHelp: "提交结果暂时无法确认，请重新加载后核对。", retry: "按原请求重试", discard: "放弃更改" },
+} as const;
+const c4MetadataControl = (page: Page, name: string) => page.getByRole("button", { name, exact: true }).or(page.getByRole("link", { name, exact: true }));
+const c4MetadataPath = (scene: string) => `/api/stores/${store}/live-sessions/${scene}`;
+
+
+// Diagnostic-only projection. Never persist a title, raw command, header, DOM or exception text.
+// A fixed filename and <=32 bounded entries survive a closed browser/request fixture.
+import { writeFileSync } from "node:fs";
+type C4PhaseReceipt = { scene: string | null; action: "copy" | "other"; key_hash: string | null; body_hash: string | null; status: number; effect: boolean };
+// C4 document projection begin (card1426): closed artifact fields only; timeOrigin never enters this type.
+type C4DocumentProjection = {
+  docRead?: "OK" | "UNAVAILABLE" | "TIMEOUT"; docOrdinal?: number;
+  navigationType?: "navigate" | "reload" | "back_forward" | "prerender" | "unknown";
+  observerInstall?: "INIT" | "LATE" | "UNKNOWN"; pageshowObserved?: boolean; pageshowPersisted?: boolean;
+  pageshowCount?: number; pageshowOverflow?: boolean;
+};
+// C4 document projection end.
+type C4PhaseProjection = C4DocumentProjection & {
+  response_status?: number; source_id?: string | null; selected_id?: string | null; copied_id?: string | null; detail_id?: string | null;
+  detail_version?: number; window_state?: "CLOSED" | "OPEN" | "INVALID"; window_generation?: number; window_opened_at?: string | null;
+  receipts?: C4PhaseReceipt[]; receipt_count?: number; write_count?: number; oracle?: "passed" | "failed" | "not_run"; phase_at_failure?: string;
+  pathname?: "STUDIO" | "CLAIMS" | "OTHER"; hash?: "NONE" | "PREPARATION" | "EDIT" | "PREFLIGHT" | "OTHER";
+  sameStore?: boolean; sameScene?: boolean; multipleFragments?: boolean;
+};
+const c4DiagnosticID = (value: unknown): string | null => typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(value) ? value : null;
+const c4DiagnosticHash = (value: unknown): string | null => typeof value === "string" && /^[0-9a-f]{16,64}$/.test(value) ? value : null;
+function c4ReceiptProjection(rows: readonly Receipt[]): C4PhaseReceipt[] {
+  return rows.slice(0, 8).map(row => ({ scene: c4DiagnosticID(row.scene), action: row.action === "copy" ? "copy" : "other",
+    key_hash: c4DiagnosticHash(row.key_hash), body_hash: c4DiagnosticHash(row.body_hash), status: Number.isSafeInteger(row.status) && row.status >= 100 && row.status <= 599 ? row.status : 0, effect: row.effect === true }));
+}
+function c4MetadataJournal(caseID: string) {
+  if (!/^(?:prep|copy|unknown)-(?:en|zh-TW|zh-CN)-(?:1440|390)$/.test(caseID)) throw new Error("invalid C4 diagnostic case ID");
+  const file = `${evidence}/c4-metadata-${caseID}.json`, started = Date.now();
+  const entries: (C4PhaseProjection & { phase: string; elapsed_ms: number })[] = [];
+  let current = "created";
+  const note = (phase: string, projection: C4PhaseProjection = {}) => {
+    if (!/^[a-z0-9-]{1,64}$/.test(phase) || entries.length >= 32) throw new Error("invalid C4 diagnostic phase or entry budget");
+    current = phase;
+    const safe: C4PhaseProjection = {};
+    for (const key of ["source_id", "selected_id", "copied_id", "detail_id"] as const)
+      if (key in projection) safe[key] = c4DiagnosticID(projection[key]);
+    for (const key of ["response_status", "detail_version", "window_generation", "receipt_count", "write_count"] as const) {
+      const value = projection[key];
+      if (typeof value === "number" && Number.isSafeInteger(value) && value >= 0 && value <= 2_147_483_647) safe[key] = value;
+    }
+    if (projection.window_state !== undefined) safe.window_state = projection.window_state === "CLOSED" || projection.window_state === "OPEN" ? projection.window_state : "INVALID";
+    if (projection.window_opened_at === null || typeof projection.window_opened_at === "string" && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,6})?Z$/.test(projection.window_opened_at)) safe.window_opened_at = projection.window_opened_at;
+    if (projection.receipts) safe.receipts = projection.receipts.slice(0, 8);
+    if (projection.oracle === "passed" || projection.oracle === "failed" || projection.oracle === "not_run") safe.oracle = projection.oracle;
+    if (projection.phase_at_failure && /^[a-z0-9-]{1,64}$/.test(projection.phase_at_failure)) safe.phase_at_failure = projection.phase_at_failure;
+    if (projection.pathname !== undefined) safe.pathname = projection.pathname === "STUDIO" || projection.pathname === "CLAIMS" ? projection.pathname : "OTHER";
+    if (projection.hash !== undefined) safe.hash = ["NONE", "PREPARATION", "EDIT", "PREFLIGHT"].includes(projection.hash) ? projection.hash : "OTHER";
+    for (const key of ["sameStore", "sameScene", "multipleFragments"] as const)
+      if (typeof projection[key] === "boolean") safe[key] = projection[key];
+    // C4 document whitelist begin: revalidate the Node projection independently before persistence.
+    if (projection.docRead !== undefined) {
+      const valid = Number.isInteger(projection.docOrdinal) && projection.docOrdinal! >= 1 && projection.docOrdinal! <= 4 &&
+        projection.navigationType !== undefined && ["navigate", "reload", "back_forward", "prerender", "unknown"].includes(projection.navigationType) &&
+        (projection.observerInstall === "INIT" || projection.observerInstall === "LATE" || projection.observerInstall === "UNKNOWN") &&
+        typeof projection.pageshowObserved === "boolean" && Number.isInteger(projection.pageshowCount) && projection.pageshowCount! >= 0 && projection.pageshowCount! <= 4 &&
+        projection.pageshowObserved === (projection.pageshowCount! > 0) && typeof projection.pageshowOverflow === "boolean" &&
+        (projection.pageshowObserved ? typeof projection.pageshowPersisted === "boolean" : projection.pageshowPersisted === undefined);
+      safe.docRead = projection.docRead === "TIMEOUT" ? "TIMEOUT" : projection.docRead === "OK" && valid ? "OK" : "UNAVAILABLE";
+      if (safe.docRead === "OK") {
+        safe.docOrdinal = projection.docOrdinal; safe.navigationType = projection.navigationType; safe.observerInstall = projection.observerInstall;
+        safe.pageshowObserved = projection.pageshowObserved; safe.pageshowCount = projection.pageshowCount; safe.pageshowOverflow = projection.pageshowOverflow;
+        if (projection.pageshowObserved === true) safe.pageshowPersisted = projection.pageshowPersisted;
+      }
+    }
+    // C4 document whitelist end.
+    entries.push({ phase, elapsed_ms: Date.now() - started, ...safe });
+    writeFileSync(file, JSON.stringify({ class: "MOCK", case_id: caseID, entries }), { encoding: "utf8", mode: 0o600, flush: true });
+  };
+  const preserveFailure = (phase: "primary-error" | "secondary-oracle-error", oracle?: "failed" | "not_run") => {
+    const phase_at_failure = current;
+    // A diagnostic filesystem failure must never replace an already failing original assertion.
+    try { note(phase, { phase_at_failure, ...(oracle ? { oracle } : {}) }); } catch { /* Original failure remains authoritative. */ }
+  };
+  note("created");
+  return { note, preserveFailure };
+}
+// C4 document probe begin (card1426). Observation only: no router/cache/history/DOM or application calls.
+// The only browser bookkeeping is this private property and one trusted-pageshow listener on the owned Page.
+function c4InstallDocumentProbe({ key, mode }: { key: string; mode: "INIT" | "LATE" }) {
+  if (window !== window.top) return false;
+  const existing = Object.getOwnPropertyDescriptor(window, key);
+  if (existing) return existing.value?.owner === key && typeof existing.value.sample === "function" && typeof existing.value.stop === "function";
+  let count = 0, overflow = false, persisted: boolean | null = null;
+  const onPageShow = (event: PageTransitionEvent) => {
+    if (!event.isTrusted) return;
+    persisted = event.persisted;
+    if (count < 4) count++; else overflow = true;
+  };
+  const probe = {
+    owner: key,
+    sample: () => {
+      try {
+        const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+        return { origin: performance.timeOrigin, type: navigation?.type, mode, observed: count > 0, count, overflow, persisted };
+      } catch { return null; }
+    },
+    stop: () => {
+      window.removeEventListener("pageshow", onPageShow);
+      if (Object.getOwnPropertyDescriptor(window, key)?.value === probe) delete (window as unknown as Record<string, unknown>)[key];
+    },
+  };
+  Object.defineProperty(window, key, { value: probe, enumerable: false, configurable: true });
+  window.addEventListener("pageshow", onPageShow);
+  return true;
+}
+type C4BoundedRead<T> = { status: "OK"; value: T } | { status: "UNAVAILABLE" | "TIMEOUT" };
+async function c4BoundedDocumentCall<T>(call: () => Promise<T>): Promise<C4BoundedRead<T>> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    // Observe both resolutions. Late completion never assigns an ordinal or writes a journal.
+    const observed: Promise<C4BoundedRead<T>> = Promise.resolve().then(call).then(
+      value => ({ status: "OK" as const, value }), () => ({ status: "UNAVAILABLE" as const }));
+    return await Promise.race([observed, new Promise<C4BoundedRead<T>>(resolve => {
+      timer = setTimeout(() => resolve({ status: "TIMEOUT" }), 100);
+    })]);
+  } catch { return { status: "UNAVAILABLE" }; }
+  finally { if (timer !== undefined) clearTimeout(timer); }
+}
+function c4DocumentProbe(page: Page) {
+  const key = "__liveCommerceC4PassiveDocument1426";
+  const origins = new Map<number, number>();
+  let installed = false;
+  return {
+    install: async () => {
+      const init = await c4BoundedDocumentCall(() => page.addInitScript(c4InstallDocumentProbe, { key, mode: "INIT" }));
+      const current = await c4BoundedDocumentCall(() => page.evaluate(c4InstallDocumentProbe, { key, mode: "LATE" }));
+      installed = init.status === "OK" && current.status === "OK" && current.value === true;
+    },
+    capture: async (): Promise<C4DocumentProjection> => {
+      const result = await c4BoundedDocumentCall(() => page.evaluate(probeKey => {
+        const probe = Object.getOwnPropertyDescriptor(window, probeKey)?.value;
+        return probe?.owner === probeKey && typeof probe.sample === "function" ? probe.sample() as unknown : null;
+      }, key));
+      if (result.status !== "OK") return { docRead: result.status };
+      // Raw timeOrigin lives only in this protocol result and the case-local map; never spread it into artifacts.
+      const raw = result.value as { origin?: unknown; type?: unknown; mode?: unknown; observed?: unknown; count?: unknown; overflow?: unknown; persisted?: unknown } | null;
+      if (!raw || typeof raw.origin !== "number" || !Number.isFinite(raw.origin) || raw.origin <= 0 ||
+        typeof raw.observed !== "boolean" || typeof raw.count !== "number" || !Number.isInteger(raw.count) || raw.count < 0 || raw.count > 4 ||
+        raw.observed !== (raw.count > 0) || typeof raw.overflow !== "boolean" || (raw.mode !== "INIT" && raw.mode !== "LATE") ||
+        (raw.observed ? typeof raw.persisted !== "boolean" : raw.persisted !== null)) return { docRead: "UNAVAILABLE" };
+      let ordinal = origins.get(raw.origin);
+      if (ordinal === undefined) {
+        if (origins.size >= 4) return { docRead: "UNAVAILABLE" };
+        ordinal = origins.size + 1; origins.set(raw.origin, ordinal);
+      }
+      const navigationType = raw.type === "navigate" || raw.type === "reload" || raw.type === "back_forward" || raw.type === "prerender" ? raw.type : "unknown";
+      return { docRead: "OK", docOrdinal: ordinal, navigationType,
+        observerInstall: installed && (raw.mode === "INIT" || raw.mode === "LATE") ? raw.mode : "UNKNOWN",
+        pageshowObserved: raw.observed, pageshowCount: raw.count, pageshowOverflow: raw.overflow,
+        ...(raw.observed ? { pageshowPersisted: raw.persisted as boolean } : {}) };
+    },
+    stop: async () => {
+      try {
+        await c4BoundedDocumentCall(() => page.evaluate(probeKey => {
+          const probe = Object.getOwnPropertyDescriptor(window, probeKey)?.value;
+          if (probe?.owner === probeKey && typeof probe.stop === "function") probe.stop();
+        }, key));
+      } finally { origins.clear(); }
+    },
+  };
+}
+// C4 document probe end.
+async function c4MetadataClickLocator(control: ReturnType<typeof c4MetadataControl>) {
+  await expect(control).toBeVisible({ timeout: 10000 });
+  await control.click({ timeout: 15000 });
+}
+async function c4MetadataClick(page: Page, name: string) { await c4MetadataClickLocator(c4MetadataControl(page, name)); }
+
+for (const viewport of parityViewports) test(`C4 metadata preparation native Edit and original settings ${viewport.width}`, async ({ page, request }) => {
+  const locale = "zh-TW", c = parityWords[locale], m = c4MetadataWords[locale], scene = scenes[0]!;
+  const diagnostic = c4MetadataJournal(`prep-${locale}-${viewport.width}`);
+  const documentProbe = c4DocumentProbe(page); // C4 document setup owner.
+  const noteRoute = (phase: string, value: string, document: C4DocumentProjection = {}) => {
+    const url = new URL(value);
+    diagnostic.note(phase, {
+      pathname: url.pathname === `/${locale}/studio` ? "STUDIO" : url.pathname === `/${locale}/studio/claims` ? "CLAIMS" : "OTHER",
+      hash: url.hash === "" ? "NONE" : url.hash === "#preparation" ? "PREPARATION" : url.hash === "#edit" ? "EDIT" : url.hash === "#preflight" ? "PREFLIGHT" : "OTHER",
+      sameStore: url.searchParams.get("store") === store, sameScene: url.searchParams.get("scene") === scene,
+      multipleFragments: url.hash.indexOf("#", 1) !== -1,
+      ...document, // C4 document projection is validated again by the serializer.
+    });
+  };
+  let navigationNotes = 0;
+  const onNavigation = (frame: ReturnType<Page["mainFrame"]>) => {
+    if (frame !== page.mainFrame() || navigationNotes >= 8) return;
+    navigationNotes++;
+    // Passive event diagnostics cannot replace a failure from the original test path.
+    try { noteRoute("mainframe-navigation", frame.url()); } catch { /* Original assertions remain authoritative. */ }
+  };
+  let before: number | undefined, primaryError = false;
+  let detail: { draft: { session_id: string; title: string; scheduled_at: string | null; aspect_ratio: string; version: number }; can_manage: boolean };
+  const writes: string[] = [];
+  try {
+    diagnostic.note("baseline-facts-start", { source_id: scene });
+    before = (await facts(request)).receipts.length;
+    diagnostic.note("login-start");
+    await page.setViewportSize(viewport); await login(page);
+    await documentProbe.install(); // C4 document setup: two bounded calls, never retried.
+    page.on("framenavigated", onNavigation);
+    page.on("request", wire => { if (new URL(wire.url()).pathname.startsWith("/api/stores/") && !["GET", "HEAD"].includes(wire.method())) writes.push(wire.method()); });
+    await test.step("SETUP: real list card loads the existing scene and GET detail", async () => {
+      diagnostic.note("list-route-start");
+      await page.goto(`${origin}/${locale}/studio?store=${store}`);
+      const title = (await facts(request)).scenes[scene]!.Title;
+      const card = page.locator(".studio-scene-list .studio-scene").filter({ has: page.locator("strong", { hasText: title }) });
+      await c4FindExistingSceneByNativePages(page, request, card);
+      await expect(card).toHaveCount(1);
+      diagnostic.note("list-card-click-start");
+      const [response] = await Promise.all([
+        page.waitForResponse(response => new URL(response.url()).pathname === c4MetadataPath(scene) && response.request().method() === "GET" && response.status() === 200, { timeout: 15000 }),
+        c4MetadataClickLocator(card),
+      ]);
+      diagnostic.note("selected-detail-status", { response_status: response.status(), source_id: scene });
+      detail = await response.json();
+      diagnostic.note("selected-detail-received", { response_status: response.status(), source_id: scene, selected_id: detail.draft.session_id, detail_version: detail.draft.version });
+      await expect(page.getByRole("heading", { name: c.prepare, exact: true })).toBeVisible();
+      expect(new URL(page.url()).searchParams.get("scene")).toBe(scene);
+    });
+    await test.step("REGRESSION: View settings still opens the real same-scene preflight", async () => {
+      diagnostic.note("view-settings-click-start");
+      noteRoute("before-settings-route", page.url(), await documentProbe.capture());
+      await c4MetadataClick(page, c.settings);
+      await expect(page.getByRole("heading", { name: c.preflight, exact: true })).toBeVisible();
+      noteRoute("after-settings-route", page.url());
+      const url = new URL(page.url());
+      expect(url.pathname).toBe(`/${locale}/studio/claims`);
+      expect(url.searchParams.get("store")).toBe(store);
+      expect(url.searchParams.get("scene")).toBe(scene);
+      expect(url.hash).toBe("#preflight");
+      diagnostic.note("preflight-back-start", { selected_id: url.searchParams.get("scene"), ...await documentProbe.capture() });
+      await page.goBack({ timeout: 15000 });
+      await expect(page.getByRole("heading", { name: c.prepare, exact: true })).toBeVisible();
+      noteRoute("after-back-route", page.url(), await documentProbe.capture());
+    });
+    await test.step("EXPECTED_RED_ENTRY: real Edit click, never goto/hash assignment", async () => {
+      diagnostic.note("edit-click-start");
+      noteRoute("before-edit-route", page.url(), await documentProbe.capture());
+      await c4MetadataClick(page, m.edit);
+      noteRoute("after-edit-click-route", page.url());
+      await expect(page).toHaveURL(`${origin}/${locale}/studio?store=${store}&scene=${scene}#edit`);
+      expect(detail.can_manage).toBe(true);
+      expect(detail.draft.session_id).toBe(scene);
+      await expect(page.getByLabel(m.name, { exact: true })).toHaveValue(detail.draft.title);
+      await expect(page.getByLabel(m.schedule, { exact: true })).toHaveValue("");
+      expect(detail.draft.scheduled_at).toBeNull();
+      await expect(page.getByLabel(m.aspect, { exact: true })).toHaveValue(detail.draft.aspect_ratio);
+      diagnostic.note("edit-fields-matched", { selected_id: detail.draft.session_id });
+    });
+  } catch (error) {
+    primaryError = true;
+    try { noteRoute("failed-route", page.url(), await documentProbe.capture()); } catch { /* Preserve the original thrown failure. */ }
+    diagnostic.preserveFailure("primary-error"); throw error;
+  } finally {
+    page.off("framenavigated", onNavigation);
+    await documentProbe.stop(); // C4 document cleanup: one bounded call; fixture owns historical documents.
+    const alreadyFailed = primaryError || test.info().errors.length > 0;
+    let readCompleted = false;
+    if (before !== undefined) {
+      try {
+        diagnostic.note("final-oracle-start");
+        const after = await facts(request); readCompleted = true;
+        diagnostic.note("final-oracle-facts", { receipt_count: after.receipts.length, write_count: writes.length });
+        expect(after.receipts).toHaveLength(before);
+        expect(writes).toHaveLength(0);
+        diagnostic.note("final-oracle-pass", { oracle: "passed" });
+        await test.info().attach("C4-metadata-zero-write", { body: JSON.stringify({ class: "MOCK", viewport: viewport.width, expected: "native Edit and preserved preflight; zero business receipts", actual: test.info().status }), contentType: "application/json" });
+      } catch (error) {
+        diagnostic.preserveFailure("secondary-oracle-error", readCompleted ? "failed" : "not_run");
+        if (!alreadyFailed) throw error;
+      }
+    } else diagnostic.preserveFailure("secondary-oracle-error", "not_run");
+  }
+});
+
+for (const [locale, viewport] of [["en", parityViewports[0]], ["zh-TW", parityViewports[1]], ["zh-CN", parityViewports[1]]] as const) {
+  test(`C4 metadata successful copy uses returned new ID ${locale} ${viewport.width}`, async ({ page, request }) => {
+    const c = parityWords[locale], m = c4MetadataWords[locale], scene = scenes[0]!;
+    const diagnostic = c4MetadataJournal(`copy-${locale}-${viewport.width}`);
+    diagnostic.note("login-start", { source_id: scene });
+    await page.setViewportSize(viewport); await login(page);
+    await page.goto(`${origin}/${locale}/studio?store=${store}&scene=${scene}#post-live`);
+    diagnostic.note("copy-source-facts-start");
+    const initial = await facts(request), source = initial.scenes[scene]!;
+    const writes: string[] = [];
+    page.on("request", wire => { if (new URL(wire.url()).pathname.startsWith("/api/stores/") && !["GET", "HEAD"].includes(wire.method())) writes.push(wire.method()); });
+    const sourceFacts = { title: source.Title, phase: source.Phase, stock: source.Stock, active: source.Active, copied: source.Copied };
+    diagnostic.note("copy-form-click-start");
+    await c4MetadataClick(page, c.copy);
+    diagnostic.note("copy-form-fill-start");
+    const title = `C4 metadata copy ${locale} ${viewport.width}`;
+    await page.getByLabel(c.copyName, { exact: true }).fill(title, { timeout: 15000 });
+    await expect(page.getByText(m.success, { exact: true })).toHaveCount(0);
+    type CopiedDetail = { draft: { session_id: string; title: string; version: number } };
+    const copiedDetailCapture: { body?: Promise<{ ok: true; detail: CopiedDetail } | { ok: false; error: unknown }> } = {};
+    const copiedRead = page.waitForResponse(response => {
+      const url = new URL(response.url()), prefix = c4MetadataPath("");
+      // Exclude obsolete source reads synchronously, before acquiring any response body.
+      if (response.request().method() !== "GET" || response.status() !== 200 || url.origin !== new URL(origin).origin || !url.pathname.startsWith(prefix) || url.pathname === c4MetadataPath(scene)) return false;
+      if (!c4DiagnosticID(url.pathname.slice(prefix.length)) || copiedDetailCapture.body) return false;
+      // Start body acquisition at arrival; retain its sole outcome and rethrow any body error below.
+      copiedDetailCapture.body = (response.json() as Promise<CopiedDetail>).then(detail => ({ ok: true as const, detail }), error => ({ ok: false as const, error }));
+      return true;
+    }, { timeout: 15000 });
+    // Observe both outcomes immediately so an early native-click failure cannot create an unhandled waiter rejection.
+    const copiedReadOutcome = copiedRead.then(response => ({ ok: true as const, response }), error => ({ ok: false as const, error }));
+    const submitted = page.waitForResponse(response => new URL(response.url()).pathname === `${c4MetadataPath(scene)}/copy` && response.request().method() === "POST", { timeout: 15000 });
+    diagnostic.note("copy-submit-start");
+    const [response] = await Promise.all([submitted, c4MetadataClick(page, c.copyReview)]);
+    diagnostic.note("copy-post-status", { response_status: response.status(), source_id: scene });
+    expect(response.status()).toBe(200);
+    const result = await response.json() as { session: { session_id: string; title: string }; window: { session_id: string; state: string; generation: number; opened_at: string | null } };
+    const newID = result.session.session_id;
+    diagnostic.note("copy-post-response", { response_status: response.status(), source_id: scene, copied_id: newID, window_state: result.window.state === "CLOSED" || result.window.state === "OPEN" ? result.window.state : "INVALID", window_generation: result.window.generation, window_opened_at: result.window.opened_at });
+    expect(newID).toMatch(/^[0-9a-f-]{36}$/); expect(newID).not.toBe(scene);
+    expect(result.session.title).toBe(title);
+    expect(result.window).toMatchObject({ session_id: newID, state: "CLOSED", generation: 0, opened_at: null });
+    diagnostic.note("copied-detail-wait-start");
+    const readOutcome = await copiedReadOutcome;
+    if (!readOutcome.ok) throw readOutcome.error;
+    const detailResponse = readOutcome.response;
+    expect(new URL(detailResponse.url()).pathname).toBe(c4MetadataPath(newID));
+    diagnostic.note("copied-detail-status", { response_status: detailResponse.status(), copied_id: newID });
+    if (!copiedDetailCapture.body) throw new Error("copied browser detail body was not captured");
+    const detailOutcome = await copiedDetailCapture.body;
+    if (!detailOutcome.ok) throw detailOutcome.error;
+    const detail = detailOutcome.detail;
+    diagnostic.note("copied-detail-response", { response_status: detailResponse.status(), copied_id: newID, detail_id: detail.draft.session_id, detail_version: detail.draft.version });
+    expect(detail.draft).toMatchObject({ session_id: newID, title });
+    await expect(page.getByRole("heading", { name: c.copied, exact: true })).toBeVisible();
+    const successURL = page.url();
+    expect(new URL(successURL).searchParams.get("scene")).toBe(newID);
+    expect(new URL(successURL).searchParams.get("store")).toBe(store);
+    const committed = await facts(request);
+    diagnostic.note("copy-effect-receipts", { source_id: scene, copied_id: newID, receipts: c4ReceiptProjection(committed.receipts.slice(initial.receipts.length)), receipt_count: committed.receipts.length - initial.receipts.length });
+    expect(committed.receipts.slice(initial.receipts.length)).toMatchObject([{ scene, action: "copy", status: 200, effect: true }]);
+    await test.info().attach("C4-copy-real-response", { body: JSON.stringify({ class: "MOCK", status: response.status(), distinctReturnedID: newID !== scene, returnedDetailMatched: detail.draft.session_id === newID, effectReceipts: committed.receipts.length - initial.receipts.length }), contentType: "application/json" });
+    let primaryError = false;
+    try {
+      await test.step("EXPECTED_RED_COPY: frozen success copy follows real 200 and returned detail", async () => {
+        diagnostic.note("copy-success-copy-start");
+        await expect.soft(page.getByText(m.success, { exact: true })).toBeVisible();
+        await expect.soft(page.getByText(m.notice, { exact: true })).toBeVisible();
+      });
+      await test.step("EXPECTED_RED_ENTRY: Edit/Open preparation retain returned copied identity", async () => {
+        diagnostic.note("copied-edit-click-start");
+        await c4MetadataClick(page, m.edit);
+        await expect(page.getByLabel(m.name, { exact: true })).toHaveValue(title);
+        expect(new URL(page.url()).searchParams.get("scene")).toBe(newID);
+        expect(new URL(page.url()).hash).toBe("#edit");
+        await page.goBack({ timeout: 15000 });
+        await expect(page.getByRole("heading", { name: c.copied, exact: true })).toBeVisible();
+        diagnostic.note("copied-open-preparation-start");
+        await c4MetadataClick(page, c.openPrep);
+        await expect(page.getByRole("heading", { name: c.preflight, exact: true })).toBeVisible();
+        expect(new URL(page.url()).searchParams.get("scene")).toBe(newID);
+        expect(new URL(page.url()).pathname).toBe(`/${locale}/studio/claims`);
+        expect(new URL(page.url()).hash).toBe("#preflight");
+        await page.goBack({ timeout: 15000 });
+        await expect(page.getByRole("heading", { name: c.copied, exact: true })).toBeVisible();
+        diagnostic.note("copied-list-back-start");
+        await c4MetadataClick(page, c.back);
+        await expect(page).toHaveURL(`${origin}/${locale}/studio?store=${store}`);
+        await expect(page.locator(".studio-scene-list").getByText(title, { exact: true })).toBeVisible();
+      });
+    } catch (error) {
+      primaryError = true; diagnostic.preserveFailure("primary-error"); throw error;
+    } finally {
+      const alreadyFailed = primaryError || test.info().errors.length > 0;
+      let readCompleted = false;
+      try {
+        diagnostic.note("final-oracle-start");
+        const after = await facts(request), currentSource = after.scenes[scene]!; readCompleted = true;
+        diagnostic.note("final-oracle-facts", { source_id: scene, copied_id: newID, receipt_count: after.receipts.length, write_count: writes.length, receipts: c4ReceiptProjection(after.receipts.slice(initial.receipts.length)) });
+        expect(writes).toEqual(["POST"]);
+        expect(after.receipts).toHaveLength(committed.receipts.length);
+        expect({ title: currentSource.Title, phase: currentSource.Phase, stock: currentSource.Stock, active: currentSource.Active, copied: currentSource.Copied }).toEqual(sourceFacts);
+        expect(after.scenes[newID]!.Title).toBe(title);
+        diagnostic.note("final-oracle-pass", { oracle: "passed" });
+      } catch (error) {
+        diagnostic.preserveFailure("secondary-oracle-error", readCompleted ? "failed" : "not_run");
+        if (!alreadyFailed) throw error;
+      }
+    }
+  });
+
+  test(`C4 metadata copy UNKNOWN blocks ${locale === "zh-CN" ? "shell" : "Back"} independently of Edit ${locale} ${viewport.width}`, async ({ page, request }) => {
+    // Never traverse missing Edit: exercise the existing copy form and its existing exits directly.
+    const c = parityWords[locale], m = c4MetadataWords[locale], scene = scenes[0]!;
+    const diagnostic = c4MetadataJournal(`unknown-${locale}-${viewport.width}`);
+    diagnostic.note("login-start", { source_id: scene });
+    await page.setViewportSize(viewport); await login(page);
+    await page.goto(`${origin}/${locale}/studio?store=${store}&scene=${scene}#post-live`);
+    diagnostic.note("copy-form-click-start");
+    await c4MetadataClick(page, c.copy);
+    diagnostic.note("copy-form-fill-start");
+    const title = `C4 lost ACK ${locale} ${viewport.width}`;
+    await page.getByLabel(c.copyName, { exact: true }).fill(title, { timeout: 15000 });
+    const before = await facts(request), commands: { key: string; body: string }[] = [];
+    let committedID = "", upstreamStatus = 0;
+    const path = `${c4MetadataPath(scene)}/copy`;
+    await page.route(`**${path}`, async route => {
+      const wire = route.request();
+      commands.push({ key: wire.headers()["idempotency-key"] ?? "", body: wire.postData() ?? "" });
+      if (commands.length !== 1) { await route.continue(); return; }
+      // FAULT: actual server effect and 200 first; abort only the client ACK. No fabricated response.
+      const actual = await route.fetch();
+      upstreamStatus = actual.status();
+      diagnostic.note("upstream-response-status", { response_status: upstreamStatus, source_id: scene });
+      const result = await actual.json() as { session: { session_id: string }; window?: { state: string; generation: number; opened_at: string | null } };
+      committedID = result.session.session_id;
+      diagnostic.note("upstream-real-response-before-drop", { response_status: upstreamStatus, source_id: scene, copied_id: committedID, window_state: result.window?.state === "CLOSED" || result.window?.state === "OPEN" ? result.window.state : "INVALID", window_generation: result.window?.generation, window_opened_at: result.window?.opened_at });
+      await actual.dispose();
+      await route.abort("failed");
+    });
+    diagnostic.note("copy-submit-start");
+    await c4MetadataClick(page, c.copyReview);
+    await test.step("SETUP_REAL_200: commit and original Retry exist before attempting departure", async () => {
+      await expect.poll(() => upstreamStatus).toBe(200);
+      expect(committedID).toMatch(/^[0-9a-f-]{36}$/); expect(committedID).not.toBe(scene);
+      await expect(page.getByRole("button", { name: m.retry, exact: true })).toBeVisible();
+      const receipts = (await facts(request)).receipts.slice(before.receipts.length);
+      diagnostic.note("unknown-effect-receipts", { source_id: scene, copied_id: committedID, receipts: c4ReceiptProjection(receipts), receipt_count: receipts.length });
+      expect(receipts).toMatchObject([{ scene, action: "copy", status: 200, effect: true }]);
+      await test.info().attach("C4-UNKNOWN-precondition", { body: JSON.stringify({ class: "MOCK", upstreamStatus, distinctReturnedID: committedID !== scene, effectReceipts: receipts.length }), contentType: "application/json" });
+    });
+    const unresolvedURL = page.url();
+    await test.step("EXPECTED_RED_GUARD: existing Back/shell must preserve original operation", async () => {
+      diagnostic.note("unknown-departure-click-start");
+      if (locale === "zh-CN") {
+        const menu = page.locator('button[aria-controls="workspace-navigation"]');
+        if (await menu.isVisible()) await c4MetadataClickLocator(menu);
+        const liveGroup = page.getByTestId("nav-group-live");
+        await expect(liveGroup).toBeVisible({ timeout: 10000 });
+        if (await liveGroup.getAttribute("aria-expanded") !== "true") await c4MetadataClickLocator(liveGroup);
+        await c4MetadataClickLocator(page.getByTestId("nav-studio"));
+      } else await c4MetadataClick(page, c.back);
+      diagnostic.note("unknown-departure-assert-start", { selected_id: new URL(page.url()).searchParams.get("scene") });
+      await expect.soft(page).toHaveURL(unresolvedURL);
+      await expect.soft(page.getByLabel(c.copyName, { exact: true })).toHaveValue(title);
+      await expect.soft(page.getByRole("button", { name: m.retry, exact: true })).toBeVisible();
+      await expect.soft(page.getByText(m.unknown, { exact: true })).toBeVisible();
+      await expect.soft(page.getByText(m.unknownHelp, { exact: true })).toBeVisible();
+      await expect.soft(c4MetadataControl(page, m.discard)).toHaveCount(0);
+      expect.soft(commands.length).toBe(1);
+      expect.soft((await facts(request)).receipts).toHaveLength(before.receipts.length + 1);
+    });
+    // If departure wrongly unmounts the operation, the guard assertions above remain failures.
+    // A correct guard must also permit the existing original-key Retry, never a new copy.
+    if (locale === "zh-CN") {
+      await page.keyboard.press("Escape");
+      await expect(page.locator('button[aria-controls="workspace-navigation"]')).toHaveAttribute("aria-expanded", "false");
+    }
+    diagnostic.note("original-retry-click-start");
+    await c4MetadataClick(page, m.retry);
+    await expect(page.getByRole("heading", { name: c.copied, exact: true })).toBeVisible();
+    expect(new URL(page.url()).searchParams.get("scene")).toBe(committedID);
+    expect(commands.length).toBe(2);
+    expect(commands[0]!.key.length > 0 && commands[1]!.key === commands[0]!.key).toBe(true);
+    expect(commands[1]!.body === commands[0]!.body).toBe(true);
+    const after = await facts(request), receipts = after.receipts.slice(before.receipts.length);
+    diagnostic.note("retry-effect-receipts", { source_id: scene, copied_id: committedID, selected_id: new URL(page.url()).searchParams.get("scene"), receipts: c4ReceiptProjection(receipts), receipt_count: receipts.length });
+    expect(receipts.filter(receipt => receipt.effect)).toHaveLength(1);
+    expect(Object.values(after.scenes).filter(row => row.Title === title)).toHaveLength(1);
+    diagnostic.note("retry-oracles-pass", { oracle: "passed" });
+    await test.info().attach("C4-UNKNOWN-retry", { body: JSON.stringify({ class: "MOCK", attempts: commands.length, sameKey: commands[1]!.key === commands[0]!.key, sameBody: commands[1]!.body === commands[0]!.body, singleEffect: receipts.filter(receipt => receipt.effect).length === 1 }), contentType: "application/json" });
+  });
+}
+
+
+// Pagination setup/observation only: facts supplies existing IDs, never a browser
+// response or a replacement list. Navigation always clicks the shipped controls.
+async function c4RenderedPageIDs(page: Page): Promise<string[]> {
+  const markers = page.locator('.studio-scene-list [data-testid^="live-session-results-"]');
+  const ids: string[] = [];
+  for (let i = 0; i < await markers.count(); i++) {
+    const marker = await markers.nth(i).getAttribute("data-testid");
+    if (!marker?.startsWith("live-session-results-")) throw new Error("missing rendered scene identity");
+    ids.push(marker.slice("live-session-results-".length));
+  }
+  return ids;
+}
+async function c4NativePageTransition(page: Page, direction: "next" | "previous") {
+  const beforeCursor = new URL(page.url()).searchParams.get("cursor") ?? "";
+  const beforeIDs = JSON.stringify(await c4RenderedPageIDs(page));
+  // Independent literal UI vocabulary; no product dictionary as the test oracle.
+  const button = page.locator(".studio-pager").getByRole("button", { name: direction === "next" ? "下一頁" : "上一頁", exact: true });
+  await expect(button).toBeEnabled();
+  await button.click({ timeout: 15000 });
+  await expect.poll(() => new URL(page.url()).searchParams.get("cursor") ?? "").not.toBe(beforeCursor);
+  await expect.poll(async () => JSON.stringify(await c4RenderedPageIDs(page))).not.toBe(beforeIDs);
+  await expect(page.locator(".studio-scene-list .studio-scene").first()).toBeVisible();
+}
+async function c4FindExistingSceneByNativePages(page: Page, request: APIRequestContext, card: ReturnType<Page["locator"]>) {
+  const observed = await facts(request);
+  // Store is an existing fixture field. The prefix Scene/DTO declaration stays frozen.
+  const rows = Object.values(observed.scenes) as (Scene & { Store: string })[];
+  const pages = Math.ceil(rows.filter(row => row.Store === store).length / 20);
+  expect(pages).toBeGreaterThan(0);
+  await expect(page.locator(".studio-scene-list .studio-scene").first()).toBeVisible();
+  const visited = new Set<string>();
+  for (let i = 0; i < pages; i++) {
+    const cursor = new URL(page.url()).searchParams.get("cursor") ?? "";
+    expect(visited.has(cursor), "native list traversal repeated a cursor").toBe(false);
+    visited.add(cursor);
+    if (await card.count() === 1) return;
+    if (i + 1 < pages) await c4NativePageTransition(page, "next");
+  }
+  throw new Error("existing scene was absent after bounded native page traversal");
+}
+
+// Run after all existing producers, retaining the original 26-row store. A
+// focused run without those producers must fail rather than claim this coverage.
+for (const viewport of parityViewports) test(`C4 metadata native all26 pagination ${viewport.width}`, async ({ page, request }) => {
+  await page.setViewportSize(viewport); await login(page);
+  const before = await facts(request);
+  const rows = Object.values(before.scenes) as (Scene & { Store: string })[];
+  const expectedIDs = rows.filter(row => row.Store === store).map(row => row.ID).sort();
+  const foreignIDs = rows.filter(row => row.Store !== store).map(row => row.ID);
+  expect(expectedIDs).toHaveLength(26);
+  const copiedTitle = "C4 metadata copy zh-CN 390";
+  expect(rows.some(row => row.Store === store && row.Copied && row.Title === copiedTitle)).toBe(true);
+  const writes: string[] = [];
+  page.on("request", wire => { if (new URL(wire.url()).pathname.startsWith("/api/stores/") && !["GET", "HEAD"].includes(wire.method())) writes.push(wire.method()); });
+  await page.goto(`${origin}/zh-TW/studio?store=${store}`);
+  await expect.poll(async () => (await c4RenderedPageIDs(page)).length).toBe(20);
+  const first = await c4RenderedPageIDs(page);
+  const pager = page.locator(".studio-pager");
+  await expect(pager.getByRole("button", { name: "上一頁", exact: true })).toBeDisabled();
+  await expect(pager.getByRole("button", { name: "下一頁", exact: true })).toBeEnabled();
+  await expect(page.locator(".studio-scene-list").getByText(copiedTitle, { exact: true })).toBeVisible();
+  await c4NativePageTransition(page, "next");
+  await expect.poll(async () => (await c4RenderedPageIDs(page)).length).toBe(6);
+  const second = await c4RenderedPageIDs(page);
+  await expect(pager.getByRole("button", { name: "下一頁", exact: true })).toBeDisabled();
+  await expect(pager.getByRole("button", { name: "上一頁", exact: true })).toBeEnabled();
+  const all = [...first, ...second];
+  expect(new Set(all).size).toBe(26);
+  expect([...all].sort()).toEqual(expectedIDs);
+  expect(all.some(id => foreignIDs.includes(id))).toBe(false);
+  await c4NativePageTransition(page, "previous");
+  await expect.poll(async () => await c4RenderedPageIDs(page)).toEqual(first);
+  await expect(pager.getByRole("button", { name: "上一頁", exact: true })).toBeDisabled();
+  await expect(page.locator(".studio-scene-list").getByText(copiedTitle, { exact: true })).toBeVisible();
+  const after = await facts(request);
+  expect(after.receipts).toEqual(before.receipts);
+  expect(Object.keys(after.scenes).sort()).toEqual(Object.keys(before.scenes).sort());
+  expect(writes).toEqual([]);
+  await test.info().attach("click-ledger-pagination", { body: JSON.stringify({ class: "MOCK", viewport: viewport.width, controls: ["Next page", "Previous page"], expected: [20, 6, 20], actual: [first.length, second.length, (await c4RenderedPageIDs(page)).length], unique: new Set(all).size, writes: writes.length, receiptDelta: after.receipts.length - before.receipts.length }), contentType: "application/json" });
 });

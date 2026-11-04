@@ -283,10 +283,11 @@ func projectCheckout(result checkout.Result) checkoutResponse {
 }
 
 type orderQuoteResponse struct {
-	Currency  string              `json:"currency"`
-	Lines     []quoteLineResponse `json:"lines"`
-	Amount    quoteAmountResponse `json:"amount"`
-	Promotion *promotionResponse  `json:"promotion,omitempty"`
+	Currency    string               `json:"currency"`
+	Lines       []quoteLineResponse  `json:"lines"`
+	Amount      quoteAmountResponse  `json:"amount"`
+	Promotion   *promotionResponse   `json:"promotion,omitempty"`
+	Adjustments []pricing.Adjustment `json:"adjustments,omitempty"`
 }
 
 // promotionResponse is the buyer's view of the code a quote/order was priced with (storefront-v2 §F). Present only when a code applied (the
@@ -378,7 +379,7 @@ func projectOrder(order checkout.Order) orderResponse {
 					ShippingMinor: quote.Amount.ShippingMinor, ShippingTaxMinor: quote.Amount.ShippingTaxMinor,
 					TaxMinor: quote.Amount.TaxMinor, TotalMinor: quote.Amount.TotalMinor,
 				},
-				Promotion: projectPromotion(quote.Promotion),
+				Promotion: projectPromotion(quote.Promotion), Adjustments: quote.Adjustments,
 			},
 			Destination: orderDestinationResponse{
 				Kind: destination.Kind, Country: destination.Country, RecipientName: destination.RecipientName,
