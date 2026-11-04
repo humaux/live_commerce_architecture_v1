@@ -1,0 +1,9 @@
+{
+  "tests/admin/studio-ui.spec.ts": "94ad4953af9d73b2585936e715b02ac0060a5e32f590cf7736590428ee8d51eb",
+  "tests/admin/meta-connect-gate.spec.ts": "8627e291a8f037effb5deb420fa38de7d35883ec13c29db628cd32b176e3bf6d",
+  "tests/admin/parity-live-sessions.ts": "e2d271207aa1f5bf556e48e94969415fcc927101005dbd2d9ef39fed0e2eb8d6",
+  "output/ci-select-backend-browser/browser-ownership.json": "87b93f5499a70dabf2befb17b8136ece60492cc2aeafb1786fb04fc3a3ea5469",
+  "output/parity-live-sessions/DELIVERY.md": "264f5befd0486d93ca277ccfe12580564ce226cae0bf59ca05b85d0ae4deb98d",
+  "output/parity-live-sessions/pr-body.md": "aa34a32e15fb1ac40d83a10b34d2031bdc887b136e9c5b22a2ee16c119c21da7",
+  "output/parity-live-sessions/tsconfig.relay-4.json": "31281d5225c4088a1b145f96c24ff6ce2a4ce406bdd1d43bb813cef0534c6f29"
+}

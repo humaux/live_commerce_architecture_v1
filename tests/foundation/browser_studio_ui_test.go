@@ -224,7 +224,7 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 	worker := lmwProcess(t, workerBinary, "studio-ui-worker", workerEnv)
 	mrReadyLog(t, worker, "media_worker_ready")
 	playwrightLog := browserLog(t, filepath.Join(evidence, "playwright.log"))
-	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/studio-ui.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
+	browser := exec.CommandContext(ctx, "pnpm", "exec", "playwright", "test", "tests/admin/studio-ui.spec.ts", "tests/admin/studio-ui2-c4-metadata.spec.ts", "--reporter=list", "--output="+filepath.Join(evidence, "results"))
 	if focused {
 		// A single known main case preserves its real chain while giving exact
 		// cohort totals below. Arbitrary subsets cannot bypass full readbacks.
@@ -244,7 +244,9 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 	browser.Stdout, browser.Stderr = playwrightLog, playwrightLog
 	browserErr := browser.Run()
 	mrStop(t, worker, syscall.SIGTERM, true)
-	wantFaults, wantKeys, wantIssued := int64(3), 5, 5
+	// Four appended C4 writer cases each add one signed login and one create.
+	// The original five requests (including the lost-ACK retry) retain their order.
+	wantFaults, wantKeys, wantIssued := int64(3), 9, 9
 	if focused {
 		wantFaults, wantKeys, wantIssued = 2, 4, 2 // no separate native-uncertain or STU05 logins
 	}
@@ -256,6 +258,18 @@ func TestBrowserStudioUIRealChain(t *testing.T) {
 	faultKeysMu.Unlock()
 	if len(keys) != wantKeys || keys[1] == "" || keys[1] != keys[2] || keys[3] == keys[1] || (!focused && (keys[4] == keys[1] || keys[4] == keys[3])) {
 		t.Errorf("lost-ACK retry changed command key: requests=%d evidence=%s", len(keys), evidence)
+	}
+	if !focused && len(keys) == wantKeys {
+		seen := make(map[string]bool, len(keys))
+		for _, key := range keys[:5] {
+			seen[key] = true
+		}
+		for i, key := range keys[5:] {
+			if key == "" || seen[key] {
+				t.Errorf("C4 writer must own one distinct nonempty create key: case=%d evidence=%s", i+1, evidence)
+			}
+			seen[key] = true
+		}
 	}
 	var duplicateCount int
 	if err := h.lp.f.owner.QueryRow(ctx, `SELECT count(*) FROM live.sessions WHERE tenant_id=$1 AND store_id=$2 AND title='STU04 lost ACK scene'`, h.lp.f.tenantA, h.lp.f.storeA1).Scan(&duplicateCount); err != nil || duplicateCount != 1 {
