@@ -89,3 +89,19 @@ Current RELAY 3 again supplies no numeric R2 target and no ownership handoff for
 On 2026-10-30, re-read `AGENTS.md`, `架构.md` §§0/1/2/26/27, contract §E, the R2 pin and notify renderer/worker. `gh pr checks 375` and `gh run view 41056798375 --log-failed --job 124066257869` confirm the same six new BFF assertions fail with 404 versus 201/400/405/503/429 (506 tests, 500 pass, 6 fail). Source remains `ca5a55e5926391aeb1a8eb8c55832e706a3f9d53`; **E3 causal BFF RED only**. `gh pr view 375 --json comments,headRefOid` returns no comments and the same head. Gates `41056798358` remains pending: bundle:03 job `124070185543` is in progress; other gate jobs are queued. Build success is not feature acceptance.
 
 RELAY 4 still supplies neither the assigned numeric R2 target nor `internal/notify` ownership/interface. Current pin is 139 (`tests/foundation/r2_integration_upgrade_test.go:131-133`). Contract §E assigns notify to buyer-comms, and its renderer rejects an unknown contact kind. The card explicitly forbids choosing a pin or editing an unowned backend package; **STOP** remains mandatory. Integrator next action: supply both assignments, rather than relay this same Foundation failure again. No implementation, migration, tests or gate edits; no local tests/servers/checks, commit, push, new workflow or recursive delegation. Only local card evidence appended. Humaux search/store/canvas tools are unavailable; no shared-memory completion claimed. Existing Gates wakeup remains the integrator's relay. GREEN, Go/PG RED and independent review remain NOT_RUN; feature incomplete.
+
+## FIX1 browser evidence (cited, not copied — ADR-20261031)
+
+The raw artifact copies under `FIX1-evidence/browser/playwright/run.pZts2ZJb/` were removed on 2026-11-04. Source: Gates run `41056798358`, job `124070185645`, artifact `gate-browser-click-sweep_7_10` (artifact ID `12981636339`). Paths are relative to the artifact root, `playwright/run.pZts2ZJb/`:
+
+| file | sha256 |
+|---|---|
+| `ci-gates/--browser-click-sweep_7_10.log` | `be56f205e17d94d7c749eb8cf35f5d302e23ff051c3d53dc16abeb8fa708fbf8` |
+| `click-sweep/20261030T131417.290145074/click-sweep.mjs.log` | `9dc751bb261b350046f2376c21e318e48a263c29e6ba7bff4e451cc9acd67c9f` |
+| `click-sweep/20261030T131417.290145074/facts.json` | `e72d826ea6dee093c44f15f900f8ee62f9662c514409fcb63e4e7f0327b19411` |
+| `click-sweep/20261030T131417.290145074/next.log` | `4f48a68f3728b9f366c16aa2a32cb34566b8b5fcdeda514d80aa47eb55df271b` |
+| `click-sweep/20261030T131417.290145074/storefront-next.log` | `12f26672a7dee53660d6e0ce245156bdafc265d428c6f105c581ed56341ec8c4` |
+| `ui-click-sweep/journeys.json` | `44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a` |
+| `ui-click-sweep/ledger.json` | `3c5a886959cf12244b760656007d185cd596f24e04ff0dcdc278484db5c58d7a` |
+| `ui-click-sweep/ledger.md` | `c67b8fb07fe91fd7291ba7f06d544553705df16e4e96cd5e34e2dbfed9cff0e1` |
+| `ui-click-sweep/screenshots/r00025.png` | `2889a409d224d961f163add5360d35f4aefd73509abb1b92e28503700fbe265f` |

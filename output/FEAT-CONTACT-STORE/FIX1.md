@@ -30,7 +30,7 @@ Fresh `gh run view --job … --log-failed` reads confirmed the Go 404 assertions
 | same | TestStoreContactNotificationOutboxAndNoSensitiveLogs | g10.log: line 389, HTTP status=404 want=201 | b: one existing notify outbox intent |
 | same | TestStoreContactUnknownMailIsNotRetried | g10.log: line 421, HTTP status=404 want=201 | b: retain existing UNKNOWN protocol |
 | same | TestStoreContactConcurrentHandlingConflict | g10.log: line 436, HTTP status=404 want=201 | b: locked CAS + opaque command receipt |
-| 41056798358 / 124070185645 | TestBrowserClickSweep | [ledger.md](FIX1-evidence/browser/playwright/run.pZts2ZJb/ui-click-sweep/ledger.md): r00025 admin `/`, desktop zh-TW, `todo-stock`, no visible change within 3 s | c-candidate per explicit ruling; no dashboard/page-path changes; integrator reruns job. No identical base assertion proved. |
+| 41056798358 / 124070185645 | TestBrowserClickSweep | artifact `gate-browser-click-sweep_7_10` `ui-click-sweep/ledger.md` (sha256 in DELIVERY.md): r00025 admin `/`, desktop zh-TW, `todo-stock`, no visible change within 3 s | c-candidate per explicit ruling; no dashboard/page-path changes; integrator reruns job. No identical base assertion proved. |
 | 41056798358 / 124098833489 | receipts | [receipts.log](FIX1-evidence/receipts.log): browser shard and g10 receipt FAIL, test_count=18/246 | dependency-only; no standalone receipt defect |
 | 41056798358 / 124098833372 | aggregate | [aggregate.log](FIX1-evidence/aggregate.log): failed gate aggregation | dependency-only |
 | 41056798358 / 124099371779 | required | [required.log](FIX1-evidence/required.log): gate/aggregate/receipts failure | dependency-only |
