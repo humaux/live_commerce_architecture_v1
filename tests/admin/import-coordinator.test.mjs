@@ -190,3 +190,17 @@ test("real ImportForm error rows use source guidance only for explicit external_
     if (!source) assert.equal(JSON.stringify(failed).includes("source_id"), false, "generic row must not claim the source column is missing");
   }
 });
+
+test("#543 D: a four-column file auto-mapped to consent shows the consent control so the merchant can un-map it", async () => {
+  const headers = ["ref", "label", "tel", "opt"];
+  const h = harness(async () => ({ kind: "receipt", value: receipt }), async () => headers, "en",
+    { requestedMapping: { external_id: "ref", name: "label", phone: "tel", email: "", consent: "opt" } });
+  h.render();
+  h.control("import-file").props.onChange({ target: { files: [new File(["ref,label,tel,opt\r\nsynthetic-id,DO_NOT_SHOW_CELL,,yes\r\n"], "four.csv", { type: "text/csv" })] } });
+  await tick(); h.render();
+  assert.equal(h.control("import-map-consent").props.value, "opt", "auto-mapped consent is visible on a four-column file");
+  h.control("import-map-consent").props.onChange({ target: { value: "" } }); h.render();
+  assert.equal(h.control("import-map-consent").props.value, "", "the un-mapped consent control stays reachable");
+  await h.click("import-preview");
+  assert.equal(h.calls[0].mapping.consent, "", "preview is sent without the consent column");
+});

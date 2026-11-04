@@ -371,9 +371,18 @@ func ccbMultiWarehousePhase(t *testing.T, ctx context.Context, f *testFixture, s
 	if err := f.owner.QueryRow(ctx, `SELECT id::text,name FROM inventory.warehouses WHERE tenant_id=$1 AND store_id=$2 AND active`, tenant, store).Scan(&primaryID, &primary); err != nil {
 		t.Fatalf("multi-warehouse phase: the one active warehouse: %v", err)
 	}
+	var c08Status string
+	if err := f.owner.QueryRow(ctx, `SELECT status FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND slug='parity-c08'`, tenant, store).Scan(&c08Status); err != nil {
+		t.Fatalf("multi-warehouse phase: parity-c08 status: %v", err)
+	}
 	if err := f.owner.QueryRow(ctx, `INSERT INTO inventory.warehouses(tenant_id,store_id,name) VALUES($1,$2,$3) RETURNING id::text`, tenant, store, second).Scan(&secondID); err != nil {
 		t.Fatalf("multi-warehouse phase: second warehouse: %v", err)
 	}
+	// #543 I(ii): fixture() is package-shared (fixtureOnce); later tests must see one active warehouse and the original parity-c08 again.
+	t.Cleanup(func() {
+		mustExec(t, f.owner, `UPDATE inventory.warehouses SET active=false WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, tenant, store, secondID)
+		mustExec(t, f.owner, `UPDATE catalog.products SET status=$3 WHERE tenant_id=$1 AND store_id=$2 AND slug='parity-c08'`, tenant, store, c08Status)
+	})
 	mustExec(t, f.owner, `UPDATE catalog.products SET status='archived' WHERE tenant_id=$1 AND store_id=$2 AND slug='parity-c08'`, tenant, store)
 	if err := f.owner.QueryRow(ctx, `SELECT id::text FROM catalog.skus WHERE tenant_id=$1 AND store_id=$2 AND code='A12'`, tenant, store).Scan(&a12); err != nil {
 		t.Fatalf("multi-warehouse phase: the C6 A12 SKU: %v", err)
