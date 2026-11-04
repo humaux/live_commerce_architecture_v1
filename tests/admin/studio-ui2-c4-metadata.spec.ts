@@ -164,6 +164,8 @@ c4PrivateTest.describe("C4 metadata independent REAL PG contracts", () => {
     await page.getByLabel("Canvas ratio", { exact: true }).selectOption("16:9");
     const [saved] = await Promise.all([
       page.waitForResponse(response => response.request().method() === "PATCH" && new URL(response.url()).pathname === path, { timeout: 15000 }),
+      // Studio.tsx re-reads the detail after a save; consume that GET here so the reload waiter below can only match the reloaded page.
+      page.waitForResponse(response => response.request().method() === "GET" && new URL(response.url()).pathname === path && response.status() === 200, { timeout: 15000 }),
       save.click({ timeout: 15000 }),
     ]);
     expect(saved.status()).toBe(200);
