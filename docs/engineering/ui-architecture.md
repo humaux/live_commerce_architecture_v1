@@ -118,7 +118,7 @@
 | 订单、查询、链接 | `/orders/{id}`、`/orders/lookup`、`/order-link` | 订单状态（标题必须跟随真实状态，D06）、转账凭证、取消 |
 | 认领 | `/claim` | 直播认领链接，加入购物车 |
 | 直播 | `/live`（S6） | 当前或下一场直播、本场商品 |
-| 内容 | `/pages/{slug}`、`/legal/{slug}`（含防诈骗 S5）、`/privacy`、`/data-deletion` | 静态和装修页面 |
+| 内容 | `/pages/{slug}`、`/legal/{slug}`（含防诈骗 S5）、`/privacy`、`/data-deletion`、`/contact` | 静态和装修页面及联系商店 |
 
 全局模块：页眉（Logo、导航、搜索、购物车、语言）、公告栏、页脚（法务、联系、营业信息）、购物车抽屉、直播横幅。
 合计 18 个页面路由。

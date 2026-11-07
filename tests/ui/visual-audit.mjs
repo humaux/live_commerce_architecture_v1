@@ -32,7 +32,7 @@ import { routes as adminRoutes } from "../../apps/admin/src/routes.ts";
 import { fixture as platformFixture } from "../admin/shell-fixture.mjs";
 import { INIT_SCRIPT, degradedMessages, monitor, settle } from "./click-sweep-lib.mjs";
 import { captureInnerScrollFrames, supplementalViewportFor, foldSupplementalCapture } from "./visual-scroll-capture.mjs";
-import { VISUAL_LOCALES, VISUAL_VIEWPORTS, assignShards, parseShard, routeId, shardReport } from "./sweep-shard-lib.mjs";
+import { VISUAL_LOCALES, VISUAL_VIEWPORTS, assertStorefrontRoutes, assignShards, parseShard, routeId, shardReport } from "./sweep-shard-lib.mjs";
 import { BLOCKING, BLOCKING_KINDS, RULES, SCROLL_POSITIONS, T, collect, countByRule, describe, evaluate, r10Occlusion, scrollToFraction, selectRecords } from "./visual-lint-lib.mjs";
 
 export { VISUAL_LOCALES as LOCALES, VISUAL_VIEWPORTS as VIEWPORTS, routeId }; // the matrix lives in sweep-shard-lib.mjs: sweep-aggregate.mjs counts the same one
@@ -49,7 +49,7 @@ const STOREFRONT = (facts) => {
     { route: "/search", path: `/search?q=${encodeURIComponent("Sweep")}` }, { route: "/orders/lookup", path: "/orders/lookup" },
     { route: "/order-link", path: "/order-link", expectDegraded: true }, { route: "/claim", path: "/claim", expectDegraded: true },
     { route: "/legal/anti-fraud", path: "/legal/anti-fraud" }, { route: "/legal/[slug]", path: "/legal/refunds" }, { route: "/privacy", path: "/privacy" },
-    { route: "/data-deletion", path: "/data-deletion" }, { route: "/pages/[slug]", path: "/pages/about" },
+    { route: "/data-deletion", path: "/data-deletion" }, { route: "/contact", path: "/contact" }, { route: "/pages/[slug]", path: "/pages/about" },
   ];
 };
 const STOREFRONT_CART = [{ route: "/cart", path: "/cart" }, { route: "/checkout", path: "/checkout" }, { route: "/orders/[orderID]", path: null }];
@@ -165,7 +165,9 @@ export async function main() {
   }
   if (wanted("=/")) adminUnits.push({ id: "signed-out-home", route: "/", state: "signed-out", url: (l) => `${adminOrigin}/${l}`, auth: false });
   const platformUnits = PLATFORM_PAGES.filter((n) => pageFilter.length === 0 || pageFilter.includes("platform") || wanted(`/${n}`)).map((name) => ({ id: name, route: name === "home" ? "/" : `/${name}`, state: "public", name }));
-  const storefrontUnits = [...STOREFRONT(facts), ...STOREFRONT_CART].filter((r) => wanted(r.route)).map((r) => ({ id: routeId(r.route), ...r }));
+  const storefrontRoutes = [...STOREFRONT(facts), ...STOREFRONT_CART];
+  assertStorefrontRoutes(storefrontRoutes.map((r) => r.route));
+  const storefrontUnits = storefrontRoutes.filter((r) => wanted(r.route)).map((r) => ({ id: routeId(r.route), ...r }));
   const universe = [];
   for (const l of LOCALES) for (const v of VIEWPORTS) {
     for (const u of adminUnits) universe.push({ app: "admin", id: u.id, locale: l, v });
