@@ -64,15 +64,57 @@ function createSafeObserver(expectedOrigin) {
   const attach = (target, id) => { const list = candidates.get(target.url_id) ?? []; if (list.length < 2048) list.push(id); candidates.set(target.url_id, list); };
   const candidateIDs = (id) => [...(candidates.get(id) ?? [])];
   const error = (e) => {
-    const name = ["Fetch API cannot load https", "Error", "TypeError", "ReferenceError", "SyntaxError", "AbortError"].includes(e.name) ? e.name : "[redacted]";
-    const suffix = " due to access control checks.";
-    const target = typeof e.message === "string" && e.message.endsWith(suffix) ? identify(`https:/${e.message.slice(0, -suffix.length)}`) : null;
-    return { name, message: target ? "access-control-signature" : "[redacted]", target };
+    try {
+      const name = ["Fetch API cannot load https", "Error", "TypeError", "ReferenceError", "SyntaxError", "AbortError"].includes(e.name) ? e.name : "[redacted]";
+      const suffix = " due to access control checks.";
+      const target = typeof e.message === "string" && e.message.endsWith(suffix) ? identify(`https:/${e.message.slice(0, -suffix.length)}`) : null;
+      return { name, message: target ? "access-control-signature" : "[redacted]", target };
+    } catch { return { name: "[redacted]", message: "[redacted]", target: null }; }
   };
   const fail = (s) => !s ? "UNKNOWN" : /cancel/i.test(s) ? "cancelled-like" : /cert|ssl|tls/i.test(s) ? "tls-like" : /cors|access.control/i.test(s) ? "security-like" : "other-redacted";
   const problem = (e) => `pageerror: ${error(e).target?.path ?? "[redacted]"}`;
-  const clear = () => { rawToID.clear(); candidates.clear(); };
-  return { identify, document, attach, candidateIDs, error, fail, problem, clear };
+  // Public WebError and pageerror share an Error object in pinned Playwright 1.63.
+  // These IDs identify client event objects/snapshots, never requests, DOM documents or source assets.
+  let errors = new WeakMap(), nextError = 0, nextDocumentDelivery = 0;
+  const read = (get, fallback = "UNKNOWN") => { try { return get(); } catch { return fallback; } };
+  const object = (e) => e !== null && typeof e === "object";
+  const unknownMetadata = (id) => ({ error_id: id, web_error_available: "UNKNOWN", page_id: 1,
+    document_delivery_id: "UNKNOWN", document_identity: "UNKNOWN", document_available: "UNKNOWN",
+    web_error_document: { same_origin: "UNKNOWN", shape: null }, stack_present: "UNKNOWN", frame_present: "UNKNOWN",
+    location_category: "UNKNOWN", location_line: "UNKNOWN", location_column: "UNKNOWN", coordinate_basis: "UNKNOWN",
+    zero_coordinate_ambiguity: "UNKNOWN", source_asset_id: "UNKNOWN", source_frame: "UNKNOWN" });
+  const errorMetadata = (e) => {
+    if (!object(e)) return unknownMetadata("UNKNOWN");
+    if (!errors.has(e)) errors.set(e, unknownMetadata(++nextError));
+    return { ...errors.get(e) };
+  };
+  const pageDocument = (page) => document(read(() => page.url(), null));
+  const captureWebError = (webError, mainPage) => {
+    // Unknown pages and other context pages (including q) do not contribute metadata.
+    if (!mainPage || read(() => webError.page(), null) !== mainPage) return;
+    const e = read(() => webError.error(), null); if (!object(e)) return;
+    const prior = errorMetadata(e); if (prior.web_error_available === "PRESENT") return;
+    const stack = read(() => e.stack, null), location = read(() => webError.location(), null);
+    const url = read(() => location.url, null), line = read(() => location.line, null), column = read(() => location.column, null);
+    const hasURL = typeof url === "string" && url.trim().length > 0;
+    let category = typeof url === "string" ? "empty" : "UNKNOWN";
+    if (hasURL) {
+      category = ["native", "[native code]"].includes(url) ? "native" : "other";
+      try { const u = new URL(url, expectedOrigin); if (u.origin === expectedOrigin && u.pathname.startsWith("/_next/static/")) category = "app-static"; } catch { /* shape stays other */ }
+    }
+    const coordinates = hasURL && Number.isSafeInteger(line) && line >= 0 && Number.isSafeInteger(column) && column >= 0;
+    const documentURL = read(() => mainPage.url(), null);
+    errors.set(e, { ...prior, web_error_available: "PRESENT", document_delivery_id: ++nextDocumentDelivery,
+      document_available: typeof documentURL === "string" ? "PRESENT" : "UNKNOWN", web_error_document: document(documentURL),
+      stack_present: typeof stack === "string" ? stack.length > 0 : "UNKNOWN",
+      frame_present: typeof stack === "string" ? /^\s*at\s+\S/m.test(stack) : "UNKNOWN",
+      location_category: category, location_line: coordinates ? line : "UNKNOWN", location_column: coordinates ? column : "UNKNOWN",
+      coordinate_basis: coordinates ? "public-zero-based" : "UNKNOWN",
+      // A recorded zero is observable, but the adapter also uses zero for absent native coordinates.
+      zero_coordinate_ambiguity: coordinates ? line === 0 || column === 0 : "UNKNOWN" });
+  };
+  const clear = () => { rawToID.clear(); candidates.clear(); errors = new WeakMap(); };
+  return { identify, document, attach, candidateIDs, error, fail, problem, clear, captureWebError, errorMetadata, pageDocument };
 }
 // END C7_SAFE_OBSERVER
 const safeObserver = rscDiagnostic ? createSafeObserver(origin) : null;
@@ -170,7 +212,9 @@ try {
   const raw = (p, headers = {}) => relay(next.port, { url: p, method: "GET", headers: { host: HOST, ...headers } }, Buffer.alloc(0));
   const loaded = (locator) => locator.evaluate((img) => img.complete && img.naturalWidth > 0);
 
-  const pc = await phone(), p = await pc.newPage();
+  const pc = await phone(); let p;
+  if (rscDiagnostic) pc.on("weberror", webError => safeObserver.captureWebError(webError, p));
+  p = await pc.newPage();
   const problems = [];
   p.on("pageerror", (e) => {
     problems.push(safeObserver ? safeObserver.problem(e) : "pageerror: [redacted]");
@@ -196,7 +240,7 @@ try {
     });
     p.on("pageerror", error => {
       const safe = safeObserver.error(error);
-      diagnosticEvent("pageerror", { ...safe, action_id: diagnosticActions.get(p) ?? null, document: safeObserver.document(p.url()), candidate_request_ids: safe.target ? safeObserver.candidateIDs(safe.target.url_id) : [], exact_request_id: "UNKNOWN" });
+      diagnosticEvent("pageerror", { ...safe, ...safeObserver.errorMetadata(error), action_id: diagnosticActions.get(p) ?? null, document: safeObserver.pageDocument(p), candidate_request_ids: safe.target ? safeObserver.candidateIDs(safe.target.url_id) : [], exact_request_id: "UNKNOWN" });
     });
     p.on("console", message => { if (message.type() !== "error") return; const text = message.text(); const category = /content security policy|connect-src/i.test(text) ? "csp" : /cross.origin|access.control|cors/i.test(text) ? "access-control" : /certificate|\btls\b|\bssl\b/i.test(text) ? "tls" : "other-redacted"; diagnosticEvent("console-error", { category }); });
   }
