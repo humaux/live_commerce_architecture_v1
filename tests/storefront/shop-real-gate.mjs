@@ -36,9 +36,43 @@ const children = new Set(), sockets = new Set(), logs = [];
 // Optional observation only. Do not change assertions or record query values, bodies, cookies or headers.
 const rscDiagnostic = process.env.C7_RSC_DIAGNOSTIC === "1" ? [] : null;
 const recognizedRscPageErrors = [];
-const rscIds = new WeakMap();
-let rscNextId = 0;
 const observedAt = () => Math.round(performance.now() * 1000) / 1000;
+// BEGIN C7_SAFE_OBSERVER: pure privacy boundary, exercised by the local adversarial test.
+function createSafeObserver(expectedOrigin) {
+  const rawToID = new Map(), candidates = new Map();
+  let nextURL = 0;
+  const identify = (raw) => {
+    try {
+      const u = new URL(raw);
+      if (u.origin !== expectedOrigin || !(u.pathname === "/api/buyer/session" || u.searchParams.has("_rsc"))) return null;
+      if (!rawToID.has(raw)) rawToID.set(raw, ++nextURL);
+      const names = [...new Set([...u.searchParams.keys()].map(k => ["_rsc", "preview"].includes(k) ? k : "[other]"))].sort();
+      const parts = u.pathname.split("/").filter(Boolean);
+      const locale = ["en", "zh-TW", "zh-CN"].includes(parts[0]) ? parts[0] : "[other]";
+      const path = u.pathname === "/api/buyer/session" ? u.pathname : parts.length === 1 ? `/${locale}` :
+        parts[1] === "products" ? `/${locale}/products${parts.length > 2 ? "/[item]" : ""}` :
+        parts[1] === "collections" ? `/${locale}/collections${parts.length > 2 ? "/[item]" : ""}` : "/[other]";
+      return { url_id: rawToID.get(raw), path, query_names: names };
+    } catch { return null; }
+  };
+  const attach = (target, id) => { const list = candidates.get(target.url_id) ?? []; list.push(id); candidates.set(target.url_id, list); };
+  const candidateIDs = (id) => [...(candidates.get(id) ?? [])];
+  const error = (e) => {
+    const name = ["Fetch API cannot load https", "Error", "TypeError", "ReferenceError", "SyntaxError", "AbortError"].includes(e.name) ? e.name : "[redacted]";
+    const suffix = " due to access control checks.";
+    const target = typeof e.message === "string" && e.message.endsWith(suffix) ? identify(`https:/${e.message.slice(0, -suffix.length)}`) : null;
+    return { name, message: target ? "access-control-signature" : "[redacted]", target };
+  };
+  const fail = (s) => !s ? "UNKNOWN" : /cancel/i.test(s) ? "cancelled-like" : /cert|ssl|tls/i.test(s) ? "tls-like" : /cors|access.control/i.test(s) ? "security-like" : "other-redacted";
+  const problem = (e) => `pageerror: ${error(e).target?.path ?? "[redacted]"}`;
+  const clear = () => { rawToID.clear(); candidates.clear(); };
+  return { identify, attach, candidateIDs, error, fail, problem, clear };
+}
+// END C7_SAFE_OBSERVER
+const safeObserver = rscDiagnostic ? createSafeObserver(origin) : null;
+let diagnosticStage = "START", diagnosticNav = 0, diagnosticRequestID = 0;
+const diagnosticRequests = new WeakMap();
+const diagnosticEvent = (event, fields = {}) => { if (rscDiagnostic) rscDiagnostic.push({ at: observedAt(), stage: diagnosticStage, nav: diagnosticNav, event, ...fields }); };
 const observedUrl = raw => {
   try {
     const u = new URL(raw);
@@ -47,7 +81,7 @@ const observedUrl = raw => {
   } catch { return null; }
 };
 let browser, edge, proxy, cases = 0;
-const pass = (name) => { cases++; console.log(`PASS ${name}`); };
+const pass = (name) => { cases++; console.log(`PASS ${name}`); const stage = /^SFR0[1-9]/.exec(name)?.[0]; if (stage) diagnosticStage = `after-${stage}`; };
 async function listen(server) { server.listen(0, "127.0.0.1"); await once(server, "listening"); return server.address().port; }
 const P = (key) => facts.products.find((p) => p.key === key);
 const COPY = shopCopy.en;
@@ -99,6 +133,13 @@ try {
   execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", path.join(certDir, "key.pem"), "-out", path.join(certDir, "cert.pem"), "-days", "1", "-subj", `/CN=${HOST}`], { stdio: "ignore" });
   const next = await startNext();
   edge = https.createServer({ key: await readFile(path.join(certDir, "key.pem")), cert: await readFile(path.join(certDir, "cert.pem")) }, async (req, res) => {
+    const target = safeObserver?.identify(`${origin}${req.url}`);
+    if (target) {
+      diagnosticEvent("edge-request", { target, method: ["GET", "POST"].includes(req.method) ? req.method : "OTHER" });
+      req.on("aborted", () => diagnosticEvent("edge-aborted", { target }));
+      res.on("finish", () => diagnosticEvent("edge-finish", { target, status: res.statusCode }));
+      res.on("close", () => diagnosticEvent("edge-close", { target, finished: res.writableFinished, status: res.headersSent ? res.statusCode : "UNKNOWN" }));
+    }
     try {
       const chunks = []; for await (const x of req) chunks.push(x);
       const out = await relay(next.port, req, Buffer.concat(chunks));
@@ -124,42 +165,39 @@ try {
   const pc = await phone(), p = await pc.newPage();
   const problems = [];
   p.on("pageerror", (e) => {
-    if (!isOwnRscPageError(e, origin)) { problems.push(`pageerror: ${e.message}`); return; }
+    if (!isOwnRscPageError(e, origin)) {
+      problems.push(safeObserver ? safeObserver.problem(e) : `pageerror: ${e.message}`);
+      return;
+    }
     const suffix = " due to access control checks.";
-    const target = observedUrl(`https:/${e.message.slice(0, -suffix.length)}`);
-    recognizedRscPageErrors.push({ name: e.name, message: `/${target.host}${target.path}?[redacted]${suffix}`, target });
+    const target = safeObserver ? safeObserver.identify(`https:/${e.message.slice(0, -suffix.length)}`) : observedUrl(`https:/${e.message.slice(0, -suffix.length)}`);
+    recognizedRscPageErrors.push(safeObserver ? { name: safeObserver.error(e).name, message: "access-control-signature", target } : { name: e.name, message: `/${target.host}${target.path}?[redacted]${suffix}`, target });
   });
   if (rscDiagnostic) {
     p.on("request", request => {
-      const url = observedUrl(request.url());
-      if (!url?.rsc) return;
-      const id = ++rscNextId; rscIds.set(request, id);
-      rscDiagnostic.push({ at: observedAt(), event: "request", id, method: request.method(), resourceType: request.resourceType(), ...url });
+      const target = safeObserver.identify(request.url()); if (!target) return;
+      const id = ++diagnosticRequestID; diagnosticRequests.set(request, id); safeObserver.attach(target, id);
+      let frame = "UNKNOWN"; try { frame = request.frame() === p.mainFrame() ? "main" : "other"; } catch { /* unavailable */ }
+      const resourceType = ["document", "fetch", "xhr", "other"].includes(request.resourceType()) ? request.resourceType() : "other";
+      diagnosticEvent("request", { id, target, method: ["GET", "POST"].includes(request.method()) ? request.method() : "OTHER", resourceType, frame });
     });
+    p.on("response", response => { const id = diagnosticRequests.get(response.request()); if (id) diagnosticEvent("response", { id, status: response.status() }); });
     p.on("requestfinished", request => {
-      const id = rscIds.get(request); if (id) rscDiagnostic.push({ at: observedAt(), event: "requestfinished", id });
+      const id = diagnosticRequests.get(request); if (id) diagnosticEvent("requestfinished", { id });
     });
     p.on("requestfailed", request => {
-      const id = rscIds.get(request); if (!id) return;
-      const raw = request.failure()?.errorText ?? "";
-      const errorText = /^[A-Za-z0-9 .:_-]{1,120}$/.test(raw) ? raw : "[redacted]";
-      rscDiagnostic.push({ at: observedAt(), event: "requestfailed", id, errorText });
+      const id = diagnosticRequests.get(request); if (id) diagnosticEvent("requestfailed", { id, failure: safeObserver.fail(request.failure()?.errorText) });
     });
     p.on("framenavigated", frame => {
       if (frame !== p.mainFrame()) return;
-      const url = observedUrl(frame.url()); if (url) rscDiagnostic.push({ at: observedAt(), event: "navigation", ...url });
+      diagnosticNav++; diagnosticEvent("navigation", { frame: "main" });
     });
     p.on("pageerror", error => {
-      const suffix = " due to access control checks.";
-      const raw = error.message;
-      const target = raw.startsWith(`/${HOST}/`) && raw.endsWith(suffix)
-        ? observedUrl(`https:/${raw.slice(0, -suffix.length)}`) : null;
-      const message = target?.rsc ? `/${target.host}${target.path}?[redacted]${suffix}` : "[redacted non-target message]";
-      const name = /^[A-Za-z .:-]{1,96}$/.test(error.name) ? error.name : "[redacted]";
-      rscDiagnostic.push({ at: observedAt(), event: "pageerror", name, message, target, predicateMatched: isWebkitCancelledFetch(error) });
+      diagnosticEvent("pageerror", safeObserver.error(error));
     });
+    p.on("console", message => { if (message.type() !== "error") return; const text = message.text(); const category = /content security policy|connect-src/i.test(text) ? "csp" : /cross.origin|access.control|cors/i.test(text) ? "access-control" : /certificate|\btls\b|\bssl\b/i.test(text) ? "tls" : "other-redacted"; diagnosticEvent("console-error", { category }); });
   }
-  p.on("console", (m) => { if (m.type() === "error" && /hydrat|minified react|warning:|did not match/i.test(m.text())) problems.push(`console: ${m.text()}`); });
+  p.on("console", (m) => { if (m.type() === "error" && /hydrat|minified react|warning:|did not match/i.test(m.text())) problems.push(`console: ${safeObserver ? "[redacted]" : m.text()}`); });
 
   // ---- SFR01 home from the published design the merchant saved through the admin API ------------------------------------------------------
   await p.goto(`${origin}/en`);
@@ -393,7 +431,11 @@ try {
 
   console.log(`engine=${engine} cases=${cases} REAL-STACK (SANDBOX)`);
 } finally {
-  if (rscDiagnostic) await writeFile(path.join(evidence, "c7-rsc-observation.json"), JSON.stringify({ engine, clock: "performance.now milliseconds", events: rscDiagnostic }, null, 2));
+  if (rscDiagnostic) {
+    const events = rscDiagnostic.map(e => e.target ? { ...e, candidate_request_ids: safeObserver.candidateIDs(e.target.url_id) } : e);
+    await writeFile(path.join(evidence, "c7-rsc-observation.json"), JSON.stringify({ engine, clock: "performance.now milliseconds", events }, null, 2));
+    safeObserver.clear();
+  }
   await writeFile(path.join(evidence, "c7-recognized-rsc-pageerrors.json"), JSON.stringify({ engine, count: recognizedRscPageErrors.length, records: recognizedRscPageErrors }, null, 2));
   for (const c of children) c.kill("SIGTERM");
   for (const s of sockets) s.destroy();
