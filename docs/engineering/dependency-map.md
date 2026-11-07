@@ -463,7 +463,7 @@ Purpose: A1 live-console read model (live-console-v1 §7.1, unit LC-B7): one GET
 
 ## `internal/loyalty`
 
-Purpose: member commands, current-row receipt projections and reads (LP1-LP19).
+Package loyalty owns store-scoped merchant member records and their append-only points ledger, including manual adjustments, manual-order awards, and the bounded privacy export and erasure operations of contracts/loyalty-points-v1.md.
 
 - Depends on (internal): `internal/command`, `internal/platform`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `golang.org/x/text/unicode/norm`
