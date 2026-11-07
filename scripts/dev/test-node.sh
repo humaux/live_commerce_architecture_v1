@@ -38,6 +38,7 @@ node --test --experimental-strip-types tests/admin/operations-model.test.ts
 for tz_audit_zone in UTC America/Los_Angeles; do
   TZ="$tz_audit_zone" node --test --experimental-strip-types tests/admin/ads-model.test.ts tests/admin/customers-model.test.ts tests/admin/timezone-ui.test.mjs apps/storefront/tests/timezone.test.mjs
 done
+node --test tests/admin/refund-convergence.test.mjs
 node --test --experimental-strip-types tests/admin/orders-v2.test.ts
 node --test --experimental-strip-types tests/admin/store-number.test.ts
 node --test --experimental-strip-types tests/admin/platform-site.test.ts

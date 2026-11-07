@@ -814,7 +814,7 @@
     "packages/format/package.json": "0a52b62b35e640298589968137e2d8899151bbcb2e0714f3f9204afc70beb3ed",
     "packages/i18n/package.json": "096562b66a71f0479808557beb6490deef65c7cf1626867ec23cffbdaedebfce",
     "packages/ui/package.json": "85891954909057d1783e4a0b8585e5b8f4609f9259116ae808ce34f1f4347078",
-    "scripts/dev/test-node.sh": "4d8fece2e72e42823552e02cb561d396493b38246c93fbd323d048a5a4ec35b2"
+    "scripts/dev/test-node.sh": "1cbe36fad269a31a90e429bce665e6852aec0eab21e468be85accf6092647f1b"
   },
   "modes": {
     "--browser-inbox": {

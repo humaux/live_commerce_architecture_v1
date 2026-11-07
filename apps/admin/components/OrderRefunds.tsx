@@ -1,5 +1,8 @@
 "use client";
 
+// Purpose: converge admitted refund totals with server order detail using bounded GETs.
+// Depends on: React, orders-client reads/writes and orders-model DTO validation; no money authority here.
+// Used by: OrderDetailPanel; automatic convergence never submits or refreshes a refund.
 // Refund section of the merchant order detail row (contracts/stripe-refund-v1.md §7.1 "Admin UI").
 // BFF routes: GET|POST /api/stores/{store}/orders/{id}/refunds, POST .../refunds/{refund}/refresh (keyless)
 // -> Go internal/httpapi/refunds.go (GET orders:read; POST payments:refund). Money authority stays in Go/SQL:
@@ -77,12 +80,39 @@ export function OrderRefunds({
   // One key per submission, reused only for a byte-identical retry of that submission.
   const pending = useRef<{ key: string; body: string } | null>(null);
 
+  const scope = JSON.stringify([store, orderID, currency, boundary]);
+  const convergence = useRef({ scope, snapshot: "", live: true, reads: Promise.resolve() });
+  if (convergence.current.scope !== scope) {
+    convergence.current = { scope, snapshot: "", live: true, reads: Promise.resolve() };
+  }
+  useEffect(() => {
+    const admitted = convergence.current;
+    admitted.live = true;
+    return () => { admitted.live = false; };
+  }, [scope]);
+  const changed = useRef(onChanged);
+  changed.current = onChanged;
+
   useEffect(() => {
     const active = new AbortController();
+    const admitted = convergence.current;
     readRefunds(store, orderID, currency, active.signal).then(
       (value) => {
+        // A transport may resolve despite cancellation; never admit a previous read/scope.
+        if (active.signal.aborted || convergence.current !== admitted) return;
         setList(value);
         setStatus("ready");
+        if (value.refunded_minor === detail.refunded_minor && value.pending_minor === detail.refund_pending_minor) return;
+        // updated_at is deliberately excluded: detail reloads must not start a read loop.
+        // Totals can revert after a late FAILED/CANCELED fact, so dedup only the last snapshot.
+        const snapshot = JSON.stringify([value.refunded_minor, value.pending_minor]);
+        if (admitted.snapshot === snapshot) return;
+        admitted.snapshot = snapshot;
+        // Serialize notifications: an earlier partial-detail GET must finish before a newer one starts.
+        admitted.reads = admitted.reads.catch(() => {}).then(async () => {
+          if (!admitted.live || convergence.current !== admitted || admitted.snapshot !== snapshot) return;
+          await changed.current();
+        }).catch(() => {});
       },
       () => {
         if (active.signal.aborted) return;
@@ -92,7 +122,7 @@ export function OrderRefunds({
       },
     );
     return () => active.abort();
-  }, [store, orderID, currency, tick, detail.updated_at]);
+  }, [store, orderID, currency, boundary, tick, detail.updated_at, detail.refunded_minor, detail.refund_pending_minor]);
 
   useEffect(() => {
     const element = dialog.current;
@@ -149,7 +179,6 @@ export function OrderRefunds({
       setUncertain(false);
       setNotice(c.refundDone);
       setTick((value) => value + 1);
-      void onChanged();
       return;
     }
     if (result.uncertain) {
@@ -175,7 +204,6 @@ export function OrderRefunds({
       result === "scheduled" ? c.refundRefreshed : result === "later" ? c.refundRefreshLater : errorText(c, result.code),
     );
     setTick((value) => value + 1);
-    void onChanged();
   }
 
   return (
