@@ -62,3 +62,9 @@ test('notifications serialize and queued old scope/unmounted work is discarded',
   release(true);await settle();assert.equal(calls,2);release(true);await settle();
   h.render({...h.props,detail:{...h.props.detail,updated_at:'v3'}});h.reads[2].resolve(snapshot(1800));h.unmount();await settle();assert.equal(calls,2);
 });
+test('a matching newer snapshot permits a later reversal to previously seen totals',async()=>{
+  let calls=0;const h=host(async()=>{calls++;return true;});
+  h.render({...h.props,detail:{...h.props.detail,refunded_minor:0}});h.reads[0].resolve(snapshot(1000));await settle();assert.equal(calls,1);
+  h.render({...h.props,detail:{...h.props.detail,updated_at:'matched',refunded_minor:2500}});h.reads[1].resolve(snapshot(2500));await settle();assert.equal(calls,1);
+  h.render({...h.props,detail:{...h.props.detail,updated_at:'late-failed',refunded_minor:2500}});h.reads[2].resolve(snapshot(1000));await settle();assert.equal(calls,2);
+});

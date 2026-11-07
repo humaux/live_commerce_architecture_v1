@@ -102,12 +102,12 @@ export function OrderRefunds({
         if (active.signal.aborted || convergence.current !== admitted) return;
         setList(value);
         setStatus("ready");
-        if (value.refunded_minor === detail.refunded_minor && value.pending_minor === detail.refund_pending_minor) return;
         // updated_at is deliberately excluded: detail reloads must not start a read loop.
         // Totals can revert after a late FAILED/CANCELED fact, so dedup only the last snapshot.
         const snapshot = JSON.stringify([value.refunded_minor, value.pending_minor]);
-        if (admitted.snapshot === snapshot) return;
+        const repeated = admitted.snapshot === snapshot;
         admitted.snapshot = snapshot;
+        if (repeated || (value.refunded_minor === detail.refunded_minor && value.pending_minor === detail.refund_pending_minor)) return;
         // Serialize notifications: an earlier partial-detail GET must finish before a newer one starts.
         admitted.reads = admitted.reads.catch(() => {}).then(async () => {
           if (!admitted.live || convergence.current !== admitted || admitted.snapshot !== snapshot) return;
