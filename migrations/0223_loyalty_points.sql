@@ -171,11 +171,11 @@ BEGIN
  'next_cursor',CASE WHEN (SELECT count(*) FROM rows)>l THEN (SELECT loyalty.cursor_encode(created_at,id,b) FROM kept ORDER BY created_at,id LIMIT 1) ELSE NULL END) INTO outcome;
  PERFORM customers.tn_fence(h,s,'customers:read',a.tenant_id,a.principal_id,a.authz_revision);RETURN outcome;
 END $$;
--- Internal current-row reconstruction uses the write's original permission. Public Get always passes customers:read.
+-- Full detail and ledger reads always require customers:read, including explicit legacy selectors.
 CREATE FUNCTION loyalty.read_member(h bytea,s uuid,i uuid,c text,p text DEFAULT 'customers:read') RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE a record;m loyalty.members;b text;v jsonb;outcome jsonb;
 BEGIN
- IF p NOT IN ('customers:read','customers:points','customers:privacy') OR p IS NULL THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403';END IF;
+ IF p IS DISTINCT FROM 'customers:read' THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403';END IF;
  SELECT * INTO a FROM customers.tn_authority(h,s,p);
  SELECT * INTO m FROM loyalty.members WHERE tenant_id=a.tenant_id AND store_id=s AND id=i;
  IF NOT FOUND THEN RAISE EXCEPTION 'not_found' USING ERRCODE='PT404';END IF;
@@ -190,10 +190,34 @@ END $$;
 CREATE FUNCTION loyalty.read_entry(h bytea,s uuid,i uuid) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE a record;e loyalty.point_entries;
 BEGIN
- SELECT * INTO a FROM customers.tn_authority(h,s,'customers:points');
+ SELECT * INTO a FROM customers.tn_authority(h,s,'customers:read');
  SELECT * INTO e FROM loyalty.point_entries WHERE tenant_id=a.tenant_id AND store_id=s AND id=i;
  IF NOT FOUND THEN RAISE EXCEPTION 'not_found' USING ERRCODE='PT404';END IF;
- PERFORM customers.tn_fence(h,s,'customers:points',a.tenant_id,a.principal_id,a.authz_revision);RETURN loyalty.entry_json(e);
+ PERFORM customers.tn_fence(h,s,'customers:read',a.tenant_id,a.principal_id,a.authz_revision);RETURN loyalty.entry_json(e);
+END $$;
+-- The existing application-owned receipt is the command binding, not an unforgeable SQL capability.
+GRANT SELECT(idempotency_key,request_hash) ON ops.command_results TO commerce_privacy_writer;
+CREATE POLICY loyalty_receipt_select ON ops.command_results FOR SELECT TO commerce_privacy_writer
+ USING(operation IN ('loyalty.member.create','loyalty.member.update','loyalty.points.adjust')
+ AND tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
+ AND store_id=nullif(current_setting('app.store_id',true),'')::uuid);
+CREATE FUNCTION loyalty.project_write(h bytea,s uuid,op text,k text,rh bytea) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE a record;r jsonb;m loyalty.members;e loyalty.point_entries;outcome jsonb;
+BEGIN
+ SELECT * INTO a FROM customers.tn_authority(h,s,'customers:points');
+ IF op IS NULL OR op NOT IN ('loyalty.member.create','loyalty.member.update','loyalty.points.adjust') OR rh IS NULL OR octet_length(rh)<>32 THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403';END IF;
+ SELECT response INTO r FROM ops.command_results WHERE tenant_id=a.tenant_id AND store_id=s AND operation=op AND idempotency_key=k AND request_hash=rh;
+ IF NOT FOUND THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403';END IF;
+ IF op IN ('loyalty.member.create','loyalty.member.update') THEN
+  SELECT * INTO m FROM loyalty.members WHERE tenant_id=a.tenant_id AND store_id=s AND id=(r->>'member_id')::uuid;
+  IF NOT FOUND THEN RAISE EXCEPTION 'not_found' USING ERRCODE='PT404';END IF;
+  outcome:=jsonb_build_object('member',loyalty.member_json(m));
+ ELSE
+  SELECT * INTO e FROM loyalty.point_entries WHERE tenant_id=a.tenant_id AND store_id=s AND id=(r->>'entry_id')::uuid;
+  IF NOT FOUND THEN RAISE EXCEPTION 'not_found' USING ERRCODE='PT404';END IF;
+  outcome:=jsonb_build_object('entry',loyalty.entry_json(e),'balance',r->'balance');
+ END IF;
+ PERFORM customers.tn_fence(h,s,'customers:points',a.tenant_id,a.principal_id,a.authz_revision);RETURN outcome;
 END $$;
 CREATE FUNCTION loyalty.read_order_entries(h bytea,s uuid,o uuid) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE a record;outcome jsonb;
@@ -252,7 +276,7 @@ BEGIN
   EXECUTE format('ALTER FUNCTION %s OWNER TO commerce_privacy_writer',f.sig);
   EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',f.sig);
   EXECUTE format('COMMENT ON FUNCTION %s IS %L',f.sig,'internal/loyalty LP-1: '||f.proname||'; scoped merchant ledger/privacy contract, no automatic identity links.');
-  IF f.proname=ANY(ARRAY['create_member','update_member','adjust_points','precheck_award','try_award_manual_order','read_members','read_member','read_entry','read_order_entries','export_member','erase_member']) THEN EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO commerce_runtime',f.sig);END IF;
+  IF f.proname=ANY(ARRAY['create_member','update_member','adjust_points','precheck_award','try_award_manual_order','read_members','read_member','read_entry','project_write','read_order_entries','export_member','erase_member']) THEN EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO commerce_runtime',f.sig);END IF;
  END LOOP;
 END $$;
 -- Preserve the current audited action set and add only member actions with the same authenticated scope fence.

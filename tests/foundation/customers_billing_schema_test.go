@@ -208,6 +208,7 @@ var cbsFunctions = []cbsFn{
 	{"loyalty.read_members(bytea,uuid,text,boolean,text,integer)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
 	{"loyalty.read_member(bytea,uuid,uuid,text,text)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
 	{"loyalty.read_entry(bytea,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"loyalty.project_write(bytea,uuid,text,text,bytea)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
 	{"loyalty.read_order_entries(bytea,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
 	{"loyalty.replay_member_erasures(uuid[])", "commerce_privacy_writer", nil, false},
 	{"loyalty.member_json(loyalty.members)", "commerce_privacy_writer", nil, true},
@@ -273,7 +274,7 @@ var cbsPrivacyExtra = []cbsPriv{
 	{"control.stores", "SELECT", []string{"id", "name", "tenant_id"}},
 	{"claims.bundles", "SELECT", []string{"platform", "session_id", "line_count"}},
 	// W6-01B: erasure deletes the idempotency receipts of the customer's tag-set/note writes (policy-limited to those four operations).
-	{"ops.command_results", "SELECT", []string{"tenant_id", "store_id", "operation", "response"}},
+	{"ops.command_results", "SELECT", []string{"tenant_id", "store_id", "operation", "response", "idempotency_key", "request_hash"}},
 	// LP-1 (0223): the award checks the order is this store's merchant_manual order (LP7/LP18).
 	{"checkout.orders", "SELECT", []string{"source"}},
 }

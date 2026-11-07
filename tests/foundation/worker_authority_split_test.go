@@ -202,6 +202,7 @@ func TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege(t *testing.T) {
 			// 0223 (LP-1, loyalty-points-v1 §1): the member/points definers are merchant-side only; no worker gets schema loyalty.
 			`SELECT loyalty.create_member($1::bytea,$2::uuid,'x',NULL,NULL) WHERE $3::uuid IS NOT NULL`,
 			`SELECT loyalty.adjust_points($1::bytea,$2::uuid,$3::uuid,1,'x',NULL)`,
+			`SELECT loyalty.project_write($1::bytea,$2::uuid,'loyalty.member.create','was02-project-key',$1::bytea) WHERE $3::uuid IS NOT NULL`,
 			`SELECT loyalty.try_award_manual_order($1::bytea,$2::uuid,$3::uuid,$3::uuid,1)`,
 			`SELECT loyalty.erase_member($1::bytea,$2::uuid,$3::uuid)`,
 			`SELECT loyalty.export_member($1::bytea,$2::uuid,$3::uuid)`,

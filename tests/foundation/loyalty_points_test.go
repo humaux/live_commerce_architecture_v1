@@ -13,6 +13,7 @@ package foundation_test
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -36,6 +37,8 @@ import (
 )
 
 const lpMarker = "lp-marker"
+
+func lpHash(token string) []byte { hash := sha256.Sum256([]byte(token)); return hash[:] }
 
 var lpAll = []string{"store:read", "customers:read", "customers:points", "customers:privacy"}
 
@@ -756,6 +759,134 @@ func TestLoyaltyLPG04MemberReplay(t *testing.T) {
 // ---------------------------------------------------------------------------------------------------------------------------
 
 func TestLoyaltyLPG05Rights(t *testing.T) {
+	t.Run("full detail definer requires literal read permission", func(t *testing.T) {
+		d := lpNewStore(t)
+		member := d.mustMember("測試會員-SQL讀取", lpStr("lp-private-contact"), lpStr("lp-private-member-note"))
+		d.mustAdjust(member.ID, 1, "lp-private-ledger-note")
+		for _, permission := range []string{"customers:points", "customers:privacy", "customers:read"} {
+			t.Run(permission, func(t *testing.T) {
+				// Literal grants and the real runtime transaction/GUC scope are independent of the production bundle.
+				token := d.principal(permission)
+				hash := sha256.Sum256([]byte(token))
+				var body []byte
+				err := d.run(token, func(ctx context.Context, tx pgx.Tx, _ platform.Scope) error {
+					return tx.QueryRow(ctx, `SELECT loyalty.read_member($1,$2::uuid,$3::uuid,NULL,$4)`, hash[:], d.store, member.ID, permission).Scan(&body)
+				})
+				if permission != "customers:read" {
+					var pg *pgconn.PgError
+					if !errors.As(err, &pg) || pg.Code != "PT403" {
+						t.Errorf("full member/ledger definer with %s must refuse PT403; got err=%v body_bytes=%d", permission, err, len(body))
+					}
+					return
+				}
+				if err != nil {
+					t.Fatal(err)
+				}
+				var detail loyalty.Detail
+				if err := json.Unmarshal(body, &detail); err != nil || detail.Member.ID != member.ID || len(detail.Entries) != 1 {
+					t.Fatalf("read-only principal must receive member and ledger: %+v %v", detail, err)
+				}
+			})
+		}
+	})
+	t.Run("write projection is bound to one scoped command receipt", func(t *testing.T) {
+		d := lpNewStore(t)
+		points := d.principal("customers:points")
+		in := loyalty.MemberInput{DisplayName: "測試會員-投影", ContactNote: lpStr("lp-projection-contact"), Notes: lpStr("lp-projection-notes")}
+		key := d.key("projection-create")
+		m, replay, err := d.create(points, key, in)
+		if err != nil || replay || m.DisplayName != in.DisplayName {
+			t.Fatalf("points-only create: %+v %v %v", m, replay, err)
+		}
+		// Independent canonical create request: field order matches the public typed command input, including explicit nulls.
+		body := []byte(`{"display_name":"測試會員-投影","contact_note":"lp-projection-contact","notes":"lp-projection-notes"}`)
+		digest := sha256.Sum256(body)
+		project := func(token, store, op, k string, hash []byte) ([]byte, error) {
+			var out []byte
+			err := d.run(token, func(ctx context.Context, tx pgx.Tx, _ platform.Scope) error {
+				return tx.QueryRow(ctx, `SELECT loyalty.project_write($1,$2::uuid,$3,$4,$5)`, lpHash(token), store, op, k, hash).Scan(&out)
+			})
+			return out, err
+		}
+		for _, token := range []string{points, d.principal("customers:points")} {
+			out, err := project(token, d.store, "loyalty.member.create", key, digest[:])
+			var got map[string]json.RawMessage
+			if err != nil || json.Unmarshal(out, &got) != nil || len(got) != 1 || got["member"] == nil || bytes.Contains(out, []byte("entries")) || bytes.Contains(out, []byte("cursor")) || bytes.Contains(out, []byte("actor")) {
+				t.Fatalf("member-only projection without creator-only rule: %s %v", out, err)
+			}
+		}
+		other := lpNewStore(t)
+		wrong := sha256.Sum256([]byte("wrong normalized request"))
+		for _, tc := range []struct {
+			name, store, op, key string
+			hash                 []byte
+		}{
+			{"missing receipt", d.store, "loyalty.member.create", d.key("missing"), digest[:]},
+			{"wrong operation", d.store, "loyalty.member.update", key, digest[:]},
+			{"operation outside allowlist", d.store, "loyalty.member.export", key, digest[:]},
+			{"wrong hash", d.store, "loyalty.member.create", key, wrong[:]},
+			{"null hash", d.store, "loyalty.member.create", key, nil},
+			{"foreign store", other.store, "loyalty.member.create", key, digest[:]},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				out, err := project(points, tc.store, tc.op, tc.key, tc.hash)
+				if err == nil || len(out) != 0 {
+					t.Fatalf("projection must refuse without data: %s %v", out, err)
+				}
+			})
+		}
+		// There is no independent target argument: a sixth member id cannot redirect a valid receipt projection.
+		err = d.run(points, func(ctx context.Context, tx pgx.Tx, _ platform.Scope) error {
+			_, err := tx.Exec(ctx, `SELECT loyalty.project_write($1,$2::uuid,$3,$4,$5,$6::uuid)`, lpHash(points), d.store, "loyalty.member.create", key, digest[:], randomUUID())
+			return err
+		})
+		var pg *pgconn.PgError
+		if !errors.As(err, &pg) || pg.Code != "42883" {
+			t.Fatalf("target substitution entrance exists: %v", err)
+		}
+		patch := loyalty.MemberPatch{ExpectedVersion: m.Version, Notes: lpStr("lp-updated-projection"), Fields: []string{"notes"}}
+		updateKey := d.key("projection-update")
+		updated, replay, err := d.update(points, updateKey, m.ID, patch)
+		if err != nil || replay || updated.Notes == nil || *updated.Notes != *patch.Notes {
+			t.Fatalf("points-only update: %+v %v %v", updated, replay, err)
+		}
+		adjustKey := d.key("projection-adjust")
+		adjusted, replay, err := d.adjust(points, adjustKey, m.ID, 7, "lp-entry-note", nil)
+		if err != nil || replay || adjusted.Balance != 7 {
+			t.Fatalf("points-only adjust: %+v %v %v", adjusted, replay, err)
+		}
+		// A successful unrelated create receipt does not authorize arbitrary entry reads.
+		err = d.run(points, func(ctx context.Context, tx pgx.Tx, _ platform.Scope) error {
+			var out []byte
+			return tx.QueryRow(ctx, `SELECT loyalty.read_entry($1,$2::uuid,$3::uuid)`, lpHash(points), d.store, adjusted.Entry.ID).Scan(&out)
+		})
+		if !errors.As(err, &pg) || pg.Code != "PT403" {
+			t.Fatalf("bare ledger entry read must refuse points-only: %v", err)
+		}
+		if _, replayed, err := d.update(points, updateKey, m.ID, patch); err != nil || !replayed {
+			t.Fatalf("points-only update replay: %v %v", replayed, err)
+		}
+		if _, _, err := d.erase(d.admin, d.key("projection-erase"), m.ID); err != nil {
+			t.Fatal(err)
+		}
+		if got, replayed, err := d.create(points, key, in); err != nil || !replayed || got.DisplayName != "[erased]" || got.ContactNote != nil || got.Notes != nil {
+			t.Fatalf("redacted create replay: %+v %v %v", got, replayed, err)
+		}
+		if got, replayed, err := d.update(points, updateKey, m.ID, patch); err != nil || !replayed || got.DisplayName != "[erased]" || got.Notes != nil {
+			t.Fatalf("redacted update replay: %+v %v %v", got, replayed, err)
+		}
+		if got, replayed, err := d.adjust(points, adjustKey, m.ID, 7, "lp-entry-note", nil); err != nil || !replayed || got.Entry.Note == nil || *got.Entry.Note != "[erased]" || got.Balance != 7 {
+			t.Fatalf("redacted adjust replay: %+v %v %v", got, replayed, err)
+		}
+		var receipts string
+		if err := d.f.owner.QueryRow(context.Background(), `SELECT string_agg(response::text,' ') FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2`, d.tenant, d.store).Scan(&receipts); err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(receipts, "lp-") || strings.Contains(receipts, in.DisplayName) {
+			t.Fatalf("PII retained in command receipts: %s", receipts)
+		}
+	})
+
 	s := lpNewStore(t)
 	m := s.mustMember("測試會員-權限", nil, nil)
 	for _, role := range []string{"owner", "admin"} {

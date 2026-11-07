@@ -131,6 +131,16 @@ func readMember(ctx context.Context, tx pgx.Tx, s platform.Scope, token, id, cur
 	e := call(ctx, tx, s, token, permission, `SELECT loyalty.read_member($1,$2::uuid,$3::uuid,$4,$5)`, &out, id, cursor, permission)
 	return out, e
 }
+
+// projectWrite reuses command.Run's canonical JSON hash; SQL derives its target solely from that scoped receipt.
+func projectWrite(ctx context.Context, tx pgx.Tx, s platform.Scope, token, op, key string, request, out any) error {
+	body, err := json.Marshal(request)
+	if err != nil {
+		return command.ErrInvalid
+	}
+	hash := sha256.Sum256(body)
+	return call(ctx, tx, s, token, "customers:points", `SELECT loyalty.project_write($1,$2::uuid,$3,$4,$5)`, out, op, key, hash[:])
+}
 func CreateMember(ctx context.Context, tx pgx.Tx, s platform.Scope, token, key string, in MemberInput) (Member, bool, error) {
 	in, e := memberInput(in)
 	if e != nil {
@@ -141,7 +151,8 @@ func CreateMember(ctx context.Context, tx pgx.Tx, s platform.Scope, token, key s
 	if e != nil {
 		return Member{}, false, e
 	}
-	d, e := readMember(ctx, tx, s, token, receipt.ID, "", "customers:points")
+	var d Detail
+	e = projectWrite(ctx, tx, s, token, "loyalty.member.create", key, in, &d)
 	return d.Member, replay, e
 }
 func UpdateMember(ctx context.Context, tx pgx.Tx, s platform.Scope, token, key, id string, in MemberPatch) (Member, bool, error) {
@@ -177,7 +188,8 @@ func UpdateMember(ctx context.Context, tx pgx.Tx, s platform.Scope, token, key, 
 	if e != nil {
 		return Member{}, false, e
 	}
-	d, e := readMember(ctx, tx, s, token, id, "", "customers:points")
+	var d Detail
+	e = projectWrite(ctx, tx, s, token, "loyalty.member.update", key, request, &d)
 	return d.Member, replay, e
 }
 func Adjust(ctx context.Context, tx pgx.Tx, s platform.Scope, token, key, id string, in AdjustInput) (AdjustResult, bool, error) {
@@ -196,9 +208,9 @@ func Adjust(ctx context.Context, tx pgx.Tx, s platform.Scope, token, key, id str
 	if e != nil {
 		return AdjustResult{}, false, e
 	}
-	var entry Entry
-	e = call(ctx, tx, s, token, "customers:points", `SELECT loyalty.read_entry($1,$2::uuid,$3::uuid)`, &entry, receipt.EntryID)
-	return AdjustResult{entry, receipt.Balance}, replay, e
+	var result AdjustResult
+	e = projectWrite(ctx, tx, s, token, "loyalty.points.adjust", key, request, &result)
+	return result, replay, e
 }
 func Erase(ctx context.Context, tx pgx.Tx, s platform.Scope, token, key, id string) (Erasure, bool, error) {
 	if !command.ValidID(id) {
