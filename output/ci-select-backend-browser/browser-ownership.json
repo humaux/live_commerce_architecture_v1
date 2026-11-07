@@ -148,7 +148,7 @@
     "tests/admin/orders-fixture-date.ts": "215706c948bf6638f32bf2896f312d546394498fb956083a5bd9ba9d7326e542",
     "tests/admin/orders-model.test.ts": "aaa4b12d5a6c4a2c876341b98fd73c5a812b94a7ee05bd51f1415058d1d427c0",
     "tests/admin/orders-request.test.ts": "ccb87d390afac556c21fd6a050aba65cc43096021015109afe236f0e0390031b",
-    "tests/admin/orders-ui.spec.ts": "64761a0f740eca02d44e5387e9223fda28167f903d65d64b3acb26f3d958a5a4",
+    "tests/admin/orders-ui.spec.ts": "c83a4ab7c8b87f10e56cb2b4e60e8671d42403021d339abe0d813eb17265f3cd",
     "tests/admin/orders-v2.test.ts": "937491fb28849ae6143b1ff72272eaa4975df25325779dedea62d6c944a16313",
     "tests/admin/parcel-merge.spec.ts": "ce9512d8178c3e8b6dcc3edaa0c0a16f635e2350fa489abd767b804290c7afbe",
     "tests/admin/parcels-bff.test.ts": "4496e04ca16357e2c758e0c881f3dbca00af9a4a58703137d1d9e73a675daedf",

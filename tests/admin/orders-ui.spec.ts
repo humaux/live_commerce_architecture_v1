@@ -1063,8 +1063,11 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
   const followingDay = await apply("next Taipei day excludes known fixture", () => page.getByTestId("orders-apply").click());
   expect(followingDay.items.map((row: { order_id: string }) => row.order_id)).not.toContain(ids.live_order);
   await expect(page.getByTestId(`order-row-${ids.live_order}`)).toHaveCount(0);
+  await revealOrderFilters(page);
   await apply("reset before visual acceptance", () => page.getByTestId("orders-reset").click());
   await revealOrderFilters(page);
+  await expect(page.getByTestId("orders-from")).toHaveValue("");
+  await expect(page.getByTestId("orders-to")).toHaveValue("");
   await apply("active ledger", () => page.getByTestId("state-filter").selectOption("active"));
   for (const locale of ["zh-TW","zh-CN","en"]) {
     await page.getByTestId("locale-switch").selectOption(locale);
