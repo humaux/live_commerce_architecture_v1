@@ -383,8 +383,13 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
                 await expect(contactPage.getByTestId("contact-confirm")).toBeVisible({ timeout: T });
                 assert.equal(attempts.length, 0, "next must not send the message");
                 for (const value of Object.values(synthetic)) await expect(contactPage.getByTestId("contact-confirm")).toContainText(value);
+                const otherTab = await context.newPage();
+                await otherTab.goto(`${origin}${route}`);
                 await contactPage.getByTestId("contact-send").click();
                 await expect(contactPage.getByTestId("contact-unknown")).toBeVisible({ timeout: T });
+                await expect(otherTab.getByTestId("contact-unknown")).toBeVisible({ timeout: T });
+                await expect(otherTab.getByTestId("contact-recover")).toHaveCount(0);
+                await otherTab.close();
                 assert.equal(attempts.length, 1, "uncertain result must not be retried automatically");
                 assert(attempts[0].key && /^[A-Za-z0-9_.:-]{8,128}$/.test(attempts[0].key), "valid idempotency key required");
                 assert.deepEqual(JSON.parse(attempts[0].body ?? "null"), synthetic);

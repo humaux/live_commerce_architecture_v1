@@ -1,6 +1,6 @@
 "use client";
 // Purpose: buyer contact form, confirmation and keyed receipt recovery.
-// Depends on the closed buyer contact BFF contract and tab-local non-PII status marker.
+// Depends on the closed buyer contact BFF contract, same-origin Web Locks and non-PII status markers.
 // Invariants: the message is memory-only; no automatic retries; an uncertain attempt retains its original key and body.
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
@@ -24,11 +24,18 @@ export default function ContactForm({ locale, preview }: { locale: Locale; previ
   const busy = useRef(false);
   useEffect(() => {
     try {
-      const value = sessionStorage.getItem(marker);
-      if (value === "sent") setPhase("sent");
-      else if (value === "pending" || value === "conflict") setPhase("unknown");
+      const shared = localStorage.getItem(marker);
+      if (shared === "pending" || shared === "conflict") setPhase("unknown");
+      else if (sessionStorage.getItem(marker) === "sent") setPhase("sent");
       else setPhase("form");
     } catch { setStorageError(true); setPhase("form"); }
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === marker && (event.newValue === "pending" || event.newValue === "conflict")) {
+        setPhase(previous => previous === "sent" ? previous : "unknown");
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
   const body = () => ({ name: fields.name, email: fields.email, ...(fields.order_number ? { order_number: fields.order_number } : {}), message: fields.message });
   function next() {
@@ -37,26 +44,37 @@ export default function ContactForm({ locale, preview }: { locale: Locale; previ
   }
   async function send(recovery: boolean) {
     if (busy.current) return;
-    if (!recovery) intent.current = { key: crypto.randomUUID(), body: JSON.stringify(body()) };
-    const current = intent.current;
-    if (!current) return;
-    try { sessionStorage.setItem(marker, "pending"); }
-    catch { setStorageError(true); return; }
+    if (!navigator.locks) { setStorageError(true); return; }
     busy.current = true;
-    setPhase("sending");
     try {
-      const response = await fetch("/api/buyer/contact-messages", { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": current.key }, body: current.body, cache: "no-store" });
-      if (response.status === 201) {
-        const receipt: unknown = await response.json();
-        if (!contactReceipt(receipt)) { setPhase("unknown"); return; }
-        sessionStorage.setItem(marker, "sent");
-        intent.current = null;
-        setPhase("sent");
-      } else if (response.status === 429) { sessionStorage.removeItem(marker); setPhase("throttle"); }
-      else if (response.status === 409) { sessionStorage.setItem(marker, "conflict"); setPhase("conflict"); }
-      else if ([400, 413, 415, 422].includes(response.status)) { sessionStorage.removeItem(marker); setPhase("failed"); }
-      else setPhase("unknown");
-    } catch { setPhase("unknown"); }
+      await navigator.locks.request(marker, { ifAvailable: true }, async lock => {
+        if (!lock) { setPhase("unknown"); return; }
+        let shared: string | null;
+        try { shared = localStorage.getItem(marker); }
+        catch { setStorageError(true); return; }
+        if ((!recovery && shared) || (recovery && shared !== "pending")) { setPhase("unknown"); return; }
+        if (!recovery) intent.current = { key: crypto.randomUUID(), body: JSON.stringify(body()) };
+        const current = intent.current;
+        if (!current) { setPhase("unknown"); return; }
+        try { localStorage.setItem(marker, "pending"); }
+        catch { setStorageError(true); return; }
+        setPhase("sending");
+        try {
+          const response = await fetch("/api/buyer/contact-messages", { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": current.key }, body: current.body, cache: "no-store" });
+          if (response.status === 201) {
+            const receipt: unknown = await response.json();
+            if (!contactReceipt(receipt)) { setPhase("unknown"); return; }
+            sessionStorage.setItem(marker, "sent");
+            localStorage.removeItem(marker);
+            intent.current = null;
+            setPhase("sent");
+          } else if (response.status === 429) { localStorage.removeItem(marker); setPhase("throttle"); }
+          else if (response.status === 409) { localStorage.setItem(marker, "conflict"); setPhase("conflict"); }
+          else if ([400, 413, 415, 422].includes(response.status)) { localStorage.removeItem(marker); setPhase("failed"); }
+          else setPhase("unknown");
+        } catch { setPhase("unknown"); }
+      });
+    } catch { setStorageError(true); }
     finally { busy.current = false; }
   }
   function field(key: keyof Fields, label: string, type = "text") {
