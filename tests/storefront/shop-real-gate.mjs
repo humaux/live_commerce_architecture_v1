@@ -33,7 +33,7 @@ const facts = JSON.parse(await readFile(env("LC_SFR_FACTS"), "utf8"));
 const HOST = new URL(facts.origin).host, origin = facts.origin;
 const children = new Set(), sockets = new Set(), logs = [];
 // Optional observation only. Do not change assertions or record query values, bodies, cookies or headers.
-const rscDiagnostic = process.env.C7_RSC_DIAGNOSTIC === "1" ? [] : null;
+const rscDiagnostic = (process.env.LC_C7_RSC_DIAGNOSTIC === "1" || process.env.C7_RSC_DIAGNOSTIC === "1") ? [] : null;
 const observedAt = () => Math.round(performance.now() * 1000) / 1000;
 // BEGIN C7_SAFE_OBSERVER: pure privacy boundary, exercised by the local adversarial test.
 function createSafeObserver(expectedOrigin) {
@@ -42,8 +42,8 @@ function createSafeObserver(expectedOrigin) {
   const identify = (raw) => {
     try {
       const u = new URL(raw);
-      if (u.origin !== expectedOrigin || !(u.pathname === "/api/buyer/session" || u.searchParams.has("_rsc"))) return null;
-      if (!rawToID.has(raw)) rawToID.set(raw, ++nextURL);
+      if (u.username || u.password || u.origin !== expectedOrigin || !(u.pathname === "/api/buyer/session" || u.searchParams.has("_rsc"))) return null;
+      if (!rawToID.has(raw)) { if (rawToID.size >= 2048) return null; rawToID.set(raw, ++nextURL); }
       const names = [...new Set([...u.searchParams.keys()].map(k => ["_rsc", "preview"].includes(k) ? k : "[other]"))].sort();
       const parts = u.pathname.split("/").filter(Boolean);
       const locale = ["en", "zh-TW", "zh-CN"].includes(parts[0]) ? parts[0] : "[other]";
@@ -53,7 +53,15 @@ function createSafeObserver(expectedOrigin) {
       return { url_id: rawToID.get(raw), path, query_names: names };
     } catch { return null; }
   };
-  const attach = (target, id) => { const list = candidates.get(target.url_id) ?? []; list.push(id); candidates.set(target.url_id, list); };
+  const document = (raw) => {
+    try {
+      const u = new URL(raw);
+      if (!["https:", "http:"].includes(u.protocol) || u.username || u.password) return { same_origin: "UNKNOWN", shape: null };
+      // Neither foreign origins nor document query values are serialized.
+      return { same_origin: u.origin === expectedOrigin, shape: u.origin === expectedOrigin ? identify(`${u.origin}${u.pathname}?_rsc=__document_shape__`)?.path ?? null : "/[foreign]" };
+    } catch { return { same_origin: "UNKNOWN", shape: null }; }
+  };
+  const attach = (target, id) => { const list = candidates.get(target.url_id) ?? []; if (list.length < 2048) list.push(id); candidates.set(target.url_id, list); };
   const candidateIDs = (id) => [...(candidates.get(id) ?? [])];
   const error = (e) => {
     const name = ["Fetch API cannot load https", "Error", "TypeError", "ReferenceError", "SyntaxError", "AbortError"].includes(e.name) ? e.name : "[redacted]";
@@ -64,13 +72,21 @@ function createSafeObserver(expectedOrigin) {
   const fail = (s) => !s ? "UNKNOWN" : /cancel/i.test(s) ? "cancelled-like" : /cert|ssl|tls/i.test(s) ? "tls-like" : /cors|access.control/i.test(s) ? "security-like" : "other-redacted";
   const problem = (e) => `pageerror: ${error(e).target?.path ?? "[redacted]"}`;
   const clear = () => { rawToID.clear(); candidates.clear(); };
-  return { identify, attach, candidateIDs, error, fail, problem, clear };
+  return { identify, document, attach, candidateIDs, error, fail, problem, clear };
 }
 // END C7_SAFE_OBSERVER
 const safeObserver = rscDiagnostic ? createSafeObserver(origin) : null;
 let diagnosticStage = "START", diagnosticNav = 0, diagnosticRequestID = 0;
 const diagnosticRequests = new WeakMap();
-const diagnosticEvent = (event, fields = {}) => { if (rscDiagnostic) rscDiagnostic.push({ at: observedAt(), stage: diagnosticStage, nav: diagnosticNav, event, ...fields }); };
+let diagnosticEdgeID = 0, diagnosticActionID = 0, diagnosticAction = null, diagnosticTruncated = false;
+const diagnosticActions = new WeakMap();
+const diagnosticActionStart = (page, step) => {
+  if (!rscDiagnostic) return;
+  diagnosticAction = ++diagnosticActionID; diagnosticActions.set(page, diagnosticAction);
+  diagnosticEvent("action-start", { action_id: diagnosticAction, step, document: safeObserver.document(page.url()), causal_association: "UNKNOWN" });
+};
+const diagnosticActionEnd = () => { if (rscDiagnostic) diagnosticEvent("action-end", { action_id: diagnosticAction }); };
+const diagnosticEvent = (event, fields = {}) => { if (rscDiagnostic && rscDiagnostic.length < 10000) rscDiagnostic.push({ at: observedAt(), stage: diagnosticStage, nav: diagnosticNav, event, ...fields }); else if (rscDiagnostic) diagnosticTruncated = true; };
 let browser, edge, proxy, cases = 0;
 const pass = (name) => { cases++; console.log(`PASS ${name}`); const stage = /^SFR0[1-9]/.exec(name)?.[0]; if (stage) diagnosticStage = `after-${stage}`; };
 async function listen(server) { server.listen(0, "127.0.0.1"); await once(server, "listening"); return server.address().port; }
@@ -126,10 +142,11 @@ try {
   edge = https.createServer({ key: await readFile(path.join(certDir, "key.pem")), cert: await readFile(path.join(certDir, "cert.pem")) }, async (req, res) => {
     const target = safeObserver?.identify(`${origin}${req.url}`);
     if (target) {
-      diagnosticEvent("edge-request", { target, method: ["GET", "POST"].includes(req.method) ? req.method : "OTHER" });
-      req.on("aborted", () => diagnosticEvent("edge-aborted", { target }));
-      res.on("finish", () => diagnosticEvent("edge-finish", { target, status: res.statusCode }));
-      res.on("close", () => diagnosticEvent("edge-close", { target, finished: res.writableFinished, status: res.headersSent ? res.statusCode : "UNKNOWN" }));
+      const edge_id = ++diagnosticEdgeID;
+      diagnosticEvent("edge-request", { edge_id, target, method: ["GET", "POST"].includes(req.method) ? req.method : "OTHER" });
+      req.on("aborted", () => diagnosticEvent("edge-aborted", { edge_id, target }));
+      res.on("finish", () => diagnosticEvent("edge-finish", { edge_id, target, status: res.statusCode }));
+      res.on("close", () => diagnosticEvent("edge-close", { edge_id, target, finished: res.writableFinished, status: res.headersSent ? res.statusCode : "UNKNOWN" }));
     }
     try {
       const chunks = []; for await (const x of req) chunks.push(x);
@@ -164,28 +181,31 @@ try {
       const id = ++diagnosticRequestID; diagnosticRequests.set(request, id); safeObserver.attach(target, id);
       let frame = "UNKNOWN"; try { frame = request.frame() === p.mainFrame() ? "main" : "other"; } catch { /* unavailable */ }
       const resourceType = ["document", "fetch", "xhr", "other"].includes(request.resourceType()) ? request.resourceType() : "other";
-      diagnosticEvent("request", { id, target, method: ["GET", "POST"].includes(request.method()) ? request.method() : "OTHER", resourceType, frame });
+      diagnosticEvent("request", { id, target, action_id: diagnosticActions.get(p) ?? null, action_association: "context-only", document: safeObserver.document(p.url()), redirected_from: diagnosticRequests.get(request.redirectedFrom()) ?? "UNKNOWN", method: ["GET", "POST"].includes(request.method()) ? request.method() : "OTHER", resourceType, frame });
     });
-    p.on("response", response => { const id = diagnosticRequests.get(response.request()); if (id) diagnosticEvent("response", { id, status: response.status() }); });
+    p.on("response", response => { const id = diagnosticRequests.get(response.request()); if (id) diagnosticEvent("response", { id, status: response.status(), redirected_to: diagnosticRequests.get(response.request().redirectedTo()) ?? "UNKNOWN" }); });
     p.on("requestfinished", request => {
-      const id = diagnosticRequests.get(request); if (id) diagnosticEvent("requestfinished", { id });
+      const id = diagnosticRequests.get(request); if (id) diagnosticEvent("requestfinished", { id, redirected_to: diagnosticRequests.get(request.redirectedTo()) ?? "UNKNOWN" });
     });
     p.on("requestfailed", request => {
       const id = diagnosticRequests.get(request); if (id) diagnosticEvent("requestfailed", { id, failure: safeObserver.fail(request.failure()?.errorText) });
     });
     p.on("framenavigated", frame => {
       if (frame !== p.mainFrame()) return;
-      diagnosticNav++; diagnosticEvent("navigation", { frame: "main" });
+      diagnosticNav++; diagnosticEvent("navigation", { frame: "main", document: safeObserver.document(frame.url()) });
     });
     p.on("pageerror", error => {
-      diagnosticEvent("pageerror", safeObserver.error(error));
+      const safe = safeObserver.error(error);
+      diagnosticEvent("pageerror", { ...safe, action_id: diagnosticActions.get(p) ?? null, document: safeObserver.document(p.url()), candidate_request_ids: safe.target ? safeObserver.candidateIDs(safe.target.url_id) : [], exact_request_id: "UNKNOWN" });
     });
     p.on("console", message => { if (message.type() !== "error") return; const text = message.text(); const category = /content security policy|connect-src/i.test(text) ? "csp" : /cross.origin|access.control|cors/i.test(text) ? "access-control" : /certificate|\btls\b|\bssl\b/i.test(text) ? "tls" : "other-redacted"; diagnosticEvent("console-error", { category }); });
   }
   p.on("console", (m) => { if (m.type() === "error" && /hydrat|minified react|warning:|did not match/i.test(m.text())) problems.push(`console: ${safeObserver ? "[redacted]" : m.text()}`); });
 
   // ---- SFR01 home from the published design the merchant saved through the admin API ------------------------------------------------------
+  diagnosticActionStart(p, "step-01");
   await p.goto(`${origin}/en`);
+  diagnosticActionEnd();
   await expect(p.getByTestId("announcement")).toContainText(facts.design.announcement);
   await expect(p.getByRole("heading", { level: 1 })).toHaveText(facts.design.hero);
   for (const id of ["section-hero", "section-featured", "section-rich-text", "section-product-grid", "section-image-text"]) await expect(p.getByTestId(id)).toBeVisible();
@@ -229,30 +249,42 @@ try {
   pass("SFR02 title/canonical/Open Graph, Product JSON-LD (real price range, availability, absolute photos), sitemap = active products only, robots, noindex on cart and checkout");
 
   // ---- SFR03 collections (photo via the amended id), sort, filter, pagination -----------------------------------------------------------------
+  diagnosticActionStart(p, "step-02");
   await p.goto(`${origin}/en/collections`);
+  diagnosticActionEnd();
   await expect(p.getByTestId("collection-tile")).toHaveCount(facts.collections.length);
   const withImage = facts.collections.find((c) => c.image_id), tile = p.getByTestId("collection-tile").filter({ hasText: withImage.title });
   await expect(tile.locator("img")).toHaveAttribute("src", `/media/c/${withImage.id}/${withImage.image_id}`);
   await expect.poll(() => loaded(tile.locator("img"))).toBe(true); // the collection photo comes from PG; the URL needs the id the read now returns
   await expect(p.getByTestId("collection-tile").filter({ hasText: "Tableware" }).locator("img")).toHaveCount(0);
   await expect(tile).toContainText(fmt(COPY.productCount, { n: withImage.active_products }));
+  diagnosticActionStart(p, "step-03");
   await p.goto(`${origin}/en/collections/tableware`);
+  diagnosticActionEnd();
   await expect(p.getByRole("heading", { level: 1 })).toHaveText("Tableware");
   assert.equal(await p.getByTestId("product-card").count(), facts.collections.find((c) => c.slug === "tableware").active_products);
   // This is the real phone context: use the mobile ordering page; keep the existing price oracle below.
+  diagnosticActionStart(p, "step-04");
   await p.getByRole("button", { name: COPY.sortBy, exact: true }).click();
+  diagnosticActionEnd();
+  diagnosticActionStart(p, "step-05");
   await p.getByRole("button", { name: COPY.sortPriceAsc, exact: true }).click();
+  diagnosticActionEnd();
   await p.waitForURL(/sort=price_asc/);
   const prices = (await p.getByTestId("product-card").locator(".sf-card__price > span:first-child").allTextContents()).map(num);
   assert(prices.length >= 3 && prices.every((n, i) => i === 0 || n >= prices[i - 1]), `not sorted ascending: ${prices}`);
+  diagnosticActionStart(p, "step-06");
   await p.goto(`${origin}/en/products?min=15&max=20`);
+  diagnosticActionEnd();
   const filtered = (await p.getByTestId("product-card").locator(".sf-card__price > span:first-child").allTextContents()).map(num);
   assert(filtered.length >= 3 && filtered.every((n) => n >= 15 && n <= 20), `price filter leaked ${filtered}`);
   // React streaming can briefly keep a second, hidden copy of the segment (<div hidden id="S:…">): wait for the swap to leave
   // exactly one (a lasting duplicate still fails) before the strict-mode assertion below.
   await expect(p.locator(".sf-filter")).toHaveCount(1);
   await expect(p.locator(".sf-filter")).toHaveAttribute("open", "");
+  diagnosticActionStart(p, "step-07");
   await p.goto(`${origin}/en/products`);
+  diagnosticActionEnd();
   // React streaming briefly keeps the finished segment in a hidden <div hidden id="S:…"> before swapping it in; only the visible chips are the UI.
   // Match shop-r5-checks: measure the 390px chip layout after loading/streaming settles.
   await p.waitForLoadState("networkidle");
@@ -263,7 +295,9 @@ try {
   assert(await categoryChips.evaluate(el => el.scrollWidth <= el.clientWidth), "G4 chips scroll horizontally at 390px");
   assert(await noOverflow(p), "G4 list overflows at 390px");
   assert.equal(await p.getByTestId("product-card").count(), 24); // page size
+  diagnosticActionStart(p, "step-08");
   await p.getByTestId("load-more").click();
+  diagnosticActionEnd();
   await expect.poll(() => p.getByTestId("product-card").count()).toBe(facts.active_count);
   await expect(p.getByTestId("load-more")).toHaveCount(0);
   const titles = await p.getByTestId("product-card").locator(".sf-card__title").allTextContents();
@@ -271,7 +305,9 @@ try {
   pass("SFR03 collection tiles (photo via /media/c/{id}/{image} from PG), collection page, price sort, price filter, cursor load more to every active product, no draft/archived");
 
   // ---- SFR04 product pages: variants, stock hints, sold out, 404s, redirects, gallery ------------------------------------------------------------
+  diagnosticActionStart(p, "step-09");
   await p.goto(`${origin}/en/products/${P("candle").slug}`);
+  diagnosticActionEnd();
   await expect(p.getByRole("heading", { level: 1 })).toHaveText(P("candle").title);
   const related = p.getByTestId("related-products");
   await expect(related).toBeVisible();
@@ -279,11 +315,15 @@ try {
   for (const key of ["candle", "draft", "retired"]) await expect(related.locator(`a[href$="/products/${P(key).slug}"]`)).toHaveCount(0);
   await expect(p.getByTestId("variant-price")).toHaveText(shop$(6800)); // opens on the cheapest in-stock variant
   await expect(p.getByTestId("stock-hint")).toContainText(COPY.inStock);
+  diagnosticActionStart(p, "step-10");
   await p.locator("label.sf-chip", { hasText: "300g" }).click();
+  diagnosticActionEnd();
   await expect(p.getByTestId("variant-price")).toHaveText(shop$(9800));
   await expect(p.getByTestId("stock-hint")).toContainText(COPY.lowStock); // 3 on hand
   assert(await noOverflow(p), "product overflows at 390px");
+  diagnosticActionStart(p, "step-11");
   await p.goto(`${origin}/en/products/${P("scarf").slug}`);
+  diagnosticActionEnd();
   await expect(p.getByTestId("related-products")).toHaveCount(0);
   await expect(p.getByRole("radio", { name: "Black" })).toBeDisabled(); // 0 on hand
   await expect(p.getByTestId("variant-price")).toHaveText(shop$(14800)); await expect(p.locator(".sf-buy__price s")).toHaveText(shop$(19800));
@@ -303,7 +343,9 @@ try {
     dialog.addEventListener("cancel", () => snapshot("cancel"));
     dialog.addEventListener("close", () => snapshot("close"));
   });
+  diagnosticActionStart(p, "step-12");
   await enlarge.click();
+  diagnosticActionEnd();
   await expect(photoDialog).toBeVisible();
   await p.keyboard.press("ArrowRight");
   await expect(photoDialog.locator("img")).toHaveAttribute("src", await strip.nth(1).getAttribute("src"));
@@ -315,18 +357,26 @@ try {
       activeTag: document.activeElement?.tagName ?? null, activeIsTrigger: document.activeElement?.matches(".sf-gal__open") ?? false }))));
     throw error;
   }
+  diagnosticActionStart(p, "step-13");
   await enlarge.click();
+  diagnosticActionEnd();
   await expect(photoDialog).toBeVisible();
+  diagnosticActionStart(p, "step-14");
   await photoDialog.getByRole("button", { name: "Close photo", exact: true }).click();
+  diagnosticActionEnd();
   await expect(photoDialog).not.toBeVisible();
   await expect(enlarge).toBeFocused();
+  diagnosticActionStart(p, "step-15");
   await p.goto(`${origin}/en/products/${P("diffuser").slug}`);
+  diagnosticActionEnd();
   await expect(p.getByTestId("add-to-cart")).toBeDisabled(); await expect(p.getByTestId("buy-now")).toBeDisabled(); await expect(p.getByTestId("stock-hint")).toContainText(COPY.outOfStock);
   const id = P("dripper").id;
   const adHop = await raw(`/products/${id}`); assert.equal(adHop.status, 308); assert.equal(adHop.headers.location, `/zh-TW/products/${id}`); // the frozen ad / feed link
   const moved = await raw(`/zh-TW/products/${id}`); assert.equal(moved.status, 308); assert.equal(moved.headers.location, `/zh-TW/products/${P("dripper").slug}`);
   for (const gone of [P("draft").slug, P("retired").slug, "no-such-product", "Checkout"]) assert.equal((await raw(`/en/products/${gone}`)).status, 404, `${gone} must be a 404`);
+  diagnosticActionStart(p, "step-16");
   await p.goto(`${origin}/en/products/${P("draft").slug}`); await expect(p.getByTestId("not-found")).toBeVisible();
+  diagnosticActionEnd();
   assert.equal((await raw(`/en/collections/nope`)).status, 404);
   pass("SFR04 variants and stock hints from real stock, sold-out and out-of-stock variants not addable, compare-at, 3-photo gallery from PG, id URL 308 -> slug, draft/archived/unknown/removed /products/Checkout are 404");
 
@@ -335,20 +385,30 @@ try {
   const dripperPrice = P("dripper").variants[0].price_minor, candlePrice = P("candle").variants[0].price_minor;
   assert(candlePrice + dripperPrice < T && 2 * candlePrice + dripperPrice >= T, "fixture prices must straddle the threshold");
   const addProduct = async (page, key, quantity = 1) => {
+    diagnosticActionStart(page, "step-17");
     await page.goto(`${origin}/en/products/${P(key).slug}`);
+    diagnosticActionEnd();
     for (let i = 1; i < quantity; i++) await page.getByRole("button", { name: COPY.increase }).first().click();
+    diagnosticActionStart(page, "step-18");
     await page.getByTestId("add-to-cart").click();
+    diagnosticActionEnd();
     await page.getByTestId("cart-checkout").waitFor();
   };
   await addProduct(p, "candle"); await addProduct(p, "dripper");
+  diagnosticActionStart(p, "step-19");
   await p.goto(`${origin}/en/cart`);
+  diagnosticActionEnd();
   await expect(p.getByTestId("cart-line")).toHaveCount(2);
   const below = candlePrice + dripperPrice;
   await expect(p.getByTestId("cart-subtotal")).toHaveText(shop$(below));
   await expect(p.getByTestId("free-shipping")).toContainText(fmt(COPY.freeShipRemaining, { amount: shop$(T - below) }));
+  diagnosticActionStart(p, "step-20");
   await p.getByTestId("cart-checkout").click();
+  diagnosticActionEnd();
   await p.waitForURL(`**/en/checkout`);
+  diagnosticActionStart(p, "step-21");
   await p.getByRole("button", { name: "Choose delivery", exact: true }).click();
+  diagnosticActionEnd();
   await expect(p.getByLabel("Delivery method")).toBeVisible();
   await expect(p.getByTestId("checkout-free-shipping")).toContainText(fmt(COPY.freeShipRemaining, { amount: shop$(T - below) }));
   // the producer: every checkout-options row carries the policy threshold (number or null)
@@ -358,21 +418,35 @@ try {
     return (await response.json()).items;
   });
   assert(optionRows.length >= 1 && optionRows.every((o) => o.free_shipping_threshold_minor === T), `options must carry the policy threshold ${T}: ${JSON.stringify(optionRows.map((o) => o.free_shipping_threshold_minor))}`);
+  diagnosticActionStart(p, "step-22");
   await p.getByRole("button", { name: "Get current total", exact: true }).click();
+  diagnosticActionEnd();
+  diagnosticActionStart(p, "step-23");
   await p.getByTestId("checkout-details-toggle").click();
+  diagnosticActionEnd();
   await expect(p.locator(".quotation")).toBeVisible();
   await expect(p.locator(".quotation dl div").filter({ hasText: "Delivery" }).locator("dd")).toHaveText(shop$(F)); // below the threshold the quote charges the fee
   const pc2 = await phone(), q = await pc2.newPage();
   await addProduct(q, "candle", 2); await addProduct(q, "dripper");
+  diagnosticActionStart(q, "step-24");
   await q.goto(`${origin}/en/cart`);
+  diagnosticActionEnd();
   await expect(q.getByTestId("cart-subtotal")).toHaveText(shop$(2 * candlePrice + dripperPrice));
   await expect(q.getByTestId("free-shipping")).toContainText(COPY.freeShipReached);
+  diagnosticActionStart(q, "step-25");
   await q.getByTestId("cart-checkout").click();
+  diagnosticActionEnd();
   await q.waitForURL(`**/en/checkout`);
+  diagnosticActionStart(q, "step-26");
   await q.getByRole("button", { name: "Choose delivery", exact: true }).click();
+  diagnosticActionEnd();
   await expect(q.getByTestId("checkout-free-shipping")).toContainText(COPY.freeShipReached);
+  diagnosticActionStart(q, "step-27");
   await q.getByRole("button", { name: "Get current total", exact: true }).click();
+  diagnosticActionEnd();
+  diagnosticActionStart(q, "step-28");
   await q.getByTestId("checkout-details-toggle").click();
+  diagnosticActionEnd();
   await expect(q.locator(".quotation")).toBeVisible();
   await expect(q.locator(".quotation dl div").filter({ hasText: "Delivery" }).locator("dd")).toHaveText(shop$(0)); // at or above the threshold shipping is free
   await expect(q.getByTestId("address-section")).toBeVisible();
@@ -382,26 +456,38 @@ try {
   // ---- SFR06 preview draft ------------------------------------------------------------------------------------------------------------------------
   const prev = await raw(`/en?preview=${facts.preview_token}`);
   assert(prev.status === 200 && /no-store/.test(prev.headers["cache-control"] ?? "") && /noindex/.test(prev.headers["x-robots-tag"] ?? ""), "preview headers");
+  diagnosticActionStart(p, "step-29");
   await p.goto(`${origin}/en?preview=${facts.preview_token}`);
+  diagnosticActionEnd();
   await expect(p.getByTestId("preview-banner")).toBeVisible(); await expect(p.getByRole("heading", { level: 1 })).toHaveText(facts.design.draft_hero);
+  diagnosticActionStart(p, "step-30");
   await p.goto(`${origin}/en?preview=${"Z".repeat(43)}`); // unknown token -> the published view, no banner
+  diagnosticActionEnd();
   await expect(p.getByTestId("preview-banner")).toHaveCount(0); await expect(p.getByRole("heading", { level: 1 })).toHaveText(facts.design.hero);
   assert(!(await raw("/en", { "x-shop-preview": facts.preview_token })).body.toString().includes(facts.design.draft_hero), "a client-sent x-shop-preview header must be ignored");
   pass("SFR06 preview token shows the saved draft with banner/no-store/noindex; unknown token and a forged header fall back to the published design");
 
   // ---- SFR07 publication through the 0081 definers --------------------------------------------------------------------------------------------------
   await control("unpublish");
+  diagnosticActionStart(p, "step-31");
   await p.goto(`${origin}/en`); await expect(p.getByTestId("store-closed")).toBeVisible();
+  diagnosticActionEnd();
   assert.equal((await raw(`/en/products/${P("candle").slug}`)).status, 404);
   assert((await raw("/robots.txt")).body.toString().includes("Disallow: /") && (await raw("/sitemap.xml")).status === 404);
   await control("publish");
+  diagnosticActionStart(p, "step-32");
   await p.goto(`${origin}/en`); await expect(p.getByRole("heading", { level: 1 })).toHaveText(facts.design.hero);
+  diagnosticActionEnd();
   assert.equal((await raw(`/en/products/${P("candle").slug}`)).status, 200);
   pass("SFR07 merchant unpublish through control.set_storefront_published closes the shop (branded closed page, 404 products, no sitemap) and republish reopens it");
 
   // ---- SFR08 locales ------------------------------------------------------------------------------------------------------------------------------------
+  diagnosticActionStart(p, "step-33");
   await p.goto(`${origin}/zh-CN/cart`); await expect(p.getByRole("heading", { level: 1 })).toHaveText(shopCopy["zh-CN"].cartTitle);
+  diagnosticActionEnd();
+  diagnosticActionStart(p, "step-34");
   await p.goto(`${origin}/en/products/${P("dripper").slug}`); await expect(p.getByTestId("add-to-cart")).toHaveText(COPY.addToCart); assert.equal(await p.evaluate(() => document.documentElement.lang), "en");
+  diagnosticActionEnd();
   assert.equal((await raw("/xx/products")).status, 404);
   pass("SFR08 UI chrome follows the locale while merchant text stays as entered; unknown locale is a 404");
 
@@ -417,8 +503,8 @@ try {
   console.log(`engine=${engine} cases=${cases} REAL-STACK (SANDBOX)`);
 } finally {
   if (rscDiagnostic) {
-    const events = rscDiagnostic.map(e => e.target ? { ...e, candidate_request_ids: safeObserver.candidateIDs(e.target.url_id) } : e);
-    await writeFile(path.join(evidence, "c7-rsc-observation.json"), JSON.stringify({ engine, clock: "performance.now milliseconds", events }, null, 2));
+    const events = rscDiagnostic.map(e => e.target ? { ...e, candidate_request_ids: e.candidate_request_ids ?? safeObserver.candidateIDs(e.target.url_id), edge_association: "UNKNOWN" } : e);
+    await writeFile(path.join(evidence, "c7-rsc-observation.json"), JSON.stringify({ engine, truncated: diagnosticTruncated, clock: "performance.now milliseconds", edge_association_policy: "URL identity provides candidates only; no temporal inference", events }, null, 2));
     safeObserver.clear();
   }
   for (const c of children) c.kill("SIGTERM");

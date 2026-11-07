@@ -64,3 +64,23 @@ test("actual storefront gate retains hydration warning failures", async () => {
   assert.equal(problems.length, 1);
   assert.throws(() => assert.deepEqual(problems, []));
 });
+
+// Execute the actual observation boundary; hostile inputs must never reach serialized evidence.
+test("C7 observer safe document shapes and bounded identities reject hostile data", async () => {
+  const { readFile } = await import("node:fs/promises"); const vm = await import("node:vm");
+  const source = await readFile("tests/storefront/shop-real-gate.mjs", "utf8");
+  const code = source.slice(source.indexOf("function createSafeObserver("), source.indexOf("// END C7_SAFE_OBSERVER"));
+  const observer = vm.runInNewContext(`${code}; createSafeObserver("https://shop.example")`, { URL });
+  const secret = "UNIQUE_PRIVATE_7f193", raw = `https://shop.example/en/products/${secret}?preview=${secret}&_rsc=${secret}&${secret}=${secret}`;
+  const target = observer.identify(raw); observer.attach(target, 1); observer.attach(target, 2);
+  const events = [target, observer.document(raw), observer.document(`https://${secret}.example/${secret}`), observer.document("about:blank"), observer.error({ name: secret, message: secret }), observer.error({ name: "Fetch API cannot load https", message: `/shop.example/en/products/${secret}?_rsc=${secret} due to access control checks.` }), observer.fail(secret)];
+  assert.equal(observer.document(raw).same_origin, true);
+  assert.equal(observer.document(`https://${secret}.example/${secret}`).same_origin, false);
+  assert.equal(observer.document("about:blank").same_origin, "UNKNOWN");
+  assert.equal(JSON.stringify(events).includes(secret), false);
+  assert.deepEqual(Object.keys(target).sort(), ["path", "query_names", "url_id"]);
+  assert.equal(observer.identify(`https://user:${secret}@shop.example/en?_rsc=x`), null);
+  assert.equal(observer.error({ name: "TypeError", message: secret }).message, "[redacted]");
+  for (let i = 0; i < 3000; i++) observer.identify(`https://shop.example/en?_rsc=${i}`);
+  assert.equal(observer.identify("https://shop.example/en?_rsc=overflow"), null);
+});
