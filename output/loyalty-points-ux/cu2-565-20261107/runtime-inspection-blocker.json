@@ -1,0 +1,15 @@
+{
+  "formal_metadata_equal": true,
+  "candidate_metadata_equal": true,
+  "first_failed_operation": "formal-fingerprint-before-00",
+  "code_sha256": "7a7cf3b4e84db0b55c7fdcdf1f6a79eb1bbca92dcbe991a137f17dcf5a0d8bc0",
+  "error": "Unable to establish connection to Figma after 10 seconds. Please check your internet connection.; inspect the canvas before retrying\n",
+  "subsequent_readonly_rejections": [
+    "candidate-fingerprint-before-00",
+    "baseline-RED"
+  ],
+  "why_subsequent_requests": "shell newline sequence did not stop on earlier failed read; they were rejected before script execution; fixed policy stop native sequence",
+  "readback_status": "busyfalse needsInspectionfalse after supported legacy metadata",
+  "canvas_changes": 0,
+  "next": "Root decision needed for current use_figma offline execution failure; no retry of generation"
+}
