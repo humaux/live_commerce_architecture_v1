@@ -34,7 +34,8 @@ CREATE TABLE loyalty.point_entries(
 CREATE UNIQUE INDEX point_entries_one_award ON loyalty.point_entries(tenant_id,store_id,order_id) WHERE reason='manual_order_award';
 CREATE INDEX point_entries_member ON loyalty.point_entries(tenant_id,store_id,member_id,created_at DESC,id DESC);
 CREATE INDEX point_entries_order ON loyalty.point_entries(tenant_id,store_id,order_id) WHERE order_id IS NOT NULL;
-GRANT SELECT,INSERT,UPDATE ON loyalty.members TO commerce_privacy_writer;
+GRANT SELECT,INSERT ON loyalty.members TO commerce_privacy_writer;
+GRANT UPDATE(display_name,contact_note,notes,balance,version,updated_at,erased_at) ON loyalty.members TO commerce_privacy_writer;
 GRANT SELECT,INSERT ON loyalty.point_entries TO commerce_privacy_writer;
 GRANT UPDATE(note) ON loyalty.point_entries TO commerce_privacy_writer;
 GRANT SELECT(source) ON checkout.orders TO commerce_privacy_writer;
@@ -180,7 +181,7 @@ BEGIN
  WITH rows AS MATERIALIZED(SELECT * FROM loyalty.point_entries e WHERE e.tenant_id=a.tenant_id AND e.store_id=s AND e.member_id=i
  AND(v IS NULL OR (e.created_at,e.id)<((v->>'t')::timestamptz,(v->>'i')::uuid)) ORDER BY e.created_at DESC,e.id DESC LIMIT 51),
  kept AS (SELECT * FROM rows ORDER BY created_at DESC,id DESC LIMIT 50)
- SELECT jsonb_build_object('member',loyalty.member_json(m),'entries',coalesce((SELECT jsonb_agg((loyalty.entry_json(k)-ARRAY['member_id','actor_principal_id'])||jsonb_build_object('actor',jsonb_build_object('principal_id',k.actor_principal_id,'display_name',NULL)) ORDER BY k.created_at DESC,k.id DESC) FROM kept k),'[]'::jsonb),
+ SELECT jsonb_build_object('member',loyalty.member_json(m),'entries',coalesce((SELECT jsonb_agg((to_jsonb(k)-ARRAY['tenant_id','store_id','member_id','actor_principal_id'])||jsonb_build_object('actor',jsonb_build_object('principal_id',k.actor_principal_id,'display_name',NULL)) ORDER BY k.created_at DESC,k.id DESC) FROM kept k),'[]'::jsonb),
  'next_ledger_cursor',CASE WHEN(SELECT count(*) FROM rows)>50 THEN(SELECT loyalty.cursor_encode(created_at,id,b) FROM kept ORDER BY created_at,id LIMIT 1) ELSE NULL END) INTO outcome;
  PERFORM customers.tn_fence(h,s,p,a.tenant_id,a.principal_id,a.authz_revision);RETURN outcome;
 END $$;

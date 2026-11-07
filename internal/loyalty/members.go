@@ -9,6 +9,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"golang.org/x/text/unicode/norm"
@@ -73,7 +74,7 @@ func dbError(err error) error {
 		case "55P03", "40P01", "40001", "57014":
 			return err
 		default:
-			return ErrUnavailable
+			return fmt.Errorf("%w (SQLSTATE %s)", ErrUnavailable, pg.Code)
 		}
 	}
 	return err
