@@ -21,7 +21,7 @@ import { createWriteStream } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
-import { launch, ctxOpts, iosZoomOffenders, engine } from "./browser-engine.mjs";
+import { launch, ctxOpts, iosZoomOffenders, engine, isWebkitCancelledFetch } from "./browser-engine.mjs";
 import { shopCopy } from "../../apps/storefront/lib/shop-copy.ts";
 import { measureMediaSizes } from "./media-sizes-perf.mjs";
 import { checkOfflineError } from "./offline-error.spec.ts";
@@ -32,6 +32,18 @@ const root = process.cwd(), evidence = env("LC_SFR_EVIDENCE");
 const facts = JSON.parse(await readFile(env("LC_SFR_FACTS"), "utf8"));
 const HOST = new URL(facts.origin).host, origin = facts.origin;
 const children = new Set(), sockets = new Set(), logs = [];
+// Optional observation only. Do not change assertions or record query values, bodies, cookies or headers.
+const rscDiagnostic = process.env.C7_RSC_DIAGNOSTIC === "1" ? [] : null;
+const rscIds = new WeakMap();
+let rscNextId = 0;
+const observedAt = () => Math.round(performance.now() * 1000) / 1000;
+const observedUrl = raw => {
+  try {
+    const u = new URL(raw);
+    if (u.host !== HOST) return null;
+    return { host: u.host, path: u.pathname.replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, "[id]"), rsc: u.searchParams.has("_rsc") };
+  } catch { return null; }
+};
 let browser, edge, proxy, cases = 0;
 const pass = (name) => { cases++; console.log(`PASS ${name}`); };
 async function listen(server) { server.listen(0, "127.0.0.1"); await once(server, "listening"); return server.address().port; }
@@ -110,6 +122,36 @@ try {
   const pc = await phone(), p = await pc.newPage();
   const problems = [];
   p.on("pageerror", (e) => problems.push(`pageerror: ${e.message}`));
+  if (rscDiagnostic) {
+    p.on("request", request => {
+      const url = observedUrl(request.url());
+      if (!url?.rsc) return;
+      const id = ++rscNextId; rscIds.set(request, id);
+      rscDiagnostic.push({ at: observedAt(), event: "request", id, method: request.method(), resourceType: request.resourceType(), ...url });
+    });
+    p.on("requestfinished", request => {
+      const id = rscIds.get(request); if (id) rscDiagnostic.push({ at: observedAt(), event: "requestfinished", id });
+    });
+    p.on("requestfailed", request => {
+      const id = rscIds.get(request); if (!id) return;
+      const raw = request.failure()?.errorText ?? "";
+      const errorText = /^[A-Za-z0-9 .:_-]{1,120}$/.test(raw) ? raw : "[redacted]";
+      rscDiagnostic.push({ at: observedAt(), event: "requestfailed", id, errorText });
+    });
+    p.on("framenavigated", frame => {
+      if (frame !== p.mainFrame()) return;
+      const url = observedUrl(frame.url()); if (url) rscDiagnostic.push({ at: observedAt(), event: "navigation", ...url });
+    });
+    p.on("pageerror", error => {
+      const suffix = " due to access control checks.";
+      const raw = error.message;
+      const target = raw.startsWith(`/${HOST}/`) && raw.endsWith(suffix)
+        ? observedUrl(`https:/${raw.slice(0, -suffix.length)}`) : null;
+      const message = target?.rsc ? `/${target.host}${target.path}?[redacted]${suffix}` : "[redacted non-target message]";
+      const name = /^[A-Za-z .:-]{1,96}$/.test(error.name) ? error.name : "[redacted]";
+      rscDiagnostic.push({ at: observedAt(), event: "pageerror", name, message, target, predicateMatched: isWebkitCancelledFetch(error) });
+    });
+  }
   p.on("console", (m) => { if (m.type() === "error" && /hydrat|minified react|warning:|did not match/i.test(m.text())) problems.push(`console: ${m.text()}`); });
 
   // ---- SFR01 home from the published design the merchant saved through the admin API ------------------------------------------------------
@@ -344,6 +386,7 @@ try {
 
   console.log(`engine=${engine} cases=${cases} REAL-STACK (SANDBOX)`);
 } finally {
+  if (rscDiagnostic) await writeFile(path.join(evidence, "c7-rsc-observation.json"), JSON.stringify({ engine, clock: "performance.now milliseconds", events: rscDiagnostic }, null, 2));
   for (const c of children) c.kill("SIGTERM");
   for (const s of sockets) s.destroy();
   await browser?.close().catch(() => {});
