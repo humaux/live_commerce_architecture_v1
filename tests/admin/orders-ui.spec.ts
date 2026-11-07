@@ -1,5 +1,5 @@
 // Purpose: Exercises orders, filters and details with supplied isolated browser identities.
-// Depends on: ../../apps/admin/lib/orders-model (strict MOCK shipment DTO validation), @playwright/test, node:fs/promises, node:path, node:http, ./fixtures/native-device, ../browser-evidence.mjs; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_ORDER_STORE, LC_BROWSER_ORDER_IDS, LC_BROWSER_FROZEN_SKU_CODE, LC_BROWSER_FOREIGN_STORE, LC_BROWSER_FOREIGN_ORDER_ID, LC_BROWSER_UNLISTED_STORE, LC_BROWSER_SECOND_TOKEN, LC_BROWSER_NO_ORDERS_TOKEN, LC_BROWSER_EXPIRED_TOKEN, LC_BROWSER_REVOKED_TOKEN
+// Depends on: ./orders-fixture-date (admitted live row dates), ../../apps/admin/lib/orders-model (strict MOCK shipment DTO validation), @playwright/test, node:fs/promises, node:path, node:http, ./fixtures/native-device, ../browser-evidence.mjs; harness env: LC_BROWSER_PUBLIC_ORIGIN, LC_BROWSER_API_ORIGIN, LC_BROWSER_EVIDENCE, LC_BROWSER_ORDER_STORE, LC_BROWSER_ORDER_IDS, LC_BROWSER_FROZEN_SKU_CODE, LC_BROWSER_FOREIGN_STORE, LC_BROWSER_FOREIGN_ORDER_ID, LC_BROWSER_UNLISTED_STORE, LC_BROWSER_SECOND_TOKEN, LC_BROWSER_NO_ORDERS_TOKEN, LC_BROWSER_EXPIRED_TOKEN, LC_BROWSER_REVOKED_TOKEN
 // Used by: apps/admin/src/features/orders/routes.ts, scripts/dev/test-local.sh, tests/foundation/browser_merchant_orders_ui_test.go
 // Invariants: ORDERS-V2-IMPL uses real clicks and response-derived identities/counts; shipment writes are explicitly MOCK,
 //   never reach PG, and preserve this harness's read-only fingerprints. MOU authority/financial/privacy/lifecycle intents survive the signed presentation migration.
@@ -12,6 +12,7 @@ import { nativePage } from "./fixtures/native-device";
 import { parseShipmentVersion } from "../../apps/admin/lib/orders-model";
 import {picklistCopy} from '../../apps/admin/lib/picklist-copy';
 import { registerShippingCenterTests } from "./shipping-center.spec";
+import { orderFixtureDates } from "./orders-fixture-date.ts";
 import { browserEvidenceDirectory } from "../browser-evidence.mjs";
 
 const required = (name: string) => {
@@ -1038,22 +1039,30 @@ test("MOU07 v2 private search, SQL queues, filters and three-language ledger", a
   await page.getByTestId("orders-session-filter").selectOption(ids.live_session);
   const live = await apply("live session", () => page.getByTestId("orders-apply").click());
   expect(live.total).toBe(1);
+  const { day: fixtureDay, nextDay } = orderFixtureDates(live.items, ids.live_order);
   await expect(page.getByTestId(`order-row-${ids.live_order}`)).toContainText("Live claim");
   await page.reload();
   await revealOrderFilters(page);
   await expect(page.getByTestId("orders-session-filter")).toHaveValue(ids.live_session);
   await apply("reset live filter", () => page.getByTestId("orders-reset").click());
-  const today = new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Taipei",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
   await revealOrderFilters(page);
-  await page.getByTestId("orders-from").fill(today);
+  await page.getByTestId("orders-from").fill(fixtureDay);
   await revealOrderFilters(page);
-  await page.getByTestId("orders-to").fill(today);
+  await page.getByTestId("orders-to").fill(fixtureDay);
   const dated = await apply("Taipei day", () => page.getByTestId("orders-apply").click());
   expect(dated.total).toBeGreaterThan(0);
+  expect(dated.items.map((row: { order_id: string }) => row.order_id)).toContain(ids.live_order);
+  await expect(page.getByTestId(`order-row-${ids.live_order}`)).toBeVisible();
   await page.reload();
   await revealOrderFilters(page);
-  await expect(page.getByTestId("orders-from")).toHaveValue(today);
-  await expect(page.getByTestId("orders-to")).toHaveValue(today);
+  await expect(page.getByTestId("orders-from")).toHaveValue(fixtureDay);
+  await expect(page.getByTestId("orders-to")).toHaveValue(fixtureDay);
+  await expect(page.getByTestId(`order-row-${ids.live_order}`)).toBeVisible();
+  await page.getByTestId("orders-from").fill(nextDay);
+  await page.getByTestId("orders-to").fill(nextDay);
+  const followingDay = await apply("next Taipei day excludes known fixture", () => page.getByTestId("orders-apply").click());
+  expect(followingDay.items.map((row: { order_id: string }) => row.order_id)).not.toContain(ids.live_order);
+  await expect(page.getByTestId(`order-row-${ids.live_order}`)).toHaveCount(0);
   await apply("reset before visual acceptance", () => page.getByTestId("orders-reset").click());
   await revealOrderFilters(page);
   await apply("active ledger", () => page.getByTestId("state-filter").selectOption("active"));
