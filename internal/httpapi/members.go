@@ -5,6 +5,7 @@
 package httpapi
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"github.com/jackc/pgx/v5"
@@ -72,6 +73,14 @@ func memberBody[T any](w http.ResponseWriter, r *http.Request, fields []string) 
 	var present map[string]json.RawMessage
 	if ok {
 		ok = json.Unmarshal(raw, &present) == nil
+	}
+	if ok {
+		for key, value := range present {
+			if bytes.Equal(bytes.TrimSpace(value), []byte("null")) && key != "q" && key != "cursor" && key != "contact_note" && key != "notes" && key != "order_id" {
+				respondError(w, 422, "invalid_request")
+				return in, present, false
+			}
+		}
 	}
 	return in, present, ok
 }

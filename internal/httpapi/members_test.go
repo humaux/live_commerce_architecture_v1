@@ -52,6 +52,8 @@ func TestMemberRoutesTransportGates(t *testing.T) {
 		// 401 = the request passed every transport gate and reached the (nil-pool) scope: the shape is accepted.
 		{"search ok", "POST", "/members/search", j, "", `{"q":"王","include_erased":false,"cursor":null,"limit":20}`, 401, "unauthorized"},
 		{"search empty body object", "POST", "/members/search", j, "", `{}`, 401, "unauthorized"},
+		{"search null limit", "POST", "/members/search", j, "", `{"limit":null}`, 422, "invalid_request"},
+		{"search null flag", "POST", "/members/search", j, "", `{"include_erased":null}`, 422, "invalid_request"},
 		{"search with an Idempotency-Key", "POST", "/members/search", j, k, `{}`, 422, "invalid_request"},
 		{"search term in the query string", "POST", "/members/search?q=x", j, "", `{}`, 422, "invalid_request"},
 		{"search not JSON", "POST", "/members/search", "text/plain", "", `{}`, 415, "json_required"},

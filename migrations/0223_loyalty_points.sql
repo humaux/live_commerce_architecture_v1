@@ -243,7 +243,8 @@ BEGIN
  PERFORM set_config('app.tenant_id',coalesce(t,''),true);PERFORM set_config('app.store_id',coalesce(s,''),true);RETURN n;
 END $$;
 -- Restore enumeration matches CD8's privileged reader, all merchant functions above additionally filter exact authenticated scope.
-CREATE POLICY restore_read ON loyalty.members FOR SELECT TO commerce_privacy_writer USING(true);
+CREATE POLICY restore_read ON loyalty.members FOR SELECT TO commerce_privacy_writer
+ USING(EXISTS(SELECT 1 FROM pg_roles WHERE rolname=session_user AND rolsuper));
 DO $$
 DECLARE f record;
 BEGIN
