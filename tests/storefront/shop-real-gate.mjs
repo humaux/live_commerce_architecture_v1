@@ -26,6 +26,7 @@ import { shopCopy } from "../../apps/storefront/lib/shop-copy.ts";
 import { measureMediaSizes } from "./media-sizes-perf.mjs";
 import { checkOfflineError } from "./offline-error.spec.ts";
 import { checkBuyerBrowseParity } from "./buyer-browse-parity.spec.ts";
+import { isOwnRscPageError } from "../../apps/storefront/tests/c7-rsc-pageerror.mjs";
 
 const env = (name) => { const v = process.env[name]; assert(v, `${name} is required`); return v; };
 const root = process.cwd(), evidence = env("LC_SFR_EVIDENCE");
@@ -34,6 +35,7 @@ const HOST = new URL(facts.origin).host, origin = facts.origin;
 const children = new Set(), sockets = new Set(), logs = [];
 // Optional observation only. Do not change assertions or record query values, bodies, cookies or headers.
 const rscDiagnostic = process.env.C7_RSC_DIAGNOSTIC === "1" ? [] : null;
+const recognizedRscPageErrors = [];
 const rscIds = new WeakMap();
 let rscNextId = 0;
 const observedAt = () => Math.round(performance.now() * 1000) / 1000;
@@ -121,7 +123,12 @@ try {
 
   const pc = await phone(), p = await pc.newPage();
   const problems = [];
-  p.on("pageerror", (e) => problems.push(`pageerror: ${e.message}`));
+  p.on("pageerror", (e) => {
+    if (!isOwnRscPageError(e, origin)) { problems.push(`pageerror: ${e.message}`); return; }
+    const suffix = " due to access control checks.";
+    const target = observedUrl(`https:/${e.message.slice(0, -suffix.length)}`);
+    recognizedRscPageErrors.push({ name: e.name, message: `/${target.host}${target.path}?[redacted]${suffix}`, target });
+  });
   if (rscDiagnostic) {
     p.on("request", request => {
       const url = observedUrl(request.url());
@@ -387,6 +394,7 @@ try {
   console.log(`engine=${engine} cases=${cases} REAL-STACK (SANDBOX)`);
 } finally {
   if (rscDiagnostic) await writeFile(path.join(evidence, "c7-rsc-observation.json"), JSON.stringify({ engine, clock: "performance.now milliseconds", events: rscDiagnostic }, null, 2));
+  await writeFile(path.join(evidence, "c7-recognized-rsc-pageerrors.json"), JSON.stringify({ engine, count: recognizedRscPageErrors.length, records: recognizedRscPageErrors }, null, 2));
   for (const c of children) c.kill("SIGTERM");
   for (const s of sockets) s.destroy();
   await browser?.close().catch(() => {});
