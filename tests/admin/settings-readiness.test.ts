@@ -106,3 +106,81 @@ test('S04 INTENTIONAL RED same-render handlers: synthetic counterexample, browse
  assert.equal(s.draft().policyEnabled,true);
  assert.equal(s.draft().reference,'Synthetic same-render','latest reference must survive: synthetic same-render handler counterexample');
 });
+
+// Exact case-c entry discriminator: fresh storage and real Continue handlers, one two-arm family.
+// Source fixture: settings-v2.spec.ts marketSelectionAcceptance case c, including all three rows.
+const entryA='80000000-0000-4000-8000-000000000041';
+const entryB='80000000-0000-4000-8000-000000000042';
+const entryC='80000000-0000-4000-8000-000000000043';
+const entryRows=[
+ {id:entryA,code:'legacy',name:'legacy',currency:'TWD',active:true,version:1,created_at:'2026-10-01T00:00:00Z'},
+ {id:entryB,code:'off',name:'off',currency:'TWD',active:false,version:1,created_at:'2026-10-02T00:00:00Z'},
+ {id:entryC,code:'usd',name:'usd',currency:'USD',active:true,version:1,created_at:'2026-10-03T00:00:00Z'},
+];
+for(const arm of ['before','after'] as const)test(`E0${arm==='before'?1:2} case-c empty entry market-${arm} navigation/edits`,async t=>{
+ const env=environment(t),ss=storage(),ls=storage();
+ const prior={sessionStorage:globalThis.sessionStorage,localStorage:globalThis.localStorage,locks:Object.getOwnPropertyDescriptor(navigator,'locks')};
+ Object.assign(globalThis,{sessionStorage:ss,localStorage:ls});
+ Object.defineProperty(navigator,'locks',{configurable:true,value:{request:async(_name:any,...args:any[])=>args.at(-1)()}});
+ Object.assign(env.document,{cookie:'__Host-commerce_csrf='+'a'.repeat(43)});
+ Object.assign(env.window,{location:{href:'https://local.invalid/en/settings'},confirm:()=>true});
+ t.after(()=>{Object.assign(globalThis,{sessionStorage:prior.sessionStorage,localStorage:prior.localStorage});if(prior.locks)Object.defineProperty(navigator,'locks',prior.locks);else delete (navigator as any).locks;});
+ assert.equal(ss.values.size,0);assert.equal(ls.values.size,0);
+
+ const persisted=()=>{const v=[...ss.values.values()][0];return v?JSON.parse(v):null;};
+ const observation=(d:any)=>({market:d?.marketID===entryA?'A':d?.marketID?'other':'none',codeHome:d?.serviceCode==='home',baseline:d?.policyObservation?.version??null,observationCurrent:!!d?.policyObservation&&d.policyObservation.target===`${d.marketID}:${d.country}:${d.serviceCode}`,observationA:!!d?.policyObservation&&d.policyObservation.target===`${entryA}:TW:home`,referenceRetained:!!d?.reference?.trim(),enabled:d?.policyEnabled===true});
+ const originalSet=ss.setItem;
+ ss.setItem=(key,value)=>{originalSet(key,value);const v=JSON.parse(value);t.diagnostic(JSON.stringify({sequence:'PERSIST',step:v.step,...observation(v.draft)}));};
+ const marketGate=deferred<Response>(),policyGates:ReturnType<typeof deferred<Response>>[]=[],serviceGates:ReturnType<typeof deferred<Response>>[]=[];
+ let writes=0,marketReads=0,h:any;
+ globalThis.fetch=async(value,init)=>{
+  if(init?.method&&init.method!=='GET')writes++;
+  assert.ok(!init?.method||init.method==='GET','entry schedule sends no writes');
+  const path=String(value);
+  if(path.endsWith('/markets')){marketReads++;t.diagnostic('REQUEST MARKET ordinal=1');return marketGate.promise;}
+  if(path.endsWith('/policy')){
+   const gate=deferred<Response>();policyGates.push(gate);
+   const d=persisted()?.draft;
+   t.diagnostic(JSON.stringify({sequence:'REQUEST_POLICY',ordinal:policyGates.length,targetA:path.endsWith(`/${entryA}/countries/TW/delivery-services/home/policy`),persistedTargetCurrent:d?.marketID===entryA&&d?.country==='TW'&&d?.serviceCode==='home'}));return gate.promise;
+  }
+  if(/delivery-services\/[^/]+$/.test(path)){const gate=deferred<Response>();serviceGates.push(gate);return gate.promise;}
+  if(path.endsWith('/delivery-services'))return page([]);
+  if(path.endsWith('/logistics/ecpay'))return absent();
+  throw new Error('unexpected entry synthetic route');
+ };
+ h=env.mount(()=>SettingsWizard({locale:'en',initial:{store,stores:[store],error:null} as any}));
+ node(h,n=>n.type==='button'&&textOf(n)==='Edit settings').props.onClick();h.flush();await h.settle();
+ assert.equal(marketReads,1);assert.equal(policyGates.length,0);assert.equal(ss.values.size,0,'no restoration or preseed');
+ const snapshot=(sequence:string)=>{
+  const nodes=all(h.flush()),form=nodes.find(n=>n.props['data-testid']==='settings-policy-form'),button=form&&all(form).find(n=>n.type==='button'&&n.props.type==='submit');
+  t.diagnostic(JSON.stringify({sequence,step:persisted()?.step??1,...observation(persisted()?.draft),savePresent:!!button,saveDisabled:button?.props.disabled??null,baselineWait:!!form&&all(form).some(n=>n.props.role==='status'),writes}));
+ };
+ snapshot('ENTRY_ADVANCED');
+ if(arm==='before'){t.diagnostic('RELEASE MARKET before navigation');marketGate.resolve(page(entryRows));await h.settle();snapshot('MARKET_RENDER_BEFORE');}
+ for(const step of [2,3]){
+  const next=node(h,n=>n.type==='button'&&textOf(n)==='Continue');assert.equal(next.props.disabled,false,'actual Continue enabled');next.props.onClick();h.flush();snapshot(`CONTINUE_RENDER_${step}`);
+ }
+ edit(h,'Stable service code','home');snapshot('EDIT_HOME_RENDER');
+ edit(h,'Configuration reference / reason','RVFIX MOCK acceptance');snapshot('EDIT_REFERENCE_RENDER');
+ edit(h,'Enable pricing policy',true);snapshot('EDIT_ENABLE_RENDER');
+ if(arm==='after'){assert.equal(policyGates.length,0);t.diagnostic('RELEASE MARKET after navigation and edits');marketGate.resolve(page(entryRows));await h.settle();snapshot('MARKET_RENDER_AFTER');}
+ assert.equal(policyGates.length,1,'exactly one advanced policy request, no overview probes');assert.equal(serviceGates.length,1);
+ await h.settle();
+ const digest=holdDigest(t);t.diagnostic('RELEASE POLICY ordinal=1 matching targetA');policyGates[0].resolve(absent());await digest.entered;snapshot('SESSION_DIGEST_HELD');digest.release();await h.settle();snapshot('POLICY_ADMISSION_RENDER');
+ // Complete sibling read only after policy admission; observe later overwrite separately.
+ const admitted=persisted()?.draft;
+ const controls=all(node(h,n=>n.props['data-testid']==='settings-policy-form'));
+ const renderedReference=controls.find(n=>n.type==='input'&&n.props['aria-label']==='Configuration reference / reason');
+ const renderedEnable=input(h,'Enable pricing policy');
+ const result={baseline:admitted?.policyObservation?.version,referenceRetained:admitted?.reference==='RVFIX MOCK acceptance',enabled:admitted?.policyEnabled===true,renderedReferenceRetained:renderedReference?.props.value==='RVFIX MOCK acceptance',renderedEnabled:renderedEnable.props.checked===true,saveDisabled:save(h).props.disabled};
+ serviceGates[0].resolve(absent());await h.settle();snapshot('SIBLING_COMPLETION_RENDER');
+ t.diagnostic(JSON.stringify({sequence:'RESULT',...result,originalFailureSignature:result.baseline<0&&result.referenceRetained&&result.saveDisabled===true&&admitted?.policyObservation?.target===`${entryA}:TW:home`,writes,digestCalls:digest.calls()}));
+ assert.equal(writes,0);assert.equal(ls.values.size,0);assert.equal(digest.calls(),2,'policy and then sibling actual session digests');
+ assert.equal(admitted?.policyObservation?.target,`${entryA}:TW:home`,'admitted observation matches selected target');
+ assert.equal(result.baseline,0,'matching admitted404 establishes baseline0');
+ assert.equal(result.referenceRetained,true,'latest reference retained after admitted404');
+ assert.equal(result.enabled,true,'latest enabled retained after admitted404');
+ assert.equal(result.renderedReferenceRetained,true);assert.equal(result.renderedEnabled,true);assert.equal(result.saveDisabled,false,'actual rendered Save enabled');
+ assert.equal(persisted()?.draft.policyObservation.version,0,'sibling keeps admitted policy baseline');
+ assert.equal(persisted()?.draft.reference,'RVFIX MOCK acceptance','sibling keeps latest reference');
+});

@@ -1,0 +1,12 @@
+{
+  "tests/admin/settings-readiness.test.ts": "390e424a64453f2bd0a22afd615a52cb8d3fcf9686719159d824df1088a015bf",
+  "scripts/dev/test-node.sh": "2317914d5558611a615bb15cc3eede98ea94d4c5bc7c9069d74e020e97cd0e5b",
+  "apps/admin/components/SettingsWizard.tsx": "072eb75e96454f429b8e31e32b6993e953d8509ef174425ce1dbb8d2f7147478",
+  "apps/admin/lib/settings-client.ts": "535a9360a6265590ff9df2e92061a019f0ebfdd3f8ca5c2de9b7cd0d6318a753",
+  "apps/admin/lib/settings-draft.ts": "1a31aead7ed5ff65eb34d9b9ca871208de1b3a46efa2bbe1f041e199f440cac7",
+  "tests/admin/inbox-review-host.test.ts": "ffa1a9f6e2bc7c224b52a3ec12c14dd0b5a5600026416ecfb2d2e6a3c6b2a018",
+  "tests/admin/live-settings-hooks.test.ts": "46cc13b98bdca7ee3e59bc1d3feea6abfba26512f05fdacafbfdbc0b4433cbfe",
+  "tests/admin/settings-v2.spec.ts": "5e7370fe8f8c30540f4516e888c6e92a010ca60f717b1ff297adc6440a571ac3",
+  "pnpm-lock.yaml": "4bfe9088d35d37f80e45cb317a15a1bf00fcb58919f765be597429ed2a7d3f7f",
+  "REPORT.md": "6c271d73c441e4afc8987dac304bcd7d90656e54afb7bb2f962eea6d270f61d5"
+}

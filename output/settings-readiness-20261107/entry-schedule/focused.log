@@ -1,0 +1,75 @@
+(node:48792) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ E01 case-c empty entry market-before navigation/edits (13.923ms)
+ℹ REQUEST MARKET ordinal=1
+ℹ {"sequence":"ENTRY_ADVANCED","step":1,"market":"none","codeHome":false,"baseline":null,"observationCurrent":false,"observationA":false,"referenceRetained":false,"enabled":false,"savePresent":false,"saveDisabled":null,"baselineWait":false,"writes":0}
+ℹ RELEASE MARKET before navigation
+ℹ {"sequence":"MARKET_RENDER_BEFORE","step":1,"market":"none","codeHome":false,"baseline":null,"observationCurrent":false,"observationA":false,"referenceRetained":false,"enabled":false,"savePresent":false,"saveDisabled":null,"baselineWait":false,"writes":0}
+ℹ {"sequence":"PERSIST","step":2,"market":"A","codeHome":false,"baseline":null,"observationCurrent":false,"observationA":false,"referenceRetained":false,"enabled":false}
+ℹ {"sequence":"CONTINUE_RENDER_2","step":2,"market":"A","codeHome":false,"baseline":null,"observationCurrent":false,"observationA":false,"referenceRetained":false,"enabled":false,"savePresent":false,"saveDisabled":null,"baselineWait":false,"writes":0}
+ℹ {"sequence":"PERSIST","step":3,"market":"A","codeHome":false,"baseline":null,"observationCurrent":false,"observationA":false,"referenceRetained":false,"enabled":false}
+ℹ {"sequence":"CONTINUE_RENDER_3","step":3,"market":"A","codeHome":false,"baseline":null,"observationCurrent":false,"observationA":false,"referenceRetained":false,"enabled":false,"savePresent":true,"saveDisabled":true,"baselineWait":true,"writes":0}
+ℹ {"sequence":"PERSIST","step":3,"market":"A","codeHome":true,"baseline":null,"observationCurrent":false,"observationA":false,"referenceRetained":false,"enabled":false}
+ℹ {"sequence":"REQUEST_POLICY","ordinal":1,"targetA":true,"persistedTargetCurrent":true}
+ℹ {"sequence":"EDIT_HOME_RENDER","step":3,"market":"A","codeHome":true,"baseline":null,"observationCurrent":false,"observationA":false,"referenceRetained":false,"enabled":false,"savePresent":true,"saveDisabled":true,"baselineWait":true,"writes":0}
+ℹ {"sequence":"PERSIST","step":3,"market":"A","codeHome":true,"baseline":-1,"observationCurrent":true,"observationA":true,"referenceRetained":true,"enabled":false}
+ℹ {"sequence":"EDIT_REFERENCE_RENDER","step":3,"market":"A","codeHome":true,"baseline":-1,"observationCurrent":true,"observationA":true,"referenceRetained":true,"enabled":false,"savePresent":true,"saveDisabled":true,"baselineWait":true,"writes":0}
+ℹ {"sequence":"PERSIST","step":3,"market":"A","codeHome":true,"baseline":-1,"observationCurrent":true,"observationA":true,"referenceRetained":true,"enabled":true}
+ℹ {"sequence":"EDIT_ENABLE_RENDER","step":3,"market":"A","codeHome":true,"baseline":-1,"observationCurrent":true,"observationA":true,"referenceRetained":true,"enabled":true,"savePresent":true,"saveDisabled":true,"baselineWait":true,"writes":0}
+ℹ RELEASE POLICY ordinal=1 matching targetA
+ℹ {"sequence":"SESSION_DIGEST_HELD","step":3,"market":"A","codeHome":true,"baseline":-1,"observationCurrent":true,"observationA":true,"referenceRetained":true,"enabled":true,"savePresent":true,"saveDisabled":true,"baselineWait":true,"writes":0}
+ℹ {"sequence":"PERSIST","step":3,"market":"A","codeHome":true,"baseline":0,"observationCurrent":true,"observationA":true,"referenceRetained":true,"enabled":true}
+ℹ {"sequence":"POLICY_ADMISSION_RENDER","step":3,"market":"A","codeHome":true,"baseline":0,"observationCurrent":true,"observationA":true,"referenceRetained":true,"enabled":true,"savePresent":true,"saveDisabled":false,"baselineWait":false,"writes":0}
+ℹ {"sequence":"PERSIST","step":3,"market":"A","codeHome":true,"baseline":0,"observationCurrent":true,"observationA":true,"referenceRetained":true,"enabled":true}
+ℹ {"sequence":"SIBLING_COMPLETION_RENDER","step":3,"market":"A","codeHome":true,"baseline":0,"observationCurrent":true,"observationA":true,"referenceRetained":true,"enabled":true,"savePresent":true,"saveDisabled":false,"baselineWait":false,"writes":0}
+ℹ {"sequence":"RESULT","baseline":0,"referenceRetained":true,"enabled":true,"renderedReferenceRetained":true,"renderedEnabled":true,"saveDisabled":false,"writes":0,"digestCalls":2}
+✖ E02 case-c empty entry market-after navigation/edits (12.319584ms)
+ℹ REQUEST MARKET ordinal=1
+ℹ {"sequence":"ENTRY_ADVANCED","step":1,"market":"none","codeHome":false,"baseline":null,"observationCurrent":false,"observationA":false,"referenceRetained":false,"enabled":false,"savePresent":false,"saveDisabled":null,"baselineWait":false,"writes":0}
+ℹ {"sequence":"PERSIST","step":2,"market":"none","codeHome":false,"baseline":null,"observationCurrent":false,"observationA":false,"referenceRetained":false,"enabled":false}
+ℹ {"sequence":"CONTINUE_RENDER_2","step":2,"market":"none","codeHome":false,"baseline":null,"observationCurrent":false,"observationA":false,"referenceRetained":false,"enabled":false,"savePresent":false,"saveDisabled":null,"baselineWait":false,"writes":0}
+ℹ {"sequence":"PERSIST","step":3,"market":"none","codeHome":false,"baseline":null,"observationCurrent":false,"observationA":false,"referenceRetained":false,"enabled":false}
+ℹ {"sequence":"CONTINUE_RENDER_3","step":3,"market":"none","codeHome":false,"baseline":null,"observationCurrent":false,"observationA":false,"referenceRetained":false,"enabled":false,"savePresent":true,"saveDisabled":true,"baselineWait":false,"writes":0}
+ℹ {"sequence":"PERSIST","step":3,"market":"none","codeHome":true,"baseline":null,"observationCurrent":false,"observationA":false,"referenceRetained":false,"enabled":false}
+ℹ {"sequence":"EDIT_HOME_RENDER","step":3,"market":"none","codeHome":true,"baseline":null,"observationCurrent":false,"observationA":false,"referenceRetained":false,"enabled":false,"savePresent":true,"saveDisabled":true,"baselineWait":false,"writes":0}
+ℹ {"sequence":"PERSIST","step":3,"market":"none","codeHome":true,"baseline":-1,"observationCurrent":false,"observationA":false,"referenceRetained":true,"enabled":false}
+ℹ {"sequence":"EDIT_REFERENCE_RENDER","step":3,"market":"none","codeHome":true,"baseline":-1,"observationCurrent":false,"observationA":false,"referenceRetained":true,"enabled":false,"savePresent":true,"saveDisabled":false,"baselineWait":false,"writes":0}
+ℹ {"sequence":"PERSIST","step":3,"market":"none","codeHome":true,"baseline":-1,"observationCurrent":false,"observationA":false,"referenceRetained":true,"enabled":true}
+ℹ {"sequence":"EDIT_ENABLE_RENDER","step":3,"market":"none","codeHome":true,"baseline":-1,"observationCurrent":false,"observationA":false,"referenceRetained":true,"enabled":true,"savePresent":true,"saveDisabled":false,"baselineWait":false,"writes":0}
+ℹ RELEASE MARKET after navigation and edits
+ℹ {"sequence":"REQUEST_POLICY","ordinal":1,"targetA":true,"persistedTargetCurrent":false}
+ℹ {"sequence":"MARKET_RENDER_AFTER","step":3,"market":"none","codeHome":true,"baseline":-1,"observationCurrent":false,"observationA":false,"referenceRetained":true,"enabled":true,"savePresent":true,"saveDisabled":true,"baselineWait":true,"writes":0}
+ℹ RELEASE POLICY ordinal=1 matching targetA
+ℹ {"sequence":"SESSION_DIGEST_HELD","step":3,"market":"none","codeHome":true,"baseline":-1,"observationCurrent":false,"observationA":false,"referenceRetained":true,"enabled":true,"savePresent":true,"saveDisabled":true,"baselineWait":true,"writes":0}
+ℹ {"sequence":"PERSIST","step":3,"market":"A","codeHome":true,"baseline":0,"observationCurrent":true,"observationA":true,"referenceRetained":false,"enabled":false}
+ℹ {"sequence":"POLICY_ADMISSION_RENDER","step":3,"market":"A","codeHome":true,"baseline":0,"observationCurrent":true,"observationA":true,"referenceRetained":false,"enabled":false,"savePresent":true,"saveDisabled":false,"baselineWait":false,"writes":0}
+ℹ {"sequence":"PERSIST","step":3,"market":"A","codeHome":true,"baseline":0,"observationCurrent":true,"observationA":true,"referenceRetained":false,"enabled":false}
+ℹ {"sequence":"SIBLING_COMPLETION_RENDER","step":3,"market":"A","codeHome":true,"baseline":0,"observationCurrent":true,"observationA":true,"referenceRetained":false,"enabled":false,"savePresent":true,"saveDisabled":false,"baselineWait":false,"writes":0}
+ℹ {"sequence":"RESULT","baseline":0,"referenceRetained":false,"enabled":false,"renderedReferenceRetained":false,"renderedEnabled":false,"saveDisabled":false,"writes":0,"digestCalls":2}
+ℹ tests 2
+ℹ suites 0
+ℹ pass 1
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 437.553709
+
+✖ failing tests:
+
+test at tests/admin/settings-readiness.test.ts:120:46
+✖ E02 case-c empty entry market-after navigation/edits (12.319584ms)
+  AssertionError [ERR_ASSERTION]: latest reference retained after admitted404
+  
+  false !== true
+  
+      at TestContext.<anonymous> (/Volumes/data/live_commerce_architecture_v1/fb-settings-readiness-1107/tests/admin/settings-readiness.test.ts:181:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

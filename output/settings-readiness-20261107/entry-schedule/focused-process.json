@@ -1,0 +1,1 @@
+{"pid": 48791, "command": ["node", "--test", "--test-timeout=20000", "--experimental-transform-types", "--test-name-pattern=^E0[12]", "tests/admin/settings-readiness.test.ts"], "timeout_seconds": 120, "wake": "native exec completion then current root worker_done run_d092b781823b", "failure": "nonzero or timeout"}
