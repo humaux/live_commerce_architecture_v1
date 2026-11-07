@@ -81,9 +81,9 @@ export function OrderRefunds({
   const pending = useRef<{ key: string; body: string } | null>(null);
 
   const scope = JSON.stringify([store, orderID, currency, boundary]);
-  const convergence = useRef({ scope, snapshot: "", live: true, reads: Promise.resolve() });
+  const convergence = useRef({ scope, snapshot: "", live: true, action: 0, notified: 0, reads: Promise.resolve() });
   if (convergence.current.scope !== scope) {
-    convergence.current = { scope, snapshot: "", live: true, reads: Promise.resolve() };
+    convergence.current = { scope, snapshot: "", live: true, action: 0, notified: 0, reads: Promise.resolve() };
   }
   useEffect(() => {
     const admitted = convergence.current;
@@ -96,6 +96,7 @@ export function OrderRefunds({
   useEffect(() => {
     const active = new AbortController();
     const admitted = convergence.current;
+    const action = admitted.action;
     readRefunds(store, orderID, currency, active.signal).then(
       (value) => {
         // A transport may resolve despite cancellation; never admit a previous read/scope.
@@ -107,10 +108,14 @@ export function OrderRefunds({
         const snapshot = JSON.stringify([value.refunded_minor, value.pending_minor]);
         const repeated = admitted.snapshot === snapshot;
         admitted.snapshot = snapshot;
-        if (repeated || (value.refunded_minor === detail.refunded_minor && value.pending_minor === detail.refund_pending_minor)) return;
+        // REVIEW_REQUIRED can change without money or item-state changes. A user action must
+        // re-read detail, but only after a read started after that action has been admitted.
+        const explicit = action > admitted.notified;
+        admitted.notified = Math.max(admitted.notified, action);
+        if (!explicit && (repeated || (value.refunded_minor === detail.refunded_minor && value.pending_minor === detail.refund_pending_minor))) return;
         // Serialize notifications: an earlier partial-detail GET must finish before a newer one starts.
         admitted.reads = admitted.reads.catch(() => {}).then(async () => {
-          if (!admitted.live || convergence.current !== admitted || admitted.snapshot !== snapshot) return;
+          if (!admitted.live || convergence.current !== admitted || (!explicit && admitted.snapshot !== snapshot)) return;
           await changed.current();
         }).catch(() => {});
       },
@@ -162,7 +167,8 @@ export function OrderRefunds({
     setUncertain(false);
   }
   async function submit() {
-    if (!list || busy || !amountOK) return;
+    const admitted = convergence.current;
+    if (!list || busy || !amountOK || !admitted.live || admitted.scope !== scope) return;
     const body = JSON.stringify({
       amount_minor: typed,
       reason,
@@ -172,12 +178,14 @@ export function OrderRefunds({
     setBusy(true);
     setProblem("");
     const result = await postRefund(store, orderID, pending.current.key, body, boundary);
+    if (!admitted.live || convergence.current !== admitted) return;
     setBusy(false);
     if (result.ok) {
       pending.current = null;
       setOpen(false);
       setUncertain(false);
       setNotice(c.refundDone);
+      admitted.action++;
       setTick((value) => value + 1);
       return;
     }
@@ -195,14 +203,17 @@ export function OrderRefunds({
     }
   }
   async function refresh(item: RefundItem) {
-    if (refreshing) return;
+    const admitted = convergence.current;
+    if (refreshing || !admitted.live || admitted.scope !== scope) return;
     setRefreshing(item.refund_id);
     setNotice("");
     const result = await refreshRefund(store, orderID, item.refund_id, boundary);
+    if (!admitted.live || convergence.current !== admitted) return;
     setRefreshing("");
     setNotice(
       result === "scheduled" ? c.refundRefreshed : result === "later" ? c.refundRefreshLater : errorText(c, result.code),
     );
+    admitted.action++;
     setTick((value) => value + 1);
   }
 
