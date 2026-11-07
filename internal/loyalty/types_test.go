@@ -32,6 +32,8 @@ func TestClassifyContractCodes(t *testing.T) {
 		// A backstop CHECK reaching Classify is a bug: it is never shown as a refusal code (LPG01b).
 		{&pgconn.PgError{Code: "23514"}, 503, "unavailable", true},
 		{platform.ErrForbidden, 0, "", false},
+		{&pgconn.PgError{Code: "PT403", Message: "forbidden"}, 0, "", false},
+		{&pgconn.PgError{Code: "PT409", Message: "conflict"}, 0, "", false},
 	} {
 		status, code, ok := Classify(c.err)
 		if status != c.status || code != c.code || ok != c.ok {

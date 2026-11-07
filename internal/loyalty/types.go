@@ -203,6 +203,9 @@ func Classify(err error) (status int, code string, ok bool) {
 	}
 	var pg *pgconn.PgError
 	if errors.As(err, &pg) {
+		if len(pg.Code) == 5 && pg.Code[:2] == "PT" {
+			return 0, "", false
+		} // Other domains retain their own refusal mapping.
 		// Retry only transient transaction failures. Never expose database messages:
 		// CHECK failures are implementation defects and can contain member PII.
 		switch pg.Code {
