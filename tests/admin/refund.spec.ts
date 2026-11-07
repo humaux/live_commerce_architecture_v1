@@ -190,6 +190,13 @@ test.describe(() => {
   test("RF11 full refund of the remainder: SUCCEEDED, payment state REFUNDED, no further action", async ({ page }) => {
     await signedLogin(page);
     const posts = watchRefundPosts(page);
+    const detailPath = `/api/stores/${store}/orders/${order}`;
+    // Register before the real UI read. Catch immediately so an earlier UI failure cannot
+    // leave a rejected response-wait promise unhandled (the awaited result still fails).
+    const olderResponse = page.waitForResponse((response) =>
+      new URL(response.url()).pathname === detailPath && response.request().method() === "GET" && response.status() === 200,
+      { timeout: 15_000 });
+    void olderResponse.catch(() => {});
     const detail = await expand(page);
     // the earlier partial refund settled at the provider while the buyer half ran
     // (the page never polls, so Refresh until the worker's SUCCEEDED fact is read back)
@@ -199,12 +206,16 @@ test.describe(() => {
       await expect(settled(detail)).toBeVisible({ timeout: 3_000 });
     }).toPass({ timeout: 60_000, intervals: [1_000, 3_000, 5_000] });
     await expect(detail).toContainText(shown(captured - partial));
-    // Fixture READ only: preserve a valid partial projection, without changing money or worker timing.
-    const detailPath = `/api/stores/${store}/orders/${order}`;
-    const older = await page.request.get(detailPath);
-    expect(older.ok()).toBeTruthy();
+    // Fixture READ only: reuse the admitted real browser response, without a new API request.
+    const older = await olderResponse;
     const olderBody = await older.text();
-    expect(olderBody).toContain("PARTIALLY_REFUNDED");
+    expect(JSON.parse(olderBody)).toMatchObject({ payment_state: "PARTIALLY_REFUNDED", refunded_minor: partial });
+    const olderHeaders = await older.allHeaders();
+    expect(olderHeaders["cache-control"]).toBe("private, no-store");
+    expect(olderHeaders["content-type"]).toContain("application/json");
+    // body() / text() are decoded: do not replay compression/framing or session cookies.
+    for (const name of ["content-encoding", "content-length", "transfer-encoding", "connection", "set-cookie"])
+      delete olderHeaders[name];
     let oldDetailServed = false;
     let terminalListServed = false;
     let postTerminalReads = 0;
@@ -215,7 +226,7 @@ test.describe(() => {
     await page.route(`**${detailPath}`, async (route) => {
       if (route.request().method() !== "GET") return route.continue();
       if (!terminalListServed) {
-        await route.fulfill({ response: older, body: olderBody });
+        await route.fulfill({ status: older.status(), headers: olderHeaders, body: olderBody });
         oldDetailServed = true;
         releaseOldDetail();
       } else {
