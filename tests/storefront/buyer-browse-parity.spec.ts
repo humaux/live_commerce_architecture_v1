@@ -350,6 +350,91 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
       const urlParams = () => new URL(page.url()).searchParams;
 
       try {
+        // Protocol candidate: the route is wholly intercepted and never sends a buyer message.
+        // The three synthetic field values stay in memory; evaluate only reads browser storage for privacy assertions.
+        {
+          const frame = f("26:850", "26:1117");
+          const route = `/${locale}/contact`;
+          const contactPage = await context.newPage();
+          const attempts: { key: string | undefined; body: string | null }[] = [];
+          const synthetic = { name: "Fixture Contact", email: "fixture@example.invalid", message: "Fixture inquiry only" };
+          let reply: "uncertain" | "received" = "uncertain";
+          const intercept = async (r: import("@playwright/test").Route) => {
+            const request = r.request();
+            if (request.method() !== "POST") return r.abort();
+            attempts.push({ key: request.headers()["idempotency-key"], body: request.postData() });
+            if (reply === "uncertain") return r.fulfill({ status: 503, json: { code: "unavailable" } });
+            return r.fulfill({ status: 201, json: { message_id: "00000000-0000-4000-8000-000000000001", status: "received" } });
+          };
+          try {
+            await contactPage.route("**/api/buyer/contact-messages", intercept);
+            await contactPage.goto(`${origin}${route}`);
+            await step(frame, route, "contact protocol entry", "open contact page", "required contact form is visible", async () => {
+              await expect(contactPage.getByTestId("contact-form")).toBeVisible({ timeout: 2000 });
+            });
+            if (!(await contactPage.getByTestId("contact-form").isVisible())) {
+              notRun.push({ frame, locale, subcase: `${viewport} contact protocol`, reason: "contact form absent; failure, same-key recovery and privacy checks not run" });
+            } else {
+              await step(frame, route, "contact uncertainty recovery", "fill and submit; explicitly recover the original request; refresh", "no automatic retry, original key/body retained, confirmed receipt survives refresh, no field values in URL or web storage", async () => {
+                await contactPage.getByTestId("contact-name").fill(synthetic.name);
+                await contactPage.getByTestId("contact-email").fill(synthetic.email);
+                await contactPage.getByTestId("contact-message").fill(synthetic.message);
+                await contactPage.getByTestId("contact-next").click();
+                await expect(contactPage.getByTestId("contact-confirm")).toBeVisible({ timeout: T });
+                assert.equal(attempts.length, 0, "next must not send the message");
+                for (const value of Object.values(synthetic)) await expect(contactPage.getByTestId("contact-confirm")).toContainText(value);
+                await contactPage.getByTestId("contact-send").click();
+                await expect(contactPage.getByTestId("contact-unknown")).toBeVisible({ timeout: T });
+                assert.equal(attempts.length, 1, "uncertain result must not be retried automatically");
+                assert(attempts[0].key && /^[A-Za-z0-9_.:-]{8,128}$/.test(attempts[0].key), "valid idempotency key required");
+                assert.deepEqual(JSON.parse(attempts[0].body ?? "null"), synthetic);
+                const storage = await contactPage.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }));
+                for (const value of Object.values(synthetic)) {
+                  assert(!contactPage.url().includes(value), "contact value leaked into URL");
+                  assert(!storage.includes(value), "contact value leaked into browser storage");
+                }
+                reply = "received";
+                await contactPage.getByTestId("contact-recover").click();
+                await expect(contactPage.getByTestId("contact-sent")).toBeVisible({ timeout: T });
+                assert.equal(attempts.length, 2, "one explicit recovery request required");
+                assert.deepEqual(attempts[1], attempts[0], "recovery must use the same key and exact body");
+                await contactPage.reload();
+                await expect(contactPage.getByTestId("contact-sent")).toBeVisible({ timeout: T });
+                assert.equal(attempts.length, 2, "refresh must not resend");
+              });
+              await step(frame, route, "contact uncertainty refresh", "start a separate uncertain attempt and refresh", "unknown remains visible, no automatic resend or false success, and fields are absent from browser storage", async () => {
+                const fresh = await context.newPage();
+                reply = "uncertain";
+                const start = attempts.length;
+                try {
+                  await fresh.route("**/api/buyer/contact-messages", intercept);
+                  await fresh.goto(`${origin}${route}`);
+                  await fresh.getByTestId("contact-name").fill(synthetic.name);
+                  await fresh.getByTestId("contact-email").fill(synthetic.email);
+                  await fresh.getByTestId("contact-message").fill(synthetic.message);
+                  await fresh.getByTestId("contact-next").click();
+                  await expect(fresh.getByTestId("contact-confirm")).toBeVisible({ timeout: T });
+                  await fresh.getByTestId("contact-send").click();
+                  await expect(fresh.getByTestId("contact-unknown")).toBeVisible({ timeout: T });
+                  assert.equal(attempts.length, start + 1);
+                  await fresh.reload();
+                  await expect(fresh.getByTestId("contact-unknown")).toBeVisible({ timeout: T });
+                  await expect(fresh.getByTestId("contact-sent")).toHaveCount(0);
+                  assert.equal(attempts.length, start + 1, "refresh must not resend an uncertain submission");
+                  const storage = await fresh.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }));
+                  for (const value of Object.values(synthetic)) assert(!storage.includes(value), "contact value leaked into browser storage");
+                } finally {
+                  await fresh.unroute("**/api/buyer/contact-messages", intercept);
+                  await fresh.close();
+                }
+              });
+            }
+          } finally {
+            await contactPage.unroute("**/api/buyer/contact-messages", intercept);
+            await contactPage.close();
+          }
+        }
+
         // ===== Empty cart (fresh context, nothing added yet): /[locale]/cart ==========================================================
         const emptyFrame = f("105:2439", "105:2468");
         const cartRoute = `/${locale}/cart`;
@@ -1160,7 +1245,7 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
                 }
               });
               await step(frame, productRoute, "spec entry return cart unchanged", "read server cart after all local choices", "all option/quantity/return operations issued zero writes and preserved the exact existing server cart", unchanged);
-              notRun.push({ frame, locale, subcase: "cart failure/UNKNOWN recovery", reason: "no existing real-PG controlled failure injector in this parity context; existing journal/state gates remain required" });
+              // The independent lost-response case below uses a fresh buyer context and the real cart producer.
               const out = detail.variants.find((v) => v.stock === "out");
               if (!out) notRun.push({ frame, locale, subcase: "sold-out option", reason: "existing selected product has no sold-out variant; an in-stock SKU is not sold-out evidence" });
               else {
@@ -1218,6 +1303,110 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
           } finally {
             page.off("request", observeWrite);
           }
+        }
+
+        // Independent sold-out witness: the candle has no unavailable value, while the existing
+        // real-stack scarf fixture has one. Do not mutate stock or infer sold-out from an in-stock SKU.
+        if (isMobile) {
+          const frame = "51:1380";
+          const scarf = facts.products.find((item: any) => item.key === "scarf");
+          assert(scarf, "sold-out witness requires the existing scarf fixture");
+          const route = `/${locale}/products/${scarf.slug}`;
+          await step(frame, route, "spec sold-out option on independent fixture", "open options, select available option, inspect unavailable option, refresh and reopen", "real unavailable option stays disabled without a cart write", async () => {
+            const response = await context.request.get(`${origin}/api/shop/product/${scarf.slug}`);
+            assert(response.ok(), "scarf product detail must be readable");
+            const detail = await response.json() as { variants: { option_values: string[]; stock: string }[] };
+            const out = detail.variants.find((v) => v.stock === "out" && v.option_values.some((value, axis) =>
+              !detail.variants.some((other) => other.stock !== "out" && other.option_values[axis] === value)));
+            assert(out, "fixture must have an independently unavailable option value");
+            const axis = out.option_values.findIndex((value, i) => !detail.variants.some((other) => other.stock !== "out" && other.option_values[i] === value));
+            const unavailable = out.option_values[axis];
+            const available = detail.variants.filter((v) => v.stock !== "out" && v.option_values[axis] !== unavailable);
+            assert(available.length >= 2, "fixture needs two available alternatives for a real selection");
+            const sessionResponse = await context.request.get(`${origin}/api/buyer/session`);
+            assert(sessionResponse.ok(), "buyer session must be readable");
+            const session = await sessionResponse.json() as { context?: unknown };
+            assert(typeof session.context === "string" && session.context.length > 0, "active buyer context required");
+            const readCart = () => context.request.get(`${origin}/api/buyer/cart`, { headers: { "X-Buyer-Context": session.context as string } });
+            const before = await readCart();
+            assert(before.ok(), "cart baseline must be readable");
+            const baseline = await before.json();
+            let writes = 0;
+            const observe = (request: import("@playwright/test").Request) => {
+              if (new URL(request.url()).pathname === "/api/buyer/cart" && request.method() === "PUT") writes++;
+            };
+            page.on("request", observe);
+            try {
+              const target = new URL(`${origin}${route}`);
+              if (facts.preview_token) target.searchParams.set("preview", facts.preview_token);
+              await page.goto(target.toString());
+              for (let pass = 0; pass < 2; pass++) {
+                await page.getByTestId("product-options-task-entry").getByRole("button", { name: c.chooseSpec, exact: true }).click({ timeout: T });
+                const task = page.getByTestId("product-options-task");
+                await expect(task.getByRole("radio", { name: unavailable, exact: true })).toBeDisabled();
+                const first = task.getByRole("radio", { name: available[0].option_values[axis], exact: true });
+                const other = task.getByRole("radio", { name: available[1].option_values[axis], exact: true });
+                await (await first.isChecked() ? other : first).click({ timeout: T });
+                await expect(task.getByRole("radio", { name: unavailable, exact: true })).toBeDisabled();
+                if (pass === 0) await page.reload();
+              }
+              assert.equal(writes, 0, "selecting options must not write the cart");
+              const after = await readCart();
+              assert(after.ok(), "cart readback must be readable");
+              assert.deepEqual(await after.json(), baseline, "sold-out inspection must preserve the cart");
+            } finally {
+              page.off("request", observe);
+            }
+          });
+        }
+
+        if (isMobile) {
+          const frame = "51:1380";
+          const scarf = facts.products.find((item: any) => item.key === "scarf");
+          assert(scarf, "cart recovery witness requires the existing scarf fixture");
+          const route = `/${locale}/products/${scarf.slug}`;
+          await step(frame, route, "spec lost cart response recovery", "add once, lose committed reply, explicitly recover and reload cart", "one durable cart addition; explicit recovery uses the identical key and body; refresh does not resend", async () => {
+            const isolated = await browser.newContext(ctxOpts({ ignoreHTTPSErrors: true, viewport: { width, height }, locale }));
+            const witness = await isolated.newPage();
+            const calls: { key: string | undefined; body: string | null }[] = [];
+            const intercept = async (r: import("@playwright/test").Route) => {
+              const request = r.request();
+              if (request.method() !== "PUT") return r.continue();
+              calls.push({ key: request.headers()["idempotency-key"], body: request.postData() });
+              if (calls.length === 1) {
+                // The real PG producer must commit before the response is discarded; no synthetic cart success.
+                const result = await r.fetch();
+                assert.equal(result.status(), 200, "lost response must follow an actual committed cart write");
+                return r.abort("failed");
+              }
+              return r.continue();
+            };
+            try {
+              await witness.route("**/api/buyer/cart", intercept);
+              const target = new URL(`${origin}${route}`);
+              if (facts.preview_token) target.searchParams.set("preview", facts.preview_token);
+              await witness.goto(target.toString());
+              await witness.getByTestId("product-options-task-entry").getByRole("button", { name: c.chooseSpec, exact: true }).click({ timeout: T });
+              const task = witness.getByTestId("product-options-task");
+              await task.getByTestId("add-to-cart").click({ timeout: T });
+              const problem = task.getByTestId("cart-problem");
+              await expect(problem).toBeVisible({ timeout: T });
+              assert.equal(calls.length, 1, "unknown cart outcome must not automatically retry");
+              await problem.getByRole("button").click({ timeout: T });
+              await expect(problem).toHaveCount(0, { timeout: T });
+              assert.equal(calls.length, 2);
+              assert(calls[0].key, "original cart write must carry an idempotency key");
+              assert.deepEqual(calls[1], calls[0], "explicit recovery must preserve key and body");
+              await witness.goto(`${origin}/${locale}/cart`);
+              await expect(witness.getByTestId("cart-line-qty")).toHaveText("1", { timeout: T });
+              await witness.reload();
+              await expect(witness.getByTestId("cart-line-qty")).toHaveText("1", { timeout: T });
+              assert.equal(calls.length, 2, "refresh must not resend");
+            } finally {
+              await witness.unroute("**/api/buyer/cart", intercept);
+              await isolated.close();
+            }
+          });
         }
 
         // ===== 51:1381: description entry/content/return plus the delivery section (integrator ruling 2026-11-04, round b-product) ======

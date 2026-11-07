@@ -194,3 +194,9 @@ clicks 「移除商品」 and reloads (line stays removed). The entry panel is t
 - The entry panel sits outside the `cart-page` host so host-scoped cart gates (order-gate, 51:1380) still see exactly the list.
 - Entry context is tab-local `sessionStorage` (one SKU id written by ProductBuy after a successful add); a plain visit to /cart in the same tab
   after an add also shows it. No URL or API field.
+
+## C7 contact continuation 2026-11-07 — integrator v2 adoption
+
+Integrator `output/fleet-control-20261107/ui/C7-DESIGN-ADOPTION.json` SHA256 `631373d3ec3e7a4c0b01dd316edc8c3837844415245a605e32de222a05a86587` adopts historical 26:850 → v2 1468:100491, 26:1117 → 1468:100543, 29:641 → 1468:100679, 29:670 → 1468:100717. Root inspected the four current exports with respective SHA256 `dde5c0e729d83e031ee9ac2565bf6882bb2791d1f502964e9bc465e87407f7a3`, `b383b22ec0e5cc8928a8a7581dfe67ee752ad80891c9982b1184f1b36ed1f191`, `58e136c16a5a795731368b8c931848305282bee59a155bb090ec2329de71185e`, `e8e41dbdbdf002412e68f8aaabb1601ffe2cc09ba5a831ae1460e5c363f66438`. Version UNKNOWN, image inspection E2 only, not acceptance. Original SHOPLINE frames and v2 confirmation/error/throttle/pending frames were also read and viewed; full local hashes and evidence are in `fleet-20261107/CONTACT-EVIDENCE.md`.
+
+Pending copy delta: 1468:101014 text `I1468:137428;1429:34287` / 1468:101061 text `I1468:137442;1429:34287` (“請先查詢結果，暫勿再次送出。”) bind fill `VariableID:13:307`; action text `I1468:101059;3:52` / `I1468:101098;3:52` (“查詢結果”) bind fill `VariableID:13:311`. Integrator directs “確認送出結果” and “使用原訊息確認結果，請勿另建訊息重送。” and corresponding zh-CN/en, because the real operation is explicit same-key/same-body POST, not a read-only lookup. This is a design-sync candidate, not a Figma write. After refresh the original body is unavailable by the no-PII-storage rule; uncertainty remains visible and no recovery POST is issued without it.
