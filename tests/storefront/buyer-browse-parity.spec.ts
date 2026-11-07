@@ -401,6 +401,8 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
                 await expect(contactPage.getByTestId("contact-unknown")).toBeVisible({ timeout: T });
                 await expect(otherTab.getByTestId("contact-unknown")).toBeVisible({ timeout: T });
                 await expect(otherTab.getByTestId("contact-recover")).toHaveCount(0);
+                await expect(otherTab.getByTestId("contact-summary")).toHaveCount(0);
+                for (const value of Object.values(synthetic)) await expect(contactPage.getByTestId("contact-summary")).toContainText(value);
                 await otherTab.close();
                 assert.equal(attempts.length, 1, "uncertain result must not be retried automatically");
                 assert(attempts[0].key && /^[A-Za-z0-9_.:-]{8,128}$/.test(attempts[0].key), "valid idempotency key required");
@@ -435,6 +437,9 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
                   await expect(fresh.getByTestId("contact-unknown")).toBeVisible({ timeout: T });
                   assert.equal(attempts.length, start + 1);
                   await fresh.reload();
+                  await expect(fresh.getByTestId("contact-summary")).toHaveCount(0);
+                  await expect(fresh.getByTestId("contact-recover")).toHaveCount(0);
+                  for (const value of Object.values(synthetic)) await expect(fresh.getByTestId("contact-unknown")).not.toContainText(value);
                   await expect(fresh.getByTestId("contact-unknown")).toBeVisible({ timeout: T });
                   await expect(fresh.getByTestId("contact-sent")).toHaveCount(0);
                   assert.equal(attempts.length, start + 1, "refresh must not resend an uncertain submission");
@@ -469,6 +474,9 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
                 await buyer.getByTestId("contact-send").click();
                 await expect(buyer.locator("main").getByRole("alert")).toBeVisible({ timeout: T });
                 await expect(buyer.getByTestId("contact-sent")).toHaveCount(0);
+                if (status === 429) {
+                  for (const value of ["Fixture Contact", "fixture@example.invalid", "Fixture inquiry only"]) await expect(buyer.getByTestId("contact-summary")).toContainText(value);
+                }
                 assert.equal(posts, 1, "a refusal must not trigger another POST");
               } finally { await isolated.close(); }
             });

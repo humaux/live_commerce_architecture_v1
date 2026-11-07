@@ -1,3 +1,4 @@
+.surface { background: var(--ds-page); min-height: 100vh; padding: 1px 0; }
 .task { width: min(720px, calc(100% - 32px)); margin: 40px auto 120px; color: var(--ds-ink); }
 .task h1 { margin: 0 0 28px; font-size: 26px; }
 .panel { background: var(--ds-surface); border-radius: var(--ds-radius-lg); padding: 16px; display: grid; gap: 12px; }
@@ -10,3 +11,5 @@
 .actions button:disabled { opacity: .6; cursor: wait; }
 .notice { padding: 12px; border-radius: var(--ds-radius-control); background: var(--ds-success-bg); color: var(--ds-success-text); }
 @media (max-width: 600px) { .task { margin-top: 32px; } .task h1 { font-size: 22px; } }
+
+.pendingNotice { padding: 16px; border: 1px solid var(--ds-sig-line); border-radius: var(--ds-radius-control); }

@@ -85,7 +85,8 @@ export default function ContactForm({ locale, preview }: { locale: Locale; previ
   if (phase === "boot") return <main className={styles.task} aria-busy="true" />;
   const edit = () => setPhase("form");
   const home = withPreview(`/${locale}`, preview);
-  return <main className={styles.task}>
+  const summary = () => <p data-testid="contact-summary">{fields.name} · {fields.email}<br />{fields.order_number && <>{fields.order_number} · </>}{fields.message}</p>;
+  return <div className={styles.surface}><main className={styles.task}>
     {phase === "form" && <div data-testid="contact-form"><h1>{c.title}</h1><div className={styles.panel}>
       {field("name", c.name)}{field("email", c.email, "email")}{field("order_number", c.order)}{field("message", c.message)}
       {invalid && <p role="alert">{c.invalid}</p>}{storageError && <p role="alert">{c.storage}</p>}
@@ -94,8 +95,8 @@ export default function ContactForm({ locale, preview }: { locale: Locale; previ
       <p>{c.name}<br />{fields.name}</p><p>{c.email}<br />{fields.email}</p><p>{c.order}<br />{fields.order_number || "—"}</p><p>{c.message}<br />{fields.message}</p>
     </div><div className={styles.actions}><button type="button" data-testid="contact-send" onClick={() => void send(false)}>{c.send}</button><button type="button" onClick={edit}>{c.edit}</button></div>{storageError && <p role="alert">{c.storage}</p>}</div>}
     {phase === "sending" && <div aria-busy="true"><h1>{c.confirm}</h1><div className={styles.actions}><button type="button" disabled>{c.send}</button></div></div>}
-    {phase === "unknown" && <div data-testid="contact-unknown" role="status"><h1>{c.unknown}</h1><div className={styles.panel}><p>{intent.current ? c.unknownBody : c.lostBody}</p></div>{intent.current && <div className={styles.actions}><button type="button" data-testid="contact-recover" onClick={() => void send(true)}>{c.recover}</button></div>}</div>}
-    {phase === "sent" && <div data-testid="contact-sent"><h1>{c.sent}</h1><div className={styles.panel}>{fields.name && <p>{fields.name} · {fields.email}<br />{fields.order_number && <>{fields.order_number} · </>}{fields.message}</p>}<p className={styles.notice}>{c.sentBody}</p></div><div className={styles.actions}><a href={home} onClick={() => { try { sessionStorage.removeItem(marker); } catch { /* keep the confirmed marker if storage is unavailable */ } }}>{c.back}</a></div></div>}
-    {(phase === "throttle" || phase === "failed" || phase === "conflict") && <div role="alert"><h1>{phase === "throttle" ? c.throttle : phase === "conflict" ? c.conflict : c.failed}</h1>{phase !== "conflict" && <div className={styles.actions}><button type="button" onClick={edit}>{c.edit}</button></div>}</div>}
-  </main>;
+    {phase === "unknown" && <div data-testid="contact-unknown" role="status"><h1>{c.unknown}</h1><div className={styles.panel}>{intent.current && summary()}<p className={styles.pendingNotice}>{intent.current ? c.unknownBody : c.lostBody}</p></div>{intent.current && <div className={styles.actions}><button type="button" data-testid="contact-recover" onClick={() => void send(true)}>{c.recover}</button></div>}</div>}
+    {phase === "sent" && <div data-testid="contact-sent"><h1>{c.sent}</h1><div className={styles.panel}>{fields.name && summary()}<p className={styles.notice}>{c.sentBody}</p></div><div className={styles.actions}><a href={home} onClick={() => { try { sessionStorage.removeItem(marker); } catch { /* keep the confirmed marker if storage is unavailable */ } }}>{c.back}</a></div></div>}
+    {(phase === "throttle" || phase === "failed" || phase === "conflict") && <div role="alert"><h1>{phase === "throttle" ? c.throttle : phase === "conflict" ? c.conflict : c.failed}</h1>{phase === "throttle" && <div className={styles.panel}>{intent.current && summary()}<p className={styles.notice}>{c.throttle}</p></div>}{phase !== "conflict" && <div className={styles.actions}><button type="button" onClick={edit}>{c.edit}</button></div>}</div>}
+  </main></div>;
 }
