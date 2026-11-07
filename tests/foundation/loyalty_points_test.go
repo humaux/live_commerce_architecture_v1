@@ -473,7 +473,7 @@ func TestLoyaltyManualOrderGates(t *testing.T) {
 			t.Fatalf("faulted final transaction: %d %v, want 503", code, out)
 		}
 		var order string
-		if err := o.e.p.f.owner.QueryRow(context.Background(), `SELECT id FROM checkout.orders WHERE store_id=$1 AND source='storefront'`, o.e.store()).Scan(&order); err != nil {
+		if err := o.e.p.f.owner.QueryRow(context.Background(), `SELECT id FROM checkout.orders WHERE store_id=$1 AND source='storefront' AND id<>$2`, o.e.store(), o.e.p.hold.OrderID).Scan(&order); err != nil {
 			t.Fatalf("the pipeline should have left exactly one storefront order: %v", err)
 		}
 		if found, _ := o.receipt(key); found || o.awardEntries(order) != 0 || s.entries(m.ID) != 0 {
@@ -1136,7 +1136,15 @@ func TestLoyaltyLPG09HTTPRoutesLogNoPII(t *testing.T) {
 	if code != 201 {
 		t.Fatalf("POST members: %d %v", code, created)
 	}
-	member, _ := created["id"].(string)
+	// Contract §2 returns {member}; the shared payment fixture also seeds a pre-existing storefront order above.
+	createdMember, ok := created["member"].(map[string]any)
+	if !ok {
+		t.Fatalf("missing member envelope: %v", created)
+	}
+	member, _ := createdMember["id"].(string)
+	if !command.ValidID(member) {
+		t.Fatalf("invalid created member id: %q", member)
+	}
 	steps := []struct {
 		method, path string
 		key          bool

@@ -205,17 +205,16 @@ var cbsFunctions = []cbsFn{
 	{"loyalty.try_award_manual_order(bytea,uuid,uuid,uuid,integer)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
 	{"loyalty.erase_member(bytea,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
 	{"loyalty.export_member(bytea,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
-	{"loyalty.read_members(bytea,uuid,text,boolean,timestamp with time zone,uuid,integer)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
-	{"loyalty.read_member(bytea,uuid,uuid,text,timestamp with time zone,uuid,integer)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
-	{"loyalty.read_entry(bytea,uuid,uuid,text)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"loyalty.read_members(bytea,uuid,text,boolean,text,integer)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"loyalty.read_member(bytea,uuid,uuid,text,text)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"loyalty.read_entry(bytea,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
 	{"loyalty.read_order_entries(bytea,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
 	{"loyalty.replay_member_erasures(uuid[])", "commerce_privacy_writer", nil, false},
-	{"loyalty.lp_ts(timestamp with time zone)", "commerce_privacy_writer", nil, true},
-	{"loyalty.lp_member_json(loyalty.members)", "commerce_privacy_writer", nil, true},
-	{"loyalty.lp_entry_json(loyalty.point_entries)", "commerce_privacy_writer", nil, true},
-	{"loyalty.lp_check_member(text,text,text)", "commerce_privacy_writer", nil, false},
-	{"loyalty.lp_order_of_store(uuid,uuid,uuid)", "commerce_privacy_writer", nil, true},
-	{"loyalty.lp_redact(uuid,uuid,uuid)", "commerce_privacy_writer", nil, false},
+	{"loyalty.member_json(loyalty.members)", "commerce_privacy_writer", nil, true},
+	{"loyalty.entry_json(loyalty.point_entries)", "commerce_privacy_writer", nil, true},
+	{"loyalty.check_text(text,text,text)", "commerce_privacy_writer", nil, false},
+	{"loyalty.cursor_encode(timestamp with time zone,uuid,text)", "commerce_privacy_writer", nil, false},
+	{"loyalty.cursor_decode(text,text)", "commerce_privacy_writer", nil, false},
 }
 
 var cbsTables = []string{"customers.consent_events", "customers.privacy_actions", "billing.store_customers", "billing.subscriptions"}
@@ -589,7 +588,7 @@ func TestCustomersBillingCB02Schema(t *testing.T) {
 		}
 		// audit inserts are limited to the contract's actions
 		auditRe := map[string][]string{"commerce_privacy_writer": {"customers.consent_withdrawn", "customers.exported", "customers.erased",
-			"customers.tag_created", "customers.tag_renamed", "customers.tag_deleted", "customers.tagged", "customers.note_added", "customers.note_edited", "customers.note_deleted", "customers.imported", "customers.orders_imported"}, "commerce_billing_writer": {"billing.customer_pinned"}}
+			"customers.tag_created", "customers.tag_renamed", "customers.tag_deleted", "customers.tagged", "customers.note_added", "customers.note_edited", "customers.note_deleted", "customers.imported", "customers.orders_imported", "member.created", "member.updated", "member.exported", "member.erased"}, "commerce_billing_writer": {"billing.customer_pinned"}}
 		for role, actions := range auditRe {
 			ps := covers("ops.audit_events", role, "INSERT")
 			if len(ps) == 0 {

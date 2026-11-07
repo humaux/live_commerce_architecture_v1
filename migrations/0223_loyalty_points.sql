@@ -45,7 +45,9 @@ BEGIN
  FOREACH t IN ARRAY ARRAY['members','point_entries'] LOOP
   EXECUTE format('ALTER TABLE loyalty.%I ENABLE ROW LEVEL SECURITY',t);
   EXECUTE format('ALTER TABLE loyalty.%I FORCE ROW LEVEL SECURITY',t);
-  EXECUTE format('CREATE POLICY scoped ON loyalty.%I FOR ALL TO commerce_privacy_writer USING (tenant_id=nullif(current_setting(''app.tenant_id'',true),'''')::uuid AND store_id=nullif(current_setting(''app.store_id'',true),'''')::uuid) WITH CHECK (tenant_id=nullif(current_setting(''app.tenant_id'',true),'''')::uuid AND store_id=nullif(current_setting(''app.store_id'',true),'''')::uuid)',t);
+  EXECUTE format('CREATE POLICY scoped_read ON loyalty.%I FOR SELECT TO commerce_privacy_writer USING (tenant_id=nullif(current_setting(''app.tenant_id'',true),'''')::uuid AND store_id=nullif(current_setting(''app.store_id'',true),'''')::uuid)',t);
+  EXECUTE format('CREATE POLICY scoped_insert ON loyalty.%I FOR INSERT TO commerce_privacy_writer WITH CHECK (tenant_id=nullif(current_setting(''app.tenant_id'',true),'''')::uuid AND store_id=nullif(current_setting(''app.store_id'',true),'''')::uuid)',t);
+  EXECUTE format('CREATE POLICY scoped_update ON loyalty.%I FOR UPDATE TO commerce_privacy_writer USING (tenant_id=nullif(current_setting(''app.tenant_id'',true),'''')::uuid AND store_id=nullif(current_setting(''app.store_id'',true),'''')::uuid) WITH CHECK (tenant_id=nullif(current_setting(''app.tenant_id'',true),'''')::uuid AND store_id=nullif(current_setting(''app.store_id'',true),'''')::uuid)',t);
  END LOOP;
 END $$;
 CREATE FUNCTION loyalty.immutable_entry() RETURNS trigger LANGUAGE plpgsql SET search_path=pg_catalog AS $$
@@ -76,7 +78,7 @@ BEGIN
  PERFORM customers.tn_fence(h,s,'customers:points',a.tenant_id,a.principal_id,a.authz_revision);
  RETURN jsonb_build_object('member_id',m.id,'version',m.version);
 END $$;
-CREATE FUNCTION loyalty.update_member(h bytea,s uuid,i uuid,v bigint,fs text[],n text,c text,b text) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+CREATE FUNCTION loyalty.update_member(h bytea,s uuid,i uuid,v integer,fs text[],n text,c text,b text) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE a record;m loyalty.members;
 BEGIN
  SELECT * INTO a FROM customers.tn_authority(h,s,'customers:points');
@@ -92,7 +94,7 @@ BEGIN
  PERFORM customers.tn_fence(h,s,'customers:points',a.tenant_id,a.principal_id,a.authz_revision);
  RETURN jsonb_build_object('member_id',i,'version',m.version);
 END $$;
-CREATE FUNCTION loyalty.adjust_points(h bytea,s uuid,i uuid,d bigint,n text,o uuid) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+CREATE FUNCTION loyalty.adjust_points(h bytea,s uuid,i uuid,d integer,n text,o uuid) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE a record;m loyalty.members;e uuid;
 BEGIN
  SELECT * INTO a FROM customers.tn_authority(h,s,'customers:points');
@@ -108,7 +110,7 @@ BEGIN
  PERFORM customers.tn_fence(h,s,'customers:points',a.tenant_id,a.principal_id,a.authz_revision);
  RETURN jsonb_build_object('entry_id',e,'balance',m.balance+d);
 END $$;
-CREATE FUNCTION loyalty.precheck_award(h bytea,s uuid,i uuid,p bigint) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+CREATE FUNCTION loyalty.precheck_award(h bytea,s uuid,i uuid,p integer) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE a record;m loyalty.members;
 BEGIN
  SELECT * INTO a FROM customers.tn_authority(h,s,'customers:points');
@@ -119,7 +121,7 @@ BEGIN
  IF m.balance+p>1000000000000 THEN RAISE EXCEPTION 'limit_reached' USING ERRCODE='PT422';END IF;
  PERFORM customers.tn_fence(h,s,'customers:points',a.tenant_id,a.principal_id,a.authz_revision);RETURN '{}'::jsonb;
 END $$;
-CREATE FUNCTION loyalty.try_award_manual_order(h bytea,s uuid,o uuid,i uuid,p bigint) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+CREATE FUNCTION loyalty.try_award_manual_order(h bytea,s uuid,o uuid,i uuid,p integer) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE a record;m loyalty.members;e loyalty.point_entries;r text;outcome jsonb;
 BEGIN
  outcome:=jsonb_build_object('member_id',i,'points',p,'state','not_awarded');
@@ -220,6 +222,7 @@ BEGIN
  SELECT * INTO a FROM customers.tn_authority(h,s,'customers:privacy');
  SELECT * INTO m FROM loyalty.members WHERE tenant_id=a.tenant_id AND store_id=s AND id=i FOR UPDATE;
  IF NOT FOUND THEN RAISE EXCEPTION 'not_found' USING ERRCODE='PT404';END IF;
+ IF m.erased_at IS NOT NULL THEN RAISE EXCEPTION 'member_erased' USING ERRCODE='PT409';END IF;
  UPDATE loyalty.members SET display_name='[erased]',contact_note=NULL,notes=NULL,erased_at=coalesce(erased_at,clock_timestamp()),updated_at=clock_timestamp(),version=version+1 WHERE tenant_id=a.tenant_id AND store_id=s AND id=i RETURNING * INTO m;
  UPDATE loyalty.point_entries SET note='[erased]' WHERE tenant_id=a.tenant_id AND store_id=s AND member_id=i AND note IS NOT NULL AND note<>'[erased]';GET DIAGNOSTICS n=ROW_COUNT;
  INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action,details) VALUES(a.tenant_id,s,a.principal_id,'member.erased',jsonb_build_object('member_id',i,'entries_redacted',n));
@@ -247,6 +250,7 @@ BEGIN
  FOR f IN SELECT p.oid::regprocedure sig,p.proname FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='loyalty' LOOP
   EXECUTE format('ALTER FUNCTION %s OWNER TO commerce_privacy_writer',f.sig);
   EXECUTE format('REVOKE ALL ON FUNCTION %s FROM PUBLIC',f.sig);
+  EXECUTE format('COMMENT ON FUNCTION %s IS %L',f.sig,'internal/loyalty LP-1: '||f.proname||'; scoped merchant ledger/privacy contract, no automatic identity links.');
   IF f.proname=ANY(ARRAY['create_member','update_member','adjust_points','precheck_award','try_award_manual_order','read_members','read_member','read_entry','read_order_entries','export_member','erase_member']) THEN EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO commerce_runtime',f.sig);END IF;
  END LOOP;
 END $$;

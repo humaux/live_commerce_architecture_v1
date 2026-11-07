@@ -672,6 +672,9 @@ func classifyPipeline(ctx context.Context, err error) error {
 // mapReceiptError maps the merchant-transaction failures (authority sentinels pass through; a PT401/403/404 of a definer too; a body
 // that differs from the receipt under the same key is idempotency_conflict).
 func mapReceiptError(err error) error {
+	if status, code, ok := loyalty.Classify(err); ok {
+		return &Error{Status: status, Code: code}
+	}
 	var pg *pgconn.PgError
 	if errors.As(err, &pg) && pg.Code == "PT409" { // fulfillment.mark_order_merchant_manual: the order is older than 10 minutes
 		return &Error{Status: http.StatusConflict, Code: "conflict"}
