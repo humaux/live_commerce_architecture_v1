@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { contactReceipt, validContactBody } from "../../lib/contact-contract";
+import { postContactMessage } from "../../lib/contact-client";
 import { contactCopy } from "../../lib/contact-copy";
 import { withPreview } from "../../lib/design";
 import styles from "./ContactForm.module.css";
@@ -61,7 +62,7 @@ export default function ContactForm({ locale, preview }: { locale: Locale; previ
         catch { setStorageError(true); return; }
         setPhase("sending");
         try {
-          const response = await fetch("/api/buyer/contact-messages", { method: "POST", headers: { "Content-Type": "application/json", "Idempotency-Key": current.key }, body: current.body, cache: "no-store" });
+          const response = await postContactMessage(current.key, current.body);
           if (response.status === 201) {
             const receipt: unknown = await response.json();
             if (!contactReceipt(receipt)) { setPhase("unknown"); return; }
