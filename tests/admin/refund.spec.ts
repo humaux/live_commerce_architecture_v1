@@ -215,7 +215,7 @@ test.describe(() => {
     await page.route(`**${detailPath}`, async (route) => {
       if (route.request().method() !== "GET") return route.continue();
       if (!terminalListServed) {
-        await route.fulfill({ status: 200, contentType: "application/json", body: olderBody });
+        await route.fulfill({ response: older, body: olderBody });
         oldDetailServed = true;
         releaseOldDetail();
       } else {
