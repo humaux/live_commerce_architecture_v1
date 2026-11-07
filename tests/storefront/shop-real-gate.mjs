@@ -220,12 +220,32 @@ try {
   await expect.poll(() => loaded(strip.first())).toBe(true);
   assert.match(await strip.first().evaluate(img => new URL(img.currentSrc).search), /^\?w=(360|720|1080)$/);
   const enlarge = p.getByRole("button", { name: "Enlarge photo" });
-  await enlarge.click();
   const photoDialog = p.locator(".sf-photo-dialog");
+  // Observation only: record native dialog lifecycle/focus facts, never change the DOM or focus.
+  await photoDialog.evaluate(dialog => {
+    window.__c7GalleryFocusTrace = [];
+    const snapshot = event => window.__c7GalleryFocusTrace.push({ event, dialogOpen: dialog.open,
+      activeTag: document.activeElement?.tagName ?? null,
+      activeIsTrigger: document.activeElement?.matches(".sf-gal__open") ?? false,
+      activeInsideDialog: dialog.contains(document.activeElement) });
+    dialog.addEventListener("cancel", () => snapshot("cancel"));
+    dialog.addEventListener("close", () => snapshot("close"));
+  });
+  await enlarge.click();
   await expect(photoDialog).toBeVisible();
   await p.keyboard.press("ArrowRight");
   await expect(photoDialog.locator("img")).toHaveAttribute("src", await strip.nth(1).getAttribute("src"));
   await p.keyboard.press("Escape");
+  await expect(photoDialog).not.toBeVisible();
+  try { await expect(enlarge).toBeFocused(); }
+  catch (error) {
+    console.error("C7_GALLERY_FOCUS_OBSERVATION", JSON.stringify(await p.evaluate(() => ({ events: window.__c7GalleryFocusTrace,
+      activeTag: document.activeElement?.tagName ?? null, activeIsTrigger: document.activeElement?.matches(".sf-gal__open") ?? false }))));
+    throw error;
+  }
+  await enlarge.click();
+  await expect(photoDialog).toBeVisible();
+  await photoDialog.getByRole("button", { name: "Close photo", exact: true }).click();
   await expect(photoDialog).not.toBeVisible();
   await expect(enlarge).toBeFocused();
   await p.goto(`${origin}/en/products/${P("diffuser").slug}`);
