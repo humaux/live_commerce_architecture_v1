@@ -7,7 +7,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync } from "node
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { discover, verifyClick, verifyVisual } from "./sweep-aggregate.mjs";
-import { CLICK_VARIANTS, JOURNEY_PAGES, STOREFRONT_ROUTES, VISUAL_LOCALES, VISUAL_VIEWPORTS, assignShards, loadWeights, parseShard, planClick, routeId, shardReport } from "./sweep-shard-lib.mjs";
+import { CLICK_VARIANTS, JOURNEY_PAGES, STOREFRONT_ROUTES, VISUAL_LOCALES, VISUAL_VIEWPORTS, assertStorefrontRoutes, assignShards, loadWeights, parseShard, planClick, routeId, shardReport } from "./sweep-shard-lib.mjs";
 
 const weights = await loadWeights();
 
@@ -49,7 +49,8 @@ test("planClick: for every N the shards partition the whole universe (every regi
     const plan = planClick(adminRoutes, weights, of);
     const seen = new Map();
     for (const p of plan.pages) { const i = plan.owner.get(p.unit); assert.ok(i >= 1 && i <= of, p.page); assert.ok(!seen.has(p.page), `duplicate page ${p.page}`); seen.set(p.page, i); }
-    assert.equal(seen.size, (adminRoutes.length + 17) * CLICK_VARIANTS.length, "admin routes + 17 storefront routes, each at all variants");
+    assert.equal(seen.size, (adminRoutes.length + STOREFRONT_ROUTES.length) * CLICK_VARIANTS.length, "admin and storefront routes, each at all variants");
+    for (const v of CLICK_VARIANTS) assert.ok(seen.has(`storefront|/contact|${v.viewport}|${v.locale}`));
     for (const r of adminRoutes) for (const v of CLICK_VARIANTS) assert.ok(seen.has(`admin|${r.path}|${v.viewport}|${v.locale}`), `${r.path} ${v.viewport}/${v.locale}`);
     for (const [j, unit] of Object.entries(plan.journeyOwner)) assert.ok(plan.owner.has(unit), `journey ${j} has an owning unit`);
     // J2/J3 read the COD order of the storefront desktop/zh-TW session: same shard, always
@@ -57,6 +58,11 @@ test("planClick: for every N the shards partition the whole universe (every regi
     // a storefront walk is never split: all its pages sit in one shard
     for (const v of CLICK_VARIANTS) assert.equal(new Set(plan.pages.filter((p) => p.unit === `storefront|${v.viewport}|${v.locale}`).map((p) => plan.owner.get(p.unit))).size, 1);
   }
+});
+
+test("both runners reject an actual route list that omits contact", () => {
+  assert.doesNotThrow(() => assertStorefrontRoutes(STOREFRONT_ROUTES));
+  assert.throws(() => assertStorefrontRoutes(STOREFRONT_ROUTES.filter((r) => r !== "/contact")), /missing \/contact/);
 });
 
 test("planClick at N=10 keeps every shard within ~1.3x of the mean planned cost", () => {
@@ -90,6 +96,7 @@ test("aggregate click: a missing shard, a dropped page row, a lost journey, a fa
   bad((s) => s.splice(2, 1), /shard 3\/6 is missing/);
   bad((s) => s.push({ ...s[0], source: "dup" }), /found twice/);
   bad((s) => { s[1].report.rows = s[1].report.rows.filter((r, i) => i !== 0); }, /no page-load row/);
+  bad((s) => { for (const x of s) x.report.rows = x.report.rows.filter((r) => !(r.app === "storefront" && r.page === "/contact")); }, /no page-load row/);
   bad((s) => { for (const x of s) x.report.rows = x.report.rows.filter((r) => r.app !== "journey"); }, /wrote no ledger row/);
   bad((s) => { s[0].report.rows.push({ app: "admin", page: "/x", viewport: "desktop", locale: "en", control: "Save", result: "fail", failure: "no-effect", actual: "nothing" }); }, /FAIL \(shard 1\)/);
   bad((s) => { s[0].platformPass = false; }, /platform-runner/);
@@ -113,7 +120,7 @@ function visualShards(of) {
   for (const l of VISUAL_LOCALES) for (const v of VISUAL_VIEWPORTS) {
     const size = `${v.size.width}x${v.size.height}`;
     for (const id of units) keys.push(`admin|${id}|${l}|${size}`);
-    for (const id of ["home", "products", "cart"]) keys.push(`storefront|${id}|${l}|${size}`);
+    for (const id of ["home", "products", "cart", "contact"]) keys.push(`storefront|${id}|${l}|${size}`);
     for (const id of ["home", "privacy"]) keys.push(`platform|${id}|${l}|${size}`);
   }
   const owner = assignShards(keys.map((key) => ({ key, weight: 1 })), of);
@@ -128,6 +135,7 @@ test("aggregate visual: honest shards pass; a missing shard, a missing shot, a b
   const bad = (mutate, re, routes = adminRoutes) => { const s = visualShards(4); mutate(s); const r = verifyVisual({ shards: s, adminRoutes: routes }); assert.ok(r.problems.some((p) => re.test(p)), `${re}: ${r.problems.join(" | ") || "no problem raised"}`); };
   bad((s) => s.pop(), /shard 4\/4 is missing/);
   bad((s) => { s[1].report.units.pop(); }, /owned shot\(s\) missing/);
+  bad((s) => { for (const x of s) x.report.units = x.report.units.filter((u) => !(u.app === "storefront" && u.id === "contact")); }, /owned shot\(s\) missing/);
   bad((s) => { s[2].report.verdict = { exit: 1, reasons: ["3 blocking violation instances"] }; }, /verdict exit 1/);
   bad((s) => { s[0].report.shard.owned = s[0].report.shard.owned.slice(1); }, /belongs to no shard/);
   bad(() => {}, /registry route \/brand-new-route/, [...adminRoutes, { path: "/brand-new-route" }]);

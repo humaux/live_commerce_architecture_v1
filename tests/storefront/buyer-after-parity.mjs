@@ -18,7 +18,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { randomBytes } from "node:crypto";
 import { launch, ctxOpts } from "./browser-engine.mjs";
-import { createFakeApi } from "./shop-fake-api.mjs";
+import { createFakeApi, PREVIEW_TOKEN } from "./shop-fake-api.mjs";
 import { browserEvidenceDirectory } from "../browser-evidence.mjs";
 import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 
@@ -373,6 +373,42 @@ for (const s of ORDERS) {
     }
   });
 }
+
+// The shared contact control is consumed by order status, privacy export failure and data deletion.
+// Exercise each real UI click in the existing MOCK runner; no contact message is submitted.
+test("contact control · direct callers preserve preview", async () => {
+  for (const dev of ["d", "m"]) {
+    const ctx = DEVICES[dev]();
+    const verify = async (page, control, label) => {
+      await click(page, page.getByTestId(control), { page: label, control, expected: "/zh-TW/contact with preview" });
+      await page.waitForURL(url => url.pathname === "/zh-TW/contact" && url.searchParams.get("preview") === PREVIEW_TOKEN, { timeout: 10000 });
+      await page.getByTestId("contact-form").waitFor({ state: "visible", timeout: 10000 });
+    };
+    for (const control of ["contact-store", "request-after-sales"]) {
+      const page = await openOrder(ctx, 1);
+      try {
+        const order = new URL(page.url()); order.searchParams.set("preview", PREVIEW_TOKEN);
+        await page.goto(order.toString());
+        await verify(page, control, "order status");
+      } finally { await page.close(); }
+    }
+    {
+      const page = await ctx.newPage();
+      try {
+        privacyState.exportMode = "too_large";
+        await page.goto(`${origin}/zh-TW/privacy?preview=${PREVIEW_TOKEN}`);
+        await click(page, btn(page, "下載我的資料").first(), { page: "privacy", control: "download", expected: "export failure" });
+        await page.getByTestId("privacy-export-failed").waitFor({ state: "visible", timeout: 10000 });
+        await verify(page, "contact-store", "privacy export failure");
+      } finally { privacyState.exportMode = "ok"; await page.close(); }
+    }
+    {
+      const page = await ctx.newPage();
+      try { await page.goto(`${origin}/zh-TW/data-deletion?preview=${PREVIEW_TOKEN}`); await verify(page, "contact-store", "data deletion"); }
+      finally { await page.close(); }
+    }
+  }
+});
 
 // cancel-payment flow: the frame says the confirm is the browser's own, so assert that a confirm was shown, accept it, then the requested-cancel state
 for (const [key, n, kind, frames] of [["home", 0, "home", { confirmD: "1222:19657", confirmM: "1222:19813", doneD: "1222:19724", doneM: "1222:19867", addr: HOME_ADDR }], ["cvs", 0, "cvs", { confirmD: "1222:19371", confirmM: "1222:19527", doneD: "1222:19438", doneM: "1222:19581", addr: CVS_ADDR }]]) {

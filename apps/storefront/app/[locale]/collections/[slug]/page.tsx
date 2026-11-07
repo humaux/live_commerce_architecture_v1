@@ -1,5 +1,7 @@
 // GET /{locale}/collections/{slug}[?sort=&min=&max=&after=]: one collection, its description and its products.
 // Go: GET catalog/v2/collections/{slug} + the list route with collection=slug (lib/shop-list.ts). 404 for unknown/hidden slugs.
+// Signed layout (Figma 6:19933 / 6:19984): title, search field, chips, "products in this collection · n" (n = the collection's
+// published product_count from catalog/v2/collections, never a page length), grid, then a "view all products" button.
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale } from "@live-commerce/i18n";
@@ -11,7 +13,12 @@ import { loadList } from "../../../../lib/shop-list";
 import type { SearchParams } from "../../../../lib/shop-list";
 import { shopCopy } from "../../../../lib/shop-copy";
 import { alternates, gate, must } from "../../../../lib/shop-page";
-import { getCollection } from "../../../../lib/shop-upstream";
+import { getCollection, listCollections } from "../../../../lib/shop-upstream";
+import Link from "next/link";
+import BrowseSearch from "../../../../components/browse/BrowseSearch";
+import styles from "../../../../components/browse/browse.module.css";
+import { browseCopy } from "../../../../lib/browse-copy";
+import { fmt } from "../../../../lib/shop-copy";
 
 type Params = Promise<{ locale: string; slug: string }>;
 
@@ -35,7 +42,9 @@ export default async function Page({ params, searchParams }: { params: Params; s
   const { preview } = await gate();
   const copy = shopCopy[locale];
   const info = must(await getCollection(slug));
-  const loaded = await loadList(locale, query, { collection: slug });
+  const [loaded, cards] = await Promise.all([loadList(locale, query, { collection: slug }), listCollections()]);
+  const t = browseCopy[locale].browse;
+  const count = cards.state === "ok" ? cards.value.find((c) => c.slug === slug)?.product_count : undefined;
   return (
     <main className="sf-wrap">
       <PageHead
@@ -48,7 +57,13 @@ export default async function Page({ params, searchParams }: { params: Params; s
       >
         {info.description && <p className="sf-pagehead__intro">{info.description}</p>}
       </PageHead>
-      <ListBody locale={locale} preview={preview} path={collectionPath(locale, slug)} params={query} loaded={loaded} />
+      <BrowseSearch locale={locale} preview={preview} />
+      <ListBody locale={locale} preview={preview} path={collectionPath(locale, slug)} params={query} loaded={loaded} heading={count === undefined ? undefined : fmt(t.collectionCount, { n: count })} />
+      <p className={styles.more}>
+        <Link className="sf-btn sf-btn--ghost" href={withPreview(`/${locale}/products`, preview)}>
+          {t.viewAllProducts}
+        </Link>
+      </p>
     </main>
   );
 }

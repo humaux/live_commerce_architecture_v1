@@ -8,8 +8,11 @@ const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
 type Get = (key: string) => string | null | undefined;
 
-export function parseListQuery(get: Get): ListQuery & { sort: (typeof SORTS)[number] } {
-  const sort = SORTS.find((s) => s === get("sort")) ?? "newest";
+export function parseListQuery(get: Get): ListQuery & { sort: (typeof SORTS)[number] | undefined } {
+  // Absence lets the server apply a collection's configured order. An explicit newest is a real
+  // override; keep the legacy fallback for every provided invalid value, including the empty string.
+  const requestedSort = get("sort");
+  const sort = requestedSort == null ? undefined : SORTS.find((s) => s === requestedSort) ?? "newest";
   const q = (get("q") ?? "").replace(/[\u0000-\u001f\u007f]/g, " ").trim();
   const collection = get("collection") ?? "";
   const num = (key: string) => {
