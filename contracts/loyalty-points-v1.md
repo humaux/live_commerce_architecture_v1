@@ -142,7 +142,8 @@ CREATE INDEX point_entries_order ON loyalty.point_entries (tenant_id, store_id, 
 | `loyalty.adjust_points(hash, store, member, delta, note, order_id)` | `customers:points` | lock member FOR UPDATE; erased → `member_erased`; foreign/unknown order → `not_found`; `balance + delta < 0` → `points_insufficient`; `> 1e12` → `limit_reached`; insert entry, update balance |
 | `loyalty.precheck_award(hash, store, member, points)` | `customers:points` | read-only, LP7; raises the matching refusal |
 | `loyalty.try_award_manual_order(hash, store, order, member, points) → jsonb` | re-checks `customers:points` | only inside the §G3 final transaction after `mark_order_merchant_manual`; order must be `source='merchant_manual'` of this store; lock member; returns LP18 state, never raises on right/member/bounds; existing award for the order (resume) → returns it |
-| `loyalty.read_members(hash, store, q, include_erased, cursor, limit)` / `read_member(…, ledger_cursor)` / `read_order_entries(hash, store, order)` | `customers:read` | RLS + permission re-check (0063 pattern) |
+| `loyalty.read_members(hash, store, q, include_erased, cursor, limit)` / `read_member(…, ledger_cursor)` / `read_entry(hash, store, entry)` / `read_order_entries(hash, store, order)` | `customers:read` | RLS + permission re-check (0063 pattern) |
+| `loyalty.project_write(hash, store, operation, key, request_hash)` | `customers:points` | Existing scoped command receipt + identical normalized request hash; fixed create/update/adjust allowlist, receipt-derived target only; current member or entry + recorded balance, including redacted replay. Application-owned receipt trust model, not an unforgeable SQL capability. |
 | `loyalty.export_member(hash, store, member)` | `customers:privacy` | returns JSON (LP12); over 1 MiB → `export_too_large`; audit `member.exported` |
 | `loyalty.erase_member(hash, store, member) → jsonb` | `customers:privacy` | LP11; returns `{member_id, erased_at, entries_redacted}`, stored as the receipt response; audit `member.erased` |
 | `loyalty.replay_member_erasures(p_members uuid[])` | ops only | LP11 restore procedure |
@@ -157,6 +158,8 @@ Common: tenant and store come only from the authenticated merchant session and t
 `Idempotency-Key` (8..128 `[A-Za-z0-9_.:-]`) handled by `command.Run` (§1). No automatic retry; `503 retry_later` means
 retry with the same key. **Names, contact notes, notes and search terms never appear in a URL, query string, log line or
 metric label**; URLs carry only ids and opaque cursors (gates LPG09, LPU06).
+
+Route base: /v1/admin/stores/{store_id}
 
 | Route | Permission | Request → response |
 | --- | --- | --- |

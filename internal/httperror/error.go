@@ -232,7 +232,10 @@ func writeDetails(w http.ResponseWriter, status int, code string, retryable bool
 		"export_too_large": "The export is too large to generate.",
 		// customers-billing-v1 Amendment W6-01B (tags and notes); version_changed is shared, declared above.
 		"tag_exists":    "A tag with this name already exists.",
-		"limit_reached": "The limit for tags or notes has been reached.",
+		"limit_reached": "The limit has been reached.",
+		// loyalty-points-v1 LP6/LP7: fixed refusal messages, never database text.
+		"points_insufficient": "There are not enough points.",
+		"member_erased":       "This member has been erased.",
 		// customers-billing-v1 §5 / billing-core B2, B12: platform billing.
 		"billing_unavailable": "Billing is temporarily unavailable.",
 		"billing_restricted":  "New claim windows are paused until billing is up to date.",

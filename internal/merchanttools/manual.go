@@ -40,6 +40,7 @@ import (
 	"livecommerce/internal/command"
 	"livecommerce/internal/domains"
 	"livecommerce/internal/fulfillment"
+	"livecommerce/internal/loyalty"
 	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
 	"livecommerce/internal/pricing"
@@ -115,6 +116,8 @@ type ManualInput struct {
 	PaymentMode string                  `json:"payment_mode"`
 	Locale      string                  `json:"locale"`
 	Discount    *pricing.ManualDiscount `json:"discount,omitempty"`
+	// MemberAward (loyalty-points-v1 LP7) is part of the hashed request; omitempty keeps every pre-LP request hash unchanged.
+	MemberAward *loyalty.Award `json:"member_award,omitempty"`
 }
 
 // ManualOption is one delivery choice of GET orders/manual/options (the buyer checkout option, card dropped).
@@ -149,6 +152,7 @@ type manualReceipt struct {
 	Currency        string                  `json:"currency"`
 	ExpiresAt       time.Time               `json:"expires_at"`
 	Discount        *pricing.ManualDiscount `json:"discount,omitempty"`
+	MemberAward     *loyalty.AwardOutcome   `json:"member_award,omitempty"` // LP18: ids, numbers, state only
 }
 
 // ManualResult is the 201 (or replayed 200) body.
@@ -186,6 +190,10 @@ type ManualOrders struct {
 	buyerPool *pgxpool.Pool
 	checkout  *checkout.Service
 	secret    []byte
+	// Test seams (nil in production, like ForBuyer.FaultAfterPlace): FaultBeforeFinal runs after the pipeline and before the final
+	// merchant transaction (the LPG06r race window); FaultAfterAward runs inside the final transaction right after the award (LPG02).
+	FaultBeforeFinal func() error
+	FaultAfterAward  func() error
 }
 
 // NewManualOrders wires the pipeline. issuer must have been built with the 30-day capability TTL; secret (>= 32 bytes) keys the HMAC that
@@ -259,6 +267,9 @@ func ValidateManual(in ManualInput) (ManualInput, error) {
 			(h.PostalCode != "" && !plain(h.PostalCode, 1, 20)) || (h.Line2 != "" && !plain(h.Line2, 1, 200)) {
 			return in, bad
 		}
+	}
+	if in.MemberAward != nil && !loyalty.ValidAward(*in.MemberAward) {
+		return in, bad
 	}
 	return in, nil
 }
@@ -374,6 +385,9 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 			replayed = true
 		case errors.Is(inner, errNeedWork):
 			inner = nil
+			if in.MemberAward != nil {
+				inner = loyalty.PrecheckAward(ctx, tx, scope, token, *in.MemberAward)
+			}
 		}
 		return inner
 	})
@@ -388,6 +402,11 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 		if receipt, err = m.pipeline(ctx, token, capability, storeID, key, in); err != nil {
 			return ManualResult{}, false, classifyPipeline(ctx, err)
 		}
+		if m.FaultBeforeFinal != nil {
+			if e := m.FaultBeforeFinal(); e != nil {
+				return ManualResult{}, false, e
+			}
+		}
 		// One merchant transaction: receipt + source mark + audit. A failure here leaves a placed order with source=storefront until the
 		// merchant retries the same key (every earlier step replays and this one runs again).
 		hash := sha256.Sum256([]byte(token))
@@ -401,8 +420,27 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 					return err
 				}
 				saved = receipt
+				if in.MemberAward != nil {
+					award, e := loyalty.TryAward(ctx, tx, scope, token, receipt.OrderID, *in.MemberAward)
+					if e != nil {
+						return e
+					}
+					saved.MemberAward = &award
+					if m.FaultAfterAward != nil {
+						if e := m.FaultAfterAward(); e != nil {
+							return e
+						}
+					}
+				}
+				details := map[string]any{}
 				if saved.Discount != nil {
-					return command.AuditDetails(ctx, tx, scope, "order.manual_created", map[string]any{"discount": saved.Discount})
+					details["discount"] = saved.Discount
+				}
+				if saved.MemberAward != nil {
+					details["member_award"] = map[string]any{"member_id": saved.MemberAward.MemberID, "points": saved.MemberAward.Points, "state": saved.MemberAward.State}
+				}
+				if len(details) > 0 {
+					return command.AuditDetails(ctx, tx, scope, "order.manual_created", details)
 				}
 				return command.Audit(ctx, tx, scope, "order.manual_created")
 			})
@@ -634,6 +672,9 @@ func classifyPipeline(ctx context.Context, err error) error {
 // mapReceiptError maps the merchant-transaction failures (authority sentinels pass through; a PT401/403/404 of a definer too; a body
 // that differs from the receipt under the same key is idempotency_conflict).
 func mapReceiptError(err error) error {
+	if status, code, ok := loyalty.Classify(err); ok {
+		return &Error{Status: status, Code: code}
+	}
 	var pg *pgconn.PgError
 	if errors.As(err, &pg) && pg.Code == "PT409" { // fulfillment.mark_order_merchant_manual: the order is older than 10 minutes
 		return &Error{Status: http.StatusConflict, Code: "conflict"}

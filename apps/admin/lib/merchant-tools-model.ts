@@ -242,10 +242,18 @@ export function toolsRoute(method: string, path: string): ToolsRoute | null {
 /** A manual-order body is JSON with exactly these top-level keys and no price-like field anywhere. */
 export function validManualBody(body: unknown): boolean {
   if (!body || typeof body !== "object" || Array.isArray(body)) return false;
-  const keys = Object.keys(body).sort().join(",");
+  const keys = Object.keys(body).filter((key) => key !== "member_award").sort().join(",");
   const raw = body as Record<string, unknown>;
   if (keys !== "customer,delivery,items,locale,payment_mode" && keys !== "customer,delivery,discount,items,locale,payment_mode") return false;
   if ("discount" in raw && !validDiscount(raw.discount)) return false;
+  // LP-1 §2: one optional, closed member award; Go/PG own rights and balance checks.
+  if ("member_award" in raw) {
+    const award = raw.member_award;
+    if (!award || typeof award !== "object" || Array.isArray(award)) return false;
+    const a = award as Record<string, unknown>;
+    if (Object.keys(a).sort().join(",") !== "member_id,points" || typeof a.member_id !== "string" || !canonicalUUID.test(a.member_id) ||
+        typeof a.points !== "number" || !Number.isInteger(a.points) || a.points < 1 || a.points > 1000000) return false;
+  }
   const forbidden = /(price|amount|total|discount|shipping|tax|tenant|store_id)/i;
   const walk = (value: unknown): boolean => {
     if (Array.isArray(value)) return value.every(walk);

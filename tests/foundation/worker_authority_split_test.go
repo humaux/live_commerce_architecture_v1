@@ -199,10 +199,25 @@ func TestWAS02NonPaymentWorkersHoldNoPaymentPrivilege(t *testing.T) {
 			`SELECT returns.list_returns($1::bytea,$2::uuid,NULL::text) WHERE $3::uuid IS NOT NULL`,
 			`SELECT returns.list_cancel_refund_gaps($1::bytea,$2::uuid) WHERE $3::uuid IS NOT NULL`,
 			`SELECT fulfillment.merchant_cancel_order($1::bytea,$2::uuid,$3::uuid,'was02-cancel-key',$1::bytea,'CONFIRMED','x')`,
+			// 0223 (LP-1, loyalty-points-v1 §1): the member/points definers are merchant-side only; no worker gets schema loyalty.
+			`SELECT loyalty.create_member($1::bytea,$2::uuid,'x',NULL,NULL) WHERE $3::uuid IS NOT NULL`,
+			`SELECT loyalty.adjust_points($1::bytea,$2::uuid,$3::uuid,1,'x',NULL)`,
+			`SELECT loyalty.project_write($1::bytea,$2::uuid,'loyalty.member.create','was02-project-key',$1::bytea) WHERE $3::uuid IS NOT NULL`,
+			`SELECT loyalty.try_award_manual_order($1::bytea,$2::uuid,$3::uuid,$3::uuid,1)`,
+			`SELECT loyalty.erase_member($1::bytea,$2::uuid,$3::uuid)`,
+			`SELECT loyalty.export_member($1::bytea,$2::uuid,$3::uuid)`,
+			`SELECT loyalty.replay_member_erasures(ARRAY[$3::uuid]) WHERE $1::bytea IS NOT NULL AND $2::uuid IS NOT NULL`,
 		} {
 			if _, err := p.Exec(ctx, call, randomBytes(32), randomUUID(), randomUUID()); sqlState(err) != "42501" {
 				t.Errorf("%s ran %s: %v (want 42501)", role, call, err)
 			}
+		}
+		// 0223: and no catalog privilege on schema loyalty or its tables either.
+		var loyaltyAny bool
+		if err := f.owner.QueryRow(ctx, `SELECT has_schema_privilege($1,'loyalty','USAGE')
+			OR has_table_privilege($1,'loyalty.members','SELECT,INSERT,UPDATE,DELETE')
+			OR has_table_privilege($1,'loyalty.point_entries','SELECT,INSERT,UPDATE,DELETE')`, role).Scan(&loyaltyAny); err != nil || loyaltyAny {
+			t.Errorf("%s holds a loyalty privilege (err=%v)", role, err)
 		}
 	}
 }

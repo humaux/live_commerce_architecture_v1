@@ -136,8 +136,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0220 (FEAT-MANUAL-DISCOUNT named adjustment; renumbered from 0216 by the integrator 2026-11-01) adds one to base 0219: 143 -> 144.
 	// 0221 (FEAT-BUYER-RMA separate buyer requests; renumbered from 0217 by the integrator 2026-11-04) adds one to base 0220: 144 -> 145.
 	// 0222 (FEAT-CONTACT-STORE encrypted contacts and transactional notification; renumbered 0211 -> 0218 -> 0222 by the integrator 2026-11-04) adds one to base 0221: 145 -> 146.
-	if len(r2) != 146 {
-		t.Fatalf("R2 migration set = %d files %v, want 146", len(r2), r2)
+	// 0223 (LP-1 member ledger) adds one to base 0222: 146 -> 147.
+	if len(r2) != 147 {
+		t.Fatalf("R2 migration set = %d files %v, want 147", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
