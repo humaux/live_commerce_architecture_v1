@@ -1,0 +1,371 @@
+{
+  "formula": "W3C WCAG2.2 contrast-minimum, current root authority2026-11-07; no inactive exemption",
+  "rows": [
+    {
+      "key": "B1",
+      "device": "D",
+      "nodeId": "1589:64794",
+      "label": "上一頁",
+      "ratio": 5.381026271914327,
+      "actual_paints": {
+        "id": "1589:64794",
+        "label": "上一頁",
+        "instanceOpacity": 1,
+        "textOpacity": 1,
+        "background": [
+          {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+              "r": 0.9450980424880981,
+              "g": 0.9607843160629272,
+              "b": 0.9764705896377563
+            },
+            "boundVariables": {
+              "color": {
+                "type": "VARIABLE_ALIAS",
+                "id": "VariableID:3:8"
+              }
+            }
+          }
+        ],
+        "foreground": [
+          {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+              "r": 0.3490196168422699,
+              "g": 0.3960784375667572,
+              "b": 0.4745098054409027
+            },
+            "boundVariables": {
+              "color": {
+                "type": "VARIABLE_ALIAS",
+                "id": "VariableID:13:308"
+              }
+            }
+          }
+        ],
+        "boundVariables": {
+          "fills": [
+            {
+              "type": "VARIABLE_ALIAS",
+              "id": "VariableID:13:308"
+            }
+          ]
+        },
+        "instanceModes": {},
+        "textModes": {}
+      }
+    },
+    {
+      "key": "B1",
+      "device": "M",
+      "nodeId": "1589:64862",
+      "label": "上一頁",
+      "ratio": 5.381026271914327,
+      "actual_paints": {
+        "id": "1589:64862",
+        "label": "上一頁",
+        "instanceOpacity": 1,
+        "textOpacity": 1,
+        "background": [
+          {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+              "r": 0.9450980424880981,
+              "g": 0.9607843160629272,
+              "b": 0.9764705896377563
+            },
+            "boundVariables": {
+              "color": {
+                "type": "VARIABLE_ALIAS",
+                "id": "VariableID:3:8"
+              }
+            }
+          }
+        ],
+        "foreground": [
+          {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+              "r": 0.3490196168422699,
+              "g": 0.3960784375667572,
+              "b": 0.4745098054409027
+            },
+            "boundVariables": {
+              "color": {
+                "type": "VARIABLE_ALIAS",
+                "id": "VariableID:13:308"
+              }
+            }
+          }
+        ],
+        "boundVariables": {
+          "fills": [
+            {
+              "type": "VARIABLE_ALIAS",
+              "id": "VariableID:13:308"
+            }
+          ]
+        },
+        "instanceModes": {},
+        "textModes": {}
+      }
+    },
+    {
+      "key": "D3",
+      "device": "D",
+      "nodeId": "1589:67333",
+      "label": "下一步",
+      "ratio": 5.381026271914327,
+      "actual_paints": {
+        "id": "1589:67333",
+        "label": "下一步",
+        "instanceOpacity": 1,
+        "textOpacity": 1,
+        "background": [
+          {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+              "r": 0.9450980424880981,
+              "g": 0.9607843160629272,
+              "b": 0.9764705896377563
+            },
+            "boundVariables": {
+              "color": {
+                "type": "VARIABLE_ALIAS",
+                "id": "VariableID:3:8"
+              }
+            }
+          }
+        ],
+        "foreground": [
+          {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+              "r": 0.3490196168422699,
+              "g": 0.3960784375667572,
+              "b": 0.4745098054409027
+            },
+            "boundVariables": {
+              "color": {
+                "type": "VARIABLE_ALIAS",
+                "id": "VariableID:13:308"
+              }
+            }
+          }
+        ],
+        "boundVariables": {
+          "fills": [
+            {
+              "type": "VARIABLE_ALIAS",
+              "id": "VariableID:13:308"
+            }
+          ]
+        },
+        "instanceModes": {},
+        "textModes": {}
+      }
+    },
+    {
+      "key": "D3",
+      "device": "M",
+      "nodeId": "1589:67420",
+      "label": "下一步",
+      "ratio": 5.381026271914327,
+      "actual_paints": {
+        "id": "1589:67420",
+        "label": "下一步",
+        "instanceOpacity": 1,
+        "textOpacity": 1,
+        "background": [
+          {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+              "r": 0.9450980424880981,
+              "g": 0.9607843160629272,
+              "b": 0.9764705896377563
+            },
+            "boundVariables": {
+              "color": {
+                "type": "VARIABLE_ALIAS",
+                "id": "VariableID:3:8"
+              }
+            }
+          }
+        ],
+        "foreground": [
+          {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+              "r": 0.3490196168422699,
+              "g": 0.3960784375667572,
+              "b": 0.4745098054409027
+            },
+            "boundVariables": {
+              "color": {
+                "type": "VARIABLE_ALIAS",
+                "id": "VariableID:13:308"
+              }
+            }
+          }
+        ],
+        "boundVariables": {
+          "fills": [
+            {
+              "type": "VARIABLE_ALIAS",
+              "id": "VariableID:13:308"
+            }
+          ]
+        },
+        "instanceModes": {},
+        "textModes": {}
+      }
+    },
+    {
+      "key": "E4",
+      "device": "D",
+      "nodeId": "1589:68601",
+      "label": "確認扣除",
+      "ratio": 5.381026271914327,
+      "actual_paints": {
+        "id": "1589:68601",
+        "label": "確認扣除",
+        "instanceOpacity": 1,
+        "textOpacity": 1,
+        "background": [
+          {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+              "r": 0.9450980424880981,
+              "g": 0.9607843160629272,
+              "b": 0.9764705896377563
+            },
+            "boundVariables": {
+              "color": {
+                "type": "VARIABLE_ALIAS",
+                "id": "VariableID:3:8"
+              }
+            }
+          }
+        ],
+        "foreground": [
+          {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+              "r": 0.3490196168422699,
+              "g": 0.3960784375667572,
+              "b": 0.4745098054409027
+            },
+            "boundVariables": {
+              "color": {
+                "type": "VARIABLE_ALIAS",
+                "id": "VariableID:13:308"
+              }
+            }
+          }
+        ],
+        "boundVariables": {
+          "fills": [
+            {
+              "type": "VARIABLE_ALIAS",
+              "id": "VariableID:13:308"
+            }
+          ]
+        },
+        "instanceModes": {},
+        "textModes": {}
+      }
+    },
+    {
+      "key": "E4",
+      "device": "M",
+      "nodeId": "1589:68666",
+      "label": "確認扣除",
+      "ratio": 5.381026271914327,
+      "actual_paints": {
+        "id": "1589:68666",
+        "label": "確認扣除",
+        "instanceOpacity": 1,
+        "textOpacity": 1,
+        "background": [
+          {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+              "r": 0.9450980424880981,
+              "g": 0.9607843160629272,
+              "b": 0.9764705896377563
+            },
+            "boundVariables": {
+              "color": {
+                "type": "VARIABLE_ALIAS",
+                "id": "VariableID:3:8"
+              }
+            }
+          }
+        ],
+        "foreground": [
+          {
+            "type": "SOLID",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "color": {
+              "r": 0.3490196168422699,
+              "g": 0.3960784375667572,
+              "b": 0.4745098054409027
+            },
+            "boundVariables": {
+              "color": {
+                "type": "VARIABLE_ALIAS",
+                "id": "VariableID:13:308"
+              }
+            }
+          }
+        ],
+        "boundVariables": {
+          "fills": [
+            {
+              "type": "VARIABLE_ALIAS",
+              "id": "VariableID:13:308"
+            }
+          ]
+        },
+        "instanceModes": {},
+        "textModes": {}
+      }
+    }
+  ]
+}

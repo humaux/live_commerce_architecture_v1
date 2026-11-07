@@ -1,0 +1,1 @@
+{"operationId":"CU2-6863a600-batch-12","candidateId":"1589:63500","keys":["C16","C17"],"frames":[["C16","D","1589:70996","DESIGN · Admin Desktop · 會員 · 匯出資料 · 失敗"],["C16","M","1589:71119","DESIGN · Admin Mobile · 會員 · 匯出資料 · 失敗"],["C17","D","1589:71192","DESIGN · Admin Desktop · 會員 · 編輯資料 · 已被他人修改"],["C17","M","1589:71327","DESIGN · Admin Mobile · 會員 · 編輯資料 · 已被他人修改"]]}

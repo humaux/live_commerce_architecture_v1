@@ -1,0 +1,2 @@
+{"id":"1589:64338","name":"DESIGN · Admin Desktop · 手工單 · 核對 · 含積分"}
+IMAGE /Volumes/data/live_commerce_architecture_v1/fb-cu2-generator-1107/output/loyalty-points-ux/cu2-native-candidate-20261107/figma/get_screenshot-1589-64338-1794055725190-0.png

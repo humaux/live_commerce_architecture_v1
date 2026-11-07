@@ -1,0 +1,26 @@
+{
+  "completed": 80,
+  "truncated": [
+    "formal-before-63.receipt.txt",
+    "formal-before-41.receipt.txt",
+    "formal-before-73.receipt.txt",
+    "formal-before-79.receipt.txt",
+    "formal-before-57.receipt.txt",
+    "formal-before-65.receipt.txt",
+    "formal-before-32.receipt.txt",
+    "formal-before-75.receipt.txt",
+    "formal-before-69.receipt.txt",
+    "formal-before-47.receipt.txt",
+    "formal-before-55.receipt.txt",
+    "formal-before-67.receipt.txt",
+    "formal-before-30.receipt.txt",
+    "formal-before-77.receipt.txt",
+    "formal-before-59.receipt.txt",
+    "formal-before-45.receipt.txt",
+    "formal-before-61.receipt.txt",
+    "formal-before-53.receipt.txt",
+    "formal-before-18.receipt.txt",
+    "formal-before-71.receipt.txt"
+  ],
+  "bounded_followup": "full native projection fingerprint planned before mutation, no complete snapshot claim for truncated receipts"
+}

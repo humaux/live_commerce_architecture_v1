@@ -1,0 +1,2 @@
+{"id":"1589:68605","name":"DESIGN · Admin Mobile · 手工單 · 扣回本單積分 · 餘額不足"}
+IMAGE /Volumes/data/live_commerce_architecture_v1/fb-cu2-generator-1107/output/loyalty-points-ux/cu2-native-candidate-20261107/figma/get_screenshot-1589-68605-1794055731041-0.png

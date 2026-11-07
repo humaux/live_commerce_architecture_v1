@@ -1,0 +1,596 @@
+[
+  {
+    "file": "formal-before-00.receipt.txt",
+    "nodes": 66,
+    "sha256": "78880110830da81bb4bc4a6a9efe44e1033ea1feed984765a0748f1d63536d9e",
+    "complete": true
+  },
+  {
+    "file": "formal-before-01.receipt.txt",
+    "nodes": 28,
+    "sha256": "52bbe0fb928e90bd44f50c3842a348e2bf1ff7d9a33d38fba4b1c80a02a456ed",
+    "complete": true
+  },
+  {
+    "file": "formal-before-02.receipt.txt",
+    "nodes": 72,
+    "sha256": "843e8c85b5cb2c2f0877adc33fbe20f142d28bc0440e84b1453a9724b4a03100",
+    "complete": true
+  },
+  {
+    "file": "formal-before-03.receipt.txt",
+    "nodes": 34,
+    "sha256": "b72fb41275ec3f714f1ae0b4144340edb7e8c259ed386782c6cc375e272e3754",
+    "complete": true
+  },
+  {
+    "file": "formal-before-04.receipt.txt",
+    "nodes": 71,
+    "sha256": "3d06d5cb5854ff052a039697716d8eb7ce14a4d43e17d639428109ef3eac8f87",
+    "complete": true
+  },
+  {
+    "file": "formal-before-05.receipt.txt",
+    "nodes": 31,
+    "sha256": "a3279f9d6a1a83d38816b89889b1ae224fdfbdd205a6637007f78ac642fbee91",
+    "complete": true
+  },
+  {
+    "file": "formal-before-06.receipt.txt",
+    "nodes": 68,
+    "sha256": "dd1560614df46e61d7c5a768b648ff794f32f19162fb7ee2c689746ec4cc532f",
+    "complete": true
+  },
+  {
+    "file": "formal-before-07.receipt.txt",
+    "nodes": 30,
+    "sha256": "ae41fd1df5de3d466d4477c4b143a929942292c5c82a685dc80e3e61370fb6df",
+    "complete": true
+  },
+  {
+    "file": "formal-before-08.receipt.txt",
+    "nodes": 66,
+    "sha256": "29a73ba9052ade029fb8cd77b33675293140131153a87d4c2448bfe565ed44cf",
+    "complete": true
+  },
+  {
+    "file": "formal-before-09.receipt.txt",
+    "nodes": 28,
+    "sha256": "4e1559f4e86c135eb39611863941744306b524d15afb218030e1d50d17c4bac2",
+    "complete": true
+  },
+  {
+    "file": "formal-before-10.receipt.txt",
+    "nodes": 68,
+    "sha256": "91e86d50954dd5e58217be17aa6179ca269631023812c48270646b6b94fbf3a5",
+    "complete": true
+  },
+  {
+    "file": "formal-before-11.receipt.txt",
+    "nodes": 30,
+    "sha256": "35c55a0b2bfb44d536d340893f6a4357d6f06b265bf4794ee27c63ab7fced1b8",
+    "complete": true
+  },
+  {
+    "file": "formal-before-12.receipt.txt",
+    "nodes": 56,
+    "sha256": "20d25930ec470fec0850d2144880255a4f006de3c5738077bb0392677613157c",
+    "complete": true
+  },
+  {
+    "file": "formal-before-13.receipt.txt",
+    "nodes": 25,
+    "sha256": "3c2018f31eddf7e062b9c41ec352bbbb794b6bdf039421351ecae3153df26033",
+    "complete": true
+  },
+  {
+    "file": "formal-before-14.receipt.txt",
+    "nodes": 57,
+    "sha256": "fae1df1fb048fb629ff0921ac99b3605e3caedddc71d954e47433651c9e52cf4",
+    "complete": true
+  },
+  {
+    "file": "formal-before-15.receipt.txt",
+    "nodes": 22,
+    "sha256": "c8f87e34bf2251fef13010a6582b4d374a0eb7f5023ed78416c113c7a41da2d3",
+    "complete": true
+  },
+  {
+    "file": "formal-before-16.receipt.txt",
+    "nodes": 64,
+    "sha256": "63f70d30fb6eff5f7a7b778c2afe8deac0f1a18b74d84b13cd44a919357f4169",
+    "complete": true
+  },
+  {
+    "file": "formal-before-17.receipt.txt",
+    "nodes": 24,
+    "sha256": "c4008e9713d1d22af7792908db5ec89a78188dd8e4ae52863319b0cffff4f8a1",
+    "complete": true
+  },
+  {
+    "file": "formal-before-18.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-19.receipt.txt",
+    "nodes": 40,
+    "sha256": "5fae2e7df2a6265551de061b8a77bb231450d1ba9929fa855706e63dc6dc5d3a",
+    "complete": true
+  },
+  {
+    "file": "formal-before-20.receipt.txt",
+    "nodes": 52,
+    "sha256": "58da6600e02c3737a10e4c147d87a5419a746e461ec83503ca80f02df0c82e00",
+    "complete": true
+  },
+  {
+    "file": "formal-before-21.receipt.txt",
+    "nodes": 21,
+    "sha256": "bf5630b3f4493d372c818da65d28eb5f2cd472bf05c5dfbbce523b5005574486",
+    "complete": true
+  },
+  {
+    "file": "formal-before-22.receipt.txt",
+    "nodes": 47,
+    "sha256": "12222eafca583dcc85bbf5a4600288b059099350df87998177c73b3df150de3c",
+    "complete": true
+  },
+  {
+    "file": "formal-before-23.receipt.txt",
+    "nodes": 16,
+    "sha256": "461789ba04c6a3574abeb3aecd7e1e779cfa59feff738a20ba80081b71db1076",
+    "complete": true
+  },
+  {
+    "file": "formal-before-24.receipt.txt",
+    "nodes": 64,
+    "sha256": "9e6b21684a7d15b7acc981c98b6a0ed7894c815500ad76381f2142b3e15e20e9",
+    "complete": true
+  },
+  {
+    "file": "formal-before-25.receipt.txt",
+    "nodes": 28,
+    "sha256": "52aec06e4c28471da4895fb976bb3279931eb36a70f9e53b793e1a8795a60ebd",
+    "complete": true
+  },
+  {
+    "file": "formal-before-26.receipt.txt",
+    "nodes": 48,
+    "sha256": "31b703da006be0e80b5c264d0d2fb7dd3aab209236080973be6e15ec990cf2cb",
+    "complete": true
+  },
+  {
+    "file": "formal-before-27.receipt.txt",
+    "nodes": 17,
+    "sha256": "20901aaffc8897aba73fad88c78cfac0ad8a984a9ce7ee6e0a2b2b6f1632fafc",
+    "complete": true
+  },
+  {
+    "file": "formal-before-28.receipt.txt",
+    "nodes": 45,
+    "sha256": "99aad91a7d9358488188ecafe82a2d6db5995d6cc6ffb2cd03743ae3a6799215",
+    "complete": true
+  },
+  {
+    "file": "formal-before-29.receipt.txt",
+    "nodes": 14,
+    "sha256": "caa578d13ab87f67be070856e3e6f92669d95b7304e37ea866b0867eb3e038dc",
+    "complete": true
+  },
+  {
+    "file": "formal-before-30.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-31.receipt.txt",
+    "nodes": 55,
+    "sha256": "894752f0b254d77a59a1bdd5d9a204b3f0764953672fb2780bcd646cacc9e465",
+    "complete": true
+  },
+  {
+    "file": "formal-before-32.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-33.receipt.txt",
+    "nodes": 56,
+    "sha256": "6e0597f95a44accf22c43a056cba72e62894d63cb5ffa109b234b7e7ba670fa5",
+    "complete": true
+  },
+  {
+    "file": "formal-before-34.receipt.txt",
+    "nodes": 24,
+    "sha256": "619db749ae1c7c6e885df5251f1aa12e37141b09dae4c0a02aaa0defe6699e61",
+    "complete": true
+  },
+  {
+    "file": "formal-before-35.receipt.txt",
+    "nodes": 58,
+    "sha256": "118b6f85717d14ef57fc24734f014c4abbb284792cecd226ad2225ea43f2ef6b",
+    "complete": true
+  },
+  {
+    "file": "formal-before-36.receipt.txt",
+    "nodes": 23,
+    "sha256": "0d8778bff2dd15084434c4169482e038ba9e1c06afa4372b516493fe39b9904d",
+    "complete": true
+  },
+  {
+    "file": "formal-before-37.receipt.txt",
+    "nodes": 57,
+    "sha256": "a8c5c16c76d1dfed5780d0da243b7b76dcb8d531fd9e67c76fcc6789ca176e8f",
+    "complete": true
+  },
+  {
+    "file": "formal-before-38.receipt.txt",
+    "nodes": 26,
+    "sha256": "ac33c3f5deffdc1f109abfbcde79f953254750656de736e9ab327c6abd16cf87",
+    "complete": true
+  },
+  {
+    "file": "formal-before-39.receipt.txt",
+    "nodes": 69,
+    "sha256": "8ee8008065a13a9a9ab63ede297977d6f8a9559764169b2feda0ff275cbefb4a",
+    "complete": true
+  },
+  {
+    "file": "formal-before-40.receipt.txt",
+    "nodes": 33,
+    "sha256": "705ef7ebcae2d624e67269a40fabf153923daf909a9f45fd7be58a7826087b9b",
+    "complete": true
+  },
+  {
+    "file": "formal-before-41.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-42.receipt.txt",
+    "nodes": 39,
+    "sha256": "c1c159af190ae405f11a5f39d5b2ae23bbb84c8ca595f7dd9be4b26240ada110",
+    "complete": true
+  },
+  {
+    "file": "formal-before-43.receipt.txt",
+    "nodes": 60,
+    "sha256": "7a006f4125fa05239eb3b8aa6486e1768186b72adb85810bab1efa05b7907038",
+    "complete": true
+  },
+  {
+    "file": "formal-before-44.receipt.txt",
+    "nodes": 27,
+    "sha256": "eabeb5c1fa2b35ea4f04c41bc9b827c69097250b6dacdd65cc1b1ee7fddf8d33",
+    "complete": true
+  },
+  {
+    "file": "formal-before-45.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-46.receipt.txt",
+    "nodes": 61,
+    "sha256": "40c973f14d22e707df106ff7a413728aa659b68c97af40841f3085c5adaf09e5",
+    "complete": true
+  },
+  {
+    "file": "formal-before-47.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-48.receipt.txt",
+    "nodes": 51,
+    "sha256": "def6e3128efe51ec1706471f2e9b98ad6b918ecb541507fe7831a758a2fb0cd1",
+    "complete": true
+  },
+  {
+    "file": "formal-before-49.receipt.txt",
+    "nodes": 49,
+    "sha256": "c9a8581962985339cc1b2fbe06220787c05ba3624724e54d281a2f26eab8880f",
+    "complete": true
+  },
+  {
+    "file": "formal-before-50.receipt.txt",
+    "nodes": 18,
+    "sha256": "f1612fd8db3c99380de959334778d7079feb0975aea902c5cbbdd63ab59871aa",
+    "complete": true
+  },
+  {
+    "file": "formal-before-51.receipt.txt",
+    "nodes": 48,
+    "sha256": "117ccbed52509c9e0350ba8fccf2f46898b9a78ec8ffefb0f896372f993cb86f",
+    "complete": true
+  },
+  {
+    "file": "formal-before-52.receipt.txt",
+    "nodes": 17,
+    "sha256": "6e42d9ceb52e1a817b17d9492d03021dd2332228ef1a85f432804af23a076da2",
+    "complete": true
+  },
+  {
+    "file": "formal-before-53.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-54.receipt.txt",
+    "nodes": 32,
+    "sha256": "076d1c6d846a8e9c59cf2d93f9674f6eea755de30b3ecd31023c190e1b886673",
+    "complete": true
+  },
+  {
+    "file": "formal-before-55.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-56.receipt.txt",
+    "nodes": 51,
+    "sha256": "abb5a228941be52a3d7c7d324908708fb580d0238db7b655cc90780c54908ffa",
+    "complete": true
+  },
+  {
+    "file": "formal-before-57.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-58.receipt.txt",
+    "nodes": 49,
+    "sha256": "46f43cb082c7963eb8a5a492d7ea493e6ad26b679dc076917ff3a980b7044fb8",
+    "complete": true
+  },
+  {
+    "file": "formal-before-59.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-60.receipt.txt",
+    "nodes": 32,
+    "sha256": "b2dfe0b8e5ffe9a81d3670fe43577f7409e8865cc799db4c0741ece1fef2084c",
+    "complete": true
+  },
+  {
+    "file": "formal-before-61.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-62.receipt.txt",
+    "nodes": 49,
+    "sha256": "ca5085adb2d7c80f60fbc03b9caeea55e083fd27df3b9dfab0a03402db57e000",
+    "complete": true
+  },
+  {
+    "file": "formal-before-63.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-64.receipt.txt",
+    "nodes": 49,
+    "sha256": "205756fcca8d8b5a0364741d63f898cb721ee9f714aed4b7acc20d0c2c933889",
+    "complete": true
+  },
+  {
+    "file": "formal-before-65.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-66.receipt.txt",
+    "nodes": 49,
+    "sha256": "955872d69b496e2f877b141d60dd78ffb722e097add34737646244d33c4aba21",
+    "complete": true
+  },
+  {
+    "file": "formal-before-67.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-68.receipt.txt",
+    "nodes": 49,
+    "sha256": "460767a16c96e4bf2d9c2a8805b5bd09045ab629dee77f594319ba75c8f229a4",
+    "complete": true
+  },
+  {
+    "file": "formal-before-69.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-70.receipt.txt",
+    "nodes": 61,
+    "sha256": "e2a0481771d9fa545c2bda0c64dc0a01e8ba3c6b90113852a5b632e49e2ca0bc",
+    "complete": true
+  },
+  {
+    "file": "formal-before-71.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-72.receipt.txt",
+    "nodes": 64,
+    "sha256": "4ba9feb7ce12bceca126a66210b7d703dbcf0aba297492d8a445588d54f9b5f4",
+    "complete": true
+  },
+  {
+    "file": "formal-before-73.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-74.receipt.txt",
+    "nodes": 63,
+    "sha256": "816911e3846533fb320f54830889a188329eba57a2c5dccbb4cff64a95802f1b",
+    "complete": true
+  },
+  {
+    "file": "formal-before-75.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-76.receipt.txt",
+    "nodes": 63,
+    "sha256": "735900711e7d5e88d79e26d37278876c75d9e1c7ef033932f61a78f5334d0d6d",
+    "complete": true
+  },
+  {
+    "file": "formal-before-77.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-78.receipt.txt",
+    "nodes": 52,
+    "sha256": "77d740a021a33dd33c06d44175f784aadaf3ddd41db3262653e1137da72b47d8",
+    "complete": true
+  },
+  {
+    "file": "formal-before-79.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-80.receipt.txt",
+    "nodes": 52,
+    "sha256": "025c6c0f87af27f1470bb0952bf9d5c01979b95ffc482fc7d2704a38ff85e9c8",
+    "complete": true
+  },
+  {
+    "file": "formal-before-81.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-82.receipt.txt",
+    "nodes": 49,
+    "sha256": "08561dc177c69d299a3d94de1bfcffe2fbe9e17a2e8fdb910a110b2d1dd2d605",
+    "complete": true
+  },
+  {
+    "file": "formal-before-83.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-84.receipt.txt",
+    "nodes": 49,
+    "sha256": "7ddd120812c297c057d6b975aa1e506f87626c037be201eb1f7607c270fdf89f",
+    "complete": true
+  },
+  {
+    "file": "formal-before-85.receipt.txt",
+    "nodes": 55,
+    "sha256": "4d72b90f9bb0505aa2cbc16db4f9c2dcc42d928590d60900ac67279861571813",
+    "complete": true
+  },
+  {
+    "file": "formal-before-86.receipt.txt",
+    "nodes": 24,
+    "sha256": "28ad37798f49971ef9de2f130f4a1bb4edd81687798fddedc8dc419dbeadd386",
+    "complete": true
+  },
+  {
+    "file": "formal-before-87.receipt.txt",
+    "nodes": 77,
+    "sha256": "c6fca5c72a9517bf26c02d741d8020cadc1e782a4dd243336da7ba214602e1c1",
+    "complete": true
+  },
+  {
+    "file": "formal-before-88.receipt.txt",
+    "nodes": 46,
+    "sha256": "80ffa4405b0d421b84705ec90e2621f2e4d91da4aa46ae31726de8addd05c4b0",
+    "complete": true
+  },
+  {
+    "file": "formal-before-89.receipt.txt",
+    "nodes": 75,
+    "sha256": "cf1b68b1c146af1cf277f0d2aa0875a81d9937e6b330dff1a2e1fce0345ab2f7",
+    "complete": true
+  },
+  {
+    "file": "formal-before-90.receipt.txt",
+    "nodes": 44,
+    "sha256": "4d1c2dd41c4588bfad01979e4bc80721cc429294c0a149a5098561f885d84bbf",
+    "complete": true
+  },
+  {
+    "file": "formal-before-91.receipt.txt",
+    "nodes": 58,
+    "sha256": "31e34e62780224510a9e1ffa3c8cedf26ce35218de31f4165cdace8de4c55520",
+    "complete": true
+  },
+  {
+    "file": "formal-before-92.receipt.txt",
+    "nodes": 27,
+    "sha256": "6533b23b6b0aeb8709decc486ad6bba37ac7ecbb22cfda395a7ea21a07c46fbc",
+    "complete": true
+  },
+  {
+    "file": "formal-before-93.receipt.txt",
+    "nodes": 65,
+    "sha256": "6ad89ee91b97d98de95cbcdbeb7490fcaf9b5376b95077167c450dcc5c7fc99d",
+    "complete": true
+  },
+  {
+    "file": "formal-before-94.receipt.txt",
+    "nodes": 34,
+    "sha256": "b3204d703f6e488ee0ac78e52032f72948a33fc00ddb4f675e1902239172f765",
+    "complete": true
+  },
+  {
+    "file": "formal-before-95.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-96.receipt.txt",
+    "nodes": 32,
+    "sha256": "912f3eebfd2cac2829d2088a43c3c5efe8135c5e48c7662c8e5881657cdd8225",
+    "complete": true
+  },
+  {
+    "file": "formal-before-97.receipt.txt",
+    "bytes": 65536,
+    "complete": false,
+    "reason": "bridge text64KiB truncation"
+  },
+  {
+    "file": "formal-before-98.receipt.txt",
+    "nodes": 32,
+    "sha256": "b60bc769eacfe522a1d865d08580f7a217e947af56c9ba0fcdd5ac10f5d0f0b4",
+    "complete": true
+  }
+]

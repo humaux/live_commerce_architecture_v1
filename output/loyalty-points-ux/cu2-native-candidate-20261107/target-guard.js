@@ -1,0 +1,1 @@
+function assertCandidate(section,id){if(!id||id==='1554:62573'||!section||section.id!==id||section.type!=='SECTION'||section.parent?.id!=='4:8829'||section.name!==CANDIDATE_NAME)throw Error('CU2 candidate-only target rejected');}

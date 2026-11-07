@@ -1,0 +1,38 @@
+[
+  {
+    "key": "B1",
+    "contentNodeId": "1589:64806",
+    "receipt": "{\"id\":\"1589:64806\",\"name\":\"Task composition\"}\nIMAGE /Volumes/data/live_commerce_architecture_v1/fb-cu2-generator-1107/output/loyalty-points-ux/cu2-native-candidate-20261107/figma/get_screenshot-1589-64806-1794055825019-0.png",
+    "purpose": "Full native scroll content image, not frame/prototype interaction proof",
+    "sha256": "5527c1382d70d002a40fd25432d45c7dda77b64dd51df29ec2894d1ed0dfefd4",
+    "dimensions": [
+      358,
+      582
+    ],
+    "viewed": true
+  },
+  {
+    "key": "B7",
+    "contentNodeId": "1589:65536",
+    "receipt": "{\"id\":\"1589:65536\",\"name\":\"Task composition\"}\nIMAGE /Volumes/data/live_commerce_architecture_v1/fb-cu2-generator-1107/output/loyalty-points-ux/cu2-native-candidate-20261107/figma/get_screenshot-1589-65536-1794055825117-0.png",
+    "purpose": "Full native scroll content image, not frame/prototype interaction proof",
+    "sha256": "516e77a5013e3078bbc16d9ea8adadfe526205a434767d8af7d3eab294e21184",
+    "dimensions": [
+      358,
+      582
+    ],
+    "viewed": false
+  },
+  {
+    "key": "B8",
+    "contentNodeId": "1589:65745",
+    "receipt": "{\"id\":\"1589:65745\",\"name\":\"Task composition\"}\nIMAGE /Volumes/data/live_commerce_architecture_v1/fb-cu2-generator-1107/output/loyalty-points-ux/cu2-native-candidate-20261107/figma/get_screenshot-1589-65745-1794055825190-0.png",
+    "purpose": "Full native scroll content image, not frame/prototype interaction proof",
+    "sha256": "516e77a5013e3078bbc16d9ea8adadfe526205a434767d8af7d3eab294e21184",
+    "dimensions": [
+      358,
+      582
+    ],
+    "viewed": false
+  }
+]

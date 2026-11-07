@@ -1,0 +1,11 @@
+{
+  "phase": "formal before snapshot",
+  "pids": [
+    "38522"
+  ],
+  "exec_session": 26240,
+  "deadline_utc": "2026-11-07T13:25:00Z",
+  "per_call_timeout_seconds": 130,
+  "failure": "nonzero/timeout stops sequence; no replay",
+  "wake": "Orca exec completion; worker_done wakes coordinator"
+}

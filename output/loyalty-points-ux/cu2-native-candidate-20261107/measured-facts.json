@@ -1,0 +1,146 @@
+[
+  {
+    "fact": "A12 D phone and full helper",
+    "observed": true
+  },
+  {
+    "fact": "E1 D complete canonical amounts",
+    "observed": true
+  },
+  {
+    "fact": "B1 D members",
+    "observed": 5
+  },
+  {
+    "fact": "C1 D ledger rows",
+    "observed": 3
+  },
+  {
+    "fact": "C3 D ledger rows",
+    "observed": 3
+  },
+  {
+    "fact": "C7 D ledger rows",
+    "observed": 3
+  },
+  {
+    "fact": "C8 D ledger rows",
+    "observed": 3
+  },
+  {
+    "fact": "C9 D ledger rows",
+    "observed": 3
+  },
+  {
+    "fact": "D1 D required explanation height",
+    "observed": [
+      88
+    ]
+  },
+  {
+    "fact": "D1 D sheet in frame",
+    "observed": true
+  },
+  {
+    "fact": "D2 D required explanation height",
+    "observed": [
+      88
+    ]
+  },
+  {
+    "fact": "D2 D sheet in frame",
+    "observed": true
+  },
+  {
+    "fact": "D3 D required explanation height",
+    "observed": [
+      88
+    ]
+  },
+  {
+    "fact": "D3 D sheet in frame",
+    "observed": true
+  },
+  {
+    "fact": "E4 D required explanation height",
+    "observed": [
+      88
+    ]
+  },
+  {
+    "fact": "E4 D sheet in frame",
+    "observed": true
+  },
+  {
+    "fact": "A12 M phone and full helper",
+    "observed": true
+  },
+  {
+    "fact": "E1 M complete canonical amounts",
+    "observed": true
+  },
+  {
+    "fact": "B1 M members",
+    "observed": 5
+  },
+  {
+    "fact": "C1 M ledger rows",
+    "observed": 3
+  },
+  {
+    "fact": "C3 M ledger rows",
+    "observed": 3
+  },
+  {
+    "fact": "C7 M ledger rows",
+    "observed": 3
+  },
+  {
+    "fact": "C8 M ledger rows",
+    "observed": 3
+  },
+  {
+    "fact": "C9 M ledger rows",
+    "observed": 3
+  },
+  {
+    "fact": "D1 M required explanation height",
+    "observed": [
+      88
+    ]
+  },
+  {
+    "fact": "D1 M sheet in frame",
+    "observed": true
+  },
+  {
+    "fact": "D2 M required explanation height",
+    "observed": [
+      88
+    ]
+  },
+  {
+    "fact": "D2 M sheet in frame",
+    "observed": true
+  },
+  {
+    "fact": "D3 M required explanation height",
+    "observed": [
+      88
+    ]
+  },
+  {
+    "fact": "D3 M sheet in frame",
+    "observed": true
+  },
+  {
+    "fact": "E4 M required explanation height",
+    "observed": [
+      88
+    ]
+  },
+  {
+    "fact": "E4 M sheet in frame",
+    "observed": true
+  }
+]

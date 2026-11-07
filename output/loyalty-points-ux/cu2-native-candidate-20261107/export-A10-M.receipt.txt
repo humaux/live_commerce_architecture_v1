@@ -1,0 +1,2 @@
+{"id":"1589:69042","name":"DESIGN · Admin Mobile · 手工單 · 已建立 · 積分未贈送"}
+IMAGE /Volumes/data/live_commerce_architecture_v1/fb-cu2-generator-1107/output/loyalty-points-ux/cu2-native-candidate-20261107/figma/get_screenshot-1589-69042-1794055731765-0.png

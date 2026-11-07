@@ -1,0 +1,9 @@
+{
+  "roots": 99,
+  "nodes": 5862,
+  "changes": [],
+  "projection_fingerprint_equal": true,
+  "method": "Full scoped projection dual32 FNV fingerprint + node/char counts; noncryptographic, not complete .fig byte equivalence;75 complete detailed prior receipts;24 truncated retained",
+  "before_index_sha256": "c41e1fea870f2760ca1fe862642f9a4e10b008285bd2c0de74db06fd95300911",
+  "after_index_sha256": "c41e1fea870f2760ca1fe862642f9a4e10b008285bd2c0de74db06fd95300911"
+}

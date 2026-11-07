@@ -1,0 +1,2 @@
+{"id":"1589:66716","name":"DESIGN · Admin Mobile · 會員 · 詳情 · 讀取失敗"}
+IMAGE /Volumes/data/live_commerce_architecture_v1/fb-cu2-generator-1107/output/loyalty-points-ux/cu2-native-candidate-20261107/figma/get_screenshot-1589-66716-1794055728823-0.png

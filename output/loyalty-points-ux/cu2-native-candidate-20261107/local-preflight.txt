@@ -1,0 +1,19 @@
+candidate-lib.js syntax0
+candidate-screens.js syntax0
+negative section fixture rejected0
+negative section fixture rejected0
+positive guard fixture0; not a renderer/emulator
+generate-00.js combined syntax0
+generate-01.js combined syntax0
+generate-02.js combined syntax0
+generate-03.js combined syntax0
+generate-04.js combined syntax0
+generate-05.js combined syntax0
+generate-06.js combined syntax0
+generate-07.js combined syntax0
+generate-08.js combined syntax0
+generate-09.js combined syntax0
+generate-10.js combined syntax0
+generate-11.js combined syntax0
+generate-12.js combined syntax0
+qa-candidate.js combined syntax0

@@ -1,0 +1,10 @@
+{
+  "original_detailed_snapshots": 99,
+  "complete": 75,
+  "pipe_truncated": 24,
+  "original_failures_preserved": true,
+  "cause_evidence": "existing call.mjs console.log then immediate process.exit; pipe buffers truncate64KiB; direct-file100004byte capture verifies",
+  "correction": "own operate.py stdout/stderr opened directly to receipt file; no shared caller edit",
+  "formal_metadata_corrected_read_equal": true,
+  "local_image_view_path_parse_error": "one local view path incorrectly sliced text+IMAGE receipt; corrected by parsing IMAGE line, no native rerun"
+}
