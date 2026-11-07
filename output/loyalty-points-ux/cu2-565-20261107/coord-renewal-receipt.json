@@ -1,0 +1,21 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Lease renewed."
+    }
+  ],
+  "structuredContent": {
+    "ok": true,
+    "action": "heartbeat",
+    "task_id": "4e4ca171-bd84-4c27-ba0c-ab7340805477",
+    "title": null,
+    "status": null,
+    "lease_expires_at": null,
+    "reason": null,
+    "tasks": null,
+    "count": null,
+    "message": "Lease renewed."
+  },
+  "isError": false
+}

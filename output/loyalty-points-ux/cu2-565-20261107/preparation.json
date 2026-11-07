@@ -1,0 +1,8 @@
+{
+  "base": "be04e4ca11281c14742e439a3f50635c93051751",
+  "source_sha256": "130c0e8a9d19196b28e243a422f3be120f69618532b81bdf1397ea9b5546cd13",
+  "source_scope": "A8/A10 full ORDER_FACTS; C12 full redacted er; three replacements only",
+  "native_application": "NOT_RUN: platform readiness handoff required",
+  "coord": "list working claimed_by codex-fb-fleet-20261107, no overlapping CU2 task; expiry not exposed in board response",
+  "actual_route": "UNKNOWN"
+}

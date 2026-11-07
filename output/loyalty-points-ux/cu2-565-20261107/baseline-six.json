@@ -1,0 +1,74 @@
+[
+  {
+    "key": "A8",
+    "device": "D",
+    "nodeId": "1589:64454",
+    "name": "DESIGN · Admin Desktop · 手工單 · 已建立 · 含積分",
+    "path": "figma/get_screenshot-1589-64454-1794055725424-0.png",
+    "width": 1440,
+    "height": 900,
+    "sha256": "f14e6e53a861f36d9786412de2efffa373cbf56593dd4246ae64d9b5c1049553",
+    "bytes": 58030,
+    "viewed": false
+  },
+  {
+    "key": "A8",
+    "device": "M",
+    "nodeId": "1589:64529",
+    "name": "DESIGN · Admin Mobile · 手工單 · 已建立 · 含積分",
+    "path": "figma/get_screenshot-1589-64529-1794055725508-0.png",
+    "width": 390,
+    "height": 844,
+    "sha256": "9b7324b45a1ca40091b52ac6dde1601931cc7031ab0a0973ffc07785dc3cb7eb",
+    "bytes": 27167,
+    "viewed": false
+  },
+  {
+    "key": "A10",
+    "device": "D",
+    "nodeId": "1589:68966",
+    "name": "DESIGN · Admin Desktop · 手工單 · 已建立 · 積分未贈送",
+    "path": "figma/get_screenshot-1589-68966-1794055731683-0.png",
+    "width": 1440,
+    "height": 900,
+    "sha256": "5e2731e9b93473bc176fad197d15854da524bc3974f80bd251ad649220df3dab",
+    "bytes": 64374,
+    "viewed": false
+  },
+  {
+    "key": "A10",
+    "device": "M",
+    "nodeId": "1589:69042",
+    "name": "DESIGN · Admin Mobile · 手工單 · 已建立 · 積分未贈送",
+    "path": "figma/get_screenshot-1589-69042-1794055731765-0.png",
+    "width": 390,
+    "height": 844,
+    "sha256": "b8d4956f62d536272a95c691382bc87de512aaa254f47de9c871e494d56d75f9",
+    "bytes": 33453,
+    "viewed": false
+  },
+  {
+    "key": "C12",
+    "device": "D",
+    "nodeId": "1589:70246",
+    "name": "DESIGN · Admin Desktop · 會員 · 已刪除資料",
+    "path": "figma/get_screenshot-1589-70246-1794055733413-0.png",
+    "width": 1440,
+    "height": 900,
+    "sha256": "e33d1cb00ba75fed7bfa8948bbe21754e0697308fc4ac35eb5c5cd6d7b41fede",
+    "bytes": 73088,
+    "viewed": false
+  },
+  {
+    "key": "C12",
+    "device": "M",
+    "nodeId": "1589:70359",
+    "name": "DESIGN · Admin Mobile · 會員 · 已刪除資料",
+    "path": "figma/get_screenshot-1589-70359-1794055733495-0.png",
+    "width": 390,
+    "height": 844,
+    "sha256": "7ed9216692a046ccb6d488087d21991874fabd3ba22dcda587d05493ef7ab330",
+    "bytes": 37037,
+    "viewed": false
+  }
+]
