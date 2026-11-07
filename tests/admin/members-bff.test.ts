@@ -55,5 +55,6 @@ test('manual BFF admits only frozen optional member_award with/without discount'
  const base={customer:{name:'Synthetic'},delivery:{},items:[],locale:'en',payment_mode:'cash_on_delivery'};
  assert.equal(validManualBody(base),true);
  assert.equal(validManualBody({...base,member_award:{member_id:member,points:5}}),true);
+ assert.equal(validManualBody({...base,discount:{name:'Synthetic discount',amount_minor:10},member_award:{member_id:member,points:5}}),true);
  for(const award of [null,{}, {member_id:member,points:0},{member_id:member,points:1.5},{member_id:member,points:1000001},{member_id:member,points:5,balance:10},{member_id:'foreign input',points:5}]) assert.equal(validManualBody({...base,member_award:award}),false);
 });
