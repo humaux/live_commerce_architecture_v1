@@ -196,6 +196,26 @@ var cbsFunctions = []cbsFn{
 	{"billing.refresh_subscription(" + cbsRefreshArgs + ")", "commerce_billing_writer", []string{"commerce_runtime"}, false},
 	{"billing.record_checkout_session(bytea,uuid,text,text,timestamp with time zone)", "commerce_billing_writer", []string{"commerce_runtime"}, false},
 	{"billing.guard_window_open()", "commerce_billing_writer", nil, false},
+	// LP-1 (0223, loyalty-points-v1 §1): member/points definers owned by the privacy writer; merchant definers EXECUTE commerce_runtime only,
+	// helpers and the restore replay nobody. The ledger trigger function is an invoker trigger (pinned in loyalty_points_test.go LPG10).
+	{"loyalty.create_member(bytea,uuid,text,text,text)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"loyalty.update_member(bytea,uuid,uuid,integer,text[],text,text,text)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"loyalty.adjust_points(bytea,uuid,uuid,integer,text,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"loyalty.precheck_award(bytea,uuid,uuid,integer)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"loyalty.try_award_manual_order(bytea,uuid,uuid,uuid,integer)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"loyalty.erase_member(bytea,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"loyalty.export_member(bytea,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"loyalty.read_members(bytea,uuid,text,boolean,text,integer)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"loyalty.read_member(bytea,uuid,uuid,text,text)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"loyalty.read_entry(bytea,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"loyalty.project_write(bytea,uuid,text,text,bytea)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"loyalty.read_order_entries(bytea,uuid,uuid)", "commerce_privacy_writer", []string{"commerce_runtime"}, false},
+	{"loyalty.replay_member_erasures(uuid[])", "commerce_privacy_writer", nil, false},
+	{"loyalty.member_json(loyalty.members)", "commerce_privacy_writer", nil, true},
+	{"loyalty.entry_json(loyalty.point_entries)", "commerce_privacy_writer", nil, true},
+	{"loyalty.check_text(text,text,text)", "commerce_privacy_writer", nil, false},
+	{"loyalty.cursor_encode(timestamp with time zone,uuid,text)", "commerce_privacy_writer", nil, false},
+	{"loyalty.cursor_decode(text,text)", "commerce_privacy_writer", nil, false},
 }
 
 var cbsTables = []string{"customers.consent_events", "customers.privacy_actions", "billing.store_customers", "billing.subscriptions"}
@@ -241,6 +261,10 @@ var cbsPrivacyFrozen = []cbsPriv{
 	{"payments.stripe_refunds", "SELECT", []string{"tenant_id", "store_id", "id", "owner_id"}},
 	{"payments.refund_facts", "SELECT", []string{"tenant_id", "store_id", "refund_id", "kind"}},
 	{"ops.audit_events", "INSERT", nil},
+	// LP-1 (0223): members and the append-only ledger, written only by the loyalty definers (no DELETE, column-level UPDATE).
+	{"loyalty.members", "SELECT", nil}, {"loyalty.members", "INSERT", nil},
+	{"loyalty.members", "UPDATE", []string{"display_name", "contact_note", "notes", "balance", "version", "updated_at", "erased_at"}},
+	{"loyalty.point_entries", "SELECT", nil}, {"loyalty.point_entries", "INSERT", nil}, {"loyalty.point_entries", "UPDATE", []string{"note"}},
 }
 
 var cbsPrivacyRequiredNarrow = map[string][]string{"storefront.destination_snapshots:SELECT": {"tenant_id", "store_id", "id", "owner_id"}}
@@ -250,7 +274,9 @@ var cbsPrivacyExtra = []cbsPriv{
 	{"control.stores", "SELECT", []string{"id", "name", "tenant_id"}},
 	{"claims.bundles", "SELECT", []string{"platform", "session_id", "line_count"}},
 	// W6-01B: erasure deletes the idempotency receipts of the customer's tag-set/note writes (policy-limited to those four operations).
-	{"ops.command_results", "SELECT", []string{"tenant_id", "store_id", "operation", "response"}},
+	{"ops.command_results", "SELECT", []string{"tenant_id", "store_id", "operation", "response", "idempotency_key", "request_hash"}},
+	// LP-1 (0223): the award checks the order is this store's merchant_manual order (LP7/LP18).
+	{"checkout.orders", "SELECT", []string{"source"}},
 }
 
 var cbsBillingFrozen = []cbsPriv{
@@ -563,7 +589,7 @@ func TestCustomersBillingCB02Schema(t *testing.T) {
 		}
 		// audit inserts are limited to the contract's actions
 		auditRe := map[string][]string{"commerce_privacy_writer": {"customers.consent_withdrawn", "customers.exported", "customers.erased",
-			"customers.tag_created", "customers.tag_renamed", "customers.tag_deleted", "customers.tagged", "customers.note_added", "customers.note_edited", "customers.note_deleted", "customers.imported", "customers.orders_imported"}, "commerce_billing_writer": {"billing.customer_pinned"}}
+			"customers.tag_created", "customers.tag_renamed", "customers.tag_deleted", "customers.tagged", "customers.note_added", "customers.note_edited", "customers.note_deleted", "customers.imported", "customers.orders_imported", "member.created", "member.updated", "member.exported", "member.erased"}, "commerce_billing_writer": {"billing.customer_pinned"}}
 		for role, actions := range auditRe {
 			ps := covers("ops.audit_events", role, "INSERT")
 			if len(ps) == 0 {
@@ -676,7 +702,7 @@ func TestCustomersBillingCB02Schema(t *testing.T) {
 
 	t.Run("permission CHECK holds each new value exactly once and every old one", func(t *testing.T) {
 		def := e.one(`SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid='identity.store_grants'::regclass AND conname='store_grants_permission_check'`)
-		for _, p := range []string{"customers:read", "customers:privacy", "billing:manage"} {
+		for _, p := range []string{"customers:read", "customers:privacy", "billing:manage", "customers:points"} { // customers:points: 0223 (LP-1)
 			if n := strings.Count(def, "'"+p+"'"); n != 1 {
 				t.Errorf("store_grants_permission_check holds %s %d times (want exactly 1; the re-derivation must be idempotent)", p, n)
 			}

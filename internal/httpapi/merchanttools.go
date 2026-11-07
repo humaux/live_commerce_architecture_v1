@@ -28,6 +28,7 @@ import (
 
 	"livecommerce/internal/claims"
 	"livecommerce/internal/command"
+	"livecommerce/internal/loyalty"
 	"livecommerce/internal/merchanttools"
 	"livecommerce/internal/platform"
 )
@@ -41,6 +42,7 @@ var forBuyerFields = []string{"items", "customer", "delivery", "payment_mode", "
 const importBudget = 60 * time.Second
 
 func registerMerchantToolsRoutes(mux *http.ServeMux, pool *pgxpool.Pool, manual *merchanttools.ManualOrders, forBuyer *merchanttools.ForBuyer) {
+	registerMemberRoutes(mux, pool)
 	const base = "/v1/admin/stores/{store_id}"
 	mux.HandleFunc("GET "+base+"/dashboard", cvsRoute(http.MethodGet, false, func(w http.ResponseWriter, r *http.Request) {
 		toolsServe(w, r, pool, "orders:read", 0, http.StatusOK, func(ctx context.Context, tx pgx.Tx, s platform.Scope) (any, error) {
@@ -228,6 +230,9 @@ func withToolsScope(r *http.Request, pool *pgxpool.Pool, permission string, budg
 
 // toolsClassify maps a merchanttools coded refusal first, then the shared claims table (authority, not found, conflict, deadline).
 func toolsClassify(err error) (int, string) {
+	if status, code, ok := loyalty.Classify(err); ok {
+		return status, code
+	}
 	var coded *merchanttools.Error
 	if errors.As(err, &coded) {
 		return coded.Status, coded.Code
@@ -416,7 +421,11 @@ func respondForBuyerError(w http.ResponseWriter, err error) {
 // optional non-null discount. studioDecodeRaw still rejects duplicate/unknown keys
 // at every nesting level and non-integer money at the typed JSON boundary.
 func manualDiscountBody[T any](w http.ResponseWriter, r *http.Request, required []string) (T, bool) {
-	in, raw, ok := studioDecodeRaw[T](w, r, append(append([]string{}, required...), "discount"))
+	fieldsAllowed := append(append([]string{}, required...), "discount")
+	if _, manual := any(*new(T)).(merchanttools.ManualInput); manual {
+		fieldsAllowed = append(fieldsAllowed, "member_award")
+	}
+	in, raw, ok := studioDecodeRaw[T](w, r, fieldsAllowed)
 	if !ok {
 		return in, false
 	}
@@ -427,6 +436,14 @@ func manualDiscountBody[T any](w http.ResponseWriter, r *http.Request, required 
 	}
 	for _, key := range required {
 		if value, found := fields[key]; !found || bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
+			respondError(w, 422, "invalid_request")
+			return in, false
+		}
+	}
+	if value, found := fields["member_award"]; found {
+		var award loyalty.Award
+		var a map[string]json.RawMessage
+		if json.Unmarshal(value, &a) != nil || len(a) != 2 || a["member_id"] == nil || a["points"] == nil || json.Unmarshal(value, &award) != nil || !loyalty.ValidAward(award) {
 			respondError(w, 422, "invalid_request")
 			return in, false
 		}

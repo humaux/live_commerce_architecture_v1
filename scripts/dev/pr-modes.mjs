@@ -150,6 +150,8 @@ function hasBrowserTag(source) {
  * derivation now records that wiring as go-fixture-import evidence, and the CVS modes' lc_covers name the package.
  */
 export const BACKEND_ONLY_PACKAGES = {
+  "internal/httpapi/members.go": "LP-1 member routes have BFF proxies but no LP-2 UI or browser harness yet; exercised by tests/foundation/loyalty_points_test.go and tests/admin/members-bff.test.ts; move to lc_covers when member UI lands (loyalty itself remains browser-covered through merchanttools)",
+  "internal/httpapi/members_test.go": "unit refusal mapping for the LP-1 member-only transport; no browser harness imports this test file; member UI pending LP-2",
   "internal/httpapi/contact.go": "merchant contact-message list/detail/mark-handled has only the admin BFF proxy (apps/admin/app/api/stores/[store]/contact-messages/**) and no admin UI page or browser harness yet (FEAT-CONTACT-STORE; UI pending PARITY-NEWFEAT); its routes are exercised by REAL_PG TestStoreContact* in tests/foundation/store_contact_messages_test.go and the node BFF tests in tests/admin/live-settings-bff.test.ts — move to lc_covers when the admin UI lands",
   "internal/httpapi/return_requests.go": "merchant return-request review has no admin UI/BFF caller or browser harness yet (FEAT-BUYER-RMA is backend-only); its routes are exercised by REAL_PG TestBuyerReturnRequests in tests/foundation/buyer_return_requests_test.go — move to lc_covers when the admin UI lands",
   "internal/httpapi/live_replay.go": "replay has no browser UI/harness yet (FEAT-LIVE-REPLAY); merchant GET/PUT and buyer projection are exercised by TestLiveReplayPublicationAndBuyerReads in tests/foundation/live_replay_test.go (g10)",
