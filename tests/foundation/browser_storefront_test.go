@@ -379,21 +379,20 @@ func TestBrowserStorefront(t *testing.T) {
 	ordersBefore := countRows(t, f.owner, `SELECT (SELECT count(*) FROM checkout.orders WHERE store_id=$1)+(SELECT count(*) FROM inventory.reservations WHERE store_id=$1)`, f.storeA1)
 	ledgerBefore := countRows(t, f.owner, `SELECT count(*) FROM inventory.ledger WHERE store_id=$1`, f.storeA1)
 
-	cmd := exec.CommandContext(ctx, "node", "tests/storefront/shop-real-gate.mjs")
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	defer func() {
-		if cmd.Process != nil {
-			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
-		}
-	}()
-	cmd.Dir = root
-	cmd.Env = browserEnvironment(map[string]string{
+	cmd := storefrontBrowserCommand(ctx, root, map[string]string{
 		"LC_MEDIA_SIZES_PHASE":       os.Getenv("LC_MEDIA_SIZES_PHASE"),
 		"LC_MEDIA_SIZES_BASELINE":    os.Getenv("LC_MEDIA_SIZES_BASELINE"),
 		"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_API_ORIGIN": h.server.URL, "COMMERCE_BUYER_BFF_KEY": h.key,
 		"COMMERCE_BUYER_COOKIE_KEY": brToken(), "COMMERCE_BUYER_SESSION_TTL": "3600",
 		"LC_SFR_EVIDENCE": evidence, "LC_SFR_FACTS": factsFile, "LC_SFR_CONTROL": control.URL, "LC_SFR_CONTROL_KEY": controlKey,
 	})
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	defer func() {
+		if cmd.Process != nil {
+			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+		}
+	}()
+
 	log := browserLog(t, filepath.Join(evidence, "shop-real-gate.log"))
 	cmd.Stdout, cmd.Stderr = log, log
 	if err := cmd.Run(); err != nil {
@@ -436,3 +435,16 @@ func TestBrowserStorefront(t *testing.T) {
 }
 
 const sfrOrigin = "https://shop.example"
+
+// storefrontBrowserCommand is the actual Node launcher; explicit fixture authority stays local.
+func storefrontBrowserCommand(ctx context.Context, root string, values map[string]string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, "node", "tests/storefront/shop-real-gate.mjs")
+	cmd.Dir = root
+	// Only the literal nonsecret opt-in crosses this storefront seam.
+	values["LC_C7_RSC_DIAGNOSTIC"] = "0"
+	if os.Getenv("LC_C7_RSC_DIAGNOSTIC") == "1" {
+		values["LC_C7_RSC_DIAGNOSTIC"] = "1"
+	}
+	cmd.Env = browserEnvironment(values)
+	return cmd
+}

@@ -902,7 +902,7 @@ case "$1" in
     lc_run() {
   # SFR gate (unit storefront-integration, SANDBOX): the storefront shell on the production build against the real buyerhttp handler and PG,
   # a shop built through the real admin API and published through the 0081 definers (tests/foundation/browser_storefront_test.go).
-  LC_BROWSER_STOREFRONT_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.3 go test -race -tags browser -count=1 -timeout=1500s -run '^TestBrowserStorefront$' -v ./tests/foundation
+  LC_BROWSER_STOREFRONT_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.3 go test -race -tags browser -count=1 -timeout=1500s -run '^(TestBrowserStorefront|TestStorefrontObserverChildEnvironment)$' -v ./tests/foundation
   printf 'PASS: SFR01-SFR09 buyer storefront shell on the REAL stack (production Next + real Go buyer API + isolated PG; shop built through the admin API, published through the migration 0081 definers; checkout path, free-shipping threshold and collection photo ids from the producers); synthetic CONNECT edge, no provider, no device. The MOCK sibling: LC_SHOP_MOCK=1 bash scripts/dev/test-local.sh --browser-storefront.\n'
     }
     if [[ "${LC_SHOP_MOCK:-0}" == 1 ]]; then

@@ -173,7 +173,7 @@ try {
   const pc = await phone(), p = await pc.newPage();
   const problems = [];
   p.on("pageerror", (e) => {
-    problems.push(safeObserver ? safeObserver.problem(e) : `pageerror: ${e.message}`);
+    problems.push(safeObserver ? safeObserver.problem(e) : "pageerror: [redacted]");
   });
   if (rscDiagnostic) {
     p.on("request", request => {
@@ -200,7 +200,7 @@ try {
     });
     p.on("console", message => { if (message.type() !== "error") return; const text = message.text(); const category = /content security policy|connect-src/i.test(text) ? "csp" : /cross.origin|access.control|cors/i.test(text) ? "access-control" : /certificate|\btls\b|\bssl\b/i.test(text) ? "tls" : "other-redacted"; diagnosticEvent("console-error", { category }); });
   }
-  p.on("console", (m) => { if (m.type() === "error" && /hydrat|minified react|warning:|did not match/i.test(m.text())) problems.push(`console: ${safeObserver ? "[redacted]" : m.text()}`); });
+  p.on("console", (m) => { if (m.type() === "error" && /hydrat|minified react|warning:|did not match/i.test(m.text())) problems.push("console: [redacted]"); });
 
   // ---- SFR01 home from the published design the merchant saved through the admin API ------------------------------------------------------
   diagnosticActionStart(p, "step-01");

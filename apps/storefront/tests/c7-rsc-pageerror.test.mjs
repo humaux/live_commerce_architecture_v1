@@ -84,3 +84,33 @@ test("C7 observer safe document shapes and bounded identities reject hostile dat
   for (let i = 0; i < 3000; i++) observer.identify(`https://shop.example/en?_rsc=${i}`);
   assert.equal(observer.identify("https://shop.example/en?_rsc=overflow"), null);
 });
+
+for (const enabled of [false, true]) test(`actual serialized errors stay private with observer ${enabled ? 'on' : 'off'}`, async () => {
+  const { readFile } = await import('node:fs/promises'); const vm = await import('node:vm');
+  const source = await readFile('tests/storefront/shop-real-gate.mjs', 'utf8');
+  const code = source.slice(source.indexOf('function createSafeObserver('), source.indexOf('// END C7_SAFE_OBSERVER'));
+  const observer = vm.runInNewContext(`${code}; createSafeObserver('https://shop.example')`, { URL });
+  const begin = source.indexOf('  p.on("pageerror", (e) => {');
+  const end = source.indexOf('  if (rscDiagnostic) {', begin);
+  const line = source.split('\n').find(x => x.includes('p.on("console", (m) =>') && x.includes('problems.push'));
+  const listeners = {}, problems = [];
+  vm.runInNewContext(source.slice(begin, end) + '\n' + line, {
+    p: { on: (event, cb) => { listeners[event] = cb; } }, problems, safeObserver: enabled ? observer : null,
+  });
+  const canary = 'PRIVATE_C7_WIRING_8720';
+  const messages = [canary, `/shop.example/en/products/${canary}?_rsc=${canary} due to access control checks.`,
+    `https://shop.example/${canary}?preview=${canary}#${canary}`, `/en/${canary}?q=${canary}`, `Warning: hydration ${canary}`];
+  for (const message of messages) {
+    listeners.pageerror({ name: canary, message });
+    listeners.console({ type: () => 'error', text: () => `Warning: hydration ${message}` });
+  }
+  assert.equal(problems.length, messages.length * 2, 'every unexpected error remains counted');
+  // Read the actual strict assertion, not a substitute success condition.
+  const strict = source.split('\n').find(x => x.includes('assert.deepEqual(problems, []'));
+  assert.ok(strict);
+  let failure;
+  try { vm.runInNewContext(strict, { assert, problems }); } catch (e) { failure = e; }
+  assert.ok(failure, 'real strict gate must fail');
+  const serialized = JSON.stringify(problems) + String(failure);
+  assert.equal(serialized.includes(canary), false, 'serialized diagnostics leaked a synthetic canary');
+});
