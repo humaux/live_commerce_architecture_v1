@@ -250,3 +250,11 @@ BEGIN
   IF f.proname=ANY(ARRAY['create_member','update_member','adjust_points','precheck_award','try_award_manual_order','read_members','read_member','read_entry','read_order_entries','export_member','erase_member']) THEN EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO commerce_runtime',f.sig);END IF;
  END LOOP;
 END $$;
+-- Preserve the current audited action set and add only member actions with the same authenticated scope fence.
+DO $$
+DECLARE v text;
+BEGIN
+ SELECT pg_get_expr(polwithcheck,polrelid) INTO STRICT v FROM pg_policy WHERE polrelid='ops.audit_events'::regclass AND polname='privacy_audit_insert';
+ IF position('customers.note_deleted' IN v)=0 THEN RAISE EXCEPTION '0223 audit policy baseline drift';END IF;
+ EXECUTE format('ALTER POLICY privacy_audit_insert ON ops.audit_events WITH CHECK ((%s) OR (action IN (''member.created'',''member.updated'',''member.exported'',''member.erased'') AND tenant_id=nullif(current_setting(''app.tenant_id'',true),'''')::uuid AND store_id=nullif(current_setting(''app.store_id'',true),'''')::uuid AND principal_id=nullif(current_setting(''app.principal_id'',true),'''')::uuid))',v);
+END $$;
