@@ -9,17 +9,38 @@ def call(label,tool,args):
  entry={'pid':os.getpid(),'candidate_target':'1589:63500','label':label,'tool':tool,'started':datetime.datetime.now(datetime.timezone.utc).isoformat(),'request_sha256':hashlib.sha256(req.read_bytes()).hexdigest(),'code_sha256':hashlib.sha256(args.get('code','').encode()).hexdigest(),'deadline_seconds':130,'native_job_id':'NOT_EXPOSED_BY_CALLER','wake':'Orca exec completion / worker_done'}
  with (OUT/'operations.jsonl').open('a') as h:h.write(json.dumps(entry)+'\n')
  receipt=OUT/(label+'.receipt.txt')
- with receipt.open('w') as stream:
-  p=subprocess.run(['node',CALL,tool,'@'+str(req),'--out',str(OUT/'figma')],stdout=stream,stderr=stream,text=True,timeout=130)
+ try:
+  with receipt.open('w') as stream:
+   p=subprocess.run(['node',CALL,tool,'@'+str(req),'--out',str(OUT/'figma')],stdout=stream,stderr=stream,text=True,timeout=130)
+ except (subprocess.TimeoutExpired,OSError) as exc:
+  with (OUT/'operations.jsonl').open('a') as h:h.write(json.dumps({'label':label,'ended':datetime.datetime.now(datetime.timezone.utc).isoformat(),'state':'TIMEOUT_UNKNOWN' if isinstance(exc,subprocess.TimeoutExpired) else 'EXECUTION_ERROR','retry_allowed':False})+'\n')
+  raise
  raw=receipt.read_text()
  with (OUT/'operations.jsonl').open('a') as h:h.write(json.dumps({'label':label,'exit':p.returncode,'ended':datetime.datetime.now(datetime.timezone.utc).isoformat()})+'\n')
  if p.returncode: raise RuntimeError('STOP '+label+': '+raw[:900])
  return raw
 
 def script(label,code):return call(label,'use_figma',{'code':code,'description':'CU2 '+label,'skillNames':'figma-workbench'})
+def preflight():
+ # One bounded sequence; semantic RED is data, never an execution retry.
+ from fingerprint import collect
+ terminal=OUT/'preflight-terminal.json'
+ if terminal.exists(): raise RuntimeError('preflight already terminal; no replay')
+ try:
+  collect('formal','before')
+  collect('candidate','before')
+  raw=script('baseline-semantic-red',(OUT/'probe-baseline.js').read_text())
+  result=json.loads(raw)
+  if result.get('verdict')!='RED': raise RuntimeError('expected baseline semantic RED')
+ except Exception as exc:
+  terminal.write_text(json.dumps({'state':'STOP_UNKNOWN','error_type':type(exc).__name__,'retry_allowed':False}))
+  raise
+ terminal.write_text(json.dumps({'state':'PREFLIGHT_EXPECTED_RED','retry_allowed':False}))
+
 if __name__=='__main__':
  action=sys.argv[1]
- if action=='snapshot':
+ if action=='preflight': preflight()
+ elif action=='snapshot':
   phase=sys.argv[2]; inv=json.loads((OUT/'formal-inventory-before.json').read_text()); ids=[x['id'] for x in inv['children']]
   for i,nid in enumerate(ids):
    label=f'formal-{phase}-{i:02d}'

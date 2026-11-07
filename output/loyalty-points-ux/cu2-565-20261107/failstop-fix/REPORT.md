@@ -1,0 +1,11 @@
+E3 OFFLINE execution-control candidate only; independent root rerun pending.
+Base 184cdc033aa48d87cae4a1d1dd5336ec3cb73fab; worktree /Volumes/data/live_commerce_architecture_v1/fb-cu2-failstop-1107; integration_worker; actual model/effort UNKNOWN.
+Allowlist: existing operate.py/fingerprint.py, same-directory offline test and failstop-fix evidence only. No schema/dependencies/figma-src/main control changes.
+Root cause: per-process raise cannot stop separate invocations. Original shell and first runtime failing await remain UNKNOWN.
+Invocation (documentation only, native NOT_RUN): python3 output/loyalty-points-ux/cu2-565-20261107/operate.py preflight
+This performs formal collect, candidate collect, baseline semantic probe sequentially; no repair, backup, replacement or export. Each collector retains its existing <=10 roots per request batching and 130s subprocess timeout. Failure/timeout terminates sequence; timeout means execution UNKNOWN, never retry-safe. Terminal marker blocks replay of the same entry.
+Commands: python3 -B output/loyalty-points-ux/cu2-565-20261107/test_failstop.py exit 0 (green.log); git diff --check exit 0. patch-sha256.json pins tested inputs.
+RED: same test against git-show base scripts in isolated temporary directory exit 1 (red.log). Controlled independent-invocation stub reproduces 3 calls despite first failure (legacy-independent.log); this does not establish the missing original shell syntax.
+GREEN: actual runpy CLI entry + stub subprocess, firstfail/timeout=1 call, secondfail=2, success semantic RED=3; imports submit nothing; every started operation has ended record and raw fixture receipts retained in green.log. Temporary fixture directories removed, no background processes launched.
+Installed skills reviewed; ponytail and code_index unavailable: applied seven-step minimal implementation ladder and rg/git symbol/caller inspection. Dependencies fingerprint -> operate.script -> operate.call -> subprocess unchanged; collect now import-safe. No new runner or retry layer.
+NOT_RUN: native/Figma/GUI/node/bridge/installation/CI, production, full repository gates (outside this offline candidate), independent acceptance. No Figma repair claimed. Rollback: revert candidate commit; original worktree and receipts untouched.

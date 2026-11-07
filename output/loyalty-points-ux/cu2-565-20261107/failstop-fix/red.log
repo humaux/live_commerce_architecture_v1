@@ -1,0 +1,52 @@
+test_entry (__main__.Failstop.test_entry) ... 
+  test_entry (__main__.Failstop.test_entry) (scenario='firstfail') ... ERROR
+  test_entry (__main__.Failstop.test_entry) (scenario='timeout') ... ERROR
+  test_entry (__main__.Failstop.test_entry) (scenario='secondfail') ... ERROR
+  test_entry (__main__.Failstop.test_entry) (scenario='good') ... ERROR
+
+======================================================================
+ERROR: test_entry (__main__.Failstop.test_entry) (scenario='firstfail')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp8p617pta/test_failstop.py", line 38, in test_entry
+    __import__('fingerprint')
+    ~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmpa6oh6eem/cu2/fingerprint.py", line 6, in <module>
+ValueError: not enough values to unpack (expected 2, got 0)
+
+======================================================================
+ERROR: test_entry (__main__.Failstop.test_entry) (scenario='timeout')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp8p617pta/test_failstop.py", line 38, in test_entry
+    __import__('fingerprint')
+    ~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmphjwp4htg/cu2/fingerprint.py", line 6, in <module>
+ValueError: not enough values to unpack (expected 2, got 0)
+
+======================================================================
+ERROR: test_entry (__main__.Failstop.test_entry) (scenario='secondfail')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp8p617pta/test_failstop.py", line 38, in test_entry
+    __import__('fingerprint')
+    ~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmpypscfgvr/cu2/fingerprint.py", line 6, in <module>
+ValueError: not enough values to unpack (expected 2, got 0)
+
+======================================================================
+ERROR: test_entry (__main__.Failstop.test_entry) (scenario='good')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmp8p617pta/test_failstop.py", line 38, in test_entry
+    __import__('fingerprint')
+    ~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "/var/folders/qx/wvgvsnwd3lj772dq24n0sz040000gn/T/tmpssmqdpjn/cu2/fingerprint.py", line 6, in <module>
+ValueError: not enough values to unpack (expected 2, got 0)
+
+----------------------------------------------------------------------
+Ran 1 test in 0.014s
+
+FAILED (errors=4)
+
+exit=1
