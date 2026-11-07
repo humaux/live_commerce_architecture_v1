@@ -145,9 +145,10 @@
     "tests/admin/ops-polish-model.test.ts": "287b334747ae9889c5a1a001f0dc91737483b1114839b3c78c9d7675ab69b029",
     "tests/admin/ops-polish.spec.ts": "252462c1640eeb71bd34494874a12eddb60216a598aba252871e76885fd7782d",
     "tests/admin/orders-bff.spec.ts": "28963e8f589eed64858f7e41c48b67f1f7bc3cbc211a5dadf4a682e875fd756a",
+    "tests/admin/orders-fixture-date.ts": "215706c948bf6638f32bf2896f312d546394498fb956083a5bd9ba9d7326e542",
     "tests/admin/orders-model.test.ts": "aaa4b12d5a6c4a2c876341b98fd73c5a812b94a7ee05bd51f1415058d1d427c0",
     "tests/admin/orders-request.test.ts": "ccb87d390afac556c21fd6a050aba65cc43096021015109afe236f0e0390031b",
-    "tests/admin/orders-ui.spec.ts": "ab5e16365350ee84dc53e36994ef3cefc772e31649365605c0b237364f40579f",
+    "tests/admin/orders-ui.spec.ts": "64761a0f740eca02d44e5387e9223fda28167f903d65d64b3acb26f3d958a5a4",
     "tests/admin/orders-v2.test.ts": "937491fb28849ae6143b1ff72272eaa4975df25325779dedea62d6c944a16313",
     "tests/admin/parcel-merge.spec.ts": "ce9512d8178c3e8b6dcc3edaa0c0a16f635e2350fa489abd767b804290c7afbe",
     "tests/admin/parcels-bff.test.ts": "4496e04ca16357e2c758e0c881f3dbca00af9a4a58703137d1d9e73a675daedf",
@@ -1582,6 +1583,7 @@
       ],
       "inputs": [
         "tests/admin/fixtures/native-device.ts",
+        "tests/admin/orders-fixture-date.ts",
         "tests/admin/orders-model.test.ts",
         "tests/admin/orders-ui.spec.ts",
         "tests/admin/parcel-merge.spec.ts",
@@ -1596,9 +1598,7 @@
       "apps": [
         "admin"
       ],
-      "unresolved": [
-        "tests/admin/orders-ui.spec.ts: unresolved import ./orders-fixture-date.ts"
-      ],
+      "unresolved": [],
       "foundationInputs": [
         "tests/admin/parcels-bff.test.ts",
         "tests/admin/parcels-model.test.ts",
