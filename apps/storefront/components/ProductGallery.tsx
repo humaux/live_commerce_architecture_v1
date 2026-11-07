@@ -38,6 +38,7 @@ export default function ProductGallery({
   const [index, setIndex] = useState(0);
   const [optionImageID, setOptionImageID] = useState(selectedImageID);
   const dialog = useRef<HTMLDialogElement>(null);
+  const zoomTrigger = useRef<HTMLButtonElement>(null);
   const [open, setOpen] = useState(false);
   const [zoomIndex, setZoomIndex] = useState(0);
   const zoomCopy = browseCopy[locale];
@@ -112,10 +113,13 @@ export default function ProductGallery({
           />
         ))}
       </div>
-      <button type="button" className="sf-gal__open" aria-haspopup="dialog" onClick={() => { setZoomIndex(index); setOpen(true); }}>
+      <button ref={zoomTrigger} type="button" className="sf-gal__open" aria-haspopup="dialog" onClick={() => { setZoomIndex(index); setOpen(true); }}>
         <SearchIcon />{zoomCopy.zoom}
       </button>
-      <dialog ref={dialog} className="sf-photo-dialog" aria-label={`${name} — ${zoomCopy.zoom}`} onClose={() => setOpen(false)}
+      <dialog ref={dialog} className="sf-photo-dialog" aria-label={`${name} — ${zoomCopy.zoom}`} onClose={event => {
+        // A queued close from an older open must not dismiss or steal focus from a reopened dialog.
+        if (!event.currentTarget.open) { setOpen(false); zoomTrigger.current?.focus(); }
+      }}
         onClick={event => { if (event.target === event.currentTarget) setOpen(false); }}
         onKeyDown={event => {
           if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
