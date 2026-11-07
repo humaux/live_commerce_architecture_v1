@@ -38,7 +38,7 @@ func TestManualMemberAwardBounds(t *testing.T) {
 		{"negative points", loyalty.Award{MemberID: member, Points: -5}, false},
 		{"over the cap", loyalty.Award{MemberID: member, Points: 1_000_001}, false},
 		{"not a uuid", loyalty.Award{MemberID: "member-1", Points: 5}, false},
-		{"upper-case uuid", loyalty.Award{MemberID: strings.ToUpper(member), Points: 5}, false},
+		{"upper-case uuid", loyalty.Award{MemberID: strings.ToUpper(strings.Replace(member, "33333333", "aaaaaaaa", 1)), Points: 5}, false},
 	} {
 		award := c.award
 		_, err := ValidateManual(lpManualInput(&award))

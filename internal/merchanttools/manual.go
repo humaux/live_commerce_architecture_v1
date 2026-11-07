@@ -268,6 +268,9 @@ func ValidateManual(in ManualInput) (ManualInput, error) {
 			return in, bad
 		}
 	}
+	if in.MemberAward != nil && !loyalty.ValidAward(*in.MemberAward) {
+		return in, bad
+	}
 	return in, nil
 }
 
@@ -382,6 +385,9 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 			replayed = true
 		case errors.Is(inner, errNeedWork):
 			inner = nil
+			if in.MemberAward != nil {
+				inner = loyalty.PrecheckAward(ctx, tx, scope, token, *in.MemberAward)
+			}
 		}
 		return inner
 	})
@@ -396,6 +402,11 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 		if receipt, err = m.pipeline(ctx, token, capability, storeID, key, in); err != nil {
 			return ManualResult{}, false, classifyPipeline(ctx, err)
 		}
+		if m.FaultBeforeFinal != nil {
+			if e := m.FaultBeforeFinal(); e != nil {
+				return ManualResult{}, false, e
+			}
+		}
 		// One merchant transaction: receipt + source mark + audit. A failure here leaves a placed order with source=storefront until the
 		// merchant retries the same key (every earlier step replays and this one runs again).
 		hash := sha256.Sum256([]byte(token))
@@ -409,8 +420,27 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 					return err
 				}
 				saved = receipt
+				if in.MemberAward != nil {
+					award, e := loyalty.TryAward(ctx, tx, scope, token, receipt.OrderID, *in.MemberAward)
+					if e != nil {
+						return e
+					}
+					saved.MemberAward = &award
+					if m.FaultAfterAward != nil {
+						if e := m.FaultAfterAward(); e != nil {
+							return e
+						}
+					}
+				}
+				details := map[string]any{}
 				if saved.Discount != nil {
-					return command.AuditDetails(ctx, tx, scope, "order.manual_created", map[string]any{"discount": saved.Discount})
+					details["discount"] = saved.Discount
+				}
+				if saved.MemberAward != nil {
+					details["member_award"] = map[string]any{"member_id": saved.MemberAward.MemberID, "points": saved.MemberAward.Points, "state": saved.MemberAward.State}
+				}
+				if len(details) > 0 {
+					return command.AuditDetails(ctx, tx, scope, "order.manual_created", details)
 				}
 				return command.Audit(ctx, tx, scope, "order.manual_created")
 			})
