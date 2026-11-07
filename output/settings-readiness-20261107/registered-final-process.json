@@ -1,0 +1,1 @@
+{"pid": 43334, "command": ["node", "--test", "--test-timeout=20000", "--experimental-transform-types", "tests/admin/live-settings-hooks.test.ts", "tests/admin/settings-readiness.test.ts"], "deadline_seconds": 120, "wake": "native exec completion then worker_done currentroot", "failure": "nonzero or timeout"}

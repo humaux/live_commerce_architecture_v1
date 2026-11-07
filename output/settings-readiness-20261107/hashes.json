@@ -1,0 +1,42 @@
+[
+  {
+    "file": "tests/admin/settings-readiness.test.ts",
+    "sha256": "5dcd8a7c362fdb20df57edac90e5608baec3e91ab3a2e515a9cc6f7f3bd2482a",
+    "byte_equal_base": false
+  },
+  {
+    "file": "scripts/dev/test-node.sh",
+    "sha256": "2317914d5558611a615bb15cc3eede98ea94d4c5bc7c9069d74e020e97cd0e5b",
+    "byte_equal_base": false
+  },
+  {
+    "file": "apps/admin/components/SettingsWizard.tsx",
+    "sha256": "072eb75e96454f429b8e31e32b6993e953d8509ef174425ce1dbb8d2f7147478",
+    "byte_equal_base": true
+  },
+  {
+    "file": "apps/admin/lib/settings-client.ts",
+    "sha256": "535a9360a6265590ff9df2e92061a019f0ebfdd3f8ca5c2de9b7cd0d6318a753",
+    "byte_equal_base": true
+  },
+  {
+    "file": "apps/admin/lib/settings-draft.ts",
+    "sha256": "1a31aead7ed5ff65eb34d9b9ca871208de1b3a46efa2bbe1f041e199f440cac7",
+    "byte_equal_base": true
+  },
+  {
+    "file": "tests/admin/inbox-review-host.test.ts",
+    "sha256": "ffa1a9f6e2bc7c224b52a3ec12c14dd0b5a5600026416ecfb2d2e6a3c6b2a018",
+    "byte_equal_base": true
+  },
+  {
+    "file": "tests/admin/live-settings-hooks.test.ts",
+    "sha256": "46cc13b98bdca7ee3e59bc1d3feea6abfba26512f05fdacafbfdbc0b4433cbfe",
+    "byte_equal_base": true
+  },
+  {
+    "file": "pnpm-lock.yaml",
+    "sha256": "4bfe9088d35d37f80e45cb317a15a1bf00fcb58919f765be597429ed2a7d3f7f",
+    "byte_equal_base": true
+  }
+]

@@ -1,0 +1,40 @@
+(node:43322) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Host subset: nested Provider and React19 context shadow defaults without sibling leakage (1.097458ms)
+✔ Host subset: provider updates reach stable children and separate roots keep their own values (0.236875ms)
+✔ Host subset: render errors restore context and hook ownership (0.218ms)
+✔ Host subset: portal children inherit logical context and retain handlers/state (0.213791ms)
+✔ Host subset: portal target/key changes remount children and removal runs cleanup (0.399542ms)
+✔ Host subset: createPortal rejects invalid DOM targets rather than swallowing children (0.10875ms)
+✔ S01 actual admitted policy404 after separately rendered edits (12.429666ms)
+ℹ S00 mounted actual advanced; initial read held; baseline unresolved; writes=0
+ℹ EDIT reference render; EDIT enable render; RELEASE policy404
+ℹ ADMITTED policy baseline=0 dirty=true latest-fields=preserved Save=enabled writes=0
+✔ S02 actual stillSession digest held while latest edit commits (2.227667ms)
+ℹ S00 mounted actual advanced; initial read held; baseline unresolved; writes=0
+ℹ DIGEST entered actual stillSession; EDIT latest reference render
+ℹ ADMITTED policy baseline=0 dirty=true latest-fields=preserved Save=enabled writes=0
+✔ S03 sibling service completion after admitted policy cannot overwrite baseline/latest fields (2.448541ms)
+ℹ S00 mounted actual advanced; initial read held; baseline unresolved; writes=0
+ℹ EDIT reference render; EDIT enable render; RELEASE policy404
+ℹ ADMITTED policy baseline=0 dirty=true latest-fields=preserved Save=enabled writes=0
+ℹ RELEASE sibling service404 after policy baseline=0
+ℹ ADMITTED policy baseline=0 dirty=true latest-fields=preserved Save=enabled writes=0
+✔ N-target rejects old policy404 without hydration or writes (1.643791ms)
+ℹ S00 mounted actual advanced; initial read held; baseline unresolved; writes=0
+✔ N-superseded rejects old policy404 without hydration or writes (1.565083ms)
+ℹ S00 mounted actual advanced; initial read held; baseline unresolved; writes=0
+✔ N-unmount rejects old policy404 without hydration or writes (1.1485ms)
+ℹ S00 mounted actual advanced; initial read held; baseline unresolved; writes=0
+✔ N-epoch rejects old policy404 without hydration or writes (1.144916ms)
+ℹ S00 mounted actual advanced; initial read held; baseline unresolved; writes=0
+✔ N-session changed during real digest rejects policy admission (1.408375ms)
+ℹ S00 mounted actual advanced; initial read held; baseline unresolved; writes=0
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 482.633208

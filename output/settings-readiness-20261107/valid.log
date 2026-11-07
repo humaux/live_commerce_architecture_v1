@@ -1,0 +1,64 @@
+(node:42089) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Host subset: nested Provider and React19 context shadow defaults without sibling leakage (1.100542ms)
+✔ Host subset: provider updates reach stable children and separate roots keep their own values (0.215709ms)
+✔ Host subset: render errors restore context and hook ownership (0.211959ms)
+✔ Host subset: portal children inherit logical context and retain handlers/state (0.208459ms)
+✔ Host subset: portal target/key changes remount children and removal runs cleanup (0.364125ms)
+✔ Host subset: createPortal rejects invalid DOM targets rather than swallowing children (0.101958ms)
+✔ S01 actual admitted policy404 after separately rendered edits (12.485208ms)
+ℹ S00 mounted actual advanced; initial read held; baseline unresolved; writes=0
+ℹ EDIT reference render; EDIT enable render; RELEASE policy404
+ℹ ADMITTED policy baseline=0 dirty=true latest-fields=preserved Save=enabled writes=0
+✔ S02 actual stillSession digest held while latest edit commits (2.248417ms)
+ℹ S00 mounted actual advanced; initial read held; baseline unresolved; writes=0
+ℹ DIGEST entered actual stillSession; EDIT latest reference render
+ℹ ADMITTED policy baseline=0 dirty=true latest-fields=preserved Save=enabled writes=0
+✔ S03 sibling service completion after admitted policy cannot overwrite baseline/latest fields (2.450292ms)
+ℹ S00 mounted actual advanced; initial read held; baseline unresolved; writes=0
+ℹ EDIT reference render; EDIT enable render; RELEASE policy404
+ℹ ADMITTED policy baseline=0 dirty=true latest-fields=preserved Save=enabled writes=0
+ℹ RELEASE sibling service404 after policy baseline=0
+ℹ ADMITTED policy baseline=0 dirty=true latest-fields=preserved Save=enabled writes=0
+✔ N-target rejects old policy404 without hydration or writes (1.788875ms)
+ℹ S00 mounted actual advanced; initial read held; baseline unresolved; writes=0
+✔ N-superseded rejects old policy404 without hydration or writes (1.718541ms)
+ℹ S00 mounted actual advanced; initial read held; baseline unresolved; writes=0
+✔ N-unmount rejects old policy404 without hydration or writes (1.219083ms)
+ℹ S00 mounted actual advanced; initial read held; baseline unresolved; writes=0
+✔ N-epoch rejects old policy404 without hydration or writes (1.149666ms)
+ℹ S00 mounted actual advanced; initial read held; baseline unresolved; writes=0
+✔ N-session changed during real digest rejects policy admission (1.380334ms)
+ℹ S00 mounted actual advanced; initial read held; baseline unresolved; writes=0
+✖ S04 INTENTIONAL RED same-render handlers: synthetic counterexample, browser cause UNKNOWN (1.867709ms)
+ℹ S00 mounted actual advanced; initial read held; baseline unresolved; writes=0
+ℹ SYNTHETIC policy admitted baseline=0 Save=enabled writes=0; reference lost before 404; browser relevance UNKNOWN
+ℹ tests 15
+ℹ suites 0
+ℹ pass 14
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 475.451583
+
+✖ failing tests:
+
+test at tests/admin/settings-readiness.test.ts:98:1
+✖ S04 INTENTIONAL RED same-render handlers: synthetic counterexample, browser cause UNKNOWN (1.867709ms)
+  AssertionError [ERR_ASSERTION]: latest reference must survive: synthetic same-render handler counterexample
+  + actual - expected
+  
+  + ''
+  - 'Synthetic same-render'
+  
+      at TestContext.<anonymous> (/Volumes/data/live_commerce_architecture_v1/fb-settings-readiness-1107/tests/admin/settings-readiness.test.ts:106:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: '',
+    expected: 'Synthetic same-render',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

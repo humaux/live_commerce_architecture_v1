@@ -1,0 +1,25 @@
+(node:39883) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Host subset: nested Provider and React19 context shadow defaults without sibling leakage (1.168791ms)
+✔ Host subset: provider updates reach stable children and separate roots keep their own values (0.247583ms)
+✔ Host subset: render errors restore context and hook ownership (0.220416ms)
+✔ Host subset: portal children inherit logical context and retain handlers/state (0.208791ms)
+✔ Host subset: portal target/key changes remount children and removal runs cleanup (0.3895ms)
+✔ Host subset: createPortal rejects invalid DOM targets rather than swallowing children (0.105792ms)
+✔ S01 actual admitted policy404 after separately rendered edits (13.708042ms)
+✔ S02 actual stillSession digest held while latest edit commits (2.195791ms)
+✔ S03 sibling service completion after admitted policy cannot overwrite baseline/latest fields (2.674667ms)
+✔ N-target rejects old policy404 without hydration or writes (1.880917ms)
+✔ N-superseded rejects old policy404 without hydration or writes (1.895875ms)
+✔ N-unmount rejects old policy404 without hydration or writes (1.745666ms)
+✔ N-epoch rejects old policy404 without hydration or writes (1.517334ms)
+✔ N-session changed during real digest rejects policy admission (1.487458ms)
+✔ S04 two handlers captured in one render: synthetic schedule counterexample only (1.38975ms)
+ℹ tests 15
+ℹ suites 0
+ℹ pass 15
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 550.066458

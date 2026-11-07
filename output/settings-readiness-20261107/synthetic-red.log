@@ -1,0 +1,34 @@
+(node:42103) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✖ S04 INTENTIONAL RED same-render handlers: synthetic counterexample, browser cause UNKNOWN (15.124166ms)
+ℹ S00 mounted actual advanced; initial read held; baseline unresolved; writes=0
+ℹ SYNTHETIC policy admitted baseline=0 Save=enabled writes=0; reference lost before 404; browser relevance UNKNOWN
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 421.951125
+
+✖ failing tests:
+
+test at tests/admin/settings-readiness.test.ts:98:1
+✖ S04 INTENTIONAL RED same-render handlers: synthetic counterexample, browser cause UNKNOWN (15.124166ms)
+  AssertionError [ERR_ASSERTION]: latest reference must survive: synthetic same-render handler counterexample
+  + actual - expected
+  
+  + ''
+  - 'Synthetic same-render'
+  
+      at TestContext.<anonymous> (/Volumes/data/live_commerce_architecture_v1/fb-settings-readiness-1107/tests/admin/settings-readiness.test.ts:106:9)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: '',
+    expected: 'Synthetic same-render',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

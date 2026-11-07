@@ -1,0 +1,15 @@
+(node:38876) ExperimentalWarning: Transform Types is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ Host subset: nested Provider and React19 context shadow defaults without sibling leakage (1.246375ms)
+✔ Host subset: provider updates reach stable children and separate roots keep their own values (0.270958ms)
+✔ Host subset: render errors restore context and hook ownership (0.235834ms)
+✔ Host subset: portal children inherit logical context and retain handlers/state (0.227417ms)
+✔ Host subset: portal target/key changes remount children and removal runs cleanup (0.421666ms)
+✔ Host subset: createPortal rejects invalid DOM targets rather than swallowing children (0.095917ms)
+✖ S01 actual admitted policy404 after separately rendered edits (5007.907125ms)
+✖ S02 actual stillSession digest held while latest edit commits (5002.970959ms)
+✖ S03 sibling service completion after admitted policy cannot overwrite baseline/latest fields (5002.427709ms)
+
+Interrupted while running:
+
+⚠ tests/admin/settings-readiness.test.ts (tests/admin/settings-readiness.test.ts:1:1)

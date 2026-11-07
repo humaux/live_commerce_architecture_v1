@@ -101,6 +101,6 @@ node --test tests/admin/code-alignment-admin-state.test.mjs
 node scripts/dev/check-ds-rules.mjs
 node scripts/dev/check-hex-ratchet.mjs
 node --test --experimental-strip-types tests/admin/live-settings-bff.test.ts tests/admin/live-settings-model.test.ts
-node --test --experimental-transform-types tests/admin/live-settings-hooks.test.ts
+node --test --experimental-transform-types tests/admin/live-settings-hooks.test.ts tests/admin/settings-readiness.test.ts
 # Browser-run artifact isolation and regression write-root counterexamples.
 node --test tests/admin/browser-evidence.test.mjs tests/ci/browser-evidence-paths.test.mjs tests/ci/evidence-retention.test.mjs
