@@ -1,6 +1,7 @@
 "use client";
 // Purpose: buyer contact form, confirmation and keyed receipt recovery.
-// Depends on the closed buyer contact BFF contract, same-origin Web Locks and non-PII status markers.
+// Depends on: the closed buyer contact BFF contract, same-origin Web Locks and non-PII status markers.
+// Used by: the storefront locale contact page.
 // Invariants: the message is memory-only; no automatic retries; an uncertain attempt retains its original key and body.
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";

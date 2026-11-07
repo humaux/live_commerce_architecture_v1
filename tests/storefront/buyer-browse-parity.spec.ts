@@ -50,6 +50,13 @@ export interface ManifestEntry extends FrameSpec {
 }
 
 const T = 10_000;
+// Homepage links must finish at visible destination content before the next navigation starts.
+export async function waitForHomeDestination(page: Page, url: RegExp, heading: string, productTitle?: string, timeout = T) {
+  await page.waitForURL(url, { timeout });
+  await expect(page).toHaveURL(url, { timeout });
+  await expect(page.getByRole("heading", { level: 1, name: heading, exact: true })).toBeVisible({ timeout });
+  if (productTitle) await expect(page.getByTestId("product-card").filter({ hasText: productTitle }).first()).toBeVisible({ timeout });
+}
 const num = (text: string) => Number(text.replace(/[^\d.]/g, ""));
 const fmt = (template: string, values: Record<string, string | number>) => template.replace(/\{(\w+)\}/g, (_, k) => String(values[k]));
 const ascending = (a: number[]) => a.every((n, i) => i === 0 || n >= a[i - 1]);
@@ -642,20 +649,19 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
           await page.goto(`${origin}${homeRoute}`);
           await step(homeFrame, homeRoute, `hero CTA link`, "click", "the published CTA (all_products) opens the product list", async () => {
             await page.getByTestId("section-hero").getByRole("link").click({ timeout: T });
-            await expect(page).toHaveURL(new RegExp(`/${locale}/products/?$`), { timeout: T });
+            await waitForHomeDestination(page, new RegExp(`/${locale}/products/?$`), c.allProducts, candle.title);
             return page.url();
           });
           await page.goto(`${origin}${homeRoute}`);
           await step(homeFrame, homeRoute, `chip "${c.allCollections}"`, "click", "opens the collections overview", async () => {
             await main.getByTestId("collection-chips").filter({ visible: true }).getByRole("link", { name: c.allCollections, exact: true }).click({ timeout: T });
-            await expect(page).toHaveURL(new RegExp(`/${locale}/collections$`), { timeout: T });
-            await expect(page.getByRole("heading", { name: c.collectionsOverview })).toBeVisible({ timeout: T });
+            await waitForHomeDestination(page, new RegExp(`/${locale}/collections$`), c.collectionsOverview);
             return page.url();
           });
           await page.goto(`${origin}${homeRoute}`);
           await step(homeFrame, homeRoute, `button "${c.viewAllProducts}"`, "click", "opens the product list", async () => {
             await page.getByTestId("section-product-grid").getByRole("link", { name: c.viewAllProducts, exact: true }).click({ timeout: T });
-            await expect(page).toHaveURL(new RegExp(`/${locale}/products/?$`), { timeout: T });
+            await waitForHomeDestination(page, new RegExp(`/${locale}/products/?$`), c.allProducts, candle.title);
             return page.url();
           });
         }

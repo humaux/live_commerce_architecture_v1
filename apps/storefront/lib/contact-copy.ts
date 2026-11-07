@@ -1,5 +1,6 @@
 // Purpose: localized buyer contact task copy; consumed only by the contact page.
 // Depends on: locale identifiers; no merchant or buyer facts.
+// Used by: ContactForm for localized buyer-facing text.
 import type { Locale } from "@live-commerce/i18n";
 export const contactCopy: Record<Locale, { title:string; name:string; email:string; order:string; message:string; next:string; confirm:string; send:string; edit:string; sent:string; sentBody:string; back:string; invalid:string; unknown:string; unknownBody:string; recover:string; lostBody:string; throttle:string; conflict:string; failed:string; storage:string }> = {
  "zh-TW": {title:"聯絡商店",name:"姓名",email:"電子郵件",order:"訂單編號（選填）",message:"訊息",next:"下一步",confirm:"確認留言",send:"確認送出",edit:"返回修改",sent:"訊息已送出",sentBody:"商家會透過電子郵件與你聯絡。",back:"返回商店",invalid:"請確認姓名、電子郵件和訊息。",unknown:"結果待確認",unknownBody:"使用原訊息確認結果，請勿另建訊息重送。",recover:"確認送出結果",lostBody:"重新整理後無法取回原訊息。請聯絡商店確認結果，請勿另建訊息重送。",throttle:"傳送次數過多，請稍候再試。",conflict:"此次訊息與原請求不符，請聯絡商店確認。",failed:"無法送出，請確認資料後再試。",storage:"無法安全保存送出狀態，請檢查瀏覽器設定。"},
