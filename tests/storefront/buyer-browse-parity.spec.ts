@@ -325,7 +325,11 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
 
       // One ledger row per operation that really ran; the callback returns what it observed.
       const step = async (frame: string, route: string, control: string, operation: string, expected: string, perform: () => Promise<string | void>) => {
-        const row = { frame, locale, viewport, route, control, operation, expected, environment: "REAL-STACK (SANDBOX)" };
+        // Injected contact POST responses exercise the real shell but never reach Go/PG.
+        // Keep their evidence tier distinct from the separately asserted real-producer receipt.
+        const environment = control.startsWith("contact ") && control !== "contact real producer receipt"
+          ? "MOCK (intercepted contact POST; REAL-STACK shell)" : "REAL-STACK (SANDBOX)";
+        const row = { frame, locale, viewport, route, control, operation, expected, environment };
         try {
           const actual = await perform();
           ledger.push({ ...row, actual: actual || "assertions passed", status: "PASS" });
