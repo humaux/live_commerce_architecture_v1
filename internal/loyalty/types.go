@@ -24,7 +24,6 @@ var (
 	ErrExportTooLarge      = errors.New("export_too_large")
 	ErrIdempotencyConflict = errors.New("idempotency_conflict")
 	ErrUnavailable         = errors.New("loyalty unavailable")
-	errNotImplemented      = errors.New("loyalty: not implemented")
 )
 
 // Award bounds and states (LP7, LP18).

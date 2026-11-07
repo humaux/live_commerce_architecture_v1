@@ -1249,3 +1249,62 @@ func TestLoyaltyLPG10ACL(t *testing.T) {
 		t.Errorf("ledger triggers enabled: %s, want 2", n)
 	}
 }
+
+// Pagination exercises the public contract, including a changed filter and a member-bound ledger cursor.
+func TestLoyaltyPaginationBindings(t *testing.T) {
+	s := lpNewStore(t)
+	for i := 0; i < 3; i++ {
+		s.mustMember(fmt.Sprintf("測試會員-paged-%d", i), nil, nil)
+	}
+	first, err := s.search(s.admin, loyalty.SearchInput{Q: lpStr("paged"), Limit: 2})
+	if err != nil || len(first.Members) != 2 || first.NextCursor == nil {
+		t.Fatalf("first search page: %+v %v", first, err)
+	}
+	second, err := s.search(s.admin, loyalty.SearchInput{Q: lpStr("paged"), Limit: 2, Cursor: first.NextCursor})
+	if err != nil || len(second.Members) != 1 || second.NextCursor != nil {
+		t.Fatalf("second search page: %+v %v", second, err)
+	}
+	for _, m := range first.Members {
+		if m.ID == second.Members[0].ID {
+			t.Fatal("search repeated a member")
+		}
+	}
+	_, err = s.search(s.admin, loyalty.SearchInput{Q: lpStr("changed"), Limit: 2, Cursor: first.NextCursor})
+	lpWant(t, "changed filter", err, 422, "invalid_request")
+	m := first.Members[0]
+	for i := 0; i < 51; i++ {
+		s.mustAdjust(m.ID, 1, "synthetic pagination")
+	}
+	d, err := s.get(s.admin, m.ID, "")
+	if err != nil || len(d.Entries) != 50 || d.NextLedgerCursor == nil {
+		t.Fatalf("first ledger page: %+v %v", d, err)
+	}
+	next, err := s.get(s.admin, m.ID, *d.NextLedgerCursor)
+	if err != nil || len(next.Entries) != 1 || next.NextLedgerCursor != nil {
+		t.Fatalf("second ledger page: %+v %v", next, err)
+	}
+	for _, e := range d.Entries {
+		if e.ID == next.Entries[0].ID {
+			t.Fatal("ledger repeated an entry")
+		}
+	}
+	_, err = s.get(s.admin, second.Members[0].ID, *d.NextLedgerCursor)
+	lpWant(t, "foreign member cursor", err, 422, "invalid_request")
+}
+
+// Disclosed fixture bulk-loads synthetic long notes solely to reach the contract's export byte bound.
+func TestLoyaltyExportByteBound(t *testing.T) {
+	s := lpNewStore(t)
+	m := s.mustMember("測試會員-export-bound", nil, nil)
+	mustExec(t, s.f.owner, `INSERT INTO loyalty.point_entries(tenant_id,store_id,member_id,delta,reason,note,actor_principal_id)
+ SELECT $1,$2,$3,1,'manual_adjust',repeat('測',200),$4 FROM generate_series(1,1800)`, s.tenant, s.store, m.ID, s.adminID)
+	key := s.key("export-bound")
+	_, _, err := s.export(s.admin, key, m.ID)
+	lpWant(t, "export larger than one MiB", err, 409, "export_too_large")
+	if n := countRows(t, s.f.owner, `SELECT count(*) FROM ops.command_results WHERE store_id=$1 AND operation='loyalty.member.export' AND idempotency_key=$2`, s.store, key); n != 0 {
+		t.Errorf("refused export left %d receipts", n)
+	}
+	if n := countRows(t, s.f.owner, `SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='member.exported'`, s.store); n != 0 {
+		t.Errorf("refused export left %d audit rows", n)
+	}
+}

@@ -32,7 +32,9 @@ func text(s string, min, max int) bool {
 	}
 	return true
 }
-func optional(s *string, max int) bool { return s == nil || text(*s, 0, max) }
+func optional(s *string, max int) bool {
+	return s == nil || (utf8.ValidString(*s) && utf8.RuneCountInString(*s) <= max)
+}
 func memberInput(in MemberInput) (MemberInput, error) {
 	in.DisplayName = norm.NFC.String(strings.TrimSpace(in.DisplayName))
 	if !text(in.DisplayName, 1, 60) || !optional(in.ContactNote, 120) || !optional(in.Notes, 1000) {
