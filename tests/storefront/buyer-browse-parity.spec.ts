@@ -440,6 +440,96 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
           }
         }
 
+        // Contract-shaped failure injections: no POST reaches the real contact producer in these cases.
+        {
+          const frame = f("26:850", "26:1117"), route = `/${locale}/contact`;
+          for (const status of [429, 409, 422]) {
+            await step(frame, route, `contact ${status} refusal`, "fill, review and submit once", "visible refusal, no sent state and no automatic retry (MOCK)", async () => {
+              const isolated = await browser.newContext(ctxOpts({ ignoreHTTPSErrors: true, viewport: { width, height }, locale }));
+              const buyer = await isolated.newPage(); let posts = 0;
+              try {
+                await isolated.route("**/api/buyer/contact-messages", async r => { posts++; await r.fulfill({ status, json: { code: status === 429 ? "rate_limited" : status === 409 ? "conflict" : "invalid_request" } }); });
+                await buyer.goto(`${origin}${route}`);
+                await buyer.getByTestId("contact-name").fill("Fixture Contact");
+                await buyer.getByTestId("contact-email").fill("fixture@example.invalid");
+                await buyer.getByTestId("contact-message").fill("Fixture inquiry only");
+                await buyer.getByTestId("contact-next").click();
+                await buyer.getByTestId("contact-send").click();
+                await expect(buyer.locator("main").getByRole("alert")).toBeVisible({ timeout: T });
+                await expect(buyer.getByTestId("contact-sent")).toHaveCount(0);
+                assert.equal(posts, 1, "a refusal must not trigger another POST");
+              } finally { await isolated.close(); }
+            });
+          }
+          await step(frame, route, "contact concurrent tabs", "submit from two already-open tabs concurrently", "one intercepted POST, both tabs visibly uncertain (MOCK)", async () => {
+            const isolated = await browser.newContext(ctxOpts({ ignoreHTTPSErrors: true, viewport: { width, height }, locale }));
+            const first = await isolated.newPage(), second = await isolated.newPage(); let posts = 0;
+            try {
+              await isolated.route("**/api/buyer/contact-messages", async r => { posts++; await r.fulfill({ status: 503, json: { code: "unavailable" } }); });
+              for (const buyer of [first, second]) {
+                await buyer.goto(`${origin}${route}`);
+                await buyer.getByTestId("contact-name").fill("Fixture Contact");
+                await buyer.getByTestId("contact-email").fill("fixture@example.invalid");
+                await buyer.getByTestId("contact-message").fill("Fixture inquiry only");
+                await buyer.getByTestId("contact-next").click();
+              }
+              await Promise.allSettled([first.getByTestId("contact-send").click({ timeout: 1500 }), second.getByTestId("contact-send").click({ timeout: 1500 })]);
+              await expect.poll(() => posts, { timeout: T }).toBe(1);
+              await expect(first.getByTestId("contact-unknown")).toBeVisible({ timeout: T });
+              await expect(second.getByTestId("contact-unknown")).toBeVisible({ timeout: T });
+              assert.equal(posts, 1, "competing tabs must not submit twice");
+            } finally { await isolated.close(); }
+          });
+          await step(frame, route, "contact unavailable locks", "submit in a browser without Web Locks", "visible refusal and no POST (MOCK)", async () => {
+            const isolated = await browser.newContext(ctxOpts({ ignoreHTTPSErrors: true, viewport: { width, height }, locale }));
+            await isolated.addInitScript(() => Object.defineProperty(navigator, "locks", { value: undefined }));
+            const buyer = await isolated.newPage(); let posts = 0;
+            try {
+              await isolated.route("**/api/buyer/contact-messages", async r => { posts++; await r.abort(); });
+              await buyer.goto(`${origin}${route}`);
+              await buyer.getByTestId("contact-name").fill("Fixture Contact");
+              await buyer.getByTestId("contact-email").fill("fixture@example.invalid");
+              await buyer.getByTestId("contact-message").fill("Fixture inquiry only");
+              await buyer.getByTestId("contact-next").click();
+              await buyer.getByTestId("contact-send").click();
+              await expect(buyer.locator("main").getByRole("alert")).toBeVisible({ timeout: T });
+              assert.equal(posts, 0, "unsupported locking must fail closed");
+            } finally { await isolated.close(); }
+          });
+        }
+
+        // One synthetic message traverses the real Next BFF, Go handler and isolated PG fixture.
+        // The fixture owns random encryption material and no mail worker; failure-injection cases above are MOCK.
+        if (locale === "en" && isMobile) {
+          const frame = "26:1117";
+          const route = `/${locale}/contact`;
+          await step(frame, route, "contact real producer receipt", "fill, review, submit once and reload", "real BFF/Go returns 201, receipt survives refresh without another POST", async () => {
+            const isolated = await browser.newContext(ctxOpts({ ignoreHTTPSErrors: true, viewport: { width, height }, locale }));
+            const buyer = await isolated.newPage();
+            const posts: import("@playwright/test").Request[] = [];
+            buyer.on("request", request => {
+              if (new URL(request.url()).pathname === "/api/buyer/contact-messages" && request.method() === "POST") posts.push(request);
+            });
+            try {
+              await buyer.goto(`${origin}${route}`);
+              await buyer.getByTestId("contact-name").fill("Synthetic Test Buyer");
+              await buyer.getByTestId("contact-email").fill("sfr-buyer@example.invalid");
+              await buyer.getByTestId("contact-message").fill("Synthetic storefront browser fixture");
+              await buyer.getByTestId("contact-next").click();
+              await expect(buyer.getByTestId("contact-confirm")).toBeVisible({ timeout: T });
+              assert.equal(posts.length, 0, "review must not send");
+              const receipt = buyer.waitForResponse(response => new URL(response.url()).pathname === "/api/buyer/contact-messages" && response.request().method() === "POST", { timeout: T });
+              await buyer.getByTestId("contact-send").click();
+              assert.equal((await receipt).status(), 201, "real producer must return a committed receipt");
+              await expect(buyer.getByTestId("contact-sent")).toBeVisible({ timeout: T });
+              assert.equal(posts.length, 1);
+              await buyer.reload();
+              await expect(buyer.getByTestId("contact-sent")).toBeVisible({ timeout: T });
+              assert.equal(posts.length, 1, "reload must not resend the contact message");
+            } finally { await isolated.close(); }
+          });
+        }
+
         // ===== Empty cart (fresh context, nothing added yet): /[locale]/cart ==========================================================
         const emptyFrame = f("105:2439", "105:2468");
         const cartRoute = `/${locale}/cart`;

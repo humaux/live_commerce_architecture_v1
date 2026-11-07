@@ -17,6 +17,7 @@ package foundation_test
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -84,6 +85,9 @@ func TestBrowserStorefront(t *testing.T) {
 	if os.Getenv("LC_BROWSER_STOREFRONT_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use scripts/dev/test-local.sh --browser-storefront")
 	}
+	// Test-only random encryption material; no production key, external SMTP or notify worker.
+	t.Setenv("COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID", "sfr-contact-fixture")
+	t.Setenv("COMMERCE_META_PAYLOAD_KEYS_JSON", fmt.Sprintf(`{"keys":[{"id":"sfr-contact-fixture","key_base64":%q}]}`, base64.StdEncoding.EncodeToString(randomBytes(32))))
 	// Keep the same catalog/buyer fixture; admit delivery through the existing Stripe
 	// mock registrar, since a retired PAYUNi method cannot authorize checkout options.
 	hp := hpSetup(t)
@@ -109,6 +113,9 @@ func TestBrowserStorefront(t *testing.T) {
 	}))
 	t.Cleanup(h.server.Close)
 	f := h.f
+	// The storefront test submits one synthetic contact message into the isolated fixture store.
+	mustExec(t, f.owner, `UPDATE control.stores SET contact_email=$3 WHERE tenant_id=$1 AND id=$2`, f.tenantA, f.storeA1, "sfr-contact@merchant.example.test")
+	contactBefore := countRows(t, f.owner, `SELECT count(*) FROM storefront.store_contact_messages WHERE store_id=$1`, f.storeA1)
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Minute)
 	defer cancel()
 	root, _ := filepath.Abs("../..")
@@ -409,6 +416,9 @@ func TestBrowserStorefront(t *testing.T) {
 	// Browsing, carts and quotes never place an order, hold stock or write the stock ledger (I05/§11.5: only checkout and payment move stock).
 	if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM checkout.orders WHERE store_id=$1)+(SELECT count(*) FROM inventory.reservations WHERE store_id=$1)`, f.storeA1); n != ordersBefore {
 		t.Errorf("orders+reservations %d -> %d: the storefront walk-through must not place an order or hold stock", ordersBefore, n)
+	}
+	if n := countRows(t, f.owner, `SELECT count(*) FROM storefront.store_contact_messages WHERE store_id=$1`, f.storeA1); n != contactBefore+1 {
+		t.Errorf("synthetic real contact write count = %d; expected baseline + 1", n)
 	}
 	if n := countRows(t, f.owner, `SELECT count(*) FROM inventory.ledger WHERE store_id=$1`, f.storeA1); n != ledgerBefore {
 		t.Errorf("inventory ledger rows %d -> %d: carts and quotes must not move stock", ledgerBefore, n)
