@@ -835,6 +835,14 @@ func TestLoyaltyLPG05Rights(t *testing.T) {
 				}
 			})
 		}
+		if out, err := project(d.principal("customers:read"), d.store, "loyalty.member.create", key, digest[:]); err == nil || len(out) != 0 {
+			t.Fatalf("read permission cannot substitute for the write projection permission: %s %v", out, err)
+		}
+		for table, want := range map[string]int{"loyalty.members": 1, "loyalty.point_entries": 0, "ops.command_results": 1} {
+			if got := countRows(t, d.f.owner, "SELECT count(*) FROM "+table+" WHERE tenant_id=$1 AND store_id=$2", d.tenant, d.store); got != want {
+				t.Fatalf("refused projections changed %s: got %d want %d", table, got, want)
+			}
+		}
 		// There is no independent target argument: a sixth member id cannot redirect a valid receipt projection.
 		err = d.run(points, func(ctx context.Context, tx pgx.Tx, _ platform.Scope) error {
 			_, err := tx.Exec(ctx, `SELECT loyalty.project_write($1,$2::uuid,$3,$4,$5,$6::uuid)`, lpHash(points), d.store, "loyalty.member.create", key, digest[:], randomUUID())
@@ -862,6 +870,14 @@ func TestLoyaltyLPG05Rights(t *testing.T) {
 		})
 		if !errors.As(err, &pg) || pg.Code != "PT403" {
 			t.Fatalf("bare ledger entry read must refuse points-only: %v", err)
+		}
+		readToken := d.principal("customers:read")
+		err = d.run(readToken, func(ctx context.Context, tx pgx.Tx, _ platform.Scope) error {
+			var out []byte
+			return tx.QueryRow(ctx, `SELECT loyalty.read_entry($1,$2::uuid,$3::uuid)`, lpHash(readToken), d.store, adjusted.Entry.ID).Scan(&out)
+		})
+		if err != nil {
+			t.Fatalf("literal read-only principal must read entry: %v", err)
 		}
 		if _, replayed, err := d.update(points, updateKey, m.ID, patch); err != nil || !replayed {
 			t.Fatalf("points-only update replay: %v %v", replayed, err)
@@ -1342,7 +1358,7 @@ func TestLoyaltyLPG10ACL(t *testing.T) {
 			t.Errorf("%s has column grants to %s (definers only)", tb, got)
 		}
 	}
-	runtimeExec := []string{"adjust_points", "create_member", "erase_member", "export_member", "precheck_award", "read_entry", "read_member",
+	runtimeExec := []string{"adjust_points", "create_member", "erase_member", "export_member", "precheck_award", "project_write", "read_entry", "read_member",
 		"read_members", "read_order_entries", "try_award_manual_order", "update_member"}
 	rows, err := f.owner.Query(ctx, `SELECT p.proname,pg_get_userbyid(p.proowner),p.prosecdef,coalesce(p.proconfig::text,''),p.prorettype='trigger'::regtype,
 		coalesce((SELECT string_agg(coalesce(nullif(pg_get_userbyid(a.grantee),''),'PUBLIC'),',') FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a

@@ -475,7 +475,7 @@
     "tests/foundation/local_recovery_negative_test.go": "c6a41346f7dd3d966e64f4554000931e3d8fd2886d29d46b385e7e4121acb312",
     "tests/foundation/local_recovery_test.go": "a3f564962691f259d1d979b55dfa0f46a721acbb46a7dd2a0f2d6aa7c071aef9",
     "tests/foundation/loyalty_bff_test.go": "806169b5a90b2d1c72c759bf4b49dc30057cb41c1ddfd023cae6f0ad7e427eb5",
-    "tests/foundation/loyalty_points_test.go": "4c635299c83ef7142a21fc6e11c6d565c737908ee0f7327b3fe8401e032c1636",
+    "tests/foundation/loyalty_points_test.go": "7ca3593f2cc874b9aef05a4b83c072e1ac05fdc83c5ecd4e29f2b1ab8e30da56",
     "tests/foundation/mail_probe_test.go": "736b213ac9cb5520f91a70b22b66d3a8c500ff34b4442a4c930fa05301863765",
     "tests/foundation/manual_discount_test.go": "cbf1557511301bfcda12e9fa97aaeebe0ff0977021ccbd9ce5ef57b835361427",
     "tests/foundation/manual_fulfilment_env_test.go": "23e55258f4f444d1012cff934a72b671fca7e1514be7e603a1a9a0f0211d62c0",
