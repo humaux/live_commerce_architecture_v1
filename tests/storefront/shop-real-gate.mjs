@@ -36,7 +36,7 @@ const children = new Set(), sockets = new Set(), logs = [];
 const rscDiagnostic = (process.env.LC_C7_RSC_DIAGNOSTIC === "1" || process.env.C7_RSC_DIAGNOSTIC === "1") ? [] : null;
 const observedAt = () => Math.round(performance.now() * 1000) / 1000;
 // BEGIN C7_SAFE_OBSERVER: pure privacy boundary, exercised by the local adversarial test.
-function createSafeObserver(expectedOrigin) {
+function createSafeObserver(expectedOrigin, assetCatalog = null) {
   const rawToID = new Map(), candidates = new Map();
   let nextURL = 0;
   const identify = (raw) => {
@@ -82,7 +82,7 @@ function createSafeObserver(expectedOrigin) {
     document_delivery_id: "UNKNOWN", document_identity: "UNKNOWN", document_available: "UNKNOWN",
     web_error_document: { same_origin: "UNKNOWN", shape: null }, stack_present: "UNKNOWN", frame_present: "UNKNOWN",
     location_category: "UNKNOWN", location_line: "UNKNOWN", location_column: "UNKNOWN", coordinate_basis: "UNKNOWN",
-    zero_coordinate_ambiguity: "UNKNOWN", source_asset_id: "UNKNOWN", source_frame: "UNKNOWN" });
+    zero_coordinate_ambiguity: "UNKNOWN", source_asset_id: "UNKNOWN", source_frame: "UNKNOWN", asset_match: {status:"UNKNOWN",reason:"CATALOG_UNAVAILABLE",asset_id:"UNKNOWN"} });
   const errorMetadata = (e) => {
     if (!object(e)) return unknownMetadata("UNKNOWN");
     if (!errors.has(e)) errors.set(e, unknownMetadata(++nextError));
@@ -104,6 +104,7 @@ function createSafeObserver(expectedOrigin) {
     }
     const coordinates = hasURL && Number.isSafeInteger(line) && line >= 0 && Number.isSafeInteger(column) && column >= 0;
     const documentURL = read(() => mainPage.url(), null);
+    const asset = assetCatalog ? read(() => assetCatalog.match(url,line,column,prior.error_id), {status:"UNKNOWN",reason:"CATALOG_UNAVAILABLE",asset_id:"UNKNOWN"}) : prior.asset_match;
     errors.set(e, { ...prior, web_error_available: "PRESENT", document_delivery_id: ++nextDocumentDelivery,
       document_available: typeof documentURL === "string" ? "PRESENT" : "UNKNOWN", web_error_document: document(documentURL),
       stack_present: typeof stack === "string" ? stack.length > 0 : "UNKNOWN",
@@ -111,13 +112,19 @@ function createSafeObserver(expectedOrigin) {
       location_category: category, location_line: coordinates ? line : "UNKNOWN", location_column: coordinates ? column : "UNKNOWN",
       coordinate_basis: coordinates ? "public-zero-based" : "UNKNOWN",
       // A recorded zero is observable, but the adapter also uses zero for absent native coordinates.
-      zero_coordinate_ambiguity: coordinates ? line === 0 || column === 0 : "UNKNOWN" });
+      zero_coordinate_ambiguity: coordinates ? line === 0 || column === 0 : "UNKNOWN", asset_match: asset, source_asset_id: asset.status === "MATCHED" ? asset.asset_id : "UNKNOWN" });
+  };
+  const finalizeAssetEvent = e => {
+    if (!e.asset_match) return e;
+    const asset = assetCatalog ? read(() => assetCatalog.finalize(e.asset_match), {status:"UNKNOWN",reason:"CATALOG_UNAVAILABLE",asset_id:"UNKNOWN"}) : e.asset_match;
+    return {...e,asset_match:asset,source_asset_id:asset.status === "MATCHED" ? asset.asset_id : "UNKNOWN"};
   };
   const clear = () => { rawToID.clear(); candidates.clear(); errors = new WeakMap(); };
-  return { identify, document, attach, candidateIDs, error, fail, problem, clear, captureWebError, errorMetadata, pageDocument };
+  return { identify, document, attach, candidateIDs, error, fail, problem, clear, captureWebError, errorMetadata, pageDocument, finalizeAssetEvent };
 }
 // END C7_SAFE_OBSERVER
-const safeObserver = rscDiagnostic ? createSafeObserver(origin) : null;
+const assetCatalog = rscDiagnostic ? (await import("./c7-asset-catalog.mjs")).createClientAssetCatalog({appRoot:path.join(root,"apps/storefront"),evidenceRoot:evidence,origin}) : null;
+const safeObserver = rscDiagnostic ? createSafeObserver(origin, assetCatalog) : null;
 let diagnosticStage = "START", diagnosticNav = 0, diagnosticRequestID = 0;
 const diagnosticRequests = new WeakMap();
 let diagnosticEdgeID = 0, diagnosticActionID = 0, diagnosticAction = null, diagnosticTruncated = false;
@@ -547,8 +554,9 @@ try {
   console.log(`engine=${engine} cases=${cases} REAL-STACK (SANDBOX)`);
 } finally {
   if (rscDiagnostic) {
-    const events = rscDiagnostic.map(e => e.target ? { ...e, candidate_request_ids: e.candidate_request_ids ?? safeObserver.candidateIDs(e.target.url_id), edge_association: "UNKNOWN" } : e);
-    await writeFile(path.join(evidence, "c7-rsc-observation.json"), JSON.stringify({ engine, truncated: diagnosticTruncated, clock: "performance.now milliseconds", edge_association_policy: "URL identity provides candidates only; no temporal inference", events }, null, 2));
+    assetCatalog?.finish();
+    const events = rscDiagnostic.map(e => safeObserver.finalizeAssetEvent(e.target ? { ...e, candidate_request_ids: e.candidate_request_ids ?? safeObserver.candidateIDs(e.target.url_id), edge_association: "UNKNOWN" } : e));
+    await writeFile(path.join(evidence, "c7-rsc-observation.json"), JSON.stringify({ engine, asset_catalog: assetCatalog.summary(), truncated: diagnosticTruncated, clock: "performance.now milliseconds", edge_association_policy: "URL identity provides candidates only; no temporal inference", events }, null, 2));
     safeObserver.clear();
   }
   for (const c of children) c.kill("SIGTERM");

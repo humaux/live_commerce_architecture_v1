@@ -116,20 +116,23 @@ for (const enabled of [false, true]) test(`actual serialized errors stay private
 });
 
 // Exercise the actual registration, actual diagnosticEvent and actual final serialization; no browser/PG.
-async function actualWebErrorListeners(enabled = true) {
+async function actualWebErrorListeners(enabled = true, catalogOptions = null) {
   const { readFile } = await import('node:fs/promises'); const vm = await import('node:vm');
   const source = await readFile('tests/storefront/shop-real-gate.mjs', 'utf8');
+  let assetCatalog = null;
+  if (enabled && catalogOptions && source.includes('createClientAssetCatalog')) { const mod = await import('../../../tests/storefront/c7-asset-catalog.mjs'); assetCatalog = mod.createClientAssetCatalog(catalogOptions); }
   const helper = source.slice(source.indexOf('function createSafeObserver('), source.indexOf('// END C7_SAFE_OBSERVER'));
   const state = source.slice(source.indexOf('const safeObserver ='), source.indexOf('let browser, edge,'));
   const start = source.indexOf('  const pc = await phone()');
   const registration = source.slice(start, source.indexOf('  // ---- SFR01', start));
   const serialization = source.split('\n').find(x => x.includes('const events = rscDiagnostic.map'));
+  const finish = source.split('\n').find(x => x.trim() === 'assetCatalog?.finish();') ?? '';
   const contextListeners = {}, pageListeners = {}, order = [];
   let url = 'https://shop.example/en';
   const page = { url: () => typeof url === 'function' ? url() : url, on: (name, cb) => { (pageListeners[name] ??= []).push(cb); }, mainFrame: () => page };
   const context = { on: (name, cb) => { order.push(name); (contextListeners[name] ??= []).push(cb); }, newPage: async () => { order.push('newPage'); return page; } };
-  const run = await vm.runInNewContext(`(async () => { ${helper}\n${state}\n${registration}\nreturn {problems, observer:safeObserver, serialize:()=>{if(!rscDiagnostic)return '[]'; ${serialization}; return JSON.stringify(events);}}; })()`, {
-    URL, origin, rscDiagnostic: enabled ? [] : null, observedAt: () => 1, phone: async () => context,
+  const run = await vm.runInNewContext(`(async () => { ${helper}\n${state}\n${registration}\nreturn {problems, observer:safeObserver, serialize:()=>{if(!rscDiagnostic)return '[]'; ${finish} ${serialization}; return JSON.stringify(events);}}; })()`, {
+    URL, origin, assetCatalog, rscDiagnostic: enabled ? [] : null, observedAt: () => 1, phone: async () => context,
   });
   return { ...run, page, order, setURL: value => { url = value; },
     web: event => { for (const cb of contextListeners.weberror ?? []) cb(event); },
@@ -226,3 +229,151 @@ test('throwing location properties and page URL leave availability UNKNOWN and p
   assert.equal(event.document_available,'UNKNOWN');assert.equal(event.document_identity,'UNKNOWN');
   assert.equal(event.location_category,'UNKNOWN');assert.equal(event.location_line,'UNKNOWN');assert.equal(event.location_column,'UNKNOWN');
 });
+
+
+async function assetFixture(run) {
+  const fs = await import('node:fs/promises'); const path = await import('node:path');
+  const base=path.resolve('output/c7-observer-wiring-20261107/asset-catalog'); await fs.mkdir(base,{recursive:true});
+  const dir=await fs.mkdtemp(path.join(base,'fixture-'));
+  const appRoot=path.join(dir,'app'), evidenceRoot=path.join(dir,'evidence');
+  await fs.mkdir(path.join(appRoot,'.next','static','chunks'),{recursive:true}); await fs.mkdir(evidenceRoot);
+  await fs.writeFile(path.join(appRoot,'.next','BUILD_ID'),'synthetic-build-1');
+  await fs.writeFile(path.join(appRoot,'.next','static','chunks','one.js'),'// inert fixture one\nvoid 0;\n');
+  await fs.writeFile(path.join(appRoot,'.next','static','chunks','two.js'),'// inert fixture two\nvoid 1;\n');
+  try { return await run({fs,path,dir,appRoot,evidenceRoot,origin}); } finally { await fs.rm(dir,{recursive:true,force:true}); }
+}
+
+test('actual handler matches same-consuming fixture asset and retains exact recoverable bytes', async () => assetFixture(async f => {
+  const h=await actualWebErrorListeners(true,f); const e=new Error('same');
+  h.web(publicError(h.page,e,{url:origin+'/_next/static/chunks/one.js',line:0,column:1}));h.error(e);
+  const event=h.events()[0]; assert.equal(event.asset_match?.status,'MATCHED');
+  assert.equal(event.source_asset_id,event.asset_match.asset_id); assert.equal(event.source_frame,'UNKNOWN');
+  const raw=await f.fs.readFile(f.path.join(f.evidenceRoot,event.asset_match.evidence_path));
+  const {createHash}=await import('node:crypto'); assert.equal(createHash('sha256').update(raw).digest('hex'),event.asset_match.content_sha256);
+  assert.equal(raw.equals(await f.fs.readFile(f.path.join(f.appRoot,'.next/static/chunks/one.js'))),true);
+  const manifest=JSON.parse(await f.fs.readFile(f.path.join(f.evidenceRoot,'c7-client-assets/manifest.json'),'utf8'));
+  assert.equal(manifest.matches[0].error_id,event.error_id); assert.equal(manifest.matches[0].asset_id,event.source_asset_id);
+  assert.equal(h.problems.length,1); assert.equal(event.exact_request_id,'UNKNOWN');
+}));
+
+test('same coordinates on two catalog assets retain distinct identities and unit uncertainty', async () => assetFixture(async f=>{
+  const h=await actualWebErrorListeners(true,f);
+  for(const name of ['one','two']){const e=new Error('identical');h.web(publicError(h.page,e,{url:origin+`/_next/static/chunks/${name}.js`,line:0,column:1}));h.error(e);}
+  const es=h.events();assert.equal(es[0].asset_match.status,'MATCHED');assert.equal(es[1].asset_match.status,'MATCHED');
+  assert.equal(es[0].source_asset_id===es[1].source_asset_id,false);
+  assert.equal(es[0].asset_match.coordinate_units,'UNKNOWN');assert.equal(es[0].zero_coordinate_ambiguity,true);
+  const m=JSON.parse(await f.fs.readFile(f.path.join(f.evidenceRoot,'c7-client-assets/manifest.json'),'utf8'));
+  assert.equal(m.sealed,true);assert.equal(m.matches.length,2);assert.equal(h.problems.length,2);
+}));
+
+for(const [label,url] of [
+ ['foreign','https://else.example/_next/static/chunks/one.js'],['credentials','https://a:b@shop.example/_next/static/chunks/one.js'],
+ ['query',origin+'/_next/static/chunks/one.js?PRIVATE_ASSET_908'],['fragment',origin+'/_next/static/chunks/one.js#PRIVATE_ASSET_908'],
+ ['empty query',origin+'/_next/static/chunks/one.js?'],['traversal',origin+'/_next/static/chunks/../chunks/one.js'],
+ ['encoded dot',origin+'/_next/static/chunks/%2e%2e/chunks/one.js'],['encoded alias',origin+'/_next/static/chunks/%6Fne.js'],
+ ['encoded slash',origin+'/_next/static/chunks%2Fone.js'],['NUL',origin+'/_next/static/chunks/one.js\0'],
+ ['missing',origin+'/_next/static/chunks/missing.js'],['port alias','https://shop.example:443/_next/static/chunks/one.js'],
+]) test(`catalog rejects ${label} through actual handler without private serialization`,async()=>assetFixture(async f=>{
+ const h=await actualWebErrorListeners(true,f),e={name:'PRIVATE_ASSET_908',message:'PRIVATE_ASSET_908',stack:'PRIVATE_ASSET_908\n    at PRIVATE_ASSET_908'};
+ h.web(publicError(h.page,e,{url,line:0,column:1}));h.error(e);const event=h.events()[0];
+ assert.equal(event.asset_match.status,'UNKNOWN');assert.equal(event.source_asset_id,'UNKNOWN');assert.equal(h.problems.length,1);
+ assert.equal(h.serialize().includes('PRIVATE_ASSET_908'),false);
+}));
+
+test('official per-segment encoding admits literal space bracket Unicode and percent filenames only canonically',async()=>assetFixture(async f=>{
+ const name='sp ace[é]%.js';await f.fs.writeFile(f.path.join(f.appRoot,'.next/static/chunks',name),'// inert encoded fixture\n');
+ const h=await actualWebErrorListeners(true,f),e=new Error('same');h.web(publicError(h.page,e,{url:origin+'/_next/static/chunks/'+encodeURIComponent(name),line:0,column:0}));h.error(e);
+ const a=h.events()[0];assert.equal(a.asset_match.status,'MATCHED');assert.equal(a.asset_match.coordinate_units,'UNKNOWN');
+ const manifest=await f.fs.readFile(f.path.join(f.evidenceRoot,'c7-client-assets/manifest.json'),'utf8');assert.equal(manifest.includes(name),false);
+}));
+
+for(const [label,limits] of [['filecount',{files:1}],['entrycount',{entries:1}],['individual bytes',{fileBytes:1}],['total bytes',{totalBytes:1}],['path length',{pathBytes:1}]])
+ test(`incomplete ${label} catalog fails closed with no partial COMPLETE`,async()=>assetFixture(async f=>{
+ const h=await actualWebErrorListeners(true,{...f,limits}),e=new Error('same');h.web(publicError(h.page,e,{url:origin+'/_next/static/chunks/one.js',line:0,column:1}));h.error(e);
+ assert.equal(h.events()[0].source_asset_id,'UNKNOWN');assert.equal(h.events()[0].asset_match.status,'UNKNOWN');assert.equal(h.problems.length,1);
+ }));
+
+for(const kind of ['build-id','source-bytes','missing-build','symlink-file','symlink-tree','fifo','duplicate-next-alias'])
+ test(`catalog rejects ${kind} rather than mixing epochs or escaping`,async()=>assetFixture(async f=>{
+ const staticDir=f.path.join(f.appRoot,'.next/static'),one=f.path.join(staticDir,'chunks/one.js');
+ if(kind==='missing-build')await f.fs.unlink(f.path.join(f.appRoot,'.next/BUILD_ID'));
+ if(kind==='symlink-file'){await f.fs.unlink(one);await f.fs.symlink(f.path.join(f.dir,'outside.js'),one);await f.fs.writeFile(f.path.join(f.dir,'outside.js'),'// outside inert');}
+ if(kind==='symlink-tree'){await f.fs.rename(staticDir,f.path.join(f.dir,'outside-static'));await f.fs.symlink(f.path.join(f.dir,'outside-static'),staticDir);}
+ if(kind==='fifo'){const {execFileSync}=await import('node:child_process');execFileSync('mkfifo',[f.path.join(staticDir,'pipe')]);}
+ if(kind==='duplicate-next-alias'){
+  const {normalizePathSep}=await import('../../../apps/storefront/node_modules/next/dist/shared/lib/page-path/normalize-path-sep.js');
+  const {encodeURIPath}=await import('../../../apps/storefront/node_modules/next/dist/shared/lib/encode-uri-path.js');
+  assert.equal(encodeURIPath(normalizePathSep('chunks\\one.js')),encodeURIPath(normalizePathSep('chunks/one.js')));
+  await f.fs.writeFile(f.path.join(staticDir,'chunks\\one.js'),'// alias inert');
+ }
+ const h=await actualWebErrorListeners(true,f);
+ if(kind==='build-id')await f.fs.writeFile(f.path.join(f.appRoot,'.next/BUILD_ID'),'different-build');
+ if(kind==='source-bytes')await f.fs.writeFile(one,'// changed fixture bytes\n');
+ const e=new Error('same');h.web(publicError(h.page,e,{url:origin+'/_next/static/chunks/one.js',line:0,column:1}));h.error(e);
+ assert.equal(h.events()[0].asset_match.status,'UNKNOWN');assert.equal(h.events()[0].source_asset_id,'UNKNOWN');assert.equal(h.problems.length,1);
+}));
+
+test('late epoch/file change invalidates earlier success in final serialization and manifest',async()=>assetFixture(async f=>{
+ const h=await actualWebErrorListeners(true,f),e=new Error('same');h.web(publicError(h.page,e,{url:origin+'/_next/static/chunks/one.js',line:0,column:1}));h.error(e);
+ await f.fs.writeFile(f.path.join(f.appRoot,'.next/static/chunks/two.js'),'// changed later\n');
+ assert.equal(h.events()[0].source_asset_id,'UNKNOWN');
+ const m=JSON.parse(await f.fs.readFile(f.path.join(f.evidenceRoot,'c7-client-assets/manifest.json'),'utf8'));assert.equal(m.status,'UNKNOWN');assert.equal(m.sealed,false);
+}));
+
+for(const [line,column] of [[-1,0],[NaN,0],[Infinity,0],[0,-1],[0,1.5],[99,0],[0,99999]])
+ test(`invalid or out-of-representation coordinate pair remains UNKNOWN (${String(line)},${String(column)})`,async()=>assetFixture(async f=>{
+ const h=await actualWebErrorListeners(true,f),e=new Error('same');h.web(publicError(h.page,e,{url:origin+'/_next/static/chunks/one.js',line,column}));h.error(e);
+ assert.equal(h.events()[0].asset_match.status,'UNKNOWN');assert.equal(h.problems.length,1);
+ }));
+
+test('retained-byte cap and preexisting destination conflict never claim success',async()=>assetFixture(async f=>{
+ const h=await actualWebErrorListeners(true,{...f,limits:{retainedBytes:1}}),e=new Error('same');h.web(publicError(h.page,e,{url:origin+'/_next/static/chunks/one.js',line:0,column:1}));h.error(e);assert.equal(h.events()[0].asset_match.status,'UNKNOWN');
+ assert.equal((await f.fs.readdir(f.path.join(f.evidenceRoot,'c7-client-assets'))).some(x=>x.endsWith('.js')),false);
+}));
+
+test('unsafe evidence destination is not followed or overwritten',async()=>assetFixture(async f=>{
+ const dir=f.path.join(f.evidenceRoot,'c7-client-assets');await f.fs.mkdir(dir);await f.fs.writeFile(f.path.join(dir,'KEEP'),'KEEP');
+ const h=await actualWebErrorListeners(true,f),e=new Error('same');h.web(publicError(h.page,e,{url:origin+'/_next/static/chunks/one.js',line:0,column:1}));h.error(e);
+ assert.equal(h.events()[0].source_asset_id,'UNKNOWN');assert.equal((await f.fs.readFile(f.path.join(dir,'KEEP'),'utf8'))==='KEEP',true);
+}));
+
+test('tampered retained bytes invalidate event identity without overwriting the file',async()=>assetFixture(async f=>{
+ const h=await actualWebErrorListeners(true,f),e=new Error('same');h.web(publicError(h.page,e,{url:origin+'/_next/static/chunks/one.js',line:0,column:1}));h.error(e);const event=h.events()[0];
+ const file=f.path.join(f.evidenceRoot,event.asset_match.evidence_path);await f.fs.writeFile(file,'KEEP');assert.equal(h.events()[0].source_asset_id,'UNKNOWN');assert.equal((await f.fs.readFile(file,'utf8'))==='KEEP',true);
+}));
+
+test('only matched JS is retained; maps HTML server and facts never become source artifacts',async()=>assetFixture(async f=>{
+ const secret='PRIVATE_ASSET_908';await f.fs.mkdir(f.path.join(f.appRoot,'.next/server'));await f.fs.writeFile(f.path.join(f.appRoot,'.next/server/private.js'),secret);
+ for(const name of ['one.js.map','index.html','facts.json'])await f.fs.writeFile(f.path.join(f.appRoot,'.next/static',name),secret);
+ const h=await actualWebErrorListeners(true,f),e=new Error(secret);h.web(publicError(h.page,e,{url:origin+'/_next/static/chunks/one.js',line:0,column:1}));h.error(e);h.events();
+ const names=await f.fs.readdir(f.path.join(f.evidenceRoot,'c7-client-assets'));assert.equal(names.filter(x=>x.endsWith('.js')).length,1);
+ assert.equal(h.serialize().includes(secret),false);assert.equal((await f.fs.readFile(f.path.join(f.evidenceRoot,'c7-client-assets/manifest.json'),'utf8')).includes(secret),false);
+}));
+
+test('actual observer-off catalog initializer performs zero build/evidence IO',async()=>{
+ const {readFile}=await import('node:fs/promises'),vm=await import('node:vm');const source=await readFile('tests/storefront/shop-real-gate.mjs','utf8');
+ const init=source.split('\n').find(x=>x.startsWith('const assetCatalog ='));assert.ok(init);let calls=0;
+ await vm.runInNewContext(`(async()=>{${init}})()`,{rscDiagnostic:null},{importModuleDynamically:()=>{calls++;throw new Error('unexpected IO');}});
+ assert.equal(calls,0);
+});
+
+test('evidence symlink is rejected without following destination',async()=>assetFixture(async f=>{
+ const real=f.path.join(f.dir,'real-evidence');await f.fs.rename(f.evidenceRoot,real);await f.fs.symlink(real,f.evidenceRoot);
+ const h=await actualWebErrorListeners(true,f),e=new Error('same');h.web(publicError(h.page,e,{url:origin+'/_next/static/chunks/one.js',line:0,column:1}));h.error(e);
+ assert.equal(h.events()[0].source_asset_id,'UNKNOWN');assert.equal((await f.fs.readdir(real)).length,0);
+}));
+
+test('retained symlink and conflicting manifest are never overwritten',async()=>assetFixture(async f=>{
+ const h=await actualWebErrorListeners(true,f),e=new Error('same');h.web(publicError(h.page,e,{url:origin+'/_next/static/chunks/one.js',line:0,column:1}));h.error(e);const a=h.events()[0];
+ const file=f.path.join(f.evidenceRoot,a.asset_match.evidence_path),outside=f.path.join(f.dir,'KEEP.js');await f.fs.writeFile(outside,'KEEP');await f.fs.unlink(file);await f.fs.symlink(outside,file);
+ assert.equal(h.events()[0].source_asset_id,'UNKNOWN');assert.equal((await f.fs.readFile(outside,'utf8'))==='KEEP',true);
+}));
+
+test('manifest conflict is preserved and cannot yield a MATCHED final event',async()=>assetFixture(async f=>{
+ const h=await actualWebErrorListeners(true,f),e=new Error('same');h.web(publicError(h.page,e,{url:origin+'/_next/static/chunks/one.js',line:0,column:1}));h.error(e);h.events();
+ const file=f.path.join(f.evidenceRoot,'c7-client-assets/manifest.json');await f.fs.writeFile(file,'KEEP');assert.equal(h.events()[0].source_asset_id,'UNKNOWN');assert.equal((await f.fs.readFile(file,'utf8'))==='KEEP',true);
+}));
+
+test('depth limit rejects incomplete enumeration',async()=>assetFixture(async f=>{
+ await f.fs.mkdir(f.path.join(f.appRoot,'.next/static/chunks/deeper'));const h=await actualWebErrorListeners(true,{...f,limits:{depth:1}}),e=new Error('same');h.web(publicError(h.page,e,{url:origin+'/_next/static/chunks/one.js',line:0,column:1}));h.error(e);assert.equal(h.events()[0].source_asset_id,'UNKNOWN');
+}));
