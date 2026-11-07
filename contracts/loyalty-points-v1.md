@@ -158,6 +158,8 @@ Common: tenant and store come only from the authenticated merchant session and t
 retry with the same key. **Names, contact notes, notes and search terms never appear in a URL, query string, log line or
 metric label**; URLs carry only ids and opaque cursors (gates LPG09, LPU06).
 
+Route base: /v1/admin/stores/{store_id}
+
 | Route | Permission | Request → response |
 | --- | --- | --- |
 | `POST /members/search` (read-only, writes nothing, no Idempotency-Key) | `customers:read` | `{"q":string\|null (1..60),"include_erased":bool,"cursor":string\|null,"limit":1..100}`; case-insensitive substring over `display_name` and `contact_note`; keyset cursor on `(created_at DESC, id DESC)`, opaque, bound to `q`/`include_erased` (changed filter = 422). → `{"members":[{"id","display_name","contact_note","balance","updated_at","erased":false}],"next_cursor":string\|null}` |
