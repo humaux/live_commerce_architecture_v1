@@ -21,12 +21,11 @@ import { createWriteStream } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
-import { launch, ctxOpts, iosZoomOffenders, engine, isWebkitCancelledFetch } from "./browser-engine.mjs";
+import { launch, ctxOpts, iosZoomOffenders, engine } from "./browser-engine.mjs";
 import { shopCopy } from "../../apps/storefront/lib/shop-copy.ts";
 import { measureMediaSizes } from "./media-sizes-perf.mjs";
 import { checkOfflineError } from "./offline-error.spec.ts";
 import { checkBuyerBrowseParity } from "./buyer-browse-parity.spec.ts";
-import { isOwnRscPageError } from "../../apps/storefront/tests/c7-rsc-pageerror.mjs";
 
 const env = (name) => { const v = process.env[name]; assert(v, `${name} is required`); return v; };
 const root = process.cwd(), evidence = env("LC_SFR_EVIDENCE");
@@ -35,7 +34,6 @@ const HOST = new URL(facts.origin).host, origin = facts.origin;
 const children = new Set(), sockets = new Set(), logs = [];
 // Optional observation only. Do not change assertions or record query values, bodies, cookies or headers.
 const rscDiagnostic = process.env.C7_RSC_DIAGNOSTIC === "1" ? [] : null;
-const recognizedRscPageErrors = [];
 const observedAt = () => Math.round(performance.now() * 1000) / 1000;
 // BEGIN C7_SAFE_OBSERVER: pure privacy boundary, exercised by the local adversarial test.
 function createSafeObserver(expectedOrigin) {
@@ -73,13 +71,6 @@ const safeObserver = rscDiagnostic ? createSafeObserver(origin) : null;
 let diagnosticStage = "START", diagnosticNav = 0, diagnosticRequestID = 0;
 const diagnosticRequests = new WeakMap();
 const diagnosticEvent = (event, fields = {}) => { if (rscDiagnostic) rscDiagnostic.push({ at: observedAt(), stage: diagnosticStage, nav: diagnosticNav, event, ...fields }); };
-const observedUrl = raw => {
-  try {
-    const u = new URL(raw);
-    if (u.host !== HOST) return null;
-    return { host: u.host, path: u.pathname.replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, "[id]"), rsc: u.searchParams.has("_rsc") };
-  } catch { return null; }
-};
 let browser, edge, proxy, cases = 0;
 const pass = (name) => { cases++; console.log(`PASS ${name}`); const stage = /^SFR0[1-9]/.exec(name)?.[0]; if (stage) diagnosticStage = `after-${stage}`; };
 async function listen(server) { server.listen(0, "127.0.0.1"); await once(server, "listening"); return server.address().port; }
@@ -165,13 +156,7 @@ try {
   const pc = await phone(), p = await pc.newPage();
   const problems = [];
   p.on("pageerror", (e) => {
-    if (!isOwnRscPageError(e, origin)) {
-      problems.push(safeObserver ? safeObserver.problem(e) : `pageerror: ${e.message}`);
-      return;
-    }
-    const suffix = " due to access control checks.";
-    const target = safeObserver ? safeObserver.identify(`https:/${e.message.slice(0, -suffix.length)}`) : observedUrl(`https:/${e.message.slice(0, -suffix.length)}`);
-    recognizedRscPageErrors.push(safeObserver ? { name: safeObserver.error(e).name, message: "access-control-signature", target } : { name: e.name, message: `/${target.host}${target.path}?[redacted]${suffix}`, target });
+    problems.push(safeObserver ? safeObserver.problem(e) : `pageerror: ${e.message}`);
   });
   if (rscDiagnostic) {
     p.on("request", request => {
@@ -436,7 +421,6 @@ try {
     await writeFile(path.join(evidence, "c7-rsc-observation.json"), JSON.stringify({ engine, clock: "performance.now milliseconds", events }, null, 2));
     safeObserver.clear();
   }
-  await writeFile(path.join(evidence, "c7-recognized-rsc-pageerrors.json"), JSON.stringify({ engine, count: recognizedRscPageErrors.length, records: recognizedRscPageErrors }, null, 2));
   for (const c of children) c.kill("SIGTERM");
   for (const s of sockets) s.destroy();
   await browser?.close().catch(() => {});

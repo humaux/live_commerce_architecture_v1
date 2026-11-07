@@ -1,5 +1,5 @@
-// Classifies only the existing WebKit cancellation signature for the storefront browser gate.
-// Depends on browser-engine.mjs; called by shop-real-gate and its negative replay tests.
+// Legacy signature recognizer retained for direct regression, not a storefront error-gate exemption.
+// Depends on browser-engine.mjs; called only by its direct tests and diagnostic calibration.
 import { isWebkitCancelledFetch } from "../../../tests/storefront/browser-engine.mjs";
 
 export function isOwnRscPageError(error, origin) {

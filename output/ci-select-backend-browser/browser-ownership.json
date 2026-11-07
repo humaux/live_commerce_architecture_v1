@@ -776,7 +776,7 @@
     "tests/storefront/shop-gate.mjs": "fe0f18018ef43ef87347f62ad9b4f185d780bbd9f8609fcfe15548ee59b46077",
     "tests/storefront/shop-helpers.mjs": "864e1deb84ee0dd9be63c31b40bbd1081969cc61ccdeb0757421f2e8a9a8e2e4",
     "tests/storefront/shop-r5-checks.mjs": "9837f3874c1ff56322d4df72be3230f304505ca90da2eb5736720ae1b2121b8d",
-    "tests/storefront/shop-real-gate.mjs": "49f13f0922407758fa4c13157c806abf1147057e2c0f68a721d2f5065d2cc858",
+    "tests/storefront/shop-real-gate.mjs": "3ee1c962b69c8f3e30244879eca72e50ae5b6cf537cb4ea04fb67a23151717fc",
     "tests/storefront/store-domains-gate.mjs": "94d3d543b931453ce9176b3801161b3aae809796dee0ef7793ff32e951497185",
     "tests/storefront/storefront-publish-gate.mjs": "ab10d5c9778d074d998a1538bf92181b3d7fc2acbbbe3f7b75eb1a88532070a0",
     "tests/storefront/stripe-browser.mjs": "37d816c1975aa078b03432eb835aac6ef22688196c2db32f6687d5de903c5ef4",
@@ -2571,7 +2571,6 @@
         "tests/storefront/offline-error.spec.ts:import apps/storefront/lib/shop-copy.ts",
         "tests/storefront/offline-error.spec.ts:server/import apps/storefront",
         "tests/storefront/shop-real-gate.mjs:import apps/storefront/lib/shop-copy.ts",
-        "tests/storefront/shop-real-gate.mjs:import apps/storefront/tests/c7-rsc-pageerror.mjs",
         "tests/storefront/shop-real-gate.mjs:server/import apps/storefront",
         "tests/storefront/storefront-publish-gate.mjs:server/import apps/admin",
         "tests/storefront/storefront-publish-gate.mjs:server/import apps/storefront"
