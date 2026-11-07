@@ -10,6 +10,7 @@ package loyalty
 
 import (
 	"errors"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"livecommerce/internal/command"
 )
@@ -179,10 +180,38 @@ type AwardOutcome struct {
 
 // ValidAward is the Go half of the award input rule.
 func ValidAward(a Award) bool {
-	return command.ValidID(a.MemberID) && a.Points >= 1 && a.Points <= MaxPoints && errNotImplemented == nil
+	return command.ValidID(a.MemberID) && a.Points >= 1 && a.Points <= MaxPoints
 }
 
 // Classify maps a loyalty error to its contract §2 status and code; ok is false for errors this package does not own.
 func Classify(err error) (status int, code string, ok bool) {
+	for _, refusal := range []struct {
+		err    error
+		status int
+		code   string
+	}{
+		{ErrInsufficient, 409, "points_insufficient"},
+		{ErrErased, 409, "member_erased"},
+		{ErrLimit, 422, "limit_reached"},
+		{ErrVersion, 409, "conflict"},
+		{ErrExportTooLarge, 409, "export_too_large"},
+		{ErrIdempotencyConflict, 409, "idempotency_conflict"},
+		{ErrUnavailable, 503, "unavailable"},
+	} {
+		if errors.Is(err, refusal.err) {
+			return refusal.status, refusal.code, true
+		}
+	}
+	var pg *pgconn.PgError
+	if errors.As(err, &pg) {
+		// Retry only transient transaction failures. Never expose database messages:
+		// CHECK failures are implementation defects and can contain member PII.
+		switch pg.Code {
+		case "55P03", "40P01", "40001", "57014":
+			return 503, "retry_later", true
+		default:
+			return 503, "unavailable", true
+		}
+	}
 	return 0, "", false
 }
