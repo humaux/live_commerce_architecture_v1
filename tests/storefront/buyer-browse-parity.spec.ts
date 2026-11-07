@@ -309,6 +309,104 @@ export const PARITY_FRAMES: FrameSpec[] = [
   { frameId: "6:21825", name: "DESIGN · Buyer Mobile · 秋日選物直播 · SHOPLINE", bucket: "U:b-live", route: "none", viewport: "390x844", screenshotFile: "none", deliveryPng: "after-6-21825.png", plan: "BLOCKED", reason: "live room: no route yet per FIGMA-INVENTORY row C7" },
 ];
 
+// Contact regression: terminal attempts cannot acquire recovery authority from another tab's pending marker.
+export async function checkContactAttemptLifecycle(browser: Browser, options: Parameters<Browser["newContext"]>[0], origin: string, timeout = 10000, record: (result: unknown) => void = () => {}) {
+  const results: { status: number; edited: boolean; recoverOffered: boolean; summary: string | null; unknownText: string; calls: unknown[] }[] = [];
+  for (const status of [400, 413, 415, 422, 429]) for (const edited of [false, true]) {
+    const context = await browser.newContext(options);
+    const first = await context.newPage(), other = await context.newPage();
+    const calls: { tab: string; key: string | undefined; body: string | null }[] = [];
+    const A = { name: "Synthetic Alpha", email: "alpha@example.invalid", message: "Synthetic message A original refused" };
+    const B = { name: "Synthetic Beta", email: "beta@example.invalid", message: "Synthetic message B edited draft" };
+    const C = { name: "Synthetic Gamma", email: "gamma@example.invalid", message: "Synthetic message C other tab uncertain" };
+    const errors: string[] = [];
+    try {
+      for (const [tab, page] of [["A", first], ["C", other]] as const) {
+        page.on("pageerror", e => errors.push(e.message));
+        await page.route("**/api/buyer/contact-messages", async route => {
+          const request = route.request();
+          assert.equal(request.method(), "POST");
+          calls.push({ tab, key: request.headers()["idempotency-key"], body: request.postData() });
+          await route.fulfill({ status: tab === "A" ? status : 503, json: { code: tab === "A" ? status === 429 ? "rate_limited" : "invalid_request" : "unavailable" } });
+        });
+      }
+      const fill = async (page: Page, values: typeof A) => {
+        for (const [field, value] of Object.entries(values)) {
+          await page.getByTestId(`contact-${field}`).fill(value);
+          await expect(page.getByTestId(`contact-${field}`)).toHaveValue(value);
+        }
+      };
+      await first.goto(`${origin}/en/contact`);
+      await fill(first, A);
+      await first.getByTestId("contact-next").click();
+      await expect(first.getByTestId("contact-confirm")).toBeVisible({ timeout });
+      assert.equal(calls.length, 0);
+      await first.getByTestId("contact-send").click();
+      await expect(first.locator("main").getByRole("alert")).toBeVisible({ timeout });
+      if (status === 429) await expect(first.getByTestId("contact-summary")).toContainText(A.message);
+      assert.equal(calls.length, 1);
+      if (edited) {
+        await first.locator("main").getByRole("button").click();
+        await expect(first.getByTestId("contact-form")).toBeVisible({ timeout });
+        await fill(first, B);
+      }
+      await other.goto(`${origin}/en/contact`);
+      await fill(other, C);
+      await other.getByTestId("contact-next").click();
+      assert.equal(calls.length, 1);
+      await other.getByTestId("contact-send").click();
+      await expect(other.getByTestId("contact-unknown")).toBeVisible({ timeout });
+      await expect(other.getByTestId("contact-summary")).toContainText(C.message);
+      // Read-only lock measurement ensures the request has settled before inspecting cross-tab state.
+      await expect.poll(() => other.evaluate(async () => (await navigator.locks.query()).held.length), { timeout }).toBe(0);
+      await expect(first.getByTestId("contact-unknown")).toBeVisible({ timeout });
+      const recoverOffered = await first.getByTestId("contact-recover").isVisible();
+      const summary = await first.getByTestId("contact-summary").count() ? await first.getByTestId("contact-summary").innerText() : null;
+      assert.equal(calls.length, 2, "storage event must not POST");
+      assert.deepEqual(errors, [], "strict zero pageerrors");
+      const result = { status, edited, recoverOffered, summary, unknownText: await first.getByTestId("contact-unknown").innerText(), calls: [...calls] };
+      results.push(result); record(result);
+      // Recovery in the genuinely ambiguous tab must still use its original bytes/key.
+      await other.getByTestId("contact-recover").click();
+      await expect.poll(() => calls.length, { timeout }).toBe(3);
+      assert.deepEqual(calls[2], calls[1]);
+      const storage = await first.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }));
+      for (const value of [...Object.values(A), ...Object.values(B), ...Object.values(C)]) assert(!storage.includes(value));
+    } finally { await context.close(); }
+  }
+  for (const result of results) {
+    assert.equal(result.recoverOffered, false, `${result.status} edit=${result.edited}: refused attempt cannot recover after another tab pending`);
+    assert.equal(result.summary, null, `${result.status} edit=${result.edited}: bounded unknown has no original summary`);
+    for (const value of ["Synthetic Alpha", "Synthetic Beta", "Synthetic Gamma", "alpha@example.invalid", "beta@example.invalid", "gamma@example.invalid"]) assert(!result.unknownText.includes(value), "bounded unknown must expose no buyer content");
+  }
+  for (const outcome of ["malformed201", "transport"]) {
+    const context = await browser.newContext(options), page = await context.newPage();
+    const calls: { key: string | undefined; body: string | null }[] = [], errors: string[] = [];
+    page.on("pageerror", e => errors.push(e.message));
+    try {
+      await page.route("**/api/buyer/contact-messages", async route => {
+        calls.push({ key: route.request().headers()["idempotency-key"], body: route.request().postData() });
+        if (calls.length > 1) return route.fulfill({ status: 201, json: { message_id: "00000000-0000-4000-8000-000000000001", status: "received" } });
+        if (outcome === "transport") return route.abort();
+        return route.fulfill({ status: 201, json: { status: "received" } });
+      });
+      await page.goto(`${origin}/en/contact`);
+      for (const [field, value] of Object.entries({ name: "Synthetic Ambiguous", email: "ambiguous@example.invalid", message: "Synthetic ambiguous original" })) await page.getByTestId(`contact-${field}`).fill(value);
+      await page.getByTestId("contact-next").click();
+      assert.equal(calls.length, 0);
+      await page.getByTestId("contact-send").click();
+      await expect(page.getByTestId("contact-unknown")).toBeVisible({ timeout });
+      await expect(page.getByTestId("contact-summary")).toContainText("Synthetic ambiguous original");
+      assert.equal(calls.length, 1, "ambiguous response cannot auto POST");
+      await page.getByTestId("contact-recover").click();
+      await expect(page.getByTestId("contact-sent")).toBeVisible({ timeout });
+      assert.equal(calls.length, 2); assert.deepEqual(calls[1], calls[0]); assert.deepEqual(errors, []);
+      record({ outcome, calls, recovered: true });
+    } finally { await context.close(); }
+  }
+  return results;
+}
+
 export async function checkBuyerBrowseParity({ browser, origin, evidence, facts }: ParityContext) {
   const parityDir = path.join(evidence, "parity");
   await mkdir(parityDir, { recursive: true });
@@ -455,6 +553,12 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
             await contactPage.unroute("**/api/buyer/contact-messages", intercept);
             await contactPage.close();
           }
+        }
+
+        if (locale === "en" && width === 1440) {
+          await step("26:850", `/${locale}/contact`, "contact terminal attempt cross-tab fence", "refuse A; optionally edit B; other tab sends C ->503; explicitly recover C", "terminal A never becomes recoverable; no A/B/C summary leaks into bounded unknown; C recovers exact key/body (MOCK)", async () => {
+            await checkContactAttemptLifecycle(browser, ctxOpts({ ignoreHTTPSErrors: true, viewport: { width, height }, locale }), origin, T);
+          });
         }
 
         // Contract-shaped failure injections: no POST reaches the real contact producer in these cases.
