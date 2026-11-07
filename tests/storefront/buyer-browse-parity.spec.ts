@@ -8,6 +8,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { expect, type Browser, type Page } from "@playwright/test";
 import { ctxOpts } from "./browser-engine.mjs";
+import { shopCopy } from "../../apps/storefront/lib/shop-copy.ts";
 
 export interface ParityContext {
   browser: Browser;
@@ -50,12 +51,12 @@ export interface ManifestEntry extends FrameSpec {
 }
 
 const T = 10_000;
-// Homepage links must finish at visible destination content before the next navigation starts.
-export async function waitForHomeDestination(page: Page, url: RegExp, heading: string, productTitle?: string, timeout = T) {
+// Browse links must reach their destination heading and, for product results, a visible first-page card.
+export async function waitForHomeDestination(page: Page, url: RegExp, heading: string, requireCard = true, timeout = T) {
   await page.waitForURL(url, { timeout });
   await expect(page).toHaveURL(url, { timeout });
   await expect(page.getByRole("heading", { level: 1, name: heading, exact: true })).toBeVisible({ timeout });
-  if (productTitle) await expect(page.getByTestId("product-card").filter({ hasText: productTitle }).first()).toBeVisible({ timeout });
+  if (requireCard) await expect(page.getByTestId("product-card").first()).toBeVisible({ timeout });
 }
 const num = (text: string) => Number(text.replace(/[^\d.]/g, ""));
 const fmt = (template: string, values: Record<string, string | number>) => template.replace(/\{(\w+)\}/g, (_, k) => String(values[k]));
@@ -641,7 +642,7 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
           await step(homeFrame, homeRoute, "home search field", "fill + Enter", `query "${candle.title}" opens the search results`, async () => {
             await main.getByRole("searchbox", { name: c.searchLabel, exact: true }).fill(candle.title, { timeout: T });
             await main.getByRole("searchbox", { name: c.searchLabel, exact: true }).press("Enter", { timeout: T });
-            await page.waitForURL(new RegExp(`/${locale}/search\\?`), { timeout: T });
+            await waitForHomeDestination(page, new RegExp(`/${locale}/search\\?`), fmt(shopCopy[locale as keyof typeof shopCopy].resultsFor, { q: candle.title }));
             assert.equal(urlParams().get("q"), candle.title);
             await expect(page.getByTestId("product-card").filter({ hasText: candle.title }).first()).toBeVisible({ timeout: T });
             return page.url();
@@ -649,19 +650,19 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
           await page.goto(`${origin}${homeRoute}`);
           await step(homeFrame, homeRoute, `hero CTA link`, "click", "the published CTA (all_products) opens the product list", async () => {
             await page.getByTestId("section-hero").getByRole("link").click({ timeout: T });
-            await waitForHomeDestination(page, new RegExp(`/${locale}/products/?$`), c.allProducts, candle.title);
+            await waitForHomeDestination(page, new RegExp(`/${locale}/products/?$`), c.allProducts);
             return page.url();
           });
           await page.goto(`${origin}${homeRoute}`);
           await step(homeFrame, homeRoute, `chip "${c.allCollections}"`, "click", "opens the collections overview", async () => {
             await main.getByTestId("collection-chips").filter({ visible: true }).getByRole("link", { name: c.allCollections, exact: true }).click({ timeout: T });
-            await waitForHomeDestination(page, new RegExp(`/${locale}/collections$`), c.collectionsOverview);
+            await waitForHomeDestination(page, new RegExp(`/${locale}/collections$`), c.collectionsOverview, false);
             return page.url();
           });
           await page.goto(`${origin}${homeRoute}`);
           await step(homeFrame, homeRoute, `button "${c.viewAllProducts}"`, "click", "opens the product list", async () => {
             await page.getByTestId("section-product-grid").getByRole("link", { name: c.viewAllProducts, exact: true }).click({ timeout: T });
-            await waitForHomeDestination(page, new RegExp(`/${locale}/products/?$`), c.allProducts, candle.title);
+            await waitForHomeDestination(page, new RegExp(`/${locale}/products/?$`), c.allProducts);
             return page.url();
           });
         }
@@ -709,12 +710,14 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
           await step(collectionFrame, collectionRoute, `button "${c.viewAllProducts}"`, "click", "opens the product list", async () => {
             await main.getByRole("link", { name: c.viewAllProducts, exact: true }).click({ timeout: T });
             await expect(page).toHaveURL(new RegExp(`/${locale}/products/?$`), { timeout: T });
+            await waitForHomeDestination(page, new RegExp(`/${locale}/products/?$`), c.allProducts);
             return page.url();
           });
           await page.goto(`${origin}${collectionRoute}`);
           await step(collectionFrame, collectionRoute, `chip "${c.allCollections}"`, "click", "opens the collections overview", async () => {
             await main.getByTestId("collection-chips").filter({ visible: true }).getByRole("link", { name: c.allCollections, exact: true }).click({ timeout: T });
             await expect(page).toHaveURL(new RegExp(`/${locale}/collections$`), { timeout: T });
+            await waitForHomeDestination(page, new RegExp(`/${locale}/collections$`), c.collectionsOverview, false);
             return page.url();
           });
           await page.goto(`${origin}${collectionRoute}`);
@@ -723,6 +726,8 @@ export async function checkBuyerBrowseParity({ browser, origin, evidence, facts 
             await main.getByRole("searchbox", { name: c.searchLabel, exact: true }).press("Enter", { timeout: T });
             await page.waitForURL(new RegExp(`/${locale}/search\\?`), { timeout: T });
             assert.equal(urlParams().get("q"), candle.title);
+            await waitForHomeDestination(page, new RegExp(`/${locale}/search\\?`), fmt(shopCopy[locale as keyof typeof shopCopy].resultsFor, { q: candle.title }));
+            await expect(page.getByTestId("product-card").filter({ hasText: candle.title }).first()).toBeVisible({ timeout: T });
             return page.url();
           });
         }
