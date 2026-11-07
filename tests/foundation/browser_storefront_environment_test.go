@@ -18,9 +18,21 @@ func TestStorefrontObserverChildEnvironment(t *testing.T) {
 	if err != nil {
 		t.Fatal("root unavailable")
 	}
-	for _, input := range []string{"", "invalid", "0", "1"} {
-		t.Run("input-"+input, func(t *testing.T) {
-			t.Setenv("LC_C7_RSC_DIAGNOSTIC", input)
+	for _, tc := range []struct {
+		name, value string
+		absent      bool
+	}{
+		{"absent", "", true}, {"empty", "", false}, {"invalid", "invalid", false}, {"zero", "0", false}, {"one", "1", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("LC_C7_RSC_DIAGNOSTIC", tc.value)
+			if tc.absent {
+				if err := os.Unsetenv("LC_C7_RSC_DIAGNOSTIC"); err != nil {
+					t.Fatal("cannot unset diagnostic opt-in")
+				}
+			}
+			// The legacy alias must not override this launcher's normalized authority.
+			t.Setenv("C7_RSC_DIAGNOSTIC", "1")
 			for _, key := range []string{"LC_PRIVATE_CANARY", "COMMERCE_PRIVATE_CANARY", "DATABASE_URL", "POSTGRES_PASSWORD"} {
 				t.Setenv(key, "synthetic-private-c7-5819")
 			}
@@ -39,28 +51,12 @@ if(active!==want) process.exit(22);
 for(const key of ['LC_PRIVATE_CANARY','COMMERCE_PRIVATE_CANARY','DATABASE_URL','POSTGRES_PASSWORD']) if(process.env[key]) process.exit(23);
 if(process.env.LC_C7_RSC_DIAGNOSTIC!== (want?'1':'0')) process.exit(24);
 if(process.env.LC_SFR_FACTS!=='fixture-authorized') process.exit(25);
-`, input}
+if(process.env.C7_RSC_DIAGNOSTIC!=='0') process.exit(27);
+`, tc.value}
 			cmd.Stdout, cmd.Stderr = nil, nil // Never print hostile values on failure.
 			if err := cmd.Run(); err != nil {
 				t.Fatalf("actual child contract failed: %v", err)
 			}
 		})
 	}
-	// Absent is distinct from an explicitly empty inherited value.
-	t.Run("absent", func(t *testing.T) {
-		old, had := os.LookupEnv("LC_C7_RSC_DIAGNOSTIC")
-		os.Unsetenv("LC_C7_RSC_DIAGNOSTIC")
-		defer func() {
-			if had {
-				os.Setenv("LC_C7_RSC_DIAGNOSTIC", old)
-			}
-		}()
-		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-		defer cancel()
-		cmd := storefrontBrowserCommand(ctx, root, map[string]string{})
-		cmd.Args = []string{"node", "-e", `if(process.env.LC_C7_RSC_DIAGNOSTIC!=='0')process.exit(26)`}
-		if err := cmd.Run(); err != nil {
-			t.Fatalf("absent opt-in contract failed: %v", err)
-		}
-	})
 }

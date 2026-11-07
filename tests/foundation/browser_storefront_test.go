@@ -441,6 +441,8 @@ func storefrontBrowserCommand(ctx context.Context, root string, values map[strin
 	cmd := exec.CommandContext(ctx, "node", "tests/storefront/shop-real-gate.mjs")
 	cmd.Dir = root
 	// Only the literal nonsecret opt-in crosses this storefront seam.
+	// The direct driver keeps its legacy alias; this launcher uses only the normalized LC opt-in.
+	values["C7_RSC_DIAGNOSTIC"] = "0"
 	values["LC_C7_RSC_DIAGNOSTIC"] = "0"
 	if os.Getenv("LC_C7_RSC_DIAGNOSTIC") == "1" {
 		values["LC_C7_RSC_DIAGNOSTIC"] = "1"
