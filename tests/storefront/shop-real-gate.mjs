@@ -78,11 +78,16 @@ function createSafeObserver(expectedOrigin, assetCatalog = null) {
   let errors = new WeakMap(), nextError = 0, nextDocumentDelivery = 0;
   const read = (get, fallback = "UNKNOWN") => { try { return get(); } catch { return fallback; } };
   const object = (e) => e !== null && typeof e === "object";
+  const unknownStack = () => ({ status: "UNKNOWN", reason: "CATALOG_UNAVAILABLE", frame_count: 0, frames_truncated: "UNKNOWN",
+    parent_frame_ordinal: "UNKNOWN", parent_asset_id: "UNKNOWN", parent_content_sha256: "UNKNOWN", parent_raw_line: "UNKNOWN",
+    parent_raw_column: "UNKNOWN", coordinate_basis: "UNKNOWN", coordinate_units: "UNKNOWN", coordinate_representation: "UNKNOWN",
+    source_frame: "UNKNOWN", caller_identity: "UNKNOWN", request_causality: "UNKNOWN", frames: [] });
   const unknownMetadata = (id) => ({ error_id: id, web_error_available: "UNKNOWN", page_id: 1,
     document_delivery_id: "UNKNOWN", document_identity: "UNKNOWN", document_available: "UNKNOWN",
     web_error_document: { same_origin: "UNKNOWN", shape: null }, stack_present: "UNKNOWN", frame_present: "UNKNOWN",
     location_category: "UNKNOWN", location_line: "UNKNOWN", location_column: "UNKNOWN", coordinate_basis: "UNKNOWN",
-    zero_coordinate_ambiguity: "UNKNOWN", source_asset_id: "UNKNOWN", source_frame: "UNKNOWN", asset_match: {status:"UNKNOWN",reason:"CATALOG_UNAVAILABLE",asset_id:"UNKNOWN"} });
+    zero_coordinate_ambiguity: "UNKNOWN", source_asset_id: "UNKNOWN", source_frame: "UNKNOWN", asset_match: {status:"UNKNOWN",reason:"CATALOG_UNAVAILABLE",asset_id:"UNKNOWN"},
+    parent_source_asset_id: "UNKNOWN", stack_frame_matches: [], stack_discriminator: unknownStack() });
   const errorMetadata = (e) => {
     if (!object(e)) return unknownMetadata("UNKNOWN");
     if (!errors.has(e)) errors.set(e, unknownMetadata(++nextError));
@@ -94,6 +99,8 @@ function createSafeObserver(expectedOrigin, assetCatalog = null) {
     if (!mainPage || read(() => webError.page(), null) !== mainPage) return;
     const e = read(() => webError.error(), null); if (!object(e)) return;
     const prior = errorMetadata(e); if (prior.web_error_available === "PRESENT") return;
+    const rawName = read(() => e.name, "UNKNOWN"), rawMessage = read(() => e.message, "UNKNOWN");
+    const headerSafe = rawName !== "UNKNOWN" && rawMessage !== "UNKNOWN" && !(typeof rawName === "string" && /[\r\n\0]/.test(rawName)) && !(typeof rawMessage === "string" && /[\r\n\0]/.test(rawMessage));
     const stack = read(() => e.stack, null), location = read(() => webError.location(), null);
     const url = read(() => location.url, null), line = read(() => location.line, null), column = read(() => location.column, null);
     const hasURL = typeof url === "string" && url.trim().length > 0;
@@ -105,6 +112,7 @@ function createSafeObserver(expectedOrigin, assetCatalog = null) {
     const coordinates = hasURL && Number.isSafeInteger(line) && line >= 0 && Number.isSafeInteger(column) && column >= 0;
     const documentURL = read(() => mainPage.url(), null);
     const asset = assetCatalog ? read(() => assetCatalog.match(url,line,column,prior.error_id), {status:"UNKNOWN",reason:"CATALOG_UNAVAILABLE",asset_id:"UNKNOWN"}) : prior.asset_match;
+    const stackMatch = assetCatalog ? read(() => assetCatalog.matchStack(stack,prior.error_id,headerSafe), unknownStack()) : prior.stack_discriminator;
     errors.set(e, { ...prior, web_error_available: "PRESENT", document_delivery_id: ++nextDocumentDelivery,
       document_available: typeof documentURL === "string" ? "PRESENT" : "UNKNOWN", web_error_document: document(documentURL),
       stack_present: typeof stack === "string" ? stack.length > 0 : "UNKNOWN",
@@ -112,12 +120,15 @@ function createSafeObserver(expectedOrigin, assetCatalog = null) {
       location_category: category, location_line: coordinates ? line : "UNKNOWN", location_column: coordinates ? column : "UNKNOWN",
       coordinate_basis: coordinates ? "public-zero-based" : "UNKNOWN",
       // A recorded zero is observable, but the adapter also uses zero for absent native coordinates.
-      zero_coordinate_ambiguity: coordinates ? line === 0 || column === 0 : "UNKNOWN", asset_match: asset, source_asset_id: asset.status === "MATCHED" ? asset.asset_id : "UNKNOWN" });
+      zero_coordinate_ambiguity: coordinates ? line === 0 || column === 0 : "UNKNOWN", asset_match: asset, source_asset_id: asset.status === "MATCHED" ? asset.asset_id : "UNKNOWN",
+      parent_source_asset_id: stackMatch.status === "MATCHED" ? stackMatch.parent_asset_id : "UNKNOWN", stack_frame_matches: stackMatch.frames ?? [], stack_discriminator: stackMatch });
   };
   const finalizeAssetEvent = e => {
     if (!e.asset_match) return e;
     const asset = assetCatalog ? read(() => assetCatalog.finalize(e.asset_match), {status:"UNKNOWN",reason:"CATALOG_UNAVAILABLE",asset_id:"UNKNOWN"}) : e.asset_match;
-    return {...e,asset_match:asset,source_asset_id:asset.status === "MATCHED" ? asset.asset_id : "UNKNOWN"};
+    const stackMatch = assetCatalog ? read(() => assetCatalog.finalizeStack(e.stack_discriminator), unknownStack()) : (e.stack_discriminator ?? unknownStack());
+    return {...e,asset_match:asset,source_asset_id:asset.status === "MATCHED" ? asset.asset_id : "UNKNOWN",
+      parent_source_asset_id:stackMatch.status === "MATCHED" ? stackMatch.parent_asset_id : "UNKNOWN",stack_frame_matches:stackMatch.frames ?? [],stack_discriminator:stackMatch};
   };
   const clear = () => { rawToID.clear(); candidates.clear(); errors = new WeakMap(); };
   return { identify, document, attach, candidateIDs, error, fail, problem, clear, captureWebError, errorMetadata, pageDocument, finalizeAssetEvent };
