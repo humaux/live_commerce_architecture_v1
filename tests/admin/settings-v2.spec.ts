@@ -1058,6 +1058,71 @@ async function marketSelectionAcceptance(source: Page, store: string, testInfo: 
   ];
   for (const k of cases) {
     const page = await source.context().newPage();
+    const originalSignature = k.name === "b: active tw";
+    let releasePolicy404 = () => {}, releaseService404 = () => {};
+    const policyGate = new Promise<void>(resolve => { releasePolicy404 = resolve; });
+    const serviceGate = new Promise<void>(resolve => { releaseService404 = resolve; });
+    let policyHeld = 0, serviceHeld = 0, routeOrdinal = 0, scheduleTruncated = false;
+    const schedule: Array<{ ordinal: number; resource: string; phase: string; request?: number; targetMatches?: boolean }> = [];
+    const mark = (resource: string, phase: string, request?: number, targetMatches?: boolean) => {
+      if (schedule.length < 40) schedule.push({ ordinal: ++routeOrdinal, resource, phase, request, targetMatches });
+      else scheduleTruncated = true;
+    };
+    if (originalSignature) await page.addInitScript(({ store, target }) => {
+      // TEST ONLY: native storage delegation + passive DOM observation; no app state/DOM writes.
+      const ledger = { rows: [] as Array<Record<string, string | number | boolean | null>>,
+        truncated: false, storageError: false, observationError: false, sessionDrift: false, targetDrift: false };
+      Object.defineProperty(window, "__settingsOriginalSignature", { value: ledger });
+      const setItem = Storage.prototype.setItem, getItem = Storage.prototype.getItem;
+      let ordinal = 0, firstKey: string | undefined, matchedTarget = false;
+      const record = (row: Record<string, string | number | boolean | null>) => {
+        if (ledger.rows.length < 128) ledger.rows.push({ ordinal: ++ordinal, ...row });
+        else ledger.truncated = true;
+      };
+      const isDraft = (receiver: unknown, key: unknown) => receiver === window.sessionStorage &&
+        typeof key === "string" && key.startsWith(`commerce-settings-draft:${store}:`);
+      Storage.prototype.setItem = function (...args: Parameters<Storage["setItem"]>) {
+        let result: ReturnType<Storage["setItem"]>;
+        try { result = Reflect.apply(setItem, this, args); }
+        catch (error) {
+          try { if (isDraft(this, args[0])) ledger.storageError = true; } catch { ledger.observationError = true; }
+          throw error; // Preserve the exact native throw, including illegal receivers/quota errors.
+        }
+        try {
+          if (isDraft(this, args[0])) {
+            const key = args[0]; // Private comparison only: never emit key, digest or serialized body.
+            firstKey ??= key;
+            ledger.sessionDrift ||= firstKey !== key;
+            const raw = Reflect.apply(getItem, this, [key]);
+            if (raw !== args[1]) ledger.storageError = true;
+            const value = JSON.parse(raw ?? "null"), draft = value?.draft, policy = draft?.policyObservation;
+            const targetMatches = policy?.target === `${target}:TW:home`;
+            if (matchedTarget && !targetMatches) ledger.targetDrift = true;
+            matchedTarget ||= targetMatches;
+            const number = (v: unknown) => typeof v === "number" && Number.isFinite(v) ? v : null;
+            record({ kind: "storage", bucket: 1, readbackMatches: raw === args[1], targetMatches,
+              step: number(value?.step), policyVersion: number(policy?.version), policyDirty: policy?.dirty === true,
+              serviceVersion: number(draft?.serviceObservation?.version),
+              referenceNonempty: typeof draft?.reference === "string" && !!draft.reference.trim(), policyEnabled: draft?.policyEnabled === true });
+          }
+        } catch { ledger.observationError = true; }
+        return result;
+      };
+      for (const capture of [true, false]) for (const type of ["input", "change", "click"]) {
+        document.addEventListener(type, event => {
+          try {
+            const el = event.target;
+            if (!(el instanceof Element) || !el.closest('[data-testid="settings-wizard"]')) return;
+            const save = document.querySelector<HTMLButtonElement>('[data-testid="settings-policy-form"] button[type="submit"]');
+            // Only fixed categories; never label text, input content or arbitrary DOM attributes.
+            const control = el instanceof HTMLInputElement && el.type === "checkbox" ? "checkbox" :
+              el.closest('[data-testid="settings-policy-form"]') ? "policy" : "wizard";
+            record({ kind: "event", type, phase: capture ? "capture" : "bubble", control,
+              trusted: event.isTrusted, savePresent: !!save, saveDisabled: save?.disabled ?? null });
+          } catch { ledger.observationError = true; }
+        }, { capture, passive: true });
+      }
+    }, { store, target: B });
     const writes: Array<{ method: string; path: string; body: Record<string, unknown> }> = [];
     // READ/MEASURE only: persisted/DOM observations are not React state; GET receipt is not hydration acknowledgement.
     const reads: Array<{ resource: string; status?: number; failed?: true }> = [];
@@ -1080,7 +1145,7 @@ async function marketSelectionAcceptance(source: Page, store: string, testInfo: 
       if (request.method() === "GET" && resource) record({ resource, failed: true });
     });
     const observations: unknown[] = [];
-    const capture = async (phase: "start" | "failure") => {
+    const capture = async (phase: "start" | "after-policy-and-native-check" | "success" | "failure") => {
       try {
         const state = await page.evaluate(({ store, target }) => {
           let journalPresent = false, journalUncertain = false, journalMalformed = false;
@@ -1114,7 +1179,16 @@ async function marketSelectionAcceptance(source: Page, store: string, testInfo: 
             save: control('[data-testid="settings-policy-form"] button[type="submit"]'), pendingPanel: control('[data-testid="settings-pending"]'),
             loading: control('.settings-form-area > .message:not(.pending)[role="status"]'), alert: control('[data-testid="settings-wizard"] [role="alert"]') };
         }, { store, target: k.target === "new" ? C : k.target });
-        observations.push({ case: k.name, phase, ...state, reads: [...reads], truncated });
+        // READ ONLY: sanitized scalar ledger and live control booleans, never raw input values.
+        const native = originalSignature ? await page.evaluate(() => {
+          const win = window as typeof window & { __settingsOriginalSignature?: unknown };
+          const form = document.querySelector('[data-testid="settings-policy-form"]');
+          const reference = form?.querySelector<HTMLInputElement>('input[aria-label="Configuration reference / reason"]');
+          const checkbox = form?.querySelector<HTMLInputElement>('input[type="checkbox"]');
+          return { ledger: win.__settingsOriginalSignature ?? null, referenceNonempty: !!reference?.value.trim(), checked: checkbox?.checked ?? null };
+        }) : undefined;
+        observations.push({ case: k.name, phase, ...state, reads: [...reads], truncated,
+          ...(originalSignature ? { native, schedule: [...schedule], scheduleTruncated } : {}) });
       } catch { observations.push({ case: k.name, phase, captureFailed: true }); }
     };
     const pattern = `**/api/stores/${store}/markets**`;
@@ -1124,6 +1198,18 @@ async function marketSelectionAcceptance(source: Page, store: string, testInfo: 
       if (request.method() === "GET") {
         if (path === "markets") return reply({ items: k.markets, next_cursor: "" });
         if (path.endsWith("/delivery-services") || path.endsWith("/payment-methods")) return reply({ items: [], next_cursor: "" });
+        const resource = resourceOf(request.url());
+        if (originalSignature && (resource === "policy" || resource === "service")) {
+          const requestOrdinal = routeOrdinal + 1;
+          const targetMatches = path === `markets/${B}/countries/TW/delivery-services/home${resource === "policy" ? "/policy" : ""}`;
+          mark(resource, "held", requestOrdinal, targetMatches);
+          if (resource === "policy") { policyHeld++; await policyGate; }
+          else { serviceHeld++; await serviceGate; }
+          mark(resource, "fulfill-start", requestOrdinal, targetMatches);
+          await reply({ code: "not_found", request_id: "rvfix-mock-absent", retryable: false, details: {} }, 404);
+          mark(resource, "fulfill-return", requestOrdinal, targetMatches); // Transport completion, NOT callback admission.
+          return;
+        }
         return reply({ code: "not_found", request_id: "rvfix-mock-absent", retryable: false, details: {} }, 404);
       }
       const body = request.postDataJSON() as Record<string, unknown>;
@@ -1141,7 +1227,19 @@ async function marketSelectionAcceptance(source: Page, store: string, testInfo: 
       await wizard.getByLabel("Stable service code", { exact: true }).fill("home");
       const policyForm = page.getByTestId("settings-policy-form");
       await policyForm.getByLabel("Configuration reference / reason", { exact: true }).fill("RVFIX MOCK acceptance");
-      await policyForm.getByLabel("Enable pricing policy", { exact: true }).check();
+      if (originalSignature) {
+        await expect.poll(() => policyHeld > 0 && serviceHeld > 0, { timeout: 10_000,
+          message: "case b: both native reads held before the one checkbox operation" }).toBe(true);
+        mark("checkbox", "check-start");
+        const checked = policyForm.getByLabel("Enable pricing policy", { exact: true }).check();
+        mark("policy", "release");
+        releasePolicy404();
+        await checked;
+        mark("checkbox", "check-return");
+        await capture("after-policy-and-native-check");
+        mark("service", "release");
+        releaseService404();
+      } else await policyForm.getByLabel("Enable pricing policy", { exact: true }).check();
       await policyForm.getByRole("button", { name: "Save pricing policy", exact: true }).click();
       if (k.blocked) {
         await expect(wizard.getByRole("alert"), `${k.name}: existing tw blocks create with a clear sentence`).toContainText(/already exists but is inactive or uses a different currency/);
@@ -1155,8 +1253,15 @@ async function marketSelectionAcceptance(source: Page, store: string, testInfo: 
         // still unprocessed leaves the journal set, and the next case then loads with a pending command and a disabled Save.
         await expect.poll(() => page.evaluate(() => Object.keys(localStorage).some(key => key.startsWith("commerce-settings-command:"))), `${k.name}: command journal settled before the page closes`).toBe(false);
       }
+      if (originalSignature) await capture("success");
     } catch (error) {
       await capture("failure");
+      if (originalSignature) try {
+        const path = testInfo.outputPath("original-signature-policy-failure.png");
+        await page.getByTestId("settings-policy-form").screenshot({ path,
+          mask: [page.locator("input, textarea")], timeout: 5_000 });
+        await testInfo.attach("original-signature-policy-failure.png", { path, contentType: "image/png" });
+      } catch { /* Preserve the original failure, including when no form mounted. */ }
       try {
         // The list reporter needs a persisted path for this JSON to reach CI artifacts.
         const diagnosticPath = testInfo.outputPath("market-selection-diagnostic.json");
@@ -1165,6 +1270,13 @@ async function marketSelectionAcceptance(source: Page, store: string, testInfo: 
       } catch { /* Keep the original failure. */ }
       throw error;
     } finally {
+      releasePolicy404();
+      releaseService404();
+      if (originalSignature) try {
+        const path = testInfo.outputPath("original-signature-ledger.json");
+        await writeFile(path, JSON.stringify({ observations, schedule, scheduleTruncated }));
+        await testInfo.attach("original-signature-ledger.json", { path, contentType: "application/json" });
+      } catch { /* Evidence absence invalidates discrimination; do not replace the original error. */ }
       await page.unroute(pattern);
       await page.close();
     }
