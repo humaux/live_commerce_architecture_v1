@@ -160,7 +160,7 @@ function MemberListScope({
         />
         {read.data && (
           <Card flush>
-            <div className={s.tableWrap}>
+            <div className={`${s.tableWrap} ${s.memberTable}`}>
               <DataTable
                 caption={c.title}
                 rows={read.data.members}
