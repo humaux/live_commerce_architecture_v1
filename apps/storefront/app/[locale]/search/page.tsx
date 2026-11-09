@@ -1,3 +1,7 @@
+// Purpose: render searchable catalog results, including cursor navigation without JavaScript.
+// Depends on: lib/shop-list.ts catalog-v2 loader, shop-page.ts published-store gate, shared list components.
+// Used by: /{locale}/search and its server-issued next-page links.
+// Invariants: no route loading.tsx/Suspense boundary: streamed segments need JS to become visible; cursor-page lengths are not totals.
 // GET /{locale}/search?q=: search by title, description or SKU code (Go matches case-insensitively, literal, active only).
 // Go: catalog-v2 list with q (lib/shop-list.ts). noindex: result pages are not content. With no q it shows the search box.
 import type { Metadata } from "next";
@@ -27,6 +31,8 @@ export default async function Page({ params, searchParams }: { params: Promise<{
   const raw = Array.isArray(query.q) ? query.q[0] : query.q;
   const q = (raw ?? "").trim();
   const loaded = q ? await loadList(locale, query) : null;
+  // A page length is a total only on a single-page result: neither earlier (`after`) nor later (`next`) pages may exist.
+  const results = loaded?.list.state === "ok" && !loaded.query.after && !loaded.list.value.next ? loaded.list.value.products.length : null;
   return (
     <main className="sf-wrap">
       <PageHead crumbs={[{ href: withPreview(`/${locale}`, preview), label: copy.home }]} label={copy.breadcrumb} title={q ? fmt(copy.resultsFor, { q }) : copy.searchTitle} />
@@ -41,10 +47,17 @@ export default async function Page({ params, searchParams }: { params: Promise<{
         </button>
       </form>
       {loaded ? (
-        <ListBody locale={locale} preview={preview} path={`/${locale}/search`} params={query} loaded={loaded} searching />
+        <>
+          {results !== null && (
+            <p className="sf-search__results" aria-live="polite">
+              {fmt(copy.searchResults, { q, n: results })}
+            </p>
+          )}
+          <ListBody locale={locale} preview={preview} path={`/${locale}/search`} params={query} loaded={loaded} searching />
+        </>
       ) : (
         <div className="sf-empty">
-          <p className="sf-muted">{copy.searchEmpty}</p>
+          <p className="sf-muted">{copy.searchPrompt}</p>
         </div>
       )}
     </main>

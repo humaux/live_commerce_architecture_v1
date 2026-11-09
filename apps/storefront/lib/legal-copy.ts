@@ -62,7 +62,7 @@ const en = (l: Locale): Record<LegalSlug, Page> => ({
     ],
   },
   terms: {
-    title: "Terms of Service",
+    title: "Terms & Conditions",
     updated: owner("Terms effective date"),
     sections: [
       sec("About these terms",
@@ -158,7 +158,7 @@ const zhTW = (l: Locale): Record<LegalSlug, Page> => ({
     ],
   },
   terms: {
-    title: "服務條款",
+    title: "購物條款",
     updated: owner("條款生效日期"),
     sections: [
       sec("關於本條款",
@@ -254,7 +254,7 @@ const zhCN = (l: Locale): Record<LegalSlug, Page> => ({
     ],
   },
   terms: {
-    title: "服务条款",
+    title: "购物条款",
     updated: owner("条款生效日期"),
     sections: [
       sec("关于本条款",

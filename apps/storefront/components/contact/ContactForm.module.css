@@ -1,0 +1,15 @@
+.surface { background: var(--ds-page); min-height: 100vh; padding: 1px 0; }
+.task { width: min(720px, calc(100% - 32px)); margin: 40px auto 120px; color: var(--ds-ink); }
+.task h1 { margin: 0 0 28px; font-size: 26px; }
+.panel { background: var(--ds-surface); border-radius: var(--ds-radius-lg); padding: 16px; display: grid; gap: 12px; }
+.field { display: grid; gap: 4px; padding: 12px; border: 1px solid var(--ds-sig-line); border-radius: var(--ds-radius-control); font-size: 14px; }
+.field input, .field textarea { border: 0; outline: 0; width: 100%; color: inherit; background: transparent; font: inherit; }
+.field :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+.actions { position: fixed; bottom: 16px; width: min(720px, calc(100% - 32px)); display: flex; gap: 12px; padding: 12px 0; background: var(--ds-surface); z-index: 4; }
+.actions button, .actions a { flex: 1; min-height: 44px; border: 1px solid var(--ds-sig-line); border-radius: var(--ds-radius-control); font: inherit; text-align: center; padding: 10px; cursor: pointer; }
+.actions button:first-child { background: var(--ds-ink); color: var(--ds-on-primary); }
+.actions button:disabled { opacity: .6; cursor: wait; }
+.notice { padding: 12px; border-radius: var(--ds-radius-control); background: var(--ds-success-bg); color: var(--ds-success-text); }
+@media (max-width: 600px) { .task { margin-top: 32px; } .task h1 { font-size: 22px; } }
+
+.pendingNotice { padding: 16px; border: 1px solid var(--ds-sig-line); border-radius: var(--ds-radius-control); }

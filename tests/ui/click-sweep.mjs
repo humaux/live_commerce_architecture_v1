@@ -34,7 +34,7 @@ import { expect } from "@playwright/test";
 import { uploadJourneyMainCover } from "./product-media-journey.mjs";
 import { launch } from "../storefront/browser-engine.mjs";
 import { routes as adminRoutes } from "../../apps/admin/src/routes.ts";
-import { CLICK_VARIANTS, J23_OWNER, JOURNEY_PAGES, loadWeights, pageKey, parseShard, planClick, shardReport } from "./sweep-shard-lib.mjs";
+import { CLICK_VARIANTS, J23_OWNER, JOURNEY_PAGES, assertStorefrontRoutes, loadWeights, pageKey, parseShard, planClick, shardReport } from "./sweep-shard-lib.mjs";
 import {
   CANCEL_RE, INIT_SCRIPT, LAYER_CSS, Ledger, classKey, controlLabel, controlLocator, isCartLineRemoval, isDestructive, isIrreversible, isSignOut, listControls, matchKnown, monitor,
   degradedMessages, pageState, restore, settle, sweepControl, writeLedger,
@@ -267,6 +267,13 @@ async function adminUnit(state, route, v, firstOfVariant) {
 // ---- storefront ----------------------------------------------------------------------------------------------------------------------------------------------
 async function storefrontSession(v, placed) {
   const c = await browser.newContext(ctxOptions(v));
+  let contactPosts = 0;
+  // Never forward a contact message: this runner's receipt is entirely synthetic.
+  await c.route("**/api/buyer/contact-messages**", async (route) => {
+    if (route.request().method() !== "POST") return route.abort();
+    contactPosts++;
+    await route.fulfill({ status: 201, contentType: "application/json", body: JSON.stringify({ message_id: "12345678-1234-1234-1234-123456789abc", status: "received" }) });
+  });
   await c.addInitScript(INIT_SCRIPT);
   const mon = monitor(c, { allowedHosts: new Set([HOST, new URL(adminOrigin).host]) });
   const page = await c.newPage();
@@ -290,8 +297,10 @@ async function storefrontSession(v, placed) {
     { route: "/legal/[slug]", path: "/legal/refunds" },
     { route: "/privacy", path: "/privacy" },
     { route: "/data-deletion", path: "/data-deletion" },
+    { route: "/contact", path: "/contact" },
     { route: "/pages/[slug]", path: "/pages/about" },
   ];
+  assertStorefrontRoutes([...list.map((r) => r.route), "/cart", "/checkout", "/orders/[orderID]"]);
   try {
     // cart, checkout and the order page first: they need a pristine cart, which the buyer fills with real clicks (also the first steps of journey J2)
     if (wanted("/cart") || wanted("/checkout") || wanted("/orders/[orderID]") || run("journeys")) {
@@ -306,6 +315,22 @@ async function storefrontSession(v, placed) {
     for (const r of list) {
       if (!wanted(r.route)) continue;
       await sweep({ route: r.route, url: `${base}${r.path}`, viewport: v.viewport, locale: v.locale, expectDegraded: !!r.expectDegraded }, r.scopes ?? main);
+    }
+    if (wanted("/contact")) {
+      const unit = { app: "storefront", route: "/contact", viewport: v.viewport, locale: v.locale };
+      const row = ledger.add(rowBase(unit, "main", "contact synthetic confirmation", { action: "fill + click next + click send", expected: "synthetic contact receipt; one intercepted POST", note: "MOCK contact POST, no real message" }));
+      try {
+        await page.goto(`${base}/contact`);
+        await page.getByTestId("contact-name").fill("Synthetic Sweep");
+        await page.getByTestId("contact-email").fill("sweep@example.invalid");
+        await page.getByTestId("contact-message").fill("Synthetic sweep message");
+        await page.getByTestId("contact-next").click();
+        await expect(page.getByTestId("contact-confirm")).toBeVisible();
+        await page.getByTestId("contact-send").click();
+        await expect(page.getByTestId("contact-sent")).toBeVisible();
+        assert.equal(contactPosts, 1, "exactly one contact POST must be intercepted");
+        row.actual = "synthetic receipt shown; one POST intercepted";
+      } catch (error) { row.result = "fail"; row.failure = "contact-synthetic"; row.actual = String(error.message || error).split("\n")[0].slice(0, 300); await shot(page, row); }
     }
   } catch (e) {
     const row = ledger.add(rowBase({ app: "storefront", route: "/(storefront)", viewport: v.viewport, locale: v.locale }, "page", "(sweep)", { result: "fail", failure: "sweep-error", actual: String(e.stack || e).slice(0, 400) }));

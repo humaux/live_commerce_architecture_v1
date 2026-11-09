@@ -1,5 +1,6 @@
 // Purpose: render the canonical product page, including role-separated media and server-owned SEO/content.
 // Depends on: scoped catalog-v2 getProduct/storeCurrency, ProductMedia, assurance, related products, Next metadata/router.
+// Layout (b-product frames 102:2163 family): back link to the product list (phone: header bar with back + title), buy side, description card.
 // Used by: /{locale}/products/{slug}; media bytes use /media/p/{product}/{image} -> Go buyer media route.
 // GET /{locale}/products/{slug}: the product page, server-rendered from catalog-v2 (title, photos, options, variants with
 // price/compare-at/stock hint, description, collections) so it is crawlable; the buy box is a client island (ProductBuy).
@@ -12,9 +13,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { isLocale } from "@live-commerce/i18n";
-import PageHead from "../../../../components/PageHead";
 import ProductMedia from "../../../../components/ProductMedia";
 import RelatedProducts from "../../../../components/RelatedProducts";
+import layout from "../../../../components/product/ProductLayout.module.css";
 import ProductAssurance from "../../../../components/ProductAssurance";
 import { withPreview } from "../../../../lib/design";
 import { collectionPath, productImage, productImageSet, productPath } from "../../../../lib/routes";
@@ -60,24 +61,19 @@ export default async function Page({ params }: { params: Params }) {
   return (
     <main className="sf-wrap sf-product" data-testid="product-page">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLd }} />
-      <div className="sf-product__crumbs">
-        <PageHead
-          crumbs={[
-            { href: withPreview(`/${locale}`, preview), label: copy.home },
-            { href: withPreview(`/${locale}/products`, preview), label: copy.allProducts },
-          ]}
-          label={copy.breadcrumb}
-          title={product.title}
-          heading={false}
-        />
-      </div>
+      <nav className={layout.back} aria-label={copy.breadcrumb} data-testid="product-back">
+        <Link href={withPreview(`/${locale}/products`, preview)}>
+          <span aria-hidden="true">‹</span> <span className={layout.backLabel}>{copy.allProducts}</span>
+        </Link>
+        <strong data-testid="product-back-title">{product.title}</strong>
+      </nav>
       <div className="sf-product__grid">
         <ProductMedia key={product.id} locale={locale} product={product} currency={currency} assurance={
           <ProductAssurance locale={locale} policies={shop.draft ? [] : shop.design.pages.filter(p => ["shipping", "returns", "refunds"].includes(p.slug)).map(({ slug, title }) => ({ slug, title }))} />
         } />
         <div className="sf-product__info">
           {product.description && (
-            <section aria-labelledby="sf-desc">
+            <section className={layout.card} aria-labelledby="sf-desc" data-testid="product-description-card">
               <h2 id="sf-desc">{copy.description}</h2>
               <p className="sf-desc">{product.description}</p>
             </section>

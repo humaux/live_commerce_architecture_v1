@@ -1,9 +1,10 @@
 "use client";
 
-// Purpose: the 「聯絡店鋪 / 聯絡商店 / 申請售後」 controls of the signed buyer frames: bring the store's own contact block (the shop footer) into view.
-// Depends on: nothing (reads the document footer).
+// Purpose: open the dedicated buyer contact task from existing contact controls.
+// Depends on: locale and the existing preview URL helper.
 // Used by: components/PrivacyCenter.tsx, app/[locale]/data-deletion/page.tsx, components/order-status/*.
-// Invariants: no navigation to an invented route; without a footer on the page it opens the store home, where the contact block lives.
+// Invariants: only a valid preview token survives navigation; no buyer data is placed in the URL.
+import { withPreview } from "../../lib/design";
 export default function ContactStoreButton({ label, locale, primary = false, testId = "contact-store" }: { label: string; locale: string; primary?: boolean; testId?: string }) {
   return (
     <button
@@ -11,9 +12,9 @@ export default function ContactStoreButton({ label, locale, primary = false, tes
       className={primary ? "primary" : undefined}
       data-testid={testId}
       onClick={() => {
-        const footer = document.querySelector("footer");
-        if (footer) footer.scrollIntoView({ block: "start" });
-        else window.location.assign(`/${locale}`);
+        const token = new URLSearchParams(window.location.search).get("preview");
+        const preview = token && /^[A-Za-z0-9_-]{43}$/.test(token) ? token : null;
+        window.location.assign(withPreview(`/${locale}/contact`, preview));
       }}
     >
       {label}

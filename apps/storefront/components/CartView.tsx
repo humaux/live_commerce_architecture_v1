@@ -1,5 +1,5 @@
 // Purpose: Cart page lines and signed read, empty and access states.
-// Depends on: CartProvider, CartLines, shop-copy and state/StorefrontState.
+// Depends on: CartProvider, CartLines, cart/CartEntry (b-cart entry panel), shop-copy and state/StorefrontState.
 // Used by: localized cart route.
 // Invariants: read recovery never submits orders or replays the cart write journal.
 "use client";
@@ -13,6 +13,7 @@ import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
 import { useCart } from "./CartProvider";
 import { CartLines, CartNotice, CartSummary } from "./CartLines";
+import CartEntry from "./cart/CartEntry";
 import { shopCopy } from "../lib/shop-copy";
 
 export default function CartView({ locale }: { locale: Locale }) {
@@ -24,6 +25,9 @@ export default function CartView({ locale }: { locale: Locale }) {
   }, [readProblem]);
   const empty = !cart || cart.items.length === 0;
   return (
+    <>
+    {/* Outside the cart-page host: the entry repeats one line, and host-scoped cart gates must still see exactly the list. */}
+    {!readProblem && <CartEntry locale={locale} />}
     <div className="sf-cartpage" data-testid="cart-page">
       <CartNotice locale={locale} />
       {ready && readProblem ? (
@@ -51,5 +55,6 @@ export default function CartView({ locale }: { locale: Locale }) {
         </div>
       )}
     </div>
+    </>
   );
 }

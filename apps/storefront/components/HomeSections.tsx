@@ -4,6 +4,10 @@
 // hero, horizontal rail, grid, narrow prose, split image/text) so a home page reads as a composed shop, not a stack of
 // identical blocks. A section whose data is missing (hidden/deleted collection, no image) degrades or disappears; it never
 // breaks the page. Merchant text is React text; rich text goes through packages/markdown-lite, which escapes before tagging.
+// Signed layout (Figma 4:9192 / 4:9296): welcome title from the store name + search field on top, the hero as an inset card, the
+// collection chips right after it, and the product grid closed by a "view all products" button. The page has exactly one h1: the
+// first hero's heading when it has one (merchant text), otherwise the welcome title.
+import { Fragment } from "react";
 import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
 import { renderMarkdown } from "../../../packages/markdown-lite/src/index.ts";
@@ -11,7 +15,11 @@ import { internalHref, withPreview } from "../lib/design";
 import type { Section } from "../lib/design";
 import { collectionPath, storeImage } from "../lib/routes";
 import { getCollection, listProducts } from "../lib/shop-upstream";
-import { shopCopy } from "../lib/shop-copy";
+import { fmt, shopCopy } from "../lib/shop-copy";
+import { browseCopy } from "../lib/browse-copy";
+import BrowseSearch from "./browse/BrowseSearch";
+import styles from "./browse/browse.module.css";
+import CollectionChips from "./CollectionChips";
 import { ArrowRightIcon } from "./icons";
 import ProductCardView from "./ProductCard";
 import Rail from "./Rail";
@@ -25,6 +33,7 @@ function Hero({ section, locale, preview, h1 }: { section: Extract<Section, { ty
   const href = section.cta_kind ? internalHref(locale, section.cta_kind, section.cta_target) : null;
   const Heading = h1 ? "h1" : "h2";
   return (
+    <div className={styles.heroWrap}>
     <section className={`sf-hero${section.image_id ? "" : " sf-hero--plain"}`} data-testid="section-hero">
       {section.image_id && <img src={storeImage(section.image_id)} alt="" fetchPriority="high" decoding="async" />}
       <div className="sf-hero__copy">
@@ -38,6 +47,7 @@ function Hero({ section, locale, preview, h1 }: { section: Extract<Section, { ty
         )}
       </div>
     </section>
+    </div>
   );
 }
 
@@ -63,15 +73,17 @@ async function ProductGridSection({ section, locale, preview }: { section: Extra
     <section className="sf-section" data-testid="section-product-grid">
       <div className="sf-section__head">
         <h2>{section.heading ?? copy.newArrivals}</h2>
-        <Link className="sf-link" href={withPreview(`/${locale}/products${sort}`, preview)}>
-          {copy.viewAll}
-        </Link>
       </div>
       <ul className="sf-grid">
         {result.value.products.map((card, i) => (
           <ProductCardView key={card.id} locale={locale} card={card} currency={result.value.store.currency} preview={preview} eager={i < 2} />
         ))}
       </ul>
+      <p className={styles.more}>
+        <Link className="sf-btn sf-btn--ghost" href={withPreview(`/${locale}/products${sort}`, preview)}>
+          {browseCopy[locale].browse.viewAllProducts}
+        </Link>
+      </p>
     </section>
   );
 }
@@ -100,14 +112,32 @@ async function FeaturedSection({ section, locale, preview }: { section: Extract<
 
 export default async function HomeSections({ sections, locale, preview, name }: { sections: Section[]; locale: Locale; preview: string | null; name: string }) {
   const firstIsHeroWithHeading = sections[0]?.type === "hero" && !!sections[0].heading;
+  const welcome = fmt(browseCopy[locale].browse.welcome, { name });
+  const chips = (
+    <div className={styles.band}>
+      <CollectionChips locale={locale} preview={preview} allLabel={browseCopy[locale].browse.allProducts} />
+    </div>
+  );
+  const chipsAfterHero = sections[0]?.type === "hero";
   return (
     <>
-      {!firstIsHeroWithHeading && <h1 className="sr-only">{name}</h1>}
+      <div className={styles.top}>
+        {firstIsHeroWithHeading ? <p className={styles.welcome}>{welcome}</p> : <h1 className={styles.welcome}>{welcome}</h1>}
+        <BrowseSearch locale={locale} preview={preview} />
+      </div>
+      {!chipsAfterHero && chips}
       {sections.map((section, index) => {
         const key = `${index}:${section.type}`;
         switch (section.type) {
           case "hero":
-            return <Hero key={key} section={section} locale={locale} preview={preview} h1={index === 0} />;
+            return index === 0 ? (
+              <Fragment key={key}>
+                <Hero section={section} locale={locale} preview={preview} h1 />
+                {chips}
+              </Fragment>
+            ) : (
+              <Hero key={key} section={section} locale={locale} preview={preview} h1={false} />
+            );
           case "featured_collection":
             return <FeaturedSection key={key} section={section} locale={locale} preview={preview} />;
           case "product_grid":
