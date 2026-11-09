@@ -1,0 +1,23 @@
+[
+  {
+    "run": "red-csrf",
+    "exit_code": 1,
+    "source": "apps/admin/lib/members-client.ts",
+    "restored_sha256": "1cf38feb83321a87d29fb74efbc7085e96e68be36190948275ef04d214511496",
+    "injection": "\"X-Removed-CSRF\": csrf",
+    "restored": true
+  },
+  {
+    "run": "red-cursor-reset",
+    "exit_code": 1,
+    "source": "apps/admin/components/members/MemberList.tsx",
+    "restored_sha256": "f1db80a8e07783d3e88032701b96cd6e0d9bebc31bec87bcd2c41954bce5ef2f",
+    "injection": "searchMembers(store.id, q, after ?? (revision > 0 ? \"stale-cursor\" : null), signal)",
+    "restored": true
+  },
+  {
+    "run": "restored-green",
+    "exit_code": 0,
+    "test_sha256": "846cdbf58714b8e85b4889939e57d6556112d824201b8a42356fc88df9b40d93"
+  }
+]

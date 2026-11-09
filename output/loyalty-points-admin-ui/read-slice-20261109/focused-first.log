@@ -1,0 +1,26 @@
+✔ Host subset: nested Provider and React19 context shadow defaults without sibling leakage (1.3955ms)
+✔ Host subset: provider updates reach stable children and separate roots keep their own values (0.253ms)
+✔ Host subset: render errors restore context and hook ownership (8.481041ms)
+✔ Host subset: portal children inherit logical context and retain handlers/state (0.590125ms)
+✔ Host subset: portal target/key changes remount children and removal runs cleanup (0.2795ms)
+✔ Host subset: createPortal rejects invalid DOM targets rather than swallowing children (3.647083ms)
+✔ exact POST JSON null/limit/CSRF with no PII or cursor URL and no idempotency key (16.466917ms)
+✔ opaque detail cursor is encoded without URL-safe customer regexp; exact detail DTO (0.574458ms)
+✔ missing CSRF sends nothing and changed cookie discards late success (16.659792ms)
+✔ safe classifications and strict malformed/null/bounds/identity/oversize checks (2.647375ms)
+✔ actual pagination keeps rows on failure, explicit retry and duplicate suppression (1.641958ms)
+✔ actual search resets cursor; stale old query/store results cannot append (1.355584ms)
+✔ logout clears actual hook data and a late successful page cannot resurrect it (1.301916ms)
+✔ actual list search component cursor resets after loaded pages with private URL-free query (14.042834ms)
+✔ actual detail en authoritative balance, null actor and native links (1.095166ms)
+✔ actual detail zh-TW authoritative balance, null actor and native links (1.347875ms)
+✔ actual detail zh-CN authoritative balance, null actor and native links (0.802208ms)
+✔ formal consumed token bindings and old token values unchanged (2.131ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 515.338

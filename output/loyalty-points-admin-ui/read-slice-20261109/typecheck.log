@@ -1,0 +1,13 @@
+
+> @live-commerce/admin@ typecheck /Volumes/data/live_commerce_architecture_v1/fb-lp2-list-1109/apps/admin
+> tsc --noEmit
+
+components/members/MemberDetail.tsx(42,95): error TS2322: Type '{ "data-testid": string; disabled: boolean; onClick: () => undefined; children: string; }' is not assignable to type 'IntrinsicAttributes & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "disabled" | "type"> & { ref?: Ref<...> | undefined; ... 6 more ...; disabledReason?: string | undefined; }'.
+  Property 'disabled' does not exist on type 'IntrinsicAttributes & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "disabled" | "type"> & { ref?: Ref<...> | undefined; ... 6 more ...; disabledReason?: string | undefined; }'.
+components/members/MemberList.tsx(46,67): error TS2322: Type '{ type: "submit"; "data-testid": string; disabled: boolean; children: string; }' is not assignable to type 'IntrinsicAttributes & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "disabled" | "type"> & { ref?: Ref<...> | undefined; ... 6 more ...; disabledReason?: string | undefined; }'.
+  Property 'disabled' does not exist on type 'IntrinsicAttributes & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "disabled" | "type"> & { ref?: Ref<...> | undefined; ... 6 more ...; disabledReason?: string | undefined; }'.
+components/members/MemberList.tsx(60,85): error TS2322: Type '{ "data-testid": string; disabled: boolean; onClick: () => undefined; children: string; }' is not assignable to type 'IntrinsicAttributes & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "disabled" | "type"> & { ref?: Ref<...> | undefined; ... 6 more ...; disabledReason?: string | undefined; }'.
+  Property 'disabled' does not exist on type 'IntrinsicAttributes & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "disabled" | "type"> & { ref?: Ref<...> | undefined; ... 6 more ...; disabledReason?: string | undefined; }'.
+/Volumes/data/live_commerce_architecture_v1/fb-lp2-list-1109/apps/admin:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @live-commerce/admin@ typecheck: `tsc --noEmit`
+Exit status 1

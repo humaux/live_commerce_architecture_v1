@@ -1,0 +1,37 @@
+# LP2 first read UI slice — implementation + offline proof
+
+Run run_d1ca4ecfe587; task task_4a44e5f39784; dispatch ctx_316fd31210d0. Role ui_worker. Selected Codex gpt-6.1-sol HIGH per dispatch; runtime model/effort attestation UNKNOWN. Base daed4b32b1f3511d72b6403fd70be92df9e8a713, exclusive branch luogangan7-lgtm/fb-lp2-list-1109 in /Volumes/data/live_commerce_architecture_v1/fb-lp2-list-1109. No helpers/new claims. Root owns coord2e150462-1608-410f-ba9d-6bd25f05bb39 and the loyalty-ui + customers-nav-and-member-tokens leases. Root proxies Humaux store/canvas; neither is claimed performed by this worker.
+
+## Delivered
+
+Authenticated native list/detail routes reuse authorized session/store page-data with store-only query grammar and UUID member validation. Existing WorkspaceFrame remains; member entries join the customers group with customers:read and nav:false detail. Shell labels and all read-state labels cover zh-TW, zh-CN, en. No GroupID, BFF, backend, manifest, lock, migration, dependency, SDK or framework additions.
+
+Member search uses exactly POST JSON {q:null|string,include_erased:false,cursor:null|string,limit:20}, CSRF, session boundary, no Idempotency-Key and no search terms in URLs. Detail encodes opaque ledger cursors. Transport rejects invalid DTOs, member identity mismatch, unsafe numbers, malformed JSON/MIME/cache policy and bodies over 1MiB, with bounded 15s transport and safe error categories. No raw errors, query telemetry or PII persistence. Ledger balance always comes from member.balance. Null actor names render localized actual principal IDs; null contact/notes show a dash. Native detail/back/order links carry UUID scope only and disable prefetch.
+
+Read lifecycle reuses useGuardedRead. Extra pages remain bound to its head identity, scope, abort controller, generation and session boundary; loading guards prevent duplicate concurrent append, overlapping row IDs are deduplicated, repeated/cyclic next cursors are protocol errors. Failed next-page retains existing rows with explicit retry. Query/store/member/session changes discard old responses; logout hides and clears accepted member/page data. Search draft is cleared on logout. No write/create/edit/adjust/export/erase/picker/order-award controls.
+
+## Evidence and commands
+
+Bounded E3 MOCK/OFFLINE evidence is tied to SOURCE-HASHES.json, checks.json and individual logs, not production acceptance. Focused actual-source client/hooks/business-component tests: 21 PASS total (15 members cases plus 6 imported hook-host self-checks), exit0. DS presentation, Next Link and WorkspaceFrame are adapters in the existing hook host; direct handler calls here are MOCK and are **not browser click acceptance**. Navigation registry/render/architecture suites: 18 PASS, exit0. Strict admin typecheck, bash syntax, header gate, derived browser-ownership generation/check and git diff --check: exit0 each.
+
+Explicit red calibration on final source: remove X-CSRF-Token => red-csrf.log exit1 at the exact request assertion; suppress query cursor reset => red-cursor-reset.log exit1 at actual list component cursor assertion; both source files restored byte-for-byte and focused-final.log exit0. mutation-results.json records injections and restored hashes. Initial failures are retained: DS disabled prop was corrected to disabledReason; route metadata initially pointed to a unit test rather than a browser spec and shared formatter reuse was corrected after navigation gate failure. No failing gate was weakened.
+
+Complete own workspace installed exactly once using pnpm10.33.0 install --frozen-lockfile --ignore-scripts --prefer-offline (install.log, exit0), no donor links or piecemeal repairs. Actual admin consumers resolve from this workspace; workspace-integrity.json verifies all tracked manifests/lock unchanged and the old canonical token file remains a byte-identical prefix. preflight-hash-verification.json verifies all21 frozen inputs/receipts (changed nav/tokens verified at base SHA).
+
+## Design binding and explicit limits
+
+Retained official Figma B1/C7/C8 contexts in output/lp2-list-preflight-20261109 are the authority; C7 desktop screenshot was visually inspected. token-map.json binds all six additive consumed --ds-members-* tokens to formal file iJ9lDdFIXgTlKkt5Tvrc0X nodes/styles. Equal surface and teal values alias canonical existing tokens; differing canvas/ink/muted/border retain exact official values. Business CSS contains no palette literals. The existing WorkspaceFrame and signed DS controls remain as authorized shell deviations. No Figma mutation.
+
+DataTable/Card/PageHeader/Badge/Button/EmptyState/ErrorState/PermissionState/AdminLoading and shared format are reused. The native search form is deliberately retained because frozen input/submit test IDs and inline validation are not supported by current SearchBox props, avoiding a shared DS API change. Desktop uses tables; scoped mobile CSS stacks labels/cells and overrides DS table minimum widths. Balance/member info share one header card; layout is adapted to actual DTO fields and actual principal IDs, not fictional fixture names/order numbers.
+
+Full-frame pixel parity, computed-browser token reconciliation, typography/component radius/spacing reconciliation, actual mobile overflow/focus behavior and all exported visual comparisons remain NOT_RUN. Page-local consumed palette coverage is bounded; no full token diff=0 or 1:1 claim. Buttons retain approved shared DS palette. Formal cloud saved-version ACK is UNKNOWN; retained context hashes bind this implementation basis.
+
+## Acceptance left for root / independent worker
+
+Existing registration card output/lp2-browser-registration-20261109/TEST-REGISTRATION-CARD.md directs extending --browser-customers-billing rather than inventing a mode. Route metadata therefore references the existing customers-billing.spec.ts; it is an ownership pointer, not a claim that this unchanged browser spec covers members. Root must integrate the members-read subtest/fixture in that existing real-PG harness and freeze a new SHA before acceptance.
+
+NOT_RUN: full canonical Node/Go/build/PG/browser/CI, affected full navigation/customer/order modes, three locales at desktop+375px through real native clicks, real-PG >20 list/>50 ledger persistence/scoping, refresh readback, actual browser logout/foreign-store/member/cursor cases, actual click ledger, independent test/security review and exported visual comparison. No heavy slot was requested or consumed. Full LP2 writes and manual-order integration remain out of scope and unfinished. No push/PR/CI, provider, production, deployment, live credentials or customer actions.
+
+No server, fixture, container, port or background process remains. Dependency installation is the complete task workspace, not a temporary fixture; failure logs are retained. Other workers' untracked preflight/browser-registration output directories are preserved and excluded from this source commit. Root must independently rerun and proxy store + canvas before protocol completion. First useful code and offline findings were available before10:00UTC; this slice freezes before10:30UTC.
+
+Delivery diff check initially caught whitespace emitted by native test/typecheck logs. Original bytes are retained in raw-logs.tar.gz; displayed logs have trailing whitespace and blank EOF normalized only, with delivered hashes regenerated. Product source and test assertions are unchanged.

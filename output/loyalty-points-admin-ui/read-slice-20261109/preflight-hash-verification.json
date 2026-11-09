@@ -1,0 +1,23 @@
+{
+  "contracts/tasks.json": true,
+  "contracts/loyalty-points-v1.md": true,
+  "internal/loyalty/types.go": true,
+  "internal/loyalty/members.go": true,
+  "internal/httpapi/members.go": true,
+  "migrations/0223_loyalty_points.sql": true,
+  "apps/admin/app/api/stores/[store]/members/proxy.ts": true,
+  "apps/admin/app/api/stores/[store]/members/search/route.ts": true,
+  "apps/admin/app/api/stores/[store]/members/[member]/route.ts": true,
+  "apps/admin/src/features/customers/routes.ts": true,
+  "packages/ui/src/tokens.css": true,
+  "output/lp2-list-preflight-20261109/IMPLEMENTATION-CARD.md": true,
+  "output/lp2-list-preflight-20261109/context-1554-75023.txt": true,
+  "output/lp2-list-preflight-20261109/context-1554-75132.txt": true,
+  "output/lp2-list-preflight-20261109/context-1558-81656.txt": true,
+  "output/lp2-list-preflight-20261109/context-1558-81760.txt": true,
+  "output/lp2-list-preflight-20261109/context-1558-85603.txt": true,
+  "output/lp2-list-preflight-20261109/context-1558-85715.txt": true,
+  "output/lp2-list-preflight-20261109/formal-1554-75023.png": true,
+  "output/lp2-list-preflight-20261109/formal-1558-81656.png": true,
+  "output/lp2-list-preflight-20261109/formal-metadata.xml": true
+}

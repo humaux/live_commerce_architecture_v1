@@ -1,0 +1,50 @@
+✔ Host subset: nested Provider and React19 context shadow defaults without sibling leakage (0.757292ms)
+✔ Host subset: provider updates reach stable children and separate roots keep their own values (0.211166ms)
+✔ Host subset: render errors restore context and hook ownership (6.057625ms)
+✔ Host subset: portal children inherit logical context and retain handlers/state (0.263667ms)
+✔ Host subset: portal target/key changes remount children and removal runs cleanup (0.192333ms)
+✔ Host subset: createPortal rejects invalid DOM targets rather than swallowing children (3.816833ms)
+✖ exact POST JSON null/limit/CSRF with no PII or cursor URL and no idempotency key (13.38725ms)
+✔ opaque detail cursor is encoded without URL-safe customer regexp; exact detail DTO (0.744042ms)
+✔ missing CSRF sends nothing and changed cookie discards late success (16.916833ms)
+✔ safe classifications and strict malformed/null/bounds/identity/oversize checks (2.812ms)
+✔ actual pagination keeps rows on failure, explicit retry and duplicate suppression (1.780791ms)
+✔ actual search resets cursor; stale old query/store results cannot append (1.36975ms)
+✔ logout clears actual hook data and a late successful page cannot resurrect it (1.142833ms)
+✔ actual list search component cursor resets after loaded pages with private URL-free query (10.864666ms)
+✔ actual detail en authoritative balance, null actor and native links (1.143875ms)
+✔ actual detail zh-TW authoritative balance, null actor and native links (1.190292ms)
+✔ actual detail zh-CN authoritative balance, null actor and native links (0.968416ms)
+✔ formal consumed token bindings and old token values unchanged (1.176459ms)
+✔ actual initial query response arriving after query change is discarded (0.937333ms)
+✔ actual ledger failed next page retains authoritative balance and explicit retry (1.79075ms)
+✔ actual empty/query-empty, denial, not-found, protocol and signed-out component states (2.302209ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 20
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 419.894042
+
+✖ failing tests:
+
+test at tests/admin/members-read.test.ts:133:1
+✖ exact POST JSON null/limit/CSRF with no PII or cursor URL and no idempotency key (13.38725ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+
+  + undefined
+  - 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+
+      at TestContext.<anonymous> (file:///Volumes/data/live_commerce_architecture_v1/fb-lp2-list-1109/tests/admin/members-read.test.ts:148:10)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

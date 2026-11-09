@@ -4,6 +4,28 @@
 import type { RouteEntry } from "../../route-types.ts";
 export const customersRoutes = [
   {
+    id: "members",
+    path: "/members",
+    group: "customers",
+    labelKey: "members",
+    icon: "support",
+    permission: "customers:read",
+    template: "list",
+    nav: true,
+    spec: "tests/admin/customers-billing.spec.ts",
+  },
+  {
+    id: "member-detail",
+    path: "/members/[member]",
+    group: "customers",
+    labelKey: "memberDetail",
+    icon: "support",
+    permission: "customers:read",
+    template: "detail",
+    nav: false,
+    spec: "tests/admin/customers-billing.spec.ts",
+  },
+  {
     id: "customers",
     path: "/customers",
     group: "customers",

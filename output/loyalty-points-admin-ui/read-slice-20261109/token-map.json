@@ -1,0 +1,43 @@
+{
+  "file": "iJ9lDdFIXgTlKkt5Tvrc0X",
+  "retained_context": "output/lp2-list-preflight-20261109/context-1558-81656.txt",
+  "tokens": [
+    {
+      "token": "--ds-members-page",
+      "value": "#f5f7fa",
+      "formal_node": "1558:81656",
+      "formal_binding": "color/canvas"
+    },
+    {
+      "token": "--ds-members-ink",
+      "value": "#142942",
+      "formal_node": "1558:81719",
+      "formal_binding": "color/ink"
+    },
+    {
+      "token": "--ds-members-muted",
+      "value": "#596579",
+      "formal_node": "1558:81725",
+      "formal_binding": "color-muted"
+    },
+    {
+      "token": "--ds-members-border",
+      "value": "#dfe5ec",
+      "formal_node": "1558:81726",
+      "formal_binding": "color-line"
+    },
+    {
+      "token": "--ds-members-surface",
+      "value": "var(--ds-surface)",
+      "formal_node": "1558:81716",
+      "formal_binding": "color-surface = white"
+    },
+    {
+      "token": "--ds-members-link",
+      "value": "var(--ui-primary)",
+      "formal_node": "1558:81736",
+      "formal_binding": "color/teal = #247965"
+    }
+  ],
+  "scope": "Consumed read surfaces only; no full-frame parity asserted"
+}

@@ -235,3 +235,14 @@
   --ui-text-helper: var(--ds-text-xs);
   --ui-rail-width: var(--ds-nav-width);
 }
+
+/* LP2 member read surfaces; formal iJ9lDdFIXgTlKkt5Tvrc0X C7 nodes 81656/81719/81725/81726.
+ * Additive only: existing consumers retain their signed palette. See read-slice token-map.json. */
+:root {
+  --ds-members-page: #f5f7fa;
+  --ds-members-ink: #142942;
+  --ds-members-muted: #596579;
+  --ds-members-border: #dfe5ec;
+  --ds-members-surface: var(--ds-surface);
+  --ds-members-link: var(--ui-primary);
+}

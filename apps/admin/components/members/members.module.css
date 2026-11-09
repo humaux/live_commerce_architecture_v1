@@ -1,0 +1,162 @@
+/* Purpose: responsive member read surfaces bound to retained formal B1/C7/C8 tokens.
+ * Depends on: canonical DS semantic tokens; no page-local palette literals.
+ * Used by: MemberList and MemberDetail; existing WorkspaceFrame remains unchanged. */
+.page {
+  --ds-text-1: var(--ds-members-ink);
+  --ds-text-2: var(--ds-members-muted);
+  --ds-border: var(--ds-members-border);
+  display: grid;
+  gap: var(--ds-space-6);
+  padding: var(--ds-space-8);
+  color: var(--ds-members-ink);
+  background: var(--ds-members-page);
+  min-width: 0;
+}
+.search {
+  display: flex;
+  gap: var(--ds-space-3);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.search label {
+  color: var(--ds-members-muted);
+}
+.search input {
+  min-width: 0;
+  flex: 1;
+  min-height: var(--ds-target);
+  padding: var(--ds-space-3);
+  border: 1px solid var(--ds-members-border);
+  border-radius: var(--ds-radius-control);
+  background: var(--ds-members-surface);
+  color: var(--ds-members-ink);
+  font: inherit;
+}
+.page a {
+  color: var(--ds-members-link);
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+.page :is(a, input, button):focus-visible {
+  outline: 2px solid var(--ds-focus);
+  outline-offset: 3px;
+}
+.summary {
+  display: grid;
+  gap: var(--ds-space-6);
+  grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr);
+}
+.balance {
+  font-size: 28px;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+.info {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--ds-space-3) var(--ds-space-6);
+  margin: 0;
+}
+.info dt {
+  color: var(--ds-members-muted);
+}
+.info dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.tableWrap {
+  overflow-x: auto;
+}
+.tableWrap :global(table) {
+  border-collapse: collapse;
+  width: 100%;
+  text-align: start;
+  font-size: 14px;
+}
+.tableWrap :global(table) :is(th, td) {
+  padding: var(--ds-space-4);
+  border-bottom: 1px solid var(--ds-members-border);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.tableWrap :global(table) th {
+  color: var(--ds-members-muted);
+  font-size: 13px;
+  font-weight: 500;
+  text-align: start;
+}
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--ds-space-4);
+  padding: var(--ds-space-4);
+  color: var(--ds-members-muted);
+}
+@media (max-width: 640px) {
+  .page {
+    padding: var(--ds-space-4);
+    gap: var(--ds-space-4);
+  }
+  .summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .search label {
+    width: 100%;
+  }
+  .tableWrap :global(table),
+  .tableWrap :global(tbody),
+  .tableWrap :global(tr),
+  .tableWrap :global(td) {
+    display: block;
+  }
+  .tableWrap :global(thead) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .tableWrap :global(tr) {
+    padding: var(--ds-space-3);
+    border-bottom: 1px solid var(--ds-members-border);
+  }
+  .tableWrap :global(td) {
+    display: block;
+    white-space: normal;
+  }
+  .tableWrap :global(td) > [data-label] {
+    display: grid;
+    grid-template-columns: minmax(80px, 1fr) minmax(0, 2fr);
+    gap: var(--ds-space-3);
+    padding: var(--ds-space-2);
+    border: 0;
+  }
+  .tableWrap :global(td) > [data-label]::before {
+    content: attr(data-label);
+    color: var(--ds-members-muted);
+  }
+}
+
+.tableWrap :global([data-table-scroll]) {
+  min-width: 0;
+}
+@media (max-width: 640px) {
+  .tableWrap :global(table) {
+    min-width: 0;
+  }
+}
+@media (max-width: 640px) {
+  /* DS tables normally scroll; the formal member mobile view stacks its cells. */
+  .tableWrap :global(table) :global(td) {
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: 100%;
+    padding: 0;
+  }
+  .tableWrap :global([data-table-scroll-hint]) {
+    display: none;
+  }
+}

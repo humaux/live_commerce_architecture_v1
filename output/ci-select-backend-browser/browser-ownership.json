@@ -128,6 +128,7 @@
     "tests/admin/logistics-request.test.ts": "01dea5be1b52e6380af48d717a536b0fd440116fb089b562af835abe8cbe36c5",
     "tests/admin/manual-fulfilment.spec.ts": "76745d29bd4fd71f395822db298fdd18f64796390757182f23c6734057131514",
     "tests/admin/members-bff.test.ts": "f0b7e7f722e0e40b7c51af6db09fa41993b2499555094fcf2f692be2cc6e5bb4",
+    "tests/admin/members-read.test.ts": "846cdbf58714b8e85b4889939e57d6556112d824201b8a42356fc88df9b40d93",
     "tests/admin/members-real-pg.mjs": "d80d7abb6bf9b40c2192c76488020cbb8bd6954c2eb3a89eb72690e3ec52a116",
     "tests/admin/merchant-tools-model.test.ts": "4e3f231a06991020221b0e12c33dea52a0c7f5e82b3d024425d0a8c3f15cdbad",
     "tests/admin/meta-connect-gate.spec.ts": "0fc43a710716f937daf7ad8b7432013464a638d66c80b77fb817e9e81704d698",
@@ -816,7 +817,7 @@
     "packages/format/package.json": "0a52b62b35e640298589968137e2d8899151bbcb2e0714f3f9204afc70beb3ed",
     "packages/i18n/package.json": "096562b66a71f0479808557beb6490deef65c7cf1626867ec23cffbdaedebfce",
     "packages/ui/package.json": "85891954909057d1783e4a0b8585e5b8f4609f9259116ae808ce34f1f4347078",
-    "scripts/dev/test-node.sh": "1cbe36fad269a31a90e429bce665e6852aec0eab21e468be85accf6092647f1b"
+    "scripts/dev/test-node.sh": "1bbcedacaeeac58200fb02893b6d667c89c780d939ef47cf414f808a174449fb"
   },
   "modes": {
     "--browser-inbox": {
