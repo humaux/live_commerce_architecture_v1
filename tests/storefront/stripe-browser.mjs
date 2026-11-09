@@ -14,6 +14,7 @@
 // Purpose: drive the SP18/SU07/SU09/OBS Stripe buyer UI browser gates described above.
 // Depends on: ./shop-helpers.mjs, ./browser-engine.mjs, @playwright/test, the Go control server (LC_STRIPE_CONTROL), openssl.
 // Used by: tests/foundation/browser_stripe_test.go (TestBrowserStripeCheckout launches this script per case).
+// Invariants: SU07 diagnostics are passive, bounded and scalar-only; action/journey and payment guards remain authoritative.
 import { reachCheckout, switchLocale, confirmCheckoutAddress } from "./shop-helpers.mjs";
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
@@ -188,9 +189,10 @@ async function context(mobile=false){
 }
 // SU07 fourth newOrder only: passive provenance, never handler/lock acceptance evidence.
 // ponytail: two bounded local event streams; no trace, response bodies, product hooks or new requests.
+// Schema 2 clickEvents holds native mouse down/up/click phases only between click-before and click-after (or failure).
 const su07DiagnosticPages=new WeakMap();
 function startSU07Diagnostic(page){
-  const out={schema:1,pageOrdinal:1,events:[],snapshots:[],truncated:false,captureFailed:false,
+  const out={schema:2,pageOrdinal:1,events:[],snapshots:[],truncated:false,captureFailed:false,
     handlerAccepted:"UNKNOWN",lockAcquired:"UNKNOWN",cartVersionSame:"UNKNOWN",cartVersionNewer:"UNKNOWN"};
   let sequence=0,documentOrdinal=0,nextDocumentOrdinal=0,navigationOrdinal=0,requestOrdinal=0,phase=0,stopped=false;
   const requests=new WeakMap();
@@ -225,16 +227,27 @@ function startSU07Diagnostic(page){
       const q=t=>document.querySelector(`[data-testid="${t}"]`),button=q("continue-shopping");
       let d=window.__su07ContinuationDiagnostic;
       if(!d){
-        d={events:[],sequence:0,phase,documentOrdinal,truncated:false};
-        const record=kind=>event=>{if(!event.target?.closest?.('[data-testid="continue-shopping"]'))return;
+        d={events:[],sequence:0,phase,documentOrdinal,truncated:false,captureFailed:false,active:false,beforeButton:null};
+        const record=kind=>event=>{if(!d.active)return;
           if(d.events.length>=24){d.truncated=true;return;}
-          const b=q("continue-shopping");d.events.push({sequence:++d.sequence,phase:d.phase,documentOrdinal:d.documentOrdinal,kind,
-            disabled:!!b?.disabled,orderPresent:!!q("order-id"),trusted:event.isTrusted===true});};
+          try{
+            const selector='[data-testid="continue-shopping"]',b=q("continue-shopping"),rect=b?.getBoundingClientRect();
+            d.events.push({sequence:++d.sequence,phase:d.phase,documentOrdinal:d.documentOrdinal,kind,type:event.type,
+              targetMatches:event.target?.matches?.(selector)===true,closestMatches:!!event.target?.closest?.(selector),
+              pathIncludes:event.composedPath().some(node=>node?.matches?.(selector)===true),
+              buttonPresent:!!b,effectivelyDisabled:!!b&&(b.matches(":disabled")||!!b.closest('[aria-disabled="true"]')),
+              sameButtonAsBefore:!!b&&b===d.beforeButton,pointerInsideButton:!!rect&&Number.isFinite(event.clientX)&&Number.isFinite(event.clientY)&&
+                event.clientX>=rect.left&&event.clientX<rect.right&&event.clientY>=rect.top&&event.clientY<rect.bottom,
+              orderPresent:!!q("order-id"),trusted:event.isTrusted===true});
+          }catch{d.captureFailed=true;}};
         d.capture=record("capture");d.bubble=record("bubble");
-        document.addEventListener("click",d.capture,{capture:true,passive:true});document.addEventListener("click",d.bubble,{passive:true});
+        for(const type of ["mousedown","mouseup","click"]){
+          document.addEventListener(type,d.capture,{capture:true,passive:true});document.addEventListener(type,d.bubble,{passive:true});}
         window.__su07ContinuationDiagnostic=d;
       }
       d.phase=phase;
+      if(name==="click-before"){d.beforeButton=button;d.active=true;}
+      else d.active=false;
       let locatorPresent=false,locatorMatchesOrder=false,journalPresent=null,journalKind="unknown",storageReadable=true;
       try{
         if(localStorage.length>64)throw new Error();
@@ -255,24 +268,43 @@ function startSU07Diagnostic(page){
         checkoutBusy:document.querySelector("main.purchase-main")?.getAttribute("aria-busy")==="true",
         paymentBusy:q("order-payment")?.getAttribute("aria-busy")==="true",documentReady:document.readyState==="complete",
         locatorPresent,locatorMatchesOrder,journalPresent,journalKind,storageReadable,
-        clickEvents:d.events.slice(0,24).map(e=>({sequence:e.sequence,phase:e.phase,documentOrdinal:e.documentOrdinal,kind:e.kind,disabled:e.disabled,orderPresent:e.orderPresent,trusted:e.trusted})),clickTruncated:d.truncated};
-      if(name==="finish"){document.removeEventListener("click",d.capture,true);document.removeEventListener("click",d.bubble);delete window.__su07ContinuationDiagnostic;}
+        clickEvents:d.events.slice(0,24).filter(e=>e&&["capture","bubble"].includes(e.kind)&&["mousedown","mouseup","click"].includes(e.type)&&
+          [e.sequence,e.phase,e.documentOrdinal].every(n=>Number.isSafeInteger(n)&&n>=0&&n<=1000)).map(e=>({sequence:e.sequence,phase:e.phase,documentOrdinal:e.documentOrdinal,kind:e.kind,type:e.type,
+          targetMatches:e.targetMatches===true,closestMatches:e.closestMatches===true,pathIncludes:e.pathIncludes===true,buttonPresent:e.buttonPresent===true,
+          effectivelyDisabled:e.effectivelyDisabled===true,sameButtonAsBefore:e.sameButtonAsBefore===true,pointerInsideButton:e.pointerInsideButton===true,
+          orderPresent:e.orderPresent===true,trusted:e.trusted===true})),clickTruncated:d.truncated,clickCaptureFailed:d.captureFailed,clickWindowOpen:d.active};
       return result;
     },{name,phase,documentOrdinal:nextDocumentOrdinal+1}),1000,null);
     if(!data||!Number.isSafeInteger(data.documentOrdinal)||data.documentOrdinal<1||data.documentOrdinal>8){out.captureFailed=true;return;}
     documentOrdinal=data.documentOrdinal;nextDocumentOrdinal=Math.max(nextDocumentOrdinal,documentOrdinal);
     // Project page data into a closed scalar schema; never serialize an arbitrary page object/error.
     const snapshot={phase,documentOrdinal,navigationOrdinal,name};
-    for(const k of ["buttonPresent","disabled","orderPresent","emptyPresent","errorPresent","checkoutBusy","paymentBusy","documentReady","locatorPresent","locatorMatchesOrder","journalPresent","storageReadable","clickTruncated"])
+    for(const k of ["buttonPresent","disabled","orderPresent","emptyPresent","errorPresent","checkoutBusy","paymentBusy","documentReady","locatorPresent","locatorMatchesOrder","journalPresent","storageReadable","clickTruncated","clickCaptureFailed","clickWindowOpen"])
       snapshot[k]=typeof data[k]==="boolean"?data[k]:null;
+    if(data.clickCaptureFailed===true)out.captureFailed=true;
     snapshot.journalKind=["unknown","none","cart","next-cart","quote","destination","checkout","other"].includes(data.journalKind)?data.journalKind:"unknown";
-    snapshot.clickEvents=Array.isArray(data.clickEvents)?data.clickEvents.slice(0,24).filter(e=>e&&["capture","bubble"].includes(e.kind)&&[e.sequence,e.phase,e.documentOrdinal].every(n=>Number.isSafeInteger(n)&&n>=0&&n<=1000)).map(e=>({sequence:e.sequence,phase:e.phase,documentOrdinal:e.documentOrdinal,kind:e.kind,disabled:e.disabled===true,orderPresent:e.orderPresent===true,trusted:e.trusted===true})):[];
+    snapshot.clickEvents=Array.isArray(data.clickEvents)?data.clickEvents.slice(0,24).filter(e=>e&&["capture","bubble"].includes(e.kind)&&["mousedown","mouseup","click"].includes(e.type)&&[e.sequence,e.phase,e.documentOrdinal].every(n=>Number.isSafeInteger(n)&&n>=0&&n<=1000)).map(e=>({sequence:e.sequence,phase:e.phase,documentOrdinal:e.documentOrdinal,kind:e.kind,type:e.type,
+      targetMatches:e.targetMatches===true,closestMatches:e.closestMatches===true,pathIncludes:e.pathIncludes===true,buttonPresent:e.buttonPresent===true,
+      effectivelyDisabled:e.effectivelyDisabled===true,sameButtonAsBefore:e.sameButtonAsBefore===true,pointerInsideButton:e.pointerInsideButton===true,
+      orderPresent:e.orderPresent===true,trusted:e.trusted===true})):[];
     if(out.snapshots.length<8)out.snapshots.push(snapshot);else out.truncated=true;
   }catch{out.captureFailed=true;}};
   const diagnostic={sample,finish:async()=>{
-    await sample("finish");stopped=true;
-    try{page.off("framenavigated",onNavigation);page.off("request",onRequest);page.off("response",onResponse);page.off("requestfailed",onFailed);}catch{out.captureFailed=true;}
-    su07DiagnosticPages.delete(page);
+    try{await sample("finish");}finally{
+      stopped=true;
+      try{
+        const cleaned=await within(page.evaluate(()=>{
+          const d=window.__su07ContinuationDiagnostic;
+          if(d){d.active=false;for(const type of ["mousedown","mouseup","click"]){
+            document.removeEventListener(type,d.capture,true);document.removeEventListener(type,d.bubble);}
+            d.beforeButton=null;d.capture=null;d.bubble=null;delete window.__su07ContinuationDiagnostic;}
+          return true;
+        }),1000,false);
+        if(cleaned!==true)out.captureFailed=true;
+      }catch{out.captureFailed=true;}
+      try{page.off("framenavigated",onNavigation);page.off("request",onRequest);page.off("response",onResponse);page.off("requestfailed",onFailed);}catch{out.captureFailed=true;}
+      su07DiagnosticPages.delete(page);
+    }
     try{const raw=JSON.stringify(out);if(hits(raw).length){say("SU07 diagnostic privacy rejected");return;}
       await writeFile(path.join(evidence,"su07-continuation-diagnostic.json"),raw,{mode:0o600});
     }catch{say("SU07 diagnostic write failed");}
