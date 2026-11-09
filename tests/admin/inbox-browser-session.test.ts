@@ -19,35 +19,32 @@ const core = ts.createSourceFile(
   ts.ScriptKind.JS,
 );
 const functions = new Map<string, string>();
-let matcher: any;
 function visit(node: any) {
   if (
     ts.isFunctionDeclaration(node) &&
-    ["isLocalHostname", "domainMatches", "pathMatches", "filterCookies"].includes(node.name?.text)
+    ["isLocalHostname", "domainMatches", "pathMatches", "cookieMatchesURL", "filterCookies"].includes(node.name?.text)
   )
     functions.set(node.name.text, node.getText(core));
-  if (ts.isClassExpression(node) && node.members.some((m: any) => m.name?.getText(core) === "_networkCookie"))
-    matcher = node.members.find((m: any) => m.name?.getText(core) === "matches");
   ts.forEachChild(node, visit);
 }
 visit(core);
-assert.equal(functions.size, 4);
-assert.ok(matcher?.body, "actual installed Cookie.matches required");
+// Playwright v1.65 moves cookie selection to shared network functions; use their actual installed bodies.
+assert.equal(functions.size, 5, "actual installed cookie selection functions required");
 const installed = new Function(
-  `${[...functions.values()].join("\n")}\nreturn {filterCookies,matches:function(url3) ${matcher.body.getText(core)}};`,
+  `${[...functions.values()].join("\n")}\nreturn {filterCookies,matches:cookieMatchesURL};`,
 )();
 const cookie = { name: "__Host-commerce_session", value: "MOCK_ONLY", domain: "127.0.0.1", path: "/", secure: true };
-test("installed APIRequestContext cookie rules exclude Secure cookie from HTTP127 but retain HTTPS/localhost", () => {
-  assert.equal(installed.matches.call({ _raw: cookie }, new URL("http://127.0.0.1:1234/api/stores/mock/inbox")), false);
-  assert.equal(installed.filterCookies([cookie], ["http://127.0.0.1:1234/api/stores/mock/inbox"]).length, 0);
-  assert.equal(installed.matches.call({ _raw: cookie }, new URL("https://127.0.0.1:1234/api/stores/mock/inbox")), true);
-  assert.equal(
-    installed.matches.call(
-      { _raw: { ...cookie, domain: "localhost" } },
-      new URL("http://localhost:1234/api/stores/mock/inbox"),
-    ),
-    true,
-  );
+test("installed cookie rules trust HTTP loopback but refuse matched ordinary HTTP Secure cookies", () => {
+  for (const domain of ["127.0.0.1", "localhost", "[::1]", "192.0.2.1"]) {
+    // Documentation-only nonloopback address: this is actual-source MODEL evidence, no network request.
+    const scoped = { ...cookie, domain };
+    for (const protocol of ["http:", "https:"]) {
+      const url = new URL(`${protocol}//${domain}:1234/api/stores/mock/inbox`);
+      const expected = protocol === "https:" || domain !== "192.0.2.1";
+      assert.equal(installed.matches(scoped, url), expected, "same-domain Secure transport classification");
+      assert.equal(installed.filterCookies([scoped], [url.href]).length, expected ? 1 : 0);
+    }
+  }
 });
 const file = "tests/admin/inbox-ui.spec.ts",
   source = readFileSync(file, "utf8");
@@ -90,7 +87,8 @@ for (const [name, status] of [
 ] as const) {
   async function execute(t: any, browserStatus: number, body = "{}") {
     const previous = globalThis.fetch,
-      reads: { path: string; init?: RequestInit }[] = [];
+      reads: { path: string; init?: RequestInit }[] = [],
+      browserReads: string[] = [], requestReads: string[] = [];
     t.after(() => {
       globalThis.fetch = previous;
     });
@@ -101,18 +99,22 @@ for (const [name, status] of [
     const page = {
       request: {
         get: async (path: string) => {
-          const carriesCookie = installed.matches.call({ _raw: cookie }, new URL(path, "http://127.0.0.1:1234"));
+          requestReads.push(path);
+          const carriesCookie = installed.matches(cookie, new URL(path, "http://127.0.0.1:1234"));
           return { status: () => (carriesCookie ? browserStatus : 401), text: async () => body };
         },
       },
-      evaluate: async (fn: any, path: string) => fn(path),
+      evaluate: async (fn: any, path: string) => { browserReads.push(path); return fn(path); },
     };
-    return { work: probe(name)(page, "MOCK_STORE", { foreign: "MOCK_FOREIGN" }, dm, expect)(), reads };
+    return { work: probe(name)(page, "MOCK_STORE", { foreign: "MOCK_FOREIGN" }, dm, expect)(), reads, browserReads, requestReads };
   }
   test(`actual INU02 ${name} uses browser auth and retains exact ${status}/DM absence`, async (t) => {
-    const { work, reads } = await execute(t, status);
+    const { work, reads, browserReads, requestReads } = await execute(t, status);
     await work;
-    assert.equal(reads.length, 1);
+    // Transport choice stays mandatory even when APIRequestContext also authenticates loopback.
+    assert.equal(requestReads.length, 0, "INU02 must not use page.request transport");
+    assert.equal(browserReads.length, 1, "INU02 must execute its read in the browser");
+    assert.equal(reads.length, 1, "browser helper must invoke real fetch source");
     assert.equal(
       reads[0].path,
       name === "cross"
