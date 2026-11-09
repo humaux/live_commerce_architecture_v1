@@ -1,4 +1,4 @@
-// Purpose: preserve one customers navigation entry, authorize import links, and gate historical private data by active/import origin.
+// Purpose: preserve distinct customer/member navigation entries, authorize import links, and gate historical private data by active/import origin.
 // Depends on: Node/TypeScript AST, React SSR, actual Customers/CustomerDetail sources, canSeeReports and shell registry.
 // Used by: W5-U1 local regression and Node CI; controlled hooks are MOCK, not browser acceptance.
 import test from "node:test";
@@ -23,10 +23,16 @@ function component(path: string, name: string, globals: Record<string, unknown>)
   { exports, require: appRequire, ...globals });
   return exports[name];
 }
-test("the static import subpage wins over customer detail and leaves the single customers nav intact", () => {
+test("the static import subpage wins over customer detail and preserves distinct customer and member navigation", () => {
   assert.equal(matchRoute("/customers/import")?.id, "customer-import");
   assert.equal(routes.find(route => route.id === "customer-import")?.nav, false);
-  assert.equal(routes.filter(route => route.group === "customers" && route.nav).length, 1);
+  assert.deepEqual(
+    routes.filter(route => route.group === "customers" && route.nav).map(route => route.id).sort(),
+    ["customers", "members"],
+  );
+  for (const id of ["customer-detail", "member-detail"]) {
+    assert.equal(routes.find(route => route.id === id)?.nav, false);
+  }
 });
 test("the actual list offers import only to privacy holders and carries the current authorized store", () => {
   for (const permission of [false, true]) {

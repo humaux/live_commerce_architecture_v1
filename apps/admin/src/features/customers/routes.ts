@@ -1,4 +1,4 @@
-// Purpose: customer list/detail/import subpage metadata with one primary navigation entry.
+// Purpose: customer/member list and detail metadata with distinct primary entries and hidden import/detail pages.
 // Depends on: shell RouteEntry and backend customers:read/customers:privacy permissions.
 // Used by: route registry, shell titles/navigation and static/browser gates.
 import type { RouteEntry } from "../../route-types.ts";
