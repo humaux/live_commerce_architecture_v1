@@ -1,9 +1,10 @@
 // Purpose: Runs shell navigation, branding and responsive/access checks; writes local evidence.
-// Depends on: Node assert/fs/module, shell-fixture, shell/company copy and frozen ../ui/visual-lint-lib.mjs arrow measurement.
+// Depends on: Node assert/fs/module, shell-fixture, shell/company/member copy and frozen ../ui/visual-lint-lib.mjs arrow measurement.
 // Used by: apps/admin/src/features/catalog/routes.ts, apps/admin/src/features/orders/routes.ts, apps/admin/src/features/overview/routes.ts, scripts/dev/release-gate.sh
 import assert from "node:assert/strict";
 import { readFile, writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
+import { membersCopy } from "../../apps/admin/components/members/copy.ts";
 import { otherID } from "./shell-fixture.mjs";
 import { shellCopy } from "../../apps/admin/src/shell-copy.ts";
 import { company, operatorSentence, brandedTitle } from "../../apps/admin/lib/company.ts";
@@ -325,7 +326,11 @@ export async function runShellGate({
           await openMenu();
           assert.equal(await page.getByTestId(`nav-${id}`).getAttribute("aria-current"), "page");
           assert.equal(await page.getByTestId("nav-group-customers").getAttribute("aria-expanded"), "true");
-          if (id === "members") await page.getByTestId("members-list").getByRole("link", { name: "Synthetic member", exact: true }).waitFor({ state: "visible" });
+          if (id === "members") {
+            const members = page.getByTestId("members-list");
+            await members.getByText(membersCopy[locale].empty, { exact: true }).waitFor({ state: "visible" });
+            assert.equal(await members.getByRole("link", { name: "Synthetic member", exact: true }).count(), 0);
+          }
           if (width < 1024) await page.keyboard.press("Escape");
         }
         if (id === "inventory" && (width === 1586 || width === 390)) {

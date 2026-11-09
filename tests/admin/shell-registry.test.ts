@@ -224,3 +224,52 @@ test("Every browser spec clicks nav-orders: the orders group stays a singleton, 
   assert.equal(returns.group, "orders");
   assert.equal(returns.nav, false);
 });
+
+// Exercise the actual HTTP fixture; only transport is MOCK, never a replacement handler.
+test("LP2 shell second-store scope returns empty without leaking primary members", async () => {
+  const { fixture, storeID, otherID, entityID } = await import("./shell-fixture.mjs");
+  const f = await fixture();
+  try {
+    const request = (store: string, tail = "members/search", method = "POST") => fetch(`${f.origin}/v1/admin/stores/${store}/${tail}`, { method, headers: { authorization: `Bearer ${f.token}` }, signal: AbortSignal.timeout(5000) });
+    const primary = await request(storeID);
+    assert.equal(primary.status, 200);
+    assert.equal((await primary.json()).members[0].display_name, "Synthetic member");
+    const second = await request(otherID);
+    assert.equal(second.status, 200, "known second MOCK store search must be explicit empty");
+    assert.deepEqual(await second.json(), { members: [], next_cursor: null });
+    for (const response of [await request(entityID), await request(otherID, "members/unknown"), await request(otherID, "members/search", "GET")]) {
+      assert.equal(response.status, 503);
+      assert.equal((await response.json()).code, "retry_later");
+    }
+  } finally { await f.close(); }
+});
+test("LP2 shell native body assertion retains second-store and localized empty checks", async () => {
+  const raw = readFileSync("tests/admin/shell-browser.mjs", "utf8");
+  assert.ok(raw.includes('await page.goto(`${base}/${locale}/?store=${otherID}`)'));
+  assert.ok(raw.includes('membersCopy[locale].empty'));
+  assert.ok(raw.includes('assert.equal(await members.getByRole("link", { name: "Synthetic member", exact: true }).count(), 0)'));
+  const start = raw.indexOf('          if (id === "members") {');
+  const end = raw.indexOf('          if (width < 1024)', start);
+  const actual = new Function("page", "membersCopy", "locale", "assert", `return (async () => { const id = "members"; ${raw.slice(start, end)} })();`);
+  const { membersCopy } = await import("../../apps/admin/components/members/copy.ts");
+  for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
+    let waited = false;
+    const page = { getByTestId(id: string) {
+      assert.equal(id, "members-list");
+      return {
+        getByText(text: string, options: { exact: boolean }) {
+          assert.equal(text, membersCopy[locale].empty); assert.equal(options.exact, true);
+          return { async waitFor(options: { state: string }) { assert.equal(options.state, "visible"); waited = true; } };
+        },
+        getByRole() { return { async count() { return 0; } }; },
+      };
+    } };
+    await actual(page, membersCopy, locale, assert);
+    assert.equal(waited, true);
+    const leaked = { getByTestId() { return { getByText() { return { async waitFor() {} }; }, getByRole() { return { async count() { return 1; } }; } }; } };
+    await assert.rejects(actual(leaked, membersCopy, locale, assert));
+  }
+  assert.match(raw, /await target\.click\(\)/);
+  assert.match(raw, /await page\.reload\(/);
+  assert.match(raw, /getAttribute\("aria-current"\)/);
+});
