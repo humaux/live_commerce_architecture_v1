@@ -156,6 +156,15 @@ func (s *Service) run(ctx context.Context, pool *pgxpool.Pool, scope platform.Sc
 	return mapError(err)
 }
 
+// requireRecentManage rejects stale billing writes before provider effects. The short
+// scoped transaction must finish before HTTP; final writer guards remain mandatory.
+func (s *Service) requireRecentManage(ctx context.Context, pool *pgxpool.Pool, scope platform.Scope, token string) error {
+	return s.run(ctx, pool, scope, token, func(tx pgx.Tx, hash [32]byte) error {
+		_, err := tx.Exec(ctx, `SELECT billing.require_recent_manage($1::bytea,$2::uuid)`, hash[:], scope.StoreID)
+		return mapAdminWriteError(err)
+	})
+}
+
 func (s *Service) readBilling(ctx context.Context, pool *pgxpool.Pool, scope platform.Scope, token string) (billingRead, error) {
 	var raw []byte
 	err := s.run(ctx, pool, scope, token, func(tx pgx.Tx, hash [32]byte) error {
@@ -313,6 +322,9 @@ func (s *Service) StartCheckout(ctx context.Context, pool *pgxpool.Pool, scope p
 	if !s.knownPrice(priceID) {
 		return "", ErrUnknownPrice
 	}
+	if err := s.requireRecentManage(ctx, pool, scope, token); err != nil {
+		return "", err
+	}
 	before, err := s.readBilling(ctx, pool, scope, token)
 	if err != nil {
 		return "", err
@@ -375,6 +387,9 @@ func (s *Service) StartCheckout(ctx context.Context, pool *pgxpool.Pool, scope p
 func (s *Service) OpenPortal(ctx context.Context, pool *pgxpool.Pool, scope platform.Scope, token string) (string, error) {
 	if !s.Enabled() {
 		return "", ErrUnavailable
+	}
+	if err := s.requireRecentManage(ctx, pool, scope, token); err != nil {
+		return "", err
 	}
 	r, err := s.readBilling(ctx, pool, scope, token)
 	if err != nil {
