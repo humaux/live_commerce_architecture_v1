@@ -304,3 +304,16 @@ test("CI-SPEED-3: drift checker rejects a corrupted ownership artifact on its ow
   writeFileSync(output, original);
   run("--check");
 });
+
+// LP2 registration is additive to the existing native W6 customer mode, with no second auth/runner stack.
+test("LP2: members HTTP and actual browser/UI companions belong to existing customer mode", async () => {
+  const { modeEntries, backendBrowserModes } = await import("../../scripts/dev/pr-modes.mjs");
+  const entry = modeEntries(usage).find(e => e.name === "--browser-customers-billing");
+  assert.ok(entry);
+  for (const file of ["internal/loyalty", "internal/httpapi/members.go", "internal/httpapi/members_test.go"]) assert.ok(entry.covers.includes(file), file);
+  assert.match(entry.body, /\^\(TestBrowserCustomersBilling\|TestBrowserW6Customers\)\$/);
+  for (const file of ["members-read.spec.ts", "members-read.test.ts", "members-bff.test.ts", "customer-tags.spec.ts", "customers-billing.spec.ts", "guarded-read-logout.test.mjs"]) assert.ok(entry.body.includes(file), file);
+  assert.ok(backendBrowserModes(["internal/httpapi/members.go"], usage).includes(entry.name));
+  const ownership = JSON.parse(readFileSync(path.join(root, ownershipJSON), "utf8"));
+  for (const file of ["tests/admin/members-read.spec.ts", "tests/admin/customer-tags.spec.ts", "tests/admin/customers-billing.spec.ts"]) assert.ok(ownership.modes[entry.name].specs.includes(file), file);
+});

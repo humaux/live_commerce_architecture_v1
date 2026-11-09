@@ -12,7 +12,7 @@ export const customersRoutes = [
     permission: "customers:read",
     template: "list",
     nav: true,
-    spec: "tests/admin/customers-billing.spec.ts",
+    spec: "tests/admin/members-read.spec.ts",
   },
   {
     id: "member-detail",
