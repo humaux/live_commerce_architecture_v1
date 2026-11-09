@@ -1,3 +1,4 @@
+import { orderFixtureDates } from "./orders-fixture-date.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { buckets, emptyFilters, parseOrderListV2, validOrdersV2Query, validOrderFilters } from "../../apps/admin/lib/orders-v2.ts";
@@ -55,4 +56,29 @@ test("ORD-01 keeps state codes and filters while aligning merchant status labels
   assert.equal(ordersCopy["zh-TW"].statuses.NOT_STARTED, "待付款");
   assert.equal(ordersCopy["zh-CN"].statuses.MERCHANT_SHIPPED, "已出货");
   assert.equal(ordersCopy["zh-CN"].statuses.NOT_STARTED, "待付款");
+});
+
+// Exercise the exact selector imported by MOU07, with independent calendar expectations.
+test("MOU07 fixture day survives Taipei midnight and foreign host timezones", (t) => {
+  t.mock.timers.enable({ apis: ["Date"], now: new Date("2026-11-07T16:00:00.001Z") });
+  const originalTZ = process.env.TZ;
+  try {
+    for (const zone of ["UTC", "America/Los_Angeles", "Pacific/Kiritimati"]) {
+      process.env.TZ = zone;
+      const select = (created_at: string) => orderFixtureDates([{ order_id: "known-live", created_at }], "known-live");
+      assert.deepEqual(select("2026-11-07T15:59:59.999999Z"), { day: "2026-11-07", nextDay: "2026-11-08" }, zone);
+      assert.deepEqual(select("2026-11-07T16:00:00.000000Z"), { day: "2026-11-08", nextDay: "2026-11-09" }, zone);
+      assert.deepEqual(select("2026-12-31T15:59:59Z"), { day: "2026-12-31", nextDay: "2027-01-01" }, zone);
+    }
+  } finally {
+    if (originalTZ === undefined) delete process.env.TZ; else process.env.TZ = originalTZ;
+  }
+});
+test("MOU07 selector rejects missing/wrong fixtures and invalid instants", () => {
+  for (const items of [undefined, [], [null], [{order_id:"other",created_at:"2026-11-07T15:59:59Z"}], [{order_id:"known-live"},{order_id:"known-live"}]]) {
+    assert.throws(() => orderFixtureDates(items, "known-live"));
+  }
+  for (const created_at of [undefined, null, 0, "", "invalid", "2026-02-30T00:00:00Z", "2026-11-07", "2026-11-07T15:59:59", "2026-11-07T25:00:00Z"]) {
+    assert.throws(() => orderFixtureDates([{order_id:"known-live",created_at}], "known-live"));
+  }
 });
