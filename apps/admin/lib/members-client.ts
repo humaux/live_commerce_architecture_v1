@@ -1,4 +1,4 @@
-// Purpose: private member DTO validation, fenced reads and bounded in-memory pagination.
+// Purpose: private member DTO validation, single-attempt keyed writes, fenced reads and bounded in-memory pagination.
 // Depends on: LP1 BFF, settings-client session fence, customers-client guarded lifecycle and React.
 // Used by: MemberList/MemberDetail; no PII is persisted, logged or placed in page URLs.
 import { useEffect, useRef, useState } from "react";
@@ -395,4 +395,288 @@ export function appendEntries(
       ...page.entries.filter((r) => !old.entries.some((o) => o.id === r.id)),
     ],
   };
+}
+
+export type CreateMemberInput = {
+  display_name: string;
+  contact_note: string | null;
+  notes: string | null;
+};
+export type AdjustPointsInput = {
+  delta: number;
+  note: string;
+  order_id?: string | null;
+};
+/** Go loyalty.Entry, distinct from the enriched detail-read Entry. */
+export type AdjustmentEntry = {
+  id: string;
+  member_id: string;
+  delta: number;
+  reason: "manual_adjust";
+  order_id: string | null;
+  note: string | null;
+  actor_principal_id: string;
+  created_at: string;
+};
+export type AdjustPointsResult = { entry: AdjustmentEntry; balance: number };
+export type MemberWriteCode =
+  | "invalid_request"
+  | "signed-out"
+  | "forbidden"
+  | "not-found"
+  | "points_insufficient"
+  | "member_erased"
+  | "idempotency_conflict"
+  | "conflict"
+  | "limit_reached"
+  | "unknown";
+/** UNKNOWN after dispatch is unresolved: refresh may read current state but MUST NOT resend. */
+export class MemberWriteError extends Error {
+  constructor(
+    readonly code: MemberWriteCode,
+    readonly outcome: "not-sent" | "rejected" | "unknown",
+  ) {
+    super(code);
+  }
+}
+const invalidWrite = (): never => {
+  throw new MemberWriteError("invalid_request", "not-sent");
+};
+function writeText(value: unknown, max: number, required = false): string {
+  if (
+    typeof value !== "string" ||
+    /\p{Cs}/u.test(value) ||
+    Array.from(value).length > max ||
+    (required && (!value.trim() || /[\p{Cc}\p{Cf}]/u.test(value)))
+  )
+    return invalidWrite();
+  return value;
+}
+function writeID(value: string): string {
+  return typeof value === "string" && canonicalUUID.test(value)
+    ? value
+    : invalidWrite();
+}
+function writeKey(value: string): string {
+  return typeof value === "string" && /^[A-Za-z0-9_.:-]{8,128}$/.test(value)
+    ? value
+    : invalidWrite();
+}
+/** Snapshot all caller-owned values synchronously, before session hashing yields. */
+export function createMember(
+  store: string,
+  input: CreateMemberInput,
+  key: string,
+  signal: AbortSignal,
+): Promise<{ member: Member }> {
+  const path = `/api/stores/${writeID(store)}/members`,
+    stableKey = writeKey(key);
+  const body = JSON.stringify({
+    display_name: writeText(
+      writeText(input.display_name, 10000)
+        .replace(
+          /^[\u0009-\u000d\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+|[\u0009-\u000d\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+$/gu,
+          "",
+        )
+        .normalize("NFC"),
+      60,
+      true,
+    ),
+    contact_note:
+      input.contact_note === null ? null : writeText(input.contact_note, 120),
+    notes: input.notes === null ? null : writeText(input.notes, 1000),
+  });
+  return writeMemberCommand(path, body, stableKey, signal, (v) => {
+    const m = obj(obj(v).member);
+    return {
+      member: parseMember(
+        { member: m, entries: [], next_ledger_cursor: null },
+        id(m.id),
+      ).member,
+    };
+  });
+}
+export function adjustPoints(
+  store: string,
+  member: string,
+  input: AdjustPointsInput,
+  key: string,
+  signal: AbortSignal,
+): Promise<AdjustPointsResult> {
+  const target = writeID(member),
+    path = `/api/stores/${writeID(store)}/members/${target}/adjustments`,
+    stableKey = writeKey(key);
+  const delta = input.delta,
+    note = writeText(input.note, 200, true),
+    order = input.order_id;
+  if (!Number.isSafeInteger(delta) || delta === 0 || Math.abs(delta) > 1e6)
+    return invalidWrite();
+  const body = JSON.stringify({
+    delta,
+    note,
+    order_id: order == null ? null : writeID(order),
+  });
+  return writeMemberCommand(path, body, stableKey, signal, (v) => {
+    const p = obj(v),
+      e = obj(p.entry);
+    if (id(e.member_id) !== target || e.reason !== "manual_adjust")
+      return invalid();
+    const entry: AdjustmentEntry = {
+      id: id(e.id),
+      member_id: id(e.member_id),
+      delta: num(e.delta, -1e6, 1e6),
+      reason: "manual_adjust",
+      order_id: e.order_id === null ? null : id(e.order_id),
+      note: nullable(e.note),
+      actor_principal_id: id(e.actor_principal_id),
+      created_at: date(e.created_at),
+    };
+    if (entry.delta !== delta || entry.order_id !== (order ?? null))
+      return invalid();
+    return { entry, balance: num(p.balance, 0, 1e12) };
+  });
+}
+/** One POST, no receipt inference/replay/storage; all awaits share one 15s deadline and caller scope signal. */
+async function writeMemberCommand<T>(
+  path: string,
+  body: string,
+  key: string,
+  signal: AbortSignal,
+  parse: (v: unknown) => T,
+): Promise<T> {
+  if (new TextEncoder().encode(body).length > 16384) return invalidWrite();
+  const csrf = csrfCookie(),
+    controller = new AbortController();
+  const deadline = setTimeout(() => controller.abort(), 15000);
+  const fence = AbortSignal.any([signal, controller.signal]);
+  let dispatched = false,
+    before = "";
+  const bounded = <V>(promise: Promise<V>): Promise<V> =>
+    new Promise((resolve, reject) => {
+      const abort = () => reject(new Error("aborted"));
+      fence.addEventListener("abort", abort, { once: true });
+      if (fence.aborted) abort();
+      promise
+        .then(resolve, reject)
+        .finally(() => fence.removeEventListener("abort", abort));
+    });
+  const sameSession = async () => {
+    try {
+      return (
+        !!before &&
+        csrfCookie() === csrf &&
+        (await bounded(sessionBoundary(csrf))) === before &&
+        csrfCookie() === csrf
+      );
+    } catch {
+      return false;
+    }
+  };
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
+  try {
+    try {
+      before = await bounded(sessionBoundary(csrf));
+    } catch {
+      signalLogout();
+      throw new MemberWriteError("signed-out", "not-sent");
+    }
+    if (fence.aborted)
+      throw new MemberWriteError("invalid_request", "not-sent");
+    dispatched = true;
+    const response = await bounded(
+      fetch(path, {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+        signal: fence,
+        body,
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrf,
+          "Idempotency-Key": key,
+        },
+      }),
+    );
+    if (response.status === 401) {
+      signalLogout();
+      throw new MemberWriteError("signed-out", "rejected");
+    }
+    if (!(await sameSession())) {
+      signalLogout();
+      throw new MemberWriteError("signed-out", "unknown");
+    }
+    if (fence.aborted) throw new Error();
+    if (response.status === 403)
+      throw new MemberWriteError("forbidden", "rejected");
+    if (response.status === 404)
+      throw new MemberWriteError("not-found", "rejected");
+    const cache = response.headers
+      .get("cache-control")
+      ?.split(",")
+      .map((v) => v.trim());
+    if (
+      response.headers.get("content-type")?.split(";")[0] !==
+        "application/json" ||
+      !cache?.includes("no-store") ||
+      (response.ok && !cache.includes("private"))
+    )
+      throw new Error();
+    reader = response.body?.getReader();
+    if (!reader) throw new Error();
+    const chunks: Uint8Array[] = [];
+    let size = 0;
+    for (;;) {
+      const part = await bounded(reader.read());
+      if (part.done) break;
+      size += part.value.byteLength;
+      if (size > 1048576) throw new Error();
+      chunks.push(part.value);
+    }
+    const bytes = new Uint8Array(size);
+    let offset = 0;
+    for (const part of chunks) {
+      bytes.set(part, offset);
+      offset += part.length;
+    }
+    const raw: unknown = JSON.parse(
+      new TextDecoder("utf-8", { fatal: true }).decode(bytes),
+    );
+    if (!(await sameSession())) {
+      signalLogout();
+      throw new MemberWriteError("signed-out", "unknown");
+    }
+    if (fence.aborted) throw new Error();
+    if (response.status === 409 || response.status === 422) {
+      const code = obj(raw).code;
+      if (
+        (response.status === 409 &&
+          [
+            "points_insufficient",
+            "member_erased",
+            "idempotency_conflict",
+            "conflict",
+          ].includes(String(code))) ||
+        (response.status === 422 &&
+          ["invalid_request", "limit_reached"].includes(String(code)))
+      )
+        throw new MemberWriteError(code as MemberWriteCode, "rejected");
+    }
+    if (response.status !== 200 && response.status !== 201) throw new Error();
+    return parse(raw);
+  } catch (error) {
+    if (error instanceof MemberWriteError) throw error;
+    const changed = csrfCookie() !== csrf;
+    if (changed) signalLogout();
+    throw new MemberWriteError(
+      changed ? "signed-out" : "unknown",
+      dispatched ? "unknown" : "not-sent",
+    );
+  } finally {
+    clearTimeout(deadline);
+    // Do not await cancellation: a hostile/stalled body must not hold the deadline open.
+    if (reader) {
+      void reader.cancel().catch(() => {});
+      reader.releaseLock();
+    }
+  }
 }
