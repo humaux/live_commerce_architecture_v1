@@ -122,7 +122,7 @@
   }
   .tableWrap :global(td) > [data-label]::before {
     content: attr(data-label) ": "; color: var(--ds-members-muted);
-    font-size: 12px;
+    font-size: var(--ds-text-xs);
   }
   .memberTable :global(td:nth-child(1)) { grid-area: 1 / 1; }
   .memberTable :global(td:nth-child(3)) { grid-area: 1 / 2; font-variant-numeric: tabular-nums; }
