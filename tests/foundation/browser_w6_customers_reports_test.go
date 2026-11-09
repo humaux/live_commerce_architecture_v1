@@ -10,6 +10,7 @@ package foundation_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -27,6 +28,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"livecommerce/internal/buyer"
 	"livecommerce/internal/customers"
 	"livecommerce/internal/fulfillment"
@@ -34,7 +36,9 @@ import (
 	"livecommerce/internal/identity"
 	"livecommerce/internal/identityhttp"
 	"livecommerce/internal/loyalty"
+	"livecommerce/internal/merchantorders"
 	"livecommerce/internal/oidclogin"
+	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
 	"livecommerce/internal/pricing"
 	"livecommerce/internal/storefront"
@@ -115,6 +119,132 @@ func TestW6UISeedFocused(t *testing.T) {
 	}
 }
 
+// TestW6UIMembersOrderAPIFocused proves the member corpus through the production router without Next or a browser.
+func TestW6UIMembersOrderAPIFocused(t *testing.T) {
+	if os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
+		t.Fatal("use focused runner with browser tag")
+	}
+	x := w6uiSeed(t)
+	reportStore := x.w.store
+	h := httpapi.NewHandler(x.w.f.runtime, httpapi.Options{SessionStoreList: true, PaymentEnvironment: "SANDBOX"})
+	read := func(store, resource, token string) *httptest.ResponseRecorder {
+		t.Helper()
+		r := httptest.NewRequest("GET", "/v1/admin/stores/"+store+"/"+resource, nil)
+		r.Header.Set("Authorization", "Bearer "+token)
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+		return w
+	}
+	reportPath := "reports/products?from=2026-09-01&to=2026-09-30"
+	originalReport := read(reportStore, reportPath, x.token)
+	if originalReport.Code != 200 {
+		t.Fatalf("report control status=%d", originalReport.Code)
+	}
+	w6uiSeedMembers(t, x)
+	reader := lcToken(t, x.w.f, x.actors["reader"])
+	none := lcToken(t, x.w.f, x.actors["none"])
+	snapshot := func() string {
+		t.Helper()
+		var state string
+		err := x.w.f.owner.QueryRow(context.Background(), `SELECT jsonb_build_array(
+   (SELECT count(*) FROM checkout.orders), (SELECT count(*) FROM checkout.payment_attempts),
+   (SELECT count(*) FROM payments.facts), (SELECT count(*) FROM inventory.ledger),
+   (SELECT count(*) FROM ops.command_results), (SELECT count(*) FROM ops.audit_events),
+   (SELECT count(*) FROM loyalty.members), (SELECT count(*) FROM loyalty.point_entries),
+   (SELECT coalesce(sum(balance),0) FROM loyalty.members))::text`).Scan(&state)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return state
+	}
+	before := snapshot()
+	defer func() {
+		if after := snapshot(); after != before {
+			t.Errorf("read-only business state changed: %s -> %s", before, after)
+		}
+	}()
+	list := "orders?view=v2&limit=10&state=active"
+	response := read(x.w.store, list, reader)
+	var code struct {
+		Code string `json:"code"`
+	}
+	_ = json.Unmarshal(response.Body.Bytes(), &code)
+	t.Logf("native ListV2 status=%d typed_code=%q", response.Code, code.Code)
+	if response.Code != 200 {
+		// Read-only diagnostic at the real definer seam; expose error class/SQLSTATE and structural counts only.
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		err := platform.WithScope(ctx, x.w.f.runtime, reader, x.w.store, "orders:read", func(tx pgx.Tx, sc platform.Scope) error {
+			_, err := merchantorders.ListV2(ctx, tx, sc, reader, merchantorders.ListV2Request{State: "active", Page: pagination.Request{Limit: 10}})
+			t.Logf("scoped ListV2 unavailable=%t", errors.Is(err, merchantorders.ErrUnavailable))
+			var raw []byte
+			// Calls identity.read_merchant_orders_v2 (merchant orders v2); read-only diagnostics of the identical selected corpus.
+			pgErr := tx.QueryRow(ctx, `SELECT identity.read_merchant_orders_v2($1,$2,11,NULL,NULL,'active','all','','','',NULL,NULL,NULL)`, tokenHash(reader), x.w.store).Scan(&raw)
+			var pg *pgconn.PgError
+			sqlstate := "none"
+			if errors.As(pgErr, &pg) {
+				sqlstate = pg.Code
+			}
+			t.Logf("raw projection SQLSTATE=%s success=%t", sqlstate, pgErr == nil)
+			return pgErr
+		})
+		if err != nil {
+			t.Logf("diagnostic transaction error class=%T", err)
+		}
+		var malformed, real int
+		if err := x.w.f.owner.QueryRow(context.Background(), `SELECT count(*) FILTER(WHERE NOT(snapshot ? 'destination') OR NOT(snapshot#>'{quote}' ? 'totals')),count(*) FILTER(WHERE id=$2) FROM checkout.orders WHERE store_id=$1`, x.w.store, x.memberOrder).Scan(&malformed, &real); err != nil {
+			t.Fatal(err)
+		}
+		t.Logf("selected corpus missing destination/totals=%d known native order=%d", malformed, real)
+		t.Errorf("member-mode native ListV2 status=%d want200 code=%q", response.Code, code.Code)
+	} else {
+		var page merchantorders.PageV2
+		if err := json.Unmarshal(response.Body.Bytes(), &page); err != nil {
+			t.Fatal(err)
+		}
+		// 0110 matched predicate excludes DRAFT from active; checkout begin has not attempted payment.
+		if page.Total != 0 || len(page.Items) != 0 {
+			t.Errorf("active native DRAFT list: total=%d items=%d want0", page.Total, len(page.Items))
+		}
+		all := read(x.w.store, "orders?view=v2&limit=10&state=all", reader)
+		if err := json.Unmarshal(all.Body.Bytes(), &page); err != nil {
+			t.Fatal(err)
+		}
+		if all.Code != 200 || page.Total != 1 || len(page.Items) != 1 || page.Items[0].OrderID != x.memberOrder {
+			t.Errorf("all native order list: status=%d total=%d items=%d; expected exact checkout identity", all.Code, page.Total, len(page.Items))
+		}
+	}
+	detail := read(x.w.store, "orders/"+x.memberOrder, reader)
+	var body struct {
+		ID    string `json:"order_id"`
+		State string `json:"commercial_state"`
+	}
+	if err := json.Unmarshal(detail.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if detail.Code != 200 || body.ID != x.memberOrder || body.State != "DRAFT" {
+		t.Errorf("native detail status=%d identity_match=%t", detail.Code, body.ID == x.memberOrder)
+	}
+	for _, item := range []struct {
+		name, store, token string
+		want               int
+	}{
+		{"no orders permission", x.w.store, none, 403}, {"foreign store", x.foreignStore, reader, 404},
+	} {
+		t.Run(item.name, func(t *testing.T) {
+			if r := read(item.store, list, item.token); r.Code != item.want {
+				t.Errorf("status=%d want%d", r.Code, item.want)
+			}
+		})
+	}
+	if after := read(reportStore, reportPath, x.token); after.Code != originalReport.Code || after.Body.String() != originalReport.Body.String() {
+		t.Error("existing report-mode oracle changed")
+	}
+	if got := w6uiMemberCounts(t, x); got != [3]int{24, 53, 78} {
+		t.Errorf("member fixture counts=%v", got)
+	}
+}
+
 func w6uiRun(t *testing.T, mode string) {
 	if os.Getenv("LC_W6UI_"+strings.ToUpper(mode)+"_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use the registered isolated W6 browser gate in GitHub CI")
@@ -161,6 +291,7 @@ func w6uiRun(t *testing.T, mode string) {
 	if mode == "customers" {
 		t.Run("members-read", func(t *testing.T) {
 			w6uiSeedMembers(t, x)
+			env["LC_W6UI_STORE"] = x.w.store
 			before := w6uiMemberCounts(t, x)
 			if before != [3]int{24, 53, 78} {
 				t.Fatalf("member fixture counts=%v want [24 53 78]", before)
@@ -645,6 +776,19 @@ export default defineConfig({testDir:%q,testMatch:%q,workers:1,retries:0,timeout
 // w6uiSeedMembers uses scoped loyalty commands; owner SQL only supplies synthetic stores/grants/readback.
 func w6uiSeedMembers(t *testing.T, x *w6uiFixture) {
 	t.Helper()
+	// Reports deliberately use incomplete order snapshots. Keep that corpus intact in its original store:
+	// the member journey reads an entire order list before detail, so it needs native checkout orders only.
+	// Reuse this world/database/router and the exact same actors; copy their existing permissions, never add any.
+	reportStore := x.w.store
+	x.w.store = randomUUID()
+	mustExec(t, x.w.f.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'members native store','TWD')`, x.w.tenant, x.w.store)
+	actors := make([]string, 0, len(x.actors))
+	for _, id := range x.actors {
+		actors = append(actors, id)
+	}
+	mustExec(t, x.w.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission)
+	 SELECT tenant_id,$2,principal_id,permission FROM identity.store_grants
+	 WHERE tenant_id=$1 AND store_id=$3 AND principal_id=ANY($4::uuid[])`, x.w.tenant, x.w.store, reportStore, actors)
 	x.emptyStore, x.foreignStore = randomUUID(), randomUUID()
 	for _, item := range []struct{ tenant, store string }{{x.w.tenant, x.emptyStore}, {x.w.f.tenantB, x.foreignStore}} {
 		mustExec(t, x.w.f.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'members synthetic store','TWD')`, item.tenant, item.store)
