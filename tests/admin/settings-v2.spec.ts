@@ -1040,6 +1040,106 @@ async function deliverySwitches(page: Page, store: string, path: string) {
   }
 }
 
+// SETTINGS PASSIVE COLLECTOR BEGIN
+/** TEST ONLY: observe native draft persistence/events without selecting a response schedule. */
+function installSettingsPassiveLedger({ store, target }: { store: string; target: string }) {
+  const ledger = { rows: [] as Array<Record<string, string | number | boolean | null>>,
+    truncated: false, storageError: false, observationError: false, sessionDrift: false, targetDrift: false, cleanupError: false };
+  const setItem = Storage.prototype.setItem, getItem = Storage.prototype.getItem;
+  let firstKey: string | undefined, matchedTarget = false;
+  const listeners: Array<{ type: string; listener: EventListener; capture: boolean }> = [];
+  const record = (row: Record<string, string | number | boolean | null>) => {
+    if (ledger.rows.length < 128) ledger.rows.push({ ordinal: ledger.rows.length + 1, ...row });
+    else ledger.truncated = true;
+  };
+  const isDraft = (receiver: unknown, key: unknown) => receiver === window.sessionStorage &&
+    typeof key === "string" && key.startsWith(`commerce-settings-draft:${store}:`);
+  const wrapped: Storage["setItem"] = function (this: Storage, ...args) {
+    let result: ReturnType<Storage["setItem"]>;
+    // Native callee, same receiver/arguments/return/throw; observation never decides whether to persist.
+    try { result = Reflect.apply(setItem, this, args); }
+    catch (error) {
+      try { if (isDraft(this, args[0])) ledger.storageError = true; } catch { ledger.observationError = true; }
+      throw error;
+    }
+    try {
+      if (isDraft(this, args[0])) {
+        const key = args[0]; // Private equality only: no key, digest, value or reference leaves this closure.
+        firstKey ??= key;
+        ledger.sessionDrift ||= firstKey !== key;
+        const raw = Reflect.apply(getItem, this, [key]);
+        if (raw !== args[1]) ledger.storageError = true;
+        const value = JSON.parse(raw ?? "null"), draft = value?.draft, policy = draft?.policyObservation;
+        const targetMatches = policy?.target === `${target}:TW:home`;
+        if (matchedTarget && !targetMatches) ledger.targetDrift = true;
+        matchedTarget ||= targetMatches;
+        const version = (v: unknown) => typeof v === "number" && Number.isSafeInteger(v) && v >= -1 ? v : null;
+        record({ kind: "storage", readbackMatches: raw === args[1], targetMatches,
+          step: [1, 2, 3].includes(value?.step) ? value.step : null,
+          policyVersion: version(policy?.version), policyDirty: policy?.dirty === true,
+          serviceVersion: version(draft?.serviceObservation?.version),
+          referenceNonempty: typeof draft?.reference === "string" && !!draft.reference.trim(), policyEnabled: draft?.policyEnabled === true });
+      }
+    } catch { ledger.observationError = true; }
+    return result;
+  };
+  Storage.prototype.setItem = wrapped;
+  for (const capture of [true, false]) for (const type of ["input", "change", "click"]) {
+    const listener: EventListener = event => {
+      try {
+        const el = event.target;
+        if (!(el instanceof Element) || !el.closest('[data-testid="settings-wizard"]')) return;
+        const save = document.querySelector<HTMLButtonElement>('[data-testid="settings-policy-form"] button[type="submit"]');
+        const control = el instanceof HTMLInputElement && el.type === "checkbox" ? "checkbox" :
+          el.closest('[data-testid="settings-policy-form"]') ? "policy" : "wizard";
+        record({ kind: "event", type, phase: capture ? "capture" : "bubble", control,
+          trusted: event.isTrusted, savePresent: !!save, saveDisabled: save?.disabled ?? null });
+      } catch { ledger.observationError = true; }
+    };
+    document.addEventListener(type, listener, { capture, passive: true });
+    listeners.push({ type, listener, capture });
+  }
+  Object.defineProperty(window, "__settingsPassiveLedger", { configurable: true, value: {
+    finish() {
+      // Cleanup is synchronous; retain the bounded diagnostic even when a native write threw.
+      try {
+        if (Storage.prototype.setItem === wrapped) Storage.prototype.setItem = setItem;
+        else ledger.cleanupError = true;
+      } catch { ledger.cleanupError = true; }
+      finally {
+        for (const { type, listener, capture } of listeners) {
+          try { document.removeEventListener(type, listener, capture); } catch { ledger.cleanupError = true; }
+        }
+        listeners.length = 0;
+        firstKey = undefined;
+        delete (window as Window & { __settingsPassiveLedger?: unknown }).__settingsPassiveLedger;
+      }
+      return ledger;
+    },
+  } });
+}
+
+/** Close the page-to-driver diagnostic boundary; arbitrary fields/values cannot reach the artifact. */
+function projectSettingsPassiveLedger(value: unknown) {
+  const object = (v: unknown): Record<string, unknown> => v !== null && typeof v === "object" ? v as Record<string, unknown> : {};
+  const bool = (v: unknown) => typeof v === "boolean" ? v : null;
+  const version = (v: unknown) => typeof v === "number" && Number.isSafeInteger(v) && v >= -1 ? v : null;
+  const choice = (v: unknown, choices: string[]) => typeof v === "string" && choices.includes(v) ? v : null;
+  const raw = object(value), rows = Array.isArray(raw.rows) ? raw.rows : [];
+  return { rows: rows.slice(0, 128).map((v: unknown) => {
+    const r = object(v), ordinal = typeof r.ordinal === "number" && Number.isInteger(r.ordinal) && r.ordinal >= 1 && r.ordinal <= 128 ? r.ordinal : null;
+    if (r.kind === "storage") return { ordinal, kind: "storage", readbackMatches: bool(r.readbackMatches), targetMatches: bool(r.targetMatches),
+      step: [1, 2, 3].includes(r.step as number) ? r.step as number : null,
+      policyVersion: version(r.policyVersion), policyDirty: bool(r.policyDirty), serviceVersion: version(r.serviceVersion),
+      referenceNonempty: bool(r.referenceNonempty), policyEnabled: bool(r.policyEnabled) };
+    return { ordinal, kind: choice(r.kind, ["event"]), type: choice(r.type, ["input", "change", "click"]),
+      phase: choice(r.phase, ["capture", "bubble"]), control: choice(r.control, ["checkbox", "policy", "wizard"]),
+      trusted: bool(r.trusted), savePresent: bool(r.savePresent), saveDisabled: bool(r.saveDisabled) };
+  }), truncated: raw.truncated === true || rows.length > 128, storageError: bool(raw.storageError),
+    observationError: bool(raw.observationError), sessionDrift: bool(raw.sessionDrift), targetDrift: bool(raw.targetDrift), cleanupError: bool(raw.cleanupError) };
+}
+// SETTINGS PASSIVE COLLECTOR END
+
 /** RVFIX P1-1/P1-2: hidden-market selection rules (b tw, c single active, d none) and the existing-tw guard, MOCK on the real route. */
 async function marketSelectionAcceptance(source: Page, store: string, testInfo: TestInfo) {
   const row = (id: string, code: string, over: Record<string, unknown> = {}) =>
@@ -1056,8 +1156,15 @@ async function marketSelectionAcceptance(source: Page, store: string, testInfo: 
     { name: "inactive tw", markets: [row(A, "tw", { active: false })], post: false, target: "", blocked: true },
     { name: "usd tw", markets: [row(A, "tw", { currency: "USD" })], post: false, target: "", blocked: true },
   ];
+  // SETTINGS PASSIVE HISTORY BEGIN
+  const passiveHistory: unknown[] = []; // At most b/c: keep both diagnostics in the existing artifact.
+  // SETTINGS PASSIVE HISTORY END
   for (const k of cases) {
     const page = await source.context().newPage();
+    // SETTINGS PASSIVE ATTACH BEGIN
+    const passive = k.name === "b: active tw" || k.name === "c: single active";
+    if (passive) await page.addInitScript(installSettingsPassiveLedger, { store, target: k.target });
+    // SETTINGS PASSIVE ATTACH END
     const writes: Array<{ method: string; path: string; body: Record<string, unknown> }> = [];
     // READ/MEASURE only: persisted/DOM observations are not React state; GET receipt is not hydration acknowledgement.
     const reads: Array<{ resource: string; status?: number; failed?: true }> = [];
@@ -1165,6 +1272,18 @@ async function marketSelectionAcceptance(source: Page, store: string, testInfo: 
       } catch { /* Keep the original failure. */ }
       throw error;
     } finally {
+      // SETTINGS PASSIVE HARVEST BEGIN
+      if (passive) try {
+        // READ ONLY harvest + restore instrumentation; never calls product handlers or changes a response.
+        const raw = await page.evaluate(() => (window as Window & {
+          __settingsPassiveLedger?: { finish(): unknown };
+        }).__settingsPassiveLedger?.finish() ?? null);
+        passiveHistory.push({ case: k.name, phase: "passive", ledger: projectSettingsPassiveLedger(raw) });
+        const diagnosticPath = testInfo.outputPath("market-selection-diagnostic.json");
+        await writeFile(diagnosticPath, JSON.stringify([...passiveHistory, ...observations]));
+        await testInfo.attach("market-selection-diagnostic.json", { path: diagnosticPath, contentType: "application/json" });
+      } catch { /* Missing diagnostic invalidates discrimination; preserve the original acceptance error. */ }
+      // SETTINGS PASSIVE HARVEST END
       await page.unroute(pattern);
       await page.close();
     }

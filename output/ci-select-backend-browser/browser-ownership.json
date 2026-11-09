@@ -205,8 +205,9 @@
     "tests/admin/returns-request.test.ts": "7716794c6a76666e182797bec5c7c8b38816101ac36de445cd3f4c8127613c80",
     "tests/admin/returns-ui.spec.ts": "fac82c19c92d2aacc42a7ac71357dcd66b101408c8475e5305aa001fa495e980",
     "tests/admin/safe-json-cancel.test.ts": "ab24bd8a7156d66a0f738ec12cc24c6a742c947fd8bbe08f534a07f42c60e8ee",
+    "tests/admin/settings-passive-ledger.test.mjs": "ee5686750f5260ccf5cfd5399e7a72981d85d23d5bcad4b2e2656d5236732f0d",
     "tests/admin/settings-real.spec.ts": "d05b768551dd1fd42850cbeb33adb4a6663473e47ea623ced3a5c51095904116",
-    "tests/admin/settings-v2.spec.ts": "5e7370fe8f8c30540f4516e888c6e92a010ca60f717b1ff297adc6440a571ac3",
+    "tests/admin/settings-v2.spec.ts": "e87c5afe006f0bfd7669e7d22168b578313f7c4dec3fc347f2fe7130eba34f66",
     "tests/admin/settlements.spec.ts": "2719c75f5191edf4bd3016792d17ca865499914d150bb030098116f7a012a1b3",
     "tests/admin/shell-architecture.test.mjs": "f324d97d97de3c8883a35523519c1f9b7ecc6a6a90c936e8e93114b3f2ce592b",
     "tests/admin/shell-browser.mjs": "ce5ebc5fa693f9f6ec56e5e85c9644a412f81192d7a27b2c3a19141e2444a056",
@@ -817,7 +818,7 @@
     "packages/format/package.json": "0a52b62b35e640298589968137e2d8899151bbcb2e0714f3f9204afc70beb3ed",
     "packages/i18n/package.json": "096562b66a71f0479808557beb6490deef65c7cf1626867ec23cffbdaedebfce",
     "packages/ui/package.json": "85891954909057d1783e4a0b8585e5b8f4609f9259116ae808ce34f1f4347078",
-    "scripts/dev/test-node.sh": "1c721bf96501d3f36b4050b8ad90d6473cc3c6f40e04f8e87f310854d4a83c53"
+    "scripts/dev/test-node.sh": "b2866b6e9c143215a319247d45333f799013e68a6e8b7c7866433590993f4831"
   },
   "modes": {
     "--browser-inbox": {

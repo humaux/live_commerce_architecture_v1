@@ -34,6 +34,7 @@ node --test --experimental-strip-types apps/storefront/tests/*.test.mjs packages
 node --test --experimental-strip-types tests/storefront/cod-footer.spec.ts
 node --test tests/ui/visual-scroll-capture.test.mjs
 node --test tests/storefront/su07-continuation-diagnostic.test.mjs
+node --test tests/admin/settings-passive-ledger.test.mjs
 node --test --experimental-strip-types tests/admin/operations-model.test.ts
 # TZ audit: real schedule/default producers and loaded component display seams run in both foreign zones.
 for tz_audit_zone in UTC America/Los_Angeles; do

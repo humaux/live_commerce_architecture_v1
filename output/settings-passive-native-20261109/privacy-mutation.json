@@ -1,0 +1,8 @@
+{
+  "source": "tests/admin/settings-v2.spec.ts",
+  "restoredSha256": "e87c5afe006f0bfd7669e7d22168b578313f7c4dec3fc347f2fe7130eba34f66",
+  "mutatedSha256": "cc3af0346faeba119dedd8831b183d8bf2a6a81002109635028d3f899b932c57",
+  "mutation": "driver storage-row projection changed to spread untrusted r before closed fields",
+  "redExit": 1,
+  "restoredGreenExit": 0
+}

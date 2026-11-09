@@ -1,0 +1,36 @@
+{
+  "base": "3d924d9cfbe56922be15b692da0ea45cbc5525f1",
+  "equivalence": "entire spec byte identical after removing only four marked passive additions",
+  "acceptedSpecSha256": "5e7370fe8f8c30540f4516e888c6e92a010ca60f717b1ff297adc6440a571ac3",
+  "strippedCandidateSha256": "5e7370fe8f8c30540f4516e888c6e92a010ca60f717b1ff297adc6440a571ac3",
+  "excludedRanges": [
+    {
+      "name": "COLLECTOR",
+      "firstLine": 1043,
+      "lastLine": 1142
+    },
+    {
+      "name": "HISTORY",
+      "firstLine": 1159,
+      "lastLine": 1161
+    },
+    {
+      "name": "ATTACH",
+      "firstLine": 1164,
+      "lastLine": 1167
+    },
+    {
+      "name": "HARVEST",
+      "firstLine": 1275,
+      "lastLine": 1286
+    }
+  ],
+  "files": {
+    "tests/admin/settings-v2.spec.ts": "e87c5afe006f0bfd7669e7d22168b578313f7c4dec3fc347f2fe7130eba34f66",
+    "tests/admin/settings-passive-ledger.test.mjs": "ee5686750f5260ccf5cfd5399e7a72981d85d23d5bcad4b2e2656d5236732f0d",
+    "scripts/dev/test-node.sh": "b2866b6e9c143215a319247d45333f799013e68a6e8b7c7866433590993f4831",
+    "output/ci-select-backend-browser/browser-ownership.json": "506f1e9f2e9f44779ea536d513a0b4f209593c395898cfc9012df49af3e9c781"
+  },
+  "donorCommit": "193f571b5d3654fa4acf677800bb78144c07f5c4",
+  "donorSpecSha256": "137e737d81008eea2edabc4d78613640ae5ac6c5061d113b6e3b5463faad6818"
+}
