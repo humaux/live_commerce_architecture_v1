@@ -41,11 +41,13 @@ async function prepare(page: Page) {
 }
 
 // FIXTURE PREPARATION ONLY: set A12's target on-hand per named warehouse through the real BFF CSV import (same transport as prepare).
+// Seeds a deterministic active decoy containing C08 (parity-c08-decoy) as a regression witness: if the empty-result check below
+// ever reverts to the broad query "q=C08", this active decoy immediately violates the retained empty assertion.
 async function stock(page: Page, targets: Record<string, number>) {
   const cookie = (await page.context().cookies()).find(c => c.name === "__Host-commerce_csrf" || c.name === "commerce_csrf");
   expect(cookie, "fixture session established by real OIDC click").toBeTruthy();
   const names = Object.keys(targets);
-  const csv = `handle,title,sku,price,description,${names.map(name => `stock:${name}`).join(",")}\nparity-a12,焦糖托特包,A12,1280,${test.info().testId},${names.map(name => targets[name]).join(",")}\n`;
+  const csv = `handle,title,sku,price,description,${names.map(name => `stock:${name}`).join(",")}\nparity-a12,焦糖托特包,A12,1280,${test.info().testId},${names.map(name => targets[name]).join(",")}\nparity-c08-decoy,C08-ACTIVE,C08-ACTIVE,100,${test.info().testId},${names.map(() => 0).join(",")}\n`;
   const response = await page.evaluate(async ({ store, csv, csrf }) => {
     const response = await fetch(`/api/stores/${store}/tools/products/import/commit`, {
       method: "POST", headers: { "Content-Type": "text/csv", "X-CSRF-Token": csrf }, body: csv,
@@ -285,7 +287,7 @@ test.describe("PARITY-DATA-OPS inventory warehouse, status, refresh and cursor c
       });
 
       // (b) archived shows the archived SKU, active hides it.
-      await page.goto(`${root("zh-TW", "inventory")}&q=C08`); await heading(page, "庫存");
+      await page.goto(`${root("zh-TW", "inventory")}&q=${encodeURIComponent("帆布收納袋")}`); await heading(page, "庫存");
       await action(page, "狀態", "selectOption", "archived shows the archived C08", async () => {
         await status.selectOption({ label: "已封存" });
         await expect(page).toHaveURL(url => url.searchParams.get("status") === "archived");
