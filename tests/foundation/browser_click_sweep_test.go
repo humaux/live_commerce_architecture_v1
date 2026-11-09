@@ -62,6 +62,7 @@ import (
 	metaads "livecommerce/internal/integrations/meta_ads"
 	"livecommerce/internal/integrations/metabridge"
 	"livecommerce/internal/live"
+	"livecommerce/internal/loyalty"
 	"livecommerce/internal/metaconnect"
 	"livecommerce/internal/msgtemplates"
 	"livecommerce/internal/oidclogin"
@@ -97,6 +98,7 @@ type csFacts struct {
 	Collections []csProduct       `json:"collections"`
 	Orders      map[string]string `json:"orders"`
 	Customer    string            `json:"customer"`
+	Member      string            `json:"member"`
 	Session     string            `json:"session"`
 	Promo       string            `json:"promo"`
 	MetaPage    string            `json:"meta_page"`
@@ -156,6 +158,19 @@ func TestBrowserClickSweep(t *testing.T) {
 		SELECT $1,$2,$3,p FROM unnest(identity.staff_permission_catalogue()) p ON CONFLICT DO NOTHING`, f.tenantA, f.storeA1, f.principalA)
 	e.topUp()
 	facts := csFacts{Store: e.store(), StoreName: "fixture-store-a1", StoreOrigin: csOrigin, Orders: map[string]string{}, JourneyTag: t04Tag()}
+	// Fixture preparation only: a separate scoped writer seeds a zero-ledger member;
+	// the browser principal and its existing permission bundle are unchanged.
+	_, memberSeedToken := lcPrincipal(t, f, f.tenantA, []string{e.store()}, "store:read", "customers:read", "customers:points")
+	if err := platform.WithScope(ctx, f.runtime, memberSeedToken, e.store(), "store:read", func(tx pgx.Tx, scope platform.Scope) error {
+		// Calls loyalty.create_member via loyalty.CreateMember (loyalty-points-v1 §2); fixture idempotency key only.
+		member, _, err := loyalty.CreateMember(ctx, tx, scope, memberSeedToken, t04Key("cs-member-seed"), loyalty.MemberInput{DisplayName: "Sweep synthetic member"})
+		if err == nil {
+			facts.Member = member.ID
+		}
+		return err
+	}); err != nil {
+		t.Fatalf("seed scoped sweep member: %v", err)
+	}
 
 	// ---- every optional merchant surface, mounted the way cmd/api mounts it -------------------------------------------------------------
 	labels, err := claims.NewLabelKey(randomBytes(32))

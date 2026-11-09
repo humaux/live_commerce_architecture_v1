@@ -70,6 +70,11 @@ export async function fixture({ seeded = {} } = {}) {
       const seed = seeded[path];
       return json(typeof seed === "function" ? seed(url) : seed);
     }
+    // Explicit LP2 MOCK reads only; unknown routes still refuse below. No PG acceptance claim.
+    if (req.method === "POST" && path === `/v1/admin/stores/${storeID}/members/search`)
+      return json({ members: [{ id: entityID, display_name: "Synthetic member", contact_note: null, balance: 0, updated_at: "2026-10-30T00:00:00Z", erased: false }], next_cursor: null });
+    if (req.method === "GET" && path === `/v1/admin/stores/${storeID}/members/${entityID}`)
+      return json({ member: { id: entityID, display_name: "Synthetic member", contact_note: null, notes: null, balance: 0, version: 1, created_at: "2026-10-30T00:00:00Z", updated_at: "2026-10-30T00:00:00Z", erased_at: null }, entries: [], next_ledger_cursor: null });
     if (
       /\/(catalog-products|collections|catalog-ledger|customers|orders|live-sessions)$/.test(
         path,

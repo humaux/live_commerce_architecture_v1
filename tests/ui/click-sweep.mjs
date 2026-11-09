@@ -219,9 +219,11 @@ const orderIDs = facts.orders;
 function adminURL(route, locale) {
   const q = (extra = "") => `?store=${store}${extra}`;
   const p = route.path;
+  if (p === "/members/[member]" && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(facts.member ?? "")) throw new Error("missing or invalid member fixture UUID");
   const sub = {
     "/orders/[order]": `/orders/${orderIDs.cash_on_delivery}`,
     "/products/[product]": `/products/${facts.products[0].id}`, "/customers/[customer]": `/customers/${facts.customer}`, "/invite/[token]": `/invite/${"A".repeat(43)}`,
+    "/members/[member]": `/members/${facts.member}`,
     "/studio/claims": "/studio/claims", "/orders/cvs-print": "/orders/cvs-print",
   }[p] ?? p;
   if (route.public) return `${adminOrigin}/${locale}${sub}`;

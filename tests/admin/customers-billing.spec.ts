@@ -251,8 +251,17 @@ test("CB11 customers list: table, phone last 3 only, search by name and phone di
   await page.getByTestId("nav-group-settings").click();
   for (const section of ["nav-group-customers", "nav-group-finance", "nav-billing"] as const)
     await expect(page.getByTestId(section)).toBeVisible();
-  await page.getByRole("navigation").getByRole("button", { name: en.nav.customers, exact: true }).click();
+  // Customers is a disclosure now that both approved customer/member leaves are visible.
+  const customerGroup = page.getByTestId("nav-group-customers");
+  await expect(async () => {
+    if (await customerGroup.getAttribute("aria-expanded") !== "true") await customerGroup.click();
+    await expect(page.getByTestId("nav-customers")).toBeVisible({ timeout: 1_000 });
+  }).toPass({ timeout: 30_000 });
+  await page.getByTestId("nav-customers").click();
   await expect(page).toHaveURL(/\/en\/customers/);
+  await expect(page.getByTestId("customers-table")).toBeVisible();
+  await page.reload();
+  await expect(page.getByTestId("customers-table")).toBeVisible();
   await page.goto(`/en/customers?store=${store}`);
   await expect(page.getByTestId("customers-table")).toBeVisible();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(en.people.title);

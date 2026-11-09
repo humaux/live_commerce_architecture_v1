@@ -273,6 +273,7 @@ export async function runShellGate({
         "collections",
         "inventory",
         "customers",
+        "members",
         "promotions",
         "ads",
         "design",
@@ -288,8 +289,6 @@ export async function runShellGate({
             ? "nav-live-console"
             : id === "studio/claims"
               ? "nav-claims"
-            : id === "customers"
-              ? "nav-group-customers"
               : id === "design"
                 ? "nav-group-storefront"
                 : id === "finance"
@@ -300,11 +299,13 @@ export async function runShellGate({
           ? "live"
           : ["products", "collections", "inventory"].includes(id)
             ? "catalog"
-          : ["promotions", "ads"].includes(id)
-            ? "marketing"
-            : ["settings", "team", "billing"].includes(id)
-              ? "settings"
-              : null;
+            : ["customers", "members"].includes(id)
+              ? "customers"
+              : ["promotions", "ads"].includes(id)
+                ? "marketing"
+                : ["settings", "team", "billing"].includes(id)
+                  ? "settings"
+                  : null;
         if (
           group &&
           (await page
@@ -318,6 +319,15 @@ export async function runShellGate({
             url.pathname === `/${locale}/${id === "studio" ? "studio" : id}`,
         );
         await ready(`/${id}`);
+        if (["customers", "members"].includes(id)) {
+          await page.reload({ waitUntil: "load" });
+          await ready(`/${id}`);
+          await openMenu();
+          assert.equal(await page.getByTestId(`nav-${id}`).getAttribute("aria-current"), "page");
+          assert.equal(await page.getByTestId("nav-group-customers").getAttribute("aria-expanded"), "true");
+          if (id === "members") await page.getByTestId("members-list").getByRole("link", { name: "Synthetic member", exact: true }).waitFor({ state: "visible" });
+          if (width < 1024) await page.keyboard.press("Escape");
+        }
         if (id === "inventory" && (width === 1586 || width === 390)) {
           await openMenu();
           assert.equal(

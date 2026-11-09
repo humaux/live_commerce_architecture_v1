@@ -32,6 +32,7 @@ const routes = [
   { name: "products", path: "/products", group: "catalog", index: 3, item: "products" },
   { name: "inbox", path: "/messages", group: "messages", index: 4 },
   { name: "customers", path: "/customers", group: "customers", index: 5, item: "customers" },
+  { name: "members", path: "/members", group: "customers", index: 5, item: "members" },
   { name: "settings", path: "/settings", group: "settings", index: 9, item: "settings" },
   { name: "storefront-editor", path: "/design", group: "storefront", index: 7 },
   { name: "live-console", path: "/studio/console", group: "live", index: 1, item: "live-console" },
@@ -215,6 +216,7 @@ async function ready(page, route) {
   await expect(page.getByTestId("shell-store-name")).toHaveText("W0 合成測試店 · Synthetic baseline");
   await expect(page.getByTestId("route-forbidden")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Application error", exact: false })).toHaveCount(0);
+  if (route === "/members") await expect(page.getByTestId("members-list").getByRole("link", { name: "Synthetic member", exact: true })).toBeVisible();
   // READ only: font readiness makes screenshots reproducible without changing the DOM.
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
 }
@@ -229,8 +231,10 @@ async function openMenu(page, locale, viewport) {
   await expect(page.locator("[data-shell-rail]")).toBeVisible();
 }
 function group(page, route, locale) {
-  return page.locator("[data-shell-rail]").getByRole("button", { name: copy[locale].nav[route.index], exact: true });
+  return page.locator("[data-shell-rail]").getByTestId(route.group === "orders" ? "nav-orders" : `nav-group-${route.group}`);
 }
+
+const navGroups = ["overview", "live", "orders", "catalog", "messages", "customers", "marketing", "storefront", "finance", "settings"];
 
 for (const [locale, c] of Object.entries(copy)) for (const viewport of viewports) {
   const size = `${viewport.width}x${viewport.height}`;
@@ -252,7 +256,11 @@ for (const [locale, c] of Object.entries(copy)) for (const viewport of viewports
       // READ/MEASURE only: the legacy dark navy must be gone on the REAL shell.
       assert.equal(await rail.evaluate((el) => getComputedStyle(el).backgroundColor), "rgb(255, 255, 255)", "shell A: white sidebar replaces legacy dark navy");
       await expect(rail.getByTestId("shell-platform-brand")).toHaveText("DaWan Live");
-      for (const name of c.nav) await expect(rail.getByRole("button", { name, exact: true })).toBeVisible();
+      for (const [index, name] of c.nav.entries()) {
+        const control = group(page, { group: navGroups[index] }, locale);
+        await expect(control).toBeVisible();
+        await expect(control).toHaveAccessibleName(name);
+      }
       const active = group(page, route, locale);
       assert.equal(await active.evaluate((el) => getComputedStyle(el).backgroundColor), "rgb(234, 246, 242)", "signed active navigation fill #eaf6f2");
       const palette = await page.locator("[data-ui-shell]").evaluate((el) => {
@@ -300,8 +308,9 @@ for (const [locale, c] of Object.entries(copy)) for (const viewport of viewports
       });
       // Every group disclosure is exercised; content module controls belong to their own cards.
       await openMenu(page, locale, viewport);
-      for (const name of c.nav) {
-        const control = page.locator("[data-shell-rail]").getByRole("button", { name, exact: true });
+      for (const [index, name] of c.nav.entries()) {
+        const control = group(page, { group: navGroups[index] }, locale);
+        await expect(control).toHaveAccessibleName(name);
         if (await control.getAttribute("aria-expanded") !== null) await step(page, name, "expand, collapse", "disclosure state follows real clicks", async () => {
           if (await control.getAttribute("aria-expanded") === "true") await control.click();
           await control.click(); await expect(control).toHaveAttribute("aria-expanded", "true");

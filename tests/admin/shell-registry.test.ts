@@ -19,6 +19,19 @@ import { catalogCopy } from "../../apps/admin/lib/catalog-v2-copy.ts";
 import { claimsCopy } from "../../apps/admin/lib/claims-copy.ts";
 import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy.ts";
 import { platformLegal } from "../../apps/admin/lib/platform-legal.ts";
+test("LP2 parity group helper identifies Customers disclosure independently of its identically named leaf", () => {
+  const raw = readFileSync("tests/admin/parity-shell-browser.mjs", "utf8");
+  const start = raw.indexOf("function group(page,");
+  const end = raw.indexOf("\n}\n", start) + 2;
+  const actualGroup = new Function("copy", `${raw.slice(start, end)}; return group;`)({ en: { nav: ["Customers"] } });
+  const page = {
+    locator() { return this; },
+    getByRole() { throw new Error("ambiguous Customers group and leaf"); },
+    getByTestId(id: string) { return id; },
+  };
+  assert.equal(actualGroup(page, { group: "customers", index: 0 }, "en"), "nav-group-customers");
+  assert.equal(actualGroup(page, { group: "orders", index: 0 }, "en"), "nav-orders");
+});
 test("Readiness jump controls expose the actual active section, not a click flag", () => {
   const readiness = readFileSync("apps/admin/components/ProductReadiness.tsx", "utf8");
   const form = readFileSync("apps/admin/components/ProductDocumentForm.tsx", "utf8");
