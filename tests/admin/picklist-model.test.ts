@@ -1,9 +1,10 @@
 // Purpose: adversarial contracts for pick selection, wire projection and exact BFF grammar.
-// Depends on: node:test/http/crypto/fs, picklist pure model/fixture and Playwright APIRequestContext; no database or browser.
+// Depends on: node:test/http/crypto/fs/os, picklist pure model/fixture and Playwright APIRequestContext; no database or browser.
 // Used by: test-node.sh and W3-U1b red-to-green acceptance.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
+import { networkInterfaces } from "node:os";
 import { randomBytes } from "node:crypto";
 import { access } from "node:fs/promises";
 import { request } from "@playwright/test";
@@ -56,13 +57,66 @@ test("HTTPS picklist fixture carries Secure session cookies automatically while 
     anonymous = await request.newContext({ ignoreHTTPSErrors: true });
     assert.equal((await anonymous.post(`${publicOrigin}/probe`, { headers: { Origin: publicOrigin } })).status(), 401);
     assert.equal((await authenticated.post(`${publicOrigin}/probe`, { headers: { Origin: publicOrigin, "X-CSRF-Token": authority } })).status(), 204);
-    assert.equal((await authenticated.post(`${upstream}/probe`, { headers: { Origin: publicOrigin, "X-CSRF-Token": authority } })).status(), 401, "same Secure cookie is still refused on plain HTTP");
+    // Playwright v1.65.0 network.ts:isLocalHostname explicitly trusts 127/8 for cookie delivery.
+    // This loopback exception is not the ordinary insecure-transport boundary tested below.
+    assert.equal((await authenticated.post(`${upstream}/probe`, { headers: { Origin: publicOrigin, "X-CSRF-Token": authority } })).status(), 204);
+    assert.ok(reads.at(-1)?.session && reads.at(-1)?.csrf, "trusted loopback receives automatic Secure cookies");
+    assert.equal(reads.at(-1)?.proto, undefined, "direct loopback request did not traverse the TLS facade");
   } finally {
     await authenticated?.dispose(); await anonymous?.dispose();
     await edge?.close();
     server.closeAllConnections(); await new Promise<void>(resolve => server.close(() => resolve()));
   }
   if (edge?.certificateDirectory) await assert.rejects(access(edge.certificateDirectory), "owned ephemeral TLS material is removed");
+});
+test("ordinary nonloopback HTTP refuses Secure cookies after real matching-domain transport", { timeout: 15000 }, async () => {
+  // Bind only an address owned by this host, never wildcard/public or external DNS.
+  const address = Object.values(networkInterfaces()).flat().find(entry => entry && !entry.internal && entry.family === "IPv4" &&
+    /^(10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.)/.test(entry.address))?.address;
+  assert.ok(address, "BLOCKED: ordinary HTTP transport control requires an owned RFC1918 IPv4 interface");
+  const authority = randomBytes(32).toString("base64url");
+  const reads: { authorityMatches: boolean; plain: boolean; session: boolean; csrf: boolean; canary: boolean; secureControl: boolean }[] = [];
+  let origin = "";
+  const server = createServer((req, res) => {
+    const cookies = new Map((req.headers.cookie ?? "").split(";").map(value => {
+      const [name, ...rest] = value.trim().split("="); return [name, rest.join("=")];
+    }));
+    const session = cookies.get("__Host-commerce_session") === authority;
+    reads.push({ authorityMatches: req.headers.host === new URL(origin).host,
+      plain: !("encrypted" in req.socket) && req.headers["x-forwarded-proto"] === undefined,
+      session, csrf: cookies.get("__Host-commerce_csrf") === authority,
+      canary: cookies.get("transport_canary") === authority, secureControl: cookies.get("transport_secure_control") === authority });
+    // Status depends on received credentials, never on the protocol or a forced refusal.
+    res.statusCode = session ? 204 : 401;
+    res.end();
+  });
+  let context: Awaited<ReturnType<typeof request.newContext>> | undefined;
+  try {
+    await new Promise<void>((resolve, reject) => {
+      server.once("error", reject);
+      server.listen(0, address, () => { server.removeListener("error", reject); resolve(); });
+    });
+    assert.ok(server.address() && typeof server.address() === "object", "owned listener bound");
+    origin = `http://${address}:${(server.address() as { port: number }).port}`;
+    const scope = { value: authority, domain: address, path: "/", expires: -1, httpOnly: false, sameSite: "Lax" as const };
+    context = await request.newContext({ timeout: 5000, storageState: { origins: [], cookies: [
+      { ...scope, name: "__Host-commerce_session", secure: true, httpOnly: true },
+      { ...scope, name: "__Host-commerce_csrf", secure: true },
+      { ...scope, name: "transport_secure_control", secure: true },
+      { ...scope, name: "transport_canary", secure: false },
+    ] } });
+    const stored = (await context.storageState()).cookies;
+    assert.equal(stored.length, 4);
+    assert.ok(stored.every(cookie => cookie.domain === address && cookie.path === "/"), "all controls have identical host/path scope");
+    assert.equal((await context.post(`${origin}/probe`, { maxRedirects: 0 })).status(), 401, "ordinary HTTP receives no Secure session");
+    assert.equal(reads.length, 1, "real endpoint received exactly one request");
+    assert.deepEqual(reads[0], { authorityMatches: true, plain: true, session: false, csrf: false, canary: true, secureControl: false },
+      "matching-domain plain HTTP receives the nonsecure canary but no Secure cookies");
+  } finally {
+    await context?.dispose();
+    server.closeAllConnections();
+    if (server.listening) await new Promise<void>(resolve => server.close(() => resolve()));
+  }
 });
 test("batch controls stay compact until an order selection or live-session scope exists", () => {
   assert.equal(shouldOpenPickTools(0, ""), false);
