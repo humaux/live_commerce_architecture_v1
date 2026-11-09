@@ -22,7 +22,7 @@ test.afterEach(async () => { await writeFile(path.join(evidence, "members-read-c
 async function step(page: Page, controlName: string, expected: string, action: () => Promise<unknown>, operation = "click", classification: Row["classification"] = "REAL_PG") {
   const row: Row = { page: new URL(page.url()).pathname, control: controlName, action: operation, expected, actual: null, result: "fail", classification }; ledger.push(row);
   try { row.actual = await action(); row.result = "pass"; }
-  catch { row.actual = "assertion failed; see Playwright trace"; throw new Error(`LP2 ${controlName}: ${expected}`); }
+  catch (error) { row.actual = "assertion failed; see Playwright trace"; throw error; }
 }
 async function ctl(resource: string, mode = "") {
   // Keyed fixture/fault preparation only, never evidence of a UI action.
@@ -144,9 +144,12 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [144
       await step(page, "native member detail", "scoped detail opens with fifty ledger entries", async () => {
         // Main member is oldest and appears on page two: navigate through the actual link.
         await page.getByTestId("members-load-more").click(); await expect(links(page)).toHaveCount(23);
-        const response = page.waitForResponse(r => r.request().method() === "GET" && new URL(r.url()).pathname.endsWith(`/members/${member}`));
+        const response = page.waitForResponse(r => r.request().method() === "GET" && new URL(r.url()).pathname === `/api/stores/${store}/members/${member}`);
         await page.getByTestId("members-list").locator(`a[href*="/members/${member}?"]`).click();
-        const data = await (await response).json() as { entries: { id: string }[] }; initialEntryIDs = data.entries.map(e => e.id);
+        const detailResponse = await response;
+        expect(detailResponse.status()).toBe(200);
+        expect(detailResponse.headers()["content-type"]).toMatch(/^application\/json(?:\s*;|$)/i);
+        const data = await detailResponse.json() as { entries: { id: string }[] }; initialEntryIDs = data.entries.map(e => e.id);
         await expect(entries(page)).toHaveCount(50);
         await expect(page.getByTestId("member-detail")).toContainText(`${c.staffID}: ${actor}`);
         return { rows: await entries(page).count(), scope: new URL(page.url()).searchParams.get("store") };
