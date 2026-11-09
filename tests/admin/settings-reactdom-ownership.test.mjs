@@ -52,20 +52,23 @@ const market={id:'00000000-0000-4000-8000-000000000002',code:'tw',name:'Fixture'
 const target=`${market.id}:TW:home`;
 const resp=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json','Cache-Control':'private, no-store'}});
 async function until(fn,label){const end=Date.now()+3000;while(!fn()){assert.ok(Date.now()<end,label);await new Promise(r=>setTimeout(r,5));}}
-for(const mode of ['before-commit','after-commit','baseline0','foreign-target','superseded','session-change','expired','unmounted','known-sequential','target-sequential','foreign-known'])test(`actual React policy404 ownership ${mode}`,{timeout:10000},async()=>{
+for(const mode of ['before-commit','after-commit','baseline0','foreign-target','superseded','session-change','expired','unmounted','known-sequential','target-sequential','foreign-known','service-known-sequential','service-foreign-known'])test(`actual React policy404 ownership ${mode}`,{timeout:10000},async()=>{
  dom.reconfigure({url:'https://fixture.invalid/en/settings?meta_connect=1'});
  sessionStorage.clear();localStorage.clear();document.cookie=`__Host-commerce_csrf=${'a'.repeat(43)}; Secure; Path=/`;
  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('a'.repeat(43)));
  const hash=Buffer.from(digest).toString('hex'),key=`commerce-settings-draft:${store.id}:${hash}`;
+ const serviceControl=mode.startsWith('service-');
  const scopedControl=['known-sequential','target-sequential','foreign-known'].includes(mode);
  const draft={...emptyDraft,marketID:market.id,serviceCode:'home',reference:'fixture-reference',policyObservation:{target:mode==='foreign-known'?`${market.id}:JP:home`:target,version:scopedControl?7:mode==='baseline0'?0:-1,dirty:true}};
+ if(serviceControl){draft.reference='';draft.policyObservation={target,version:7,dirty:false};draft.serviceObservation={target:mode==='service-foreign-known'?`${market.id}:JP:home`:target,version:7,dirty:true};}
  sessionStorage.setItem(key,JSON.stringify({version:2,step:3,draft}));
  let release,requested=false,commits=0,armed=false,fired=false,requests=0,unmounted=false,bodyConsumed=false;
  const ledger=[];
  const pending=new Promise(r=>release=r);
  globalThis.fetch=async(input,init)=>{
   assert.ok(!init?.method||init.method==='GET','no provider writes');const u=String(input);
-  if(u.endsWith('/policy')){requested=true;requests++;ledger.push({event:'request',sequence:requests});return requests===1?pending:new Promise(()=>{});}
+  if(u.endsWith('/policy')){if(serviceControl){requested=true;return resp({version:7,shipping_minor:0,tax_mode:'none',tax_basis:'goods',tax_rate_bps:0,quote_ttl_seconds:300,enabled:false});}requested=true;requests++;ledger.push({event:'request',sequence:requests});return requests===1?pending:new Promise(()=>{});}
+  if(serviceControl&&u.endsWith('/delivery-services/home'))return pending;
   if(u==='/api/stores')return resp({items:[store],next_cursor:''});
   if(u.endsWith('/markets'))return resp({items:[market],next_cursor:''});
   if(u.endsWith('/delivery-services'))return resp({items:[],next_cursor:''});
@@ -81,13 +84,27 @@ for(const mode of ['before-commit','after-commit','baseline0','foreign-target','
  const root=createRoot(document.getElementById('root'));
  try{
   root.render(React.createElement(React.Profiler,{id:'wizard',onRender(){commits++;ledger.push({event:'commit',commit:commits,version:saved().policyObservation?.version});}},React.createElement(SettingsWizard,{locale:'en',initial:{store,error:null}})));
-  await until(()=>requested&&checkbox()&&button(),'full real component mounted');
+  await until(()=>requested&&(serviceControl?document.querySelector('[data-testid="settings-service-form"]'):checkbox()&&button()),'full real component mounted');
   await settleTransport();
-  assert.equal(button().disabled,!['baseline0','known-sequential','target-sequential'].includes(mode));assert.equal(saved().policyObservation.version,scopedControl?7:mode==='baseline0'?0:-1);
+  if(!serviceControl)assert.equal(button().disabled,!['baseline0','known-sequential','target-sequential'].includes(mode));if(!serviceControl)assert.equal(saved().policyObservation.version,scopedControl?7:mode==='baseline0'?0:-1);
   const edit=(label,value)=>{
    const input=[...document.querySelectorAll('input')].find(e=>e.closest('label')?.textContent.startsWith(label));
    assert.ok(input,`real ${label} input`);Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));
   };
+  if(serviceControl){
+   const serviceForm=()=>document.querySelector('[data-testid="settings-service-form"]');
+   const inputs=()=>[...serviceForm().querySelectorAll('input')];
+   const inputValue=(input,value)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));};
+   await new Promise(resolve=>queueMicrotask(()=>{inputValue(inputs()[0],'保留名称');inputValue(inputs()[2],'Retained service');resolve();}));
+   await settleTransport();
+   const d=saved();
+   assert.equal(inputs()[0].value,'保留名称','rendered first service field retained');
+   assert.equal(inputs()[2].value,'Retained service','rendered second service field retained');
+   assert.equal(d.nameHans,'保留名称');assert.equal(d.nameEN,'Retained service');
+   assert.equal(d.country,'TW');assert.equal(d.serviceCode,'home');
+   assert.deepEqual(d.serviceObservation,{target,version:mode==='service-known-sequential'?7:-1,dirty:true},'service version belongs only to matching target');
+   console.log(JSON.stringify({mode,serviceObservation:d.serviceObservation,fieldsRetained:true}));return;
+  }
   if(scopedControl){
    // Both events run in one microtask before React replaces the attached handlers.
    await new Promise(resolve=>queueMicrotask(()=>{
