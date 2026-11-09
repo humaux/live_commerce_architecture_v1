@@ -12,7 +12,7 @@
     "tests/admin/attribution.spec.ts": "1ab133aacb7c6883d94f310fcfc83d5efc37cf54d8d940c5a24d3235e601d08d",
     "tests/admin/attribution.test.ts": "3cd4919e2ae06a018a4e5cd8fcd950d8a60fdebf17f8da089f20265ca503279e",
     "tests/admin/auth-real.spec.ts": "7a31af775240a4c56ea68152ec7758ff2157f04d9399580e6a504e60e62c203a",
-    "tests/admin/auth.spec.ts": "03150c31bf8eb248bb2fdb71eddc8deb777cac3ebdcde128eb1b580f69fd3b65",
+    "tests/admin/auth.spec.ts": "97fec13139ee4602c9cd782531e613ad0d0ad72736c3ac483a8731a216ce12ff",
     "tests/admin/backend-parity.test.ts": "eef2dc3ee041e59ed8891c6c756720d4f3635aca524ffdabe5c3ce6e7280efbb",
     "tests/admin/baselines/w0/manifest.json": "e8da2ede9d63aeca2085a46771f50c41e4b3802286885bb228a71dea15da1538",
     "tests/admin/billing-model.test.ts": "a78c2e2f6b09ec1f607fc003ada6d76eed192f6ac96bd0617d07a0c0a445bf5b",
