@@ -559,8 +559,8 @@ func TestGuardOG10BillingPreflightAuthority(t *testing.T) {
 	}
 }
 
-// BILL-271 R1: pre-plan the unchanged resolver, then compile a fresh helper copy
-// with hostile temporary type names. All DDL and harmless failure controls roll back.
+// BILL-271 R1: isolate inherited resolver casts with a fixed authorized tuple in
+// fresh test-only helper copies. OG10 covers the real resolver; all DDL rolls back.
 func TestGuardOG11BillingPreflightTempTypes(t *testing.T) {
 	e := fixture(t)
 	w := newWorld(t, e)
@@ -579,12 +579,18 @@ func TestGuardOG11BillingPreflightTempTypes(t *testing.T) {
 				}
 			}
 			exec(`SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),set_config('app.principal_id',$3,true)`, w.tenant, w.store, w.owner)
-			// Warm the unchanged dependency in this backend before introducing shadow types.
-			exec(`SELECT * FROM identity.resolve_access($1,$2::uuid,'billing:manage')`, hash(w.fresh), w.store)
 			var def string
 			if err := tx.QueryRow(ctx, `SELECT pg_get_functiondef('billing.require_recent_manage(bytea,uuid)'::regprocedure)`).Scan(&def); err != nil {
 				t.Fatal(err)
 			}
+			// Creating pg_temp.text invalidates the resolver's cached casts even after
+			// prewarming (first run: 42804). Isolate that inherited implementation;
+			// keep every new-helper cast, scope check and final freshness call intact.
+			anchor := "SELECT * INTO s FROM identity.resolve_access(p_hash,p_store,'billing:manage');"
+			if strings.Count(def, anchor) != 1 {
+				t.Fatal("preflight resolver anchor changed")
+			}
+			def = strings.Replace(def, anchor, fmt.Sprintf("SELECT 'ok'::pg_catalog.text AS access_status, '%s'::pg_catalog.uuid AS tenant_id, '%s'::pg_catalog.uuid AS principal_id INTO s;", w.tenant, w.owner), 1)
 			// Distinct function identity forces new body compilation, independent of cached helper plans.
 			good := strings.Replace(def, "billing.require_recent_manage(", "billing.bill271_qualified_control(", 1)
 			bad := strings.Replace(def, "billing.require_recent_manage(", "billing.bill271_unqualified_control(", 1)
