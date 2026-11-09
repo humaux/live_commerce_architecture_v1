@@ -1,7 +1,7 @@
 //go:build browser
 
 // Purpose: W6-U1 genuine Go/PG plus signed HTTPS OIDC browser acceptance; no successful API response mocks.
-// Depends on: rpWorld synthetic report corpus, scoped customers Go commands, identity/httpapi, production Next,
+// Depends on: rpWorld synthetic report corpus, scoped customers/loyalty commands and existing checkout seed leaf, identity/httpapi, production Next,
 // Playwright and LC_W6UI_{REPORTS,CUSTOMERS}_ACCEPTANCE; requires LC_TEST_DATABASE_ALLOWED.
 // Used by: GitHub --browser-reports and extended --browser-customers-billing gates; helpers use w6ui only.
 // Invariants: I01/I02/I05/I06/I11/I14/I18; report seeds are disclosed MOCK data, not provider/capture acceptance.
@@ -10,6 +10,7 @@ package foundation_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -27,21 +28,32 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+	"livecommerce/internal/buyer"
 	"livecommerce/internal/customers"
+	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/identity"
 	"livecommerce/internal/identityhttp"
+	"livecommerce/internal/loyalty"
+	"livecommerce/internal/merchantorders"
 	"livecommerce/internal/oidclogin"
+	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
+	"livecommerce/internal/pricing"
+	"livecommerce/internal/storefront"
 )
 
 type w6uiFixture struct {
-	w                                                 *rpWorld
-	principal, token, customer, second, note, session string
-	actors                                            map[string]string
-	mu                                                sync.Mutex
-	fault                                             string
-	requests                                          []w6uiRequest
+	w                                                                                                 *rpWorld
+	principal, token, customer, second, note, session                                                 string
+	actors                                                                                            map[string]string
+	mu                                                                                                sync.Mutex
+	fault                                                                                             string
+	requests                                                                                          []w6uiRequest
+	member, zeroMember, erasedMember, emptyStore, foreignStore, foreignMember, seedActor, memberOrder string
+	held                                                                                              chan struct{}
+	heldStarted                                                                                       bool
 }
 
 type w6uiRequest struct {
@@ -107,6 +119,132 @@ func TestW6UISeedFocused(t *testing.T) {
 	}
 }
 
+// TestW6UIMembersOrderAPIFocused proves the member corpus through the production router without Next or a browser.
+func TestW6UIMembersOrderAPIFocused(t *testing.T) {
+	if os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
+		t.Fatal("use focused runner with browser tag")
+	}
+	x := w6uiSeed(t)
+	reportStore := x.w.store
+	h := httpapi.NewHandler(x.w.f.runtime, httpapi.Options{SessionStoreList: true, PaymentEnvironment: "SANDBOX"})
+	read := func(store, resource, token string) *httptest.ResponseRecorder {
+		t.Helper()
+		r := httptest.NewRequest("GET", "/v1/admin/stores/"+store+"/"+resource, nil)
+		r.Header.Set("Authorization", "Bearer "+token)
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+		return w
+	}
+	reportPath := "reports/products?from=2026-09-01&to=2026-09-30"
+	originalReport := read(reportStore, reportPath, x.token)
+	if originalReport.Code != 200 {
+		t.Fatalf("report control status=%d", originalReport.Code)
+	}
+	w6uiSeedMembers(t, x)
+	reader := lcToken(t, x.w.f, x.actors["reader"])
+	none := lcToken(t, x.w.f, x.actors["none"])
+	snapshot := func() string {
+		t.Helper()
+		var state string
+		err := x.w.f.owner.QueryRow(context.Background(), `SELECT jsonb_build_array(
+   (SELECT count(*) FROM checkout.orders), (SELECT count(*) FROM checkout.payment_attempts),
+   (SELECT count(*) FROM payments.facts), (SELECT count(*) FROM inventory.ledger),
+   (SELECT count(*) FROM ops.command_results), (SELECT count(*) FROM ops.audit_events),
+   (SELECT count(*) FROM loyalty.members), (SELECT count(*) FROM loyalty.point_entries),
+   (SELECT coalesce(sum(balance),0) FROM loyalty.members))::text`).Scan(&state)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return state
+	}
+	before := snapshot()
+	defer func() {
+		if after := snapshot(); after != before {
+			t.Errorf("read-only business state changed: %s -> %s", before, after)
+		}
+	}()
+	list := "orders?view=v2&limit=10&state=active"
+	response := read(x.w.store, list, reader)
+	var code struct {
+		Code string `json:"code"`
+	}
+	_ = json.Unmarshal(response.Body.Bytes(), &code)
+	t.Logf("native ListV2 status=%d typed_code=%q", response.Code, code.Code)
+	if response.Code != 200 {
+		// Read-only diagnostic at the real definer seam; expose error class/SQLSTATE and structural counts only.
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		err := platform.WithScope(ctx, x.w.f.runtime, reader, x.w.store, "orders:read", func(tx pgx.Tx, sc platform.Scope) error {
+			_, err := merchantorders.ListV2(ctx, tx, sc, reader, merchantorders.ListV2Request{State: "active", Page: pagination.Request{Limit: 10}})
+			t.Logf("scoped ListV2 unavailable=%t", errors.Is(err, merchantorders.ErrUnavailable))
+			var raw []byte
+			// Calls identity.read_merchant_orders_v2 (merchant orders v2); read-only diagnostics of the identical selected corpus.
+			pgErr := tx.QueryRow(ctx, `SELECT identity.read_merchant_orders_v2($1,$2,11,NULL,NULL,'active','all','','','',NULL,NULL,NULL)`, tokenHash(reader), x.w.store).Scan(&raw)
+			var pg *pgconn.PgError
+			sqlstate := "none"
+			if errors.As(pgErr, &pg) {
+				sqlstate = pg.Code
+			}
+			t.Logf("raw projection SQLSTATE=%s success=%t", sqlstate, pgErr == nil)
+			return pgErr
+		})
+		if err != nil {
+			t.Logf("diagnostic transaction error class=%T", err)
+		}
+		var malformed, real int
+		if err := x.w.f.owner.QueryRow(context.Background(), `SELECT count(*) FILTER(WHERE NOT(snapshot ? 'destination') OR NOT(snapshot#>'{quote}' ? 'totals')),count(*) FILTER(WHERE id=$2) FROM checkout.orders WHERE store_id=$1`, x.w.store, x.memberOrder).Scan(&malformed, &real); err != nil {
+			t.Fatal(err)
+		}
+		t.Logf("selected corpus missing destination/totals=%d known native order=%d", malformed, real)
+		t.Errorf("member-mode native ListV2 status=%d want200 code=%q", response.Code, code.Code)
+	} else {
+		var page merchantorders.PageV2
+		if err := json.Unmarshal(response.Body.Bytes(), &page); err != nil {
+			t.Fatal(err)
+		}
+		// 0110 matched predicate excludes DRAFT from active; checkout begin has not attempted payment.
+		if page.Total != 0 || len(page.Items) != 0 {
+			t.Errorf("active native DRAFT list: total=%d items=%d want0", page.Total, len(page.Items))
+		}
+		all := read(x.w.store, "orders?view=v2&limit=10&state=all", reader)
+		if err := json.Unmarshal(all.Body.Bytes(), &page); err != nil {
+			t.Fatal(err)
+		}
+		if all.Code != 200 || page.Total != 1 || len(page.Items) != 1 || page.Items[0].OrderID != x.memberOrder {
+			t.Errorf("all native order list: status=%d total=%d items=%d; expected exact checkout identity", all.Code, page.Total, len(page.Items))
+		}
+	}
+	detail := read(x.w.store, "orders/"+x.memberOrder, reader)
+	var body struct {
+		ID    string `json:"order_id"`
+		State string `json:"commercial_state"`
+	}
+	if err := json.Unmarshal(detail.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if detail.Code != 200 || body.ID != x.memberOrder || body.State != "DRAFT" {
+		t.Errorf("native detail status=%d identity_match=%t", detail.Code, body.ID == x.memberOrder)
+	}
+	for _, item := range []struct {
+		name, store, token string
+		want               int
+	}{
+		{"no orders permission", x.w.store, none, 403}, {"foreign store", x.foreignStore, reader, 404},
+	} {
+		t.Run(item.name, func(t *testing.T) {
+			if r := read(item.store, list, item.token); r.Code != item.want {
+				t.Errorf("status=%d want%d", r.Code, item.want)
+			}
+		})
+	}
+	if after := read(reportStore, reportPath, x.token); after.Code != originalReport.Code || after.Body.String() != originalReport.Body.String() {
+		t.Error("existing report-mode oracle changed")
+	}
+	if got := w6uiMemberCounts(t, x); got != [3]int{24, 53, 78} {
+		t.Errorf("member fixture counts=%v", got)
+	}
+}
+
 func w6uiRun(t *testing.T, mode string) {
 	if os.Getenv("LC_W6UI_"+strings.ToUpper(mode)+"_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use the registered isolated W6 browser gate in GitHub CI")
@@ -150,6 +288,43 @@ func w6uiRun(t *testing.T, mode string) {
 		}
 	}
 	w6uiAuthorityReadback(t, x)
+	if mode == "customers" {
+		t.Run("members-read", func(t *testing.T) {
+			w6uiSeedMembers(t, x)
+			env["LC_W6UI_STORE"] = x.w.store
+			before := w6uiMemberCounts(t, x)
+			if before != [3]int{24, 53, 78} {
+				t.Fatalf("member fixture counts=%v want [24 53 78]", before)
+			}
+			if n := countRows(t, x.w.f.owner, `SELECT count(*) FROM loyalty.members WHERE store_id=$1 AND erased_at IS NULL`, x.w.store); n != 23 {
+				t.Fatalf("active members=%d want23", n)
+			}
+			env["LC_W6UI_ORDER"] = x.memberOrder
+			env["LC_W6UI_MEMBER"], env["LC_W6UI_ZERO_MEMBER"], env["LC_W6UI_ERASED_MEMBER"] = x.member, x.zeroMember, x.erasedMember
+			env["LC_W6UI_EMPTY_STORE"], env["LC_W6UI_FOREIGN_STORE"], env["LC_W6UI_FOREIGN_MEMBER"], env["LC_W6UI_SEED_ACTOR"] = x.emptyStore, x.foreignStore, x.foreignMember, x.seedActor
+			w6uiSpecs(t, ctx, stack, "members-read", env)
+			after := w6uiMemberCounts(t, x)
+			if before != after {
+				t.Errorf("read journeys mutated member/ledger/command counts: %v -> %v", before, after)
+			}
+			data, _ := json.MarshalIndent(map[string]any{"before": before, "after": after, "classification": "REAL_PG; control/session writes excluded"}, "", "  ")
+			if e := os.WriteFile(filepath.Join(evidence, "members-read-counts.json"), data, 0600); e != nil {
+				t.Fatal(e)
+			}
+			data, e := os.ReadFile(filepath.Join(evidence, "members-read-click-ledger.json"))
+			var rows []struct {
+				Result string `json:"result"`
+			}
+			if e != nil || json.Unmarshal(data, &rows) != nil || len(rows) == 0 {
+				t.Fatal("missing members read click ledger")
+			}
+			for _, row := range rows {
+				if row.Result != "pass" {
+					t.Errorf("members click result=%q", row.Result)
+				}
+			}
+		})
+	}
 	x.mu.Lock()
 	requests := append([]w6uiRequest(nil), x.requests...)
 	x.mu.Unlock()
@@ -338,13 +513,40 @@ func w6uiStart(t *testing.T, ctx context.Context, x *w6uiFixture, evidence strin
 			}
 			_, e = x.w.f.owner.Exec(r.Context(), `UPDATE identity.external_identities SET principal_id=$2 WHERE issuer=$1 AND subject='browser-subject'`, idp.server.URL, principal)
 		case "/fault":
-			if in.Mode != "drop-note" && in.Mode != "read-503" && in.Mode != "truncate-report" && in.Mode != "tag-read-503" && in.Mode != "notes-read-503" && in.Mode != "" {
+			if in.Mode != "drop-note" && in.Mode != "read-503" && in.Mode != "truncate-report" && in.Mode != "tag-read-503" && in.Mode != "notes-read-503" && in.Mode != "members-search-503" && in.Mode != "members-ledger-503" && in.Mode != "members-hold" && in.Mode != "" {
 				http.Error(w, "invalid", 422)
 				return
 			}
 			x.mu.Lock()
 			x.fault = in.Mode
+			if in.Mode == "members-hold" {
+				if x.held != nil {
+					close(x.held)
+				}
+				x.held = make(chan struct{})
+				x.heldStarted = false
+			}
 			x.mu.Unlock()
+		case "/members-release":
+			x.mu.Lock()
+			if x.held != nil {
+				close(x.held)
+				x.held = nil
+			}
+			x.mu.Unlock()
+		case "/members-held":
+			x.mu.Lock()
+			held := x.heldStarted
+			x.mu.Unlock()
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]bool{"held": held})
+			return
+		case "/members-revoke":
+			_, e = x.w.f.owner.Exec(r.Context(), `UPDATE identity.sessions SET revoked_at=clock_timestamp() WHERE principal_id=$1`, x.actors["reader"])
+		case "/deny-read":
+			_, e = x.w.f.owner.Exec(r.Context(), `DELETE FROM identity.store_grants WHERE principal_id=$1 AND store_id=$2 AND permission='customers:read'`, x.actors["reader"], x.w.store)
+		case "/restore-read":
+			_, e = x.w.f.owner.Exec(r.Context(), `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'customers:read') ON CONFLICT DO NOTHING`, x.w.tenant, x.w.store, x.actors["reader"])
 		case "/concurrent-tags":
 			var id string
 			e = x.w.f.owner.QueryRow(r.Context(), `SELECT id FROM customers.tags WHERE store_id=$1 AND name='Seed02'`, x.w.store).Scan(&id)
@@ -476,17 +678,44 @@ func w6uiWrap(x *w6uiFixture, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		x.mu.Lock()
 		fault := x.fault
+		memberSearch := r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/members/search")
+		memberDetail := r.Method == "GET" && strings.Contains(r.URL.Path, "/members/")
+		memberFault := fault == "members-search-503" && memberSearch || fault == "members-ledger-503" && memberDetail && r.URL.Query().Get("ledger_cursor") != "" || fault == "members-hold" && (memberSearch || memberDetail)
+		release := x.held
+		if memberFault {
+			x.fault = ""
+
+		}
 		match := fault == "drop-note" && r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/notes") || (fault == "read-503" || fault == "truncate-report") && r.Method == "GET" && strings.Contains(r.URL.Path, "/reports/") || fault == "tag-read-503" && r.Method == "GET" && strings.HasSuffix(r.URL.Path, "/customers/tags") || fault == "notes-read-503" && r.Method == "GET" && strings.HasSuffix(r.URL.Path, "/notes")
 		if match {
 			x.fault = ""
 		}
 		x.mu.Unlock()
+		if memberFault && fault != "members-hold" {
+			http.Error(w, "fixture transport unavailable", 503)
+			return
+		}
 		if match && (fault == "read-503" || fault == "tag-read-503" || fault == "notes-read-503") {
 			http.Error(w, "fixture transport unavailable", 503)
 			return
 		}
 		recorded := httptest.NewRecorder()
 		next.ServeHTTP(recorded, r)
+		if memberFault && fault == "members-hold" && recorded.Code == http.StatusOK {
+			x.mu.Lock()
+			x.heldStarted = true
+			x.mu.Unlock()
+			timer := time.NewTimer(15 * time.Second)
+			defer timer.Stop()
+			select {
+			case <-release:
+			case <-r.Context().Done():
+				return
+			case <-timer.C:
+				http.Error(w, "fixture hold expired", 503)
+				return
+			}
+		}
 		x.mu.Lock()
 		x.requests = append(x.requests, w6uiRequest{r.Method, r.URL.Path, r.Header.Get("Idempotency-Key"), recorded.Code})
 		x.mu.Unlock()
@@ -513,10 +742,16 @@ func w6uiWrap(x *w6uiFixture, next http.Handler) http.Handler {
 }
 
 func w6uiSpecs(t *testing.T, ctx context.Context, s *brfStack, mode string, env map[string]string) {
-	config := filepath.Join(s.evidence, "playwright.w6.config.ts")
+	configName, logName := "playwright.w6.config.ts", "playwright.log"
+	if mode == "members-read" {
+		configName, logName = "playwright.w6.members-read.config.ts", "playwright-members-read.log"
+	}
+	config := filepath.Join(s.evidence, configName)
 	spec := "reports.spec.ts"
 	if mode == "customers" {
 		spec = "customer-tags.spec.ts"
+	} else if mode == "members-read" {
+		spec = "members-read.spec.ts"
 	}
 	body := fmt.Sprintf(`import {defineConfig} from "@playwright/test";
 export default defineConfig({testDir:%q,testMatch:%q,workers:1,retries:0,timeout:120000,expect:{timeout:15000},reporter:[["list"]],outputDir:%q,use:{baseURL:%q,headless:true,ignoreHTTPSErrors:true,trace:"retain-on-failure",screenshot:"only-on-failure"}});`, filepath.Join(s.root, "tests/admin"), spec, filepath.Join(s.evidence, "results"), s.origin)
@@ -531,9 +766,165 @@ export default defineConfig({testDir:%q,testMatch:%q,workers:1,retries:0,timeout
 		env["LC_W6UI_CALIBRATION"] = v
 	}
 	cmd.Env = browserEnvironment(env)
-	log := browserLog(t, filepath.Join(s.evidence, "playwright.log"))
+	log := browserLog(t, filepath.Join(s.evidence, logName))
 	cmd.Stdout, cmd.Stderr = log, log
 	if e := cmd.Run(); e != nil {
 		t.Fatalf("W6 browser gate failed: %v; evidence=%s", e, s.evidence)
 	}
+}
+
+// w6uiSeedMembers uses scoped loyalty commands; owner SQL only supplies synthetic stores/grants/readback.
+func w6uiSeedMembers(t *testing.T, x *w6uiFixture) {
+	t.Helper()
+	// Reports deliberately use incomplete order snapshots. Keep that corpus intact in its original store:
+	// the member journey reads an entire order list before detail, so it needs native checkout orders only.
+	// Reuse this world/database/router and the exact same actors; copy their existing permissions, never add any.
+	reportStore := x.w.store
+	x.w.store = randomUUID()
+	mustExec(t, x.w.f.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'members native store','TWD')`, x.w.tenant, x.w.store)
+	actors := make([]string, 0, len(x.actors))
+	for _, id := range x.actors {
+		actors = append(actors, id)
+	}
+	mustExec(t, x.w.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission)
+	 SELECT tenant_id,$2,principal_id,permission FROM identity.store_grants
+	 WHERE tenant_id=$1 AND store_id=$3 AND principal_id=ANY($4::uuid[])`, x.w.tenant, x.w.store, reportStore, actors)
+	x.emptyStore, x.foreignStore = randomUUID(), randomUUID()
+	for _, item := range []struct{ tenant, store string }{{x.w.tenant, x.emptyStore}, {x.w.f.tenantB, x.foreignStore}} {
+		mustExec(t, x.w.f.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'members synthetic store','TWD')`, item.tenant, item.store)
+	}
+	for _, actor := range []string{x.actors["reader"], x.actors["none"]} {
+		for _, permission := range []string{"store:read", "customers:read"} {
+			if actor == x.actors["none"] && permission == "customers:read" {
+				continue
+			}
+			mustExec(t, x.w.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING`, x.w.tenant, x.emptyStore, actor, permission)
+		}
+	}
+	x.memberOrder = w6uiMemberOrder(t, x)
+	var token string
+	x.seedActor, token = lcPrincipal(t, x.w.f, x.w.tenant, []string{x.w.store}, lpAll...)
+	run := func(fn func(context.Context, pgx.Tx, platform.Scope) error) {
+		t.Helper()
+		ctx := context.Background()
+		if e := platform.WithScope(ctx, x.w.f.runtime, token, x.w.store, "store:read", func(tx pgx.Tx, sc platform.Scope) error { return fn(ctx, tx, sc) }); e != nil {
+			t.Fatal(e)
+		}
+	}
+	for i := 0; i < 24; i++ {
+		var m loyalty.Member
+		run(func(ctx context.Context, tx pgx.Tx, sc platform.Scope) (e error) {
+			input := loyalty.MemberInput{DisplayName: fmt.Sprintf("LP2 synthetic %02d", i)}
+			if i == 0 {
+				contact := "LP2_SYNTHETIC_CONTACT"
+				input.ContactNote = &contact
+			}
+			m, _, e = loyalty.CreateMember(ctx, tx, sc, token, t04Key("lp2-seed"), input)
+			return e
+		})
+		if i == 0 {
+			x.member = m.ID
+		}
+		if i == 1 {
+			x.zeroMember = m.ID
+		}
+		n := 0
+		if i == 0 {
+			n = 52
+		}
+		if i == 23 {
+			n = 1
+			x.erasedMember = m.ID
+		}
+		for j := 0; j < n; j++ {
+			run(func(ctx context.Context, tx pgx.Tx, sc platform.Scope) error {
+				_, _, e := loyalty.Adjust(ctx, tx, sc, token, t04Key("lp2-seed-entry"), m.ID, loyalty.AdjustInput{Delta: 1, Note: "synthetic entry", OrderID: func() *string {
+					if i == 0 && j == 51 {
+						return &x.memberOrder
+					}
+					return nil
+				}()})
+				return e
+			})
+		}
+		if i == 23 {
+			run(func(ctx context.Context, tx pgx.Tx, sc platform.Scope) error {
+				_, _, e := loyalty.Erase(ctx, tx, sc, token, t04Key("lp2-seed-erase"), m.ID)
+				return e
+			})
+		}
+	}
+	_, foreignToken := lcPrincipal(t, x.w.f, x.w.f.tenantB, []string{x.foreignStore}, lpAll...)
+	ctx := context.Background()
+	if e := platform.WithScope(ctx, x.w.f.runtime, foreignToken, x.foreignStore, "store:read", func(tx pgx.Tx, sc platform.Scope) error {
+		m, _, e := loyalty.CreateMember(ctx, tx, sc, foreignToken, t04Key("lp2-foreign"), loyalty.MemberInput{DisplayName: "foreign synthetic member"})
+		x.foreignMember = m.ID
+		return e
+	}); e != nil {
+		t.Fatal(e)
+	}
+	t.Cleanup(func() {
+		x.mu.Lock()
+		defer x.mu.Unlock()
+		if x.held != nil {
+			close(x.held)
+			x.held = nil
+		}
+	})
+}
+
+func w6uiMemberCounts(t *testing.T, x *w6uiFixture) [3]int {
+	t.Helper()
+	return [3]int{
+		countRows(t, x.w.f.owner, `SELECT count(*) FROM loyalty.members WHERE store_id=$1`, x.w.store),
+		countRows(t, x.w.f.owner, `SELECT count(*) FROM loyalty.point_entries WHERE store_id=$1`, x.w.store),
+		countRows(t, x.w.f.owner, `SELECT count(*) FROM ops.command_results WHERE store_id=$1 AND operation LIKE 'loyalty.%'`, x.w.store),
+	}
+}
+
+// w6uiMemberOrder adapts moBeginInOtherStore's existing checkout leaf to this same store/pools.
+// No second world, order INSERT, report snapshot or successful HTTP stub is used.
+func w6uiMemberOrder(t *testing.T, x *w6uiFixture) string {
+	t.Helper()
+	ctx := context.Background()
+	f := *x.w.f
+	f.tenantA, f.storeA1 = x.w.tenant, x.w.store
+	id, token := lcPrincipal(t, &f, f.tenantA, []string{f.storeA1}, "store:read", "catalog:read", "catalog:write", "inventory:read", "inventory:write", "inventory:reserve", "pricing:read", "pricing:write", "integration:manage", "integration:read", "orders:read")
+	f.principalA, f.tokens = id, map[string]string{"a": token}
+	h := cqHarness{f: &f, a: openBuyerTestPools(t, &f), stock: t04CreateStock(t, &f, f.tokens["a"], f.storeA1, 10)}
+	var err error
+	h.service, err = buyer.New(h.a.issuer, time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.cap = mustIssue(t, h.service, f.storeA1)
+	h.market, err = pricingScoped(ctx, &f, f.tokens["a"], f.storeA1, "pricing:write", func(tx pgx.Tx, scope platform.Scope) (pricing.Market, error) {
+		return pricing.CreateMarket(ctx, tx, scope, t04Key("mo-other-market"), pricing.MarketInput{Code: "tw", Name: "Other store market", Currency: "TWD"})
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	zero := int64(0)
+	h.policy = pricing.PolicyInput{MarketID: h.market.ID, Country: "TW", Currency: "TWD", ShippingMode: "country_flat", ShippingMinor: &zero, TaxMode: "none", TaxBasis: "goods", TaxRateBPS: &zero, QuoteTTLSeconds: 300, Enabled: true, ConfigurationRef: "synthetic merchant order fixture"}
+	delivery := fulfillment.ServiceInput{MarketID: h.market.ID, Country: "TW", Code: "home", PolicyVersion: 1, NameHans: "测试配送", NameHant: "測試配送", NameEN: "Mock delivery", DeliveryKind: "home", Mode: "MANUAL", Enabled: true, Visible: true}
+	dsPolicy(t, h, delivery, 0, 0, true)
+	if _, err = dsSet(h, t04Key("mo-other-delivery"), delivery); err != nil {
+		t.Fatal(err)
+	}
+	allocation := fulfillment.AllocationInput{MarketID: h.market.ID, Country: "TW", Code: "home", ExpectedServiceVersion: 1, WarehouseIDs: []string{h.stock.warehouse.ID}}
+	if _, err = daSet(h, t04Key("mo-other-allocation"), allocation); err != nil {
+		t.Fatal(err)
+	}
+	pool, err := platform.OpenCheckoutPool(ctx, bcRole(t, &f, "commerce_checkout_runtime"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(pool.Close)
+	b := bcHarness{cqHarness: h, pool: pool, service: bcService(t, pool), delivery: delivery, allocation: allocation}
+	b.prepare(t, h.cap, []storefront.Item{{SKUID: h.stock.skus[0].ID, Quantity: 1}})
+	order, err := b.begin(t04Key("mo-other-begin"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return order.OrderID
 }

@@ -1,8 +1,30 @@
-// Purpose: customer list/detail/import subpage metadata with one primary navigation entry.
+// Purpose: customer/member list and detail metadata with distinct primary entries and hidden import/detail pages.
 // Depends on: shell RouteEntry and backend customers:read/customers:privacy permissions.
 // Used by: route registry, shell titles/navigation and static/browser gates.
 import type { RouteEntry } from "../../route-types.ts";
 export const customersRoutes = [
+  {
+    id: "members",
+    path: "/members",
+    group: "customers",
+    labelKey: "members",
+    icon: "support",
+    permission: "customers:read",
+    template: "list",
+    nav: true,
+    spec: "tests/admin/members-read.spec.ts",
+  },
+  {
+    id: "member-detail",
+    path: "/members/[member]",
+    group: "customers",
+    labelKey: "memberDetail",
+    icon: "support",
+    permission: "customers:read",
+    template: "detail",
+    nav: false,
+    spec: "tests/admin/customers-billing.spec.ts",
+  },
   {
     id: "customers",
     path: "/customers",

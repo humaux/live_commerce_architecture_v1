@@ -3,7 +3,7 @@
 // Used by: browser_live_console_test.go and test-local.sh --browser-live-console.
 // Invariants: I01/I02/I06/I10/I11/I14/I18; Console upstream/receipts are explicitly MOCK, never SQL/provider acceptance.
 import { parityWords, parityViewports, parityClick, parityShot as c4ParityShot } from "./parity-live-sessions";
-import { expect, type Page, type APIRequestContext, type BrowserContext } from "@playwright/test";
+import { expect, request as apiRequest, type Response as BrowserResponse, type Page, type APIRequestContext, type BrowserContext } from "@playwright/test";
 import { test } from "./inbox-private-evidence";
 import { mkdir, writeFile } from "node:fs/promises";
 import { randomBytes } from "node:crypto";
@@ -42,7 +42,7 @@ const sizes = [{ width: 1586, height: 992 }, { width: 390, height: 844 }];
 const streamSizes = [{width:1440,height:992},{width:390,height:844}];
 type Receipt = { scene: string; action: string; key_hash: string; body_hash: string; status: number; effect: boolean; input: Record<string, unknown> };
 type Scene = { ID: string; Title: string; Phase: string; Offer: string; SKU: string; Warehouse: string; Active: boolean; Stock: number; StockVersion: number; OfferVersion: number; Reads: number[] | null; Recommended: unknown; Copied: boolean };
-type Facts = { class: "MOCK"; scenes: Record<string, Scene>; receipts: Receipt[]; bad_authority: number;comments:{requests:number;older_requests:number;private_requests:number;public_requests:number;private_operations:number;graph_sends:number} };
+type Facts = { class: "MOCK"; scenes: Record<string, Scene>; receipts: Receipt[]; bad_authority: number;comments:{requests:number;older_requests:number;private_requests:number;public_requests:number;public_unknown:number;private_operations:number;graph_sends:number} };
 
 // Trace records credential headers; page-only screenshots and redacted receipts are the evidence.
 test.use({ baseURL: origin, trace: "off", screenshot: "off", video:"off" });
@@ -175,6 +175,26 @@ async function login(page: Page) {
   await page.goto(`${origin}/en/`);
   await page.getByRole("button", { name: "Sign in with identity service" }).click();
   await expect(page.getByTestId("shell-store-selector")).toBeAttached();
+}
+/** Assert only deletion metadata from the actual logout acknowledgment; never log cookie values. */
+async function assertLogoutDeletion(response: BrowserResponse) {
+  expect([204, 401].includes(response.status()), "logout must be acknowledged by the server").toBe(true);
+  const headers = await response.headersArray();
+  for (const name of ["__Host-commerce_session", "__Host-commerce_csrf"]) {
+    const deletion = headers.filter(header => header.name.toLowerCase() === "set-cookie" && header.value.startsWith(`${name}=`));
+    expect(deletion.length, "each auth cookie needs one deletion header").toBe(1);
+    const parts = deletion[0].value.split(";").map(part => part.trim());
+    expect(parts[0] === `${name}=`, "logout cookie value must be empty").toBe(true);
+    const attributes = new Map(parts.slice(1).map(part => {
+      const at = part.indexOf("=");
+      return [part.slice(0, at < 0 ? undefined : at).toLowerCase(), at < 0 ? "" : part.slice(at + 1)];
+    }));
+    expect(attributes.get("path") === "/" && !attributes.has("domain"), "host-only root deletion scope").toBe(true);
+    expect(attributes.has("secure") && attributes.get("max-age") === "0", "Secure deletion with zero lifetime").toBe(true);
+    expect(attributes.get("samesite")?.toLowerCase() === "lax" &&
+      attributes.has("httponly") === (name === "__Host-commerce_session"), "auth deletion flags retained").toBe(true);
+    expect(Date.parse(attributes.get("expires") ?? "") <= 0, "deletion must expire at the epoch").toBe(true);
+  }
 }
 async function authorityCookies(context: BrowserContext) {
   // Cookie inspection filters by scheme too. Query the same host's Secure
@@ -677,10 +697,36 @@ for (const [localeIndex, locale] of locales.entries()) for (const [sizeIndex, si
     await expect(page.getByTestId("live-console")).toBeVisible();
     await expect(page.getByText(`LC-U1 copied ${name}`, { exact: true })).toHaveCount(0);
     await page.getByTestId("workspace-sign-out").locator("xpath=ancestor::details/summary").click();
-    await page.getByTestId("workspace-sign-out").click();
-    await expect(page.getByTestId("live-console")).toHaveCount(0);
-    const cookies = await page.context().cookies(origin);
-    expect(cookies.filter((cookie) => cookie.name === "__Host-commerce_session" || cookie.name === "__Host-commerce_csrf").map((cookie) => cookie.name)).toHaveLength(0);
+    // Keep a separate in-memory context holding the SAME live session to prove server revocation, not just browser deletion.
+    const oldState = await context.storageState();
+    const oldSession = oldState.cookies.find(cookie => cookie.name === "__Host-commerce_session" && cookie.domain === new URL(origin).hostname && cookie.path === "/");
+    expect(!!oldSession?.value && oldSession.secure, "valid pre-logout host session required").toBe(true);
+    expect(oldState.cookies.filter(cookie => cookie.domain === new URL(origin).hostname && cookie.path === "/" && cookie.secure &&
+      ["__Host-commerce_session", "__Host-commerce_csrf"].includes(cookie.name)).length).toBe(2);
+    const revokedSession = await apiRequest.newContext({ baseURL: origin, ignoreHTTPSErrors: true, storageState: oldState });
+    try {
+      expect((await revokedSession.get("/api/stores", { maxRedirects: 0 })).status()).toBe(200);
+      const logoutAck = page.waitForResponse(response => response.url() === `${origin}/api/auth/logout` &&
+        response.request().method() === "POST", { timeout: 15000 }).then(
+          response => ({ ok: true as const, response }), error => ({ ok: false as const, error }));
+      await page.getByTestId("workspace-sign-out").click();
+      // Privacy erasure remains an immediate UI guard, before awaiting completion of revocation/deletion.
+      await expect(page.getByTestId("live-console")).toHaveCount(0);
+      const acknowledgment = await logoutAck;
+      if (!acknowledgment.ok) throw acknowledgment.error;
+      await assertLogoutDeletion(acknowledgment.response);
+      await expect(page).toHaveURL(`${origin}/${locale}`);
+      await expect(page.locator('form[action="/api/auth/login"]')).toBeVisible();
+      const cookies = await context.cookies(); // Unfiltered raw jar: no scheme-based false-empty result.
+      expect(cookies.filter(cookie => cookie.domain === new URL(origin).hostname && cookie.path === "/" &&
+        ["__Host-commerce_session", "__Host-commerce_csrf"].includes(cookie.name)).length).toBe(0);
+      const retainedSession = (await revokedSession.storageState()).cookies.find(cookie => cookie.name === "__Host-commerce_session");
+      expect(!!retainedSession && retainedSession.value === oldSession?.value, "revocation probe must still carry the same old session").toBe(true);
+      expect((await revokedSession.get("/api/stores", { maxRedirects: 0 })).status()).toBe(401);
+      await page.reload();
+      await expect(page.locator('form[action="/api/auth/login"]')).toBeVisible();
+      await expect(page.getByTestId("live-console")).toHaveCount(0);
+    } finally { await revokedSession.dispose(); }
     const end = await facts(request);
     await writeFile(`${evidence}/${name}-receipts.json`, JSON.stringify({ class: "MOCK", scene, copied, receipts: end.receipts.filter((receipt) => receipt.scene === scene), cadence }, null, 2));
   });
@@ -1551,8 +1597,8 @@ function c4DocumentProbe(page: Page) {
   let installed = false;
   return {
     install: async () => {
-      const init = await c4BoundedDocumentCall(() => page.addInitScript(c4InstallDocumentProbe, { key, mode: "INIT" }));
-      const current = await c4BoundedDocumentCall(() => page.evaluate(c4InstallDocumentProbe, { key, mode: "LATE" }));
+      const init = await c4BoundedDocumentCall(() => page.addInitScript(c4InstallDocumentProbe, { key, mode: "INIT" as const }));
+      const current = await c4BoundedDocumentCall(() => page.evaluate(c4InstallDocumentProbe, { key, mode: "LATE" as const }));
       installed = init.status === "OK" && current.status === "OK" && current.value === true;
     },
     capture: async (): Promise<C4DocumentProjection> => {

@@ -1,0 +1,26 @@
+✔ G-UI3/G-UI5 architecture constraints pass with shrinking legacy exceptions (700.546084ms)
+✔ G-UI3/G-UI5 negatives: new formatter, component fetch, >800 lines and wider allowance fail (0.357583ms)
+✔ Readiness jump controls expose the actual active section, not a click flag (0.5425ms)
+✔ Integrator P2: legal CN comment ordering and a distinct three-image recommendation (0.142541ms)
+✔ ADM04 and ADM06 explain unavailable SKUs and keep collection vocabulary consistent (0.218708ms)
+✔ ADM06 create/detail titles share the route vocabulary without adding a phantom Next page (0.332292ms)
+✔ G-UI1 Next pages and route registry are bidirectional, unique, typed, documented (1.451667ms)
+✔ G-UI1 copy key parity: no missing or extra key in any locale (0.076542ms)
+✔ CVS lookup is registered, localized and available only with order access, outside the rail (0.086625ms)
+✔ G-UI2 staff without catalog:read cannot see products/inventory or open a product URL (0.133125ms)
+✔ G-UI2 every route permission is a permission Go knows, and /orders/new needs inventory:reserve (379.648708ms)
+✔ G-UI1 dynamic and public routes match, details never appear as navigation (0.967ms)
+✔ W6-U2 ledger is a settings in-page route, preserving existing navigation (0.305583ms)
+✔ Every browser spec clicks nav-orders: the orders group stays a singleton, so returns/new/print routes are nav: false (0.575125ms)
+✔ TabStrip reserves a hidden hint only when the caller opts in (6.555292ms)
+✔ shell-registry: every routed path has exactly one nonempty shared h1 in all three locales (159.678208ms)
+✔ shell-registry: orders stays one actual group button on live and non-live routes (1.213917ms)
+✔ shell-registry: loading/expired/unavailable/forbidden keep one safe heading and never leak private content (1.957708ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 819.76825

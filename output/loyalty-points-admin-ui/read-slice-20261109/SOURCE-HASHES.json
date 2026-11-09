@@ -1,0 +1,15 @@
+{
+  "apps/admin/app/[locale]/members/[member]/page.tsx": "50771c76995b9075d203e6b9b5993963f159b076e5a6929c7ddbfd429fc8d2ed",
+  "apps/admin/app/[locale]/members/page.tsx": "e64a9230d36cc61078afc1215956b722f31c88a5149c21786a2f604be31afe51",
+  "apps/admin/components/members/MemberDetail.tsx": "b65701358b612ffdbf99502e000c5dfedd3fc238e24ea66734256d04539a0d23",
+  "apps/admin/components/members/MemberList.tsx": "f1db80a8e07783d3e88032701b96cd6e0d9bebc31bec87bcd2c41954bce5ef2f",
+  "apps/admin/components/members/copy.ts": "ffe209c1784b97da6d869d81bcf71cc5c751379a5d5f57e7ed9547ec621b3dbd",
+  "apps/admin/components/members/members.module.css": "4fa6dae4b4f4510ff476f93bce83a0e357e3db0327a767b3d18e577ae0d3cd76",
+  "apps/admin/lib/members-client.ts": "1cf38feb83321a87d29fb74efbc7085e96e68be36190948275ef04d214511496",
+  "apps/admin/src/features/customers/routes.ts": "34139a35954dcc5a262cd58017c05c8d145e2872634a807b3d231548633fb03a",
+  "apps/admin/src/shell-copy.ts": "87298a09214e2faf0ce5f5bb1fa6a645778b3a8c51f961fdc35be5d59f75bf05",
+  "packages/ui/src/tokens.css": "750ace4090f4adfa4dfaff685a4256ba5c222c5ee7313c69cc30cf8a4751f3ee",
+  "scripts/dev/test-node.sh": "1bbcedacaeeac58200fb02893b6d667c89c780d939ef47cf414f808a174449fb",
+  "tests/admin/members-read.test.ts": "846cdbf58714b8e85b4889939e57d6556112d824201b8a42356fc88df9b40d93",
+  "output/ci-select-backend-browser/browser-ownership.json": "cde0b117a4f1adb36e109722bf3c8f7885daa95ec9bec55d73971e85c16c79b4"
+}

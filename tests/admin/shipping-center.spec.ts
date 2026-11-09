@@ -7,6 +7,22 @@ import { expect, test, type Page, type TestInfo } from "@playwright/test";
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
+// Only declarations made with shippingTest own this lifecycle; imported MOU tests keep the base fixtures.
+// Native wait semantics: https://playwright.dev/docs/api/class-page#page-unroute-all (1.63.0, checked 2026-11-09).
+const shippingTest = test.extend<{ shippingWrites: string[] }>({
+  shippingWrites: async ({}, use) => { await use([]); },
+  page: async ({ page, shippingWrites }, use) => {
+    try {
+      await use(page);
+    } finally {
+      // This file exclusively owns these page routes (including the detail-fault override).
+      // Drain fetch → json → fulfill while the parent page/context fixtures are still alive.
+      await page.unrouteAll({ behavior: "wait" });
+      expect(shippingWrites, "no business writes through the end of shipping route drain").toEqual([]);
+    }
+  },
+});
+
 const copies = {
   "zh-TW": {
     center: "出貨中心", backOrders: "返回訂單", note: "列印不購面單、不登記出貨。",
@@ -87,8 +103,7 @@ function fixture(locale: Locale) {
   });
 }
 
-async function mockReads(page: Page, store: string, locale: Locale, rows = fixture(locale), pageSize = rows.length) {
-  const writes: string[] = [];
+async function mockReads(page: Page, store: string, locale: Locale, writes: string[], rows = fixture(locale), pageSize = rows.length) {
   await page.route(url => url.pathname.startsWith("/api/"), async route => {
     const request = route.request(), url = new URL(request.url());
     if (!["GET", "HEAD"].includes(request.method())) {
@@ -152,12 +167,13 @@ function ledgerFor(info: TestInfo, locale: string) {
 }
 
 // Register through the existing signed fixture, like settings-v2.spec.ts. Merely matching a filename is not CI execution.
+// registerShippingCenterTests declares shipping-only fixtures/tests; it does not install hooks on the importing suite.
 export function registerShippingCenterTests(login: (page: Page) => Promise<void>) {
   const store = process.env.LC_BROWSER_ORDER_STORE!;
   const path = (locale: string) => `/${locale}/orders/shipping?store=${store}`;
   for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
     const c = copies[locale];
-    test(`PARITY-SHIPCENTER RV3 ${locale}: long batch summary cannot cover rows or pagination at 1440 and 390`, async ({ page }, info) => {
+    shippingTest(`PARITY-SHIPCENTER RV3 ${locale}: long batch summary cannot cover rows or pagination at 1440 and 390`, async ({ page, shippingWrites }, info) => {
       info.setTimeout(90000);
       await login(page);
       // MOCK read preparation: two full valid pages, four ordinary named products per order;
@@ -175,7 +191,7 @@ export function registerShippingCenterTests(login: (page: Page) => Promise<void>
             item_summary: { items: items.slice(0, 3).map(it => ({ product_name: it.name, variant_label: null, quantity: it.quantity })), total_item_count: 4 } },
           detail: { ...base.detail, order_id: id, items } };
       });
-      const { writes } = await mockReads(page, store, locale, rows, 10);
+      const { writes } = await mockReads(page, store, locale, shippingWrites, rows, 10);
       const ledger = ledgerFor(info, locale);
       const next = locale === "zh-TW" ? "下一頁" : locale === "zh-CN" ? "下一页" : "Next page";
       const first = locale === "zh-TW" ? "返回第一頁" : locale === "zh-CN" ? "返回第一页" : "Back to first page";
@@ -260,12 +276,12 @@ export function registerShippingCenterTests(login: (page: Page) => Promise<void>
       expect(writes).toEqual([]);
     });
 
-    test(`PARITY-SHIPCENTER RV3 ${locale}: printed cross-border home address retains destination country`, async ({ page }, info) => {
+    shippingTest(`PARITY-SHIPCENTER RV3 ${locale}: printed cross-border home address retains destination country`, async ({ page, shippingWrites }, info) => {
       await login(page);
       const rows = fixture(locale);
       rows[0].detail.country = "HK";
       rows[0].detail.destination.country = "HK";
-      const { writes } = await mockReads(page, store, locale, rows);
+      const { writes } = await mockReads(page, store, locale, shippingWrites, rows);
       const ledger = ledgerFor(info, locale);
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.goto(path(locale));
@@ -288,10 +304,10 @@ export function registerShippingCenterTests(login: (page: Page) => Promise<void>
 
     const cases = locale === "zh-TW" ? combinations : combinations.filter(c => c.name === "all");
     for (const combo of cases) {
-      test(`PARITY-SHIPCENTER ${locale} ${combo.name}: select, review, print, return and refresh`, async ({ page }, info) => {
+      shippingTest(`PARITY-SHIPCENTER ${locale} ${combo.name}: select, review, print, return and refresh`, async ({ page, shippingWrites }, info) => {
         info.setTimeout(90000);
         await login(page);
-        const { rows, writes } = await mockReads(page, store, locale);
+        const { rows, writes } = await mockReads(page, store, locale, shippingWrites);
         const ledger = ledgerFor(info, locale);
         await page.setViewportSize({ width: 1440, height: 900 });
         await page.goto(path(locale));
@@ -378,9 +394,9 @@ export function registerShippingCenterTests(login: (page: Page) => Promise<void>
         }
       });
     }
-    test(`PARITY-SHIPCENTER ${locale} signed mobile single-order screen`, async ({ page }, info) => {
+    shippingTest(`PARITY-SHIPCENTER ${locale} signed mobile single-order screen`, async ({ page, shippingWrites }, info) => {
       await login(page);
-      const { writes } = await mockReads(page, store, locale);
+      const { writes } = await mockReads(page, store, locale, shippingWrites);
       await page.setViewportSize({ width: 390, height: 844 });
       await page.goto(path(locale));
       await expect(content(page).getByRole("heading", { name: c.center, exact: true })).toBeVisible();
@@ -409,11 +425,11 @@ export function registerShippingCenterTests(login: (page: Page) => Promise<void>
     });
   }
 
-  test("PARITY-SHIPCENTER every selection/review cancellation and return control", async ({ page }, info) => {
+  shippingTest("PARITY-SHIPCENTER every selection/review cancellation and return control", async ({ page, shippingWrites }, info) => {
     info.setTimeout(90000);
     await login(page);
     const c = copies["zh-TW"], ledger = ledgerFor(info, "zh-TW");
-    await mockReads(page, store, "zh-TW");
+    await mockReads(page, store, "zh-TW", shippingWrites);
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(path("zh-TW"));
     await expect(content(page).getByRole("heading", { name: c.center, exact: true })).toBeVisible();
@@ -460,10 +476,10 @@ export function registerShippingCenterTests(login: (page: Page) => Promise<void>
     }
   });
 
-  test("PARITY-SHIPCENTER existing server reads reach preview without synthetic DTO interception", async ({ page }, info) => {
+  shippingTest("PARITY-SHIPCENTER existing server reads reach preview without synthetic DTO interception", async ({ page, shippingWrites }, info) => {
     info.setTimeout(60000);
     await login(page);
-    const ledger = ledgerFor(info, "en"), writes: string[] = [];
+    const ledger = ledgerFor(info, "en"), writes = shippingWrites;
     page.on("request", request => {
       if (new URL(request.url()).pathname.startsWith(`/api/stores/${store}/`) && !["GET", "HEAD"].includes(request.method())) writes.push(request.method());
     });
@@ -491,10 +507,10 @@ export function registerShippingCenterTests(login: (page: Page) => Promise<void>
     });
   });
 
-  test("PARITY-SHIPCENTER detail read failure cannot print partial or invented slips; Retry recovers", async ({ page }, info) => {
+  shippingTest("PARITY-SHIPCENTER detail read failure cannot print partial or invented slips; Retry recovers", async ({ page, shippingWrites }, info) => {
     await login(page);
     const ledger = ledgerFor(info, "en");
-    const { writes } = await mockReads(page, store, "en");
+    const { writes } = await mockReads(page, store, "en", shippingWrites);
     let failing = true;
     // MOCK read fault only: never alter production state or bypass a control's event handler.
     await page.route(url => url.pathname === `/api/stores/${store}/orders/${orderIDs[0]}`, async route => {

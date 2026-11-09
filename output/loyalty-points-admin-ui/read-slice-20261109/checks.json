@@ -1,0 +1,91 @@
+{
+  "base_sha": "daed4b32b1f3511d72b6403fd70be92df9e8a713",
+  "evidence": "MOCK/OFFLINE E3 bound to SOURCE-HASHES.json; product acceptance NOT_RUN",
+  "checks": [
+    {
+      "label": "focused-final",
+      "command": [
+        "node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/members-read.test.ts"
+      ],
+      "exit_code": 0,
+      "log": "output/loyalty-points-admin-ui/read-slice-20261109/focused-final.log"
+    },
+    {
+      "label": "typecheck-final",
+      "command": [
+        "pnpm",
+        "--filter",
+        "@live-commerce/admin",
+        "typecheck"
+      ],
+      "exit_code": 0,
+      "log": "output/loyalty-points-admin-ui/read-slice-20261109/typecheck-final.log"
+    },
+    {
+      "label": "navigation-offline-final",
+      "command": [
+        "node",
+        "--test",
+        "--experimental-strip-types",
+        "tests/admin/shell-registry.test.ts",
+        "tests/admin/shell-render.test.ts",
+        "tests/admin/shell-architecture.test.mjs"
+      ],
+      "exit_code": 0,
+      "log": "output/loyalty-points-admin-ui/read-slice-20261109/navigation-offline-final.log"
+    },
+    {
+      "label": "syntax",
+      "command": [
+        "bash",
+        "-n",
+        "scripts/dev/test-node.sh"
+      ],
+      "exit_code": 0,
+      "log": "output/loyalty-points-admin-ui/read-slice-20261109/syntax.log"
+    },
+    {
+      "label": "headers",
+      "command": [
+        "bash",
+        "scripts/dev/check-headers.sh",
+        "daed4b32b1f3511d72b6403fd70be92df9e8a713"
+      ],
+      "exit_code": 0,
+      "log": "output/loyalty-points-admin-ui/read-slice-20261109/headers.log"
+    },
+    {
+      "label": "derive",
+      "command": [
+        "node",
+        "scripts/dev/derive-browser-ownership.mjs"
+      ],
+      "exit_code": 0,
+      "log": "output/loyalty-points-admin-ui/read-slice-20261109/derive.log"
+    },
+    {
+      "label": "derive-check",
+      "command": [
+        "node",
+        "scripts/dev/derive-browser-ownership.mjs",
+        "--check"
+      ],
+      "exit_code": 0,
+      "log": "output/loyalty-points-admin-ui/read-slice-20261109/derive-check.log"
+    },
+    {
+      "label": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check",
+        "daed4b32b1f3511d72b6403fd70be92df9e8a713"
+      ],
+      "exit_code": 0,
+      "log": "output/loyalty-points-admin-ui/read-slice-20261109/diff-check.log"
+    }
+  ]
+}

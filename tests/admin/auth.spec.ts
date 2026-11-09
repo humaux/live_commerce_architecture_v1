@@ -1,3 +1,6 @@
+// Purpose: native provider-MOCK BFF authentication protocol and negative authority acceptance.
+// Depends on: Playwright APIRequestContext, owned HTTP identity fixture, actual Next/BFF cookie and CSRF routes.
+// Used by: AdminIdentityMock browser gate; no real provider or production credentials.
 import { expect, test } from "@playwright/test";
 import {
   createServer,
@@ -241,19 +244,38 @@ test("PROVIDER_MOCK browser BFF enforces binding, cookies, CSRF and revocation o
   const authorityCookie = `__Host-commerce_session=${sessionCookie}; __Host-commerce_csrf=${csrf}`;
 
   const beforeAmbiguousSSR = requests.length;
-  const ambiguousSSR = await page.request.get("/zh-CN/", {
-    headers: {
-      Cookie: `__Host-commerce_session=${sessionCookie}; __Host-commerce_session=${"D".repeat(42)}A`,
-    },
+  // Canonical path keeps the duplicate authority at the SSR sink: a redirect would replace it with the context jar.
+  const ambiguousCookie = `__Host-commerce_session=${sessionCookie}; __Host-commerce_session=${"D".repeat(42)}A`;
+  const duplicateAuthority = ambiguousCookie.split(";").map(pair => pair.trim());
+  expect(duplicateAuthority.length).toBe(2);
+  expect(duplicateAuthority.every(pair => pair.startsWith("__Host-commerce_session="))).toBe(true);
+  expect(duplicateAuthority[0] !== duplicateAuthority[1]).toBe(true);
+  const ambiguousSSR = await page.request.get("/zh-CN", {
+    headers: { Cookie: ambiguousCookie }, maxRedirects: 0,
   });
+  expect(ambiguousSSR.url()).toBe(`${publicOrigin}/zh-CN`);
+  expect(ambiguousSSR.headers()["location"]).toBeUndefined();
   expect(ambiguousSSR.status()).toBe(200);
+  const ambiguousHTML = await ambiguousSSR.text();
+  expect(ambiguousHTML).toContain('action="/api/auth/login"');
+  expect(ambiguousHTML).not.toContain('data-testid="dashboard-page"');
   expect(requests).toHaveLength(beforeAmbiguousSSR);
 
-  const safeSSR = await page.request.get("/zh-CN/", {
-    headers: { Cookie: authorityCookie },
+  const beforeSafeSSR = requests.length;
+  const safeSSR = await page.request.get("/zh-CN", {
+    headers: { Cookie: authorityCookie }, maxRedirects: 0,
   });
+  expect(safeSSR.url()).toBe(`${publicOrigin}/zh-CN`);
+  expect(safeSSR.headers()["location"]).toBeUndefined();
   expect(safeSSR.status()).toBe(200);
-  expect(await safeSSR.text()).not.toContain(
+  expect(requests.slice(beforeSafeSSR).length).toBeGreaterThan(0);
+  expect(requests.slice(beforeSafeSSR).every(call => call.method === "GET" && call.path === "/v1/admin/stores")).toBe(true);
+  const safeHTML = await safeSSR.text();
+  // SSR mounts the authenticated shell; its dashboard children wait for the client workspace read.
+  expect(safeHTML).toContain('data-testid="shell-platform-brand"');
+  expect(safeHTML).toContain('data-testid="workspace-sign-out"');
+  expect(safeHTML).not.toContain('action="/api/auth/login"');
+  expect(safeHTML).not.toContain(
     "private diagnostic must not escape",
   );
 

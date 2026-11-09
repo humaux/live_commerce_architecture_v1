@@ -1,0 +1,15 @@
+{
+  "pnpm": "10.33.0",
+  "complete_frozen_install": true,
+  "old_token_prefix_unchanged": true,
+  "manifests_lock_unchanged": {
+    "apps/admin/package.json": true,
+    "apps/storefront/package.json": true,
+    "output/matrix-ledger-enforce/historical-evidence/strict-final-package.json": true,
+    "package.json": true,
+    "packages/format/package.json": true,
+    "packages/i18n/package.json": true,
+    "packages/ui/package.json": true,
+    "pnpm-lock.yaml": true
+  }
+}

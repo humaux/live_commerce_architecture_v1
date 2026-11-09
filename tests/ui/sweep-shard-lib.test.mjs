@@ -1,15 +1,38 @@
+// Purpose: guard sweep partitioning, coverage and the actual registry URL builders.
+// Depends on: Node test/fs, route registry, sweep aggregate and shard helpers; no runtime stack.
+// Used by: scripts/dev/test-node.sh and generic browser-registry regression checks.
 // Unit tests of LC_SWEEP_SHARD partitioning and of the whole-run aggregate (tests/ui/sweep-aggregate.mjs): every unit of the live route registry is owned by exactly one
 // shard for any N, and the aggregate turns a missing shard / page / journey / registry route into a failure. Run by scripts/dev/test-node.sh (no browser, no PG).
 import assert from "node:assert/strict";
 import test from "node:test";
 import { routes as adminRoutes } from "../../apps/admin/src/routes.ts";
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { discover, verifyClick, verifyVisual } from "./sweep-aggregate.mjs";
 import { CLICK_VARIANTS, JOURNEY_PAGES, STOREFRONT_ROUTES, VISUAL_LOCALES, VISUAL_VIEWPORTS, assignShards, loadWeights, parseShard, planClick, routeId, shardReport } from "./sweep-shard-lib.mjs";
 
 const weights = await loadWeights();
+
+test("LP2 actual generic registry URL builders resolve member UUID and fail closed without a fixture", () => {
+  const member = "33333333-3333-4333-8333-333333333333";
+  for (const file of ["tests/ui/click-sweep.mjs", "tests/ui/visual-audit.mjs"]) {
+    const raw = readFileSync(file, "utf8");
+    const start = file.includes("click-sweep") ? raw.indexOf("function adminURL(") : raw.lastIndexOf("const q =", raw.indexOf("const adminURL ="));
+    const end = file.includes("click-sweep") ? raw.indexOf("\nconst shellMenu", start) : raw.indexOf('\n  // "create new"', start);
+    assert.ok(start >= 0 && end > start, "execute the actual existing builder without launching its browser runner");
+    const make = new Function("facts", "store", "adminOrigin", `const orderIDs = facts.orders; ${raw.slice(start, end)}; return adminURL;`);
+    for (const locale of ["en", "zh-TW", "zh-CN"]) {
+      const build = make({ member, orders: {}, products: [{}] }, "fixture-store", "https://admin.example.test");
+      assert.equal(build({ path: "/members/[member]" }, locale), `https://admin.example.test/${locale}/members/${member}?store=fixture-store`);
+      assert.equal(build({ path: "/members" }, locale), `https://admin.example.test/${locale}/members?store=fixture-store`);
+    }
+    for (const value of [undefined, "", "[member]", "not-a-uuid"]) {
+      const build = make({ member: value, orders: {}, products: [{}] }, "fixture-store", "https://admin.example.test");
+      assert.throws(() => build({ path: "/members/[member]" }, "en"), /member fixture/);
+    }
+  }
+});
 
 // The storefront twin of G-UI1 (tests/admin/shell-registry.test.ts): the click sweep and visual lint open STOREFRONT_ROUTES, a hand list, so a
 // new buyer page.tsx would otherwise never be clicked or shot. Route groups like "(list)" do not appear in URLs.

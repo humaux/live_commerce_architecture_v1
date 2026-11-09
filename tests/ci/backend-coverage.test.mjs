@@ -304,3 +304,24 @@ test("CI-SPEED-3: drift checker rejects a corrupted ownership artifact on its ow
   writeFileSync(output, original);
   run("--check");
 });
+
+// LP2 registration is additive to the existing native W6 customer mode, with no second auth/runner stack.
+test("LP2: members HTTP and actual browser/UI companions belong to existing customer mode", async () => {
+  const { modeEntries, backendBrowserModes } = await import("../../scripts/dev/pr-modes.mjs");
+  const entry = modeEntries(usage).find(e => e.name === "--browser-customers-billing");
+  assert.ok(entry);
+  for (const file of ["internal/loyalty", "internal/httpapi/members.go", "internal/httpapi/members_test.go"]) assert.ok(entry.covers.includes(file), file);
+  // Exercise the actual Go selector so additive controls cannot hide missing native execution.
+  const selector = entry.body.match(/go test[^\n]* -run '([^']+)'/);
+  assert.ok(selector, "existing customer mode must execute a Go test selector");
+  const selected = new RegExp(selector[1]);
+  for (const name of ["TestBrowserCustomersBilling", "TestBrowserW6Customers", "TestW6UISeedFocused", "TestW6UIMembersOrderAPIFocused"]) {
+    assert.ok(selected.test(name), `selector must include ${name}`);
+    for (const other of [`prefix${name}`, `${name}Suffix`]) assert.ok(!selected.test(other), `selector boundary must reject ${other}`);
+  }
+  for (const other of ["", "not-a-test", "TestUnrelated", "TestBrowser", "TestW6UI"]) assert.ok(!selected.test(other), `selector must reject unrelated ${other}`);
+  for (const file of ["members-read.spec.ts", "members-read.test.ts", "members-bff.test.ts", "customer-tags.spec.ts", "customers-billing.spec.ts", "guarded-read-logout.test.mjs"]) assert.ok(entry.body.includes(file), file);
+  assert.ok(backendBrowserModes(["internal/httpapi/members.go"], usage).includes(entry.name));
+  const ownership = JSON.parse(readFileSync(path.join(root, ownershipJSON), "utf8"));
+  for (const file of ["tests/admin/members-read.spec.ts", "tests/admin/customer-tags.spec.ts", "tests/admin/customers-billing.spec.ts"]) assert.ok(ownership.modes[entry.name].specs.includes(file), file);
+});

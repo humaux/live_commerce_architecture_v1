@@ -383,7 +383,8 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
   expect(skuCommands, "explicit Save must replay the identical SKU key and body exactly once").toEqual([originalSku, originalSku]);
   const acknowledged = await skuAcknowledged;
   expect(acknowledged.status(), "the SKU write succeeded; only its follow-up read failed").toBe(200);
-  expect(await acknowledged.json()).toMatchObject(JSON.parse(originalSku.body));
+  const skuReceipt = await acknowledged.json();
+  expect(skuReceipt).toMatchObject(JSON.parse(originalSku.body));
   expect(productReads, "only the immediate post-acknowledgement product read has failed").toBe(1);
   expect(inventoryCommands, "the failed read occurs before any initial adjustment").toHaveLength(0);
   // READ ONLY: distinguish this failure from a still-pending SKU command.
@@ -493,7 +494,7 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
   await page.getByRole("button", { name: "Save settings", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Settings saved", exact: true })).toBeVisible();
   expect(inventoryCommands, "exactly one explicit replay of the original key and body").toEqual([originalInventory, originalInventory]);
-  expect(JSON.parse(originalInventory.body).sku_id, "the original stock command targets A's acknowledged SKU").toBe((await acknowledged.json()).id);
+  expect(JSON.parse(originalInventory.body).sku_id, "the original stock command targets A's acknowledged SKU").toBe(skuReceipt.id);
   // Native refresh proves B's editor and persisted SKU/inventory facts did not
   // change during either recovery; only A received the original command replay.
   const afterB = readB();
