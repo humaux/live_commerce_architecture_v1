@@ -784,7 +784,8 @@
     "tests/storefront/shop-real-gate.mjs": "91f6f6f19c5550ff46436835fc55bad4e29aa39990baeea5d756cd929ee1e6d4",
     "tests/storefront/store-domains-gate.mjs": "94d3d543b931453ce9176b3801161b3aae809796dee0ef7793ff32e951497185",
     "tests/storefront/storefront-publish-gate.mjs": "ab10d5c9778d074d998a1538bf92181b3d7fc2acbbbe3f7b75eb1a88532070a0",
-    "tests/storefront/stripe-browser.mjs": "37d816c1975aa078b03432eb835aac6ef22688196c2db32f6687d5de903c5ef4",
+    "tests/storefront/stripe-browser.mjs": "e16906690ee46519f7ef6e2c13730b9424b0cd000ec9ec63619e894d5312b7a8",
+    "tests/storefront/su07-continuation-diagnostic.test.mjs": "2f834d18d5df748cef7ae837740ab28ea441840c479670fbd0ce340e30a265c8",
     "tests/ui/click-sweep-known-defects.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
     "tests/ui/click-sweep-lib.mjs": "478b1b3f56fa6c785f4491701873c263f76d0fb152e3b1ea1bddda0ca81ea2bf",
     "tests/ui/click-sweep-lib.test.mjs": "379b84f5f8319900ba8386be9fe3b89c4f86eab5a120d620504fd257ee3947af",
@@ -816,7 +817,7 @@
     "packages/format/package.json": "0a52b62b35e640298589968137e2d8899151bbcb2e0714f3f9204afc70beb3ed",
     "packages/i18n/package.json": "096562b66a71f0479808557beb6490deef65c7cf1626867ec23cffbdaedebfce",
     "packages/ui/package.json": "85891954909057d1783e4a0b8585e5b8f4609f9259116ae808ce34f1f4347078",
-    "scripts/dev/test-node.sh": "1cbe36fad269a31a90e429bce665e6852aec0eab21e468be85accf6092647f1b"
+    "scripts/dev/test-node.sh": "1c721bf96501d3f36b4050b8ad90d6473cc3c6f40e04f8e87f310854d4a83c53"
   },
   "modes": {
     "--browser-inbox": {
