@@ -134,7 +134,7 @@ async function composition(page: Page, kind: "list" | "ledger", name: string) {
     catch (error) { redFailure = error instanceof Error ? error.message : String(error); }
     expect(redFailure, "original stacking must turn the same grouping assertion RED").not.toBe("");
     expect(red.height, "original stack is measurably taller on the same real fixture").toBeGreaterThan(green.height);
-  } finally { await fault.evaluate(node => node.remove()); }
+  } finally { await fault.evaluate(node => node.parentNode?.removeChild(node)); }
   const restored = await measure();
   expect(grouped(restored)).toBe(true);
   expect(restored.height).toBeCloseTo(green.height, 0);
