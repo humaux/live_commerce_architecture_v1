@@ -2,7 +2,7 @@
 // Depends on: Locale from index; no diagnostics or resource identifiers enter displayed copy.
 // Used by: UiGalleryRecovery, shared admin boundaries and storefront state branches.
 // Invariants: uncertainty offers a read of the same operation, never another submission.
-import type { Locale } from "./index";
+import type { Locale } from "./index.ts";
 
 const en = {
   title: "Recovery actions", empty: "No products yet", emptyBody: "Add your first product.",
