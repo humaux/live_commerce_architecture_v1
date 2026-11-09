@@ -95,68 +95,50 @@
   padding: var(--ds-space-4);
   color: var(--ds-members-muted);
 }
+/* Keep DS table markup and desktop sizing; mobile records group related cells. */
+.tableWrap :global([data-table-scroll]) { min-width: 0; }
 @media (max-width: 640px) {
-  .page {
-    padding: var(--ds-space-4);
-    gap: var(--ds-space-4);
-  }
-  .summary {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .search label {
-    width: 100%;
-  }
-  .tableWrap :global(table),
-  .tableWrap :global(tbody),
-  .tableWrap :global(tr),
-  .tableWrap :global(td) {
-    display: block;
-  }
+  .page { padding: var(--ds-space-4); gap: var(--ds-space-4); }
+  .summary { grid-template-columns: minmax(0, 1fr); }
+  .search label { width: 100%; }
+  .tableWrap :global(table), .tableWrap :global(tbody) { display: block; min-width: 0; }
   .tableWrap :global(thead) {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%);
   }
-  .tableWrap :global(tr) {
+  .tableWrap :global(tbody tr:not(:has(> td[colspan]))) {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: var(--ds-space-2) var(--ds-space-3);
     padding: var(--ds-space-3);
     border-bottom: 1px solid var(--ds-members-border);
   }
-  .tableWrap :global(td) {
-    display: block;
-    white-space: normal;
+  .tableWrap :global(table td) {
+    display: block; width: auto !important; min-width: 0 !important;
+    max-width: 100%; height: auto; padding: 0; border: 0; white-space: normal;
   }
   .tableWrap :global(td) > [data-label] {
-    display: grid;
-    grid-template-columns: minmax(80px, 1fr) minmax(0, 2fr);
-    gap: var(--ds-space-3);
-    padding: var(--ds-space-2);
-    border: 0;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
   }
   .tableWrap :global(td) > [data-label]::before {
-    content: attr(data-label);
-    color: var(--ds-members-muted);
+    content: attr(data-label) ": "; color: var(--ds-members-muted);
+    font-size: var(--ds-text-xs);
   }
-}
-
-.tableWrap :global([data-table-scroll]) {
-  min-width: 0;
-}
-@media (max-width: 640px) {
-  .tableWrap :global(table) {
-    min-width: 0;
-  }
-}
-@media (max-width: 640px) {
-  /* DS tables normally scroll; the formal member mobile view stacks its cells. */
-  .tableWrap :global(table) :global(td) {
-    width: auto !important;
-    min-width: 0 !important;
-    max-width: 100%;
-    padding: 0;
-  }
-  .tableWrap :global([data-table-scroll-hint]) {
-    display: none;
-  }
+  .memberTable :global(td:not([colspan]):nth-child(1)) { grid-area: 1 / 1; }
+  .memberTable :global(td:not([colspan]):nth-child(3)) { grid-area: 1 / 2; font-variant-numeric: tabular-nums; }
+  .memberTable :global(td:not([colspan]):nth-child(2)), .memberTable :global(td:not([colspan]):nth-child(4)) { grid-column: 1 / -1; }
+  .memberTable :global(td:not([colspan]):nth-child(1) a) { display: inline-flex; align-items: center; min-height: var(--ds-target); }
+  .ledgerTable :global(td:not([colspan]):nth-child(2)) { grid-area: 1 / 1; font-variant-numeric: tabular-nums; }
+  .ledgerTable :global(td:not([colspan]):nth-child(3)) { grid-area: 1 / 2; }
+  .ledgerTable :global(tbody tr:not(:has(> td[colspan]))) { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
+  .ledgerTable :global(td:not([colspan]):nth-child(1)) { grid-area: 2 / 1; }
+  .ledgerTable :global(td:not([colspan]):nth-child(4)) { grid-area: 2 / 2; }
+  .ledgerTable :global(td:not([colspan]):nth-child(6)) { grid-area: 3 / 1 / auto / -1; }
+  .ledgerTable :global(td:not([colspan]):nth-child(5)) { grid-area: 4 / 1 / auto / -1; }
+  .ledgerTable :global(td:not([colspan]):nth-child(4) a) { display: inline-flex; align-items: center; min-height: var(--ds-target); }
+  /* DS colspan states are content blocks, never record tracks or sticky scroller slices. */
+  .tableWrap :global(tbody tr:has(> td[colspan])) { display: block; }
+  .tableWrap :global(table td[colspan]) { display: block; inline-size: 100% !important; height: auto; }
+  .tableWrap :global(table tbody td[colspan] > *) { position: static; inline-size: 100%; max-inline-size: 100%; }
+  .tableWrap :global([data-table-scroll-hint]) { display: none; }
 }

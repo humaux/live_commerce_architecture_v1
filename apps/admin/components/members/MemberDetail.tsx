@@ -93,7 +93,7 @@ export function MemberDetail({
             </Card>
             <section data-testid="member-ledger" aria-label={c.ledger}>
               <Card title={c.ledger} flush>
-                <div className={s.tableWrap}>
+                <div className={`${s.tableWrap} ${s.ledgerTable}`}>
                   <DataTable
                     caption={c.ledger}
                     rows={data.entries}

@@ -100,6 +100,92 @@ async function snapshot(page: Page, name: string) {
   expect(measurement.overflow).toBeLessThanOrEqual(1);
   await writeFile(path.join(evidence, `members-${name}-tokens.json`), JSON.stringify({ mapping, measurement, expected, visualComparison: "NOT_RUN independent exported-frame review; existing shell deviations retained; no whole-frame parity claim" }, null, 2));
 }
+// READ ONLY geometry; native journeys below remain the acceptance path.
+async function composition(page: Page, kind: "list" | "ledger", name: string) {
+  const rows = page.getByTestId(kind === "list" ? "members-list" : "member-ledger").locator("tbody tr");
+  const measure = () => rows.first().evaluate(row => ({
+    height: row.getBoundingClientRect().height,
+    fields: Array.from(row.querySelectorAll("td")).map(cell => {
+      const b = cell.getBoundingClientRect();
+      const content = cell.querySelector<HTMLElement>("[data-label]")!;
+      const cb = content.getBoundingClientRect();
+      return { contentRight: cb.right, right: b.right, contentScrollWidth: content.scrollWidth, contentWidth: content.clientWidth, contentHeight: cb.height, contentBottom: cb.bottom, bottom: b.bottom, x: b.x, y: b.y, width: b.width, height: b.height, text: cell.textContent, label: cell.querySelector("[data-label]")?.getAttribute("data-label") };
+    }),
+    overflow: document.documentElement.scrollWidth - innerWidth,
+  }));
+  const grouped = (m: Awaited<ReturnType<typeof measure>>) => {
+    const [a, b] = kind === "list" ? [0, 2] : [1, 2];
+    return Math.abs(m.fields[a].y - m.fields[b].y) < 1 && m.fields[b].x >= m.fields[a].x + m.fields[a].width - 1;
+  };
+  const intrinsic = (m: Awaited<ReturnType<typeof measure>>) => m.fields.every(f => {
+    const trackContent = Math.max(...m.fields.filter(other => Math.abs(other.y - f.y) < 1).map(other => other.contentHeight));
+    return f.height <= trackContent + 2 && f.contentBottom <= f.bottom + 1 && f.contentRight <= f.right + 1 && f.contentScrollWidth <= f.contentWidth + 1;
+  });
+  const green = await measure();
+  expect(green.fields).toHaveLength(kind === "list" ? 4 : 6);
+  expect(green.fields.every(f => f.label && f.text?.trim())).toBe(true);
+  expect(green.overflow).toBe(0);
+  expect(grouped(green), "primary record fields share a compact row").toBe(true);
+  expect(intrinsic(green), "record tracks fit actual content lineboxes without inherited blank height").toBe(true);
+  const heightFault = await page.addStyleTag({ content: `[data-testid="${kind === "list" ? "members-list" : "member-ledger"}"] td:not([colspan]) { height:60px !important; }` });
+  let heightRed: Awaited<ReturnType<typeof measure>> | undefined;
+  try {
+    heightRed = await measure();
+    expect(intrinsic(heightRed), "old fixed60 must fail actual content geometry").toBe(false);
+  } finally { await heightFault.evaluate(node => node.parentNode?.removeChild(node)); }
+  expect(intrinsic(await measure())).toBe(true);
+  // Deliberate presentation-only fault: restore e6296 full-width mobile stacking.
+  // addStyleTag is calibration, never a substitute for native user acceptance.
+  const fault = await page.addStyleTag({ content: `
+    [data-testid="${kind === "list" ? "members-list" : "member-ledger"}"] tbody tr { display:block !important; }
+    [data-label] { display:grid !important; grid-template-columns:minmax(80px,1fr) minmax(0,2fr) !important; gap:12px !important; padding:8px !important; }
+  ` });
+  let red: Awaited<ReturnType<typeof measure>> | undefined;
+  let redFailure = "";
+  try {
+    red = await measure();
+    try { expect(grouped(red), "primary record fields share a compact row").toBe(true); }
+    catch (error) { redFailure = error instanceof Error ? error.message : String(error); }
+    expect(redFailure, "original stacking must turn the same grouping assertion RED").not.toBe("");
+    expect(red.height, "original stack is measurably taller on the same real fixture").toBeGreaterThan(green.height);
+  } finally { await fault.evaluate(node => node.parentNode?.removeChild(node)); }
+  const restored = await measure();
+  expect(grouped(restored)).toBe(true);
+  expect(restored.height).toBeCloseTo(green.height, 0);
+  await writeFile(path.join(evidence, `members-${name}-composition.json`), JSON.stringify({ green, heightRed, red, redFailure, restored, calibration: "original stacking rejected; restored grouping accepted" }, null, 2));
+}
+async function stateShot(page: Page, name: string, caption?: string, scope = store) {
+  if (caption) {
+    expect(new URL(page.url()).searchParams.get("store")).toBe(scope);
+    const content = page.locator('[data-testid="members-list"], [data-testid="member-detail"]').getByText(caption, { exact: true });
+    await expect(content).toBeVisible();
+    await content.scrollIntoViewIfNeeded();
+    // READ ONLY: prove the actual explanation fits its cell, clipping ancestors and viewport.
+    const readFit = () => content.evaluate(node => {
+      const b = node.getBoundingClientRect();
+      let left = 0, top = 0, right = innerWidth, bottom = innerHeight;
+      for (let parent = node.parentElement; parent; parent = parent.parentElement) {
+        const cs = getComputedStyle(parent), r = parent.getBoundingClientRect();
+        if (/(auto|scroll|hidden|clip)/.test(cs.overflowX) || parent.tagName === "TD") { left = Math.max(left, r.left); right = Math.min(right, r.right); }
+        if (/(auto|scroll|hidden|clip)/.test(cs.overflowY) || parent.tagName === "TD") { top = Math.max(top, r.top); bottom = Math.min(bottom, r.bottom); }
+      }
+      return { fits: b.width > 0 && b.height > 0 && b.left >= left - 1 && b.right <= right + 1 && b.top >= top - 1 && b.bottom <= bottom + 1, overflow: document.documentElement.scrollWidth - innerWidth };
+    });
+    const fits = await readFit();
+    let stateRed: Awaited<ReturnType<typeof readFit>> | undefined;
+    if (page.viewportSize()?.width === 375) {
+      // Restore the retained fixed-height clipping fault, then remove only this style node.
+      const stateFault = await page.addStyleTag({ content: 'td[colspan] { height:60px !important; overflow:hidden !important; }' });
+      try { stateRed = await readFit(); expect(stateRed.fits, "old state clipping must be RED").toBe(false); }
+      finally { await stateFault.evaluate(node => node.parentNode?.removeChild(node)); }
+      expect((await readFit()).fits).toBe(true);
+    }
+    expect(fits.fits, "state explanation is inside cell/viewport/clipping bounds").toBe(true);
+    expect(fits.overflow).toBe(0);
+    await writeFile(path.join(evidence, `members-state-${name}-geometry.json`), JSON.stringify({ caption, scope, fits, stateRed, restored: await readFit() }, null, 2));
+  }
+  await page.screenshot({ path: path.join(evidence, `members-state-${name}.png`), fullPage: true });
+}
 async function logout(page: Page, locale: Locale) {
   const sc = shellCopy[locale];
   await page.locator("summary").filter({ hasText: sc.account }).click();
@@ -120,8 +206,12 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [144
     try {
       await expect(links(page)).toHaveCount(20);
       await snapshot(page, `${locale}-${width}-list`);
+      if (width === 375) await composition(page, "list", `${locale}-list`);
       if (width === 375) await step(page, "mobile scroll", "keyboard reaches final visible row and pagination", async () => {
         await page.getByTestId("members-search-input").press("Tab");
+        const pagination = page.getByTestId("members-load-more");
+        for (let tabs = 0; tabs < 30 && !(await pagination.evaluate(node => node === document.activeElement)); tabs++) await page.keyboard.press("Tab");
+        await expect(pagination).toBeFocused();
         await page.keyboard.press("End");
         await page.getByTestId("members-load-more").scrollIntoViewIfNeeded();
         await expect(page.getByTestId("members-load-more")).toBeInViewport();
@@ -130,6 +220,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [144
       await ctl("fault", "members-search-503");
       await step(page, "list next failure", "503 preserves twenty rows and explicit retry", async () => {
         await page.getByTestId("members-load-more").click(); await expect(page.getByTestId("members-list").getByRole("alert")).toContainText(c.network); await expect(links(page)).toHaveCount(20);
+        await stateShot(page, `${locale}-${width}-list-page-error`);
         return { rows: await links(page).count(), retry: await page.getByTestId("members-load-more").innerText() };
       }, "click", "MOCK");
       await step(page, "list next retry", "23 unique members and terminal pagination", async () => {
@@ -139,6 +230,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [144
       });
       await search(page, marker, true); await expect(links(page)).toHaveCount(1);
       await search(page, "NO_SYNTHETIC_MATCH"); await expect(page.getByText(c.queryEmpty, { exact: true })).toBeVisible();
+      await stateShot(page, `${locale}-${width}-query-empty`, c.queryEmpty);
       await search(page, "LP2 synthetic"); await expect(links(page)).toHaveCount(20);
       await search(page, ""); await expect(links(page)).toHaveCount(20);
       await step(page, "native member detail", "scoped detail opens with fifty ledger entries", async () => {
@@ -155,6 +247,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [144
         return { rows: await entries(page).count(), scope: new URL(page.url()).searchParams.get("store") };
       });
       await snapshot(page, `${locale}-${width}-detail`);
+      if (width === 375) await composition(page, "ledger", `${locale}-ledger`);
       await step(page, "native scoped order link", "real checkout order detail renders after native navigation", async () => {
         const link = page.getByTestId("member-ledger").getByRole("link", { name: order, exact: true });
         await expect(link).toHaveAttribute("href", `/${locale}/orders/${order}?store=${store}`);
@@ -181,6 +274,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [144
         if (id === erased) await expect(page.getByText(c.erased, { exact: true })).toBeVisible();
         else { await expect(page.getByText(c.noEntries, { exact: true })).toBeVisible(); await expect(page.getByTestId("member-detail").locator("dd").filter({ hasText: c.dash })).toHaveCount(2); }
         await page.reload(); await expect(page.getByTestId("member-detail").locator("strong")).toHaveText(expectedBalance);
+        await stateShot(page, `${locale}-${width}-${id === erased ? "erased" : "no-entries"}`, id === erased ? undefined : c.noEntries);
       }
       await step(page, "member back", "list defaults to twenty rows with blank draft", async () => { await page.getByTestId("member-back").click(); await expect(links(page)).toHaveCount(20); await expect(page.getByTestId("members-search-input")).toHaveValue(""); return { rows: await links(page).count() }; });
       await step(page, "native browser Back", "returns to erased detail then list without private history state", async () => { await page.goBack(); await expect(page.getByTestId("member-ledger")).toBeVisible(); await page.goForward(); await expect(links(page)).toHaveCount(20); return { pathname: new URL(page.url()).pathname }; }, "back/forward");
@@ -190,7 +284,12 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [144
         await page.getByTestId("shell-store-selector").selectOption(empty); await expect(page).toHaveURL(new RegExp(`store=${empty}`));
         // Store switching intentionally lands on overview; enter members through native navigation.
         if (width === 375) await page.getByRole("button", { name: sc.openMenu, exact: true }).click();
-        await page.getByTestId("nav-members").click(); await expect(page.getByText(c.empty, { exact: true })).toBeVisible();
+        const settled = page.waitForResponse(r => r.request().method() === "POST" && new URL(r.url()).pathname === `/api/stores/${empty}/members/search`);
+        await page.getByTestId("nav-members").click();
+        const emptyRead = await settled; expect(emptyRead.status()).toBe(200);
+        expect((await emptyRead.json() as { members: unknown[] }).members).toHaveLength(0);
+        await expect(page.getByText(c.empty, { exact: true })).toBeVisible();
+        await stateShot(page, `${locale}-${width}-empty-store`, c.empty, empty);
         return { store: new URL(page.url()).searchParams.get("store"), empty: true };
       }, "selectOption/click");
       await privacy(page, urls, consoleTexts); expect(mutation).toBe(0);
@@ -204,6 +303,7 @@ test("MOCK read permission revocation and opaque foreign refusal", async ({ brow
   try {
     await expect(links(page)).toHaveCount(20); await ctl("deny-read");
     await step(page, "revoked read/reload", "no private rows after server grant revocation", async () => { await page.reload(); await expect(page.getByTestId("route-forbidden")).toBeVisible(); await expect(links(page)).toHaveCount(0); return { privateRows: await links(page).count() }; }, "reload", "MOCK");
+    await stateShot(page, "en-1440-permission-revoked");
     await ctl("restore-read"); await page.goto(listURL("en")); await expect(links(page)).toHaveCount(20);
     for (const [scope, id] of [[store, foreignMember], [foreign, foreignMember]]) {
       const response = await page.goto(detailURL("en", id, scope));
@@ -250,6 +350,7 @@ for (const target of ["list", "detail"] as const) test(`MOCK 401 clears ${target
    if(target === "detail") await page.getByTestId("member-ledger-load-more").click(); else await page.getByTestId("members-search-submit").click();
    expect((await response).status()).toBe(401); await expect(page.getByTestId("shell-session-expired")).toBeVisible();
    await expect(links(page)).toHaveCount(0); await expect(entries(page)).toHaveCount(0);
+   await stateShot(page, `en-1440-${target}-session-expired`);
    return { status: 401, listRows: await links(page).count(), ledgerRows: await entries(page).count() };
   }, "click", "MOCK");
  } finally { await context.close(); }
