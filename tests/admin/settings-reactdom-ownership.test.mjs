@@ -158,4 +158,79 @@ for(const mode of ['before-commit','after-commit','baseline0','foreign-target','
   assert.equal(button().disabled,false);
  }finally{if(!unmounted)flushSync(()=>root.unmount());dom.window.Storage.prototype.setItem=original;}
 });
+// First discovery uses the same actual component/event seam as the accepted modes.
+// MOCKDOM only: storage seeds are fixtures; all edits use rendered DOM controls.
+for(const mode of ['late','early','known-zero','known-seven','foreign-observation','explicit-market','first-session-change','first-unmounted'])test(`actual React first-market ${mode}`,{timeout:10000},async()=>{
+ dom.reconfigure({url:'https://fixture.invalid/en/settings?meta_connect=1'});
+ sessionStorage.clear();localStorage.clear();document.cookie=`__Host-commerce_csrf=${'a'.repeat(43)}; Secure; Path=/`;
+ const hash=Buffer.from(await crypto.subtle.digest('SHA-256',new TextEncoder().encode('a'.repeat(43)))).toString('hex');
+ const key=`commerce-settings-draft:${store.id}:${hash}`;
+ const control=['known-zero','known-seven','foreign-observation'].includes(mode);
+ const draft={...emptyDraft,serviceCode:'home',marketID:mode==='explicit-market'?market.id:''};
+ if(control)Object.assign(draft,{reference:'retained-reference',policyEnabled:true,policyObservation:{target:mode==='foreign-observation'?'zero:JP:home':'zero:TW:home',version:mode==='known-seven'?7:mode==='known-zero'?0:-1,dirty:true}});
+ sessionStorage.setItem(key,JSON.stringify({version:2,step:3,draft}));
+ let releaseMarket,releasePolicy,marketRequested=false,policyRequests=0,commits=0,unmounted=false,marketBody=false,policyBody=false;
+ const marketPending=new Promise(r=>releaseMarket=r),policyPending=new Promise(r=>releasePolicy=r),ledger=[];
+ globalThis.fetch=async(input,init)=>{
+  assert.ok(!init?.method||init.method==='GET','first-market zero provider writes');
+  const u=String(input);ledger.push({event:'GET',url:u});
+  if(u.endsWith('/markets')){marketRequested=true;if(mode!=='early')await marketPending;const response=resp({items:[market],next_cursor:''}),read=response.json.bind(response);response.json=async()=>{const value=await read();marketBody=true;return value;};return response;}
+  if(u.endsWith('/policy')){assert.ok(u.endsWith(`/markets/${market.id}/countries/TW/delivery-services/home/policy`),'scoped policy read');policyRequests++;return policyPending;}
+  if(u==='/api/stores')return resp({items:[store],next_cursor:''});
+  if(u.endsWith('/delivery-services'))return resp({items:[],next_cursor:''});
+  return resp({code:'not_found'},404);
+ };
+ const saved=()=>JSON.parse(sessionStorage.getItem(key)).draft;
+ const form=()=>document.querySelector('[data-testid="settings-policy-form"]');
+ const checkbox=()=>form()?.querySelector('input[type="checkbox"]');
+ const reference=()=>[...form().querySelectorAll('input')].find(e=>e.closest('label')?.textContent.startsWith('Configuration reference / reason'));
+ const original=dom.window.Storage.prototype.setItem;
+ dom.window.Storage.prototype.setItem=function(k,v){original.call(this,k,v);if(this===sessionStorage&&k===key)ledger.push({event:'persist',draft:JSON.parse(v).draft});};
+ const root=createRoot(document.getElementById('root'));
+ const release= (fn,body,status,mark)=>{const response=resp(body,status),read=response.json.bind(response);response.json=async()=>{const v=await read();mark();return v;};fn(response);};
+ try{
+  root.render(React.createElement(React.Profiler,{id:'first-market',onRender(){commits++;}},React.createElement(SettingsWizard,{locale:'en',initial:{store,error:null}})));
+  await until(()=>marketRequested&&checkbox(),'first-market form mounted');await settleTransport();
+  if(mode==='early')await until(()=>policyRequests===1,'market-before-edit control read');
+  if(!control){
+   // Native value setter + input is the existing MOCKDOM seam, never native browser evidence.
+   Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(reference(),'retained-reference');reference().dispatchEvent(new Event('input',{bubbles:true}));
+   checkbox().click();await until(()=>saved().reference==='retained-reference'&&saved().policyEnabled,'both DOM edits persisted');
+  }
+  assert.equal(saved().policyObservation.version,control?draft.policyObservation.version:-1,'no fabricated baseline before scoped response');
+  if(mode==='first-session-change')document.cookie=`__Host-commerce_csrf=${'b'.repeat(43)}; Secure; Path=/`;
+  if(mode==='first-unmounted'){flushSync(()=>root.unmount());unmounted=true;}
+  if(mode!=='early'){
+   releaseMarket();
+   await until(()=>marketBody,'market response body consumed');await settleTransport();
+  }
+  if(mode.startsWith('first-')){
+   assert.equal(policyRequests,0,'rejected discovery cannot start scoped read');
+   assert.equal(ledger.filter(e=>e.event==='persist'&&e.draft.policyObservation?.version===0).length,0,'rejected discovery cannot admit zero');return;
+  }
+  await until(()=>policyRequests===1,'discovery triggered one scoped policy read');await settleTransport();
+  const before=saved();
+  assert.equal(before.reference,'retained-reference');assert.equal(before.policyEnabled,true);
+  if(control)assert.deepEqual(before.policyObservation,draft.policyObservation,'known or foreign observation must not be reassociated');
+  if(mode==='explicit-market')assert.equal(before.policyObservation.target,'zero:TW:home','explicit market is not pending zero identity');
+  const commitBefore=commits;
+  ledger.push({event:'release-policy404'});
+  release(releasePolicy,{code:'not_found'},404,()=>policyBody=true);
+  await until(()=>policyBody,'scoped 404 response body consumed');await settleTransport();
+  await until(()=>commits>commitBefore,'scoped response React commit');await settleTransport();
+  const result=saved();console.log(JSON.stringify({mode,react:React.version,ledger,result}));
+  assert.equal(result.marketID,market.id,'discovered target');
+  assert.equal(result.policyObservation.target,target,'baseline owns scoped target');
+  assert.equal(result.policyObservation.version,0,'zero comes only from admitted scoped 404');
+  if(['late','early'].includes(mode)){
+   assert.equal(result.reference,'retained-reference','first-market scoped404 retains edited reference');
+   assert.equal(result.policyEnabled,true,'first-market scoped404 retains edited policy enable');
+   assert.equal(reference().value,'retained-reference','rendered reference retained');assert.equal(checkbox().checked,true,'rendered policy enable retained');
+   assert.equal(result.policyObservation.dirty,true,'edited observation remains dirty');
+  }else{
+   assert.equal(result.reference,'','unowned observation follows ordinary hydration');
+   assert.equal(result.policyEnabled,false);assert.equal(result.policyObservation.dirty,false);
+  }
+ }finally{if(!unmounted)flushSync(()=>root.unmount());dom.window.Storage.prototype.setItem=original;}
+});
 test.after(()=>{crypto.subtle.digest=realDigest;dom.window.close();});
