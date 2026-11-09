@@ -108,3 +108,6 @@ node --test --experimental-strip-types tests/admin/live-settings-bff.test.ts tes
 node --test --experimental-transform-types tests/admin/live-settings-hooks.test.ts
 # Browser-run artifact isolation and regression write-root counterexamples.
 node --test tests/admin/browser-evidence.test.mjs tests/ci/browser-evidence-paths.test.mjs tests/ci/evidence-retention.test.mjs
+
+# Actual ReactDOM must be isolated from custom hook-host module replacements.
+node --test tests/admin/settings-reactdom-ownership.test.mjs

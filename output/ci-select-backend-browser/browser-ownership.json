@@ -207,6 +207,7 @@
     "tests/admin/returns-request.test.ts": "7716794c6a76666e182797bec5c7c8b38816101ac36de445cd3f4c8127613c80",
     "tests/admin/returns-ui.spec.ts": "fac82c19c92d2aacc42a7ac71357dcd66b101408c8475e5305aa001fa495e980",
     "tests/admin/safe-json-cancel.test.ts": "ab24bd8a7156d66a0f738ec12cc24c6a742c947fd8bbe08f534a07f42c60e8ee",
+    "tests/admin/settings-reactdom-ownership.test.mjs": "340df8e8fdc4a8f7276cf5321d39f32f7ffa5cfe55ac7e4fd16f6797a595a61b",
     "tests/admin/settings-real.spec.ts": "d05b768551dd1fd42850cbeb33adb4a6663473e47ea623ced3a5c51095904116",
     "tests/admin/settings-v2.spec.ts": "958bc787e7616ce602669f97b1dc0c6bc5d7ee87aceade63adb0710ebf22c510",
     "tests/admin/settlements.spec.ts": "2719c75f5191edf4bd3016792d17ca865499914d150bb030098116f7a012a1b3",
@@ -815,11 +816,11 @@
     "playwright.config.ts": "7d22a5cfb63aab68d206d0162a40dfdac3f63256ece1ef222f9f3351e4378c04",
     "apps/admin/package.json": "8ff4057bb534e821455b9cb47b93429a0d66040faad1d9c25edeabd4864dbbb4",
     "apps/storefront/package.json": "e25eed3dcbc88ef821828200325f2cb7f92934447e1978998efdd4fa58eb8987",
-    "package.json": "6c5126c8db83721f056504a9e73a25e289401b3bb0a45c25cd9d2a58ec63f5f6",
+    "package.json": "2d610c843c98b307338662c9841e29b740c7467b45c2a80d6397e85fdade022a",
     "packages/format/package.json": "0a52b62b35e640298589968137e2d8899151bbcb2e0714f3f9204afc70beb3ed",
     "packages/i18n/package.json": "096562b66a71f0479808557beb6490deef65c7cf1626867ec23cffbdaedebfce",
     "packages/ui/package.json": "85891954909057d1783e4a0b8585e5b8f4609f9259116ae808ce34f1f4347078",
-    "scripts/dev/test-node.sh": "0a8494378b4e9b4b727e87cf5899bb951b45789bb9c305cd424665a9c2e1432b"
+    "scripts/dev/test-node.sh": "79df085bc5c25a5ea2536df5fe4661fcf00045b5202e88d2201ad0fc218846e4"
   },
   "modes": {
     "--browser-inbox": {
