@@ -553,12 +553,24 @@ async function writeMemberCommand<T>(
     before = "";
   const bounded = <V>(promise: Promise<V>): Promise<V> =>
     new Promise((resolve, reject) => {
-      const abort = () => reject(new Error("aborted"));
+      const cleanup = () => fence.removeEventListener("abort", abort);
+      const abort = () => {
+        cleanup();
+        reject(new Error("aborted"));
+      };
       fence.addEventListener("abort", abort, { once: true });
       if (fence.aborted) abort();
-      promise
-        .then(resolve, reject)
-        .finally(() => fence.removeEventListener("abort", abort));
+      // Crypto cannot be canceled; detach now and ignore any late settlement.
+      promise.then(
+        (value) => {
+          cleanup();
+          resolve(value);
+        },
+        (error) => {
+          cleanup();
+          reject(error);
+        },
+      );
     });
   const sameSession = async () => {
     try {
@@ -568,7 +580,9 @@ async function writeMemberCommand<T>(
         (await bounded(sessionBoundary(csrf))) === before &&
         csrfCookie() === csrf
       );
-    } catch {
+    } catch (error) {
+      // An unchanged session canceled mid-hash has an unknown command outcome.
+      if (fence.aborted && csrfCookie() === csrf) throw error;
       return false;
     }
   };
@@ -577,6 +591,7 @@ async function writeMemberCommand<T>(
     try {
       before = await bounded(sessionBoundary(csrf));
     } catch {
+      if (fence.aborted && csrf && csrfCookie() === csrf) return invalidWrite();
       signalLogout();
       throw new MemberWriteError("signed-out", "not-sent");
     }

@@ -4,6 +4,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { environment } from "./inbox-review-host.test.ts";
+const { useGuardedRead } =
+  await import("../../apps/admin/lib/customers-client.ts");
 const { createMember, adjustPoints, MemberWriteError, searchMembers } =
   await import("../../apps/admin/lib/members-client.ts");
 const sid = "11111111-1111-4111-8111-111111111111",
@@ -66,6 +68,8 @@ test("caller key and CSRF are sent exactly once with private body snapshot", asy
   environment(t);
   const entered = deferred<void>(),
     held = deferred<Response>();
+  const controller = new AbortController();
+  t.after(() => controller.abort());
   let calls = 0;
   let request: any;
   globalThis.fetch = async (url, options) => {
@@ -75,7 +79,7 @@ test("caller key and CSRF are sent exactly once with private body snapshot", asy
     return held.promise;
   };
   const body = input(),
-    pending = createMember(sid, body, key, signal());
+    pending = createMember(sid, body, key, controller.signal);
   body.display_name = "CHANGED_PRIVATE";
   body.contact_note = "CHANGED_CONTACT";
   await entered.promise;
@@ -212,13 +216,15 @@ test("late session success is UNKNOWN and signals privacy logout", async (t) => 
   const env = environment(t),
     entered = deferred<void>(),
     held = deferred<Response>();
+  const controller = new AbortController();
+  t.after(() => controller.abort());
   let logouts = 0;
   env.window.addEventListener("commerce-session-logout", () => logouts++);
   globalThis.fetch = async () => {
     entered.resolve();
     return held.promise;
   };
-  const pending = createMember(sid, input(), key, signal());
+  const pending = createMember(sid, input(), key, controller.signal);
   await entered.promise;
   env.document.cookie = `__Host-commerce_csrf=${"b".repeat(43)}`;
   held.resolve(response({ member: member() }));
@@ -229,6 +235,7 @@ test("abort while body stalls settles UNKNOWN even if mock ignores fetch abort",
   environment(t);
   const entered = deferred<void>(),
     controller = new AbortController();
+  t.after(() => controller.abort());
   let canceled = false;
   globalThis.fetch = async () =>
     new Response(
@@ -349,3 +356,164 @@ test("search remains read-only POST with no caller key or private URL term", asy
   assert.equal(request.headers["Idempotency-Key"], undefined);
   assert.ok(!request.url.includes("PRIVATE"));
 });
+
+// Observe the actual signalLogout path, including both cross-tab transports.
+function logoutEffects(
+  t: import("node:test").TestContext,
+  env: ReturnType<typeof environment>,
+) {
+  const counts = { event: 0, broadcast: 0, storage: 0 };
+  env.window.addEventListener("commerce-session-logout", () => counts.event++);
+  const previousChannel = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "BroadcastChannel",
+  )!;
+  const channel = class extends EventTarget {
+    postMessage() {
+      counts.broadcast++;
+    }
+    close() {}
+  };
+  Object.defineProperty(globalThis, "BroadcastChannel", {
+    configurable: true,
+    writable: true,
+    value: channel,
+  });
+  t.after(() => {
+    Object.defineProperty(globalThis, "BroadcastChannel", previousChannel);
+  });
+  const previous = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  Object.defineProperty(globalThis, "localStorage", {
+    configurable: true,
+    value: {
+      setItem() {
+        counts.storage++;
+      },
+    },
+  });
+  t.after(() => {
+    if (previous) Object.defineProperty(globalThis, "localStorage", previous);
+    else Reflect.deleteProperty(globalThis, "localStorage");
+  });
+  return counts;
+}
+const callers = {
+  create: (s: AbortSignal) => createMember(sid, input(), key, s),
+  adjust: (s: AbortSignal) =>
+    adjustPoints(sid, mid, { delta: 2, note: "fixture" }, key, s),
+};
+for (const [name, call] of Object.entries(callers)) {
+  test(`P583 ${name} pre-aborted valid session stays signed in`, async (t) => {
+    const env = environment(t),
+      effects = logoutEffects(t, env);
+    const controller = new AbortController();
+    t.after(() => controller.abort());
+    let posts = 0;
+    globalThis.fetch = async () => {
+      posts++;
+      return response({});
+    };
+    controller.abort();
+    const result = await call(controller.signal).catch((e) => e);
+    assert.deepEqual(effects, { event: 0, broadcast: 0, storage: 0 });
+    assert.ok(error("invalid_request", "not-sent")(result));
+    assert.equal(posts, 0);
+  });
+  for (const phase of [1, 2, 3])
+    for (const mode of ["abort", "deadline"]) {
+      test(`P583 ${name} ${mode} during hash phase ${phase} preserves session`, async (t) => {
+        const env = environment(t),
+          effects = logoutEffects(t, env);
+        const host = env.mount(() =>
+          useGuardedRead("P583", async () => "fixture-visible", null),
+        );
+        await host.settle();
+        assert.equal(host.output.status, "ready");
+        const controller = new AbortController(),
+          entered = deferred<void>(),
+          held = deferred<void>();
+        const digest = crypto.subtle.digest.bind(crypto.subtle);
+        let hashes = 0,
+          posts = 0;
+        t.mock.method(
+          crypto.subtle,
+          "digest",
+          (...args: Parameters<SubtleCrypto["digest"]>) => {
+            const native = digest(...args);
+            if (++hashes !== phase) return native;
+            entered.resolve();
+            return held.promise.then(() => native);
+          },
+        );
+        t.after(() => {
+          controller.abort();
+          held.resolve();
+        });
+        if (mode === "deadline") t.mock.timers.enable({ apis: ["setTimeout"] });
+        globalThis.fetch = async () => {
+          posts++;
+          return response(
+            name === "create" ? { member: member() } : adjustment(),
+          );
+        };
+        const pending = call(controller.signal).catch((e) => e);
+        await entered.promise;
+        if (mode === "abort") controller.abort();
+        else t.mock.timers.tick(15000);
+        const result = await pending;
+        assert.deepEqual(effects, { event: 0, broadcast: 0, storage: 0 });
+        assert.ok(
+          error(
+            phase === 1 ? "invalid_request" : "unknown",
+            phase === 1 ? "not-sent" : "unknown",
+          )(result),
+        );
+        assert.equal(posts, phase === 1 ? 0 : 1);
+        // The native digest cannot be canceled: releasing it must not revive the command.
+        held.resolve();
+        await host.settle();
+        assert.deepEqual(effects, { event: 0, broadcast: 0, storage: 0 });
+        assert.equal(host.output.status, "ready");
+        assert.equal(host.output.data, "fixture-visible");
+        assert.equal(posts, phase === 1 ? 0 : 1);
+      });
+    }
+}
+for (const cause of ["missing", "changed", "digest", "401"]) {
+  test(`P583 genuine ${cause} still clears private reads`, async (t) => {
+    const env = environment(t),
+      effects = logoutEffects(t, env);
+    const host = env.mount(() =>
+      useGuardedRead("P583-control", async () => "fixture-visible", null),
+    );
+    await host.settle();
+    let posts = 0;
+    if (cause === "missing") env.document.cookie = "";
+    if (cause === "digest")
+      t.mock.method(crypto.subtle, "digest", async () => {
+        throw Error("digest unavailable");
+      });
+    globalThis.fetch = async () => {
+      posts++;
+      if (cause === "changed")
+        env.document.cookie = `__Host-commerce_csrf=${"b".repeat(43)}`;
+      return response({ member: member() }, cause === "401" ? 401 : 201);
+    };
+    await assert.rejects(
+      createMember(sid, input(), key, signal()),
+      error(
+        "signed-out",
+        cause === "401"
+          ? "rejected"
+          : cause === "changed"
+            ? "unknown"
+            : "not-sent",
+      ),
+    );
+    host.flush();
+    assert.deepEqual(effects, { event: 1, broadcast: 1, storage: 1 });
+    assert.equal(host.output.status, "signed-out");
+    assert.equal(host.output.data, null);
+    assert.equal(posts, cause === "missing" || cause === "digest" ? 0 : 1);
+  });
+}
