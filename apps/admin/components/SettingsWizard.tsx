@@ -252,7 +252,12 @@ function AdvancedSettings({
       throw new Error("storage");
   }
   function update<K extends keyof Draft>(field: K, value: Draft[K]) {
-    const next = { ...draft, [field]: value };
+    // An admitted read can advance the ref before React commits its replacement.
+    // Keep this event's fields and baseline on that same current snapshot.
+    const next = { ...draftRef.current, [field]: value };
+    const target = validCountry(next.country) && validCode(next.serviceCode)
+      ? `${pickMarket(marketsRef.current, storeCurrency, next.marketID)?.id ?? "zero"}:${next.country}:${next.serviceCode}`
+      : "";
     // API (ECPay) is a CVS-only mode: choosing home delivery puts the service back to manual.
     if (field === "serviceKind" && value === "home") next.serviceMode = "MANUAL";
     if (
@@ -280,8 +285,8 @@ function AdvancedSettings({
       ].includes(field)
     )
       next.serviceObservation = {
-        target: serviceTarget,
-        version: next.serviceObservation?.version ?? -1,
+        target,
+        version: next.serviceObservation?.target === target ? next.serviceObservation.version : -1,
         dirty: true,
       };
     if (
@@ -297,12 +302,12 @@ function AdvancedSettings({
       ].includes(field)
     )
       next.policyObservation = {
-        target: serviceTarget,
-        version: next.policyObservation?.version ?? -1,
+        target,
+        version: next.policyObservation?.target === target ? next.policyObservation.version : -1,
         dirty: true,
       };
     try {
-      persistDraft(next, step);
+      persistDraft(next, stepRef.current);
       draftRef.current = next;
       setDraft(next);
       setError(null);

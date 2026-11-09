@@ -42,6 +42,7 @@ type="file">` + `FormData`, the storefront gallery a plain `<img>`.
 | `@live-commerce/i18n` (workspace) | admin, storefront | Shared zh-CN / zh-TW / en message catalogs and locale routing | both apps |
 | `@playwright/test` (dev) | root | Real-browser gates (Chromium) for every page | `tests/**`, `apps/*/tests` |
 | `typescript` (dev) | root | `strict` typecheck of both apps | CI |
+| `jsdom` 31.0.0 (dev) | root, test only | Actual ReactDOM settings ownership tests; replaces no production runtime or test framework. Node ^22.22.2 or ^24.15.0 or >=26 (workspace Node24 must be >=24.15). Handwritten hooks cannot prove commit/event ordering; official https://github.com/jsdom/jsdom checked 2026-11-09 | `tests/admin/settings-reactdom-ownership.test.mjs` |
 | `prettier` (dev) | root | Formatting only | dev tooling |
 | `livekit-client` (dev) | root | Browser-side LiveKit publisher used only by the local R04 input probe | `scripts/dev/r04-local-input.mjs` |
 | `@types/*` (dev) | apps | Type definitions | typecheck |

@@ -462,3 +462,5 @@ The boundary and canonicalization are documented in
 [engineering/contractdrift.md](../engineering/contractdrift.md).
 
 Self-tests use `scripts/dev/contractdrift/testdata` and temporary real Git repositories; they run in check-gates. `-json` provides the complete classified report with every file:line. This is static E3 source evidence, not API runtime, browser or provider acceptance.
+
+Settings draft ownership: `node --test tests/admin/settings-reactdom-ownership.test.mjs` is registered as one separate process in `scripts/dev/test-node.sh` (real ReactDOM 19.3 with test-only jsdom; MOCK DOM/network, not native browser acceptance). It covers admitted-baseline preservation across commit ordering, rejected reads, current-target version isolation and sequential edits.
