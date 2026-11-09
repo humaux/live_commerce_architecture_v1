@@ -435,8 +435,21 @@ function AdvancedSettings({
       const currency = store.currency ?? "TWD";
       const chosen = pickMarket(allItems, currency, draftRef.current.marketID);
       if (chosen && chosen.id !== draftRef.current.marketID) {
-        draftRef.current = { ...draftRef.current, marketID: chosen.id };
-        setDraft((d) => ({ ...d, marketID: chosen.id }));
+        const current = draftRef.current;
+        const observed = current.policyObservation;
+        // First discovery gives pending edits a target, never a saved baseline.
+        const next = { ...current, marketID: chosen.id };
+        if (
+          !current.marketID && observed?.dirty && observed.version === -1 &&
+          observed.target === `zero:${current.country}:${current.serviceCode}`
+        ) {
+          next.policyObservation = {
+            ...observed,
+            target: `${chosen.id}:${current.country}:${current.serviceCode}`,
+          };
+        }
+        draftRef.current = next;
+        setDraft(next);
       }
     } catch (value) {
       if (mounted.current && token === epoch.current && (await stillSession()))
