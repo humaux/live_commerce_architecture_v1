@@ -730,6 +730,7 @@ case "$1" in
   test -f tests/admin/customers-billing.spec.ts
   test -f tests/foundation/browser_w6_customers_reports_test.go
   grep -q '^func TestBrowserW6Customers' tests/foundation/browser_w6_customers_reports_test.go
+  grep -q '^func TestW6UIMembersOrderAPIFocused' tests/foundation/browser_w6_customers_reports_test.go
   test -f tests/admin/customer-tags.spec.ts
   test -f tests/admin/members-read.spec.ts
   test -f tests/storefront/privacy-buyer.mjs
@@ -738,7 +739,7 @@ case "$1" in
   mkdir -p output/playwright
     }
     lc_run() {
-  LC_BROWSER_CUSTOMERS_BILLING_ACCEPTANCE=1 LC_W6UI_CUSTOMERS_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.3 go test -race -tags browser -count=1 -timeout=2400s -run '^(TestBrowserCustomersBilling|TestBrowserW6Customers)$' -v ./tests/foundation
+  LC_BROWSER_CUSTOMERS_BILLING_ACCEPTANCE=1 LC_W6UI_CUSTOMERS_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.3 go test -race -tags browser -count=1 -timeout=2400s -run '^(TestBrowserCustomersBilling|TestBrowserW6Customers|TestW6UISeedFocused|TestW6UIMembersOrderAPIFocused)$' -v ./tests/foundation
   printf 'PASS: CB11 isolated admin + storefront Next, Go, PG, real worker; platform billing = MOCK (independent billingtest fake, Stripe pages answered in the browser); not provider or deployment acceptance; CB10 SANDBOX and CB12 LIVE are NOT_RUN.\n'
     }
     ;;
