@@ -196,7 +196,8 @@
     "tests/admin/production.spec.ts": "f48164f44126b50c6e72e469383fd6ae63477baa5c1af3bef97600bde00f0a8e",
     "tests/admin/promotions-model.test.ts": "05d0d25fa925037cc8e2f0e3a1b739c91248151f4fe8ba05d39dc444ccd8186d",
     "tests/admin/refund-bff.test.ts": "d153c85c3d2a1bade8b0a7266e26c513b51595c81e371716a8eec704a432c68f",
-    "tests/admin/refund.spec.ts": "f65326d061fb14c1b8130de18d84f5499e0d8965cbb45ae7404f1a6293a8034f",
+    "tests/admin/refund-convergence.test.mjs": "30a6e2ccf8f0e6b0991ed2292e7f4589154289c7514116658e365dafb1c4ac14",
+    "tests/admin/refund.spec.ts": "5dc338b3e55d0aff0b3e1936d49783aea77e955e6dc39a43db8b5f8b16d00baa",
     "tests/admin/reports-bff.test.ts": "502017abef843fb5e75289002d50669b9099a7cbcc417c27e9b4a13dc5012a71",
     "tests/admin/reports-render.test.mjs": "82e0c983679eb34574b2bc6bf7b46ed02f02078b7e237b418d2cf174e7be2584",
     "tests/admin/reports.spec.ts": "e7dc43497dd6f337f65a43fc8bd0767fbd8b0e3b7eddfecda75761877128b710",
@@ -815,7 +816,7 @@
     "packages/format/package.json": "0a52b62b35e640298589968137e2d8899151bbcb2e0714f3f9204afc70beb3ed",
     "packages/i18n/package.json": "096562b66a71f0479808557beb6490deef65c7cf1626867ec23cffbdaedebfce",
     "packages/ui/package.json": "85891954909057d1783e4a0b8585e5b8f4609f9259116ae808ce34f1f4347078",
-    "scripts/dev/test-node.sh": "4d8fece2e72e42823552e02cb561d396493b38246c93fbd323d048a5a4ec35b2"
+    "scripts/dev/test-node.sh": "1cbe36fad269a31a90e429bce665e6852aec0eab21e468be85accf6092647f1b"
   },
   "modes": {
     "--browser-inbox": {

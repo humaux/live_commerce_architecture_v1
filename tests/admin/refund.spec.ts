@@ -190,6 +190,13 @@ test.describe(() => {
   test("RF11 full refund of the remainder: SUCCEEDED, payment state REFUNDED, no further action", async ({ page }) => {
     await signedLogin(page);
     const posts = watchRefundPosts(page);
+    const detailPath = `/api/stores/${store}/orders/${order}`;
+    // Register before the real UI read. Catch immediately so an earlier UI failure cannot
+    // leave a rejected response-wait promise unhandled (the awaited result still fails).
+    const olderResponse = page.waitForResponse((response) =>
+      new URL(response.url()).pathname === detailPath && response.request().method() === "GET" && response.status() === 200,
+      { timeout: 15_000 });
+    void olderResponse.catch(() => {});
     const detail = await expand(page);
     // the earlier partial refund settled at the provider while the buyer half ran
     // (the page never polls, so Refresh until the worker's SUCCEEDED fact is read back)
@@ -199,6 +206,44 @@ test.describe(() => {
       await expect(settled(detail)).toBeVisible({ timeout: 3_000 });
     }).toPass({ timeout: 60_000, intervals: [1_000, 3_000, 5_000] });
     await expect(detail).toContainText(shown(captured - partial));
+    // Fixture READ only: reuse the admitted real browser response, without a new API request.
+    const older = await olderResponse;
+    const olderBody = await older.text();
+    expect(JSON.parse(olderBody)).toMatchObject({ payment_state: "PARTIALLY_REFUNDED", refunded_minor: partial });
+    const olderHeaders = await older.allHeaders();
+    expect(olderHeaders["cache-control"]).toBe("private, no-store");
+    expect(olderHeaders["content-type"]).toContain("application/json");
+    // body() / text() are decoded: do not replay compression/framing or session cookies.
+    for (const name of ["content-encoding", "content-length", "transfer-encoding", "connection", "set-cookie"])
+      delete olderHeaders[name];
+    let oldDetailServed = false;
+    let terminalListServed = false;
+    let postTerminalReads = 0;
+    let releaseOldDetail!: () => void;
+    const oldDetailDone = new Promise<void>((resolve) => { releaseOldDetail = resolve; });
+    // Arrange the actual UI's two independent reads: earlier valid detail completes before
+    // the newer terminal list. Only GET responses are ordered; financial fixtures remain real.
+    await page.route(`**${detailPath}`, async (route) => {
+      if (route.request().method() !== "GET") return route.continue();
+      if (!terminalListServed) {
+        await route.fulfill({ status: older.status(), headers: olderHeaders, body: olderBody });
+        oldDetailServed = true;
+        releaseOldDetail();
+      } else {
+        postTerminalReads++;
+        await route.continue();
+      }
+    });
+    await page.route(`**${detailPath}/refunds`, async (route) => {
+      if (route.request().method() !== "GET") return route.continue();
+      const response = await route.fetch();
+      const body = await response.json();
+      if (body.refunded_minor === captured && body.pending_minor === 0) {
+        await oldDetailDone;
+        terminalListServed = true;
+      }
+      await route.fulfill({ response });
+    });
     await refundThroughDialog(page, detail, captured - partial, captured - partial);
     const body = JSON.parse(posts[posts.length - 1].body ?? "{}") as Record<string, unknown>;
     expect(body).toMatchObject({ amount_minor: captured - partial, expected_refundable_minor: captured - partial });
@@ -209,6 +254,11 @@ test.describe(() => {
       if (await refresh.count()) await refresh.first().click();
       await expect(detail.locator('[data-state="REFUNDED"]').first()).toBeVisible({ timeout: 3_000 });
     }).toPass({ timeout: 60_000, intervals: [1_000, 3_000, 5_000] });
+    expect(oldDetailServed).toBe(true);
+    expect(terminalListServed).toBe(true);
+    expect(postTerminalReads).toBeGreaterThan(0);
+    expect(postTerminalReads).toBeLessThanOrEqual(2); // bounded convergence, including a concurrent explicit refresh
+    expect(posts).toHaveLength(1); // no automatic refund POST
     await expect(detail.getByRole("button", { name: ui.refundAction })).toHaveCount(0); // nothing refundable left
     await expect(detail).toContainText(shown(captured));
     // stock and order state are untouched by a refund: still a confirmed order awaiting the merchant's fulfilment
