@@ -271,7 +271,10 @@ test("PROVIDER_MOCK browser BFF enforces binding, cookies, CSRF and revocation o
   expect(requests.slice(beforeSafeSSR).length).toBeGreaterThan(0);
   expect(requests.slice(beforeSafeSSR).every(call => call.method === "GET" && call.path === "/v1/admin/stores")).toBe(true);
   const safeHTML = await safeSSR.text();
-  expect(safeHTML).toContain('data-testid="dashboard-page"');
+  // SSR mounts the authenticated shell; its dashboard children wait for the client workspace read.
+  expect(safeHTML).toContain('data-testid="shell-platform-brand"');
+  expect(safeHTML).toContain('data-testid="workspace-sign-out"');
+  expect(safeHTML).not.toContain('action="/api/auth/login"');
   expect(safeHTML).not.toContain(
     "private diagnostic must not escape",
   );
