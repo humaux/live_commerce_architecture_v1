@@ -109,7 +109,7 @@ async function composition(page: Page, kind: "list" | "ledger", name: string) {
       const b = cell.getBoundingClientRect();
       const content = cell.querySelector<HTMLElement>("[data-label]")!;
       const cb = content.getBoundingClientRect();
-      return { contentHeight: cb.height, contentBottom: cb.bottom, bottom: b.bottom, x: b.x, y: b.y, width: b.width, height: b.height, text: cell.textContent, label: cell.querySelector("[data-label]")?.getAttribute("data-label") };
+      return { contentRight: cb.right, right: b.right, contentScrollWidth: content.scrollWidth, contentWidth: content.clientWidth, contentHeight: cb.height, contentBottom: cb.bottom, bottom: b.bottom, x: b.x, y: b.y, width: b.width, height: b.height, text: cell.textContent, label: cell.querySelector("[data-label]")?.getAttribute("data-label") };
     }),
     overflow: document.documentElement.scrollWidth - innerWidth,
   }));
@@ -119,7 +119,7 @@ async function composition(page: Page, kind: "list" | "ledger", name: string) {
   };
   const intrinsic = (m: Awaited<ReturnType<typeof measure>>) => m.fields.every(f => {
     const trackContent = Math.max(...m.fields.filter(other => Math.abs(other.y - f.y) < 1).map(other => other.contentHeight));
-    return f.height <= trackContent + 2 && f.contentBottom <= f.bottom + 1;
+    return f.height <= trackContent + 2 && f.contentBottom <= f.bottom + 1 && f.contentRight <= f.right + 1 && f.contentScrollWidth <= f.contentWidth + 1;
   });
   const green = await measure();
   expect(green.fields).toHaveLength(kind === "list" ? 4 : 6);
@@ -172,16 +172,17 @@ async function stateShot(page: Page, name: string, caption?: string, scope = sto
       return { fits: b.width > 0 && b.height > 0 && b.left >= left - 1 && b.right <= right + 1 && b.top >= top - 1 && b.bottom <= bottom + 1, overflow: document.documentElement.scrollWidth - innerWidth };
     });
     const fits = await readFit();
+    let stateRed: Awaited<ReturnType<typeof readFit>> | undefined;
     if (page.viewportSize()?.width === 375) {
       // Restore the retained fixed-height clipping fault, then remove only this style node.
       const stateFault = await page.addStyleTag({ content: 'td[colspan] { height:60px !important; overflow:hidden !important; }' });
-      try { expect((await readFit()).fits, "old state clipping must be RED").toBe(false); }
+      try { stateRed = await readFit(); expect(stateRed.fits, "old state clipping must be RED").toBe(false); }
       finally { await stateFault.evaluate(node => node.parentNode?.removeChild(node)); }
       expect((await readFit()).fits).toBe(true);
     }
     expect(fits.fits, "state explanation is inside cell/viewport/clipping bounds").toBe(true);
     expect(fits.overflow).toBe(0);
-    await writeFile(path.join(evidence, `members-state-${name}-geometry.json`), JSON.stringify({ caption, scope, fits }, null, 2));
+    await writeFile(path.join(evidence, `members-state-${name}-geometry.json`), JSON.stringify({ caption, scope, fits, stateRed, restored: await readFit() }, null, 2));
   }
   await page.screenshot({ path: path.join(evidence, `members-state-${name}.png`), fullPage: true });
 }
