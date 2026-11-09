@@ -5,7 +5,7 @@
 // (staff routes; orders CSV, finance CSV, customer erasure and bank-transfer decisions through internal/httpapi), session
 // A/B isolation and the principal + session-hash throttle keys over a real database, and the httperror code table
 // (reauth_required, owner_role_disabled, bank_transfer_closed).
-// Depends on: internal/identityhttp (NewHandler, NewPasswordHandler, NewStaffHandler), internal/httpapi (NewHandler),
+// Depends on: internal/billing, internal/billing/billingtest, internal/identityhttp (NewHandler, NewPasswordHandler, NewStaffHandler), internal/httpapi (NewHandler),
 // internal/httperror (Middleware, Write), internal/identity (Passwords, Staff, HashPassword, error values), internal/mail,
 // internal/platform (OpenIdentityPool, OpenPool), livecommerce/migrations; the disposable lc_foundation_test database
 // (LC_TEST_DATABASE_ALLOWED=1, LC_TEST_DATABASE_URL) for the RH1x tests, which SKIP (NOT_RUN) without it.
@@ -709,19 +709,74 @@ func admin(t *testing.T, h http.Handler, method, path, bearer, key, body string)
 func TestReauthRH13GuardedDomainsEndToEnd(t *testing.T) {
 	e := fixture(t)
 	w := newWorld(t, e)
-	// Platform billing over the billingtest fake (never api.stripe.com): checkout creates the Stripe customer, then the guarded
-	// billing.pin_customer refuses the stale session.
+	// A test-local copy preserves the fixture's validated runtime identity/configuration.
+	// Native acquire/release tracing tracks only marked application requests, not pool health work.
+	observer := &billingRequestObserver{held: make(map[*pgx.Conn]bool)}
+	poolConfig := e.runtime.Config()
+	poolConfig.ConnConfig.Tracer = observer
+	runtime, err := pgxpool.NewWithConfig(context.Background(), poolConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(runtime.Close)
+	probeCtx := context.WithValue(context.Background(), observer, true)
+	for _, commit := range []bool{false, true} {
+		tx, err := runtime.Begin(probeCtx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if observer.count() != 1 {
+			t.Error("observer must reject a held request transaction at the HTTP boundary")
+		}
+		if commit {
+			err = tx.Commit(probeCtx)
+		} else {
+			err = tx.Rollback(probeCtx)
+		}
+		if err != nil || observer.count() != 0 {
+			t.Fatalf("observer did not clear committed/rolled-back request: %v", err)
+		}
+	}
+	// This native idle-resource acquisition is also used by pool maintenance;
+	// unlike Pool.Acquire it does not represent an application request.
+	idle := runtime.AcquireAllIdle(context.Background())
+	if len(idle) == 0 {
+		t.Error("idle-resource negative control was not exercised")
+	}
+	if observer.count() != 0 {
+		t.Error("unrelated idle-resource acquisition attributed to request")
+	}
+	for _, conn := range idle {
+		conn.Release()
+	}
+	// Platform billing over the existing fake: stale requests must be refused before any provider POST.
 	fake := billingtest.New("acct_OC15" + hex.EncodeToString(rnd32()[:6]))
 	t.Cleanup(fake.Close)
 	cfg := billing.Config{SecretKey: "sk_" + "test_" + hex.EncodeToString(rnd32()[:12]), WebhookSecret: "whsec_" + hex.EncodeToString(rnd32()[:16]),
 		ReturnOrigin: "https://admin.example.test", PriceIDs: []string{"price_OC15Month"}}
 	fake.RequireKey(cfg.SecretKey)
 	fake.AddPrice("price_OC15Month", 30000, "twd", "month", "Pro Monthly", true, false)
-	bill, err := billing.New(context.Background(), e.runtime, cfg, fake.Transport())
+	// Observe the existing transport seam; no remote provider access. A request must release
+	// its scoped SQL transaction before HTTP. Age injection models expiry after preflight.
+	expireToken := ""
+	rt := fake.Transport()
+	bill, err := billing.New(context.Background(), runtime, cfg, billingObserveTransport(func(r *http.Request) (*http.Response, error) {
+		if n := observer.count(); n != 0 {
+			t.Errorf("billing HTTP holds %d request connections; want zero", n)
+		}
+		if expireToken != "" && r.Method == http.MethodPost && r.URL.Path == "/v1/checkout/sessions" {
+			setAuthAge(t, e, expireToken, "11 minutes") // fixture only; not an authorization shortcut
+			expireToken = ""
+		}
+		return rt.RoundTrip(r)
+	}))
 	if err != nil || !bill.Enabled() {
 		t.Fatalf("billing service: enabled=%v err=%v", bill != nil && bill.Enabled(), err)
 	}
-	h := httpapi.NewHandler(e.runtime, httpapi.Options{Billing: bill, PaymentProfile: "SANDBOX"})
+	handler := httpapi.NewHandler(runtime, httpapi.Options{Billing: bill, PaymentProfile: "SANDBOX"})
+	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handler.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), observer, true)))
+	})
 	base := "/v1/admin/stores/" + w.store
 	today := time.Now().UTC()
 	from, to := today.AddDate(0, 0, -7).Format("2006-01-02"), today.Format("2006-01-02")
@@ -737,11 +792,85 @@ func TestReauthRH13GuardedDomainsEndToEnd(t *testing.T) {
 		{"products report csv", http.MethodGet, base + "/reports/products.csv?from=" + from + "&to=" + to, "", ""},
 		{"platform Stripe settings", http.MethodPut, base + "/payments/card", "", `{"enabled":false,"terms_version":"","descriptor_suffix":null,"expected_version":0}`},
 		{"billing checkout", http.MethodPost, base + "/billing/checkout", "", `{"price_id":"price_OC15Month"}`},
+		{"billing portal unpinned", http.MethodPost, base + "/billing/portal", "", ""},
 	} {
 		want(t, c.name, admin(t, h, c.method, c.path, w.stale, c.key, c.body), http.StatusForbidden, "reauth_required")
 	}
+	if n := len(fake.CallsTo(http.MethodPost, "/")); n != 0 {
+		t.Errorf("stale unpinned billing made %d provider POSTs; want zero", n)
+	}
+	// Establish the pinned fixture through the real fresh HTTP flow, not a second harness.
+	body := `{"price_id":"price_OC15Month"}`
+	want(t, "fresh checkout", admin(t, h, http.MethodPost, base+"/billing/checkout", w.fresh, "", body), http.StatusOK, "")
+	want(t, "fresh portal", admin(t, h, http.MethodPost, base+"/billing/portal", w.fresh, "", ""), http.StatusOK, "")
+	for _, c := range []struct{ path, body string }{{"/billing/checkout", body}, {"/billing/portal", ""}} {
+		fake.ResetCalls()
+		want(t, "stale pinned "+c.path, admin(t, h, http.MethodPost, base+c.path, w.stale, "", c.body), http.StatusForbidden, "reauth_required")
+		if n := len(fake.CallsTo(http.MethodPost, "/")); n != 0 {
+			t.Errorf("stale pinned %s made %d provider POSTs; want zero", c.path, n)
+		}
+	}
+	foreign := newWorld(t, e)
+	for _, c := range []struct{ path, body string }{{"/billing/checkout", body}, {"/billing/portal", ""}} {
+		fake.ResetCalls()
+		want(t, "foreign store "+c.path, admin(t, h, http.MethodPost, base+c.path, foreign.fresh, "", c.body), http.StatusNotFound, "not_found")
+		if n := len(fake.CallsTo(http.MethodPost, "/")); n != 0 {
+			t.Errorf("foreign store %s made %d provider POSTs; want zero", c.path, n)
+		}
+	}
+	var previous string
+	if err := e.owner.QueryRow(context.Background(), `SELECT open_checkout_session_id FROM billing.store_customers WHERE store_id=$1::uuid AND environment='SANDBOX'`, w.store).Scan(&previous); err != nil {
+		t.Fatal(err)
+	}
+	fake.ResetCalls()
+	expireToken = w.fresh
+	want(t, "expiry after preflight", admin(t, h, http.MethodPost, base+"/billing/checkout", w.fresh, "", body), http.StatusForbidden, "reauth_required")
+	if expireToken != "" || len(fake.CallsExact(http.MethodPost, "/v1/checkout/sessions")) != 1 {
+		t.Error("expiry case did not cross the provider boundary exactly once")
+	}
+	if n := count(t, e.owner, `SELECT count(*) FROM billing.store_customers WHERE store_id=$1::uuid AND open_checkout_session_id=$2`, w.store, previous); n != 1 {
+		t.Error("final DB guard failed to preserve the previous checkout session")
+	}
+	setAuthAge(t, e, w.fresh, "0 seconds") // restore for the existing positive export assertion
 	live(t, e, "stale session after the guarded refusals", w.stale)
 	if got := admin(t, h, http.MethodGet, base+"/orders/unshipped.csv", w.fresh, "", ""); got.status != http.StatusOK {
 		t.Errorf("fresh session export: HTTP %d body %s, want 200", got.status, got.raw)
 	}
+}
+
+// billingObserveTransport wraps only the existing fake; invoked synchronously by RH13.
+type billingObserveTransport func(*http.Request) (*http.Response, error)
+
+func (f billingObserveTransport) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+// billingRequestObserver uses pgx's native application lifecycle hooks. Query data
+// (including arguments/tokens) is ignored; background health acquisitions are unmarked.
+type billingRequestObserver struct {
+	mu   sync.Mutex
+	held map[*pgx.Conn]bool
+}
+
+func (*billingRequestObserver) TraceQueryStart(ctx context.Context, _ *pgx.Conn, _ pgx.TraceQueryStartData) context.Context {
+	return ctx
+}
+func (*billingRequestObserver) TraceQueryEnd(context.Context, *pgx.Conn, pgx.TraceQueryEndData) {}
+func (*billingRequestObserver) TraceAcquireStart(ctx context.Context, _ *pgxpool.Pool, _ pgxpool.TraceAcquireStartData) context.Context {
+	return ctx
+}
+func (o *billingRequestObserver) TraceAcquireEnd(ctx context.Context, _ *pgxpool.Pool, d pgxpool.TraceAcquireEndData) {
+	if ctx.Value(o) == true && d.Err == nil {
+		o.mu.Lock()
+		o.held[d.Conn] = true
+		o.mu.Unlock()
+	}
+}
+func (o *billingRequestObserver) TraceRelease(_ *pgxpool.Pool, d pgxpool.TraceReleaseData) {
+	o.mu.Lock()
+	delete(o.held, d.Conn)
+	o.mu.Unlock()
+}
+func (o *billingRequestObserver) count() int {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	return len(o.held)
 }
