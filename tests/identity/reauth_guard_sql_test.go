@@ -43,6 +43,7 @@ var guardedSigs = []string{
 	"customers.export_import_profile(bytea,uuid,uuid)",
 	"migrationimport.read_batch_results(bytea,uuid,uuid)",
 	"customers.erase_owner(bytea,uuid,uuid,text,uuid)",
+	"billing.require_recent_manage(bytea,uuid)",
 	"billing.pin_customer(bytea,uuid,text,text,text)",
 	"billing.record_checkout_session(bytea,uuid,text,text,timestamptz)",
 	"ads.approve_draft(bytea,uuid,uuid,integer)",
@@ -148,6 +149,7 @@ func guardCases() []gcase {
 	day := time.Now().UTC()
 	from := day.AddDate(0, 0, -7)
 	return []gcase{
+		{"billing_preflight", `SELECT billing.require_recent_manage($1,$2::uuid)`, func(w *world, tok string) []any { return []any{hash(tok), w.store} }, true},
 		{"staff_invite", `SELECT * FROM identity.staff_invite($1,$2::uuid,$3::uuid,$4,'viewer','en',$5)`,
 			func(w *world, tok string) []any {
 				return []any{hash(tok), w.store, uuid(), guardEmail("oc03.invite"), rnd32()}
@@ -437,6 +439,191 @@ func TestGuardOG09NineMinuteSessionPassesTheGuard(t *testing.T) {
 			if c.mustSucceed && err != nil {
 				t.Errorf("%s: 9-minute-old session: %v, want success", c.name, err)
 			}
+		})
+	}
+}
+
+// BILL-271: the new narrow runtime capability must not expose the owner-only identity guard.
+func TestGuardOG10BillingPreflightAuthority(t *testing.T) {
+	e := fixture(t)
+	w := newWorld(t, e)
+	ctx := context.Background()
+	const sig = "billing.require_recent_manage(bytea,uuid)"
+	var owner string
+	var definer bool
+	var config []string
+	if err := e.owner.QueryRow(ctx, `SELECT pg_get_userbyid(proowner),prosecdef,proconfig FROM pg_proc WHERE oid=$1::regprocedure`, sig).Scan(&owner, &definer, &config); err != nil {
+		t.Fatal(err)
+	}
+	if owner != "commerce_billing_writer" || !definer || strings.Join(config, ",") != "search_path=pg_catalog" {
+		t.Fatalf("preflight authority: %s %v %v", owner, definer, config)
+	}
+	var acl []string
+	if err := e.owner.QueryRow(ctx, `SELECT array_agg(CASE WHEN a.grantee=0 THEN 'PUBLIC' ELSE pg_get_userbyid(a.grantee) END ORDER BY a.grantee::regrole::text) FROM pg_proc p,LATERAL aclexplode(p.proacl) a WHERE p.oid=$1::regprocedure AND a.privilege_type='EXECUTE' AND NOT a.is_grantable`, sig).Scan(&acl); err != nil {
+		t.Fatal(err)
+	}
+	sort.Strings(acl)
+	if strings.Join(acl, ",") != "commerce_billing_writer,commerce_runtime" {
+		t.Fatalf("preflight ACL %v", acl)
+	}
+	if n := count(t, e.owner, `SELECT count(*) FROM pg_proc p,LATERAL aclexplode(p.proacl) a WHERE p.oid=$1::regprocedure AND a.is_grantable`, sig); n != 0 {
+		t.Fatal("unexpected grant option")
+	}
+	// Effective privilege closure includes inherited memberships, not just explicit ACL entries.
+	if n := count(t, e.owner, `SELECT count(*) FROM pg_roles r WHERE NOT r.rolsuper AND has_function_privilege(r.oid,$1::regprocedure,'EXECUTE') IS DISTINCT FROM (pg_has_role(r.oid,'commerce_billing_writer','USAGE') OR pg_has_role(r.oid,'commerce_runtime','USAGE'))`, sig); n != 0 {
+		t.Fatalf("unexpected inherited execute closure: %d", n)
+	}
+	other := newWorld(t, e)
+	second := uuid()
+	mustExec(t, e.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'second billing store','TWD')`, w.tenant, second)
+	mustExec(t, e.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) SELECT $1,$2,$3,p FROM unnest(ARRAY['store:read','billing:manage']) p`, w.tenant, second, w.owner)
+	cases := []struct {
+		name, token, store, tenantGUC, storeGUC, principalGUC, isolation, code, message string
+		malformed                                                                       bool
+	}{
+		{name: "fresh", token: w.fresh, store: w.store},
+		{name: "stale", token: w.stale, store: w.store, code: "PT403", message: "reauth_required"},
+		{name: "malformed", token: w.fresh, store: w.store, malformed: true, code: "PT400", message: "invalid billing preflight"},
+		{name: "isolation", token: w.fresh, store: w.store, isolation: "repeatable read", code: "PT400", message: "invalid billing preflight"},
+		{name: "missing tenant", token: w.fresh, store: w.store, tenantGUC: "missing", code: "PT403", message: "forbidden"},
+		{name: "forged tenant", token: w.fresh, store: w.store, tenantGUC: other.tenant, code: "PT403", message: "forbidden"},
+		{name: "forged principal", token: w.fresh, store: w.store, principalGUC: other.owner, code: "PT403", message: "forbidden"},
+		{name: "missing store", token: w.fresh, store: w.store, storeGUC: "missing", code: "PT403", message: "forbidden"},
+		{name: "missing principal", token: w.fresh, store: w.store, principalGUC: "missing", code: "PT403", message: "forbidden"},
+		{name: "swapped authorized store", token: w.fresh, store: second, code: "PT403", message: "forbidden"},
+		{name: "foreign tenant", token: w.fresh, store: other.store, code: "PT404", message: "not found"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			tx, err := e.owner.Begin(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer tx.Rollback(ctx)
+			if c.isolation != "" {
+				if _, err = tx.Exec(ctx, `SET TRANSACTION ISOLATION LEVEL REPEATABLE READ`); err != nil {
+					t.Fatal(err)
+				}
+			}
+			tenant, store, principal := w.tenant, w.store, w.owner
+			if c.tenantGUC != "" {
+				tenant = c.tenantGUC
+			}
+			if c.storeGUC != "" {
+				store = c.storeGUC
+			}
+			if c.principalGUC != "" {
+				principal = c.principalGUC
+			}
+			if tenant == "missing" {
+				tenant = ""
+			}
+			if store == "missing" {
+				store = ""
+			}
+			if principal == "missing" {
+				principal = ""
+			}
+			if _, err = tx.Exec(ctx, `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),set_config('app.principal_id',$3,true)`, tenant, store, principal); err != nil {
+				t.Fatal(err)
+			}
+			if _, err = tx.Exec(ctx, `SET LOCAL ROLE commerce_runtime`); err != nil {
+				t.Fatal(err)
+			}
+			h := hash(c.token)
+			if c.malformed {
+				h = []byte{1}
+			}
+			_, err = tx.Exec(ctx, `SELECT billing.require_recent_manage($1,$2::uuid)`, h, c.store)
+			if c.code == "" {
+				if err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				wantPG(t, c.name, err, c.code, c.message)
+			}
+		})
+	}
+	tx, err := e.owner.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback(ctx)
+	if _, err = tx.Exec(ctx, `SET LOCAL ROLE commerce_runtime`); err != nil {
+		t.Fatal(err)
+	}
+	_, err = tx.Exec(ctx, `SELECT identity.require_recent_auth($1,interval '10 minutes')`, hash(w.fresh))
+	var pg *pgconn.PgError
+	if !errors.As(err, &pg) || pg.Code != "42501" {
+		t.Fatalf("runtime identity guard execute: %v", err)
+	}
+}
+
+// BILL-271 R1: isolate inherited resolver casts with a fixed authorized tuple in
+// fresh test-only helper copies. OG10 covers the real resolver; all DDL rolls back.
+func TestGuardOG11BillingPreflightTempTypes(t *testing.T) {
+	e := fixture(t)
+	w := newWorld(t, e)
+	ctx := context.Background()
+	for _, typ := range []string{"text", "record"} {
+		t.Run(typ, func(t *testing.T) {
+			tx, err := e.owner.Begin(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer tx.Rollback(ctx)
+			exec := func(q string, args ...any) {
+				t.Helper()
+				if _, err := tx.Exec(ctx, q, args...); err != nil {
+					t.Fatal(err)
+				}
+			}
+			exec(`SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),set_config('app.principal_id',$3,true)`, w.tenant, w.store, w.owner)
+			var def string
+			if err := tx.QueryRow(ctx, `SELECT pg_get_functiondef('billing.require_recent_manage(bytea,uuid)'::regprocedure)`).Scan(&def); err != nil {
+				t.Fatal(err)
+			}
+			// Creating pg_temp.text invalidates the resolver's cached casts even after
+			// prewarming (first run: 42804). Isolate that inherited implementation;
+			// keep every new-helper cast, scope check and final freshness call intact.
+			anchor := "SELECT * INTO s FROM identity.resolve_access(p_hash,p_store,'billing:manage');"
+			if strings.Count(def, anchor) != 1 {
+				t.Fatal("preflight resolver anchor changed")
+			}
+			def = strings.Replace(def, anchor, fmt.Sprintf("SELECT 'ok'::pg_catalog.text AS access_status, '%s'::pg_catalog.uuid AS tenant_id, '%s'::pg_catalog.uuid AS principal_id INTO s;", w.tenant, w.owner), 1)
+			// Distinct function identity forces new body compilation, independent of cached helper plans.
+			good := strings.Replace(def, "billing.require_recent_manage(", "billing.bill271_qualified_control(", 1)
+			bad := strings.Replace(def, "billing.require_recent_manage(", "billing.bill271_unqualified_control(", 1)
+			if typ == "text" {
+				bad = strings.ReplaceAll(bad, "::pg_catalog.text", "::text")
+			} else {
+				bad = strings.Replace(bad, "s pg_catalog.record", "s record", 1)
+			}
+			exec(good)
+			exec(bad)
+			for _, name := range []string{"bill271_qualified_control", "bill271_unqualified_control"} {
+				exec(`ALTER FUNCTION billing.` + name + `(bytea,uuid) OWNER TO commerce_billing_writer`)
+				exec(`REVOKE ALL ON FUNCTION billing.` + name + `(bytea,uuid) FROM PUBLIC`)
+				exec(`GRANT EXECUTE ON FUNCTION billing.` + name + `(bytea,uuid) TO commerce_runtime`)
+			}
+			if typ == "text" {
+				exec(`CREATE DOMAIN pg_temp.text AS pg_catalog.text CHECK (false)`)
+			} else {
+				exec(`CREATE TYPE pg_temp.record AS (marker pg_catalog.int4)`)
+			}
+			exec(`SET LOCAL ROLE commerce_runtime`)
+			exec(`SELECT billing.bill271_qualified_control($1,$2::uuid)`, hash(w.fresh), w.store)
+			// Savepoint keeps the harmless negative control from aborting the surrounding fixture.
+			sp, err := tx.Begin(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, err = sp.Exec(ctx, `SELECT billing.bill271_unqualified_control($1,$2::uuid)`, hash(w.fresh), w.store)
+			if err == nil {
+				t.Error("unqualified temp-type control unexpectedly succeeded")
+			}
+			_ = sp.Rollback(ctx)
+			exec(`SELECT billing.bill271_qualified_control($1,$2::uuid)`, hash(w.fresh), w.store)
 		})
 	}
 }
