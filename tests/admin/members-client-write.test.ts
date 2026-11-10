@@ -10,6 +10,8 @@ const {
   createMember,
   adjustPoints,
   updateMember,
+  exportMember,
+  eraseMember,
   MemberWriteError,
   searchMembers,
 } = await import("../../apps/admin/lib/members-client.ts");
@@ -412,6 +414,8 @@ function logoutEffects(
   return counts;
 }
 const callers = {
+  export: (s: AbortSignal) => exportMember(sid, mid, key, s),
+  erase: (s: AbortSignal) => eraseMember(sid, mid, key, s),
   update: (s: AbortSignal) =>
     updateMember(sid, mid, { expected_version: 1, notes: null }, key, s),
   create: (s: AbortSignal) => createMember(sid, input(), key, s),
@@ -699,4 +703,189 @@ test("PATCH late session or mismatched member cannot succeed", async (t) => {
     error("signed-out", "unknown"),
   );
   assert.equal(calls, 2);
+});
+
+// Privacy DTO fixtures follow SQL export_member/erase_member, not the detail-read actor DTO.
+const privacyEntry = () => ({
+  id: eid,
+  delta: -2,
+  reason: "manual_adjust",
+  order_id: null,
+  note: "[erased]",
+  actor_principal_id: sid,
+  created_at: stamp,
+});
+const exported = () => ({ member: member(), entries: [privacyEntry()] });
+const erased = () => ({
+  member_id: mid,
+  erased_at: stamp,
+  entries_redacted: 1,
+});
+for (const [mode, call, value] of [
+  ["export", exportMember, exported],
+  ["erasure", eraseMember, erased],
+] as const) {
+  test(`privacy ${mode} sends one empty keyed POST and projects private DTO`, async (t) => {
+    environment(t);
+    let calls = 0;
+    globalThis.fetch = async (url, options) => {
+      calls++;
+      assert.equal(url, `/api/stores/${sid}/members/${mid}/${mode}`);
+      assert.equal(options?.method, "POST");
+      assert.equal(options?.body, "{}");
+      assert.equal(options?.credentials, "same-origin");
+      assert.equal(options?.cache, "no-store");
+      assert.equal((options?.headers as any)["Idempotency-Key"], key);
+      assert.equal((options?.headers as any)["X-CSRF-Token"], "a".repeat(43));
+      return response({ ...value(), private_extra: "PRIVATE" }, 200);
+    };
+    assert.deepEqual(await call(sid, mid, key, signal()), value());
+    assert.equal(calls, 1);
+  });
+  test(`privacy ${mode} definitive refusals never retry or expose server PII`, async (t) => {
+    environment(t);
+    for (const [status, code, want] of [
+      [403, "forbidden", "forbidden"],
+      [403, "reauth_required", "reauth_required"],
+      [404, "not_found", "not-found"],
+      [409, "member_erased", "member_erased"],
+      [409, "export_too_large", "export_too_large"],
+      [409, "idempotency_conflict", "idempotency_conflict"],
+    ] as const) {
+      let calls = 0;
+      globalThis.fetch = async () => {
+        calls++;
+        return response({ code, message: "PRIVATE" }, status);
+      };
+      await assert.rejects(
+        call(sid, mid, key, signal()),
+        error(want, "rejected"),
+      );
+      assert.equal(calls, 1);
+    }
+  });
+  test(`privacy ${mode} invalid ids or key send zero requests`, (t) => {
+    environment(t);
+    let calls = 0;
+    globalThis.fetch = async () => {
+      calls++;
+      return response(value(), 200);
+    };
+    for (const args of [
+      ["PRIVATE", mid, key],
+      [sid, "PRIVATE", key],
+      [sid, mid, "short"],
+    ])
+      assert.throws(
+        () => call(args[0], args[1], args[2], signal()),
+        error("invalid_request", "not-sent"),
+      );
+    assert.equal(calls, 0);
+  });
+  test(`privacy ${mode} oversized or untrusted success stays unknown with no retry`, async (t) => {
+    environment(t);
+    for (const result of [
+      () =>
+        new Response(" ".repeat(1048577), {
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "private, no-store",
+          },
+        }),
+      () => response(value(), 200, { "Cache-Control": "no-store" }),
+      () => response(value(), 201),
+      () => response(value(), 200, { "Content-Type": "text/csv" }),
+      () => response({ private: "PRIVATE" }, 503),
+    ]) {
+      let calls = 0;
+      globalThis.fetch = async () => {
+        calls++;
+        return result();
+      };
+      await assert.rejects(
+        call(sid, mid, key, signal()),
+        error("unknown", "unknown"),
+      );
+      assert.equal(calls, 1);
+    }
+  });
+}
+test("privacy export keeps complete flat ledger, bounds bytes inclusively and strips staff PII", async (t) => {
+  environment(t);
+  const value = {
+    member: {
+      ...member(),
+      erased_at: null,
+      display_name: "PRIVATE_MEMBER",
+      contact_note: "PRIVATE_CONTACT",
+    },
+    entries: Array.from({ length: 51 }, (_, i) => ({
+      ...privacyEntry(),
+      id: `33333333-3333-4333-8333-${String(i).padStart(12, "0")}`,
+      reason: "manual_order_award",
+      delta: 2,
+      note: "PRIVATE_NOTE",
+    })),
+  };
+  const raw = JSON.stringify(value);
+  globalThis.fetch = async () =>
+    new Response(
+      raw + " ".repeat(1048576 - new TextEncoder().encode(raw).length),
+      {
+        headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "private, no-store",
+        },
+      },
+    );
+  assert.deepEqual(await exportMember(sid, mid, key, signal()), value);
+  const withExtras = {
+    member: { ...member(), created_by: "PRIVATE_STAFF" },
+    entries: [
+      {
+        ...privacyEntry(),
+        actor: { display_name: "PRIVATE_STAFF" },
+        display_name: "PRIVATE_STAFF",
+      },
+    ],
+  };
+  globalThis.fetch = async () => response(withExtras, 200);
+  assert.deepEqual(await exportMember(sid, mid, key, signal()), exported());
+});
+test("privacy export rejects mismatched IDs, invalid ledger and stale PII tombstones", async (t) => {
+  environment(t);
+  for (const value of [
+    { ...exported(), member: { ...member(), id: sid } },
+    { ...exported(), member: { ...member(), display_name: "PRIVATE_STALE" } },
+    { ...exported(), member: { ...member(), contact_note: "PRIVATE_STALE" } },
+    { ...exported(), entries: [{ ...privacyEntry(), note: "PRIVATE_STALE" }] },
+    { ...exported(), entries: [privacyEntry(), privacyEntry()] },
+    { ...exported(), entries: [{ ...privacyEntry(), delta: 0 }] },
+    {
+      ...exported(),
+      entries: [{ ...privacyEntry(), actor_principal_id: null }],
+    },
+  ]) {
+    globalThis.fetch = async () => response(value, 200);
+    await assert.rejects(
+      exportMember(sid, mid, key, signal()),
+      error("unknown", "unknown"),
+    );
+  }
+});
+test("privacy erasure accepts only matching tombstone summary", async (t) => {
+  environment(t);
+  for (const patch of [
+    { member_id: sid },
+    { erased_at: null },
+    { erased_at: "bad" },
+    { entries_redacted: -1 },
+    { entries_redacted: 1.5 },
+  ]) {
+    globalThis.fetch = async () => response({ ...erased(), ...patch }, 200);
+    await assert.rejects(
+      eraseMember(sid, mid, key, signal()),
+      error("unknown", "unknown"),
+    );
+  }
 });

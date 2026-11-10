@@ -1,11 +1,13 @@
 // Purpose: private member DTO validation, single-attempt keyed writes, fenced reads and bounded in-memory pagination.
-// Depends on: LP1 BFF, settings-client session fence, customers-client guarded lifecycle and React.
+// Depends on: LP1 BFF, members-write-client writes, settings-client session fence, customers-client guarded lifecycle and React.
 // Used by: MemberList/MemberDetail; no PII is persisted, logged or placed in page URLs.
 import { useEffect, useRef, useState } from "react";
 import { csrfCookie, sessionBoundary } from "./settings-client";
 import { ReadError, useGuardedRead, type ReadCode } from "./customers-client";
 import { signalLogout } from "./session-events";
 import { canonicalUUID } from "./orders-model";
+import { writeMemberCommand, invalidWrite } from "./members-write-client";
+export { MemberWriteError, type MemberWriteCode } from "./members-write-client";
 
 export type MemberRow = {
   id: string;
@@ -425,29 +427,6 @@ export type AdjustmentEntry = {
   created_at: string;
 };
 export type AdjustPointsResult = { entry: AdjustmentEntry; balance: number };
-export type MemberWriteCode =
-  | "invalid_request"
-  | "signed-out"
-  | "forbidden"
-  | "not-found"
-  | "points_insufficient"
-  | "member_erased"
-  | "idempotency_conflict"
-  | "conflict"
-  | "limit_reached"
-  | "unknown";
-/** UNKNOWN after dispatch is unresolved: refresh may read current state but MUST NOT resend. */
-export class MemberWriteError extends Error {
-  constructor(
-    readonly code: MemberWriteCode,
-    readonly outcome: "not-sent" | "rejected" | "unknown",
-  ) {
-    super(code);
-  }
-}
-const invalidWrite = (): never => {
-  throw new MemberWriteError("invalid_request", "not-sent");
-};
 function writeText(value: unknown, max: number, required = false): string {
   if (
     typeof value !== "string" ||
@@ -587,163 +566,101 @@ export function adjustPoints(
     return { entry, balance: num(p.balance, 0, 1e12) };
   });
 }
-/** One keyed command, no receipt inference/replay/storage; all awaits share one 15s deadline and caller scope signal. */
-async function writeMemberCommand<T>(
-  path: string,
-  body: string,
+/** SQL export_member returns the full flat ledger, without staff display names. */
+export type MemberExportEntry = Omit<
+  AdjustmentEntry,
+  "member_id" | "reason"
+> & {
+  reason: "manual_adjust" | "manual_order_award";
+};
+export type MemberExport = { member: Member; entries: MemberExportEntry[] };
+export type MemberErasure = {
+  member_id: string;
+  erased_at: string;
+  entries_redacted: number;
+};
+/** Return validated JSON in memory only; callers own scope cancellation and explicit same-key recovery. */
+export function exportMember(
+  store: string,
+  member: string,
   key: string,
   signal: AbortSignal,
-  parse: (v: unknown) => T,
-  method: "POST" | "PATCH" = "POST",
-): Promise<T> {
-  if (new TextEncoder().encode(body).length > 16384) return invalidWrite();
-  const csrf = csrfCookie(),
-    controller = new AbortController();
-  const deadline = setTimeout(() => controller.abort(), 15000);
-  const fence = AbortSignal.any([signal, controller.signal]);
-  let dispatched = false,
-    before = "";
-  const bounded = <V>(promise: Promise<V>): Promise<V> =>
-    new Promise((resolve, reject) => {
-      const cleanup = () => fence.removeEventListener("abort", abort);
-      const abort = () => {
-        cleanup();
-        reject(new Error("aborted"));
-      };
-      fence.addEventListener("abort", abort, { once: true });
-      if (fence.aborted) abort();
-      // Crypto cannot be canceled; detach now and ignore any late settlement.
-      promise.then(
-        (value) => {
-          cleanup();
-          resolve(value);
-        },
-        (error) => {
-          cleanup();
-          reject(error);
-        },
-      );
-    });
-  const sameSession = async () => {
-    try {
-      return (
-        !!before &&
-        csrfCookie() === csrf &&
-        (await bounded(sessionBoundary(csrf))) === before &&
-        csrfCookie() === csrf
-      );
-    } catch (error) {
-      // An unchanged session canceled mid-hash has an unknown command outcome.
-      if (fence.aborted && csrfCookie() === csrf) throw error;
-      return false;
-    }
-  };
-  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
-  try {
-    try {
-      before = await bounded(sessionBoundary(csrf));
-    } catch {
-      if (fence.aborted && csrf && csrfCookie() === csrf) return invalidWrite();
-      signalLogout();
-      throw new MemberWriteError("signed-out", "not-sent");
-    }
-    if (fence.aborted)
-      throw new MemberWriteError("invalid_request", "not-sent");
-    dispatched = true;
-    const response = await bounded(
-      fetch(path, {
-        method,
-        credentials: "same-origin",
-        cache: "no-store",
-        signal: fence,
-        body,
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrf,
-          "Idempotency-Key": key,
-        },
-      }),
-    );
-    if (response.status === 401) {
-      signalLogout();
-      throw new MemberWriteError("signed-out", "rejected");
-    }
-    if (!(await sameSession())) {
-      signalLogout();
-      throw new MemberWriteError("signed-out", "unknown");
-    }
-    if (fence.aborted) throw new Error();
-    if (response.status === 403)
-      throw new MemberWriteError("forbidden", "rejected");
-    if (response.status === 404)
-      throw new MemberWriteError("not-found", "rejected");
-    const cache = response.headers
-      .get("cache-control")
-      ?.split(",")
-      .map((v) => v.trim());
-    if (
-      response.headers.get("content-type")?.split(";")[0] !==
-        "application/json" ||
-      !cache?.includes("no-store") ||
-      (response.ok && !cache.includes("private"))
-    )
-      throw new Error();
-    reader = response.body?.getReader();
-    if (!reader) throw new Error();
-    const chunks: Uint8Array[] = [];
-    let size = 0;
-    for (;;) {
-      const part = await bounded(reader.read());
-      if (part.done) break;
-      size += part.value.byteLength;
-      if (size > 1048576) throw new Error();
-      chunks.push(part.value);
-    }
-    const bytes = new Uint8Array(size);
-    let offset = 0;
-    for (const part of chunks) {
-      bytes.set(part, offset);
-      offset += part.length;
-    }
-    const raw: unknown = JSON.parse(
-      new TextDecoder("utf-8", { fatal: true }).decode(bytes),
-    );
-    if (!(await sameSession())) {
-      signalLogout();
-      throw new MemberWriteError("signed-out", "unknown");
-    }
-    if (fence.aborted) throw new Error();
-    if (response.status === 409 || response.status === 422) {
-      const code = obj(raw).code;
+): Promise<MemberExport> {
+  const target = writeID(member),
+    path = `/api/stores/${writeID(store)}/members/${target}/export`,
+    stableKey = writeKey(key);
+  return writeMemberCommand(
+    path,
+    "{}",
+    stableKey,
+    signal,
+    (v) => {
+      const p = obj(v);
+      const member = parseMember(
+        { member: p.member, entries: [], next_ledger_cursor: null },
+        target,
+      ).member;
+      // The byte limit is enforced by the shared reader; do not reuse the 50-row read-page cap.
+      const entries = rows(p.entries, 1048576, (v): MemberExportEntry => {
+        const e = obj(v);
+        const delta = num(e.delta, -1e6, 1e6);
+        if (
+          delta === 0 ||
+          (e.reason !== "manual_adjust" && e.reason !== "manual_order_award")
+        )
+          return invalid();
+        return {
+          id: id(e.id),
+          delta,
+          reason: e.reason,
+          order_id: e.order_id === null ? null : id(e.order_id),
+          note: nullable(e.note),
+          actor_principal_id: id(e.actor_principal_id),
+          created_at: date(e.created_at),
+        };
+      });
+      // A tombstone must never deliver stale member or ledger text after erasure.
       if (
-        (response.status === 409 &&
-          [
-            "points_insufficient",
-            "member_erased",
-            "idempotency_conflict",
-            "conflict",
-          ].includes(String(code))) ||
-        (response.status === 422 &&
-          ["invalid_request", "limit_reached"].includes(String(code)))
+        member.erased_at !== null &&
+        (member.display_name !== "[erased]" ||
+          member.contact_note !== null ||
+          member.notes !== null ||
+          entries.some(
+            (entry) => entry.note !== null && entry.note !== "[erased]",
+          ))
       )
-        throw new MemberWriteError(code as MemberWriteCode, "rejected");
-    }
-    if (response.status !== 200 && response.status !== 201) throw new Error();
-    return parse(raw);
-  } catch (error) {
-    if (error instanceof MemberWriteError) throw error;
-    const changed = csrfCookie() !== csrf;
-    if (changed) signalLogout();
-    throw new MemberWriteError(
-      changed ? "signed-out" : "unknown",
-      dispatched ? "unknown" : "not-sent",
-    );
-  } finally {
-    clearTimeout(deadline);
-    // Do not await cancellation: a hostile/stalled body must not hold the deadline open.
-    if (reader) {
-      void reader.cancel().catch(() => {});
-      reader.releaseLock();
-    }
-  }
+        return invalid();
+      return { member, entries };
+    },
+    "POST",
+    true,
+  );
+}
+/** The privacy endpoint takes {}, unlike customer erasure's separate confirmation contract. */
+export function eraseMember(
+  store: string,
+  member: string,
+  key: string,
+  signal: AbortSignal,
+): Promise<MemberErasure> {
+  const target = writeID(member),
+    path = `/api/stores/${writeID(store)}/members/${target}/erasure`,
+    stableKey = writeKey(key);
+  return writeMemberCommand(
+    path,
+    "{}",
+    stableKey,
+    signal,
+    (v) => {
+      const p = obj(v);
+      if (id(p.member_id) !== target) return invalid();
+      return {
+        member_id: target,
+        erased_at: date(p.erased_at),
+        entries_redacted: num(p.entries_redacted, 0, Number.MAX_SAFE_INTEGER),
+      };
+    },
+    "POST",
+    true,
+  );
 }
