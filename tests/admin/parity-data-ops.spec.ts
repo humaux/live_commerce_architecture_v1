@@ -58,6 +58,27 @@ async function stock(page: Page, targets: Record<string, number>) {
   expect(response.body.committed).toBe(true);
 }
 
+// InventoryView renders the SKU code before a middle-dot separator in one semantic cell.
+// Whole-row text can join a product suffix "a1" to the next quantity cell "20".
+const inventoryA12Row = (page: Page) => page.getByRole("row").filter({ has: page.getByRole("cell", { name: /^A12 · / }) });
+
+test("MODEL_ONLY: inventory SKU-cell selector rejects cross-cell and name collisions", async ({ browser }) => {
+  // Selector-engine calibration only: isolated page, no app DOM/session/fixture changes.
+  const calibration = await browser.newPage();
+  const rows = '<tr><td>T04-6f0d9f30dfa1-1 · <button>t04-6f0d9f30dfa1</button></td><td>20</td></tr><tr><td>A12 · <button>焦糖托特包</button></td><td>24</td></tr>';
+  try {
+    await calibration.setContent(`<table><tbody>${rows}</tbody></table>`);
+    await expect(calibration.getByRole("row").filter({ hasText: "A12" }), "old locator cross-cell witness").toHaveCount(2);
+    await expect(inventoryA12Row(calibration), "SKU-cell uniquely selects true A12").toHaveCount(1);
+    await expect(inventoryA12Row(calibration)).toContainText("焦糖托特包");
+    await calibration.setContent(`<table><tbody>${rows}<tr><td>A120 · <button>other</button></td><td>1</td></tr><tr><td>OTHER · <button>A12</button></td><td>1</td></tr></tbody></table>`);
+    await expect(inventoryA12Row(calibration), "SKU-cell excludes A120 and product-name A12").toHaveCount(1);
+    await expect(inventoryA12Row(calibration)).toContainText("焦糖托特包");
+  } finally {
+    await calibration.close();
+  }
+});
+
 recordEvidence();
 test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
   test.skip(multiWarehouse, "one-warehouse C6 frames already ran in the first TestBrowserCatalogCore phase");
@@ -142,7 +163,8 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
       await page.setViewportSize(viewport); await login(page);
       await page.goto(root("zh-TW", "inventory")); await heading(page, "庫存");
       await prepare(page); await page.reload();
-      const row = page.getByRole("row").filter({ hasText: "A12" });
+      const row = inventoryA12Row(page);
+      await expect(row, "exactly one A12 SKU before adjustment").toHaveCount(1);
       // Use the product row/card's actual control; no selecting an internal variable or URL-only state.
       await action(page, "A12 / 調整庫存", "click", "selected SKU adjustment opens", async () => {
         await row.getByRole("button", { name: "調整庫存", exact: true }).click(); await heading(page, "調整庫存");
@@ -195,7 +217,7 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         await heading(page, "庫存已調整");
         await capture(page, frame("840:5248", "840:5249"));
         await click(page, "返回庫存", "saved on-hand survives refresh", async () => {
-          await page.reload(); await expect(page.getByRole("row").filter({ hasText: "A12" })).toContainText("27");
+          await page.reload(); await expect(inventoryA12Row(page), "exactly one persisted A12 SKU").toHaveCount(1); await expect(inventoryA12Row(page)).toContainText("27");
         });
       }
     });
