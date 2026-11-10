@@ -801,7 +801,7 @@
     "tests/ui/ds-render.test.mjs": "bf269a2baae95dd61d9298496351e3d3a464ad383f145d835b5006b557273abb",
     "tests/ui/ds-rework.test.mjs": "35d67aa7d2c2926cedc2e3fcb463acd2192badd09a5a8dd810547e52a9e34227",
     "tests/ui/ds-rules.test.mjs": "a6129cb77edd74b7c9f4f7688f9bb4b7276c7bf484faa2b5c5575db5edc39291",
-    "tests/ui/ds-tokens.test.mjs": "57430d5e0d3e07e64b675ddb5740f59c27c06663b1720d00d4772bb1db9a1e9c",
+    "tests/ui/ds-tokens.test.mjs": "c73cfe6a9a30e579462652bc58aa5e4d6559ea2988c3b232bb0896ca8e6ab961",
     "tests/ui/hex-baseline.json": "47616c5491bbf5dc4e3b3b9d454c8514f8e22677cd3fa2bbd6902e521df7ca82",
     "tests/ui/product-media-journey.mjs": "40f7470c598b5b1aae51af7ab5c5d03bd59e6161ca9ff0e1092072b3d2ba9dc9",
     "tests/ui/sweep-aggregate.mjs": "96b17bae5f7ed4cc3df60671b12b7a42bb23ebca24c473eb0c819924720d9c3a",

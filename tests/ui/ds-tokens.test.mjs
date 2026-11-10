@@ -122,3 +122,65 @@ test("no copy inside the ui package: components render strings that arrive as pr
     assert.doesNotMatch(stripped, />\s*[A-Za-z一-鿿][A-Za-z一-鿿 ]{2,}\s*</, `${f}: literal text between JSX tags`);
   }
 });
+
+// LP2 exact ten promoted form profiles: iJ9lDdFIXgTlKkt5Tvrc0X / 1678:52228.
+// Oracle: approved AFTER sha256 3ea7073f964713462dc82f20f2bd9242a882712c3942e3d2fb4fa108c217b84c
+// and source TOKEN-CONTRACT literal geometry; no runtime form consumers are implemented here.
+test("member form: exact promoted central contract and reused accessibility roles", () => {
+  const expected = {
+    "control-member-dialog-width": "520px", "control-member-dialog-pad": "28px",
+    "radius-member-dialog": "12px", "radius-member-sheet": "16px",
+    "control-member-sheet-pad-end": "28px", "control-member-field-gap": "6px",
+    "text-member-value": "15px", "text-member-heading": "20px",
+    "control-member-action-leading": "20px", "members-control-bg": "#f1f5f9",
+    "control-member-input-pad-block": "10px", "radius-member-control": "5px",
+    "control-member-note-height": "88px", "members-action-bg": "#247965",
+    "members-action-border": "#dde5ee", "control-member-action-width": "160px",
+    "members-scrim": "rgb(20 41 66 / 45%)",
+    "members-ink": "#142942", "members-muted": "#596579", "members-surface": "#fff",
+    "border-input": "#8c8c8c", "target": "44px", "disabled-bg": "#f5f6f8",
+    "disabled-text": "#566171", "disabled-border": "#e5e7eb",
+    "disabled-primary-bg": "#6d8cab", "disabled-primary-text": "#fff",
+  };
+  for (const [name, value] of Object.entries(expected)) assert.equal(ds(name), value, name);
+  assert.equal(decls.get("--ds-control-member-sheet-pad-end"), "var(--ds-control-member-dialog-pad)");
+  assert.equal(decls.get("--ds-members-action-bg"), "#247965", "member primary stays stable under data-ds=2");
+  const selector = css.indexOf('[data-ds="2"]');
+  const open = css.indexOf("{", selector);
+  const close = css.indexOf("}", open);
+  assert.ok(selector >= 0 && open > selector && close > open, "data-ds=2 alias block exists");
+  const remap = css.slice(open + 1, close);
+  assert.doesNotMatch(remap, /--ds-(?:control-member|radius-member|text-member|members-action|members-control|members-scrim)[\w-]*\s*:/);
+});
+
+test("member form: actual role contrast on control and action surfaces", () => {
+  for (const [fg, bg] of [
+    ["members-ink", "members-control-bg"], ["members-muted", "members-control-bg"],
+    ["members-ink", "members-surface"], ["members-muted", "members-surface"],
+    ["on-primary", "members-action-bg"], ["disabled-text", "disabled-bg"],
+    ["danger-text", "members-control-bg"],
+  ]) assert.ok(ratio(ds(fg), ds(bg)) >= 4.5, `${fg} on ${bg} < 4.5`);
+  for (const bg of ["members-control-bg", "members-surface"])
+    for (const fg of ["border-input", "focus"])
+      assert.ok(ratio(ds(fg), ds(bg)) >= 3, `${fg} on ${bg} < 3`);
+  assert.ok(ratio(ds("disabled-primary-bg"), ds("members-surface")) >= 3);
+  assert.ok(ratio(ds("disabled-primary-text"), ds("disabled-primary-bg")) >= 3.5);
+  // Source secondary-action stroke is decorative; the input boundary uses border-input instead.
+  assert.ok(ratio(ds("members-action-border"), ds("members-control-bg")) < 3);
+});
+
+test("member form: semantic consumer declarations pass current R1-R7 without exceptions", async () => {
+  const { check } = await import("../../scripts/dev/check-ds-rules.mjs");
+  const source = `
+.dialog { width:var(--ds-control-member-dialog-width); padding:var(--ds-control-member-dialog-pad); border-radius:var(--ds-radius-member-dialog); }
+.sheet { width:100%; padding:var(--ds-space-5) var(--ds-space-4) var(--ds-control-member-sheet-pad-end); border-radius:var(--ds-radius-member-sheet); }
+.field { gap:var(--ds-control-member-field-gap); }
+.input { padding:var(--ds-control-member-input-pad-block) var(--ds-space-3); font-size:var(--ds-text-member-value); background:var(--ds-members-control-bg); color:var(--ds-members-ink); border:1px solid var(--ds-border-input); border-radius:var(--ds-radius-member-control); min-height:var(--ds-target); }
+.heading { font-size:var(--ds-text-member-heading); }
+.longNote { height:var(--ds-control-member-note-height); }
+.action { width:var(--ds-control-member-action-width); line-height:var(--ds-control-member-action-leading); background:var(--ds-members-action-bg); border-color:var(--ds-members-action-border); color:var(--ds-on-primary); }
+.scrim { background:var(--ds-members-scrim); }
+`;
+  assert.deepEqual(check(source, ".css", "member-form.module.css"), []);
+  for (const [, name] of source.matchAll(/var\((--[a-z0-9-]+)\)/g)) resolve(name);
+});
