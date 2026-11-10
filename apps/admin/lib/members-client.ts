@@ -402,6 +402,12 @@ export type CreateMemberInput = {
   contact_note: string | null;
   notes: string | null;
 };
+export type UpdateMemberInput = {
+  expected_version: number;
+  display_name?: string;
+  contact_note?: string | null;
+  notes?: string | null;
+};
 export type AdjustPointsInput = {
   delta: number;
   note: string;
@@ -462,6 +468,18 @@ function writeKey(value: string): string {
     ? value
     : invalidWrite();
 }
+function writeDisplayName(value: unknown): string {
+  return writeText(
+    writeText(value, 10000)
+      .replace(
+        /^[\u0009-\u000d\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+|[\u0009-\u000d\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+$/gu,
+        "",
+      )
+      .normalize("NFC"),
+    60,
+    true,
+  );
+}
 /** Snapshot all caller-owned values synchronously, before session hashing yields. */
 export function createMember(
   store: string,
@@ -472,16 +490,7 @@ export function createMember(
   const path = `/api/stores/${writeID(store)}/members`,
     stableKey = writeKey(key);
   const body = JSON.stringify({
-    display_name: writeText(
-      writeText(input.display_name, 10000)
-        .replace(
-          /^[\u0009-\u000d\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+|[\u0009-\u000d\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+$/gu,
-          "",
-        )
-        .normalize("NFC"),
-      60,
-      true,
-    ),
+    display_name: writeDisplayName(input.display_name),
     contact_note:
       input.contact_note === null ? null : writeText(input.contact_note, 120),
     notes: input.notes === null ? null : writeText(input.notes, 1000),
@@ -495,6 +504,48 @@ export function createMember(
       ).member,
     };
   });
+}
+/** Omitted fields stay omitted; explicit null clears optional text. Snapshot before any await. */
+export function updateMember(
+  store: string,
+  member: string,
+  input: UpdateMemberInput,
+  key: string,
+  signal: AbortSignal,
+): Promise<{ member: Member }> {
+  const target = writeID(member),
+    path = `/api/stores/${writeID(store)}/members/${target}`,
+    stableKey = writeKey(key);
+  if (!input || typeof input !== "object" || Array.isArray(input))
+    return invalidWrite();
+  const version = input.expected_version;
+  if (!Number.isSafeInteger(version) || version < 1) return invalidWrite();
+  const patch: UpdateMemberInput = { expected_version: version };
+  if (Object.hasOwn(input, "display_name"))
+    patch.display_name = writeDisplayName(input.display_name);
+  for (const field of ["contact_note", "notes"] as const) {
+    if (Object.hasOwn(input, field)) {
+      const value = input[field];
+      patch[field] =
+        value === null
+          ? null
+          : writeText(value, field === "contact_note" ? 120 : 1000);
+    }
+  }
+  if (Object.keys(patch).length === 1) return invalidWrite();
+  return writeMemberCommand(
+    path,
+    JSON.stringify(patch),
+    stableKey,
+    signal,
+    (v) => ({
+      member: parseMember(
+        { member: obj(v).member, entries: [], next_ledger_cursor: null },
+        target,
+      ).member,
+    }),
+    "PATCH",
+  );
 }
 export function adjustPoints(
   store: string,
@@ -536,13 +587,14 @@ export function adjustPoints(
     return { entry, balance: num(p.balance, 0, 1e12) };
   });
 }
-/** One POST, no receipt inference/replay/storage; all awaits share one 15s deadline and caller scope signal. */
+/** One keyed command, no receipt inference/replay/storage; all awaits share one 15s deadline and caller scope signal. */
 async function writeMemberCommand<T>(
   path: string,
   body: string,
   key: string,
   signal: AbortSignal,
   parse: (v: unknown) => T,
+  method: "POST" | "PATCH" = "POST",
 ): Promise<T> {
   if (new TextEncoder().encode(body).length > 16384) return invalidWrite();
   const csrf = csrfCookie(),
@@ -600,7 +652,7 @@ async function writeMemberCommand<T>(
     dispatched = true;
     const response = await bounded(
       fetch(path, {
-        method: "POST",
+        method,
         credentials: "same-origin",
         cache: "no-store",
         signal: fence,

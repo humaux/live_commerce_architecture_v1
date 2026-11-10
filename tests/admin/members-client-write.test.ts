@@ -6,8 +6,13 @@ import assert from "node:assert/strict";
 import { environment } from "./inbox-review-host.test.ts";
 const { useGuardedRead } =
   await import("../../apps/admin/lib/customers-client.ts");
-const { createMember, adjustPoints, MemberWriteError, searchMembers } =
-  await import("../../apps/admin/lib/members-client.ts");
+const {
+  createMember,
+  adjustPoints,
+  updateMember,
+  MemberWriteError,
+  searchMembers,
+} = await import("../../apps/admin/lib/members-client.ts");
 const sid = "11111111-1111-4111-8111-111111111111",
   mid = "22222222-2222-4222-8222-222222222222",
   eid = "33333333-3333-4333-8333-333333333333";
@@ -101,6 +106,10 @@ test("caller key and CSRF are sent exactly once with private body snapshot", asy
     contact_note: "PRIVATE_CONTACT",
     notes: null,
   });
+  assert.equal(
+    request.body,
+    '{"display_name":"é","contact_note":"PRIVATE_CONTACT","notes":null}',
+  );
   assert.equal(request.url, `/api/stores/${sid}/members`);
   assert.equal(request.url.includes("PRIVATE"), false);
   held.resolve(response({ member: member() }, 200));
@@ -119,6 +128,11 @@ test("adjust uses actual flat Go DTO and frozen target/body; erasure replay note
   body.delta = 7;
   body.note = "CHANGED";
   assert.deepEqual(await pending, adjustment());
+  assert.equal(request.method, "POST");
+  assert.equal(
+    request.body,
+    '{"delta":2,"note":"PRIVATE_NOTE","order_id":null}',
+  );
   assert.equal(request.url, `/api/stores/${sid}/members/${mid}/adjustments`);
   assert.deepEqual(JSON.parse(request.body), {
     delta: 2,
@@ -398,6 +412,8 @@ function logoutEffects(
   return counts;
 }
 const callers = {
+  update: (s: AbortSignal) =>
+    updateMember(sid, mid, { expected_version: 1, notes: null }, key, s),
   create: (s: AbortSignal) => createMember(sid, input(), key, s),
   adjust: (s: AbortSignal) =>
     adjustPoints(sid, mid, { delta: 2, note: "fixture" }, key, s),
@@ -453,7 +469,7 @@ for (const [name, call] of Object.entries(callers)) {
         globalThis.fetch = async () => {
           posts++;
           return response(
-            name === "create" ? { member: member() } : adjustment(),
+            name === "adjust" ? adjustment() : { member: member() },
           );
         };
         const pending = call(controller.signal).catch((e) => e);
@@ -517,3 +533,170 @@ for (const cause of ["missing", "changed", "digest", "401"]) {
     assert.equal(posts, cause === "missing" || cause === "digest" ? 0 : 1);
   });
 }
+
+test("PATCH freezes input, target and key before hashing; normalizes Go whitespace/NFC", async (t) => {
+  environment(t);
+  let request: any,
+    calls = 0;
+  globalThis.fetch = async (url, options) => {
+    calls++;
+    request = { url, ...options };
+    return response({ member: member() }, 200);
+  };
+  const patch = {
+    expected_version: 1,
+    display_name: "\u0085e\u0301\u3000",
+    contact_note: null,
+    notes: "PRIVATE_NOTE",
+  };
+  const pending = updateMember(sid, mid, patch, key, signal());
+  patch.expected_version = 99;
+  patch.display_name = "CHANGED";
+  patch.contact_note = null;
+  patch.notes = "CHANGED";
+  assert.deepEqual(await pending, { member: member() });
+  assert.equal(calls, 1);
+  assert.equal(request.method, "PATCH");
+  assert.equal(request.url, `/api/stores/${sid}/members/${mid}`);
+  assert.equal(request.credentials, "same-origin");
+  assert.equal(request.cache, "no-store");
+  assert.equal(request.headers["Idempotency-Key"], key);
+  assert.equal(request.headers["X-CSRF-Token"], "a".repeat(43));
+  assert.equal(request.headers["Content-Type"], "application/json");
+  assert.deepEqual(JSON.parse(request.body), {
+    expected_version: 1,
+    display_name: "é",
+    contact_note: null,
+    notes: "PRIVATE_NOTE",
+  });
+});
+test("PATCH distinguishes omitted, empty and explicit null optional fields", async (t) => {
+  environment(t);
+  for (const patch of [
+    { expected_version: 1, notes: null },
+    { expected_version: 2, contact_note: "" },
+    { expected_version: 2, contact_note: null, notes: "" },
+    { expected_version: 1, display_name: "😀".repeat(60) },
+    {
+      expected_version: 1,
+      notes: "😀".repeat(1000),
+      contact_note: "😀".repeat(120),
+    },
+  ]) {
+    globalThis.fetch = async (_url, options) => {
+      assert.deepEqual(JSON.parse(String(options?.body)), patch);
+      return response({ member: member() }, 200);
+    };
+    await updateMember(sid, mid, patch, key, signal());
+  }
+});
+test("PATCH invalid version, fields, name, optional text, ids and key send zero requests", (t) => {
+  environment(t);
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls++;
+    return response({});
+  };
+  const bad: unknown[] = [
+    null,
+    undefined,
+    [],
+    {},
+    { expected_version: 1 },
+    ...[0, -1, 1.5, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1, "1", null].map(
+      (expected_version) => ({ expected_version, notes: null }),
+    ),
+    ...[
+      null,
+      undefined,
+      " ",
+      "x".repeat(61),
+      "line\nline",
+      "\ud800",
+      "\ufeffx",
+    ].map((display_name) => ({ expected_version: 1, display_name })),
+    ...[undefined, 1, "x".repeat(121), "\ud800"].map((contact_note) => ({
+      expected_version: 1,
+      contact_note,
+    })),
+    ...[undefined, 1, "x".repeat(1001), "\ud800"].map((notes) => ({
+      expected_version: 1,
+      notes,
+    })),
+  ];
+  for (const patch of bad)
+    assert.throws(
+      () => updateMember(sid, mid, patch as any, key, signal()),
+      error("invalid_request", "not-sent"),
+    );
+  for (const [store, memberID, requestKey] of [
+    ["PRIVATE", mid, key],
+    [sid, "PRIVATE", key],
+    [sid, mid, "short"],
+  ])
+    assert.throws(
+      () =>
+        updateMember(
+          store,
+          memberID,
+          { expected_version: 1, notes: null },
+          requestKey,
+          signal(),
+        ),
+      error("invalid_request", "not-sent"),
+    );
+  assert.equal(calls, 0);
+});
+test("PATCH refusals preserve status/code and same-key conflict never retries", async (t) => {
+  environment(t);
+  for (const [status, code, want] of [
+    [403, "forbidden", "forbidden"],
+    [404, "not_found", "not-found"],
+    [409, "conflict", "conflict"],
+    [409, "member_erased", "member_erased"],
+    [409, "idempotency_conflict", "idempotency_conflict"],
+  ] as const) {
+    let calls = 0;
+    globalThis.fetch = async (_url, options) => {
+      calls++;
+      assert.equal(
+        (options?.headers as Record<string, string>)["Idempotency-Key"],
+        key,
+      );
+      return response({ code, message: "PRIVATE" }, status);
+    };
+    await assert.rejects(
+      updateMember(
+        sid,
+        mid,
+        { expected_version: 1, notes: null },
+        key,
+        signal(),
+      ),
+      error(want, "rejected"),
+    );
+    assert.equal(calls, 1);
+  }
+});
+test("PATCH late session or mismatched member cannot succeed", async (t) => {
+  const env = environment(t);
+  let calls = 0;
+  globalThis.fetch = async () => {
+    calls++;
+    return response({ member: { ...member(), id: sid } }, 200);
+  };
+  await assert.rejects(
+    updateMember(sid, mid, { expected_version: 1, notes: null }, key, signal()),
+    error("unknown", "unknown"),
+  );
+  globalThis.fetch = async () => {
+    calls++;
+    env.document.cookie = `__Host-commerce_csrf=${"b".repeat(43)}`;
+    return response({ member: member() }, 200);
+  };
+  await assert.rejects(
+    updateMember(sid, mid, { expected_version: 1, notes: null }, key, signal()),
+    error("signed-out", "unknown"),
+  );
+  assert.equal(calls, 2);
+});
