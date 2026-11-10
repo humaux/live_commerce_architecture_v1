@@ -54,6 +54,9 @@ type w6uiFixture struct {
 	member, zeroMember, erasedMember, emptyStore, foreignStore, foreignMember, seedActor, memberOrder string
 	held                                                                                              chan struct{}
 	heldStarted                                                                                       bool
+	formsStore, formsAlt, formsPrincipal, formsToken                                                  string
+	formsHeld                                                                                         chan struct{}
+	formsStarted                                                                                      bool
 }
 
 type w6uiRequest struct {
@@ -324,6 +327,36 @@ func w6uiRun(t *testing.T, mode string) {
 				}
 			}
 		})
+		t.Run("members-forms", func(t *testing.T) {
+			w6uiPrepareForms(t, x)
+			env["LC_W6UI_FORMS_STORE"], env["LC_W6UI_FORMS_ALT"] = x.formsStore, x.formsAlt
+			// Actual focused unit command: node --test --experimental-strip-types tests/admin/members-forms.test.ts.
+			// Native production-built UI: tests/admin/members-forms.spec.ts; original read subtest already settled.
+			w6uiSpecs(t, ctx, stack, "members-forms", env)
+			data, err := os.ReadFile(filepath.Join(evidence, "members-forms-completion.json"))
+			var completion struct {
+				Cases []string `json:"cases"`
+			}
+			if err != nil || json.Unmarshal(data, &completion) != nil || len(completion.Cases) != 11 {
+				t.Fatalf("M7-FORMS-REGISTERED-COMPLETION: missing eleven completed native cases: %v", err)
+			}
+			data, err = os.ReadFile(filepath.Join(evidence, "members-forms-click-ledger.json"))
+			var rows []struct {
+				Result string `json:"result"`
+			}
+			if err != nil || json.Unmarshal(data, &rows) != nil || len(rows) == 0 {
+				t.Fatal("M7-FORMS-CLICK-LEDGER: missing native actions")
+			}
+			for _, row := range rows {
+				if row.Result != "pass" {
+					t.Error("M7-FORMS-CLICK-LEDGER: failed action")
+				}
+			}
+			state, err := w6uiFormsState(x, "")
+			if err != nil || state["members"] != int64(10) {
+				t.Fatalf("M7-FORMS-SQL: member effects mismatch: %v %v", state, err)
+			}
+		})
 	}
 	x.mu.Lock()
 	requests := append([]w6uiRequest(nil), x.requests...)
@@ -513,12 +546,16 @@ func w6uiStart(t *testing.T, ctx context.Context, x *w6uiFixture, evidence strin
 			}
 			_, e = x.w.f.owner.Exec(r.Context(), `UPDATE identity.external_identities SET principal_id=$2 WHERE issuer=$1 AND subject='browser-subject'`, idp.server.URL, principal)
 		case "/fault":
-			if in.Mode != "drop-note" && in.Mode != "read-503" && in.Mode != "truncate-report" && in.Mode != "tag-read-503" && in.Mode != "notes-read-503" && in.Mode != "members-search-503" && in.Mode != "members-ledger-503" && in.Mode != "members-hold" && in.Mode != "" {
+			if in.Mode != "drop-note" && in.Mode != "read-503" && in.Mode != "truncate-report" && in.Mode != "tag-read-503" && in.Mode != "notes-read-503" && in.Mode != "members-search-503" && in.Mode != "members-ledger-503" && in.Mode != "members-hold" && in.Mode != "forms-hold" && in.Mode != "forms-drop" && in.Mode != "" {
 				http.Error(w, "invalid", 422)
 				return
 			}
 			x.mu.Lock()
 			x.fault = in.Mode
+			if in.Mode == "forms-hold" {
+				x.formsHeld = make(chan struct{})
+				x.formsStarted = false
+			}
 			if in.Mode == "members-hold" {
 				if x.held != nil {
 					close(x.held)
@@ -527,6 +564,31 @@ func w6uiStart(t *testing.T, ctx context.Context, x *w6uiFixture, evidence strin
 				x.heldStarted = false
 			}
 			x.mu.Unlock()
+		case "/forms-release":
+			x.mu.Lock()
+			if x.formsHeld != nil {
+				close(x.formsHeld)
+				x.formsHeld = nil
+			}
+			x.mu.Unlock()
+		case "/forms-state":
+			state, err := w6uiFormsState(x, in.Mode)
+			if err != nil {
+				http.Error(w, "forms SQL read failed", 500)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(state)
+			return
+		case "/forms-race":
+			var balance int64
+			e = x.w.f.owner.QueryRow(r.Context(), `SELECT balance FROM loyalty.members WHERE store_id=$1 AND id=$2`, x.formsStore, in.Mode).Scan(&balance)
+			if e == nil && balance > 0 {
+				e = platform.WithScope(r.Context(), x.w.f.runtime, x.formsToken, x.formsStore, "customers:points", func(tx pgx.Tx, sc platform.Scope) error {
+					_, _, err := loyalty.Adjust(r.Context(), tx, sc, x.formsToken, t04Key("forms-race"), in.Mode, loyalty.AdjustInput{Delta: -balance, Note: "synthetic concurrent deduction"})
+					return err
+				})
+			}
 		case "/members-release":
 			x.mu.Lock()
 			if x.held != nil {
@@ -677,6 +739,13 @@ func w6uiAuthorityReadback(t *testing.T, x *w6uiFixture) {
 func w6uiWrap(x *w6uiFixture, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		x.mu.Lock()
+		formsStore := x.formsStore
+		x.mu.Unlock()
+		if formsStore != "" && r.Method == "POST" && strings.HasPrefix(r.URL.Path, "/v1/admin/stores/"+formsStore+"/members") && !strings.HasSuffix(r.URL.Path, "/search") {
+			w6uiFormsWrite(x, next, w, r)
+			return
+		}
+		x.mu.Lock()
 		fault := x.fault
 		memberSearch := r.Method == "POST" && strings.HasSuffix(r.URL.Path, "/members/search")
 		memberDetail := r.Method == "GET" && strings.Contains(r.URL.Path, "/members/")
@@ -745,6 +814,8 @@ func w6uiSpecs(t *testing.T, ctx context.Context, s *brfStack, mode string, env 
 	configName, logName := "playwright.w6.config.ts", "playwright.log"
 	if mode == "members-read" {
 		configName, logName = "playwright.w6.members-read.config.ts", "playwright-members-read.log"
+	} else if mode == "members-forms" {
+		configName, logName = "playwright.w6.members-forms.config.ts", "playwright-members-forms.log"
 	}
 	config := filepath.Join(s.evidence, configName)
 	spec := "reports.spec.ts"
@@ -752,6 +823,8 @@ func w6uiSpecs(t *testing.T, ctx context.Context, s *brfStack, mode string, env 
 		spec = "customer-tags.spec.ts"
 	} else if mode == "members-read" {
 		spec = "members-read.spec.ts"
+	} else if mode == "members-forms" {
+		spec = "members-forms.spec.ts"
 	}
 	body := fmt.Sprintf(`import {defineConfig} from "@playwright/test";
 export default defineConfig({testDir:%q,testMatch:%q,workers:1,retries:0,timeout:120000,expect:{timeout:15000},reporter:[["list"]],outputDir:%q,use:{baseURL:%q,headless:true,ignoreHTTPSErrors:true,trace:"retain-on-failure",screenshot:"only-on-failure"}});`, filepath.Join(s.root, "tests/admin"), spec, filepath.Join(s.evidence, "results"), s.origin)
@@ -927,4 +1000,120 @@ func w6uiMemberOrder(t *testing.T, x *w6uiFixture) string {
 		t.Fatal(err)
 	}
 	return order.OrderID
+}
+
+// w6uiPrepareForms isolates every new grant/effect from the already-verified read corpus.
+func w6uiPrepareForms(t *testing.T, x *w6uiFixture) {
+	t.Helper()
+	x.mu.Lock()
+	x.formsStore, x.formsAlt = randomUUID(), randomUUID()
+	x.mu.Unlock()
+	for _, store := range []string{x.formsStore, x.formsAlt} {
+		mustExec(t, x.w.f.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'M7 synthetic forms','TWD')`, x.w.tenant, store)
+	}
+	x.formsPrincipal, x.formsToken = lcPrincipal(t, x.w.f, x.w.tenant, []string{x.formsStore}, "store:read", "customers:read", "customers:points")
+	x.actors["forms-points"] = x.formsPrincipal
+	reader, _ := lcPrincipal(t, x.w.f, x.w.tenant, []string{x.formsStore}, "store:read", "customers:read")
+	x.actors["forms-reader"] = reader
+	for _, permission := range []string{"store:read", "customers:read"} {
+		mustExec(t, x.w.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4)`, x.w.tenant, x.formsAlt, x.formsPrincipal, permission)
+	}
+	t.Cleanup(func() {
+		x.mu.Lock()
+		defer x.mu.Unlock()
+		if x.formsHeld != nil {
+			close(x.formsHeld)
+			x.formsHeld = nil
+		}
+	})
+}
+
+// SQL values, never response guesses, attest that writes committed before hold/drop.
+func w6uiFormsState(x *w6uiFixture, member string) (map[string]int64, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	state := map[string]int64{}
+	for _, item := range []struct{ name, sql string }{
+		{"members", `SELECT count(*) FROM loyalty.members WHERE store_id=$1`},
+		{"entries", `SELECT count(*) FROM loyalty.point_entries WHERE store_id=$1`},
+		{"commands", `SELECT count(*) FROM ops.command_results WHERE store_id=$1 AND operation LIKE 'loyalty.%'`},
+	} {
+		var value int64
+		if err := x.w.f.owner.QueryRow(ctx, item.sql, x.formsStore).Scan(&value); err != nil {
+			return nil, err
+		}
+		state[item.name] = value
+	}
+	if member != "" {
+		var balance, sum, entries int64
+		err := x.w.f.owner.QueryRow(ctx, `SELECT balance,(SELECT coalesce(sum(delta),0) FROM loyalty.point_entries WHERE store_id=$1 AND member_id=$2),(SELECT count(*) FROM loyalty.point_entries WHERE store_id=$1 AND member_id=$2) FROM loyalty.members WHERE store_id=$1 AND id=$2`, x.formsStore, member).Scan(&balance, &sum, &entries)
+		if err != nil {
+			return nil, err
+		}
+		state["balance"], state["sum"], state["memberEntries"] = balance, sum, entries
+	}
+	x.mu.Lock()
+	defer x.mu.Unlock()
+	state["held"] = 0
+	if x.formsStarted {
+		state["held"] = 1
+	}
+	for _, req := range x.requests {
+		if req.Method == "POST" && strings.HasPrefix(req.Path, "/v1/admin/stores/"+x.formsStore+"/members") && !strings.HasSuffix(req.Path, "/search") {
+			state["writeRequests"]++
+		}
+	}
+	return state, nil
+}
+
+func w6uiFormsWrite(x *w6uiFixture, next http.Handler, w http.ResponseWriter, r *http.Request) {
+	x.mu.Lock()
+	fault, release := x.fault, x.formsHeld
+	if fault == "forms-hold" || fault == "forms-drop" {
+		x.fault = ""
+	}
+	x.mu.Unlock()
+	recorded := httptest.NewRecorder()
+	next.ServeHTTP(recorded, r) // Genuine production router + PG commit; no successful response stub.
+	x.mu.Lock()
+	x.requests = append(x.requests, w6uiRequest{r.Method, r.URL.Path, r.Header.Get("Idempotency-Key"), recorded.Code})
+	x.mu.Unlock()
+	if (fault == "forms-hold" || fault == "forms-drop") && recorded.Code >= 200 && recorded.Code < 300 {
+		var receipt int
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		err := x.w.f.owner.QueryRow(ctx, `SELECT count(*) FROM ops.command_results WHERE store_id=$1 AND idempotency_key=$2`, x.formsStore, r.Header.Get("Idempotency-Key")).Scan(&receipt)
+		cancel()
+		if err != nil || receipt != 1 {
+			http.Error(w, "M7 commit receipt SQL mismatch", 500)
+			return
+		}
+		x.mu.Lock()
+		x.formsStarted = true
+		x.mu.Unlock()
+		if fault == "forms-hold" {
+			timer := time.NewTimer(10 * time.Second)
+			defer timer.Stop()
+			select {
+			case <-release:
+			case <-r.Context().Done():
+				return
+			case <-timer.C:
+				http.Error(w, "M7 hold expired", 503)
+				return
+			}
+		} else {
+			if hj, ok := w.(http.Hijacker); ok {
+				if conn, _, err := hj.Hijack(); err == nil {
+					_ = conn.Close()
+					return
+				}
+			}
+			panic(http.ErrAbortHandler)
+		}
+	}
+	for key, values := range recorded.Header() {
+		w.Header()[key] = values
+	}
+	w.WriteHeader(recorded.Code)
+	_, _ = w.Write(recorded.Body.Bytes())
 }

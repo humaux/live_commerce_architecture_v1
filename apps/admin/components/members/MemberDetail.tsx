@@ -1,4 +1,4 @@
-// Purpose: authoritative member balance/info and append-only ledger read view.
+// Purpose: authoritative member balance/ledger with manual adjustment through one fenced form owner.
 // Depends on: members-client, existing WorkspaceFrame/DS, shared format and scoped native links.
 // Used by: members/[member]/page.tsx; actor fallback uses actual principal ID.
 "use client";
@@ -21,6 +21,7 @@ import { WorkspaceFrame } from "../WorkspaceFrame";
 import { MemberReadState, type MembersProps } from "./MemberList";
 import { membersCopy } from "./copy";
 import s from "./members.module.css";
+import { MemberForms } from "./MemberForms";
 export function MemberDetail({
   locale,
   store,
@@ -59,7 +60,22 @@ export function MemberDetail({
         <PageHeader
           breadcrumbLabel={c.title}
           title={data?.member.display_name ?? c.detail}
-          status={<Badge>{c.readOnly}</Badge>}
+          status={
+            !store?.permissions?.includes("customers:points") ? (
+              <Badge>{c.readOnly}</Badge>
+            ) : undefined
+          }
+        />
+        <MemberForms
+          locale={locale}
+          store={store}
+          member={data?.member}
+          memberId={member}
+          scope={`${renderKey}|${locale}|${store?.id}|${member}`}
+          boundary={read.boundary}
+          status={read.status}
+          onSaved={read.reload}
+          onRefresh={read.reload}
         />
         <MemberReadState
           status={read.status}
