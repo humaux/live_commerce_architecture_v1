@@ -14,6 +14,28 @@ export const CLICK_VARIANTS = [
 ];
 /** Every buyer route of docs/engineering/ui-architecture.md section 4 that the click sweep must open at every variant. */
 export const STOREFRONT_ROUTES = ["/", "/products", "/collections", "/collections/[slug]", "/products/[slug]", "/search", "/cart", "/checkout", "/orders/lookup", "/orders/[orderID]", "/order-link", "/claim", "/legal/anti-fraud", "/legal/[slug]", "/privacy", "/data-deletion", "/pages/[slug]"];
+/** Ordinary storefront walk in registry order. The caller owns the three cart-bearing click flows.
+ * Fixture templates are explicit: a new dynamic route must never navigate to a literal placeholder.
+ */
+export function storefrontWalk(facts, chrome, main, routes = STOREFRONT_ROUTES) {
+  const fixtureSlug = (value, route) => {
+    if (typeof value !== "string" || !value.trim() || /[\[\]]/.test(value)) throw new Error(`storefront fixture missing for ${route}`);
+    return value;
+  };
+  return routes.filter(route => !["/cart", "/checkout", "/orders/[orderID]"].includes(route)).map(route => {
+    let path = route === "/" ? "" : route;
+    switch (route) {
+      case "/collections/[slug]": path = `/collections/${fixtureSlug(facts.collections?.[0]?.slug, route)}`; break;
+      case "/products/[slug]": path = `/products/${fixtureSlug(facts.products?.[1]?.slug, route)}`; break;
+      case "/legal/[slug]": path = "/legal/refunds"; break;
+      case "/pages/[slug]": path = "/pages/about"; break;
+      case "/search": path = `/search?q=${encodeURIComponent("Sweep")}`; break;
+      default: if (/[\[\]]/.test(route)) throw new Error(`unsupported storefront route template: ${route}`);
+    }
+    return { route, path, ...(route === "/" ? { scopes: [chrome, ...main] } : {}),
+      ...(["/order-link", "/claim"].includes(route) ? { expectDegraded: true } : {}) };
+  });
+}
 /** The `page` text of every journey ledger row; J2/J3 and J2b run after the storefront desktop/zh-TW session (they need its COD order), so they share its shard. */
 export const JOURNEY_PAGES = {
   J1: ["J1 product editor -> storefront", "J1 storefront"],

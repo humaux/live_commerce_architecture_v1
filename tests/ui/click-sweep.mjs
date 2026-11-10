@@ -34,7 +34,7 @@ import { expect } from "@playwright/test";
 import { uploadJourneyMainCover } from "./product-media-journey.mjs";
 import { launch } from "../storefront/browser-engine.mjs";
 import { routes as adminRoutes } from "../../apps/admin/src/routes.ts";
-import { CLICK_VARIANTS, J23_OWNER, JOURNEY_PAGES, loadWeights, pageKey, parseShard, planClick, shardReport } from "./sweep-shard-lib.mjs";
+import { CLICK_VARIANTS, J23_OWNER, JOURNEY_PAGES, storefrontWalk, loadWeights, pageKey, parseShard, planClick, shardReport } from "./sweep-shard-lib.mjs";
 import {
   CANCEL_RE, INIT_SCRIPT, LAYER_CSS, Ledger, classKey, controlLabel, controlLocator, isCartLineRemoval, isDestructive, isIrreversible, isSignOut, listControls, matchKnown, monitor,
   degradedMessages, pageState, restore, settle, sweepControl, writeLedger,
@@ -278,22 +278,7 @@ async function storefrontSession(v, placed) {
   const main = [{ name: "main", selector: "#main" }];
   const chrome = { name: "chrome", selector: "body", exclude: "#main" };
   const product = facts.products[1];
-  const list = [
-    { route: "/", path: "", scopes: [chrome, ...main] },
-    { route: "/products", path: "/products" },
-    { route: "/collections", path: "/collections" },
-    { route: "/collections/[slug]", path: `/collections/${facts.collections[0].slug}` },
-    { route: "/products/[slug]", path: `/products/${product.slug}` },
-    { route: "/search", path: `/search?q=${encodeURIComponent("Sweep")}` },
-    { route: "/orders/lookup", path: "/orders/lookup" },
-    { route: "/order-link", path: "/order-link", expectDegraded: true }, // a link page opened without its token shows the refused-link view by design
-    { route: "/claim", path: "/claim", expectDegraded: true },
-    { route: "/legal/anti-fraud", path: "/legal/anti-fraud" },
-    { route: "/legal/[slug]", path: "/legal/refunds" },
-    { route: "/privacy", path: "/privacy" },
-    { route: "/data-deletion", path: "/data-deletion" },
-    { route: "/pages/[slug]", path: "/pages/about" },
-  ];
+  const list = storefrontWalk(facts, chrome, main);
   try {
     // cart, checkout and the order page first: they need a pristine cart, which the buyer fills with real clicks (also the first steps of journey J2)
     if (wanted("/cart") || wanted("/checkout") || wanted("/orders/[orderID]") || run("journeys")) {
