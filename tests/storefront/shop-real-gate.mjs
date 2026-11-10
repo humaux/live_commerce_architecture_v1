@@ -318,6 +318,7 @@ try {
 
   await checkOfflineError({ browser, origin, control }); // OC-11: logged, not counted in `cases`
   await checkBuyerParityStates({ browser, origin, evidence });
+  await checkContactNative({ browser, origin, evidence });
 
   console.log(`engine=${engine} cases=${cases} REAL-STACK (SANDBOX)`);
 } finally {
