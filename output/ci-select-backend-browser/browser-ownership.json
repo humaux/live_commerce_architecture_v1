@@ -128,7 +128,7 @@
     "tests/admin/logistics-request.test.ts": "01dea5be1b52e6380af48d717a536b0fd440116fb089b562af835abe8cbe36c5",
     "tests/admin/manual-fulfilment.spec.ts": "76745d29bd4fd71f395822db298fdd18f64796390757182f23c6734057131514",
     "tests/admin/members-bff.test.ts": "f0b7e7f722e0e40b7c51af6db09fa41993b2499555094fcf2f692be2cc6e5bb4",
-    "tests/admin/members-client-write.test.ts": "e667301bea6f07ffc4da2e5d96d814e0fc31bbf593dad3ff14971d293da9c4a5",
+    "tests/admin/members-client-write.test.ts": "16a30fa461ccb2c175f7d9cc505e7a44713e69021aae8184b57e401f1b571f7c",
     "tests/admin/members-read.spec.ts": "b92d4c2c301ca45a58d77ef74b8749dab2e75323acab4083822042ce2c710259",
     "tests/admin/members-read.test.ts": "846cdbf58714b8e85b4889939e57d6556112d824201b8a42356fc88df9b40d93",
     "tests/admin/members-real-pg.mjs": "d80d7abb6bf9b40c2192c76488020cbb8bd6954c2eb3a89eb72690e3ec52a116",
