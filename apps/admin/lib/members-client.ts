@@ -430,6 +430,8 @@ export type MemberWriteCode =
   | "signed-out"
   | "forbidden"
   | "not-found"
+  | "reauth_required"
+  | "export_too_large"
   | "points_insufficient"
   | "member_erased"
   | "idempotency_conflict"
@@ -587,6 +589,104 @@ export function adjustPoints(
     return { entry, balance: num(p.balance, 0, 1e12) };
   });
 }
+/** SQL export_member returns the full flat ledger, without staff display names. */
+export type MemberExportEntry = Omit<
+  AdjustmentEntry,
+  "member_id" | "reason"
+> & {
+  reason: "manual_adjust" | "manual_order_award";
+};
+export type MemberExport = { member: Member; entries: MemberExportEntry[] };
+export type MemberErasure = {
+  member_id: string;
+  erased_at: string;
+  entries_redacted: number;
+};
+/** Return validated JSON in memory only; callers own scope cancellation and explicit same-key recovery. */
+export function exportMember(
+  store: string,
+  member: string,
+  key: string,
+  signal: AbortSignal,
+): Promise<MemberExport> {
+  const target = writeID(member),
+    path = `/api/stores/${writeID(store)}/members/${target}/export`,
+    stableKey = writeKey(key);
+  return writeMemberCommand(
+    path,
+    "{}",
+    stableKey,
+    signal,
+    (v) => {
+      const p = obj(v);
+      const member = parseMember(
+        { member: p.member, entries: [], next_ledger_cursor: null },
+        target,
+      ).member;
+      // The byte limit is enforced by the shared reader; do not reuse the 50-row read-page cap.
+      const entries = rows(p.entries, 1048576, (v): MemberExportEntry => {
+        const e = obj(v);
+        const delta = num(e.delta, -1e6, 1e6);
+        if (
+          delta === 0 ||
+          (e.reason !== "manual_adjust" && e.reason !== "manual_order_award")
+        )
+          return invalid();
+        return {
+          id: id(e.id),
+          delta,
+          reason: e.reason,
+          order_id: e.order_id === null ? null : id(e.order_id),
+          note: nullable(e.note),
+          actor_principal_id: id(e.actor_principal_id),
+          created_at: date(e.created_at),
+        };
+      });
+      // A tombstone must never deliver stale member or ledger text after erasure.
+      if (
+        member.erased_at !== null &&
+        (member.display_name !== "[erased]" ||
+          member.contact_note !== null ||
+          member.notes !== null ||
+          entries.some(
+            (entry) => entry.note !== null && entry.note !== "[erased]",
+          ))
+      )
+        return invalid();
+      return { member, entries };
+    },
+    "POST",
+    true,
+  );
+}
+/** The privacy endpoint takes {}, unlike customer erasure's separate confirmation contract. */
+export function eraseMember(
+  store: string,
+  member: string,
+  key: string,
+  signal: AbortSignal,
+): Promise<MemberErasure> {
+  const target = writeID(member),
+    path = `/api/stores/${writeID(store)}/members/${target}/erasure`,
+    stableKey = writeKey(key);
+  return writeMemberCommand(
+    path,
+    "{}",
+    stableKey,
+    signal,
+    (v) => {
+      const p = obj(v);
+      if (id(p.member_id) !== target) return invalid();
+      return {
+        member_id: target,
+        erased_at: date(p.erased_at),
+        entries_redacted: num(p.entries_redacted, 0, Number.MAX_SAFE_INTEGER),
+      };
+    },
+    "POST",
+    true,
+  );
+}
 /** One keyed command, no receipt inference/replay/storage; all awaits share one 15s deadline and caller scope signal. */
 async function writeMemberCommand<T>(
   path: string,
@@ -595,6 +695,7 @@ async function writeMemberCommand<T>(
   signal: AbortSignal,
   parse: (v: unknown) => T,
   method: "POST" | "PATCH" = "POST",
+  privacy = false,
 ): Promise<T> {
   if (new TextEncoder().encode(body).length > 16384) return invalidWrite();
   const csrf = csrfCookie(),
@@ -673,7 +774,7 @@ async function writeMemberCommand<T>(
       throw new MemberWriteError("signed-out", "unknown");
     }
     if (fence.aborted) throw new Error();
-    if (response.status === 403)
+    if (response.status === 403 && !privacy)
       throw new MemberWriteError("forbidden", "rejected");
     if (response.status === 404)
       throw new MemberWriteError("not-found", "rejected");
@@ -713,11 +814,18 @@ async function writeMemberCommand<T>(
       throw new MemberWriteError("signed-out", "unknown");
     }
     if (fence.aborted) throw new Error();
+    if (response.status === 403)
+      throw new MemberWriteError(
+        obj(raw).code === "reauth_required" ? "reauth_required" : "forbidden",
+        "rejected",
+      );
+    if (privacy && response.ok && response.status !== 200) throw new Error();
     if (response.status === 409 || response.status === 422) {
       const code = obj(raw).code;
       if (
         (response.status === 409 &&
           [
+            "export_too_large",
             "points_insufficient",
             "member_erased",
             "idempotency_conflict",
