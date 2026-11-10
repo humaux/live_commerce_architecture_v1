@@ -768,7 +768,7 @@
     "tests/storefront/contact-native.spec.ts": "ae3fe240431938ce6b6b4dee3f7c29368d31885433b6f621a9bdcde6c2830f4c",
     "tests/storefront/cvs-buyer.mjs": "4b8413485bf78e9dc3f4012ebd03caa0187280c15548f31c4c1426074deaf1f7",
     "tests/storefront/cvs-pap-only.mjs": "5cfb53e5dee4fb24445919f5444bfd0540a2eaea25123ff7475a95a5d9e10e14",
-    "tests/storefront/cvs-picker.mjs": "ead5d53f097166d49f62b8cbc03db1300efa9c78e6f9de7a8ded0bdb345b7777",
+    "tests/storefront/cvs-picker.mjs": "53a2935ebb107c1495390c308f5e827836fd820eb9ff7928d2acf383ef6aa905",
     "tests/storefront/home-cod-buyer.mjs": "6e1922d58aa75e6ce2c5f8c57279852e513421e58ddc1103bc4574fd8bb3dbd8",
     "tests/storefront/legal-pages.mjs": "75096e2148250a804a3ed4a35d29eae48aa017dec6978c569deb2a03d9341cbf",
     "tests/storefront/manual-order-link-gate.mjs": "e0ad778e0e0b73ad52021ba33e60e5892f7eed6210db2f36802e3337d79da4cc",
