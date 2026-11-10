@@ -10,9 +10,69 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync, readFileSyn
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { discover, verifyClick, verifyVisual } from "./sweep-aggregate.mjs";
-import { CLICK_VARIANTS, JOURNEY_PAGES, STOREFRONT_ROUTES, VISUAL_LOCALES, VISUAL_VIEWPORTS, assignShards, loadWeights, parseShard, planClick, routeId, shardReport } from "./sweep-shard-lib.mjs";
+import { CLICK_VARIANTS, JOURNEY_PAGES, STOREFRONT_ROUTES, VISUAL_LOCALES, VISUAL_VIEWPORTS, assignShards, loadWeights, parseShard, planClick, routeId, shardReport, storefrontWalk } from "./sweep-shard-lib.mjs";
 
 const weights = await loadWeights();
+
+// Evaluate the actual executor's list expression with the shared helper, without starting a browser.
+const walkFacts = { products: [{}, { slug: "fixture-product" }], collections: [{ slug: "fixture-collection" }] };
+const walkChrome = { name: "chrome", selector: "body", exclude: "#main" };
+const walkMain = [{ name: "main", selector: "#main" }];
+function executorWalk(routes = STOREFRONT_ROUTES, facts = walkFacts) {
+  const raw = readFileSync("tests/ui/click-sweep.mjs", "utf8");
+  const start = raw.indexOf("  const list =", raw.indexOf("async function storefrontSession"));
+  const end = raw.indexOf("\n  try {", start);
+  assert.ok(start >= 0 && end > start);
+  assert.match(raw.slice(end, raw.indexOf("// ---- journeys by clicks", end)), /for \(const r of list\)/);
+  return new Function("storefrontWalk", "facts", "chrome", "main", "const product = facts.products?.[1];" + raw.slice(start, end) + "; return list;")(
+    (f, c, m) => storefrontWalk(f, c, m, routes), facts, walkChrome, walkMain);
+}
+
+test("storefront executor: exact legacy mappings plus three unique click-only routes", () => {
+  const expected = [
+    { route: "/", path: "", scopes: [walkChrome, ...walkMain] },
+    { route: "/products", path: "/products" },
+    { route: "/collections", path: "/collections" },
+    { route: "/collections/[slug]", path: "/collections/fixture-collection" },
+    { route: "/products/[slug]", path: "/products/fixture-product" },
+    { route: "/search", path: "/search?q=Sweep" },
+    { route: "/orders/lookup", path: "/orders/lookup" },
+    { route: "/order-link", path: "/order-link", expectDegraded: true },
+    { route: "/claim", path: "/claim", expectDegraded: true },
+    { route: "/legal/anti-fraud", path: "/legal/anti-fraud" },
+    { route: "/legal/[slug]", path: "/legal/refunds" },
+    { route: "/privacy", path: "/privacy" },
+    { route: "/data-deletion", path: "/data-deletion" },
+    { route: "/pages/[slug]", path: "/pages/about" },
+  ];
+  assert.deepEqual(executorWalk(), expected);
+  const special = ["/cart", "/checkout", "/orders/[orderID]"];
+  const all = [...executorWalk().map(r => r.route), ...special];
+  assert.equal(all.length, 17);
+  assert.equal(new Set(all).size, 17);
+  assert.deepEqual(all.sort(), [...STOREFRONT_ROUTES].sort());
+  const raw = readFileSync("tests/ui/click-sweep.mjs", "utf8");
+  const session = raw.slice(raw.indexOf("async function storefrontSession"), raw.indexOf("// ---- journeys by clicks"));
+  for (const route of special) assert.equal(session.split(`await sweep({ route: "${route}"`).length - 1, 1);
+  assert.ok(session.indexOf('await addToCartByClicks') < session.indexOf('route: "/cart"'));
+  assert.ok(session.indexOf('route: "/cart"') < session.indexOf('route: "/checkout"'));
+  assert.ok(session.indexOf('await placeCodOrder') < session.indexOf('route: "/orders/[orderID]"'));
+  assert.ok(session.indexOf('route: "/orders/[orderID]"') < session.indexOf('for (const r of list)'));
+});
+
+test("storefront executor: registered contact enters the same ordinary walk", () => {
+  const routes = [...STOREFRONT_ROUTES, "/contact"];
+  assert.deepEqual(executorWalk(routes).at(-1), { route: "/contact", path: "/contact" });
+  assert.equal(executorWalk(routes).filter(r => r.route === "/contact").length, 1);
+});
+
+test("storefront executor: missing dynamic fixture or unsupported template fails explicitly", () => {
+  for (const facts of [{}, { products: [{}], collections: [{}] }, { ...walkFacts, collections: [] }, { ...walkFacts, products: [{}, {slug: ""}] }]) {
+    assert.throws(() => executorWalk(STOREFRONT_ROUTES, facts), /storefront.*fixture/i);
+  }
+  assert.throws(() => executorWalk([...STOREFRONT_ROUTES, "/future/[slug]"]), /unsupported storefront route template/i);
+});
+
 
 test("LP2 actual generic registry URL builders resolve member UUID and fail closed without a fixture", () => {
   const member = "33333333-3333-4333-8333-333333333333";
