@@ -412,6 +412,8 @@ func TestBrowserStorefront(t *testing.T) {
 		t.Fatalf("offline-error.spec.ts did not report; evidence=%s", evidence)
 	}
 
+	// tests/storefront/contact-native.spec.ts is actually awaited by shop-real-gate.mjs;
+	// this Go caller independently verifies its complete 61-case native contact ledger.
 	assertSFRContactLedger(t, evidence, string(out))
 
 	// ---- independent PG readback ----------------------------------------------------------------------------------------------------

@@ -320,7 +320,7 @@
     "tests/foundation/browser_store_domains_test.go": "13ebb75fb6440d6089a6a554a02b94c0779a9b9e6896140ef594055ff3406d53",
     "tests/foundation/browser_storefront_fixture_test.go": "25d96f19df47622f79a19421d6aa2667280c7fc364cb086741e567b37361eb4a",
     "tests/foundation/browser_storefront_publish_test.go": "c5dab984c74291d4670311f2e1d3d465e667aa8f04570044cc826d74d08f5da3",
-    "tests/foundation/browser_storefront_test.go": "10f338cc909c1fc8f666b797bec78fc33cbab49ae14a8de6479676ec302d5d1f",
+    "tests/foundation/browser_storefront_test.go": "8e36753e60463942b15384ba18e03666173bc5d7777506f6459046d2c18b3f6a",
     "tests/foundation/browser_stripe_pool_lifetime_test.go": "31ee4ac25c34a44086f1afda7734a3d437065dcea180acbe10ac11267e09705a",
     "tests/foundation/browser_stripe_test.go": "608b58ff85ec353298696fd1ab8f14b8faeae3b90c325de9ae361bb6ac6b908e",
     "tests/foundation/browser_studio_bff_test.go": "0a2429916f451d208b0b7a7f69f39cb79d8087f88659b96fe876ba2ae5e41221",
@@ -2585,6 +2585,7 @@
     "--browser-storefront": {
       "specs": [
         "apps/storefront/tests/shop.test.mjs",
+        "tests/storefront/contact-native.spec.ts",
         "tests/storefront/offline-error.spec.ts",
         "tests/storefront/shop-real-gate.mjs",
         "tests/storefront/storefront-publish-gate.mjs"
@@ -2625,6 +2626,7 @@
         "registry:--browser-storefront:server/import apps/storefront",
         "scripts/dev/test-local.sh:--browser-storefront:lc_build=storefront",
         "tests/foundation/browser_storefront_publish_test.go -> tests/storefront/storefront-publish-gate.mjs",
+        "tests/foundation/browser_storefront_test.go -> tests/storefront/contact-native.spec.ts",
         "tests/foundation/browser_storefront_test.go -> tests/storefront/offline-error.spec.ts",
         "tests/foundation/browser_storefront_test.go -> tests/storefront/shop-real-gate.mjs",
         "tests/storefront/offline-error.spec.ts:import apps/storefront/lib/shop-copy.ts",
