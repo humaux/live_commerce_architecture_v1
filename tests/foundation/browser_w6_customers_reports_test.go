@@ -8,10 +8,13 @@
 package foundation_test
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image/png"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -20,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -56,6 +60,15 @@ type w6uiFixture struct {
 	heldStarted                                                                                       bool
 	formsStore, formsAlt, formsPrincipal, formsToken                                                  string
 	formsHeld                                                                                         chan struct{}
+	formsCase                                                                                         string
+	formsEvidence                                                                                     string
+	formsFixtureToken                                                                                 string
+	formsTrace                                                                                        []w6uiFormsSQLRow
+	formsAliases                                                                                      map[string]int
+	formsSeen                                                                                         map[string][32]byte
+	formsKeyBodyUnchanged                                                                             bool
+	formsTransport                                                                                    int64
+	formsFixtureCommands                                                                              int64
 	formsStarted                                                                                      bool
 }
 
@@ -329,6 +342,19 @@ func w6uiRun(t *testing.T, mode string) {
 		})
 		t.Run("members-forms", func(t *testing.T) {
 			w6uiPrepareForms(t, x)
+			x.formsEvidence = evidence
+			sha, err := exec.CommandContext(ctx, "git", "-C", stack.root, "rev-parse", "HEAD").Output()
+			if err != nil {
+				t.Fatal(err)
+			}
+			env["LC_M7_SOURCE_SHA"] = strings.TrimSpace(string(sha))
+			for key, file := range map[string]string{"LC_M7_SPEC_SHA256": "tests/admin/members-forms.spec.ts", "LC_M7_GO_SHA256": "tests/foundation/browser_w6_customers_reports_test.go"} {
+				body, err := os.ReadFile(filepath.Join(stack.root, file))
+				if err != nil {
+					t.Fatal(err)
+				}
+				env[key] = fmt.Sprintf("%x", sha256.Sum256(body))
+			}
 			env["LC_W6UI_FORMS_STORE"], env["LC_W6UI_FORMS_ALT"] = x.formsStore, x.formsAlt
 			// Actual focused unit command: node --test --experimental-strip-types tests/admin/members-forms.test.ts.
 			// Native production-built UI: tests/admin/members-forms.spec.ts; original read subtest already settled.
@@ -337,8 +363,8 @@ func w6uiRun(t *testing.T, mode string) {
 			var completion struct {
 				Cases []string `json:"cases"`
 			}
-			if err != nil || json.Unmarshal(data, &completion) != nil || len(completion.Cases) != 11 {
-				t.Fatalf("M7-FORMS-REGISTERED-COMPLETION: missing eleven completed native cases: %v", err)
+			if err != nil || json.Unmarshal(data, &completion) != nil || !w6uiFormsCasesMatch(completion.Cases) {
+				t.Fatalf("M7-FORMS-REGISTERED-COMPLETION: missing exact seventeen completed native cases: %v", err)
 			}
 			data, err = os.ReadFile(filepath.Join(evidence, "members-forms-click-ledger.json"))
 			var rows []struct {
@@ -353,9 +379,10 @@ func w6uiRun(t *testing.T, mode string) {
 				}
 			}
 			state, err := w6uiFormsState(x, "")
-			if err != nil || state["members"] != int64(10) {
+			if err != nil || state["members"] != 16 || state["entries"] != 16 || state["commands"] != 34 || state["totalBalance"] != 192 || state["erasedMembers"] != 2 || state["writeRequests"] != 35 {
 				t.Fatalf("M7-FORMS-SQL: member effects mismatch: %v %v", state, err)
 			}
+			w6uiVerifyFormsC(t, x, evidence)
 		})
 	}
 	x.mu.Lock()
@@ -571,10 +598,58 @@ func w6uiStart(t *testing.T, ctx context.Context, x *w6uiFixture, evidence strin
 				x.formsHeld = nil
 			}
 			x.mu.Unlock()
+		case "/forms-case":
+			valid := false
+			for i := range w6uiFormsCases() {
+				if in.Mode == fmt.Sprintf("C%02d", i+1) {
+					valid = true
+				}
+			}
+			if !valid {
+				http.Error(w, "invalid forms case", 422)
+				return
+			}
+			x.mu.Lock()
+			x.formsCase = in.Mode
+			x.formsAliases = map[string]int{}
+			x.formsTransport = 0
+			x.mu.Unlock()
+		case "/forms-erase":
+			x.mu.Lock()
+			allowed := x.formsCase == "C15" || x.formsCase == "C16"
+			x.mu.Unlock()
+			if !allowed {
+				http.Error(w, "fixture scope refused", 403)
+				return
+			}
+			var present int
+			e = x.w.f.owner.QueryRow(r.Context(), `SELECT count(*) FROM loyalty.members WHERE store_id=$1 AND id=$2`, x.formsStore, in.Mode).Scan(&present)
+			if e == nil && present == 1 {
+				e = platform.WithScope(r.Context(), x.w.f.runtime, x.formsFixtureToken, x.formsStore, "customers:privacy", func(tx pgx.Tx, sc platform.Scope) error {
+					_, _, err := loyalty.Erase(r.Context(), tx, sc, x.formsFixtureToken, t04Key("m7-c-fixture-erase"), in.Mode)
+					return err
+				})
+				if e == nil {
+					x.mu.Lock()
+					x.formsFixtureCommands++
+					x.mu.Unlock()
+				}
+			} else if e == nil {
+				e = fmt.Errorf("synthetic member absent")
+			}
 		case "/forms-state":
-			state, err := w6uiFormsState(x, in.Mode)
+			phase, member, ok := strings.Cut(in.Mode, "|")
+			if !ok || !w6uiFormsPhaseAllowed(phase) {
+				http.Error(w, "invalid snapshot phase", 422)
+				return
+			}
+			state, err := w6uiFormsState(x, member)
 			if err != nil {
 				http.Error(w, "forms SQL read failed", 500)
+				return
+			}
+			if err := w6uiRecordFormsSQL(x, phase, member, state); err != nil {
+				http.Error(w, "SQL sidecar persistence failed", 500)
 				return
 			}
 			w.Header().Set("Content-Type", "application/json")
@@ -588,6 +663,11 @@ func w6uiStart(t *testing.T, ctx context.Context, x *w6uiFixture, evidence strin
 					_, _, err := loyalty.Adjust(r.Context(), tx, sc, x.formsToken, t04Key("forms-race"), in.Mode, loyalty.AdjustInput{Delta: -balance, Note: "synthetic concurrent deduction"})
 					return err
 				})
+				if e == nil {
+					x.mu.Lock()
+					x.formsFixtureCommands++
+					x.mu.Unlock()
+				}
 			}
 		case "/members-release":
 			x.mu.Lock()
@@ -1015,6 +1095,9 @@ func w6uiPrepareForms(t *testing.T, x *w6uiFixture) {
 	x.actors["forms-points"] = x.formsPrincipal
 	reader, _ := lcPrincipal(t, x.w.f, x.w.tenant, []string{x.formsStore}, "store:read", "customers:read")
 	x.actors["forms-reader"] = reader
+	_, x.formsFixtureToken = lcPrincipal(t, x.w.f, x.w.tenant, []string{x.formsStore}, "store:read", "customers:privacy")
+	x.formsSeen = map[string][32]byte{}
+	x.formsKeyBodyUnchanged = true
 	for _, permission := range []string{"store:read", "customers:read"} {
 		mustExec(t, x.w.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4)`, x.w.tenant, x.formsAlt, x.formsPrincipal, permission)
 	}
@@ -1052,8 +1135,27 @@ func w6uiFormsState(x *w6uiFixture, member string) (map[string]int64, error) {
 		}
 		state["balance"], state["sum"], state["memberEntries"] = balance, sum, entries
 	}
+	var total, erased, altMembers, altEntries, altCommands int64
+	if err := x.w.f.owner.QueryRow(ctx, `SELECT coalesce(sum(balance),0),count(*) FILTER(WHERE erased_at IS NOT NULL) FROM loyalty.members WHERE store_id=$1`, x.formsStore).Scan(&total, &erased); err != nil {
+		return nil, err
+	}
+	if err := x.w.f.owner.QueryRow(ctx, `SELECT (SELECT count(*) FROM loyalty.members WHERE store_id=$1),(SELECT count(*) FROM loyalty.point_entries WHERE store_id=$1),(SELECT count(*) FROM ops.command_results WHERE store_id=$1 AND operation LIKE 'loyalty.%')`, x.formsAlt).Scan(&altMembers, &altEntries, &altCommands); err != nil {
+		return nil, err
+	}
+	state["totalBalance"], state["erasedMembers"] = total, erased
+	var sessions, revoked int64
+	if err := x.w.f.owner.QueryRow(ctx, `SELECT count(*),count(*) FILTER(WHERE revoked_at IS NOT NULL) FROM identity.sessions WHERE principal_id=$1`, x.formsPrincipal).Scan(&sessions, &revoked); err != nil {
+		return nil, err
+	}
+	state["actorSessions"], state["revokedSessions"] = sessions, revoked
+	state["altMembers"], state["altEntries"], state["altCommands"] = altMembers, altEntries, altCommands
 	x.mu.Lock()
 	defer x.mu.Unlock()
+	state["transportState"], state["fixtureCommands"] = x.formsTransport, x.formsFixtureCommands
+	state["keyBodyUnchanged"] = 0
+	if x.formsKeyBodyUnchanged {
+		state["keyBodyUnchanged"] = 1
+	}
 	state["held"] = 0
 	if x.formsStarted {
 		state["held"] = 1
@@ -1073,6 +1175,20 @@ func w6uiFormsWrite(x *w6uiFixture, next http.Handler, w http.ResponseWriter, r 
 		x.fault = ""
 	}
 	x.mu.Unlock()
+	body, err := io.ReadAll(io.LimitReader(r.Body, 16385))
+	if err != nil {
+		http.Error(w, "fixture body read failed", 400)
+		return
+	}
+	r.Body = io.NopCloser(bytes.NewReader(body))
+	x.mu.Lock()
+	command := r.URL.Path + "|" + r.Header.Get("Idempotency-Key")
+	digest := sha256.Sum256(body)
+	if before, seen := x.formsSeen[command]; seen && before != digest {
+		x.formsKeyBodyUnchanged = false
+	}
+	x.formsSeen[command] = digest // Memory only; neither key/body nor their hashes enter evidence.
+	x.mu.Unlock()
 	recorded := httptest.NewRecorder()
 	next.ServeHTTP(recorded, r) // Genuine production router + PG commit; no successful response stub.
 	x.mu.Lock()
@@ -1089,19 +1205,32 @@ func w6uiFormsWrite(x *w6uiFixture, next http.Handler, w http.ResponseWriter, r 
 		}
 		x.mu.Lock()
 		x.formsStarted = true
+		x.formsTransport = 1
 		x.mu.Unlock()
 		if fault == "forms-hold" {
 			timer := time.NewTimer(10 * time.Second)
 			defer timer.Stop()
 			select {
 			case <-release:
+				x.mu.Lock()
+				x.formsTransport = 2
+				x.mu.Unlock()
 			case <-r.Context().Done():
+				x.mu.Lock()
+				x.formsTransport = 3
+				x.mu.Unlock()
 				return
 			case <-timer.C:
+				x.mu.Lock()
+				x.formsTransport = 5
+				x.mu.Unlock()
 				http.Error(w, "M7 hold expired", 503)
 				return
 			}
 		} else {
+			x.mu.Lock()
+			x.formsTransport = 4
+			x.mu.Unlock()
 			if hj, ok := w.(http.Hijacker); ok {
 				if conn, _, err := hj.Hijack(); err == nil {
 					_ = conn.Close()
@@ -1116,4 +1245,310 @@ func w6uiFormsWrite(x *w6uiFixture, next http.Handler, w http.ResponseWriter, r 
 	}
 	w.WriteHeader(recorded.Code)
 	_, _ = w.Write(recorded.Body.Bytes())
+}
+
+// C acceptance expectations are independently hardcoded from the root's exact17 card, never imported from browser output.
+type w6uiFormsCase struct {
+	Title                                               string
+	Members, Entries, Commands, Balance, Writes, Erased int64
+	Phases                                              []string
+}
+
+func w6uiFormsCases() []w6uiFormsCase {
+	return []w6uiFormsCase{
+		{"REAL_PG forms en/1440", 1, 2, 3, 30, 3, 0, []string{"create_ack", "note_blank", "note_space", "adjust50", "adjust30", "geometry"}},
+		{"REAL_PG forms en/375", 1, 2, 3, 30, 3, 0, []string{"create_ack", "note_blank", "note_space", "adjust50", "adjust30", "geometry"}},
+		{"REAL_PG forms zh-TW/1440", 1, 2, 3, 30, 3, 0, []string{"create_ack", "note_blank", "note_space", "adjust50", "adjust30", "geometry"}},
+		{"REAL_PG forms zh-TW/375", 1, 2, 3, 30, 3, 0, []string{"create_ack", "note_blank", "note_space", "adjust50", "adjust30", "geometry"}},
+		{"REAL_PG forms zh-CN/1440", 1, 2, 3, 30, 3, 0, []string{"create_ack", "note_blank", "note_space", "adjust50", "adjust30", "geometry"}},
+		{"REAL_PG forms zh-CN/375", 1, 2, 3, 30, 3, 0, []string{"create_ack", "note_blank", "note_space", "adjust50", "adjust30", "geometry"}},
+		{"REAL_PG forms reader permission and opaque foreign refusal", 0, 0, 0, 0, 1, 0, []string{"reader_detail"}},
+		{"REAL_PG forms create pending double click then committed UNKNOWN never resends", 1, 0, 1, 0, 1, 0, []string{"unknown", "refreshed", "escape_blocked"}},
+		{"REAL_PG forms adjust committed UNKNOWN reads SQL effect exactly once", 1, 1, 2, 5, 2, 0, []string{"unknown", "refreshed", "escape_blocked"}},
+		{"REAL_PG forms held commit suppresses stale store and logout completion", 1, 0, 1, 0, 1, 0, []string{"committed", "logout"}},
+		{"REAL_PG forms genuine server race refusal and correction controls", 1, 2, 3, 0, 4, 0, []string{"race_fixture", "refused"}},
+		{"REAL_PG forms same-tab store history boundary", 1, 0, 1, 0, 1, 0, []string{"committed", "other_store", "released"}},
+		{"REAL_PG forms same-tab member history boundary", 2, 1, 3, 7, 3, 0, []string{"A_before", "B_before", "committed", "B_after", "released"}},
+		{"REAL_PG forms reauthenticated session epoch", 1, 0, 1, 0, 1, 0, []string{"committed", "new_session", "released"}},
+		{"REAL_PG forms erased before open", 1, 0, 2, 0, 1, 1, []string{"erase_fixture", "erased_disabled"}},
+		{"REAL_PG forms erased after review", 1, 0, 2, 0, 2, 1, []string{"erase_fixture", "refused"}},
+		{"REAL_PG forms unavailable member read state", 0, 0, 0, 0, 0, 0, []string{"read404"}},
+	}
+}
+func w6uiFormsCasesMatch(actual []string) bool {
+	expected := w6uiFormsCases()
+	if len(actual) != len(expected) {
+		return false
+	}
+	seen := map[string]bool{}
+	for _, v := range actual {
+		if seen[v] {
+			return false
+		}
+		seen[v] = true
+	}
+	for _, v := range expected {
+		if !seen[v.Title] {
+			return false
+		}
+	}
+	return true
+}
+func w6uiFormsPhaseAllowed(phase string) bool {
+	if phase == "before" || phase == "final" || phase == "snapshot" {
+		return true
+	}
+	for _, c := range w6uiFormsCases() {
+		for _, v := range c.Phases {
+			if phase == v {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+type w6uiFormsSQLRow struct {
+	Case             string           `json:"case"`
+	Phase            string           `json:"phase"`
+	Seq              int              `json:"seq"`
+	Actor            string           `json:"actor"`
+	Store            string           `json:"store"`
+	Member           int              `json:"member"`
+	Counts           map[string]int64 `json:"counts"`
+	KeyBodyUnchanged bool             `json:"key_body_unchanged"`
+}
+
+func w6uiRecordFormsSQL(x *w6uiFixture, phase, member string, state map[string]int64) error {
+	x.mu.Lock()
+	defer x.mu.Unlock()
+	if x.formsCase == "" || x.formsEvidence == "" {
+		return fmt.Errorf("unbound forms case/evidence")
+	}
+	allowed := phase == "before" || phase == "final" || phase == "snapshot" || phase == "geometry"
+	for i, c := range w6uiFormsCases() {
+		if x.formsCase == fmt.Sprintf("C%02d", i+1) {
+			for _, v := range c.Phases {
+				allowed = allowed || phase == v
+			}
+		}
+	}
+	if !allowed {
+		return fmt.Errorf("snapshot phase outside case contract")
+	}
+	ordinal := 0
+	if member != "" {
+		ordinal = x.formsAliases[member]
+		if ordinal == 0 {
+			ordinal = len(x.formsAliases) + 1
+			x.formsAliases[member] = ordinal
+		}
+	}
+	seq := 0
+	for _, v := range x.formsTrace {
+		if v.Case == x.formsCase {
+			seq++
+		}
+	}
+	state["phaseSeq"] = int64(seq)
+	state["memberAlias"] = int64(ordinal)
+	copy := map[string]int64{}
+	for k, v := range state {
+		copy[k] = v
+	}
+	actor := "P"
+	if x.formsCase == "C07" {
+		actor = "R"
+	}
+	x.formsTrace = append(x.formsTrace, w6uiFormsSQLRow{x.formsCase, phase, seq, actor, "S", ordinal, copy, x.formsKeyBodyUnchanged})
+	body, err := json.MarshalIndent(x.formsTrace, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(x.formsEvidence, "members-forms-go-sql.json"), body, 0600)
+}
+func w6uiVerifyFormsC(t *testing.T, x *w6uiFixture, evidence string) {
+	t.Helper()
+	body, err := os.ReadFile(filepath.Join(evidence, "members-forms-sql-ledger.json"))
+	var browser []struct {
+		Actor            string           `json:"actor"`
+		Store            string           `json:"store"`
+		Member           int              `json:"member"`
+		Case             string           `json:"case"`
+		Phase            string           `json:"phase"`
+		Seq              int              `json:"seq"`
+		Counts           map[string]int64 `json:"counts"`
+		UI               string           `json:"ui_state"`
+		SessionChanged   bool             `json:"session_changed"`
+		KeyBodyUnchanged bool             `json:"key_body_unchanged"`
+	}
+	if err != nil || json.Unmarshal(body, &browser) != nil {
+		t.Fatal("M7-C-SQL-SIDECAR: browser numeric/state ledger missing or malformed")
+	}
+	x.mu.Lock()
+	trace := append([]w6uiFormsSQLRow(nil), x.formsTrace...)
+	x.mu.Unlock()
+	body, err = os.ReadFile(filepath.Join(evidence, "members-forms-go-sql.json"))
+	var persisted []w6uiFormsSQLRow
+	if err != nil || json.Unmarshal(body, &persisted) != nil || !reflect.DeepEqual(trace, persisted) || len(browser) != len(trace) {
+		t.Fatal("M7-C-SQL-SIDECAR: independent persisted Go trace mismatch")
+	}
+	for i, row := range trace {
+		b := browser[i]
+		if row.Actor != b.Actor || row.Store != b.Store || row.Member != b.Member || row.Case != b.Case || row.Phase != b.Phase || row.Seq != b.Seq || !reflect.DeepEqual(row.Counts, b.Counts) || !row.KeyBodyUnchanged || !b.KeyBodyUnchanged || b.UI == "" {
+			t.Fatal("M7-C-SQL-SIDECAR: provenance/schema/reconciliation mismatch")
+		}
+	}
+	for i, c := range w6uiFormsCases() {
+		alias := fmt.Sprintf("C%02d", i+1)
+		phases := map[string]bool{}
+		var before, after map[string]int64
+		session := false
+		for j, row := range trace {
+			if row.Case != alias {
+				continue
+			}
+			phases[row.Phase] = true
+			if row.Phase == "before" {
+				before = row.Counts
+			}
+			if row.Phase == "final" {
+				after = row.Counts
+			}
+			session = session || browser[j].SessionChanged
+		}
+		if before == nil || after == nil {
+			t.Fatalf("M7-C-SQL-PHASE: %s missing before/final", alias)
+		}
+		for _, phase := range c.Phases {
+			if !phases[phase] {
+				t.Fatalf("M7-C-SQL-PHASE: %s missing %s", alias, phase)
+			}
+		}
+		for _, v := range []struct {
+			k    string
+			want int64
+		}{{"members", c.Members}, {"entries", c.Entries}, {"commands", c.Commands}, {"totalBalance", c.Balance}, {"writeRequests", c.Writes}, {"erasedMembers", c.Erased}} {
+			if after[v.k]-before[v.k] != v.want {
+				t.Fatalf("M7-C-SQL-EFFECT: %s %s delta=%d want=%d", alias, v.k, after[v.k]-before[v.k], v.want)
+			}
+		}
+		if after["altMembers"] != before["altMembers"] || after["altEntries"] != before["altEntries"] || after["altCommands"] != before["altCommands"] {
+			t.Fatal("M7-C-SQL-EFFECT: alternate store changed")
+		}
+		if alias == "C14" && (!session || after["actorSessions"]-before["actorSessions"] != 2 || after["revokedSessions"]-before["revokedSessions"] != 1) {
+			t.Fatal("M7-C-SESSION: changed-session boolean or independent SQL epoch counts missing")
+		}
+	}
+	var geometry []w6uiFormsGeometry
+	body, err = os.ReadFile(filepath.Join(evidence, "members-forms-geometry.json"))
+	if err != nil || json.Unmarshal(body, &geometry) != nil || len(geometry) == 0 {
+		t.Fatal("M7-C-GEOMETRY: missing native open-modal evidence")
+	}
+	var geometrySources map[string]map[string]any
+	if err := json.Unmarshal([]byte(w6uiFormsGeometrySourcesJSON), &geometrySources); err != nil || len(geometrySources) != 26 {
+		t.Fatal("M7-G-SOURCE-BINDING: invalid independent source table")
+	}
+	geometryTuples := make(map[string]bool, 78)
+	for _, v := range geometry {
+		if !v.Passed || v.Source["propertySHA256"] == nil || v.Source["pngSHA256"] == nil {
+			t.Fatal("M7-C-GEOMETRY: unbound/failed source role")
+		}
+		width, ok := v.Source["viewport"].(float64)
+		if !ok || (width != 375 && width != 1440) {
+			t.Fatal("M7-C-GEOMETRY: invalid viewport")
+		}
+		locale, validLocale := v.Source["locale"].(string)
+		if !validLocale || (locale != "en" && locale != "zh-TW" && locale != "zh-CN") {
+			t.Fatal("M7-G-SOURCE-BINDING: invalid locale")
+		}
+		variant := "Desktop"
+		if width == 375 {
+			variant = "Mobile"
+		}
+		expectedSource, knownRole := geometrySources[v.Role+variant]
+		if !knownRole {
+			t.Fatalf("M7-G-SOURCE-BINDING: unknown role %s/%s", v.Role, variant)
+		}
+		for _, field := range []string{"frame", "modal", "propertyFileSHA256", "propertySHA256", "pngSHA256", "width", "referenceHeight", "fields", "padding", "radius"} {
+			actual, present := v.Source[field]
+			got, gotErr := json.Marshal(actual)
+			want, wantErr := json.Marshal(expectedSource[field])
+			if !present || gotErr != nil || wantErr != nil || !bytes.Equal(got, want) {
+				t.Fatalf("M7-G-SOURCE-BINDING: %s/%s/%g mismatched %s", v.Role, locale, width, field)
+			}
+		}
+		geometryTuples[fmt.Sprintf("%s|%s|%g", v.Role, locale, width)] = true
+		for _, item := range []struct {
+			shot     w6uiFormsPNG
+			viewport bool
+		}{{v.Screenshots.Viewport, true}, {v.Screenshots.Dialog, false}} {
+			if filepath.Base(item.shot.File) != item.shot.File || !strings.HasPrefix(item.shot.File, "members-forms-"+v.Case+"-") || !strings.HasSuffix(item.shot.File, ".png") {
+				t.Fatal("M7-C-PNG: unsafe/missing evidence name")
+			}
+			image, err := os.ReadFile(filepath.Join(evidence, item.shot.File))
+			if err != nil || fmt.Sprintf("%x", sha256.Sum256(image)) != item.shot.SHA256 {
+				t.Fatal("M7-C-PNG: native byte hash mismatch")
+			}
+			config, err := png.DecodeConfig(bytes.NewReader(image))
+			want := 520
+			if width == 375 {
+				want = 375
+			}
+			if item.viewport {
+				want = int(width)
+			}
+			if err != nil || config.Width != want || config.Height <= 0 {
+				t.Fatal("M7-C-PNG: native dimensions mismatch")
+			}
+		}
+	}
+
+	for _, role := range []string{"Create", "CreateEmptyName", "CreateSubmitting", "Adjust", "AdjustEmptyNote", "PositiveConfirm", "NegativeConfirm", "AdjustInsufficient", "AdjustSubmitting", "CreateUnknown", "CreateRefused", "Unknown", "Refused"} {
+		for _, locale := range []string{"en", "zh-TW", "zh-CN"} {
+			for _, width := range []int{375, 1440} {
+				tuple := fmt.Sprintf("%s|%s|%d", role, locale, width)
+				if !geometryTuples[tuple] {
+					t.Fatalf("M7-G-SOURCE-COVERAGE: missing %s", tuple)
+				}
+			}
+		}
+	}
+	if len(geometryTuples) != 78 {
+		t.Fatalf("M7-G-SOURCE-COVERAGE: got %d unique tuples, want 78", len(geometryTuples))
+	}
+
+	for i := 1; i <= 6; i++ {
+		alias := fmt.Sprintf("C%02d", i)
+		for _, role := range []string{"Create", "CreateEmptyName", "CreateSubmitting", "Adjust", "AdjustEmptyNote", "PositiveConfirm", "NegativeConfirm", "AdjustInsufficient", "AdjustSubmitting"} {
+			found := false
+			for _, v := range geometry {
+				if v.Case == alias && v.Role == role {
+					found = true
+				}
+			}
+			if !found {
+				t.Fatalf("M7-C-GEOMETRY: %s missing %s", alias, role)
+			}
+		}
+	}
+}
+
+// Independent literal identities from the 26 approved, root-verified source roles.
+// This table never supplies observed native rows.
+const w6uiFormsGeometrySourcesJSON = `{"AdjustDesktop":{"fields":{"amount":45,"note":88},"frame":"1681:52534","modal":"1681:52613","padding":[28,28,28,28],"pngSHA256":"91770478806278b79420ed3951da7a35c2bf11ce9b6cc3496b1a2d761f8b30f0","propertyFileSHA256":"3ea7073f964713462dc82f20f2bd9242a882712c3942e3d2fb4fa108c217b84c","propertySHA256":"e1e6ad65d28e3209c5264431dbb6ea8dbb4805f7f9b3c539c6b3e1c8be258b5e","radius":12,"referenceHeight":523,"width":520},"AdjustEmptyNoteDesktop":{"fields":{"amount":45,"note":88},"frame":"1713:52583","modal":"1713:52662","padding":[28,28,28,28],"pngSHA256":"ac85f716e1777a1978270c8e3735564bb0dc9cb3e8e6601e9c963573ba59b3d7","propertyFileSHA256":"c577e75f1e3a627046e1f7af7af330fe5bfcfc8a1a08c50632af1175e9ace9ae","propertySHA256":"354c0d15195b9df8c3f0ac2a606f85165c531d4ff3e930ab496c14385666cd49","radius":12,"referenceHeight":486,"width":520},"AdjustEmptyNoteMobile":{"fields":{"amount":45,"note":46},"frame":"1681:52716","modal":"1681:52751","padding":[20,16,28,16],"pngSHA256":"c65cc5a5477447123b4d652a83ad14522ccdc640361516f302bc90cb044fa400","propertyFileSHA256":"3ea7073f964713462dc82f20f2bd9242a882712c3942e3d2fb4fa108c217b84c","propertySHA256":"bc6dd1a5682c46114558f239c495284c9f636071e7b7a1d545208ebfe7beb566","radius":16,"referenceHeight":436,"width":390},"AdjustInsufficientDesktop":{"fields":{"amount":46,"note":88},"frame":"1713:52700","modal":"1713:52779","padding":[28,28,28,28],"pngSHA256":"05b2550afbff0426d391ceadf12db8e549f69ce32d3623d42139fe49ab72ef2e","propertyFileSHA256":"c577e75f1e3a627046e1f7af7af330fe5bfcfc8a1a08c50632af1175e9ace9ae","propertySHA256":"46af33a0d4b1b6ee7ace31fe4a728d4e4860116525db4bed6761a307bb3c4864","radius":12,"referenceHeight":487,"width":520},"AdjustInsufficientMobile":{"fields":{"amount":46,"note":45},"frame":"1681:52779","modal":"1681:52814","padding":[20,16,28,16],"pngSHA256":"7bbd4657f297f6db68a5cc12e71ae8c90089d312646394969ef90f44f3bdbd6f","propertyFileSHA256":"3ea7073f964713462dc82f20f2bd9242a882712c3942e3d2fb4fa108c217b84c","propertySHA256":"96fa5270b561c67ae90486dc734a0fdce2d4910945d582f7e040acdaf69c7f27","radius":16,"referenceHeight":436,"width":390},"AdjustMobile":{"fields":{"amount":45,"note":88},"frame":"1681:52652","modal":"1681:52687","padding":[20,16,28,16],"pngSHA256":"3608202dd6cdabd54b3dbb020ed369b34dc2a03397d02710b030ae73d1db4be7","propertyFileSHA256":"3ea7073f964713462dc82f20f2bd9242a882712c3942e3d2fb4fa108c217b84c","propertySHA256":"54f42077c2dd2bdd981ce21b4fb2965a605dc4c48f8de0160930e8f5181ce453","radius":16,"referenceHeight":515,"width":390},"AdjustSubmittingDesktop":{"fields":{},"frame":"1718:52529","modal":"1718:52608","padding":[28,28,28,28],"pngSHA256":"796b7902377582e0caefb9505e0bd1575f75de9279e538f374ad5f19b64e32b0","propertyFileSHA256":"c577e75f1e3a627046e1f7af7af330fe5bfcfc8a1a08c50632af1175e9ace9ae","propertySHA256":"6a2cb3c850bf82631bc0ea01e4ba319f8e92281de6a821a2f0b194e02885edd5","radius":12,"referenceHeight":333,"width":520},"AdjustSubmittingMobile":{"fields":{},"frame":"1681:52842","modal":"1681:52877","padding":[20,16,28,16],"pngSHA256":"4739e39d2509533ccb171db585143f8111a30574b20826b91e2517f8a724cbfc","propertyFileSHA256":"3ea7073f964713462dc82f20f2bd9242a882712c3942e3d2fb4fa108c217b84c","propertySHA256":"25dc36f24fd92290a99cf52f9f936829f13b9d02de372a172ba33c565366a389","radius":16,"referenceHeight":325,"width":390},"CreateDesktop":{"fields":{"contact":45,"name":45,"notes":88},"frame":"1681:52319","modal":"1681:52392","padding":[28,28,28,28],"pngSHA256":"ce507e77083bfb66af2041e8cc1de105c006211b6b06399cc9736e31d13d1dda","propertyFileSHA256":"3ea7073f964713462dc82f20f2bd9242a882712c3942e3d2fb4fa108c217b84c","propertySHA256":"28c9688dece774a16f8b987203d4d46fb1f4b5f18590df41c918251030ea0206","radius":12,"referenceHeight":476,"width":520},"CreateEmptyNameDesktop":{"fields":{"contact":45,"name":46,"notes":88},"frame":"1713:52478","modal":"1713:52551","padding":[28,28,28,28],"pngSHA256":"0e027e7094de4091d66cfa9b2b80ec572f39a34b905f778f04cb847efd29a0e8","propertyFileSHA256":"c577e75f1e3a627046e1f7af7af330fe5bfcfc8a1a08c50632af1175e9ace9ae","propertySHA256":"17f8c66d470890dd3be5904b7a4cd976d91d8411541c7bf935047e0e3f951d87","radius":12,"referenceHeight":503,"width":520},"CreateEmptyNameMobile":{"fields":{"contact":45,"name":46,"notes":45},"frame":"1681:52478","modal":"1681:52511","padding":[20,16,28,16],"pngSHA256":"6353483ae0748332b9a13fdc53e2b5eb00377853f6a2f2906513abeace02cd2a","propertyFileSHA256":"3ea7073f964713462dc82f20f2bd9242a882712c3942e3d2fb4fa108c217b84c","propertySHA256":"04a6a5af376ecc96ba992558e072b7451c7bb298b89a94e24e6527da95ae4bde","radius":16,"referenceHeight":452,"width":390},"CreateMobile":{"fields":{"contact":45,"name":45,"notes":45},"frame":"1681:52423","modal":"1681:52456","padding":[20,16,28,16],"pngSHA256":"1888b574a11df73e9f7b0d0692f46ef759356adba3a077c5c90f4c51241cf57c","propertyFileSHA256":"3ea7073f964713462dc82f20f2bd9242a882712c3942e3d2fb4fa108c217b84c","propertySHA256":"dac1c4875658cfd6baab6f30e20873edb9ccd9f28115434eb83b1976852420af","radius":16,"referenceHeight":425,"width":390},"CreateRefusedDesktop":{"fields":{},"frame":"1666:52491","modal":"1666:52584","padding":[28,28,28,28],"pngSHA256":"1e11cabe26d49f0004e5bc4f5a74bf7a0d2659159e28895211d2da04030d08eb","propertyFileSHA256":"515ee71bd52ad613b209c2485ac1b4d193273ddff2d98a21dde6f073fd9ff6b6","propertySHA256":"515ee71bd52ad613b209c2485ac1b4d193273ddff2d98a21dde6f073fd9ff6b6","radius":12,"referenceHeight":219,"width":520},"CreateRefusedMobile":{"fields":{},"frame":"1666:52604","modal":"1666:52657","padding":[20,16,28,16],"pngSHA256":"f81297204910101babfe9b1f7cbd9868e11772700b74d4f4f1299a25730877c1","propertyFileSHA256":"515ee71bd52ad613b209c2485ac1b4d193273ddff2d98a21dde6f073fd9ff6b6","propertySHA256":"515ee71bd52ad613b209c2485ac1b4d193273ddff2d98a21dde6f073fd9ff6b6","radius":16,"referenceHeight":211,"width":390},"CreateSubmittingDesktop":{"fields":{"contact":45,"name":45,"notes":88},"frame":"1681:52894","modal":"1681:52967","padding":[28,28,28,28],"pngSHA256":"2881cff8dd50cb5cf64b4deb29638a53138b954982324fcf21110f6385877863","propertyFileSHA256":"3ea7073f964713462dc82f20f2bd9242a882712c3942e3d2fb4fa108c217b84c","propertySHA256":"33b0d886c004df54f9ccfcf8585b882663f8c78e5a0feb478ea377bd8337bd03","radius":12,"referenceHeight":512,"width":520},"CreateSubmittingMobile":{"fields":{"contact":45,"name":45,"notes":45},"frame":"1681:52999","modal":"1681:53032","padding":[20,16,28,16],"pngSHA256":"1ac821f7bf257e350e6b44959b471ab60ffa4f091baec15eea3bc5aad68c9985","propertyFileSHA256":"3ea7073f964713462dc82f20f2bd9242a882712c3942e3d2fb4fa108c217b84c","propertySHA256":"3ebf6c4d1240f619843ad747d492fcf66c92a22ade7727d28a1216d0088b83d3","radius":16,"referenceHeight":461,"width":390},"CreateUnknownDesktop":{"fields":{},"frame":"1666:52314","modal":"1666:52407","padding":[28,28,28,28],"pngSHA256":"517c37f2f3812ce367ded738d32fa0b05ddcdccdc4feea88f439df49448d2ecd","propertyFileSHA256":"515ee71bd52ad613b209c2485ac1b4d193273ddff2d98a21dde6f073fd9ff6b6","propertySHA256":"515ee71bd52ad613b209c2485ac1b4d193273ddff2d98a21dde6f073fd9ff6b6","radius":12,"referenceHeight":257,"width":520},"CreateUnknownMobile":{"fields":{},"frame":"1666:52427","modal":"1666:52480","padding":[20,16,28,16],"pngSHA256":"125eed10351ea944812a4862b0da78674a14f30f6db84c2a033afd92118271df","propertyFileSHA256":"515ee71bd52ad613b209c2485ac1b4d193273ddff2d98a21dde6f073fd9ff6b6","propertySHA256":"515ee71bd52ad613b209c2485ac1b4d193273ddff2d98a21dde6f073fd9ff6b6","radius":16,"referenceHeight":270,"width":390},"NegativeConfirmDesktop":{"fields":{},"frame":"1558:84155","modal":"1558:84269","padding":[28,28,28,28],"pngSHA256":"1c54bed0e9f071e788d45603465cc18cb4895cd996bb0c558a0d652b6bef4760","propertyFileSHA256":"c577e75f1e3a627046e1f7af7af330fe5bfcfc8a1a08c50632af1175e9ace9ae","propertySHA256":"8f905258c2db61ec2d3a1b35fdef8de4a2148ee0e1a460fa8374da762a3eb857","radius":12,"referenceHeight":333,"width":520},"NegativeConfirmMobile":{"fields":{},"frame":"1558:84281","modal":"1558:84338","padding":[20,16,28,16],"pngSHA256":"15b3c0a2af71863c969aa1958920d48d61e73136e520de37f069c5752bb64791","propertyFileSHA256":"c577e75f1e3a627046e1f7af7af330fe5bfcfc8a1a08c50632af1175e9ace9ae","propertySHA256":"a4ed45c1ce15ca35673c265fc9f988f91d4805664050b520c4afe8d9770f944b","radius":16,"referenceHeight":325,"width":390},"PositiveConfirmDesktop":{"fields":{},"frame":"1666:52668","modal":"1666:52747","padding":[28,28,28,28],"pngSHA256":"c4809c895a873879dfcd82456a074c5b566bab344fc56a6f10610f3d92c92200","propertyFileSHA256":"515ee71bd52ad613b209c2485ac1b4d193273ddff2d98a21dde6f073fd9ff6b6","propertySHA256":"515ee71bd52ad613b209c2485ac1b4d193273ddff2d98a21dde6f073fd9ff6b6","radius":12,"referenceHeight":333,"width":520},"PositiveConfirmMobile":{"fields":{},"frame":"1666:52774","modal":"1666:52809","padding":[20,16,28,16],"pngSHA256":"e2178fd16d8c91f20b5ed0bd4278853cc9801812b9899ca51ce53cd779912d2b","propertyFileSHA256":"515ee71bd52ad613b209c2485ac1b4d193273ddff2d98a21dde6f073fd9ff6b6","propertySHA256":"515ee71bd52ad613b209c2485ac1b4d193273ddff2d98a21dde6f073fd9ff6b6","radius":16,"referenceHeight":325,"width":390},"RefusedDesktop":{"fields":{},"frame":"1558:84734","modal":"1558:84848","padding":[28,28,28,28],"pngSHA256":"2b3c4a0126a4a339653ceb6fd0875be8fe6100602fd6b4587842994fe5a87dbb","propertyFileSHA256":"c577e75f1e3a627046e1f7af7af330fe5bfcfc8a1a08c50632af1175e9ace9ae","propertySHA256":"e383eaac2bd3bb024b9f32d2e8781b6bf1dd29357674e191632a8fc5078830b2","radius":12,"referenceHeight":219,"width":520},"RefusedMobile":{"fields":{},"frame":"1558:84857","modal":"1558:84914","padding":[20,16,28,16],"pngSHA256":"995179fa3989c560c9e3883339ddad6bebcf95fec7227ea4222aa1d6516fccea","propertyFileSHA256":"c577e75f1e3a627046e1f7af7af330fe5bfcfc8a1a08c50632af1175e9ace9ae","propertySHA256":"99c4bf0e0aff108bb40d5a96e3da466dcfa1cd6fb8230bb715805dbe5daa9507","radius":16,"referenceHeight":232,"width":390},"UnknownDesktop":{"fields":{},"frame":"1558:84545","modal":"1558:84659","padding":[28,28,28,28],"pngSHA256":"bfa3469807835a9672dc1258b1503e258c28c8f0c78426c88f244b7be1c5d465","propertyFileSHA256":"c577e75f1e3a627046e1f7af7af330fe5bfcfc8a1a08c50632af1175e9ace9ae","propertySHA256":"ce5939593dc3ba995ab5834cb25a296f0258af51cd42169afc960854b9ad2d69","radius":12,"referenceHeight":278,"width":520},"UnknownMobile":{"fields":{},"frame":"1558:84668","modal":"1558:84725","padding":[20,16,28,16],"pngSHA256":"d74f6c190d38152be04d06af48c30955dcbda40c894184ee0da0d29a475058d2","propertyFileSHA256":"c577e75f1e3a627046e1f7af7af330fe5bfcfc8a1a08c50632af1175e9ace9ae","propertySHA256":"40cc2c76291aaf27c8d87b5e0db8394d2653bd30241417dcced1fa2f05258171","radius":16,"referenceHeight":270,"width":390}}`
+
+type w6uiFormsPNG struct {
+	File   string `json:"file"`
+	SHA256 string `json:"sha256"`
+}
+type w6uiFormsGeometry struct {
+	Case        string         `json:"case"`
+	Role        string         `json:"role"`
+	Passed      bool           `json:"passed"`
+	Source      map[string]any `json:"source"`
+	Screenshots struct {
+		Viewport w6uiFormsPNG `json:"viewport"`
+		Dialog   w6uiFormsPNG `json:"dialog"`
+	} `json:"screenshots"`
 }
