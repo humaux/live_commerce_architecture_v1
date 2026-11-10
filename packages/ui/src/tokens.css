@@ -246,3 +246,28 @@
   --ds-members-surface: var(--ds-surface);
   --ds-members-link: var(--ui-primary);
 }
+
+/* LP2 member forms: formal iJ9lDdFIXgTlKkt5Tvrc0X section 1678:52228, ten promoted profiles.
+ * AFTER sha256 3ea7073f964713462dc82f20f2bd9242a882712c3942e3d2fb4fa108c217b84c.
+ * Additive roles only; reuse members ink/muted/surface and existing accessible boundary/target/disabled roles.
+ * Desktop is 520px; mobile is responsive full width. Note 88px applies only to long-note profiles,
+ * never a universal field height. Runtime consumption and native geometry are verified by the later UI unit. */
+:root {
+  --ds-control-member-dialog-width: 520px;
+  --ds-control-member-dialog-pad: 28px;
+  --ds-radius-member-dialog: 12px;
+  --ds-radius-member-sheet: 16px;
+  --ds-control-member-sheet-pad-end: var(--ds-control-member-dialog-pad);
+  --ds-control-member-field-gap: 6px;
+  --ds-text-member-value: 15px;
+  --ds-text-member-heading: 20px;
+  --ds-control-member-action-leading: 20px;
+  --ds-members-control-bg: #f1f5f9;
+  --ds-control-member-input-pad-block: 10px;
+  --ds-radius-member-control: 5px;
+  --ds-control-member-note-height: 88px;
+  --ds-members-action-bg: #247965;
+  --ds-members-action-border: #dde5ee;
+  --ds-control-member-action-width: 160px;
+  --ds-members-scrim: rgb(20 41 66 / 45%);
+}
