@@ -726,7 +726,28 @@ async function captureRole(page: Page, locale: Locale, role: string) {
       "--ds-border-input",
       "--ds-target",
     ];
+    // Detached canvas parses colors without changing the UI. Keep RGB exact and
+    // compare alpha as an 8-bit value: 45% and compiled hex alpha 0x73 agree.
+    // Only parse the browser's own legacy rgb(a) serialization, never CSS input.
+    const color = document.createElement("canvas").getContext("2d")!;
+    const rgba8 = (value: string) => {
+      if (!CSS.supports("color", value)) throw new Error("Invalid scrim color");
+      color.fillStyle = value;
+      const serialized = color.fillStyle;
+      const rgba = /^rgba?\((\d+), (\d+), (\d+)(?:, ([\d.]+))?\)$/.exec(serialized);
+      if (!rgba) throw new Error(`Unexpected scrim serialization: ${serialized}`);
+      return [Number(rgba[1]), Number(rgba[2]), Number(rgba[3]),
+        Math.round(Number(rgba[4] ?? 1) * 255)];
+    };
+    const scrim = {
+      actual: rgba8(cs.getPropertyValue("--ds-members-scrim").trim()),
+      expected: rgba8("rgb(20 41 66 / 45%)"),
+      // Spec-local negative controls exercise the same browser parser/comparison.
+      wrongRGB: rgba8("rgb(21 41 66 / 45%)"),
+      wrongAlpha: rgba8("rgb(20 41 66 / 46%)"),
+    };
     return {
+      scrim,
       rect: box(d),
       viewport: innerWidth,
       dpr: devicePixelRatio,
@@ -835,7 +856,17 @@ async function captureRole(page: Page, locale: Locale, role: string) {
     "--ds-border-input": "#8c8c8c",
     "--ds-target": "44px",
   };
-  expect(measurement.tokens).toEqual(expectedTokens);
+  // Raw custom-property text stays in geometry evidence; all other tokens keep
+  // their existing exact comparison. Scrim equivalence must reject RGB/alpha drift.
+  const { "--ds-members-scrim": rawScrim, ...otherTokens } = measurement.tokens;
+  const { "--ds-members-scrim": sourceScrim, ...otherExpectedTokens } = expectedTokens;
+  expect(rawScrim).toBeTruthy();
+  expect(sourceScrim).toBe("rgb(20 41 66 / 45%)");
+  expect(otherTokens).toEqual(otherExpectedTokens);
+  expect(measurement.scrim.expected).toEqual([20, 41, 66, 115]);
+  expect(measurement.scrim.wrongRGB).not.toEqual(measurement.scrim.expected);
+  expect(measurement.scrim.wrongAlpha).not.toEqual(measurement.scrim.expected);
+  expect(measurement.scrim.actual).toEqual(measurement.scrim.expected);
   expect(measurement.fields.map((f) => f.name).sort()).toEqual(
     Object.keys(source.fields).sort(),
   );
