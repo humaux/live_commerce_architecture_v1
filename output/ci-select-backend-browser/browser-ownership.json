@@ -9,7 +9,7 @@
     "tests/admin/attribution-checkout.spec.ts": "1f42c6aaaab3fde22097a7babbbb98b5a3f19c70d337ed7cc704bf91e17dd0dc",
     "tests/admin/attribution-format.test.ts": "662fc1de39ba699c1e3ded9f7bd1c91d00caf1abedb24efaabfe14277fab8e36",
     "tests/admin/attribution.fixture.ts": "853a63334321e6f0719b8817ae48cf8e7260e9b14b30143e93faf303a131ab0c",
-    "tests/admin/attribution.spec.ts": "1ab133aacb7c6883d94f310fcfc83d5efc37cf54d8d940c5a24d3235e601d08d",
+    "tests/admin/attribution.spec.ts": "c7848cee1c5e684c1493f7a8f27ef6f146dfe0f0003bd3d74526de5c9749b970",
     "tests/admin/attribution.test.ts": "3cd4919e2ae06a018a4e5cd8fcd950d8a60fdebf17f8da089f20265ca503279e",
     "tests/admin/auth-real.spec.ts": "7a31af775240a4c56ea68152ec7758ff2157f04d9399580e6a504e60e62c203a",
     "tests/admin/auth.spec.ts": "97fec13139ee4602c9cd782531e613ad0d0ad72736c3ac483a8731a216ce12ff",
