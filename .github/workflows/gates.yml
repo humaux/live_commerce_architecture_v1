@@ -167,6 +167,10 @@ jobs:
   gate:
     name: gate (${{ matrix.mode }})
     needs: [plan, build]
+    # Diagnostic branch only: read one pinned artifact from this repository.
+    permissions:
+      contents: read
+      actions: read
     # build is skipped when no leg consumes it (push: foundation shards only); a failed build skips every leg, which `required` reports red.
     if: ${{ !cancelled() && needs.plan.result == 'success' && (needs.build.result == 'success' || needs.build.result == 'skipped') }}
     strategy:
@@ -293,6 +297,68 @@ jobs:
           key: playwright-debs-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.image }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
       - name: Download pinned test image
         run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+      - name: Prepare pinned M7 assertion replay (diagnostic branch only)
+        if: ${{ github.event_name == 'workflow_dispatch' && matrix.mode == 'focused:^TestM7FormsVerifierCalibration$' }}
+        timeout-minutes: 5
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "$EXTRA_ENV" == '' ]] || { echo 'M7 replay requires empty extra_env' >&2; exit 2; }
+          timeout 180s gh api repos/humaux/live_commerce_architecture_v1/actions/artifacts/13959056498/zip > "$RUNNER_TEMP/m7-replay.zip"
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, shutil, stat, zipfile
+          root = pathlib.Path.cwd()
+          archive = pathlib.Path(os.environ['RUNNER_TEMP']) / 'm7-replay.zip'
+          assert archive.stat().st_size == 39686567
+          archive_sha = hashlib.sha256(archive.read_bytes()).hexdigest()
+          assert archive_sha == 'a3bee6bb7341c696a56bb5e4fa0fed582cca4600aba69853ffb0ffcf5bbc8fd7'
+          extracted = pathlib.Path(os.environ['RUNNER_TEMP']) / 'm7-replay-evidence'
+          extracted.mkdir()
+          with zipfile.ZipFile(archive) as z:
+              files = z.infolist()
+              assert len(files) <= 2000 and sum(f.file_size for f in files) <= 512 * 1024 * 1024
+              names = set()
+              for f in files:
+                  p = pathlib.PurePosixPath(f.filename)
+                  assert not p.is_absolute() and '..' not in p.parts and f.filename not in names
+                  assert not stat.S_ISLNK(f.external_attr >> 16)
+                  names.add(f.filename)
+              assert z.testzip() is None
+              for f in files:
+                  target = extracted.joinpath(*pathlib.PurePosixPath(f.filename).parts)
+                  if f.is_dir():
+                      target.mkdir(parents=True, exist_ok=True)
+                  else:
+                      target.parent.mkdir(parents=True, exist_ok=True)
+                      with z.open(f) as src, target.open('xb') as dst:
+                          shutil.copyfileobj(src, dst, 65536)
+          matches = list(extracted.rglob('members-forms-go-sql.json'))
+          assert len(matches) == 1
+          source = root / 'tests/foundation/browser_w6_customers_reports_test.go'
+          body = source.read_bytes()
+          source_sha = hashlib.sha256(body).hexdigest()
+          assert source_sha == 'f4dc0ef750699064795683f0fa8eabace9e707e14c0c8577cc1d23c4335f8718'
+          start = b'\t\t\t// PrepareForms starts an empty store;'
+          end = b'\t\t\tw6uiVerifyFormsC(t, x, evidence)'
+          query = b'\t\t\tstate, err := w6uiFormsState(x, "")\n'
+          assert body.count(start) == body.count(end) == 1
+          fragment = body[body.index(start):body.index(end)]
+          assert fragment.count(query) == 1
+          helper = root / 'experiments/m7-forms-verifier-replay.go.txt'
+          overlay_source = pathlib.Path(os.environ['RUNNER_TEMP']) / 'm7-replay-test.go'
+          overlay_source.write_bytes(helper.read_bytes() + b'\nfunc m7ReplayAggregate(t *testing.T, state map[string]int64, err error) {\n' + fragment.replace(query, b'', 1) + b'}\n')
+          virtual = root / 'tests/foundation/m7_forms_verifier_replay_test.go'
+          assert not virtual.exists()
+          overlay = pathlib.Path(os.environ['RUNNER_TEMP']) / 'm7-replay-overlay.json'
+          overlay.write_text(json.dumps({'Replace': {str(virtual): str(overlay_source)}}))
+          output = root / 'output/ci-gates/m7-calibration'
+          output.mkdir(parents=True)
+          (output / 'binding.json').write_text(json.dumps({'archive_sha256': archive_sha, 'verifier_sha256': source_sha, 'aggregate_fragment_sha256': hashlib.sha256(fragment).hexdigest(), 'helper_sha256': hashlib.sha256(helper.read_bytes()).hexdigest(), 'runtime_source': 'cf26bce42115b6143f8ecf121ff28f29a7639e58', 'scope': 'archived assertion replay; reconstructed trace is not independent native SQL collection'}, indent=2))
+          with open(os.environ['GITHUB_ENV'], 'a') as env:
+              for k, v in {'LC_M7_REPLAY_EVIDENCE': matches[0].parent, 'LC_M7_REPLAY_OVERLAY': overlay, 'LC_M7_REPLAY_OUTPUT': output}.items():
+                  env.write(f'{k}={v}\n')
+          PY
       - name: Gate
         id: gate
         run: |
@@ -343,6 +409,10 @@ jobs:
               # A balanced group of scripts/dev/shard-plan.json: an anchored explicit -run list, or (the catch-all) -skip of every other group's tests.
               shard:g[0-9][0-9]) LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="$(node scripts/dev/shard-plan.mjs run "${MODE#shard:}")" LC_FOUNDATION_SKIP="$(node scripts/dev/shard-plan.mjs skip "${MODE#shard:}")" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
               shard:*)    LC_FOUNDATION_PKGS=./tests/foundation LC_FOUNDATION_RUN="${MODE#shard:}" bash scripts/dev/test-local.sh 2>&1 | tee "$log" ;;
+              'focused:^TestM7FormsVerifierCalibration$')
+                [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && -n "${LC_M7_REPLAY_OVERLAY:-}" ]] || return 2
+                go test -race -count=1 -timeout=10m -tags browser -overlay="$LC_M7_REPLAY_OVERLAY" -run '^TestM7FormsVerifierCalibration$' -v ./tests/foundation 2>&1 | tee "$log"
+                ;;
               focused:*)  LC_FOCUSED_TIMEOUT=7200s bash scripts/dev/test-focused.sh "${MODE#focused:}" 2>&1 | tee "$log" ;;
               # One slice of the sweep / visual lint (tests/ui/sweep-shard-lib.mjs): its own PG, fixture and store, so click-sweep runs its single worker race-free.
               --browser-click-sweep@*|--browser-visual-lint@*) LC_SWEEP_SHARD="${MODE##*@}" xvfb-run -a bash scripts/dev/test-local.sh "${MODE%@*}" 2>&1 | tee "$log" ;;

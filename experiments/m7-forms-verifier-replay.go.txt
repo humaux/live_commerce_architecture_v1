@@ -1,0 +1,233 @@
+// Purpose: calibrate the pinned M7 assertions against owned copies of real CI evidence.
+// Depends on: the compiled current w6ui verifier and a hash-pinned archived positive run.
+// Used by: one isolated workflow_dispatch via Go -overlay; never ordinary tests.
+// Invariants: no database/browser, no accepted-source changes, exact failure marker required.
+
+package foundation_test
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+)
+
+// This is assertion replay. Reconstructed in-memory trace is NOT an independent
+// witness of the original SQL collector. The original native CI supplies that
+// positive evidence; this experiment only probes the exact compiled assertions.
+func TestM7FormsVerifierCalibration(t *testing.T) {
+	if fault := os.Getenv("LC_M7_REPLAY_CHILD"); fault != "" {
+		m7ReplayChild(t, fault)
+		return
+	}
+	cases := []struct{ fault, marker string }{
+		{"baseline", ""},
+		{"aggregate-entry", "M7-FORMS-SQL:"},
+		{"aggregate-http", "M7-FORMS-SQL:"},
+		{"sidecar", "M7-C-SQL-SIDECAR:"},
+		{"missing-phase", "M7-C-SQL-PHASE:"},
+		{"case-entry", "M7-C-SQL-EFFECT:"},
+		{"source-hash", "M7-G-SOURCE-BINDING:"},
+		{"missing-tuple", "M7-G-SOURCE-COVERAGE:"},
+		{"png-bytes", "M7-C-PNG:"},
+		{"restored", ""},
+	}
+	output := os.Getenv("LC_M7_REPLAY_OUTPUT")
+	if output == "" {
+		t.Fatal("CALIBRATION-SETUP: missing output directory")
+	}
+	if err := os.MkdirAll(output, 0700); err != nil {
+		t.Fatal(err)
+	}
+	executable, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	type receipt struct {
+		Fault          string `json:"fault"`
+		Exit           int    `json:"exit"`
+		ExpectedMarker string `json:"expected_marker"`
+		Log            string `json:"log"`
+		CopyRemoved    bool   `json:"copy_removed"`
+	}
+	var receipts []receipt
+	for _, c := range cases {
+		t.Run(c.fault, func(t *testing.T) {
+			// The parent owns cleanup even when CommandContext must kill the child.
+			owned := filepath.Join(t.TempDir(), "evidence")
+			if base := os.Getenv("LC_M7_REPLAY_EVIDENCE"); base == "" {
+				t.Fatal("CALIBRATION-SETUP: evidence path missing")
+			} else if err := os.CopyFS(owned, os.DirFS(base)); err != nil {
+				t.Fatalf("CALIBRATION-SETUP: copy evidence: %v", err)
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+			defer cancel()
+			cmd := exec.CommandContext(ctx, executable, "-test.run=^TestM7FormsVerifierCalibration$", "-test.v", "-test.count=1")
+			for _, v := range os.Environ() {
+				if !strings.HasPrefix(v, "LC_M7_REPLAY_CHILD=") && !strings.HasPrefix(v, "LC_M7_REPLAY_OWNED=") {
+					cmd.Env = append(cmd.Env, v)
+				}
+			}
+			cmd.Env = append(cmd.Env, "LC_M7_REPLAY_CHILD="+c.fault, "LC_M7_REPLAY_OWNED="+owned)
+			log, runErr := cmd.CombinedOutput() // Run waits and reaps the child, including timeout.
+			removeErr := os.RemoveAll(owned)
+			_, statErr := os.Stat(owned)
+			if removeErr != nil || !errors.Is(statErr, os.ErrNotExist) {
+				t.Fatalf("CALIBRATION-SETUP: parent copy cleanup failed: %v %v", removeErr, statErr)
+			}
+			path := filepath.Join(output, c.fault+".log")
+			if err := os.WriteFile(path, log, 0600); err != nil {
+				t.Fatal(err)
+			}
+			exit := 0
+			if runErr != nil {
+				var e *exec.ExitError
+				if !errors.As(runErr, &e) {
+					t.Fatalf("CALIBRATION-SETUP: child start: %v", runErr)
+				}
+				exit = e.ExitCode()
+			}
+			receipts = append(receipts, receipt{c.fault, exit, c.marker, filepath.Base(path), true})
+			if ctx.Err() != nil {
+				t.Fatalf("CALIBRATION-SETUP: child deadline: %v", ctx.Err())
+			}
+			if c.marker == "" {
+				if exit != 0 || !strings.Contains(string(log), "M7-REPLAY-VERIFIERS-RETURNED") {
+					t.Fatalf("CALIBRATION-BASELINE: expected exact verifiers to return; see %s", path)
+				}
+			} else if exit != 1 || !strings.Contains(string(log), c.marker) || strings.Contains(string(log), "CALIBRATION-SETUP:") || strings.Contains(string(log), "WARNING: DATA RACE") {
+				t.Fatalf("CALIBRATION-NEGATIVE: %s exit=%d missing intended marker %s; see %s", c.fault, exit, c.marker, path)
+			}
+			t.Logf("M7-CALIBRATION fault=%s exit=%d marker=%q asserted=true", c.fault, exit, c.marker)
+		})
+	}
+	m7ReplayWrite(t, filepath.Join(output, "receipts.json"), receipts)
+}
+
+func m7ReplayChild(t *testing.T, fault string) {
+	owned := os.Getenv("LC_M7_REPLAY_OWNED")
+	if owned == "" || owned == os.Getenv("LC_M7_REPLAY_EVIDENCE") {
+		t.Fatal("CALIBRATION-SETUP: parent-owned copy missing")
+	}
+	goPath := filepath.Join(owned, "members-forms-go-sql.json")
+	browserPath := filepath.Join(owned, "members-forms-sql-ledger.json")
+	geometryPath := filepath.Join(owned, "members-forms-geometry.json")
+	var trace []w6uiFormsSQLRow
+	m7ReplayRead(t, goPath, &trace)
+	if len(trace) == 0 {
+		t.Fatal("CALIBRATION-SETUP: empty original SQL trace")
+	}
+	state := make(map[string]int64)
+	for k, v := range trace[len(trace)-1].Counts {
+		state[k] = v
+	}
+	switch fault {
+	case "aggregate-entry":
+		state["entries"]++
+	case "aggregate-http":
+		state["writeRequests"]++
+	}
+	m7ReplayAggregate(t, state, nil) // Exact source fragment appended by the pinned workflow.
+	var browser []map[string]any
+	var geometry []map[string]any
+	m7ReplayRead(t, browserPath, &browser)
+	m7ReplayRead(t, geometryPath, &geometry)
+	if len(browser) != len(trace) || len(geometry) == 0 {
+		t.Fatal("CALIBRATION-SETUP: original evidence shape")
+	}
+	switch fault {
+	case "baseline", "restored":
+	case "sidecar":
+		// Keep the reconstructed witness unchanged; corrupt only its persisted copy.
+		persisted := append([]w6uiFormsSQLRow(nil), trace...)
+		persisted[0].Actor = "INVALID"
+		m7ReplayWrite(t, goPath, persisted)
+	case "missing-phase":
+		var kept []w6uiFormsSQLRow
+		var keptBrowser []map[string]any
+		removed := 0
+		for i, row := range trace {
+			if row.Case == "C01" && row.Phase == "before" {
+				removed++
+				continue
+			}
+			kept, keptBrowser = append(kept, row), append(keptBrowser, browser[i])
+		}
+		if removed != 1 {
+			t.Fatal("CALIBRATION-SETUP: missing-phase mutation target")
+		}
+		trace = kept
+		m7ReplayWrite(t, goPath, trace)
+		m7ReplayWrite(t, browserPath, keptBrowser)
+	case "case-entry":
+		changed := 0
+		for i := range trace {
+			if trace[i].Case == "C01" && trace[i].Phase == "final" {
+				trace[i].Counts["entries"]++
+				browser[i]["counts"].(map[string]any)["entries"] = trace[i].Counts["entries"]
+				changed++
+			}
+		}
+		if changed != 1 {
+			t.Fatal("CALIBRATION-SETUP: case-entry mutation target")
+		}
+		m7ReplayWrite(t, goPath, trace)
+		m7ReplayWrite(t, browserPath, browser)
+	case "source-hash":
+		geometry[0]["source"].(map[string]any)["propertySHA256"] = strings.Repeat("0", 64)
+		m7ReplayWrite(t, geometryPath, geometry)
+	case "missing-tuple":
+		var kept []map[string]any
+		removed := 0
+		for _, row := range geometry {
+			source := row["source"].(map[string]any)
+			if row["role"] == "Refused" && source["locale"] == "zh-CN" && source["viewport"] == float64(375) {
+				removed++
+				continue
+			}
+			kept = append(kept, row)
+		}
+		if removed == 0 {
+			t.Fatal("CALIBRATION-SETUP: missing-tuple mutation target")
+		}
+		m7ReplayWrite(t, geometryPath, kept)
+	case "png-bytes":
+		shot := geometry[0]["screenshots"].(map[string]any)["viewport"].(map[string]any)["file"].(string)
+		if filepath.Base(shot) != shot {
+			t.Fatal("CALIBRATION-SETUP: unsafe screenshot")
+		}
+		if err := os.WriteFile(filepath.Join(owned, shot), []byte("deliberately corrupt owned PNG"), 0600); err != nil {
+			t.Fatal(err)
+		}
+	default:
+		t.Fatal("CALIBRATION-SETUP: unknown child fault")
+	}
+	x := &w6uiFixture{formsTrace: trace}
+	w6uiVerifyFormsC(t, x, owned)
+	t.Log("M7-REPLAY-VERIFIERS-RETURNED")
+}
+
+func m7ReplayRead(t *testing.T, path string, value any) {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil || json.Unmarshal(b, value) != nil {
+		t.Fatalf("CALIBRATION-SETUP: read JSON %s: %v", filepath.Base(path), err)
+	}
+}
+
+func m7ReplayWrite(t *testing.T, path string, value any) {
+	t.Helper()
+	b, err := json.Marshal(value)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, b, 0600); err != nil {
+		t.Fatal(fmt.Errorf("write owned calibration evidence: %w", err))
+	}
+}
