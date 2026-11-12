@@ -122,6 +122,8 @@ test("MOCK adjustment validates integer/reason/balance, reviews and returns with
   const x = await setup(t, true),
     held = deferred<Response>(),
     entered = deferred<void>();
+  assert.equal(node(x.h, (n) => n.props.name === "note").props.rows, 1);
+  assert.equal(by(x.h, "member-form-dialog").props["data-validation-invalid"], undefined);
   let calls = 0;
   let request: RequestInit | undefined;
   globalThis.fetch = async (_u, init) => {
@@ -143,6 +145,8 @@ test("MOCK adjustment validates integer/reason/balance, reviews and returns with
   submit(x.h);
   await x.h.settle();
   assert.equal(calls, 0);
+  assert.equal(by(x.h, "member-form-dialog").props["data-validation-invalid"], true);
+  assert.equal(node(x.h, (n) => n.props.name === "note").props["aria-invalid"], false);
   field(x.h, "amount", "20");
   field(x.h, "note", "");
   submit(x.h);
@@ -151,9 +155,11 @@ test("MOCK adjustment validates integer/reason/balance, reviews and returns with
     node(x.h, (n) => n.props.name === "note").props["aria-invalid"],
     true,
   );
+  assert.equal(by(x.h, "member-form-dialog").props["data-validation-invalid"], true);
   field(x.h, "note", "synthetic reason");
   submit(x.h);
   await x.h.settle();
+  assert.equal(by(x.h, "member-form-dialog").props["data-validation-invalid"], undefined);
   assert.match(textOf(x.h.output), /50 → 30/);
   assert.equal(calls, 0);
   by(x.h, "member-form-back").props.onClick();

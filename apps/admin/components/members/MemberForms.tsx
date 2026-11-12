@@ -323,6 +323,7 @@ export function MemberForms({
       <label htmlFor={`member-form-${field}`}>{label}</label>
       {multiline ? (
         <textarea
+          rows={1}
           id={`member-form-${field}`}
           name={field}
           value={value}
@@ -368,6 +369,7 @@ export function MemberForms({
         data-testid="member-form-dialog"
         data-kind={adjusting ? "adjust" : "create"}
         data-step={step}
+        data-validation-invalid={!!invalid || undefined}
         onCancel={(e) => {
           e.preventDefault();
           close();
