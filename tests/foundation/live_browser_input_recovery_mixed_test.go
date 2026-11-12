@@ -466,3 +466,207 @@ func TestLiveMediaRecoveryMRR05StaleObserverNewOwner(t *testing.T) {
 		t.Fatalf("current owner finish failed: disposition=%s state=%s", disposition, sqlState(err))
 	}
 }
+
+// Both immutable liability bits belong to one original operation/native job.
+// SQL/ledger only: fixture observations are not provider or process acceptance.
+// Input precedes Egress as required by the contract: Egress clears the lease.
+func TestLiveMediaRecoveryMRR05BothMembers(t *testing.T) {
+	h := brwStart(t)
+	brwReserveGrant(t, h)
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancel()
+	lease, err := brwClaim(ctx, h.bicHarness, h.plan, randomBytes(32))
+	if err != nil || lease.disposition != "claimed" || lease.mode != "reconcile" || lease.generation < 1 {
+		t.Fatalf("original claim disposition=%s state=%s", lease.disposition, sqlState(err))
+	}
+	brwSelectObserve(t, h, lease)
+	material, err := brwReserveStart(ctx, h, lease, h.plan.RoomName,
+		h.grant.PublisherIdentity, "PA_mrr05_both", "ACTIVE", true, false, true, false)
+	if err != nil || material["mode"] != "dispatch" {
+		t.Fatalf("original wire reservation failed: state=%s", sqlState(err))
+	}
+	// Do not log private dispatch material, tokens, or JSON snapshots.
+	material = nil
+	login, recovery := lmaLogin(t, h.lp.f, "commerce_media_recovery")
+	name := pgx.Identifier{login}.Sanitize()
+	mustExec(t, h.lp.f.owner, "REVOKE commerce_media_recovery FROM "+name)
+	mustExec(t, h.lp.f.owner, "GRANT commerce_media_recovery TO "+name+" WITH INHERIT TRUE, SET FALSE")
+	episode := randomUUID()
+	mrr05Cleanup(t, h, episode)
+	started := time.Now()
+	var disposition, operation, profile string
+	var job, baseline int64
+	var inputRequired, egressRequired bool
+	if err := recovery.QueryRow(ctx, `SELECT disposition,operation_id::text,job_id,baseline_generation,
+	 execution_profile,input_required,egress_required FROM live.begin_media_recovery_episode_with_input($1::uuid,0,1,true)`, episode).
+		Scan(&disposition, &operation, &job, &baseline, &profile, &inputRequired, &egressRequired); err != nil ||
+		disposition != "pending" || operation != h.plan.OperationID || job != h.plan.JobID || baseline != lease.generation ||
+		profile != "LOCAL_SFU_MOCK_EGRESS" || !inputRequired || !egressRequired {
+		t.Fatalf("both-bit admission failed: disposition=%s state=%s", disposition, sqlState(err))
+	}
+	// Read-only owner inspection binds immutable identity and native/dispatch/Stop
+	// budgets. Recovery may advance generation, never spend these budgets.
+	budget := func() string {
+		t.Helper()
+		var private string
+		if err := h.lp.f.owner.QueryRow(ctx, `SELECT jsonb_build_object(
+		 'operation',o.id,'job',o.job_id,'attempt',to_jsonb(a),'native',to_jsonb(j),
+		 'wire_at',x.wire_reserved_at,'wire_generation',x.wire_generation,'stop_count',x.stop_wire_count,
+		 'custody',to_jsonb(i))::text
+		 FROM integration.operations o JOIN live.media_attempts a ON a.id=o.media_attempt_id
+		 JOIN river_media.river_job j ON j.id=o.job_id
+		 JOIN live.media_execution_state x ON x.operation_id=o.id
+		 JOIN live.media_input_custody i ON i.operation_id=o.id
+		 WHERE o.id=$1::uuid AND a.id=$2::uuid AND j.id=$3`, operation, h.plan.AttemptID, job).Scan(&private); err != nil {
+			t.Fatalf("identity/budget read failed: state=%s", sqlState(err))
+		}
+		return private
+	}
+	before := budget()
+	assertOpen := func() {
+		t.Helper()
+		var open bool
+		if err := h.lp.f.owner.QueryRow(ctx, `SELECT i.state<>'CLOSED' AND x.resource_state<>'TERMINAL'
+		 AND o.state IN ('DISPATCHING','UNKNOWN') AND j.finalized_at IS NULL
+		 FROM integration.operations o JOIN live.media_input_custody i ON i.operation_id=o.id
+		 JOIN live.media_execution_state x ON x.operation_id=o.id JOIN river_media.river_job j ON j.id=o.job_id
+		 WHERE o.id=$1::uuid`, operation).Scan(&open); err != nil || !open || budget() != before {
+			t.Fatalf("proof changed liability/identity/budget: open=%v state=%s", open, sqlState(err))
+		}
+	}
+	read := func(wantInput, wantEgress string, inputGen, egressGen int64, wantDisposition, wantScope string) {
+		t.Helper()
+		var valid bool
+		if err := recovery.QueryRow(ctx, `SELECT count(*)=1 AND bool_and(
+		 operation_id=$2::uuid AND job_id=$3 AND baseline_generation=$4 AND candidate_count=1 AND coverage_known
+		 AND execution_profile='LOCAL_SFU_MOCK_EGRESS' AND input_required AND egress_required
+		 AND coalesce(input_observation_id::text,'')=$5 AND coalesce(observation_id::text,'')=$6
+		 AND coalesce(input_observation_generation,0)=$7 AND coalesce(observation_generation,0)=$8
+		 AND coalesce(input_observation_source,'')=CASE WHEN $5='' THEN '' ELSE 'ROOM' END
+		 AND coalesce(input_observation_result,'')=CASE WHEN $5='' THEN '' ELSE 'ABSENT' END
+		 AND coalesce(observation_source,'')=CASE WHEN $6='' THEN '' ELSE 'ROOM' END
+		 AND disposition=$9 AND scope_status=$10 AND timeout_at IS NULL)
+		 FROM live.read_media_recovery_episode_with_input($1::uuid)`, episode, operation, job, baseline,
+			wantInput, wantEgress, inputGen, egressGen, wantDisposition, wantScope).Scan(&valid); err != nil || !valid {
+			t.Fatalf("committed composite readback mismatch: state=%s", sqlState(err))
+		}
+	}
+	witness := func(input, egress any, want string, elapsed int64) {
+		t.Helper()
+		var got string
+		if err := recovery.QueryRow(ctx, `SELECT live.witness_media_recovery_episode_with_input($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::bigint)`,
+			episode, operation, input, egress, elapsed).Scan(&got); err != nil || got != want {
+			t.Fatalf("composite witness got=%s want=%s state=%s", got, want, sqlState(err))
+		}
+	}
+	read("", "", 0, 0, "pending", "pending")
+	witness(nil, nil, "unqualified", time.Since(started).Milliseconds())
+	assertOpen()
+	// Wait on the actual dispatch lease; no backdating or manual generation.
+	waitDeadline := time.Now().Add(40 * time.Second)
+	for {
+		var expired bool
+		if err := h.lp.f.owner.QueryRow(ctx, `SELECT lease_until IS NOT NULL AND lease_until<=clock_timestamp()
+		 FROM integration.operations WHERE id=$1::uuid AND generation=$2`, operation, lease.generation).Scan(&expired); err != nil {
+			t.Fatalf("dispatch lease read failed: state=%s", sqlState(err))
+		}
+		if expired {
+			break
+		}
+		if time.Now().After(waitDeadline) {
+			t.Fatal("dispatch lease did not expire within 40s")
+		}
+		timer := time.NewTimer(100 * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			t.Fatal("context expired waiting for dispatch lease")
+		case <-timer.C:
+		}
+	}
+	claim := func(key []byte, wantInput string) int64 {
+		t.Helper()
+		var generation int64
+		var valid bool
+		if len(key) != 32 {
+			t.Fatal("claim requires a 32-byte key")
+		}
+		if err := recovery.QueryRow(ctx, `SELECT disposition,generation,
+		 execution_profile='LOCAL_SFU_MOCK_EGRESS' AND input_required AND egress_required
+		 AND coalesce(input_observation_id::text,'')=$5 AND egress_observation_id IS NULL
+		 FROM live.claim_media_recovery_observation_with_input($1::uuid,$2::uuid,$3::bigint,$4::bytea)`,
+			episode, operation, job, key, wantInput).Scan(&disposition, &generation, &valid); err != nil || disposition != "claimed" || generation <= baseline || !valid {
+			t.Fatalf("both-bit claim failed: disposition=%s state=%s", disposition, sqlState(err))
+		}
+		return generation
+	}
+	key := randomBytes(32)
+	generation := claim(key, "")
+	var inputID, egressID string
+	inputRecord := `SELECT disposition,input_observation_id::text FROM live.record_browser_input_recovery_observation($1::uuid,$2::uuid,$3::bigint,$4::bytea,'ROOM','ABSENT',NULL,NULL)`
+	if err := recovery.QueryRow(ctx, inputRecord, episode, operation, generation, key).Scan(&disposition, &inputID); err != nil || disposition != "checked" || inputID == "" {
+		t.Fatalf("input record failed: disposition=%s state=%s", disposition, sqlState(err))
+	}
+	read(inputID, "", generation, 0, "pending", "pending")
+	witness(inputID, nil, "unqualified", time.Since(started).Milliseconds())
+	witness(nil, inputID, "unqualified", time.Since(started).Milliseconds())
+	witness(inputID, randomUUID(), "unqualified", time.Since(started).Milliseconds())
+	assertOpen()
+	// Fail the missing side under a wrong token, then recover its committed
+	// counterpart by readback. Each call is an independent committed statement.
+	egressRecord := `SELECT disposition,observation_id::text FROM live.record_media_recovery_observation_with_input(
+	 $1::uuid,$2::uuid,$3::bigint,$4::bytea,'ROOM','EG_mrr05_both',$5::text,'EGRESS_ACTIVE',100,120,0)`
+	if err := recovery.QueryRow(ctx, egressRecord, episode, operation, generation, randomBytes(32), h.plan.RoomName).Scan(&disposition, &egressID); sqlState(err) != "ME409" {
+		t.Fatalf("wrong egress authority state=%s", sqlState(err))
+	}
+	read(inputID, "", generation, 0, "pending", "pending")
+	assertOpen()
+	if err := recovery.QueryRow(ctx, `SELECT live.finish_media_recovery_observation_with_input($1::uuid,$2::uuid,$3::bigint,$4::bytea,'not_observed')`,
+		episode, operation, generation, key).Scan(&disposition); err != nil || disposition != "released" {
+		t.Fatalf("partial finish disposition=%s state=%s", disposition, sqlState(err))
+	}
+	read(inputID, "", generation, 0, "pending", "pending")
+	newKey := randomBytes(32)
+	if string(newKey) == string(key) {
+		t.Fatal("new owner requires an independent key")
+	}
+	newGeneration := claim(newKey, inputID)
+	if newGeneration <= generation {
+		t.Fatal("new claim failed to advance generation")
+	}
+	var duplicate string
+	if err := recovery.QueryRow(ctx, inputRecord, episode, operation, newGeneration, newKey).Scan(&disposition, &duplicate); sqlState(err) != "ME409" {
+		t.Fatalf("first input proof was replaceable: state=%s", sqlState(err))
+	}
+	read(inputID, "", generation, 0, "pending", "pending")
+	assertOpen()
+	if err := recovery.QueryRow(ctx, egressRecord, episode, operation, newGeneration, newKey, h.plan.RoomName).Scan(&disposition, &egressID); err != nil || disposition != "checked" || egressID == "" || egressID == inputID {
+		t.Fatalf("egress record failed: disposition=%s state=%s", disposition, sqlState(err))
+	}
+	read(inputID, egressID, generation, newGeneration, "checked", "pending")
+	// Egress status is not exported by the public reader; verify the exact
+	// persisted result via read-only owner inspection, never fabricate proof.
+	var correlated bool
+	if err := h.lp.f.owner.QueryRow(ctx, `SELECT r.operation_id=v.operation_id AND r.attempt_id=v.attempt_id
+	 AND r.operation_id=$3::uuid AND r.attempt_id=$4::uuid AND r.job_id=$5 AND r.episode_id=$6::uuid
+	 AND r.generation=$7 AND v.generation=$8 AND r.source='ROOM' AND r.result='ABSENT'
+	 AND v.source='ROOM' AND v.status='EGRESS_ACTIVE' AND v.egress_id='EG_mrr05_both'
+	 AND r.room_name=v.room_name AND r.project_id=v.project_id
+	 FROM live.media_input_recovery_observations r CROSS JOIN live.media_observations v
+	 WHERE r.id=$1::uuid AND v.id=$2::uuid`, inputID, egressID, operation, h.plan.AttemptID, job, episode, generation, newGeneration).Scan(&correlated); err != nil || !correlated {
+		t.Fatalf("exact committed proof correlation failed: state=%s", sqlState(err))
+	}
+	witness(nil, egressID, "unqualified", time.Since(started).Milliseconds())
+	witness(egressID, inputID, "unqualified", time.Since(started).Milliseconds())
+	witness(randomUUID(), egressID, "unqualified", time.Since(started).Milliseconds())
+	read(inputID, egressID, generation, newGeneration, "checked", "pending")
+	assertOpen()
+	elapsed := time.Since(started).Milliseconds()
+	if elapsed > 90000 {
+		t.Fatal("composite committed readback exceeded SQL episode budget")
+	}
+	witness(inputID, egressID, "witnessed", elapsed)
+	read(inputID, egressID, generation, newGeneration, "witnessed", "finished")
+	witness(inputID, egressID, "already_witnessed", elapsed)
+	assertOpen()
+}

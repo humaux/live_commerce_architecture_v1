@@ -430,7 +430,7 @@
     "tests/foundation/live_browser_input_holds_test.go": "6b9998ef144628ef40f5788a1c4df27567d1f1da909c4349b6abd79b38057d65",
     "tests/foundation/live_browser_input_http_test.go": "e2beaa328423bd439fa6a11348f59e9b19c01176ac8da73509b4cd483d0c9672",
     "tests/foundation/live_browser_input_plan_fault_test.go": "235072f275af0864168de4ecfafafb0c91ad636fa5c3783644e0b554e96757ed",
-    "tests/foundation/live_browser_input_recovery_mixed_test.go": "bd8435a0856ae1a0c4a473c4a7d9e380a45338572cc98a200101faebaeb35c8e",
+    "tests/foundation/live_browser_input_recovery_mixed_test.go": "6f75a39ca92041d1998de5661c5cf16cf53e13219be5e6a909ea9e05ac16d51a",
     "tests/foundation/live_browser_input_runtime_test.go": "94a03febda3d994256894e376e2614cf1aaed473c72f87d16d4f8201d348b895",
     "tests/foundation/live_claims_contains_test.go": "998d6824fb43416437fe69048f02166b1fb201a5397f77064895f4be83494c03",
     "tests/foundation/live_claims_ingest_test.go": "24ce9697acbb18a76d806bdc502b71a34c629b735e9af44fe4f30271c0e14857",
