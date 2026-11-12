@@ -1,3 +1,7 @@
+// Purpose: open and validate least-privilege media worker, executor and recovery pools.
+// Depends on: pgxpool, platform pool admission helpers and PostgreSQL role/function catalogs.
+// Used by: media worker/executor/recovery runtime wiring and foundation admission tests.
+// Invariants: retain role isolation and exact ABI checks; reject unexpected executable grants.
 package platform
 
 import (
