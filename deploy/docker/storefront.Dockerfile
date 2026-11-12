@@ -41,6 +41,8 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/admin/package.json apps/admin/
 COPY apps/storefront/package.json apps/storefront/
 COPY packages/i18n/package.json packages/i18n/
+COPY packages/ui/package.json packages/ui/
+COPY packages/format/package.json packages/format/
 
 FROM base AS deps
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile --store-dir /pnpm/store
