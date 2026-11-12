@@ -1539,9 +1539,11 @@ async function heldCreate(page: Page, label: string) {
   await expect.poll(async () => (await state()).held).toBe(1);
   return state("", "committed");
 }
-async function nativeBack(page: Page) {
-  // Browser UI history operation, not force clicking inert page controls or a synthetic prop swap.
-  await page.keyboard.press("Alt+ArrowLeft");
+async function nativeBack(page: Page, expectedURL: string) {
+  // Traverse one real history entry; URL/state, not a possibly null response, proves arrival.
+  expect(page.url()).not.toBe(expectedURL);
+  await page.goBack({ timeout: 15_000 });
+  await expect(page).toHaveURL(expectedURL);
 }
 test("REAL_PG forms same-tab store history boundary", async ({ browser }) => {
   const { page, context } = await signed(browser);
@@ -1549,29 +1551,28 @@ test("REAL_PG forms same-tab store history boundary", async ({ browser }) => {
     await step(
       page,
       "store history setup",
-      "selectOption/click",
-      "real alternate-store history entry",
+      "selectOption",
+      "stable alternate-members then original-members history entries",
       async () => {
         await page.getByTestId("shell-store-selector").selectOption(alt);
-        await page.getByTestId("nav-members").click();
         await expect(page).toHaveURL(list("en", alt));
+        await expect(page.getByTestId("shell-store-selector")).toHaveValue(alt);
         await page.getByTestId("shell-store-selector").selectOption(store);
-        await page.getByTestId("nav-members").click();
         await expect(page).toHaveURL(list("en"));
+        await expect(page.getByTestId("shell-store-selector")).toHaveValue(store);
       },
     );
     const committed = await heldCreate(page, "M7_C_STORE_PRIVATE");
     await step(
       page,
       "held same-tab store boundary",
-      "browser Back keyboard",
-      "new real store visible before response release",
+      "page.goBack",
+      "one Back reaches alternate members and unmounts old create form before release",
       async () => {
-        await nativeBack(page);
-        await expect(page.getByTestId("members-list")).toHaveCount(0);
-        await nativeBack(page);
-        await expect(page).toHaveURL(list("en", alt));
+        await nativeBack(page, list("en", alt));
+        await expect(page.getByTestId("shell-store-selector")).toHaveValue(alt);
         await expect(page.getByTestId("members-list")).toBeVisible();
+        await expect(page.getByTestId("member-form")).toHaveCount(0);
         await expect(page.getByTestId("member-create-open")).toHaveCount(0);
         await expect(page.locator('[name="name"]')).toHaveCount(0);
       },
@@ -1595,9 +1596,13 @@ test("REAL_PG forms same-tab store history boundary", async ({ browser }) => {
 test("REAL_PG forms same-tab member history boundary", async ({ browser }) => {
   const { page, context } = await signed(browser);
   try {
+    await expect(page).toHaveURL(list("en"));
     const b = await create(page, "en", "M7_C_MEMBER_B");
+    await expect(page).toHaveURL(`${origin}/en/members/${b}?store=${store}`);
     await page.getByTestId("member-back").click();
+    await expect(page).toHaveURL(list("en"));
     const a = await create(page, "en", "M7_C_MEMBER_A");
+    await expect(page).toHaveURL(`${origin}/en/members/${a}?store=${store}`);
     const beforeA = await state(a, "A_before"),
       beforeB = await state(b, "B_before");
     await review(page, "en", "7");
@@ -1609,13 +1614,13 @@ test("REAL_PG forms same-tab member history boundary", async ({ browser }) => {
     await step(
       page,
       "held same-tab member boundary",
-      "browser Back keyboard",
-      "B remains B before old A response release",
+      "page.goBack twice",
+      "A to list to B; B remains B before old A response release",
       async () => {
-        await nativeBack(page);
+        await nativeBack(page, list("en"));
         await expect(page.getByTestId("members-list")).toBeVisible();
-        await nativeBack(page);
-        await expect(page).toHaveURL(
+        await nativeBack(
+          page,
           `${origin}/en/members/${b}?store=${store}`,
         );
         await expect(
