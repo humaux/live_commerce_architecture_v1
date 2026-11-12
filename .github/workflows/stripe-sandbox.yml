@@ -31,7 +31,7 @@ jobs:
     timeout-minutes: 90
     environment: stripe-sandbox
     env:
-      GOTOOLCHAIN: go1.27.3
+      GOTOOLCHAIN: go1.27.4
       GOFLAGS: -mod=readonly
       PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
       MODE: --stripe-browser
