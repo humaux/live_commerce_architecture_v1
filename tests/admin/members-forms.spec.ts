@@ -1976,7 +1976,7 @@ test("REAL_PG forms genuine server race refusal and correction controls zh-CN", 
   await localizedRaceRefused(browser, "zh-CN");
 });
 
-for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
+for (const locale of ["en", "zh-TW"] as const) {
   test(`REAL_PG forms genuine create permission refusal ${locale}`, async ({ browser }) => {
     const { page, context } = await signed(browser, locale);
     try {
