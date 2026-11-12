@@ -670,3 +670,243 @@ func TestLiveMediaRecoveryMRR05BothMembers(t *testing.T) {
 	witness(inputID, egressID, "already_witnessed", elapsed)
 	assertOpen()
 }
+
+// Foreign proofs are committed receipts owned by another admitted original job,
+// not absent UUIDs. Only the public restricted-role recorders create evidence.
+func TestLiveMediaRecoveryMRR05ForeignMemberProofs(t *testing.T) {
+	members := [2]*brwHarness{brwStart(t), brwStart(t)}
+	a, b := members[0], members[1]
+	if a.lp.f != b.lp.f || a.session == b.session || a.input.AuthorizationID == b.input.AuthorizationID ||
+		a.plan.OperationID == b.plan.OperationID || a.plan.JobID == b.plan.JobID ||
+		a.plan.AttemptID == b.plan.AttemptID || a.plan.RoomName == b.plan.RoomName {
+		t.Fatal("foreign-member fixtures require one database and distinct original identities/targets")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+	defer cancel()
+	var leases [2]brwLease
+	for n, h := range members {
+		brwReserveGrant(t, h)
+		var err error
+		leases[n], err = brwClaim(ctx, h.bicHarness, h.plan, randomBytes(32))
+		if err != nil || leases[n].disposition != "claimed" || leases[n].mode != "reconcile" || leases[n].generation < 1 {
+			t.Fatalf("member %d original claim failed: state=%s", n, sqlState(err))
+		}
+		brwSelectObserve(t, h, leases[n])
+		material, err := brwReserveStart(ctx, h, leases[n], h.plan.RoomName,
+			h.grant.PublisherIdentity, "PA_mrr05_foreign", "ACTIVE", true, false, true, false)
+		if err != nil || material["mode"] != "dispatch" {
+			t.Fatalf("member %d original wire reservation failed: state=%s", n, sqlState(err))
+		}
+		material = nil
+	}
+	if a.grant.PublisherIdentity == b.grant.PublisherIdentity {
+		t.Fatal("foreign-member input targets must be distinct")
+	}
+	login, recovery := lmaLogin(t, a.lp.f, "commerce_media_recovery")
+	name := pgx.Identifier{login}.Sanitize()
+	mustExec(t, a.lp.f.owner, "REVOKE commerce_media_recovery FROM "+name)
+	mustExec(t, a.lp.f.owner, "GRANT commerce_media_recovery TO "+name+" WITH INHERIT TRUE, SET FALSE")
+	episode := randomUUID()
+	// Registered after both fixtures: exact episode cleanup runs before either
+	// fixture's receipt/attempt/authorization teardown; retained scope is unchanged.
+	mrr05Cleanup(t, a, episode)
+	started := time.Now()
+	var admitted bool
+	if err := recovery.QueryRow(ctx, `SELECT count(*)=2 AND bool_and(disposition='pending'
+	 AND episode_id=$1::uuid AND candidate_count=2 AND coverage_known
+	 AND execution_profile='LOCAL_SFU_MOCK_EGRESS' AND input_required AND egress_required
+	 AND ((operation_id=$2::uuid AND job_id=$3 AND baseline_generation=$4)
+	 OR (operation_id=$5::uuid AND job_id=$6 AND baseline_generation=$7)))
+	 AND count(DISTINCT operation_id)=2
+	 FROM live.begin_media_recovery_episode_with_input($1::uuid,0,2,true)`, episode,
+		a.plan.OperationID, a.plan.JobID, leases[0].generation,
+		b.plan.OperationID, b.plan.JobID, leases[1].generation).Scan(&admitted); err != nil || !admitted {
+		t.Fatalf("two-member both-bit admission failed: state=%s", sqlState(err))
+	}
+	// Freeze identity, native job, attempt, custody and Start/Stop budgets. Proof
+	// may advance recovery generation/projection, but cannot spend these budgets.
+	budget := func() string {
+		t.Helper()
+		var private string
+		if err := a.lp.f.owner.QueryRow(ctx, `SELECT jsonb_agg(jsonb_build_object(
+		 'operation',o.id,'job',o.job_id,'attempt',to_jsonb(a),'native',to_jsonb(j),
+		 'wire_at',x.wire_reserved_at,'wire_generation',x.wire_generation,
+		 'stop_count',x.stop_wire_count,'custody',to_jsonb(i)) ORDER BY o.id)::text
+		 FROM integration.operations o JOIN live.media_attempts a ON a.id=o.media_attempt_id
+		 JOIN river_media.river_job j ON j.id=o.job_id
+		 JOIN live.media_execution_state x ON x.operation_id=o.id
+		 JOIN live.media_input_custody i ON i.operation_id=o.id
+		 WHERE o.id IN ($1::uuid,$2::uuid)`, a.plan.OperationID, b.plan.OperationID).Scan(&private); err != nil {
+			t.Fatalf("private budget read failed: state=%s", sqlState(err))
+		}
+		return private
+	}
+	beforeBudget := budget()
+	assertOpen := func() {
+		t.Helper()
+		var open bool
+		if err := a.lp.f.owner.QueryRow(ctx, `SELECT count(*)=2 AND bool_and(
+		 i.state<>'CLOSED' AND x.resource_state<>'TERMINAL'
+		 AND o.state IN ('DISPATCHING','UNKNOWN') AND j.finalized_at IS NULL)
+		 FROM integration.operations o JOIN live.media_input_custody i ON i.operation_id=o.id
+		 JOIN live.media_execution_state x ON x.operation_id=o.id
+		 JOIN river_media.river_job j ON j.id=o.job_id
+		 WHERE o.id IN ($1::uuid,$2::uuid)`, a.plan.OperationID, b.plan.OperationID).Scan(&open); err != nil || !open || budget() != beforeBudget {
+			t.Fatalf("foreign proof changed original liability/budgets: state=%s", sqlState(err))
+		}
+	}
+	var inputIDs, egressIDs [2]string
+	var generations [2]int64
+	read := func(n int, wantDisposition, wantScope string) {
+		t.Helper()
+		h := members[n]
+		var valid bool
+		if err := recovery.QueryRow(ctx, `SELECT count(*)=1 AND bool_and(
+		 episode_id=$1::uuid AND job_id=$3 AND baseline_generation=$4 AND candidate_count=2
+		 AND coverage_known AND blocked_by_episode_id IS NULL AND timeout_at IS NULL
+		 AND execution_profile='LOCAL_SFU_MOCK_EGRESS' AND input_required AND egress_required
+		 AND coalesce(input_observation_id::text,'')=$5 AND coalesce(observation_id::text,'')=$6
+		 AND coalesce(input_observation_generation,0)=CASE WHEN $5='' THEN 0 ELSE $7 END
+		 AND coalesce(observation_generation,0)=CASE WHEN $6='' THEN 0 ELSE $7 END
+		 AND coalesce(input_observation_source,'')=CASE WHEN $5='' THEN '' ELSE 'ROOM' END
+		 AND coalesce(input_observation_result,'')=CASE WHEN $5='' THEN '' ELSE 'ABSENT' END
+		 AND coalesce(observation_source,'')=CASE WHEN $6='' THEN '' ELSE 'ROOM' END
+		 AND disposition=$8 AND scope_status=$9
+		 AND (witness_elapsed_ms IS NOT NULL)=($8='witnessed'))
+		 FROM live.read_media_recovery_episode_with_input($1::uuid) WHERE operation_id=$2::uuid`,
+			episode, h.plan.OperationID, h.plan.JobID, leases[n].generation,
+			inputIDs[n], egressIDs[n], generations[n], wantDisposition, wantScope).Scan(&valid); err != nil || !valid {
+			t.Fatalf("member %d committed readback mismatch: state=%s", n, sqlState(err))
+		}
+	}
+	for n := range members {
+		read(n, "pending", "pending")
+	}
+	waitDeadline := time.Now().Add(40 * time.Second)
+	for {
+		var expired bool
+		if err := a.lp.f.owner.QueryRow(ctx, `SELECT count(*)=2 AND bool_and(
+		 lease_until IS NOT NULL AND lease_until<=clock_timestamp()) FROM integration.operations
+		 WHERE (id=$1::uuid AND generation=$2) OR (id=$3::uuid AND generation=$4)`,
+			a.plan.OperationID, leases[0].generation, b.plan.OperationID, leases[1].generation).Scan(&expired); err != nil {
+			t.Fatalf("original lease read failed: state=%s", sqlState(err))
+		}
+		if expired {
+			break
+		}
+		if time.Now().After(waitDeadline) {
+			t.Fatal("original leases did not naturally expire within 40s")
+		}
+		timer := time.NewTimer(100 * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			t.Fatal("context expired waiting for original leases")
+		case <-timer.C:
+		}
+	}
+	for n, h := range members {
+		key := randomBytes(32)
+		var disposition string
+		var valid bool
+		if err := recovery.QueryRow(ctx, `SELECT disposition,generation,
+		 execution_profile='LOCAL_SFU_MOCK_EGRESS' AND input_required AND egress_required
+		 AND input_observation_id IS NULL AND egress_observation_id IS NULL
+		 FROM live.claim_media_recovery_observation_with_input($1::uuid,$2::uuid,$3::bigint,$4::bytea)`,
+			episode, h.plan.OperationID, h.plan.JobID, key).Scan(&disposition, &generations[n], &valid); err != nil ||
+			disposition != "claimed" || !valid || generations[n] <= leases[n].generation {
+			t.Fatalf("member %d recovery claim failed: state=%s", n, sqlState(err))
+		}
+		if err := recovery.QueryRow(ctx, `SELECT disposition,input_observation_id::text
+		 FROM live.record_browser_input_recovery_observation($1::uuid,$2::uuid,$3::bigint,$4::bytea,'ROOM','ABSENT',NULL,NULL)`,
+			episode, h.plan.OperationID, generations[n], key).Scan(&disposition, &inputIDs[n]); err != nil || disposition != "checked" || inputIDs[n] == "" {
+			t.Fatalf("member %d input record failed: state=%s", n, sqlState(err))
+		}
+		read(n, "pending", "pending") // Separate statement after INPUT COMMIT.
+		if err := recovery.QueryRow(ctx, `SELECT disposition,observation_id::text
+		 FROM live.record_media_recovery_observation_with_input($1::uuid,$2::uuid,$3::bigint,$4::bytea,
+		 'ROOM',$5::text,$6::text,'EGRESS_ACTIVE',100,120,0)`, episode, h.plan.OperationID,
+			generations[n], key, "EG_mrr05_foreign_"+h.plan.AttemptID, h.plan.RoomName).
+			Scan(&disposition, &egressIDs[n]); err != nil || disposition != "checked" || egressIDs[n] == "" || egressIDs[n] == inputIDs[n] {
+			t.Fatalf("member %d egress record failed: state=%s", n, sqlState(err))
+		}
+		read(n, "checked", "pending") // Separate statement after EGRESS COMMIT.
+		var correlated bool
+		if err := a.lp.f.owner.QueryRow(ctx, `SELECT r.operation_id=$3::uuid AND v.operation_id=r.operation_id
+		 AND r.attempt_id=$4::uuid AND v.attempt_id=r.attempt_id AND r.job_id=$5 AND o.job_id=r.job_id
+		 AND r.episode_id=$6::uuid AND r.generation=$7 AND v.generation=$7
+		 AND r.source='ROOM' AND r.result='ABSENT' AND v.source='ROOM' AND v.status='EGRESS_ACTIVE'
+		 AND v.egress_id=$8 AND r.room_name=$9 AND v.room_name=r.room_name
+		 AND r.project_id=i.project_id AND v.project_id=i.project_id
+		 AND r.endpoint_identity=i.endpoint_identity AND r.credential_version=i.credential_version
+		 AND r.publisher_identity=i.publisher_identity
+		 FROM live.media_input_recovery_observations r JOIN integration.operations o ON o.id=r.operation_id
+		 JOIN live.media_input_custody i ON i.operation_id=o.id CROSS JOIN live.media_observations v
+		 WHERE r.id=$1::uuid AND v.id=$2::uuid`, inputIDs[n], egressIDs[n], h.plan.OperationID,
+			h.plan.AttemptID, h.plan.JobID, episode, generations[n], "EG_mrr05_foreign_"+h.plan.AttemptID, h.plan.RoomName).Scan(&correlated); err != nil || !correlated {
+			t.Fatalf("member %d exact committed proof provenance failed: state=%s", n, sqlState(err))
+		}
+		assertOpen()
+	}
+	if inputIDs[0] == inputIDs[1] || egressIDs[0] == egressIDs[1] {
+		t.Fatal("foreign-member receipts must be distinct")
+	}
+	// Snapshot complete private rows/events of BOTH owners, including witness
+	// pointers and receipts, in one statement. Compare only; never log JSON.
+	snapshot := func() string {
+		t.Helper()
+		var private string
+		if err := a.lp.f.owner.QueryRow(ctx, `SELECT jsonb_build_object(
+		 'scope',(SELECT to_jsonb(s) FROM live.media_recovery_episode_scope s WHERE episode_id=$1::uuid),
+		 'owners',(SELECT jsonb_agg(jsonb_build_object('op',to_jsonb(o),'execution',to_jsonb(x)) ORDER BY o.id)
+		 FROM integration.operations o JOIN live.media_execution_state x ON x.operation_id=o.id WHERE o.id IN ($2::uuid,$3::uuid)),
+		 'events',(SELECT jsonb_agg(to_jsonb(e) ORDER BY id) FROM integration.operation_events e WHERE operation_id IN ($2::uuid,$3::uuid)),
+		 'inputs',(SELECT jsonb_agg(to_jsonb(r) ORDER BY id) FROM live.media_input_recovery_observations r WHERE episode_id=$1::uuid),
+		 'egress',(SELECT jsonb_agg(to_jsonb(v) ORDER BY id) FROM live.media_observations v WHERE operation_id IN ($2::uuid,$3::uuid)))::text`,
+			episode, a.plan.OperationID, b.plan.OperationID).Scan(&private); err != nil {
+			t.Fatalf("private two-owner snapshot failed: state=%s", sqlState(err))
+		}
+		return private
+	}
+	witness := func(n int, input, egress, want string, elapsed int64) {
+		t.Helper()
+		if elapsed < 0 || elapsed > 90000 {
+			t.Fatal("committed readback exceeded 90000ms SQL episode budget")
+		}
+		var got string
+		if err := recovery.QueryRow(ctx, `SELECT live.witness_media_recovery_episode_with_input($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::bigint)`,
+			episode, members[n].plan.OperationID, input, egress, elapsed).Scan(&got); err != nil || got != want {
+			t.Fatalf("member %d witness got=%s want=%s state=%s", n, got, want, sqlState(err))
+		}
+	}
+	for _, pair := range [][2]string{{inputIDs[0], egressIDs[1]}, {inputIDs[1], egressIDs[0]}, {inputIDs[1], egressIDs[1]}} {
+		read(0, "checked", "pending")
+		read(1, "checked", "pending")
+		before := snapshot()
+		witness(0, pair[0], pair[1], "unqualified", time.Since(started).Milliseconds())
+		if snapshot() != before {
+			t.Fatal("foreign-member rejection mutated either owner, event, receipt or scope")
+		}
+		read(0, "checked", "pending")
+		read(1, "checked", "pending")
+		assertOpen()
+	}
+	// Both true owners retain their exact proofs. A alone cannot finish scope.
+	for n := range members {
+		read(n, "checked", "pending")
+		elapsed := time.Since(started).Milliseconds()
+		witness(n, inputIDs[n], egressIDs[n], "witnessed", elapsed)
+		scope := "pending"
+		if n == 1 {
+			scope = "finished"
+		}
+		read(n, "witnessed", scope)
+		read(1-n, []string{"checked", "witnessed"}[n], scope)
+		before := snapshot()
+		witness(n, inputIDs[n], egressIDs[n], "already_witnessed", elapsed)
+		if snapshot() != before {
+			t.Fatal("own-pair idempotent replay mutated private state")
+		}
+		assertOpen()
+	}
+}
