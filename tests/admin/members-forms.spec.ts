@@ -1872,7 +1872,7 @@ test("REAL_PG forms create pending double click then committed UNKNOWN never res
 async function localizedAdjustUnknown(browser: Browser, locale: Locale) {
   const { page, context } = await signed(browser, locale);
   try {
-    const id = await create(page, locale, "M7_UNKNOWN_ADJUST");
+    const id = await create(page, locale, `M7_UNKNOWN_ADJUST_${locale}`);
     await review(page, locale, "5");
     const before = await state(id);
     await ctl("fault", "forms-drop");
@@ -1917,7 +1917,7 @@ test("REAL_PG forms adjust committed UNKNOWN reads SQL effect exactly once zh-CN
 async function localizedRaceRefused(browser: Browser, locale: Locale) {
   const { page, context } = await signed(browser, locale);
   try {
-    const id = await create(page, locale, "M7_RACE");
+    const id = await create(page, locale, `M7_RACE_${locale}`);
     await review(page, locale, "50");
     await confirm(page, 50);
     await review(page, locale, "30", true);
