@@ -156,7 +156,7 @@ test("live-settings is one inert registry entry with the existing admin/PG comma
   });
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /mode=--browser-live-settings build=admin fixture=pg/);
-  assert.match(result.stdout, /LC_BROWSER_LIVE_SETTINGS_ACCEPTANCE=1 GOTOOLCHAIN=go1\.27\.3 go test -race -tags browser -count=1 -timeout=780s -run '\^\(TestBrowserLiveSettingsUIRealChain\|TestBrowserParityLeftovers\)\$'/);
+  assert.match(result.stdout, /LC_BROWSER_LIVE_SETTINGS_ACCEPTANCE=1 GOTOOLCHAIN=go1\.27\.4 go test -race -tags browser -count=1 -timeout=780s -run '\^\(TestBrowserLiveSettingsUIRealChain\|TestBrowserParityLeftovers\)\$'/);
   const selector = result.stdout.match(/-run '([^']+)' -v \.\/tests\/foundation/);
   assert.ok(selector, "the registered Go test selector must be present");
   const selected = new RegExp(selector[1]);

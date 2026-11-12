@@ -20,7 +20,7 @@
 #   smoke full; keep the digest pin; never COPY env/secret files into any stage.
 
 # Same Go pin as go.Dockerfile; only used to compile the static lcentry launcher.
-ARG GO_IMAGE=golang:1.27.3-trixie@sha256:604106102d33b1084e37ca08adf98ac0813624ae8595bd0d7f3965ecebded09c
+ARG GO_IMAGE=golang:1.27.4-trixie@sha256:b54b2639de8c1bfe538ec5ffc45f29b1932235ac5f6d63c059853646677112d9
 # Node 24.15.0 = ledger-tested toolchain (docs/implementation/dependencies.md:226); resolved 2026-09-28.
 ARG NODE_IMAGE=node:24.15.0-trixie-slim@sha256:291be77873bc04731968cacf82f0fcef17cee8cf200c6b6951e2bcab41560eb7
 

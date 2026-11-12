@@ -1007,7 +1007,20 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
           actual: "PASS",
         });
         await page.getByTestId("attribution-from").fill(fixture.from);
+        // Same-date reads remount the native disclosure; inspect only the new report.
+        const restoredReportRead = page.waitForResponse(
+          (r) =>
+            r.request().method() === "GET" &&
+            new URL(r.url()).pathname ===
+              `/api/stores/${store}/ads/attribution`,
+        );
         await page.getByTestId("attribution-apply").click();
+        const restoredReportResponse = await restoredReportRead;
+        expect(restoredReportResponse.status()).toBe(200);
+        await restoredReportResponse.json();
+        await expect(page.getByTestId("attribution-loading")).toBeHidden();
+        await expect(page.getByTestId("attribution-apply")).toBeEnabled();
+        await expect(page.getByTestId("attribution-window")).toBeVisible();
         await visibleFacts(page, locale);
         // READ/MEASURE only: checks layout; never changes DOM, values or backend state.
         expect(
