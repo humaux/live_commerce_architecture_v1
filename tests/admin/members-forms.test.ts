@@ -172,8 +172,8 @@ test("MOCK adjustment validates integer/reason/balance, reviews and returns with
   await entered.promise;
   await x.h.settle();
   assert.equal(calls, 1);
-  assert.equal(by(x.h, "member-form-cancel").props["aria-disabled"], true);
-  by(x.h, "member-form-cancel").props.onClick();
+  assert.equal(by(x.h, "member-form-back").props["aria-disabled"], true);
+  by(x.h, "member-form-back").props.onClick();
   assert.equal(by(x.h, "member-form-dialog").props["data-step"], "pending");
   assert.deepEqual(JSON.parse(String(request?.body)), {
     delta: -20,
@@ -329,3 +329,70 @@ for (const code of [
       code === "idempotency_conflict" ? "unknown" : "refused",
     );
   });
+
+for (const direction of [1, -1])
+  test(`MOCK adjustment held pending preserves confirmation summary and exclusion (${direction})`, async (t) => {
+    const x = await setup(t, true), held = deferred<Response>(), entered = deferred<void>();
+    let calls = 0;
+    globalThis.fetch = async () => { calls++; entered.resolve(); return held.promise; };
+    field(x.h, "sign", String(direction));
+    field(x.h, "amount", "20");
+    field(x.h, "note", "synthetic pending reason");
+    submit(x.h);
+    await x.h.settle();
+    const summary = textOf(x.h.output);
+    const confirmationTitle = textOf(node(x.h, (n) => n.props.id === "member-form-title"));
+    const confirm = by(x.h, "member-form-confirm").props.onClick;
+    confirm();
+    await entered.promise;
+    await x.h.settle();
+    try {
+      assert.equal(by(x.h, "member-form-dialog").props["data-step"], "pending");
+      assert.equal(nodes(x.h.flush()).filter((n) => ["input", "textarea", "select"].includes(n.type as string)).length, 0);
+      const pending = textOf(x.h.output);
+      assert.equal(textOf(node(x.h, (n) => n.props.id === "member-form-title")), confirmationTitle);
+      assert.equal(by(x.h, "member-form-dialog").props["aria-describedby"], "member-form-pending");
+      assert.equal(node(x.h, (n) => n.props.id === "member-form-pending").props.role, "status");
+      assert.equal(nodes(x.h.flush()).some((n) => n.props.id === "member-form-guidance"), false);
+      assert.ok(summary.includes("SYNTHETIC_MEMBER"));
+      assert.ok(pending.includes("SYNTHETIC_MEMBER"));
+      assert.ok(pending.includes("synthetic pending reason"));
+      assert.ok(pending.includes(`50 → ${50 + direction * 20}`));
+      assert.ok(pending.replace(/\s/g, "").includes(`${direction > 0 ? "+" : "−"}20`));
+      assert.ok(textOf(node(x.h, (n) => n.props.role === "status")).length > 0);
+      for (const id of ["member-form-back", "member-form-confirm"])
+        assert.equal(by(x.h, id).props["aria-disabled"], true);
+      by(x.h, "member-form-back").props.onClick();
+      by(x.h, "member-form-confirm").props.onClick();
+      confirm(); // Stale pre-pending handler must retain synchronous single-intent exclusion.
+      by(x.h, "member-form-dialog").props.onCancel({ preventDefault() {} });
+      await x.h.settle();
+      assert.equal(by(x.h, "member-form-dialog").props["data-step"], "pending");
+      assert.equal(calls, 1);
+    } finally {
+      held.resolve(response({ entry: { id: sid }, balance: 50 + direction * 20 }));
+      await x.h.settle();
+    }
+  });
+test("MOCK create held pending retains disabled fields and status without duplicate POST or dismiss", async (t) => {
+  const x = await setup(t), held = deferred<Response>(), entered = deferred<void>();
+  let calls = 0;
+  globalThis.fetch = async () => { calls++; entered.resolve(); return held.promise; };
+  field(x.h, "name", "SYNTHETIC_CREATE");
+  submit(x.h);
+  await entered.promise;
+  await x.h.settle();
+  try {
+    assert.equal(by(x.h, "member-form-dialog").props["data-step"], "pending");
+    for (const name of ["name", "contact", "notes"])
+      assert.equal(node(x.h, (n) => n.props.name === name).props.disabled, true);
+    assert.ok(textOf(node(x.h, (n) => n.props.role === "status")).length > 0);
+    for (const id of ["member-form-cancel", "member-form-submit"])
+      assert.equal(by(x.h, id).props["aria-disabled"], true);
+    by(x.h, "member-form-cancel").props.onClick();
+    submit(x.h);
+    await x.h.settle();
+    assert.equal(by(x.h, "member-form-dialog").props["data-step"], "pending");
+    assert.equal(calls, 1);
+  } finally { held.resolve(response({ member })); await x.h.settle(); }
+});

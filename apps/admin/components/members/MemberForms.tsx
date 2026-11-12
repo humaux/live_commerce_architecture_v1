@@ -307,7 +307,7 @@ export function MemberForms({
     ? adjusting
       ? c.unknownTitle
       : c.createUnknownTitle
-    : step === "confirm"
+    : step === "confirm" || (busy && adjusting)
       ? sign > 0
         ? c.confirmAdd
         : c.confirmDeduct
@@ -370,7 +370,7 @@ export function MemberForms({
         ref={dialog}
         className={s.formDialog}
         aria-labelledby="member-form-title"
-        aria-describedby="member-form-guidance"
+        aria-describedby={busy && adjusting ? "member-form-pending" : "member-form-guidance"}
         data-testid="member-form-dialog"
         data-kind={adjusting ? "adjust" : "create"}
         data-step={step}
@@ -406,14 +406,16 @@ export function MemberForms({
             <h2 id="member-form-title" tabIndex={-1}>
               {title}
             </h2>
-            <p id="member-form-guidance">
-              {unresolved
-                ? c.readOnlyRefresh
-                : adjusting
-                  ? c.irreversible
-                  : c.searchFirst}
-            </p>
-            {(step === "edit" || busy) && (
+            {!(busy && adjusting) && (
+              <p id="member-form-guidance">
+                {unresolved
+                  ? c.readOnlyRefresh
+                  : adjusting
+                    ? c.irreversible
+                    : c.searchFirst}
+              </p>
+            )}
+            {(step === "edit" || (busy && !adjusting)) && (
               <form data-testid="member-form" onSubmit={review} noValidate>
                 <fieldset disabled={busy}>
                   {adjusting ? (
@@ -472,7 +474,7 @@ export function MemberForms({
                 </div>
               </form>
             )}
-            {step === "confirm" && (
+            {(step === "confirm" || (busy && adjusting)) && (
               <>
                 <p>{snapshot?.name}</p>
                 <p>
@@ -485,11 +487,15 @@ export function MemberForms({
                 <p>
                   {`${c.balance}: ${snapshot?.balance} → ${(snapshot?.balance ?? 0) + sign * Number(amount)}`}
                 </p>
+                {busy && <p id="member-form-pending" role="status">{c.pending}</p>}
                 <div className={s.formActions}>
                   <Button
                     size="lg"
                     data-testid="member-form-back"
-                    onClick={() => setStep("edit")}
+                    disabledReason={busy ? c.pending : undefined}
+                    onClick={() => {
+                      if (!busy && !intent.current) setStep("edit");
+                    }}
                   >
                     {c.back}
                   </Button>
@@ -497,9 +503,10 @@ export function MemberForms({
                     size="lg"
                     variant="primary"
                     data-testid="member-form-confirm"
+                    disabledReason={busy ? c.pending : undefined}
                     onClick={() => void submit()}
                   >
-                    {sign > 0 ? c.confirmAdd : c.confirmDeduct}
+                    {busy ? c.pending : sign > 0 ? c.confirmAdd : c.confirmDeduct}
                   </Button>
                 </div>
               </>
