@@ -501,6 +501,15 @@ const originalCases = [
   "REAL_PG forms erased before open",
   "REAL_PG forms erased after review",
   "REAL_PG forms unavailable member read state",
+  "REAL_PG forms create pending double click then committed UNKNOWN never resends zh-TW",
+  "REAL_PG forms create pending double click then committed UNKNOWN never resends zh-CN",
+  "REAL_PG forms adjust committed UNKNOWN reads SQL effect exactly once zh-TW",
+  "REAL_PG forms adjust committed UNKNOWN reads SQL effect exactly once zh-CN",
+  "REAL_PG forms genuine server race refusal and correction controls zh-TW",
+  "REAL_PG forms genuine server race refusal and correction controls zh-CN",
+  "REAL_PG forms genuine create permission refusal en",
+  "REAL_PG forms genuine create permission refusal zh-TW",
+  "REAL_PG forms genuine create permission refusal zh-CN",
 ] as const;
 type Locale = "en" | "zh-TW" | "zh-CN";
 type Row = {
@@ -1787,3 +1796,202 @@ test("REAL_PG forms unavailable member read state", async ({ browser }) => {
     await context.close();
   }
 });
+
+async function localizedCreateUnknown(browser: Browser, locale: Locale) {
+  const { page, context } = await signed(browser, locale);
+  const before = await state();
+  try {
+    await page.getByTestId("member-create-open").click();
+    await fill(page, "name", "M7 synthetic dropped create");
+    await ctl("fault", "forms-drop");
+    await step(
+      page,
+      "create response lost",
+      "click",
+      "committed create becomes UNKNOWN",
+      async () => {
+        await page.getByTestId("member-form-submit").click();
+        await expect(dialog(page)).toHaveAttribute("data-step", "unknown");
+      },
+    );
+    await captureResponsive(page, locale, "CreateUnknown");
+    const committed = await state("", "unknown");
+    expect(committed.members).toBe(before.members + 1);
+    expect(committed.commands).toBe(before.commands + 1);
+    await step(
+      page,
+      "UNKNOWN read only",
+      "click/keyboard",
+      "refresh and Escape cannot resend or resolve intent",
+      async () => {
+        await page.getByTestId("member-form-refresh").click();
+        await page.keyboard.press("Escape");
+        await expect(dialog(page)).toBeVisible();
+        await expect(dialog(page)).toHaveAttribute("data-step", "unknown");
+        await expect(page.getByTestId("member-form-submit")).toHaveCount(0);
+      },
+    );
+    await state("", "refreshed");
+    await state("", "escape_blocked");
+    await expect(page.getByTestId("member-form-close")).toHaveCount(0);
+    await expect(page.getByTestId("member-form-cancel")).toHaveCount(0);
+    const after = await state();
+    expect(after.commands).toBe(committed.commands);
+    expect(after.writeRequests).toBe(committed.writeRequests);
+  } finally {
+    await context.close();
+  }
+}
+test("REAL_PG forms create pending double click then committed UNKNOWN never resends zh-TW", async ({ browser }) => {
+  await localizedCreateUnknown(browser, "zh-TW");
+});
+test("REAL_PG forms create pending double click then committed UNKNOWN never resends zh-CN", async ({ browser }) => {
+  await localizedCreateUnknown(browser, "zh-CN");
+});
+
+async function localizedAdjustUnknown(browser: Browser, locale: Locale) {
+  const { page, context } = await signed(browser, locale);
+  try {
+    const id = await create(page, locale, "M7_UNKNOWN_ADJUST");
+    await review(page, locale, "5");
+    const before = await state(id);
+    await ctl("fault", "forms-drop");
+    await page.getByTestId("member-form-confirm").click();
+    await expect(dialog(page)).toHaveAttribute("data-step", "unknown");
+    await captureResponsive(page, locale, "Unknown");
+    const committed = await state(id, "unknown");
+    expect(committed.balance).toBe(5);
+    expect(committed.sum).toBe(5);
+    expect(committed.memberEntries).toBe(1);
+    expect(committed.commands).toBe(before.commands + 1);
+    await step(
+      page,
+      "adjust UNKNOWN refresh",
+      "click",
+      "read refresh keeps unresolved state and sends no POST",
+      async () => {
+        await page.getByTestId("member-form-refresh").click();
+        await expect(dialog(page)).toHaveAttribute("data-step", "unknown");
+      },
+    );
+    await state(id, "refreshed");
+    await page.keyboard.press("Escape");
+    await expect(dialog(page)).toHaveAttribute("data-step", "unknown");
+    await state(id, "escape_blocked");
+    await expect(page.getByTestId("member-form-close")).toHaveCount(0);
+    await expect(page.getByTestId("member-form-cancel")).toHaveCount(0);
+    const after = await state(id);
+    expect(after.commands).toBe(committed.commands);
+    expect(after.writeRequests).toBe(committed.writeRequests);
+  } finally {
+    await context.close();
+  }
+}
+test("REAL_PG forms adjust committed UNKNOWN reads SQL effect exactly once zh-TW", async ({ browser }) => {
+  await localizedAdjustUnknown(browser, "zh-TW");
+});
+test("REAL_PG forms adjust committed UNKNOWN reads SQL effect exactly once zh-CN", async ({ browser }) => {
+  await localizedAdjustUnknown(browser, "zh-CN");
+});
+
+async function localizedRaceRefused(browser: Browser, locale: Locale) {
+  const { page, context } = await signed(browser, locale);
+  try {
+    const id = await create(page, locale, "M7_RACE");
+    await review(page, locale, "50");
+    await confirm(page, 50);
+    await review(page, locale, "30", true);
+    await ctl("forms-race", id);
+    const before = await state(id, "race_fixture");
+    await step(
+      page,
+      "server concurrent deduction refusal",
+      "click",
+      "actual409 visible and no second deduction",
+      async () => {
+        await page.getByTestId("member-form-confirm").click();
+        await expect(dialog(page)).toHaveAttribute("data-step", "refused");
+        await expect(dialog(page).getByRole("alert")).toContainText(
+          memberFormCopy[locale].insufficient,
+        );
+      },
+    );
+    await captureResponsive(page, locale, "Refused");
+    const after = await state(id, "refused");
+    expect(after.commands).toBe(before.commands);
+    expect(after.memberEntries).toBe(before.memberEntries);
+    expect(after.balance).toBe(0);
+    await step(
+      page,
+      "refusal back",
+      "click",
+      "draft can be corrected",
+      async () => {
+        await page.getByTestId("member-form-back").click();
+        await expect(page.locator('[name="amount"]')).toHaveValue("30");
+      },
+    );
+    await page.getByTestId("member-form-submit").click();
+    await page.getByTestId("member-form-confirm").click();
+    await expect(dialog(page)).toHaveAttribute("data-step", "refused");
+    await step(
+      page,
+      "refusal close",
+      "click",
+      "modal closes and opener focused",
+      async () => {
+        await page.getByTestId("member-form-close").click();
+        await expect(dialog(page)).not.toBeVisible();
+        await expect(page.getByTestId("member-adjust-open")).toBeFocused();
+      },
+    );
+  } finally {
+    await context.close();
+  }
+}
+test("REAL_PG forms genuine server race refusal and correction controls zh-TW", async ({ browser }) => {
+  await localizedRaceRefused(browser, "zh-TW");
+});
+test("REAL_PG forms genuine server race refusal and correction controls zh-CN", async ({ browser }) => {
+  await localizedRaceRefused(browser, "zh-CN");
+});
+
+for (const locale of ["en", "zh-TW", "zh-CN"] as const) {
+  test(`REAL_PG forms genuine create permission refusal ${locale}`, async ({ browser }) => {
+    const { page, context } = await signed(browser, locale);
+    try {
+      await page.getByTestId("member-create-open").click();
+      await fill(page, "name", "M7 synthetic permission refusal");
+      const before = await state();
+      // Fixture changes only the existing synthetic grant after the real form opens.
+      await ctl("forms-points-grant", "deny");
+      await step(page, "create permission refusal", "click", "genuine POST403 and localized refused UI", async () => {
+        const response = page.waitForResponse(r =>
+          r.request().method() === "POST" &&
+          new URL(r.url()).pathname === `/api/stores/${store}/members`);
+        await page.getByTestId("member-form-submit").click();
+        const refused = await response;
+        expect(refused.status()).toBe(403);
+        expect(await refused.text()).toContain("forbidden");
+        await expect(dialog(page)).toHaveAttribute("data-step", "refused");
+        await expect(dialog(page).getByRole("alert")).toContainText(memberFormCopy[locale].forbidden);
+      });
+      await captureResponsive(page, locale, "CreateRefused");
+      const after = await state("", "refused");
+      for (const key of ["members", "entries", "commands", "totalBalance", "erasedMembers"])
+        expect(after[key], key).toBe(before[key]);
+      expect(after.writeRequests).toBe(before.writeRequests + 1);
+    } finally {
+      try {
+        // Handler returns204 only after exact captured grant state is restored.
+        await ctl("forms-points-grant", "restore");
+        await step(page, "restored read access", "reload", "production member list remains readable", async () => {
+          await page.reload();
+          await expect(page.getByTestId("members-list")).toBeVisible();
+        });
+      } finally {
+        await context.close();
+      }
+    }
+  });
+}

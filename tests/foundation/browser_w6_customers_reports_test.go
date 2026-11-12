@@ -69,6 +69,8 @@ type w6uiFixture struct {
 	formsKeyBodyUnchanged                                                                             bool
 	formsTransport                                                                                    int64
 	formsFixtureCommands                                                                              int64
+	formsGrantBefore                                                                                  [][4]string
+	formsGrantDenied                                                                                  bool
 	formsStarted                                                                                      bool
 }
 
@@ -133,6 +135,19 @@ func TestW6UISeedFocused(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	for _, fault := range []struct {
+		name, mode string
+		committed  bool
+	}{
+		{"deny_commit_ack_loss", "deny", true},
+		{"restore_commit_ack_loss", "restore", true},
+		{"deny_rolled_back", "deny", false},
+	} {
+		t.Run("forms_grant_"+fault.name, func(t *testing.T) {
+			w6uiFormsGrantCommitRecovery(t, fault.mode, fault.committed)
+		})
+	}
+	t.Run("forms_grant_unsettled_commit", w6uiFormsGrantUnsettled)
 }
 
 // TestW6UIMembersOrderAPIFocused proves the member corpus through the production router without Next or a browser.
@@ -685,6 +700,8 @@ func w6uiStart(t *testing.T, ctx context.Context, x *w6uiFixture, evidence strin
 			return
 		case "/members-revoke":
 			_, e = x.w.f.owner.Exec(r.Context(), `UPDATE identity.sessions SET revoked_at=clock_timestamp() WHERE principal_id=$1`, x.actors["reader"])
+		case "/forms-points-grant":
+			e = w6uiFormsPointsGrant(r.Context(), x, in.Mode)
 		case "/deny-read":
 			_, e = x.w.f.owner.Exec(r.Context(), `DELETE FROM identity.store_grants WHERE principal_id=$1 AND store_id=$2 AND permission='customers:read'`, x.actors["reader"], x.w.store)
 		case "/restore-read":
@@ -1102,6 +1119,13 @@ func w6uiPrepareForms(t *testing.T, x *w6uiFixture) {
 		mustExec(t, x.w.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4)`, x.w.tenant, x.formsAlt, x.formsPrincipal, permission)
 	}
 	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := w6uiFormsPointsGrant(ctx, x, "restore"); err != nil {
+			t.Errorf("forms exact grant restoration: %v", err)
+		}
+	})
+	t.Cleanup(func() {
 		x.mu.Lock()
 		defer x.mu.Unlock()
 		if x.formsHeld != nil {
@@ -1109,6 +1133,318 @@ func w6uiPrepareForms(t *testing.T, x *w6uiFixture) {
 			x.formsHeld = nil
 		}
 	})
+}
+
+// w6uiFormsPointsGrant binds a single synthetic points grant; complete tenant grants
+// are compared in the same transaction. No request controls actor/store/permission.
+func w6uiFormsPointsGrant(ctx context.Context, x *w6uiFixture, mode string) error {
+	return w6uiFormsPointsGrantCommit(ctx, x, mode, func(tx pgx.Tx) error { return tx.Commit(ctx) })
+}
+
+// The commit seam is private to this fixture and its real-PG fault tests; HTTP input cannot select it.
+func w6uiFormsPointsGrantCommit(ctx context.Context, x *w6uiFixture, mode string, commit func(pgx.Tx) error) error {
+	if mode != "deny" && mode != "restore" {
+		return fmt.Errorf("invalid grant mode")
+	}
+	x.mu.Lock()
+	defer x.mu.Unlock()
+	if x.formsStore == "" || x.formsPrincipal == "" {
+		return fmt.Errorf("forms not prepared")
+	}
+	tx, err := x.w.f.owner.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
+	// The stable membership row fences an earlier ambiguous transaction before the next fresh snapshot.
+	var lockedPrincipal string
+	if err := tx.QueryRow(ctx, "SELECT principal_id::text FROM identity.memberships WHERE tenant_id=$1 AND principal_id=$2 FOR UPDATE", x.w.tenant, x.formsPrincipal).Scan(&lockedPrincipal); err != nil {
+		return err
+	}
+	read := func() ([][4]string, error) {
+		rows, err := tx.Query(ctx, `SELECT tenant_id::text,store_id::text,principal_id::text,permission FROM identity.store_grants WHERE tenant_id=$1 ORDER BY tenant_id,store_id,principal_id,permission`, x.w.tenant)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		grants := make([][4]string, 0)
+		for rows.Next() {
+			var row [4]string
+			if err := rows.Scan(&row[0], &row[1], &row[2], &row[3]); err != nil {
+				return nil, err
+			}
+			grants = append(grants, row)
+		}
+		return grants, rows.Err()
+	}
+	current, err := read()
+	if err != nil {
+		return err
+	}
+	target := [4]string{x.w.tenant, x.formsStore, x.formsPrincipal, "customers:points"}
+	if mode == "deny" {
+		if x.formsGrantDenied {
+			return fmt.Errorf("points already denied")
+		}
+		remaining := make([][4]string, 0, len(current))
+		matches, reads := 0, 0
+		for _, row := range current {
+			if row == target {
+				matches++
+			} else {
+				remaining = append(remaining, row)
+			}
+			if row[1] == x.formsStore && row[2] == x.formsPrincipal && (row[3] == "store:read" || row[3] == "customers:read") {
+				reads++
+			}
+		}
+		if matches != 1 || reads != 2 {
+			return fmt.Errorf("expected exact points and read grants")
+		}
+		// Keep restoration intent before any write: a COMMIT error cannot prove rollback.
+		x.formsGrantBefore, x.formsGrantDenied = current, true
+		result, err := tx.Exec(ctx, `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission=$4`, target[0], target[1], target[2], target[3])
+		if err != nil {
+			return err
+		}
+		if result.RowsAffected() != 1 {
+			return fmt.Errorf("points deletion count")
+		}
+		after, err := read()
+		if err != nil {
+			return err
+		}
+		if !reflect.DeepEqual(after, remaining) {
+			return fmt.Errorf("other grants changed during deny")
+		}
+		if err := commit(tx); err != nil {
+			return err
+		}
+		return nil
+	}
+	if !x.formsGrantDenied {
+		return nil
+	}
+	// A prior deny may have rolled back, or restore may have committed without its acknowledgement.
+	if reflect.DeepEqual(current, x.formsGrantBefore) {
+		x.formsGrantDenied = false
+		return nil
+	}
+	// Recover the exact original four columns, never manufacture a grant.
+	var captured [4]string
+	remaining := make([][4]string, 0, len(x.formsGrantBefore))
+	matches := 0
+	for _, row := range x.formsGrantBefore {
+		if row == target {
+			captured = row
+			matches++
+		} else {
+			remaining = append(remaining, row)
+		}
+	}
+	if matches != 1 {
+		return fmt.Errorf("missing captured points tuple")
+	}
+	if !reflect.DeepEqual(current, remaining) {
+		return fmt.Errorf("other grants changed before restore")
+	}
+	if _, err := tx.Exec(ctx, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4)`, captured[0], captured[1], captured[2], captured[3]); err != nil {
+		return err
+	}
+	after, err := read()
+	if err != nil {
+		return err
+	}
+	if !reflect.DeepEqual(after, x.formsGrantBefore) {
+		return fmt.Errorf("full grant state differs after restore")
+	}
+	if err := commit(tx); err != nil {
+		return err
+	}
+	x.formsGrantDenied = false
+	return nil
+}
+
+// Exercise committed-but-unacknowledged and rolled-back outcomes in the already-selected PG seed test.
+func w6uiFormsGrantCommitRecovery(t *testing.T, mode string, commitBeforeError bool) {
+	t.Helper()
+	x := w6uiSeed(t)
+	w6uiPrepareForms(t, x)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	grants := func() string {
+		t.Helper()
+		var value string
+		err := x.w.f.owner.QueryRow(ctx, "SELECT coalesce(jsonb_agg(jsonb_build_array(tenant_id,store_id,principal_id,permission) ORDER BY tenant_id,store_id,principal_id,permission),'[]'::jsonb)::text FROM identity.store_grants WHERE tenant_id=$1", x.w.tenant).Scan(&value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return value
+	}
+	business := func() [3]int64 {
+		t.Helper()
+		var value [3]int64
+		err := x.w.f.owner.QueryRow(ctx, "SELECT (SELECT count(*) FROM loyalty.members WHERE store_id=$1),(SELECT count(*) FROM loyalty.point_entries WHERE store_id=$1),(SELECT count(*) FROM ops.command_results WHERE store_id=$1 AND operation LIKE 'loyalty.%')", x.formsStore).Scan(&value[0], &value[1], &value[2])
+		if err != nil {
+			t.Fatal(err)
+		}
+		return value
+	}
+	original, effects := grants(), business()
+	if mode == "restore" {
+		if err := w6uiFormsPointsGrant(ctx, x, "deny"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	lost := errors.New("synthetic grant commit acknowledgement loss")
+	injected := false
+	err := w6uiFormsPointsGrantCommit(ctx, x, mode, func(tx pgx.Tx) error {
+		injected = true
+		if commitBeforeError {
+			if err := tx.Commit(ctx); err != nil {
+				return err
+			}
+		}
+		return lost
+	})
+	if !injected || !errors.Is(err, lost) {
+		t.Fatalf("grant commit fault not exercised: %v", err)
+	}
+	afterFault := grants()
+	if mode == "deny" && commitBeforeError {
+		if afterFault == original {
+			t.Fatal("deny fault did not commit the grant removal")
+		}
+	} else if afterFault != original {
+		t.Fatal("rollback or committed restore did not leave original grants")
+	}
+	for i := 0; i < 2; i++ {
+		if err := w6uiFormsPointsGrant(ctx, x, "restore"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if grants() != original || business() != effects {
+		t.Fatal("grant recovery changed the original grants or loyalty effects")
+	}
+	x.mu.Lock()
+	pending := x.formsGrantDenied
+	x.mu.Unlock()
+	if pending {
+		t.Fatal("grant restoration still pending after exact readback")
+	}
+	t.Logf("M7-GRANT-ACK-RECOVERY mode=%s committed=%t exact_grants=true business_delta=0 duplicate_restore=ok", mode, commitBeforeError)
+}
+
+// A real open transaction models the backend still settling after an ambiguous commit response.
+func w6uiFormsGrantUnsettled(t *testing.T) {
+	x := w6uiSeed(t)
+	w6uiPrepareForms(t, x)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := w6uiFormsPointsGrant(ctx, x, "deny"); err != nil {
+		t.Fatal(err)
+	}
+	if err := w6uiFormsPointsGrant(ctx, x, "restore"); err != nil {
+		t.Fatal(err)
+	}
+	// Keep the blocker/probe outside the pool so the concurrency witness also works with MaxConns=1.
+	connect := func() *pgx.Conn {
+		t.Helper()
+		conn, err := pgx.ConnectConfig(ctx, x.w.f.owner.Config().ConnConfig.Copy())
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() {
+			cleanup, stop := context.WithTimeout(context.Background(), 5*time.Second)
+			defer stop()
+			if err := conn.Close(cleanup); err != nil {
+				t.Error(err)
+			}
+		})
+		return conn
+	}
+	blockerConn, probe := connect(), connect()
+	held, err := blockerConn.BeginTx(ctx, pgx.TxOptions{IsoLevel: pgx.ReadCommitted})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		cleanup, stop := context.WithTimeout(context.Background(), 5*time.Second)
+		defer stop()
+		_ = held.Rollback(cleanup)
+	}()
+	var principal string
+	if err := held.QueryRow(ctx, "SELECT principal_id::text FROM identity.memberships WHERE tenant_id=$1 AND principal_id=$2 FOR UPDATE", x.w.tenant, x.formsPrincipal).Scan(&principal); err != nil {
+		t.Fatal(err)
+	}
+	var blocker int
+	if err := held.QueryRow(ctx, "SELECT pg_backend_pid()").Scan(&blocker); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := held.Exec(ctx, "DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='customers:points'", x.w.tenant, x.formsStore, x.formsPrincipal); err != nil {
+		t.Fatal(err)
+	}
+	x.mu.Lock()
+	x.formsGrantDenied = true
+	x.mu.Unlock()
+	result, done := make(chan error, 1), make(chan struct{})
+	go func() {
+		defer close(done)
+		result <- w6uiFormsPointsGrant(ctx, x, "restore")
+	}()
+	defer func() {
+		cancel()
+		select {
+		case <-done:
+		case <-time.After(5 * time.Second):
+			t.Error("grant restore goroutine did not stop")
+		}
+	}()
+	tick := time.NewTicker(10 * time.Millisecond)
+	defer tick.Stop()
+	for {
+		select {
+		case err := <-result:
+			t.Fatalf("restore escaped the unsettled transaction: %v", err)
+		default:
+		}
+		var blocked bool
+		if err := probe.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE $1::int=ANY(pg_blocking_pids(pid)))", blocker).Scan(&blocked); err != nil {
+			t.Fatal(err)
+		}
+		if blocked {
+			break
+		}
+		select {
+		case <-ctx.Done():
+			t.Fatal("restore never reached the database transaction fence")
+		case <-tick.C:
+		}
+	}
+	if err := held.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case err := <-result:
+		if err != nil {
+			t.Fatal(err)
+		}
+	case <-ctx.Done():
+		t.Fatal("restore did not finish after the old transaction committed")
+	}
+	var body []byte
+	if err := x.w.f.owner.QueryRow(ctx, "SELECT coalesce(jsonb_agg(jsonb_build_array(tenant_id,store_id,principal_id,permission) ORDER BY tenant_id,store_id,principal_id,permission),'[]'::jsonb) FROM identity.store_grants WHERE tenant_id=$1", x.w.tenant).Scan(&body); err != nil {
+		t.Fatal(err)
+	}
+	var actual [][4]string
+	if err := json.Unmarshal(body, &actual); err != nil || !reflect.DeepEqual(actual, x.formsGrantBefore) {
+		t.Fatal("late commit recovery did not restore the complete original grant set")
+	}
+	var effects int
+	if err := x.w.f.owner.QueryRow(ctx, "SELECT (SELECT count(*) FROM loyalty.members WHERE store_id=$1)+(SELECT count(*) FROM loyalty.point_entries WHERE store_id=$1)+(SELECT count(*) FROM ops.command_results WHERE store_id=$1 AND operation LIKE 'loyalty.%')", x.formsStore).Scan(&effects); err != nil || effects != 0 {
+		t.Fatal("late commit recovery changed loyalty effects")
+	}
+	t.Log("M7-GRANT-UNSETTLED blocked_on_old_transaction=true exact_grants=true business_delta=0")
 }
 
 // SQL values, never response guesses, attest that writes committed before hold/drop.
@@ -1273,6 +1609,15 @@ func w6uiFormsCases() []w6uiFormsCase {
 		{"REAL_PG forms erased before open", 1, 0, 2, 0, 1, 1, []string{"erase_fixture", "erased_disabled"}},
 		{"REAL_PG forms erased after review", 1, 0, 2, 0, 2, 1, []string{"erase_fixture", "refused"}},
 		{"REAL_PG forms unavailable member read state", 0, 0, 0, 0, 0, 0, []string{"read404"}},
+		{"REAL_PG forms create pending double click then committed UNKNOWN never resends zh-TW", 1, 0, 1, 0, 1, 0, []string{"unknown", "refreshed", "escape_blocked"}},
+		{"REAL_PG forms create pending double click then committed UNKNOWN never resends zh-CN", 1, 0, 1, 0, 1, 0, []string{"unknown", "refreshed", "escape_blocked"}},
+		{"REAL_PG forms adjust committed UNKNOWN reads SQL effect exactly once zh-TW", 1, 1, 2, 5, 2, 0, []string{"unknown", "refreshed", "escape_blocked"}},
+		{"REAL_PG forms adjust committed UNKNOWN reads SQL effect exactly once zh-CN", 1, 1, 2, 5, 2, 0, []string{"unknown", "refreshed", "escape_blocked"}},
+		{"REAL_PG forms genuine server race refusal and correction controls zh-TW", 1, 2, 3, 0, 4, 0, []string{"race_fixture", "refused"}},
+		{"REAL_PG forms genuine server race refusal and correction controls zh-CN", 1, 2, 3, 0, 4, 0, []string{"race_fixture", "refused"}},
+		{"REAL_PG forms genuine create permission refusal en", 0, 0, 0, 0, 1, 0, []string{"refused"}},
+		{"REAL_PG forms genuine create permission refusal zh-TW", 0, 0, 0, 0, 1, 0, []string{"refused"}},
+		{"REAL_PG forms genuine create permission refusal zh-CN", 0, 0, 0, 0, 1, 0, []string{"refused"}},
 	}
 }
 func w6uiFormsCasesMatch(actual []string) bool {
