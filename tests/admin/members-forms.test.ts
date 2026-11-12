@@ -198,6 +198,38 @@ test("MOCK adjustment validates integer/reason/balance, reviews and returns with
   await x.h.settle();
   assert.equal(x.saved(), 1);
 });
+test("MOCK every repeated invalid submit requests field focus without POST", async (t) => {
+  const x = await setup(t, true);
+  let calls = 0;
+  globalThis.fetch = async () => { calls++; return response({ member }); };
+  const requests: string[] = [];
+  // Observe the real handler/effect query and focus calls only; this is not native DOM focus.
+  const dialog = by(x.h, "member-form-dialog");
+  dialog.props.ref.current = {
+    open: true,
+    querySelector: (selector: string) => ({ focus: () => requests.push(selector) }),
+  };
+  field(x.h, "amount", "20");
+  for (const note of ["", "   ", "   "]) {
+    field(x.h, "note", note);
+    await x.h.settle();
+    const before = requests.length;
+    submit(x.h);
+    await x.h.settle();
+    assert.ok(requests.length > before, `focus requested for invalid note ${JSON.stringify(note)}`);
+    assert.equal(requests.at(-1), '[name="note"]');
+    assert.equal(node(x.h, (n) => n.props.name === "note").props["aria-invalid"], true);
+    assert.ok(textOf(node(x.h, (n) => n.props.role === "alert")));
+    assert.equal(calls, 0);
+  }
+  field(x.h, "amount", "0");
+  const before = requests.length;
+  submit(x.h);
+  await x.h.settle();
+  assert.ok(requests.length > before);
+  assert.equal(requests.at(-1), '[name="amount"]');
+  assert.equal(calls, 0);
+});
 test("MOCK UNKNOWN keeps original command across read refresh/reopen and cannot resend", async (t) => {
   const x = await setup(t);
   let calls = 0;

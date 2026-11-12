@@ -167,6 +167,11 @@ export function MemberForms({
     const fail = (field: string, text: string) => {
       setInvalid(field);
       setError(text);
+      // Repeated failures can batch back to identical state, so the effect may not rerun.
+      if (open && !concealed)
+        dialog.current
+          ?.querySelector<HTMLElement>(`[name="${field}"]`)
+          ?.focus();
       return null;
     };
     setInvalid("");
