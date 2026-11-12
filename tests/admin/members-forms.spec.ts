@@ -1708,11 +1708,26 @@ test("REAL_PG forms erased before open", async ({ browser }) => {
       "click",
       "real erased reason with no write",
       async () => {
-        await expect(page.getByTestId("member-adjust-open")).toHaveAttribute(
-          "aria-disabled",
-          "true",
-        );
-        await page.getByTestId("member-adjust-open").click();
+        const open = page.getByTestId("member-adjust-open");
+        await expect(open).toHaveCount(1);
+        await expect(open).toBeVisible();
+        await expect(open).toHaveAttribute("aria-disabled", "true");
+        await expect(open).toHaveAttribute("title", memberFormCopy.en.erased);
+        await expect(open).toHaveAttribute("aria-describedby", /\S+/);
+        const reasonId = await open.getAttribute("aria-describedby");
+        const reason = page.locator(`[id=${JSON.stringify(reasonId)}]`);
+        await expect(reason).toHaveCount(1);
+        await expect(reason).toHaveText(memberFormCopy.en.erased);
+        // DS Button intentionally receives blocked clicks to reveal its reason.
+        // Reuse ui-gallery's native pointer pattern: measure only, then real input.
+        await open.scrollIntoViewIfNeeded();
+        const box = await open.boundingBox(); // [READ/MEASURE] fresh viewport CSS pixels.
+        expect(box).not.toBeNull();
+        if (!box) throw new Error("erased adjustment button has no visible box");
+        expect(box.width).toBeGreaterThan(0);
+        expect(box.height).toBeGreaterThan(0);
+        await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+        await expect(reason).toHaveAttribute("role", "status");
         await expect(
           page.getByText(memberFormCopy.en.erased, { exact: true }),
         ).toBeVisible();
