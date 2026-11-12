@@ -379,7 +379,7 @@ func w6uiRun(t *testing.T, mode string) {
 				Cases []string `json:"cases"`
 			}
 			if err != nil || json.Unmarshal(data, &completion) != nil || !w6uiFormsCasesMatch(completion.Cases) {
-				t.Fatalf("M7-FORMS-REGISTERED-COMPLETION: missing exact seventeen completed native cases: %v", err)
+				t.Fatalf("M7-FORMS-REGISTERED-COMPLETION: missing exact %d completed native cases: %v", len(w6uiFormsCases()), err)
 			}
 			data, err = os.ReadFile(filepath.Join(evidence, "members-forms-click-ledger.json"))
 			var rows []struct {
@@ -393,8 +393,20 @@ func w6uiRun(t *testing.T, mode string) {
 					t.Error("M7-FORMS-CLICK-LEDGER: failed action")
 				}
 			}
+			// PrepareForms starts an empty store; expected effects come only from the case registry.
+			var expected struct {
+				Members, Entries, Commands, Balance, Writes, Erased int64
+			}
+			for _, c := range w6uiFormsCases() {
+				expected.Members += c.Members
+				expected.Entries += c.Entries
+				expected.Commands += c.Commands
+				expected.Balance += c.Balance
+				expected.Writes += c.Writes
+				expected.Erased += c.Erased
+			}
 			state, err := w6uiFormsState(x, "")
-			if err != nil || state["members"] != 16 || state["entries"] != 16 || state["commands"] != 34 || state["totalBalance"] != 192 || state["erasedMembers"] != 2 || state["writeRequests"] != 35 {
+			if err != nil || state["members"] != expected.Members || state["entries"] != expected.Entries || state["commands"] != expected.Commands || state["totalBalance"] != expected.Balance || state["erasedMembers"] != expected.Erased || state["writeRequests"] != expected.Writes {
 				t.Fatalf("M7-FORMS-SQL: member effects mismatch: %v %v", state, err)
 			}
 			w6uiVerifyFormsC(t, x, evidence)
@@ -1583,7 +1595,7 @@ func w6uiFormsWrite(x *w6uiFixture, next http.Handler, w http.ResponseWriter, r 
 	_, _ = w.Write(recorded.Body.Bytes())
 }
 
-// C acceptance expectations are independently hardcoded from the root's exact17 card, never imported from browser output.
+// C acceptance expectations are independently hardcoded for all registered cases, never imported from browser output.
 type w6uiFormsCase struct {
 	Title                                               string
 	Members, Entries, Commands, Balance, Writes, Erased int64

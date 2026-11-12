@@ -329,7 +329,7 @@
     "tests/foundation/browser_studio_ui_test.go": "97683286c4f1fd407c7eb9b8969975fd736bc9299238f59fd8d7d3ded0058332",
     "tests/foundation/browser_taiwan_cvs_test.go": "2c6123a688dd251201e84de16532fa2e0fbdafaa6702a652d4a508ded39a71b3",
     "tests/foundation/browser_tracking_backfill_test.go": "bb4f4bf70d21361403bc4fcda5d41b813b99645f24919129c03d75ffc4557443",
-    "tests/foundation/browser_w6_customers_reports_test.go": "ca41a6615061b16877e2565518f3e9a29cb9d5e0abdda11bf8429c4020ae06c8",
+    "tests/foundation/browser_w6_customers_reports_test.go": "f4dc0ef750699064795683f0fa8eabace9e707e14c0c8577cc1d23c4335f8718",
     "tests/foundation/buyer_capability_test.go": "6f7b5f2b2f0f6d94b95ec544db8bd3dab188409fcf1cd2a11cc8f87a2cf80589",
     "tests/foundation/buyer_catalog_test.go": "c625f8681506008e02aaad4c0faceed19999df2a000e48fbcff1f7a7be7e538a",
     "tests/foundation/buyer_checkout_edges_test.go": "0036bb3ce4d17d5f3f94c68d674d5f2581bf1d521bb121016f7dc687e293729e",
