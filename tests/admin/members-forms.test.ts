@@ -396,3 +396,97 @@ test("MOCK create held pending retains disabled fields and status without duplic
     assert.equal(calls, 1);
   } finally { held.resolve(response({ member })); await x.h.settle(); }
 });
+
+for (const adjust of [false, true])
+  test(`MOCK privacy revalidation conceals retained ${adjust ? "adjust" : "create"} draft until accepted same boundary`, async (t) => {
+    const x = await setup(t, adjust);
+    field(x.h, adjust ? "note" : "name", "PRIVATE_REVALIDATION");
+    const accepted = x.props.boundary;
+    for (let cycle = 0; cycle < 2; cycle++) {
+      for (const status of ["hidden", "loading", "unavailable", "loading"] as const) {
+        Object.assign(x.props, { status, boundary: "", ...(adjust ? { member: undefined } : {}) });
+        x.h.dirty = true;
+        await x.h.settle();
+        assert.equal(textOf(x.h.output).includes("PRIVATE_REVALIDATION"), false);
+        assert.equal(textOf(x.h.output).includes("SYNTHETIC_MEMBER"), false);
+        assert.equal(nodes(x.h.output).some(n => n.props.name === (adjust ? "note" : "name")), false);
+      }
+      Object.assign(x.props, { status: "ready", boundary: accepted, ...(adjust ? { member } : {}) });
+      x.h.dirty = true;
+      await x.h.settle();
+      assert.equal(node(x.h, n => n.props.name === (adjust ? "note" : "name")).props.value, "PRIVATE_REVALIDATION");
+    }
+    Object.assign(x.props, { status: "ready", boundary: "replacement-session" });
+    x.h.dirty = true;
+    await x.h.settle();
+    assert.equal(nodes(x.h.output).some(n => n.props.name === (adjust ? "note" : "name")), false);
+    assert.equal(textOf(x.h.output).includes("SYNTHETIC_MEMBER"), false);
+  });
+
+for (const outcome of ["pending", "unknown"] as const)
+  test(`MOCK ${outcome} intent survives hidden/loading/unavailable without stale-handler replay`, async (t) => {
+    const x = await setup(t, true), held = deferred<Response>(), entered = deferred<void>();
+    let calls = 0;
+    globalThis.fetch = async () => { calls++; entered.resolve(); return held.promise; };
+    field(x.h, "amount", "5"); field(x.h, "note", "PRIVATE_INTENT");
+    submit(x.h); await x.h.settle();
+    const confirm = by(x.h, "member-form-confirm").props.onClick;
+    confirm(); await entered.promise;
+    if (outcome === "unknown") held.resolve(response({ code: "idempotency_conflict" }, 409));
+    await x.h.settle();
+    const boundary = x.props.boundary;
+    for (const status of ["hidden", "loading", "unavailable", "loading", "ready"] as const) {
+      Object.assign(x.props, { status, boundary: status === "ready" ? boundary : "" });
+      x.h.dirty = true; await x.h.settle();
+      confirm(); x.open();
+      by(x.h, "member-form-dialog").props.onCancel({ preventDefault() {} });
+      await x.h.settle();
+      assert.equal(calls, 1);
+      assert.equal(by(x.h, "member-form-dialog").props["data-step"], outcome);
+      if (status !== "ready") {
+        assert.equal(textOf(x.h.output).includes("PRIVATE_INTENT"), false);
+        assert.equal(nodes(x.h.output).some(n => n.props.id === "member-form-title"), false);
+      }
+    }
+    if (outcome === "pending") { held.resolve(response({ code: "idempotency_conflict" }, 409)); await x.h.settle(); }
+    assert.equal(calls, 1);
+  });
+
+test("MOCK stale confirmation during failed revalidation cannot create a new intent", async (t) => {
+  const x = await setup(t, true); let calls = 0;
+  globalThis.fetch = async () => { calls++; return response({ code: "points_insufficient" }, 409); };
+  field(x.h, "amount", "5"); field(x.h, "note", "PRIVATE_REVIEW"); submit(x.h); await x.h.settle();
+  const confirm = by(x.h, "member-form-confirm").props.onClick;
+  Object.assign(x.props, { status: "loading", boundary: "" }); x.h.dirty = true; await x.h.settle();
+  confirm(); await x.h.settle();
+  assert.equal(calls, 0);
+});
+
+test("MOCK definite erased refusal discards private state, refreshes owner, and blocks Back/Close/reopen/stale confirm", async (t) => {
+  const x = await setup(t, true); let calls = 0;
+  globalThis.fetch = async () => { calls++; return response({ code: "member_erased" }, 409); };
+  field(x.h, "amount", "5"); field(x.h, "note", "PRIVATE_ERASED_NOTE"); submit(x.h); await x.h.settle();
+  const confirm = by(x.h, "member-form-confirm").props.onClick;
+  confirm(); await x.h.settle();
+  assert.equal(x.refreshed(), 1);
+  assert.equal(by(x.h, "member-form-dialog").props["data-step"], "refused");
+  by(x.h, "member-form-back").props.onClick(); await x.h.settle();
+  assert.equal(by(x.h, "member-form-dialog").props["data-step"], "refused");
+  assert.equal(textOf(x.h.output).includes("SYNTHETIC_MEMBER"), false);
+  assert.equal(textOf(x.h.output).includes("PRIVATE_ERASED_NOTE"), false);
+  by(x.h, "member-form-close").props.onClick(); await x.h.settle();
+  x.open(); confirm(); await x.h.settle();
+  assert.equal(nodes(x.h.output).some(n => n.props.name === "amount"), false);
+  assert.equal(textOf(x.h.output).includes("SYNTHETIC_MEMBER"), false);
+  assert.equal(calls, 1);
+});
+
+test("MOCK correctable insufficient refusal keeps editable recovery", async (t) => {
+  const x = await setup(t, true);
+  globalThis.fetch = async () => response({ code: "points_insufficient" }, 409);
+  field(x.h, "amount", "5"); field(x.h, "note", "correctable"); submit(x.h); await x.h.settle();
+  by(x.h, "member-form-confirm").props.onClick(); await x.h.settle();
+  by(x.h, "member-form-back").props.onClick(); await x.h.settle();
+  assert.equal(node(x.h, n => n.props.name === "amount").props.value, "5");
+  assert.equal(x.refreshed(), 0);
+});

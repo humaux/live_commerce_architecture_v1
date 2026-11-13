@@ -2,6 +2,7 @@
 // Depends on: TestBrowserW6Customers members-forms production Next/Go/PG subtest, signed IdP, keyed fixture controls.
 // Used by: --browser-customers-billing; controls prepare faults/read SQL only, never replace UI mutation actions.
 import { test, expect, type Browser, type Page } from "@playwright/test";
+import { nativePage } from "./fixtures/native-device";
 import { writeFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
@@ -667,14 +668,23 @@ async function signed(
   locale: Locale = "en",
   width = 1440,
   actor = "forms-points",
+  optionalPage?: Page,
 ) {
   await ctl("actor", actor);
-  const context = await browser.newContext({
+  const context = optionalPage?.context() ?? await browser.newContext({
     ignoreHTTPSErrors: true,
     viewport: { width, height: 900 },
     deviceScaleFactor: 1,
   });
-  const page = await context.newPage();
+  const page = optionalPage ?? await context.newPage();
+  if (optionalPage) {
+    await page.setViewportSize({ width, height: 900 });
+    // Same synthetic TLS policy as the ordinary context; no launch flags or origin rewrite.
+    const session = await context.newCDPSession(page);
+    // Keep this session alive through fixture navigation; native.close() owns
+    // browser/target shutdown and releases it after the test, including failures.
+    await session.send("Security.setIgnoreCertificateErrors", { ignore: true });
+  }
   activePage = page;
   await page.goto(`${origin}/en/`);
   await step(
@@ -1315,9 +1325,10 @@ test("REAL_PG forms reader permission and opaque foreign refusal", async ({
 test("REAL_PG forms create pending double click then committed UNKNOWN never resends", async ({
   browser,
 }) => {
-  const { page, context } = await signed(browser);
-  const before = await state();
+  const native = await nativePage(evidence, "members-forms-c08-profile-");
   try {
+    const { page, context } = await signed(browser, "en", 1440, "forms-points", native.page);
+    const before = await state();
     await page.getByTestId("member-create-open").click();
     await fill(page, "name", "M7 synthetic dropped create");
     await ctl("fault", "forms-drop");
@@ -1332,6 +1343,25 @@ test("REAL_PG forms create pending double click then committed UNKNOWN never res
       },
     );
     await captureResponsive(page, "en", "CreateUnknown");
+    await step(page, "UNKNOWN failed revalidation", "native tab visibility/click", "failed authoritative read conceals private form and retry never replays UNKNOWN", async () => {
+      const cover = await context.newPage();
+      try {
+        await cover.goto("about:blank");
+        await cover.bringToFront();
+        // [READ/MEASURE] native visibility, never synthetic events.
+        await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("hidden");
+        await expect(dialog(page)).not.toBeVisible();
+        await ctl("fault", "members-search-503");
+        await page.bringToFront();
+        await expect(page.getByRole("button", { name: membersCopy.en.retry, exact: true })).toBeVisible();
+        await expect(dialog(page)).not.toBeVisible();
+        await expect(page.locator('[name="name"],[name="contact"],[name="notes"]')).toHaveCount(0);
+        await page.getByRole("button", { name: membersCopy.en.retry, exact: true }).click();
+        await expect(dialog(page)).toBeVisible();
+        await expect(dialog(page)).toHaveAttribute("data-step", "unknown");
+        await expect(page.getByTestId("member-form-submit")).toHaveCount(0);
+      } finally { await cover.close(); }
+    });
     const committed = await state("", "unknown");
     expect(committed.members).toBe(before.members + 1);
     expect(committed.commands).toBe(before.commands + 1);
@@ -1356,7 +1386,7 @@ test("REAL_PG forms create pending double click then committed UNKNOWN never res
     expect(after.commands).toBe(committed.commands);
     expect(after.writeRequests).toBe(committed.writeRequests);
   } finally {
-    await context.close();
+    await native.close();
   }
 });
 test("REAL_PG forms adjust committed UNKNOWN reads SQL effect exactly once", async ({
@@ -1743,10 +1773,47 @@ test("REAL_PG forms erased before open", async ({ browser }) => {
   }
 });
 test("REAL_PG forms erased after review", async ({ browser }) => {
-  const { page, context } = await signed(browser);
+  const native = await nativePage(evidence, "members-forms-c16-profile-");
   try {
+    const { page, context } = await signed(browser, "en", 1440, "forms-points", native.page);
     const a = await create(page, "en", "M7_C_ERASE_AFTER");
     await review(page, "en", "5");
+    await step(page, "private review revalidation", "native tab visibility/release", "retained review stays absent through delayed read and returns only after acceptance", async () => {
+      const cover = await context.newPage();
+      try {
+        await cover.goto("about:blank");
+        for (let cycle = 0; cycle < 2; cycle++) {
+          await cover.bringToFront();
+          // [READ/MEASURE] native visibility only; no lifecycle or DOM mutation.
+          await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("hidden");
+          await expect(dialog(page)).not.toBeVisible();
+          await expect(page.locator("body")).not.toContainText("M7_C_ERASE_AFTER");
+          await ctl("fault", "members-hold");
+          const readStarted = page.waitForRequest(r => r.method() === "GET" && new URL(r.url()).pathname.endsWith(`/members/${a}`));
+          await page.bringToFront();
+          await readStarted;
+          await expect.poll(async () => {
+            // Existing keyed fixture readback synchronizes the real upstream hold.
+            const r = await fetch(`${control}/members-held`, {
+              method: "POST",
+              headers: { "X-W6UI-Gate-Key": gateKey, "Content-Type": "application/json" },
+              body: JSON.stringify({ mode: "" }), signal: AbortSignal.timeout(5000),
+            });
+            expect(r.status).toBe(200);
+            return ((await r.json()) as { held: boolean }).held;
+          }).toBe(true);
+          await expect(dialog(page)).not.toBeVisible();
+          await expect(page.locator("body")).not.toContainText("M7_C_ERASE_AFTER");
+          await expect(page.getByTestId("member-form-confirm")).toHaveCount(0);
+          await ctl("members-release");
+          await expect(dialog(page)).toBeVisible();
+          await expect(dialog(page)).toHaveAttribute("data-step", "confirm");
+          await expect(dialog(page)).toContainText("M7_C_ERASE_AFTER");
+        }
+      } finally {
+        try { await ctl("members-release"); } finally { await cover.close(); }
+      }
+    });
     await ctl("forms-erase", a);
     const erased = await state(a, "erase_fixture");
     await step(
@@ -1768,12 +1835,38 @@ test("REAL_PG forms erased after review", async ({ browser }) => {
         );
       },
     );
+    // Existing terminal refusal controls: Back discloses its reason without editing;
+    // Close and the erased opener cannot resurrect the old target or send again.
+    await step(page, "erased Back Close reopen", "click/native pointer", "private draft gone after owning read refresh; zero additional adjustment POST", async () => {
+      await expect(page.getByTestId("member-detail")).not.toContainText("M7_C_ERASE_AFTER");
+      const back = page.getByTestId("member-form-back");
+      await expect(back).toHaveAttribute("aria-disabled", "true");
+      await back.scrollIntoViewIfNeeded();
+      const box = await back.boundingBox(); // [READ/MEASURE] blocked DS reason uses real pointer.
+      if (!box) throw new Error("erased Back has no visible box");
+      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+      await expect(dialog(page)).toHaveAttribute("data-step", "refused");
+      await expect(page.locator('[name="amount"],[name="note"]')).toHaveCount(0);
+      await page.getByTestId("member-form-close").click();
+      await expect(dialog(page)).not.toBeVisible();
+      const open = page.getByTestId("member-adjust-open");
+      await expect(open).toHaveAttribute("aria-disabled", "true");
+      await open.scrollIntoViewIfNeeded();
+      const openerBox = await open.boundingBox(); // [READ/MEASURE] no forced input.
+      if (!openerBox) throw new Error("erased opener has no visible box");
+      await page.mouse.click(openerBox.x + openerBox.width / 2, openerBox.y + openerBox.height / 2);
+      await expect(dialog(page)).not.toBeVisible();
+      await page.reload();
+      await expect(page.getByTestId("member-adjust-open")).toHaveAttribute("aria-disabled", "true");
+      await expect(page.locator("body")).not.toContainText("M7_C_ERASE_AFTER");
+    });
     const after = await state(a, "refused");
+    expect(after.writeRequests).toBe(erased.writeRequests + 1);
     expect(after.commands).toBe(erased.commands);
     expect(after.entries).toBe(erased.entries);
     expect(after.balance).toBe(erased.balance);
   } finally {
-    await context.close();
+    await native.close();
   }
 });
 test("REAL_PG forms unavailable member read state", async ({ browser }) => {
