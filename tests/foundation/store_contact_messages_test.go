@@ -393,6 +393,36 @@ func contactDrain(t *testing.T, w *notify.Worker) {
 	t.Fatal("MOCK notification outbox did not drain within 40 batches")
 }
 
+// contactNotifySnapshot observes only aggregate counters and closed classes; never logs payloads or identifiers.
+func contactNotifySnapshot(t *testing.T, e *tcvEnv, messageID, phase string, m *contactMailer) {
+	t.Helper()
+	var used, pending, found, attempts int
+	var state, skip string
+	var claimed, eligible bool
+	err := e.p.f.owner.QueryRow(context.Background(), `
+WITH instant AS (SELECT clock_timestamp() AS now),
+ day AS (SELECT now,to_timestamp((floor((extract(epoch FROM now)+28800)/86400)*86400-28800)::double precision) AS start FROM instant),
+ target AS (SELECT * FROM notify.outbox WHERE order_id=$1 AND kind='store_contact' AND tenant_id=$2 AND store_id=$3)
+SELECT (SELECT count(DISTINCT coalesce(x.batch_id::text,x.order_id::text||x.kind)) FROM notify.outbox x,day WHERE x.state IN ('SENDING','SENT','UNKNOWN') AND x.claimed_at>=day.start),
+ (SELECT count(*) FROM notify.outbox WHERE state='PENDING'),
+ count(*),coalesce(max(CASE WHEN state IN ('PENDING','SENDING','SENT','UNKNOWN','FAILED','SKIPPED') THEN state ELSE 'other' END),'missing'),
+ coalesce(max(attempts),0),coalesce(bool_or(claimed_at IS NOT NULL),false),
+ coalesce(bool_or(next_attempt_at<=day.now),false),
+ coalesce(max(CASE WHEN skip_reason IS NULL THEN 'none' WHEN skip_reason IN ('no_recipient','opted_out','stale','no_owner','no_order','erased') THEN skip_reason ELSE 'other' END),'missing')
+FROM target CROSS JOIN day`, messageID, e.tenant(), e.store()).Scan(&used, &pending, &found, &state, &attempts, &claimed, &eligible, &skip)
+	if err != nil {
+		code := "unavailable"
+		if sqlErr, ok := err.(interface{ SQLState() string }); ok {
+			code = sqlErr.SQLState()
+		}
+		t.Fatalf("contact diagnostic setup failure: SQLSTATE=%s", code)
+	}
+	if found != 1 {
+		t.Fatalf("contact diagnostic setup failure: target_found=%d", found)
+	}
+	t.Logf("contact diagnostic phase=%s global_used=%d global_pending=%d target_found=%d state=%s attempts=%d claimed=%t next_attempt_eligible=%t skip_class=%s mock_total=%d mock_target_matches=%d", phase, used, pending, found, state, attempts, claimed, eligible, skip, len(m.messages), len(m.to(e)))
+}
+
 func TestStoreContactNotificationOutboxAndNoSensitiveLogs(t *testing.T) {
 	e := contactEnv(t)
 	var logs bytes.Buffer
@@ -412,7 +442,9 @@ func TestStoreContactNotificationOutboxAndNoSensitiveLogs(t *testing.T) {
 	if len(m.messages) != 0 {
 		t.Fatal("submission performed inline SMTP instead of committing outbox intent")
 	}
+	contactNotifySnapshot(t, e, first.MessageID, "before", m)
 	contactDrain(t, w)
+	contactNotifySnapshot(t, e, first.MessageID, "after", m)
 	if len(m.to(e)) != 1 {
 		t.Fatal("outbox did not notify only the store profile contact_email")
 	}
