@@ -207,6 +207,13 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	}
 	sort.Strings(diff)
 	if len(diff) != 0 || len(a) < 1000 {
+		// Retain the actual fixture definitions on mismatch; do not normalize catalog equality.
+		const readinessDefinition = `SELECT json_build_object('prosrc',prosrc,'definition',pg_get_functiondef(oid))::text FROM pg_proc WHERE oid=to_regprocedure('live.media_browser_input_recovery_ready()')`
+		var upgradedReady, freshReady string
+		upgradedErr := upgraded.QueryRow(ctx, readinessDefinition).Scan(&upgradedReady)
+		freshErr := fresh.QueryRow(ctx, readinessDefinition).Scan(&freshReady)
+		t.Logf("upgraded readiness: %s err=%v", upgradedReady, upgradedErr)
+		t.Logf("fresh readiness: %s err=%v", freshReady, freshErr)
 		t.Fatalf("upgraded catalog (%d rows) differs from fresh (%d rows) in %d rows; first: %.2000v", len(a), len(b), len(diff), diff[:min(len(diff), 12)])
 	}
 }

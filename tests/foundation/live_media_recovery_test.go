@@ -315,6 +315,8 @@ func TestLiveMediaRecoveryMRR03NegativeAuthorityAndFences(t *testing.T) {
 			{"public execute", `GRANT EXECUTE ON FUNCTION live.read_media_recovery_episode_with_input(uuid) TO PUBLIC`},
 			{"worker execute", `GRANT EXECUTE ON FUNCTION live.read_media_recovery_episode_with_input(uuid) TO commerce_media_worker`},
 			{"registrar execute", `GRANT EXECUTE ON FUNCTION live.read_media_recovery_episode_with_input(uuid) TO commerce_media_registrar`},
+			{"wrong policy role", `ALTER POLICY media_input_recovery_writer ON live.media_input_recovery_observations TO commerce_media_recovery`},
+			{"public policy role", `ALTER POLICY media_input_recovery_writer ON live.media_input_recovery_observations TO PUBLIC`},
 			{"missing recovery execute", `REVOKE EXECUTE ON FUNCTION live.read_media_recovery_episode_with_input(uuid) FROM commerce_media_recovery`},
 		} {
 			t.Run(probe.name, func(t *testing.T) {

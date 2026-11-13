@@ -938,7 +938,7 @@ DO $install$
 DECLARE v_constraints text; v_triggers text; v_helpers text; v_policies text;
 BEGIN
  SELECT string_agg(format('(%L,%L,%L)', conrelid::regclass::text,conname,
-  pg_catalog.pg_get_constraintdef(oid)), ',') INTO v_constraints
+  pg_catalog.pg_get_constraintdef(oid)), ',' ORDER BY conrelid::regclass::text,conname) INTO v_constraints
  FROM pg_catalog.pg_constraint
  WHERE conrelid IN ('live.media_input_recovery_observations'::regclass,
   'live.media_recovery_episode_scope'::regclass)
@@ -946,7 +946,7 @@ BEGIN
   (conname LIKE 'media_recovery_%' OR conname='operation_events_episode_event_kind_check'
    OR conname='operation_events_recovery_execution_profile_check'));
  SELECT string_agg(format('(%L,%L,%L,%s)',tgrelid::regclass::text,tgname,
-  pg_catalog.pg_get_triggerdef(oid),tgtype), ',') INTO v_triggers
+  pg_catalog.pg_get_triggerdef(oid),tgtype), ',' ORDER BY tgrelid::regclass::text,tgname) INTO v_triggers
  FROM pg_catalog.pg_trigger WHERE NOT tgisinternal AND
  ((tgrelid='live.media_input_recovery_observations'::regclass)
  OR (tgrelid='live.media_observations'::regclass AND tgname IN
@@ -956,7 +956,7 @@ BEGIN
  OR (tgrelid='live.media_execution_state'::regclass AND tgname='media_execution_identity')
  OR (tgrelid='river_media.river_job'::regclass AND tgname='media_job_family'));
  SELECT string_agg(format('(%L,%L)',p.oid::regprocedure::text,
-  pg_catalog.pg_get_functiondef(p.oid)), ',') INTO v_helpers
+  pg_catalog.pg_get_functiondef(p.oid)), ',' ORDER BY n.nspname,p.oid::regprocedure::text) INTO v_helpers
  FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
  WHERE n.nspname='live' AND p.proname IN
  ('guard_media_input_recovery_receipt','assert_legacy_media_recovery_scope',
@@ -968,8 +968,8 @@ BEGIN
   'guard_media_input_custody','guard_media_job_family','media_native_job',
   'media_recovery_native_eligible');
  SELECT string_agg(format('(%L,%L,%L,%L,%L,%L)',polrelid::regclass::text,polname,
-  polcmd::text,polroles::text,coalesce(pg_catalog.pg_get_expr(polqual,polrelid),''),
-  coalesce(pg_catalog.pg_get_expr(polwithcheck,polrelid),'')), ',') INTO v_policies
+  polcmd::text,polroles::regrole[]::text,coalesce(pg_catalog.pg_get_expr(polqual,polrelid),''),
+  coalesce(pg_catalog.pg_get_expr(polwithcheck,polrelid),'')), ',' ORDER BY polrelid::regclass::text,polname) INTO v_policies
  FROM pg_catalog.pg_policy WHERE polrelid IN
  ('live.media_input_recovery_observations'::regclass,'live.media_recovery_episode_scope'::regclass);
  IF v_constraints IS NULL OR v_triggers IS NULL OR v_helpers IS NULL OR v_policies IS NULL
@@ -1036,7 +1036,7 @@ LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $ready$
   LEFT JOIN pg_catalog.pg_policy p ON p.polrelid=pg_catalog.to_regclass(expected.relation)
    AND p.polname=expected.name
   WHERE p.oid IS NULL OR NOT p.polpermissive OR p.polcmd::text<>expected.command
-   OR p.polroles::text<>expected.roles
+   OR p.polroles::regrole[]::text<>expected.roles
    OR coalesce(pg_catalog.pg_get_expr(p.polqual,p.polrelid),'')<>expected.qual
    OR coalesce(pg_catalog.pg_get_expr(p.polwithcheck,p.polrelid),'')<>expected.check_qual)
  AND (SELECT count(*)=2 FROM pg_catalog.pg_policy WHERE polrelid IN
