@@ -214,8 +214,16 @@ func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
 		if err != nil {
 			t.Fatalf("PE mobile matrix ledger unavailable: %v; evidence=%s", err, evidence)
 		}
-		if err := validateProductEditorMatrixLedger(ledger); err != nil {
-			t.Fatalf("PE mobile matrix ledger rejected: %v; evidence=%s", err, evidence)
+		proof, err := productEditorMatrixFreshProof(root, ledger, filepath.Base(evidence))
+		if err != nil {
+			t.Fatalf("PE mobile matrix ledger/proof rejected: %v; evidence=%s", err, evidence)
+		}
+		proofJSON, err := json.Marshal(proof)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(evidence, "matrix-owner-proof.json"), append(proofJSON, '\n'), 0600); err != nil {
+			t.Fatal(err)
 		}
 		t.Logf("PASS mobile matrix click ledger: %d declared unique PASS identities; evidence=%s", len(productEditorMatrixLedgerExpected()), ledgerPath)
 		prefix := "pe" + tag

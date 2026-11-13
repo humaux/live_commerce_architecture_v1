@@ -761,3 +761,156 @@ func TestProductEditorMatrixLedgerEvidenceRunIdentityMetadata(t *testing.T) {
 		t.Fatalf("changed line numbers and durations must preserve identities: %v", err)
 	}
 }
+
+// These are producer controls, not the future conditional G07 admission controls.
+func TestProductEditorMatrixOwnerProof(t *testing.T) {
+	for _, name := range []string{"GITHUB_SHA", "GITHUB_WORKFLOW_SHA", "GITHUB_WORKFLOW_REF", "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "GITHUB_JOB", "GITHUB_EVENT_NAME"} {
+		t.Setenv(name, "")
+	}
+	t.Run("canonical-matching-and-exact-drift", func(t *testing.T) {
+		root, _ := productEditorMatrixEvidenceFixture(t)
+		proof, err := productEditorMatrixCanonicalProof(root)
+		if err != nil || proof == nil {
+			t.Fatalf("valid canonical fixture: %v", err)
+		}
+		if proof.Schema != "matrix-owner-proof/v1" || proof.Validation != "CANONICAL_VALIDATED" || len(proof.Drift) != 0 || proof.Reason != "" {
+			t.Fatalf("unexpected matching proof: %+v", proof)
+		}
+		if len(proof.Sources) != len(productEditorMatrixEvidenceSources) || len(proof.Files) != 4 {
+			t.Fatal("incomplete canonical bindings")
+		}
+		for _, source := range proof.Sources {
+			if source.Recorded != source.Actual {
+				t.Fatal("matching source fabricated drift")
+			}
+		}
+		originalFiles := proof.Files
+		name := "tests/admin/product-editor.acceptance.ts"
+		before := productEditorMatrixReadFixture(t, root, name)
+		after := append(append([]byte{}, before...), []byte("\n// proof drift control\n")...)
+		if err := os.WriteFile(filepath.Join(root, name), after, 0600); err != nil {
+			t.Fatal(err)
+		}
+		proof, err = productEditorMatrixCanonicalProof(root)
+		if proof == nil || err == nil || proof.Validation != "HISTORICAL_SOURCE_DRIFT" {
+			t.Fatalf("expected typed drift fact: %+v %v", proof, err)
+		}
+		if !reflect.DeepEqual(proof.Drift, []string{name}) || proof.Reason != "canonical evidence is historical (source drift: "+name+")" || !reflect.DeepEqual(originalFiles, proof.Files) {
+			t.Fatal("incorrect drift set/reason or canonical fingerprints changed")
+		}
+		found := false
+		for _, source := range proof.Sources {
+			if source.Path == name {
+				found = true
+				if source.Recorded != productEditorMatrixDigest(before) || source.Actual != productEditorMatrixDigest(after) {
+					t.Fatal("incorrect recorded/actual hash pair")
+				}
+			}
+		}
+		if !found {
+			t.Fatal("drifted source missing from proof")
+		}
+	})
+	t.Run("canonical-invalid-never-produces-proof", func(t *testing.T) {
+		root, canonical := productEditorMatrixEvidenceFixture(t)
+		if err := os.WriteFile(filepath.Join(root, canonical, "playwright.log"), []byte("tampered"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		proof, err := productEditorMatrixCanonicalProof(root)
+		if err == nil || proof != nil {
+			t.Fatal("invalid canonical bytes produced proof")
+		}
+	})
+	t.Run("fresh-ledger-bindings-and-rejections", func(t *testing.T) {
+		root, _ := productEditorMatrixEvidenceFixture(t)
+		// Fresh validation uses the current compiled table, never the historical fixture table.
+		if err := os.WriteFile(filepath.Join(root, productEditorMatrixCasesPath), productEditorMatrixLedgerCasesJSON, 0600); err != nil {
+			t.Fatal(err)
+		}
+		ledger := productEditorMatrixReadFixture(t, "../..", "tests/foundation/testdata/product_editor_mobile_matrix_ledger.json")
+		proof, err := productEditorMatrixFreshProof(root, ledger, "native-suite-control")
+		if err != nil || proof == nil {
+			t.Fatalf("valid recorded ledger: %v", err)
+		}
+		if proof.Validation != "LEDGER_VALIDATED" || proof.Files["product-editor-click-ledger.json"] != productEditorMatrixDigest(ledger) || proof.Files[productEditorMatrixCasesPath] != productEditorMatrixDigest(productEditorMatrixLedgerCasesJSON) {
+			t.Fatal("fresh proof does not bind actual bytes")
+		}
+		if proof.Identity.RunID != "unknown" || proof.Identity.CheckoutSHA != "unknown" || proof.Identity.TrackedClean != "unknown" || proof.Identity.Test != "TestBrowserCatalogCore" || proof.Identity.Evidence != "native-suite-control" {
+			t.Fatal("missing metadata fabricated qualification")
+		}
+		var rows []productEditorMatrixLedgerRow
+		if err := json.Unmarshal(ledger, &rows); err != nil {
+			t.Fatal(err)
+		}
+		duplicate := append(append([]productEditorMatrixLedgerRow{}, rows...), rows[0])
+		missingIdentity := append([]productEditorMatrixLedgerRow{}, rows...)
+		missingIdentity[0].Page = ""
+		failed := append([]productEditorMatrixLedgerRow{}, rows...)
+		failed[0].Actual = "FAIL"
+		mutations := map[string][]byte{"malformed": []byte("{"), "empty": []byte("[]")}
+		for name, values := range map[string][]productEditorMatrixLedgerRow{"duplicate": duplicate, "missing": rows[1:], "missing-identity": missingIdentity, "failed": failed} {
+			data, err := json.Marshal(values)
+			if err != nil {
+				t.Fatal(err)
+			}
+			mutations[name] = data
+		}
+		for name, data := range mutations {
+			t.Run(name, func(t *testing.T) {
+				proof, err := productEditorMatrixFreshProof(root, data, "native-suite-control")
+				if err == nil || proof != nil {
+					t.Fatal("invalid fresh ledger produced proof")
+				}
+			})
+		}
+		name := productEditorMatrixEvidenceSources[0]
+		before := productEditorMatrixReadFixture(t, root, name)
+		after := append(append([]byte{}, before...), []byte("\n// changed producer\n")...)
+		if err := os.WriteFile(filepath.Join(root, name), after, 0600); err != nil {
+			t.Fatal(err)
+		}
+		changed, err := productEditorMatrixFreshProof(root, ledger, "native-suite-control")
+		if err != nil || changed == nil {
+			t.Fatalf("changed producer fingerprint: %v", err)
+		}
+		if changed.Sources[0].Actual == proof.Sources[0].Actual || changed.Sources[0].Actual != productEditorMatrixDigest(after) || changed.Sources[0].Recorded != "unknown" {
+			t.Fatal("source change invisible or historical digest fabricated")
+		}
+		if err := os.WriteFile(filepath.Join(root, productEditorMatrixCasesPath), append(append([]byte{}, productEditorMatrixLedgerCasesJSON...), '\n'), 0600); err != nil {
+			t.Fatal(err)
+		}
+		rejected, err := productEditorMatrixFreshProof(root, ledger, "native-suite-control")
+		if err == nil || rejected != nil {
+			t.Fatal("checkout/compiled case stamp mismatch produced proof")
+		}
+	})
+	t.Run("distinct-CI-and-checkout-identities", func(t *testing.T) {
+		root, _ := productEditorMatrixEvidenceFixture(t)
+		t.Setenv("GITHUB_SHA", strings.Repeat("a", 40))
+		t.Setenv("GITHUB_WORKFLOW_SHA", strings.Repeat("b", 40))
+		t.Setenv("GITHUB_WORKFLOW_REF", "owner/repo/.github/workflows/gates.yml@refs/heads/test")
+		t.Setenv("GITHUB_RUN_ID", "4242")
+		t.Setenv("GITHUB_RUN_ATTEMPT", "2")
+		t.Setenv("GITHUB_JOB", "gate")
+		t.Setenv("GITHUB_EVENT_NAME", "workflow_dispatch")
+		proof, err := productEditorMatrixCanonicalProof(root)
+		if err != nil || proof == nil {
+			t.Fatalf("well-formed identity facts: %v", err)
+		}
+		id := proof.Identity
+		if id.SubjectSHA != strings.Repeat("a", 40) || id.WorkflowSHA != strings.Repeat("b", 40) || id.RunID != "4242" || id.RunAttempt != "2" || id.CheckoutSHA != "unknown" {
+			t.Fatal("CI claims collapsed into actual checkout identity")
+		}
+		if _, err := productEditorMatrixIdentity(root, "TestBrowserCatalogCore", "../elsewhere"); err == nil {
+			t.Fatal("invalid native evidence identity accepted")
+		}
+	})
+	t.Run("malformed-CI-metadata-produces-no-proof", func(t *testing.T) {
+		root, _ := productEditorMatrixEvidenceFixture(t)
+		t.Setenv("GITHUB_RUN_ATTEMPT", "not-an-attempt")
+		proof, err := productEditorMatrixCanonicalProof(root)
+		if err == nil || proof != nil || strings.Contains(err.Error(), "not-an-attempt") {
+			t.Fatal("malformed metadata accepted or echoed")
+		}
+	})
+}
