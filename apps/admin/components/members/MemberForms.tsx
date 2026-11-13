@@ -318,13 +318,11 @@ export function MemberForms({
           ? c.insufficient
           : e.code === "forbidden"
             ? c.forbidden
-            : e.code === "member_erased"
-              ? c.erased
-              : e.code === "not-found"
-                ? c.unavailable
-                : e.code === "limit_reached"
-                  ? c.limit
-                  : c.refused,
+            : e.code === "not-found"
+              ? c.unavailable
+              : e.code === "limit_reached"
+                ? c.limit
+                : c.refused,
       );
     }
   }
