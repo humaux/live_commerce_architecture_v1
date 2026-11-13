@@ -408,6 +408,14 @@ func TestStoreContactNotificationOutboxAndNoSensitiveLogs(t *testing.T) {
 	in := contactInput()
 	in["email"] = "buyer-" + e.tag + "@buyers.example.test"
 	in["message"] = "Synthetic contact message " + e.tag + " <b>literal text</b>"
+	// An older claim window can be consumed entirely by synthetic rows with no order.
+	skippedOrders := make([]string, 20)
+	for i := range skippedOrders {
+		skippedOrders[i] = randomUUID()
+		if _, err := e.p.f.owner.Exec(context.Background(), `INSERT INTO notify.outbox(tenant_id,store_id,order_id,kind,created_at) VALUES($1,$2,$3,'placed',clock_timestamp()-interval '1 hour')`, e.tenant(), e.store(), skippedOrders[i]); err != nil {
+			t.Fatal("contact skipped-window fixture setup failed")
+		}
+	}
 	first := contactReceived(t, contactSubmit(t, e, key, ip, in))
 	if len(m.messages) != 0 {
 		t.Fatal("submission performed inline SMTP instead of committing outbox intent")
@@ -415,6 +423,15 @@ func TestStoreContactNotificationOutboxAndNoSensitiveLogs(t *testing.T) {
 	contactDrain(t, w)
 	if len(m.to(e)) != 1 {
 		t.Fatal("outbox did not notify only the store profile contact_email")
+	}
+	for _, order := range skippedOrders {
+		var state string
+		if err := e.p.f.owner.QueryRow(context.Background(), `SELECT state||':'||coalesce(skip_reason,'') FROM notify.outbox WHERE tenant_id=$1 AND store_id=$2 AND order_id=$3 AND kind='placed'`, e.tenant(), e.store(), order).Scan(&state); err != nil {
+			t.Fatal("contact skipped-window fixture read failed")
+		}
+		if state != "SKIPPED:no_order" {
+			t.Fatal("contact skipped-window fixture must be SKIPPED:no_order")
+		}
 	}
 	for _, msg := range m.messages {
 		if msg.To == in["email"] {
