@@ -4,6 +4,15 @@
 # Used by: developers, CI (gates.yml build job: --prebuild DIR; gate jobs: LC_PREBUILT_DIR), pr-modes.mjs, ci-plan.mjs, check-gates.sh and release-gate.sh.
 # Add a mode in ONE case entry below; browser arms declare lc_browsers for CI dependency selection.
 set -euo pipefail
+# Aggregate hang bound only; individual SQL/product clocks remain unchanged.
+# Validate before any external command, fixture or build (also on metadata paths).
+# Four canonical digits bound arithmetic before evaluation, preventing overflow.
+LC_FOUNDATION_TIMEOUT_SECONDS=${LC_FOUNDATION_TIMEOUT_SECONDS-4500}
+if [[ ! "$LC_FOUNDATION_TIMEOUT_SECONDS" =~ ^[1-9][0-9]{3}$ ]] ||
+   (( LC_FOUNDATION_TIMEOUT_SECONDS < 4500 || LC_FOUNDATION_TIMEOUT_SECONDS > 7200 )); then
+  printf 'LC_FOUNDATION_TIMEOUT_SECONDS must be canonical integer seconds in 4500..7200\n' >&2
+  exit 2
+fi
 # Keep the runtime guard before cd, exactly as in the original runner; metadata paths are inert.
 if [[ "${1:-}" != --list && "${1:-}" != --dry-run ]]; then
   if env | grep -qE '=(sk|rk)_live_'; then echo 'refused: live key in test environment' >&2; exit 2; fi
@@ -1628,8 +1637,11 @@ case "$1" in
   # LC_FOUNDATION_RUN the -run regex and LC_FOUNDATION_SKIP the -skip regex; .github/workflows/gates.yml runs 1 unit shard + the
   # tests/foundation groups of scripts/dev/shard-plan.json in parallel (each top-level test in exactly one group, enforced by
   # `node scripts/dev/shard-plan.mjs --check` in check-gates.sh). Unset = the whole suite, unchanged.
+  # Default stays 4500s for the ordinary 90-minute Foundation job. Only the
+  # 150-minute G07 diagnostic adapter opts into 7200s as an INITIAL_CALIBRATION_CEILING;
+  # complete-suite tail duration is UNKNOWN until native calibration.
   # shellcheck disable=SC2086 # LC_FOUNDATION_PKGS is a deliberate word-split package list
-  GOTOOLCHAIN=go1.27.4 go test -p 1 -race -count=1 -timeout=4500s -v ${LC_FOUNDATION_RUN:+-run "$LC_FOUNDATION_RUN"} ${LC_FOUNDATION_SKIP:+-skip "$LC_FOUNDATION_SKIP"} ${LC_FOUNDATION_PKGS:-./...}
+  GOTOOLCHAIN=go1.27.4 go test -p 1 -race -count=1 -timeout="${LC_FOUNDATION_TIMEOUT_SECONDS}s" -v ${LC_FOUNDATION_RUN:+-run "$LC_FOUNDATION_RUN"} ${LC_FOUNDATION_SKIP:+-skip "$LC_FOUNDATION_SKIP"} ${LC_FOUNDATION_PKGS:-./...}
   # go vet ./... checks the whole repository, not the shard's tests: a tests/foundation test-subset shard (RUN/SKIP set) leaves it to the
   # unit shard / the whole-suite run, so a full run vets exactly once instead of once per shard.
   if [[ -z "${LC_FOUNDATION_RUN:-}${LC_FOUNDATION_SKIP:-}" ]]; then GOTOOLCHAIN=go1.27.4 go vet ./...; fi
@@ -1816,6 +1828,9 @@ esac
 fi
 if ! lc_select_mode "$test_mode"; then lc_usage >&2; exit 2; fi
 if [[ "$lc_dry_run" == 1 ]]; then
+  if [[ "$test_mode" == foundation ]]; then
+    printf '# foundation_aggregate_timeout_seconds=%s\n' "$LC_FOUNDATION_TIMEOUT_SECONDS"
+  fi
   printf '# mode=%s build=%s fixture=%s\n' "$test_mode" "$lc_build" "$lc_fixture"
   declare -f lc_environment
   printf 'lc_environment\n'

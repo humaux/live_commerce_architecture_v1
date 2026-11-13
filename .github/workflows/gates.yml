@@ -96,6 +96,8 @@ jobs:
             workflow_ref: env.WORKFLOW_REF, dispatch_sha: env.GITHUB_SHA,
             run_id: env.GITHUB_RUN_ID, run_attempt: env.GITHUB_RUN_ATTEMPT,
             canonical_command: "bash scripts/dev/release-gate.sh --strict --only G07",
+            foundation_aggregate_timeout_seconds: 7200,
+            foundation_budget_status: "INITIAL_CALIBRATION_CEILING",
             canonical_exit: "NOT_RUN"}' > "$RUNNER_TEMP/g07-adapter/identity.json"
           [[ "$SUBJECT_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'subject must be exact40 lowercase hex' >&2; exit 2; }
           [[ "$REQUESTED_MODES" == '[]' && -z "$REQUESTED_EXTRA_ENV" && "$REQUESTED_FULL_BROWSER" == false ]] || {
@@ -136,10 +138,14 @@ jobs:
           unset LC_FOUNDATION_PKGS LC_FOUNDATION_RUN LC_FOUNDATION_SKIP LC_PREBUILT_DIR
           unset STRIPE_BROWSER STRIPE_SANDBOX STRIPE_SECRET_KEY STRIPE_SECRET_KEY_ROTATED STRIPE_ACCOUNT_ID
           export LC_RELEASE_GATE_OUT="$RUNNER_TEMP/g07-canonical"
+          # New configured subject required; this is not unchanged exact-5f6 evidence.
+          # 120-minute aggregate ceiling leaves 30 minutes of the 150-minute job
+          # for setup, other packages, vet, postflight and upload; fit is unmeasured.
+          export LC_FOUNDATION_TIMEOUT_SECONDS=7200
           rc=0
           bash scripts/dev/release-gate.sh --strict --only G07 || rc=$?
           # Keep canonical exit 1/3 intact; a successful command still fails on source drift.
-          jq --argjson code "$rc" '. + {canonical_exit: $code}' "$RUNNER_TEMP/g07-adapter/checkout.json" > "$RUNNER_TEMP/g07-adapter/result.json"
+          jq --argjson code "$rc" '. + {canonical_exit: $code, foundation_aggregate_timeout_seconds: (env.LC_FOUNDATION_TIMEOUT_SECONDS | tonumber)}' "$RUNNER_TEMP/g07-adapter/checkout.json" > "$RUNNER_TEMP/g07-adapter/result.json"
           post=0
           [[ "$(git rev-parse HEAD)" == "$SUBJECT_SHA" ]] || post=1
           git status --porcelain > "$RUNNER_TEMP/g07-adapter/source-status.after.txt"
