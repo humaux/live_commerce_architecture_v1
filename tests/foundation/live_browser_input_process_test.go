@@ -285,7 +285,8 @@ func TestLiveBrowserInputProcessNativeQueues(t *testing.T) {
 	mrReadyLog(t, p, "media_worker_ready")
 	deadline := time.Now().Add(35 * time.Second)
 	var inputAttempt, legacyAttempt int
-	var turn string
+	var turn, egress string
+	var inputSnoozed, legacySnoozed bool
 	for time.Now().Before(deadline) {
 		err := h.lp.f.owner.QueryRow(context.Background(), `SELECT j.attempt,c.last_runtime_turn FROM river_media.river_job j JOIN live.media_input_custody c ON c.operation_id=$2::uuid WHERE j.id=$1`, input.plan.JobID, input.plan.OperationID).Scan(&inputAttempt, &turn)
 		if err != nil {
@@ -294,13 +295,18 @@ func TestLiveBrowserInputProcessNativeQueues(t *testing.T) {
 		if err := h.lp.f.owner.QueryRow(context.Background(), `SELECT attempt FROM river_media.river_job WHERE id=$1`, h.plan.JobID).Scan(&legacyAttempt); err != nil {
 			t.Fatal(err)
 		}
-		if inputAttempt > 0 && legacyAttempt > 0 && turn == "INPUT_OBSERVE" && h.facts(t).egress == "EG_native" {
+		// Both original IDs belong to this same physical PG fixture. Snooze
+		// preserves execution evidence without incrementing River Attempt.
+		inputSnoozed = brwSnoozedOriginalJob(t, input.bicHarness, input.plan.JobID)
+		legacySnoozed = brwSnoozedOriginalJob(t, input.bicHarness, h.plan.JobID)
+		egress = h.facts(t).egress
+		if inputSnoozed && legacySnoozed && turn == "INPUT_OBSERVE" && egress == "EG_native" {
 			break
 		}
 		time.Sleep(50 * time.Millisecond)
 	}
-	if inputAttempt < 1 || legacyAttempt < 1 || turn != "INPUT_OBSERVE" || h.facts(t).egress != "EG_native" {
-		t.Fatalf("native queues not consumed: input=%d legacy=%d turn=%s", inputAttempt, legacyAttempt, turn)
+	if !inputSnoozed || !legacySnoozed || turn != "INPUT_OBSERVE" || egress != "EG_native" {
+		t.Fatalf("native queues not consumed: input_snoozed=%t legacy_snoozed=%t input_attempt=%d legacy_attempt=%d turn=%s egress=%s", inputSnoozed, legacySnoozed, inputAttempt, legacyAttempt, turn, egress)
 	}
 	for _, pair := range []struct {
 		op             string
@@ -322,7 +328,7 @@ func TestLiveBrowserInputProcessNativeQueues(t *testing.T) {
 	if participant < 1 {
 		t.Fatal("compiled child never reached real SFU")
 	}
-	t.Logf("REAL_PG native dual queues parent_pid=%d input_job=%d egress_job=%d attempts=%d/%d input_turn=%s", p.cmd.Process.Pid, input.plan.JobID, h.plan.JobID, inputAttempt, legacyAttempt, turn)
+	t.Logf("REAL_PG native dual queues parent_pid=%d input_job=%d egress_job=%d attempts=%d/%d input_turn=%s input_snoozed=%t legacy_snoozed=%t egress=%s real_sfu_participant_rpc=%d", p.cmd.Process.Pid, input.plan.JobID, h.plan.JobID, inputAttempt, legacyAttempt, turn, inputSnoozed, legacySnoozed, egress, participant)
 	mrStop(t, p, syscall.SIGTERM, true)
 }
 
