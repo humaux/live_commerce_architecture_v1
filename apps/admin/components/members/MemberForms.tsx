@@ -76,19 +76,22 @@ export function MemberForms({
   const dialog = useRef<HTMLDialogElement>(null),
     opener = useRef<HTMLElement | null>(null);
   const privateBoundary = useRef("");
+  const erasedTarget = useRef(false);
+  // Current accepted read also fences retained handlers captured before concealment.
+  const activeRead = useRef({ status, boundary, permitted: false });
   activeScope.current = scope;
   const permitted = !!store?.permissions?.includes("customers:points");
   const concealed =
     !permitted ||
-    status === "hidden" ||
-    status === "signed-out" ||
-    status === "forbidden" ||
-    status === "not-found";
+    status !== "ready" ||
+    !boundary ||
+    (!!privateBoundary.current && privateBoundary.current !== boundary);
+  activeRead.current = { status, boundary, permitted };
   const busy = step === "pending",
     unresolved = step === "unknown";
   const reason = !store
     ? c.noStore
-    : member?.erased_at
+    : erasedTarget.current || member?.erased_at
       ? c.erased
       : status !== "ready"
         ? c.loading
@@ -112,6 +115,7 @@ export function MemberForms({
     setSnapshot(null);
   }
   useEffect(() => {
+    erasedTarget.current = false;
     clear();
     const logout = () => clear();
     window.addEventListener("commerce-session-logout", logout);
@@ -125,6 +129,10 @@ export function MemberForms({
   useEffect(() => {
     if (status === "signed-out" || !permitted) clear();
   }, [status, permitted]);
+  useEffect(() => {
+    if (status === "ready" && boundary && privateBoundary.current &&
+        boundary !== privateBoundary.current) clear();
+  }, [status, boundary]);
   useEffect(() => {
     const el = dialog.current;
     if (!el) return;
@@ -153,7 +161,7 @@ export function MemberForms({
     clear(); // Local draft only; deliberately no logout or read-session invalidation.
   }
   function start(event: { currentTarget: HTMLElement }) {
-    if (!permitted || reason) return;
+    if (!permitted || reason || !readAccepted() || erasedTarget.current) return;
     opener.current = event.currentTarget;
     if (!intent.current) {
       privateBoundary.current = boundary;
@@ -212,16 +220,22 @@ export function MemberForms({
       return fail("amount", c.insufficient);
     return { delta: sign * count, note, order_id: null };
   }
+  function readAccepted() {
+    const read = activeRead.current;
+    return read.permitted && read.status === "ready" && !!read.boundary &&
+      (!privateBoundary.current || privateBoundary.current === read.boundary) &&
+      activeScope.current === scope;
+  }
   function review(event: FormEvent) {
     event.preventDefault();
-    if (intent.current || busy || !permitted) return;
+    if (intent.current || busy || !permitted || !readAccepted() || erasedTarget.current) return;
     if (validate()) {
       if (adjusting) setStep("confirm");
       else void submit();
     }
   }
   async function submit() {
-    if (intent.current || !store || !permitted || concealed) return;
+    if (intent.current || !store || !permitted || concealed || !readAccepted() || erasedTarget.current) return;
     const body = validate();
     if (!body) return;
     const command: Intent = Object.freeze({
@@ -285,6 +299,17 @@ export function MemberForms({
         setStep("unknown");
         setError(c.unknown);
         return; // Retain the same body/key/target: reading never clears or replays this intent.
+      }
+      if (e.code === "member_erased") {
+        // Definite acknowledgement is terminal for this target, including stale handlers
+        // and Close/reopen while the owning read is still being refreshed.
+        erasedTarget.current = true;
+        clear();
+        setOpen(true);
+        setStep("refused");
+        setError(c.erased);
+        onRefresh();
+        return;
       }
       intent.current = null;
       setStep("refused");
@@ -527,7 +552,9 @@ export function MemberForms({
                   <Button
                     size="lg"
                     data-testid="member-form-back"
+                    disabledReason={erasedTarget.current ? c.erased : undefined}
                     onClick={() => {
+                      if (erasedTarget.current || !readAccepted()) return;
                       setError("");
                       setStep("edit");
                     }}
