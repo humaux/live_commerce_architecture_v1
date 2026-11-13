@@ -111,7 +111,6 @@ jobs:
         run: |
           [[ "$(git rev-parse HEAD)" == "$SUBJECT_SHA" ]]
           [[ -z "$(git status --porcelain)" ]]
-          git check-ignore output/g07-canonical/probe
           sha256sum scripts/dev/release-gate.sh scripts/dev/test-local.sh scripts/dev/test-local-runtime.sh > "$RUNNER_TEMP/g07-adapter/scripts.before.sha256"
           jq --arg head "$(git rev-parse HEAD)" '. + {subject_checkout_sha: $head}' "$RUNNER_TEMP/g07-adapter/identity.json" > "$RUNNER_TEMP/g07-adapter/checkout.json"
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
@@ -136,7 +135,7 @@ jobs:
           sha256sum --check "$RUNNER_TEMP/g07-adapter/scripts.before.sha256"
           unset LC_FOUNDATION_PKGS LC_FOUNDATION_RUN LC_FOUNDATION_SKIP LC_PREBUILT_DIR
           unset STRIPE_BROWSER STRIPE_SANDBOX STRIPE_SECRET_KEY STRIPE_SECRET_KEY_ROTATED STRIPE_ACCOUNT_ID
-          export LC_RELEASE_GATE_OUT="$PWD/output/g07-canonical"
+          export LC_RELEASE_GATE_OUT="$RUNNER_TEMP/g07-canonical"
           rc=0
           bash scripts/dev/release-gate.sh --strict --only G07 || rc=$?
           # Keep canonical exit 1/3 intact; a successful command still fails on source drift.
@@ -157,7 +156,7 @@ jobs:
           name: g07-subject-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ${{ runner.temp }}/g07-adapter/
-            output/g07-canonical/
+            ${{ runner.temp }}/g07-canonical/
           retention-days: 14
           if-no-files-found: error
 
