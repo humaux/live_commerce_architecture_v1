@@ -1,6 +1,7 @@
-// Diagnostic recovery ledger and legacy observer. Depends on pgx and private SQL ABI.
-// Called by recovery supervision; constructed mode alone selects scope, and mixed
-// diagnostic mode cannot claim observations or enable provider I/O.
+// Responsibility: diagnostic ledger and constructed-mode recovery dispatch.
+// Dependencies: pgx, private SQL ABI and LiveKit observation adapters.
+// Callers: recovery supervision. Invariant: diagnostic mixed mode has no provider admission.
+
 package live
 
 import (
@@ -45,9 +46,11 @@ type RecoveryReadback struct {
 }
 
 type MediaRecoveryObserver struct {
-	pool         *pgxpool.Pool
-	browserInput bool
-	projects     map[mediaProjectKey]mediaEndpoint
+	pool             *pgxpool.Pool
+	browserInput     bool
+	input            *BrowserInputRuntime
+	providerAdmitted bool
+	projects         map[mediaProjectKey]mediaEndpoint
 }
 
 // The diagnostic ledger remains usable when native/project configuration is
@@ -244,7 +247,13 @@ func (r *MediaRecoveryObserver) Timeout(ctx context.Context, episode string, ela
 // Observe performs at most one fenced Query/FindByRoom; the parent owns retries
 // and samples the post-commit readback before it may attest a witness.
 func (r *MediaRecoveryObserver) Observe(ctx context.Context, episode string, member RecoveryMember) (string, error) {
-	if r == nil || r.pool == nil || r.browserInput || ctx == nil || member.Disposition != "pending" || member.OperationID == "" || member.JobID < 1 {
+	if r != nil && r.browserInput {
+		if !r.providerAdmitted {
+			return "", ErrMediaRecovery
+		}
+		return r.observeWithInput(ctx, episode, member)
+	}
+	if r == nil || r.pool == nil || ctx == nil || member.Disposition != "pending" || member.OperationID == "" || member.JobID < 1 {
 		return "", ErrMediaRecovery
 	}
 	var token [32]byte
