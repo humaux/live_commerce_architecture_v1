@@ -381,12 +381,20 @@ func contactDrain(t *testing.T, w *notify.Worker) {
 	t.Helper()
 	// The shared CI database may contain other tests' pending notifications. Drain with MOCK only;
 	// assertions below select this fixture's unique recipient, without deleting anyone else's rows.
+	pending := func() int64 {
+		var count int64
+		if err := fixture(t).owner.QueryRow(context.Background(), `SELECT count(*) FROM notify.outbox WHERE state='PENDING'`).Scan(&count); err != nil {
+			t.Fatal("contact outbox pending count failed")
+		}
+		return count
+	}
 	for range 40 {
+		before := pending()
 		n, err := w.Once(context.Background())
 		if err != nil {
 			t.Fatal("contact outbox worker failed")
 		}
-		if n == 0 {
+		if n == 0 && pending() >= before {
 			return
 		}
 	}
