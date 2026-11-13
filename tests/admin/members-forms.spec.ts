@@ -725,6 +725,23 @@ async function captureRole(page: Page, locale: Locale, role: string) {
         scrollWidth: e.scrollWidth,
       };
     };
+    // Read layout context beside the existing box measurement so headed and
+    // ordinary contexts expose viewport/gutter differences without changing UI.
+    const layoutBox = (e: Element | null) => {
+      if (!e) return null;
+      const r = e.getBoundingClientRect(), style = getComputedStyle(e);
+      return {
+        tag: e.tagName,
+        rect: { x: r.x, y: r.y, width: r.width, height: r.height },
+        clientWidth: e.clientWidth, clientHeight: e.clientHeight,
+        scrollWidth: e.scrollWidth, scrollHeight: e.scrollHeight,
+        style: Object.fromEntries([
+          "position", "width", "inline-size", "max-inline-size", "box-sizing",
+          "overflow-x", "overflow-y", "scrollbar-gutter", "margin-left",
+          "margin-right", "border-left-width", "border-right-width", "transform", "zoom",
+        ].map((name) => [name, style.getPropertyValue(name)])),
+      };
+    };
     const tokenNames = [
       "--ds-control-member-dialog-width",
       "--ds-control-member-dialog-pad",
@@ -771,6 +788,24 @@ async function captureRole(page: Page, locale: Locale, role: string) {
       viewport: innerWidth,
       dpr: devicePixelRatio,
       zoom: visualViewport?.scale,
+      layout: {
+        compatMode: document.compatMode,
+        innerWidth, innerHeight,
+        visualViewport: visualViewport ? {
+          width: visualViewport.width, height: visualViewport.height,
+          scale: visualViewport.scale,
+          offsetLeft: visualViewport.offsetLeft, offsetTop: visualViewport.offsetTop,
+        } : null,
+        root: layoutBox(document.documentElement),
+        body: layoutBox(document.body),
+        scrollingElement: layoutBox(document.scrollingElement),
+        dialog: layoutBox(d),
+        open: d.open,
+        modal: d.matches(":modal"),
+        visibilityState: document.visibilityState,
+        hasFocus: document.hasFocus(),
+        userAgent: navigator.userAgent,
+      },
       padding: [
         cs.paddingTop,
         cs.paddingRight,
