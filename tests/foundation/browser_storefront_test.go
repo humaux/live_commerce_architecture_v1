@@ -17,6 +17,7 @@ package foundation_test
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -84,6 +85,9 @@ func TestBrowserStorefront(t *testing.T) {
 	if os.Getenv("LC_BROWSER_STOREFRONT_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use scripts/dev/test-local.sh --browser-storefront")
 	}
+	// Test-only random encryption material; no production key, SMTP or notify worker.
+	t.Setenv("COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID", "sfr-contact-fixture")
+	t.Setenv("COMMERCE_META_PAYLOAD_KEYS_JSON", fmt.Sprintf(`{"keys":[{"id":"sfr-contact-fixture","key_base64":%q}]}`, base64.StdEncoding.EncodeToString(randomBytes(32))))
 	// Keep the same catalog/buyer fixture; admit delivery through the existing Stripe
 	// mock registrar, since a retired PAYUNi method cannot authorize checkout options.
 	hp := hpSetup(t)
@@ -109,6 +113,9 @@ func TestBrowserStorefront(t *testing.T) {
 	}))
 	t.Cleanup(h.server.Close)
 	f := h.f
+	// One synthetic browser contact traverses the real BFF/Go/isolated PG; no notification worker runs.
+	mustExec(t, f.owner, `UPDATE control.stores SET contact_email=$3 WHERE tenant_id=$1 AND id=$2`, f.tenantA, f.storeA1, "sfr-contact@merchant.example.test")
+	contactBefore := countRows(t, f.owner, `SELECT count(*) FROM storefront.store_contact_messages WHERE store_id=$1`, f.storeA1)
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Minute)
 	defer cancel()
 	root, _ := filepath.Abs("../..")
@@ -405,10 +412,17 @@ func TestBrowserStorefront(t *testing.T) {
 		t.Fatalf("offline-error.spec.ts did not report; evidence=%s", evidence)
 	}
 
+	// tests/storefront/contact-native.spec.ts is actually awaited by shop-real-gate.mjs;
+	// this Go caller independently verifies its complete 61-case native contact ledger.
+	assertSFRContactLedger(t, evidence, string(out))
+
 	// ---- independent PG readback ----------------------------------------------------------------------------------------------------
 	// Browsing, carts and quotes never place an order, hold stock or write the stock ledger (I05/§11.5: only checkout and payment move stock).
 	if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM checkout.orders WHERE store_id=$1)+(SELECT count(*) FROM inventory.reservations WHERE store_id=$1)`, f.storeA1); n != ordersBefore {
 		t.Errorf("orders+reservations %d -> %d: the storefront walk-through must not place an order or hold stock", ordersBefore, n)
+	}
+	if n := countRows(t, f.owner, `SELECT count(*) FROM storefront.store_contact_messages WHERE store_id=$1`, f.storeA1); n != contactBefore+1 {
+		t.Errorf("synthetic real contact write count = %d; expected baseline + 1", n)
 	}
 	if n := countRows(t, f.owner, `SELECT count(*) FROM inventory.ledger WHERE store_id=$1`, f.storeA1); n != ledgerBefore {
 		t.Errorf("inventory ledger rows %d -> %d: carts and quotes must not move stock", ledgerBefore, n)
@@ -426,3 +440,65 @@ func TestBrowserStorefront(t *testing.T) {
 }
 
 const sfrOrigin = "https://shop.example"
+
+// assertSFRContactLedger binds registration to each original contact case, not an aggregate-only PASS.
+// The native helper owns actions; this independent Go caller owns the mandatory case set and evidence admission.
+func assertSFRContactLedger(t *testing.T, evidence, output string) {
+	t.Helper()
+	const namespace = "M8-CONTACT-NATIVE/v1"
+	const complete = "M8_CONTACT_NATIVE_COMPLETE namespace=M8-CONTACT-NATIVE/v1 mock=60 sandbox=1 contexts=49 skips=0"
+	if !strings.Contains(output, complete+"\n") {
+		t.Fatalf("missing native contact completion marker; evidence=%s", evidence)
+	}
+	raw, err := os.ReadFile(filepath.Join(evidence, "contact-click-ledger.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var ledger struct {
+		Namespace string `json:"namespace"`
+		Contexts  int    `json:"contexts"`
+		Skips     int    `json:"skips"`
+		Rows      []struct {
+			Namespace   string `json:"namespace"`
+			CaseID      string `json:"case_id"`
+			Locale      string `json:"locale"`
+			Viewport    string `json:"viewport"`
+			Environment string `json:"environment"`
+			Status      string `json:"status"`
+		} `json:"rows"`
+	}
+	if err := json.Unmarshal(raw, &ledger); err != nil {
+		t.Fatal(err)
+	}
+	if ledger.Namespace != namespace || ledger.Contexts != 49 || ledger.Skips != 0 || len(ledger.Rows) != 61 {
+		t.Fatalf("native contact ledger header/count mismatch; evidence=%s", evidence)
+	}
+	type expectedCase struct{ locale, viewport, environment string }
+	expected := make(map[string]expectedCase)
+	for _, locale := range []string{"zh-TW", "zh-CN", "en"} {
+		for _, viewport := range []string{"1440x900", "390x844"} {
+			for _, control := range []string{"contact protocol entry", "contact uncertainty recovery", "contact uncertainty refresh", "contact 429 refusal", "contact 409 refusal", "contact 422 refusal", "contact concurrent tabs", "contact unavailable locks"} {
+				expected[locale+"/"+viewport+"/"+control] = expectedCase{locale, viewport, "MOCK"}
+			}
+		}
+	}
+	for _, status := range []int{400, 413, 415, 422, 429} {
+		for _, edited := range []bool{false, true} {
+			expected[fmt.Sprintf("lifecycle/%d/edited=%t", status, edited)] = expectedCase{"en", "1440x900", "MOCK"}
+		}
+	}
+	for _, outcome := range []string{"malformed201", "transport"} {
+		expected["lifecycle/"+outcome] = expectedCase{"en", "1440x900", "MOCK"}
+	}
+	expected["en/390x844/contact real producer receipt"] = expectedCase{"en", "390x844", "SANDBOX"}
+	for _, row := range ledger.Rows {
+		want, ok := expected[row.CaseID]
+		if !ok || row.Namespace != namespace || row.Status != "PASS" || row.Locale != want.locale || row.Viewport != want.viewport || row.Environment != want.environment {
+			t.Fatalf("native contact case mismatch/duplicate: %q; evidence=%s", row.CaseID, evidence)
+		}
+		delete(expected, row.CaseID)
+	}
+	if len(expected) != 0 {
+		t.Fatalf("native contact cases omitted: %d; evidence=%s", len(expected), evidence)
+	}
+}
