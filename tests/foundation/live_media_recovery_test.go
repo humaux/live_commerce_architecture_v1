@@ -266,6 +266,79 @@ func TestLiveMediaRecoveryMRR03NegativeAuthorityAndFences(t *testing.T) {
 	h := lmeSetup(t, func(w http.ResponseWriter, _ *http.Request) { http.Error(w, "no provider", 500) })
 	recovery, login := mrrRecoveryPool(t, h)
 	ctx := context.Background()
+	// Catalog assertions use real migrated PostgreSQL and the restricted recovery login.
+	// The ALTER probes are transactional and rolled back; they intentionally test
+	// readiness against a missing ABI and an inconsistent reader snapshot contract.
+	t.Run("mixed catalog and readiness", func(t *testing.T) {
+		type abi struct{ signature, result, volatility string }
+		apis := []abi{
+			{"live.begin_media_recovery_episode_with_input(uuid,bigint,integer,boolean)", "TABLE(disposition text, episode_id uuid, operation_id uuid, job_id bigint, baseline_generation bigint, deadline_at timestamp with time zone, candidate_count integer, coverage_known boolean, blocked_by_episode_id uuid, execution_profile text, input_required boolean, egress_required boolean)", "v"},
+			{"live.claim_media_recovery_observation_with_input(uuid,uuid,bigint,bytea)", "TABLE(disposition text, generation bigint, project_id text, credential_version bigint, endpoint_identity text, room_name text, publisher_identity text, egress_id text, execution_profile text, input_required boolean, egress_required boolean, input_observation_id uuid, egress_observation_id uuid)", "v"},
+			{"live.record_browser_input_recovery_observation(uuid,uuid,bigint,bytea,text,text,text,text)", "TABLE(disposition text, input_observation_id uuid)", "v"},
+			{"live.record_media_recovery_observation_with_input(uuid,uuid,bigint,bytea,text,text,text,text,bigint,bigint,bigint)", "TABLE(disposition text, observation_id uuid)", "v"},
+			{"live.finish_media_recovery_observation_with_input(uuid,uuid,bigint,bytea,text)", "text", "v"},
+			{"live.read_media_recovery_episode_with_input(uuid)", "TABLE(episode_id uuid, scope_status text, coverage_known boolean, candidate_count integer, blocked_by_episode_id uuid, operation_id uuid, disposition text, baseline_generation bigint, observation_id uuid, observation_source text, observation_generation bigint, witness_elapsed_ms bigint, timeout_at timestamp with time zone, cleanup_required boolean, execution_profile text, input_required boolean, egress_required boolean, input_observation_id uuid, input_observation_source text, input_observation_result text, input_observation_generation bigint, job_id bigint)", "s"},
+			{"live.witness_media_recovery_episode_with_input(uuid,uuid,uuid,uuid,bigint)", "text", "v"},
+			{"live.media_browser_input_recovery_ready()", "boolean", "v"},
+		}
+		for _, a := range apis {
+			var owner, result, volatility string
+			var secdef, path, allowed bool
+			var excess int
+			err := h.lp.f.owner.QueryRow(ctx, `SELECT pg_get_userbyid(p.proowner),pg_get_function_result(p.oid),p.provolatile::text,p.prosecdef,
+			 'search_path=pg_catalog'=ANY(p.proconfig),
+			 (SELECT count(*) FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) x
+			  WHERE x.privilege_type='EXECUTE' AND x.grantee NOT IN (p.proowner,'commerce_media_recovery'::regrole))
+			 FROM pg_proc p WHERE p.oid=to_regprocedure($1)`, a.signature).Scan(&owner, &result, &volatility, &secdef, &path, &excess)
+			if err != nil || owner != "commerce_media_writer" || result != a.result || volatility != a.volatility || !secdef || !path || excess != 0 {
+				t.Errorf("mixed ABI %s: owner=%s result=%s volatility=%s secdef=%v path=%v excess=%d err=%v", a.signature, owner, result, volatility, secdef, path, excess, err)
+			}
+			if err := recovery.QueryRow(ctx, `SELECT has_function_privilege(current_user,$1,'EXECUTE')`, a.signature).Scan(&allowed); err != nil || !allowed {
+				t.Errorf("recovery access %s: allowed=%v err=%v", a.signature, allowed, err)
+			}
+			for label, pool := range map[string]*pgxpool.Pool{"worker": h.worker, "executor": h.executor, "runtime": h.lp.f.runtime, "registrar": h.registrar} {
+				if err := pool.QueryRow(ctx, `SELECT has_function_privilege(current_user,$1,'EXECUTE')`, a.signature).Scan(&allowed); err != nil || allowed {
+					t.Errorf("%s access %s: allowed=%v err=%v", label, a.signature, allowed, err)
+				}
+			}
+		}
+		var ready bool
+		if err := recovery.QueryRow(ctx, `SELECT live.media_browser_input_recovery_ready()`).Scan(&ready); err != nil || !ready {
+			t.Fatalf("mixed ready: %v %v", ready, err)
+		}
+		for _, probe := range []struct{ name, ddl string }{
+			{"missing ABI", `ALTER FUNCTION live.read_media_recovery_episode_with_input(uuid) RENAME TO test_hidden_mixed_read`},
+			{"volatile reader", `ALTER FUNCTION live.read_media_recovery_episode_with_input(uuid) VOLATILE`},
+			{"volatile legacy reader", `ALTER FUNCTION live.read_media_recovery_episode(uuid) VOLATILE`},
+			{"wrong owner", `ALTER FUNCTION live.read_media_recovery_episode_with_input(uuid) OWNER TO commerce_media_recovery`},
+			{"unsafe path", `ALTER FUNCTION live.read_media_recovery_episode_with_input(uuid) SET search_path TO public`},
+			{"public execute", `GRANT EXECUTE ON FUNCTION live.read_media_recovery_episode_with_input(uuid) TO PUBLIC`},
+			{"worker execute", `GRANT EXECUTE ON FUNCTION live.read_media_recovery_episode_with_input(uuid) TO commerce_media_worker`},
+			{"registrar execute", `GRANT EXECUTE ON FUNCTION live.read_media_recovery_episode_with_input(uuid) TO commerce_media_registrar`},
+			{"wrong policy role", `ALTER POLICY media_input_recovery_writer ON live.media_input_recovery_observations TO commerce_media_recovery`},
+			{"public policy role", `ALTER POLICY media_input_recovery_writer ON live.media_input_recovery_observations TO PUBLIC`},
+			{"missing recovery execute", `REVOKE EXECUTE ON FUNCTION live.read_media_recovery_episode_with_input(uuid) FROM commerce_media_recovery`},
+		} {
+			t.Run(probe.name, func(t *testing.T) {
+				tx, err := h.lp.f.owner.Begin(ctx)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer tx.Rollback(ctx)
+				if _, err = tx.Exec(ctx, probe.ddl); err != nil {
+					t.Fatal(err)
+				}
+				// Query as the restricted role inside the same transaction so the catalog
+				// mutation is visible without relying on superuser EXECUTE bypass.
+				if _, err = tx.Exec(ctx, `SET LOCAL ROLE commerce_media_recovery`); err != nil {
+					t.Fatal(err)
+				}
+				if err = tx.QueryRow(ctx, `SELECT live.media_browser_input_recovery_ready()`).Scan(&ready); err != nil || ready {
+					t.Fatalf("readiness failed to detect %s: %v %v", probe.name, ready, err)
+				}
+			})
+		}
+	})
 	signatures := map[string]string{
 		"live.begin_media_recovery_episode(uuid,bigint,integer,boolean)":                                    "TABLE(disposition text, episode_id uuid, operation_id uuid, job_id bigint, baseline_generation bigint, deadline_at timestamp with time zone, candidate_count integer, coverage_known boolean, blocked_by_episode_id uuid)",
 		"live.claim_recovery_observation(uuid,uuid,bigint,bytea)":                                           "TABLE(disposition text, generation bigint, project_id text, credential_version bigint, endpoint_identity text, room_name text, egress_id text)",

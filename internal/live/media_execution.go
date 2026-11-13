@@ -1,3 +1,6 @@
+// Responsibility: native Egress execution and opt-in dualqueue construction.
+// Dependencies: scoped PG kernels, LiveKit, River. Caller: media-worker.
+// Invariants: exact queue/profile/job binding, one lifecycle, unchanged retry rules.
 package live
 
 import (
@@ -104,6 +107,72 @@ func NewMediaClient(ctx context.Context, workerPool, executorPool *pgxpool.Pool,
 		return nil, ErrMediaDatabase
 	}
 	return client, nil
+}
+
+// NewMediaClientWithBrowserInput owns one River lifecycle and one kind registration.
+// Concurrency is per queue (peak 2N); recovery's total wave limit is unchanged.
+func NewMediaClientWithBrowserInput(ctx context.Context, workerPool, executorPool *pgxpool.Pool,
+	keys *livekit.MaterialKeyring, projects []MediaProject, runtime *BrowserInputRuntime, concurrency int,
+) (*river.Client[pgx.Tx], error) {
+	if ctx == nil || workerPool == nil || executorPool == nil || keys == nil || concurrency < 1 || concurrency > 32 {
+		return nil, ErrMediaConfig
+	}
+	selected, input, err := recoveryProjectMaps(projects, runtime)
+	if err != nil {
+		return nil, ErrMediaConfig
+	}
+	preflight, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	if platform.ValidateMediaWorkerPool(preflight, workerPool) != nil ||
+		platform.ValidateMediaExecutorPool(preflight, executorPool) != nil ||
+		platform.ValidateSameDatabase(preflight, workerPool, executorPool) != nil {
+		return nil, ErrMediaDatabase
+	}
+	var ready bool
+	if executorPool.QueryRow(preflight, `SELECT live.media_worker_ready() AND live.media_browser_input_worker_ready()`).Scan(&ready) != nil || !ready {
+		return nil, ErrMediaDatabase
+	}
+	egress := &mediaExecutionWorker{pool: executorPool, keys: keys, projects: selected}
+	workers := river.NewWorkers()
+	river.AddWorker(workers, &mediaQueueDispatcher{egress: egress, input: &browserInputExecutionWorker{egress: egress, runtime: input}})
+	client, err := river.NewClient(riverpgxv5.New(workerPool), &river.Config{
+		Schema: mediaSchema, Workers: workers,
+		Queues: map[string]river.QueueConfig{mediaMockQueue: {MaxWorkers: concurrency}, mediaInputMockQueue: {MaxWorkers: concurrency}},
+		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+	})
+	if err != nil {
+		return nil, ErrMediaDatabase
+	}
+	return client, nil
+}
+
+// Dispatch only the exact frozen queues; each existing worker retains its SQL
+// profile/job binding and native finalization/retry behavior.
+type mediaQueueDispatcher struct {
+	river.WorkerDefaults[mediaOperationArgs]
+	egress *mediaExecutionWorker
+	input  *browserInputExecutionWorker
+}
+
+func (*mediaQueueDispatcher) Timeout(*river.Job[mediaOperationArgs]) time.Duration {
+	return 30 * time.Second
+}
+func (w *mediaQueueDispatcher) Work(ctx context.Context, job *river.Job[mediaOperationArgs]) error {
+	if w == nil || job == nil || job.JobRow == nil || job.ID < 1 || job.Args.Version != 1 ||
+		!command.ValidID(job.Args.OperationID) || job.Kind != (mediaOperationArgs{}).Kind() {
+		return river.JobCancel(ErrMediaJob)
+	}
+	switch job.Queue {
+	case mediaMockQueue:
+		if w.egress != nil {
+			return w.egress.Work(ctx, job)
+		}
+	case mediaInputMockQueue:
+		if w.input != nil {
+			return w.input.Work(ctx, job)
+		}
+	}
+	return river.JobCancel(ErrMediaJob)
 }
 
 func selectMediaProjects(projects []MediaProject) (map[mediaProjectKey]mediaEndpoint, error) {
