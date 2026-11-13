@@ -1,21 +1,25 @@
 package foundation_test
 
 // Responsibility: legacy DB admission with optional future recovery catalog.
-// Dependencies: production legacy migrations, fixture/lmaLogin, platform validators.
+// Dependencies: production legacy migrations, mciStartPG/lmaLogin, platform validators.
 // Called by MRR06; invariants: exact optional ABIs only, isolated grants restored.
 // Future bodies are MODEL_ONLY inert catalog stubs, never migration/business proof.
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/internal/platform"
+	"livecommerce/migrations"
 )
 
 func TestLiveMediaRecoveryMRR06Compatibility(t *testing.T) {
-	f := fixture(t)
+	f := mrr06LegacyFixture(t)
 	ctx := context.Background()
 	login, recovery := lmaLogin(t, f, "commerce_media_recovery")
 	name := pgx.Identifier{login}.Sanitize()
@@ -35,7 +39,7 @@ func TestLiveMediaRecoveryMRR06Compatibility(t *testing.T) {
 	}
 
 	// Ordered output columns are frozen in live-browser-input-recovery-v1.md.
-	// No file import from the separate SQL worktree; no future business migration.
+	// The isolated legacy fixture has not executed the future business migration.
 	abis := []struct{ signature, result string }{
 		{"begin_media_recovery_episode_with_input(uuid,bigint,integer,boolean)", "TABLE(disposition text,episode_id uuid,operation_id uuid,job_id bigint,baseline_generation bigint,deadline_at timestamptz,candidate_count integer,coverage_known boolean,blocked_by_episode_id uuid,execution_profile text,input_required boolean,egress_required boolean)"},
 		{"claim_media_recovery_observation_with_input(uuid,uuid,bigint,bytea)", "TABLE(disposition text,generation bigint,project_id text,credential_version bigint,endpoint_identity text,room_name text,publisher_identity text,egress_id text,execution_profile text,input_required boolean,egress_required boolean,input_observation_id uuid,egress_observation_id uuid)"},
@@ -163,4 +167,29 @@ func TestLiveMediaRecoveryMRR06Compatibility(t *testing.T) {
 			t.Fatalf("exact optional future ABI catalog unexpectedly refused after negatives: %v", err)
 		}
 	})
+}
+
+// mrr06LegacyFixture applies real historical SQL to a fresh disposable database.
+// As in the R2 upgrade fixture, the full-file checksum temporarily defers only
+// 0029; remove that placeholder before any legacy-state observation. Never apply
+// 0029 and drop its objects: the optional catalog stubs below are MODEL_ONLY.
+func mrr06LegacyFixture(t *testing.T) *testFixture {
+	t.Helper()
+	owner := mciStartPG(t)
+	ctx := context.Background()
+	const deferred = "post_river/0029_live_browser_input_recovery.sql"
+	body, err := os.ReadFile("../../migrations/" + deferred)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustExec(t, owner, `CREATE TABLE public.lc_schema_migrations (version text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())`)
+	mustExec(t, owner, `INSERT INTO public.lc_schema_migrations(version,checksum) VALUES($1,$2)`, deferred, fmt.Sprintf("%x", sha256.Sum256(body)))
+	if err := migrations.Apply(ctx, owner); err != nil {
+		t.Fatalf("MRR06 real pre-0029 migrations: %v", err)
+	}
+	mustExec(t, owner, `DELETE FROM public.lc_schema_migrations WHERE version=$1`, deferred)
+	if n := countRows(t, owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version=$1`, deferred); n != 0 {
+		t.Fatalf("MRR06 legacy database has %d applied 0029 ledger entries", n)
+	}
+	return &testFixture{owner: owner, databaseURL: owner.Config().ConnString()}
 }

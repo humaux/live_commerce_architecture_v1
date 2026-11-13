@@ -470,7 +470,7 @@
     "tests/foundation/live_media_input_custody_test.go": "f84cb8a6ddc3353b3b70d4e1207c875918998c0fd587233f644dd4811003c12f",
     "tests/foundation/live_media_login_custody_test.go": "20c1fb757a20facdf5a6ca98698e7ac421717a1e04360d52849790cffa8dd8fa",
     "tests/foundation/live_media_plan_test.go": "7b4ea664636ab9a0f07d5f13c2398a35433158d8b87ad0865a9306ca4e5c3401",
-    "tests/foundation/live_media_recovery_compat_test.go": "e5e017eae272609853b75a7e77a1c37abd60c184cd829ea65d0e3a27456220a1",
+    "tests/foundation/live_media_recovery_compat_test.go": "ed5ca113b840c3efae08818595aba1d9da520f5ca5f74fead1b39ca16e9d6644",
     "tests/foundation/live_media_recovery_test.go": "6af8ff26c8e9e92df36cdc9f44773c7aef32cf9c7304668302cc1ed366fa79aa",
     "tests/foundation/live_media_runtime_test.go": "bc769be360b146c4fcf992e3924d618fc9058ad1fabc8f4b4b49e49a977ff662",
     "tests/foundation/live_media_stop_legacy_test.go": "796618ef383442bdce0f794e5dfb79f8a1c4bf83019280d0a706caa1733114ee",
