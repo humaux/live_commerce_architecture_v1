@@ -1,3 +1,8 @@
+-- Purpose: Mixed recovery admission, observation receipts and exact catalog readiness.
+-- Depends on: Legacy 0041 kernels, 0195 snapshot fix and post_river native guards.
+-- Used by: Recovery supervisor and recovery-role validation.
+-- Invariants: Immutable admission, append-only proofs, original job/lease fences and sticky timeout.
+
 -- Responsibility: mixed input/Egress recovery SQL and exact catalog readiness.
 -- Dependencies: legacy 0041 kernels, 0195 snapshot fix, post_river 0007-0011 native guards.
 -- Called by: recovery supervisor; owner-only helpers are not worker APIs.

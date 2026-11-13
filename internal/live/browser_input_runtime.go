@@ -1,3 +1,8 @@
+// Purpose: Bind and validate browser-input project maps.
+// Depends on: Command parsing and the LiveKit integration.
+// Used by: Browser-input processing and the mixed recovery observer.
+// Invariants: Only validated MOCK project/version bindings are retained; construction performs no I/O.
+
 package live
 
 import (
