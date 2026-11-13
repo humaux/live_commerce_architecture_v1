@@ -138,8 +138,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0222 (FEAT-CONTACT-STORE encrypted contacts and transactional notification; renumbered 0211 -> 0218 -> 0222 by the integrator 2026-11-04) adds one to base 0221: 145 -> 146.
 	// 0223 (LP-1 member ledger) adds one to base 0222: 146 -> 147.
 	// 0224 (BILL-271 billing recent-auth preflight) adds one to base 0223: 147 -> 148.
-	if len(r2) != 148 {
-		t.Fatalf("R2 migration set = %d files %v, want 148", len(r2), r2)
+	// post_river/0029 (M4 live browser input recovery) adds one: 148 -> 149.
+	if len(r2) != 149 {
+		t.Fatalf("R2 migration set = %d files %v, want 149", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
