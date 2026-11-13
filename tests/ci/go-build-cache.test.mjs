@@ -81,7 +81,8 @@ function shardScopeContract(source) {
 function executionContract(source) {
   const foundation = source.split(/^  foundation\)\s*$/m)[1]?.split(/^    ;;$/m)[0] ?? "";
   const command = foundation.split("\n").find(line => /^  GOTOOLCHAIN=.* go test /.test(line)) ?? "";
-  for (const flag of ["-race", "-count=1", "-timeout=4500s"]) assert.ok(command.split(/\s+/).includes(flag), `keep ${flag}`);
+  for (const flag of ["-race", "-count=1", '-timeout="${LC_FOUNDATION_TIMEOUT_SECONDS}s"']) assert.ok(command.split(/\s+/).includes(flag), `keep ${flag}`);
+  assert.match(source, /^LC_FOUNDATION_TIMEOUT_SECONDS=\$\{LC_FOUNDATION_TIMEOUT_SECONDS-4500\}$/m, "ordinary runs retain the 4500-second default; scoped budgets use validated admission");
   // Exact expansions, not names: a swapped -run/-skip or a dropped flag silently changes which tests a shard executes.
   for (const selector of ['${LC_FOUNDATION_RUN:+-run "$LC_FOUNDATION_RUN"}', '${LC_FOUNDATION_SKIP:+-skip "$LC_FOUNDATION_SKIP"}', "${LC_FOUNDATION_PKGS:-./...}"]) {
     assert.ok(command.includes(selector), `keep ${selector}`);
@@ -93,6 +94,16 @@ test("matrix reuses native Go compilation while every selected foundation test s
   cacheContract(workflow);
   shardScopeContract(workflow);
   executionContract(runner);
+});
+
+test("aggregate timeout contract rejects an unbounded flag or a changed ordinary default", () => {
+  const flag = '-timeout="${LC_FOUNDATION_TIMEOUT_SECONDS}s"';
+  assert.ok(runner.includes(flag));
+  assert.throws(() => executionContract(runner.replace(flag, "-timeout=0")), /keep -timeout=/);
+  assert.throws(() => executionContract(runner.replace(
+    'LC_FOUNDATION_TIMEOUT_SECONDS=${LC_FOUNDATION_TIMEOUT_SECONDS-4500}',
+    'LC_FOUNDATION_TIMEOUT_SECONDS=${LC_FOUNDATION_TIMEOUT_SECONDS-7200}',
+  )), /ordinary runs retain/);
 });
 
 test("injected gNN leg outside ./tests/foundation goes RED under the shard scope contract", () => {

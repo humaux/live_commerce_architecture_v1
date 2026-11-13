@@ -38,6 +38,12 @@ on:
     - cron: '43 21 * * *'
   workflow_dispatch:
     inputs:
+      g07_subject_sha:
+        description: >-
+          Diagnostic full canonical G07 on this exact 40-character lowercase commit SHA.
+          Requires modes=[]; extra_env empty; full_browser_universe=false. Empty preserves normal planning.
+        default: ''
+        required: false
       modes:
         description: >-
           JSON array of gates. "foundation" = full suite serially (test-local.sh); "foundation-shards" = unit shard + the balanced tests/foundation groups in parallel;
@@ -68,7 +74,100 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # Diagnostic only: canonical subject evidence, never a generic matrix receipt or a PR admission check.
+  g07_subject:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.g07_subject_sha != '' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    env:
+      SUBJECT_SHA: ${{ inputs.g07_subject_sha }}
+      REQUESTED_MODES: ${{ inputs.modes }}
+      REQUESTED_EXTRA_ENV: ${{ inputs.extra_env }}
+      REQUESTED_FULL_BROWSER: ${{ inputs.full_browser_universe }}
+      WORKFLOW_SHA: ${{ github.workflow_sha }}
+      WORKFLOW_REF: ${{ github.workflow_ref }}
+      GOTOOLCHAIN: go1.27.4
+      GOFLAGS: -mod=readonly
+    steps:
+      - name: Validate diagnostic request before checkout or tests
+        run: |
+          mkdir -p "$RUNNER_TEMP/g07-adapter"
+          jq -n '{subject_requested: env.SUBJECT_SHA, workflow_sha: env.WORKFLOW_SHA,
+            workflow_ref: env.WORKFLOW_REF, dispatch_sha: env.GITHUB_SHA,
+            run_id: env.GITHUB_RUN_ID, run_attempt: env.GITHUB_RUN_ATTEMPT,
+            canonical_command: "bash scripts/dev/release-gate.sh --strict --only G07",
+            foundation_aggregate_timeout_seconds: 7200,
+            foundation_budget_status: "INITIAL_CALIBRATION_CEILING",
+            canonical_exit: "NOT_RUN"}' > "$RUNNER_TEMP/g07-adapter/identity.json"
+          [[ "$SUBJECT_SHA" =~ ^[0-9a-f]{40}$ ]] || { echo 'subject must be exact40 lowercase hex' >&2; exit 2; }
+          [[ "$REQUESTED_MODES" == '[]' && -z "$REQUESTED_EXTRA_ENV" && "$REQUESTED_FULL_BROWSER" == false ]] || {
+            echo 'G07 diagnostic requires modes=[], empty extra_env and full_browser_universe=false; calibration is forbidden' >&2
+            exit 2
+          }
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          ref: ${{ inputs.g07_subject_sha }}
+          persist-credentials: false
+          fetch-depth: 0 # historical fixture binaries need history, as in the existing gate job
+      - name: Verify frozen subject and record owning script hashes
+        run: |
+          [[ "$(git rev-parse HEAD)" == "$SUBJECT_SHA" ]]
+          [[ -z "$(git status --porcelain)" ]]
+          sha256sum scripts/dev/release-gate.sh scripts/dev/test-local.sh scripts/dev/test-local-runtime.sh > "$RUNNER_TEMP/g07-adapter/scripts.before.sha256"
+          jq --arg head "$(git rev-parse HEAD)" '. + {subject_checkout_sha: $head}' "$RUNNER_TEMP/g07-adapter/identity.json" > "$RUNNER_TEMP/g07-adapter/checkout.json"
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Go modules (prefetch with retry)
+        run: for i in 1 2 3; do go mod download && exit 0; echo "go mod download attempt $i failed; retrying"; sleep $((i * 15)); done; exit 1
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: ./.github/actions/pnpm
+      - name: Node dependencies (frozen lockfile)
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Download pinned test image
+        run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+      - name: Full canonical G07 (subject-bound)
+        run: |
+          [[ "$(git rev-parse HEAD)" == "$SUBJECT_SHA" ]]
+          [[ -z "$(git status --porcelain)" ]]
+          sha256sum --check "$RUNNER_TEMP/g07-adapter/scripts.before.sha256"
+          unset LC_FOUNDATION_PKGS LC_FOUNDATION_RUN LC_FOUNDATION_SKIP LC_PREBUILT_DIR
+          unset STRIPE_BROWSER STRIPE_SANDBOX STRIPE_SECRET_KEY STRIPE_SECRET_KEY_ROTATED STRIPE_ACCOUNT_ID
+          export LC_RELEASE_GATE_OUT="$RUNNER_TEMP/g07-canonical"
+          # New configured subject required; this is not unchanged exact-5f6 evidence.
+          # 120-minute aggregate ceiling leaves 30 minutes of the 150-minute job
+          # for setup, other packages, vet, postflight and upload; fit is unmeasured.
+          export LC_FOUNDATION_TIMEOUT_SECONDS=7200
+          rc=0
+          bash scripts/dev/release-gate.sh --strict --only G07 || rc=$?
+          # Keep canonical exit 1/3 intact; a successful command still fails on source drift.
+          jq --argjson code "$rc" '. + {canonical_exit: $code, foundation_aggregate_timeout_seconds: (env.LC_FOUNDATION_TIMEOUT_SECONDS | tonumber)}' "$RUNNER_TEMP/g07-adapter/checkout.json" > "$RUNNER_TEMP/g07-adapter/result.json"
+          post=0
+          [[ "$(git rev-parse HEAD)" == "$SUBJECT_SHA" ]] || post=1
+          git status --porcelain > "$RUNNER_TEMP/g07-adapter/source-status.after.txt"
+          [[ ! -s "$RUNNER_TEMP/g07-adapter/source-status.after.txt" ]] || post=1
+          sha256sum scripts/dev/release-gate.sh scripts/dev/test-local.sh scripts/dev/test-local-runtime.sh > "$RUNNER_TEMP/g07-adapter/scripts.after.sha256"
+          cmp "$RUNNER_TEMP/g07-adapter/scripts.before.sha256" "$RUNNER_TEMP/g07-adapter/scripts.after.sha256" || post=1
+          printf '%s\n' "$post" > "$RUNNER_TEMP/g07-adapter/postflight.exit"
+          if ((rc != 0)); then exit "$rc"; fi
+          exit "$post"
+      - name: Upload canonical G07 evidence (including failures and skip inventories)
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: g07-subject-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/g07-adapter/
+            ${{ runner.temp }}/g07-canonical/
+          retention-days: 14
+          if-no-files-found: error
+
   plan:
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.g07_subject_sha != '') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10 # + contract drift (go run, ~1-2 min)
     outputs:
@@ -642,7 +741,8 @@ jobs:
   required:
     name: required
     needs: [plan, build, gate, aggregate, deploy, receipts]
-    if: ${{ always() }}
+    # A subject diagnostic has its own verdict; it must never emit a generic admission PASS.
+    if: ${{ always() && !(github.event_name == 'workflow_dispatch' && inputs.g07_subject_sha != '') }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:
