@@ -1,0 +1,61 @@
+/* Purpose: reviewed aftersales layout using scoped semantic aliases and shared control tokens.
+ * Depends on: packages/ui/src/tokens.css. Called by: ReturnRequestForm/Detail.
+ * Invariants: no global palette overrides; fluid width, logical properties, 44px targets and wrapping facts. */
+.root {
+  --return-navy: var(--ds-ink);
+  --return-ink: var(--ds-sig-label);
+  --return-muted: var(--ds-crumb-text);
+  --return-line: var(--ds-members-border);
+  --return-canvas: var(--ds-sig-page);
+  --return-surface: var(--ds-surface);
+  --return-teal: var(--ds-button-text-kind);
+  --return-teal-soft: #eaf6f2;
+  --return-target: var(--ui-target);
+  --return-apply-width: 760px;
+  --return-detail-width: 1312px;
+  box-sizing: border-box;
+  min-inline-size: 0;
+  background: var(--return-canvas);
+  color: var(--return-ink);
+  font: var(--ds-text-md)/1.5 var(--ds-font);
+  padding: var(--ds-space-8) var(--ds-space-4) var(--ds-space-12);
+  overflow-wrap: anywhere;
+}
+.root *, .root *::before, .root *::after { box-sizing: border-box; min-inline-size: 0; }
+.apply, .detail { inline-size: 100%; margin-inline: auto; }
+.apply { max-inline-size: var(--return-apply-width); }
+.detail { max-inline-size: var(--return-detail-width); }
+.root h1 { color: var(--return-navy); font-size: var(--ds-text-3xl); margin-block: var(--ds-space-6); }
+.root h2, .root legend { color: var(--return-navy); font-size: var(--ds-text-xl); font-weight: 600; margin-block: 0 var(--ds-space-3); }
+.root p { margin-block: var(--ds-space-2); }
+.card { background: var(--return-surface); border: 1px solid var(--return-line); border-radius: var(--ds-radius-member-dialog); padding: var(--ds-space-5); margin-block: var(--ds-space-6); }
+.root fieldset { border: 0; padding: 0; margin: 0; }
+.root label { display: block; margin-block: var(--ds-space-3); }
+.root input:not([type="checkbox"]), .root textarea, .root select {
+  display: block; inline-size: 100%; min-block-size: var(--return-target);
+  border: 1px solid var(--return-line); border-radius: var(--ds-radius-control);
+  padding: var(--ds-space-3); font: inherit; color: var(--return-ink); background: var(--return-surface);
+  margin-block-start: var(--ds-space-1);
+}
+.root textarea { min-block-size: 112px; resize: vertical; }
+.root .selection { display: flex; align-items: center; gap: var(--ds-space-2); min-block-size: var(--return-target); margin: 0; cursor: pointer; }
+.root input[type="checkbox"] { flex: 0 0 auto; inline-size: var(--ds-space-5); block-size: var(--ds-space-5); margin: 0; accent-color: var(--return-navy); }
+.line { padding-block: var(--ds-space-2); border-block-end: 1px solid var(--return-line); }
+.primary, .secondary, .back {
+  display: flex; justify-content: center; align-items: center; text-align: center;
+  inline-size: 100%; min-block-size: var(--return-target); font: inherit;
+  padding: var(--ds-space-2) var(--ds-control-button-pad); margin-block: var(--ds-space-3);
+  border: 1px solid var(--return-line); border-radius: var(--ds-radius-control); cursor: pointer; text-decoration: none;
+}
+.primary { color: var(--return-surface); background: var(--return-navy); border-color: var(--return-navy); }
+.secondary, .back { color: var(--return-navy); background: var(--return-surface); }
+.back { inline-size: fit-content; }
+.root :disabled { opacity: .65; cursor: default; }
+.root :focus-visible { outline: var(--ds-focus-width) solid var(--ds-focus); outline-offset: var(--ds-focus-offset); }
+.notice, .badge { background: var(--return-teal-soft); color: var(--return-teal); border-radius: var(--ds-radius-control); padding: var(--ds-space-3); }
+.badge { display: inline-block; font-size: var(--ds-text-xs); }
+.note { white-space: pre-wrap; }
+.root ul, .root ol { padding-inline-start: var(--ds-space-5); }
+.dialog { inline-size: min(calc(100% - 32px), var(--return-apply-width)); max-block-size: calc(100% - 32px); overflow: auto; color: var(--return-ink); background: var(--return-surface); border: 1px solid var(--return-line); border-radius: var(--ds-radius-member-dialog); padding: var(--ds-space-5); }
+.dialog::backdrop { background: var(--return-navy); opacity: .35; }
+@media (max-width: 600px) { .root { padding-block-start: var(--ds-space-4); } .root h1 { font-size: var(--ds-text-2xl); } }
