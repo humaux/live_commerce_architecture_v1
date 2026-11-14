@@ -1,6 +1,6 @@
-// Purpose: Exercise canonical matrix evidence with isolated byte, source and run-outcome corruptions.
-// Depends on: the real evidence validator and native canonical receipts; no DB, browser or network calls.
-// Used by: foundation shards; fixture mutations never modify delivered evidence or source files.
+// Purpose: Exercise canonical matrix evidence and own the parent-only ledger location after complete browser children.
+// Depends on: the real evidence validator, canonical receipts and catalog child runner; isolated controls use no DB/browser/network.
+// Used by: foundation shards and the native catalog browser owner; fixture mutations never modify delivered evidence or source files.
 package foundation_test
 
 import (
@@ -762,11 +762,183 @@ func TestProductEditorMatrixLedgerEvidenceRunIdentityMetadata(t *testing.T) {
 	}
 }
 
+// Validated PE data crosses the child boundary without passing the parent's T to
+// any native operation. Kept untagged so the same orchestration has DB-free controls.
+type catalogCoreBrowserFacts struct {
+	ledgerPath string
+	identities int
+}
+
+func runCatalogCoreBrowserChildren(t *testing.T, productEditor bool, run func(*testing.T, bool) *catalogCoreBrowserFacts) {
+	t.Helper() // The owner log retains the browser parent's source-file location.
+	var facts *catalogCoreBrowserFacts
+	complete := true
+	for _, child := range []struct {
+		name string
+		pe   bool
+	}{{"PE12-17-TWD", true}, {"CC12-frozen", false}} {
+		if child.pe && !productEditor {
+			continue
+		}
+		var childT *testing.T
+		returned := false
+		ok := t.Run(child.name, func(t *testing.T) {
+			childT = t
+			got := run(t, child.pe)
+			if child.pe {
+				facts = got
+			}
+			returned = true
+		})
+		// Run's bool does not distinguish SKIP; FailNow/SkipNow do not return.
+		// These children are sequential, and Run also waits for their cleanups.
+		complete = complete && ok && returned && childT != nil && !childT.Failed() && !childT.Skipped()
+	}
+	if !productEditor || !complete || t.Failed() || t.Skipped() {
+		return
+	}
+	if facts == nil || facts.ledgerPath == "" || facts.identities <= 0 {
+		t.Fatal("successful product-editor child returned incomplete ledger facts")
+	}
+	t.Logf("PASS mobile matrix click ledger: %d declared unique PASS identities; evidence=%s", facts.identities, facts.ledgerPath)
+}
+
 // These are producer controls, not the future conditional G07 admission controls.
 func TestProductEditorMatrixOwnerProof(t *testing.T) {
+	// Isolated current-binary controls use real testing.T child failure/skip behavior;
+	// the callback facts are MODEL_ONLY and never become native browser evidence.
+	if control := os.Getenv("LC_MATRIX_OWNER_LOCATION_CONTROL"); control != "" {
+		switch control {
+		case "success", "pe-fail-now", "pe-skip", "cc12-skip", "cc12-fail", "pe-cleanup-fail", "missing-facts":
+		default:
+			t.Fatal("unknown owner location control")
+		}
+		runCatalogCoreBrowserChildren(t, true, func(child *testing.T, pe bool) *catalogCoreBrowserFacts {
+			if pe {
+				switch control {
+				case "pe-fail-now":
+					child.FailNow()
+				case "pe-skip":
+					child.Skip("MODEL_ONLY PE skip")
+				case "pe-cleanup-fail":
+					child.Cleanup(func() { child.Error("MODEL_ONLY cleanup failure") })
+				case "missing-facts":
+					return nil
+				}
+				return &catalogCoreBrowserFacts{ledgerPath: "output/playwright/owner-control/product-editor-click-ledger.json", identities: 1}
+			}
+			if control == "cc12-skip" {
+				child.Skip("MODEL_ONLY CC12 skip")
+			}
+			if control == "cc12-fail" {
+				child.Error("MODEL_ONLY later CC12 assertion failed")
+			}
+			return nil
+		})
+		return
+	}
 	for _, name := range []string{"GITHUB_SHA", "GITHUB_WORKFLOW_SHA", "GITHUB_WORKFLOW_REF", "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "GITHUB_JOB", "GITHUB_EVENT_NAME"} {
 		t.Setenv(name, "")
 	}
+	t.Run("parent-location-after-complete-children", func(t *testing.T) {
+		for _, tc := range []struct {
+			name, parent, pe, cc12 string
+			exit, locations        int
+		}{
+			{"success", "pass", "pass", "pass", 0, 1},
+			{"pe-fail-now", "fail", "fail", "pass", 1, 0},
+			{"pe-skip", "pass", "skip", "pass", 0, 0},
+			{"cc12-skip", "pass", "pass", "skip", 0, 0},
+			{"cc12-fail", "fail", "pass", "fail", 1, 0},
+			{"pe-cleanup-fail", "fail", "fail", "pass", 1, 0},
+			{"missing-facts", "fail", "pass", "pass", 1, 0},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				binary, err := os.Executable()
+				if err != nil {
+					t.Fatal(err)
+				}
+				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cancel()
+				cmd := exec.CommandContext(ctx, binary, "-test.run=^TestProductEditorMatrixOwnerProof$", "-test.v=test2json")
+				cmd.Env = productEditorMatrixChildEnv("LC_MATRIX_OWNER_LOCATION_CONTROL=" + tc.name)
+				raw, err := cmd.CombinedOutput()
+				code := 0
+				if err != nil {
+					exit, ok := err.(*exec.ExitError)
+					if !ok {
+						t.Fatal(err)
+					}
+					code = exit.ExitCode()
+				}
+				if code != tc.exit {
+					t.Fatalf("control exit %d, want %d: %s", code, tc.exit, raw)
+				}
+				// The standard converter preserves actual T ownership, including NAME
+				// switches back to the parent; nested stdout is not a terminal oracle.
+				convert := exec.CommandContext(ctx, "go", "tool", "test2json", "-p", "livecommerce/tests/foundation")
+				convert.Stdin = strings.NewReader(string(raw))
+				data, err := convert.Output()
+				if err != nil {
+					t.Fatal(err)
+				}
+				const parent = "TestProductEditorMatrixOwnerProof"
+				want := map[string]string{parent: tc.parent, parent + "/PE12-17-TWD": tc.pe, parent + "/CC12-frozen": tc.cc12}
+				starts, ends, endAt := map[string]int{}, map[string]int{}, map[string]int{}
+				locations, locationAt, packageEnds := 0, -1, 0
+				location := regexp.MustCompile(`(?m)^\s*catalog_matrix_evidence_test\.go:\d+: PASS mobile matrix click ledger: 1 declared unique PASS identities; evidence=output/playwright/owner-control/product-editor-click-ledger\.json$`)
+				for i, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+					var event struct{ Action, Package, Test, Output string }
+					if err := json.Unmarshal([]byte(line), &event); err != nil {
+						t.Fatal(err)
+					}
+					if event.Package != "livecommerce/tests/foundation" {
+						t.Fatalf("wrong event package: %+v", event)
+					}
+					if event.Test != "" {
+						if _, ok := want[event.Test]; !ok {
+							t.Fatalf("unexpected test identity: %+v", event)
+						}
+						if event.Action == "run" {
+							starts[event.Test]++
+						}
+					}
+					if event.Action == "pass" || event.Action == "fail" || event.Action == "skip" {
+						if event.Test == "" {
+							packageEnds++
+							if event.Action != tc.parent {
+								t.Fatalf("wrong package terminal: %+v", event)
+							}
+						} else {
+							ends[event.Test]++
+							endAt[event.Test] = i
+							if event.Action != want[event.Test] {
+								t.Fatalf("wrong test terminal: %+v", event)
+							}
+						}
+					}
+					if strings.Contains(event.Output, "PASS mobile matrix click ledger:") {
+						if event.Action != "output" || event.Test != parent || len(location.FindAllString(event.Output, -1)) != 1 {
+							t.Fatalf("location not owned by parent: %+v", event)
+						}
+						locations++
+						locationAt = i
+					}
+				}
+				for name := range want {
+					if starts[name] != 1 || ends[name] != 1 {
+						t.Fatalf("incomplete/duplicate test %s: starts=%d ends=%d", name, starts[name], ends[name])
+					}
+				}
+				if packageEnds != 1 || locations != tc.locations {
+					t.Fatalf("package terminals=%d locations=%d, want 1/%d", packageEnds, locations, tc.locations)
+				}
+				if locations == 1 && (locationAt <= endAt[parent+"/PE12-17-TWD"] || locationAt <= endAt[parent+"/CC12-frozen"] || locationAt >= endAt[parent]) {
+					t.Fatal("parent location emitted before both child terminals or after parent terminal")
+				}
+			})
+		}
+	})
 	t.Run("canonical-matching-and-exact-drift", func(t *testing.T) {
 		root, _ := productEditorMatrixEvidenceFixture(t)
 		proof, err := productEditorMatrixCanonicalProof(root)
