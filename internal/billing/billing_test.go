@@ -720,3 +720,40 @@ func TestMapErrorTable(t *testing.T) {
 		t.Fatal("lock timeouts and nil must pass through unchanged")
 	}
 }
+
+// The free assembly seam and retained Service API must enforce the same external
+// status priority without any database or provider use on these refusals.
+func TestWebhookFactoryStatusPriority(t *testing.T) {
+	svc := webhookService(t, roundTrip(func(*http.Request) (*http.Response, error) {
+		t.Fatal("refusal reached Stripe")
+		return nil, nil
+	}))
+	pool := lazyPool(t)
+	for _, tc := range []struct {
+		name    string
+		service *Service
+		ingress *pgxpool.Pool
+		enabled bool
+	}{
+		{"nil", nil, pool, false}, {"disabled", &Service{}, pool, false},
+		{"missing pool", svc, nil, false}, {"enabled", svc, pool, true},
+	} {
+		for name, h := range map[string]http.Handler{"free": NewWebhookHandler(tc.service, tc.ingress), "method": tc.service.WebhookHandler(tc.ingress)} {
+			for _, method := range []string{"GET", "HEAD", "OPTIONS", "DELETE", "POST"} {
+				t.Run(tc.name+"/"+name+"/"+method, func(t *testing.T) {
+					want, allow := 503, ""
+					if tc.enabled {
+						want, allow = 405, "POST"
+						if method == "POST" {
+							want, allow = 400, ""
+						}
+					}
+					rec := postWebhook(h, method, "{}", nil)
+					if rec.Code != want || rec.Header().Get("Allow") != allow {
+						t.Fatalf("status=%d allow=%q, want %d/%q", rec.Code, rec.Header().Get("Allow"), want, allow)
+					}
+				})
+			}
+		}
+	}
+}

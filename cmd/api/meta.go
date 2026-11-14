@@ -1,3 +1,8 @@
+// Purpose: load and mount the API process Meta webhook router.
+// Depends on: integrations/meta, platform PostgreSQL pools and COMMERCE_META_* configuration.
+// Used by: cmd/api startup and the API HTTP routing chain.
+// Invariants: namespace checks never rewrite requests; configuration stays redacted.
+
 package main
 
 import (
@@ -94,8 +99,8 @@ func mountMeta(fallback, metaHandler http.Handler) http.Handler {
 		return fallback
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/v1/meta") ||
-			strings.HasPrefix(path.Clean(r.URL.Path), "/v1/meta") {
+		if meta.WebhookRoutes.HasPrefix(r.URL.Path) ||
+			meta.WebhookRoutes.HasPrefix(path.Clean(r.URL.Path)) {
 			metaHandler.ServeHTTP(w, r)
 			return
 		}
