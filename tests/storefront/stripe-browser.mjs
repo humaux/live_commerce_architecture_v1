@@ -665,6 +665,7 @@ async function su07(){
   // 6. phone profile (iPhone 15 under webkit, Pixel 7 under chromium): touch, zh-TW copy and money format, no horizontal overflow.
   // Moved from the retired buyer-payment-browser.mjs so the --browser-webkit payment step keeps an iPhone Safari pass over the order-payment view.
   // A fresh unpaid order: the SU07 order above was handed off (PENDING) by steps 1-4.
+  startSU07Diagnostic(page);
   const unpaidOrder=await newOrder(page);
   const mobile=await context(true);await mobile.addCookies(await c.cookies(origin));
   const mobilePage=await mobile.newPage();await mobilePage.goto(checkout);

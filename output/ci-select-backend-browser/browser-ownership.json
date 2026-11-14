@@ -789,7 +789,7 @@
     "tests/storefront/shop-real-gate.mjs": "bb247981c341596cf7761c82e6fb364f5f4f8844fa11ec5038055361177789f1",
     "tests/storefront/store-domains-gate.mjs": "94d3d543b931453ce9176b3801161b3aae809796dee0ef7793ff32e951497185",
     "tests/storefront/storefront-publish-gate.mjs": "ab10d5c9778d074d998a1538bf92181b3d7fc2acbbbe3f7b75eb1a88532070a0",
-    "tests/storefront/stripe-browser.mjs": "e16906690ee46519f7ef6e2c13730b9424b0cd000ec9ec63619e894d5312b7a8",
+    "tests/storefront/stripe-browser.mjs": "bdf4f403e012f14b1c02b5adab942c1d3f90025370148b76b4f51633852cf90c",
     "tests/storefront/su07-continuation-diagnostic.test.mjs": "2f834d18d5df748cef7ae837740ab28ea441840c479670fbd0ce340e30a265c8",
     "tests/ui/click-sweep-known-defects.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
     "tests/ui/click-sweep-lib.mjs": "478b1b3f56fa6c785f4491701873c263f76d0fb152e3b1ea1bddda0ca81ea2bf",
