@@ -68,6 +68,7 @@ export default function OrderTerminalView({
           {!completed && <p className="order-note">{c.termNoEntry}</p>}
           <p className="order-total"><span>{c.termTotal}</span> <strong>{money(quote.amount.total_minor, quote.currency)}</strong></p>
           {order.shipment && <ShipmentBlock shipment={order.shipment} locale={locale} />}
+          {completed && <div className="os-actions"><a className="os-back" data-testid="request-after-sales" href={`/${locale}/orders/${order.order_id}/return`}>{c.after}</a></div>}
         </section>
       </div>
     </section>
