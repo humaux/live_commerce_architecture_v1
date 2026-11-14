@@ -1,6 +1,8 @@
 // Purpose: private localized buyer return route; server renders no protected order facts.
-// Depends on: Next routing, Locale and ReturnRequestForm. Called by: staged buyer entry integration.
+// Depends on: Next routing, Locale and ReturnRequestForm.
 // Invariants: UUIDs validated; request is a UI-only exact-detail selector, never an API query alias.
+// Used by: localized buyer return routing.
+
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale } from "@live-commerce/i18n";
@@ -14,5 +16,5 @@ export default async function Page({ params, searchParams }: {
   const { request } = await searchParams;
   const uuid = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
   if (!isLocale(locale) || !uuid.test(orderID) || (request !== undefined && (typeof request !== "string" || !uuid.test(request)))) notFound();
-  return <ReturnRequestForm key={`${locale}:${orderID}:${request ?? ""}`} locale={locale} orderID={orderID} requestID={request} />;
+  return <ReturnRequestForm key={`${locale}:${orderID}`} locale={locale} orderID={orderID} requestID={request} />;
 }

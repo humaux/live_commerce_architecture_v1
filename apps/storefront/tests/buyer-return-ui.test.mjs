@@ -3,7 +3,7 @@
 // Invariants: no test execution locally; these controls do not claim browser/persistence acceptance.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { requestProjection, requestListProjection, inputProjection, canWithdraw, isDesignedStatus, resolvesAttempt } from "../components/order-status/return-request-state.ts";
+import { requestProjection, requestListProjection, inputProjection, canWithdraw, resolvesAttempt } from "../components/order-status/return-request-state.ts";
 const id = "11111111-1111-4111-8111-111111111111";
 const order = "22222222-2222-4222-8222-222222222222";
 const sku = "33333333-3333-4333-8333-333333333333";
@@ -23,15 +23,20 @@ test("detail projection preserves facts and refuses foreign IDs, private additio
   assert.equal(requestListProjection({ items: [{ ...requested, status: "unexpected" }] }, order), null);
   assert.deepEqual(requestListProjection({ items: [requested] }, sku), []);
 });
-test("valid terminal records remain terminal and unreviewed statuses cannot expose withdrawal", () => {
+test("valid terminal records retain all closed states and never expose withdrawal", () => {
   const withdrawn = { ...requested, status: "withdrawn", version: 2, timeline: [...requested.timeline, { status: "withdrawn", at }] };
   assert.ok(requestProjection(withdrawn, order));
   assert.equal(canWithdraw(withdrawn), false);
-  assert.equal(isDesignedStatus(withdrawn), true);
   const approved = { ...requested, status: "approved", version: 2, return_id: sku, return_state: "REGISTERED", timeline: [...requested.timeline, { status: "approved", at }] };
   assert.ok(requestProjection(approved, order));
-  assert.equal(isDesignedStatus(approved), false);
   assert.equal(canWithdraw(approved), false);
+  const rejected = { ...requested, status: "rejected", version: 2, rejection_reason: "<script>synthetic text</script>".repeat(20), timeline: [...requested.timeline, { status: "rejected", at }] };
+  assert.ok(requestProjection(rejected, order));
+  assert.equal(canWithdraw(rejected), false);
+  for (const return_state of ["REGISTERED", "RECEIVED", "INSPECTED", "CLOSED", "CANCELLED"]) {
+    assert.ok(requestProjection({ ...approved, return_state }, order));
+  }
+  assert.equal(requestProjection({ ...approved, return_state: "REFUNDED" }, order), null);
   assert.equal(canWithdraw(requested), true);
   assert.equal(resolvesAttempt("withdraw", requested), false);
   assert.equal(resolvesAttempt("withdraw", withdrawn), true);

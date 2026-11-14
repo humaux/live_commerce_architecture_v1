@@ -13,7 +13,7 @@ export const CLICK_VARIANTS = [
   { viewport: "desktop", size: { width: 1586, height: 992 }, locale: "en", mobile: false },
 ];
 /** Every buyer route of docs/engineering/ui-architecture.md section 4 that the click sweep must open at every variant. */
-export const STOREFRONT_ROUTES = ["/", "/products", "/collections", "/collections/[slug]", "/products/[slug]", "/search", "/cart", "/checkout", "/orders/lookup", "/orders/[orderID]", "/order-link", "/claim", "/legal/anti-fraud", "/legal/[slug]", "/privacy", "/data-deletion", "/pages/[slug]"];
+export const STOREFRONT_ROUTES = ["/", "/products", "/collections", "/collections/[slug]", "/products/[slug]", "/search", "/cart", "/checkout", "/orders/lookup", "/orders/[orderID]", "/orders/[orderID]/return", "/order-link", "/claim", "/legal/anti-fraud", "/legal/[slug]", "/privacy", "/data-deletion", "/pages/[slug]"];
 /** Ordinary storefront walk in registry order. The caller owns the three cart-bearing click flows.
  * Fixture templates are explicit: a new dynamic route must never navigate to a literal placeholder.
  */
@@ -22,7 +22,7 @@ export function storefrontWalk(facts, chrome, main, routes = STOREFRONT_ROUTES) 
     if (typeof value !== "string" || !value.trim() || /[\[\]]/.test(value)) throw new Error(`storefront fixture missing for ${route}`);
     return value;
   };
-  return routes.filter(route => !["/cart", "/checkout", "/orders/[orderID]"].includes(route)).map(route => {
+  return routes.filter(route => !["/cart", "/checkout", "/orders/[orderID]", "/orders/[orderID]/return"].includes(route)).map(route => {
     let path = route === "/" ? "" : route;
     switch (route) {
       case "/collections/[slug]": path = `/collections/${fixtureSlug(facts.collections?.[0]?.slug, route)}`; break;

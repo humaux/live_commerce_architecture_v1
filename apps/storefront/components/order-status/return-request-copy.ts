@@ -1,7 +1,17 @@
 // Purpose: exhaustive localized buyer aftersales copy and safe refusal dictionary.
-// Depends on: Locale and frozen return refusal codes. Called by: ReturnRequestForm/Detail.
-// Invariants: never display upstream text; approved/rejected presentation remains outside this slice.
+// Depends on: Locale, frozen return refusal codes and existing read-only RMA status copy.
+// Invariants: never display upstream text; all four closed states stay separate from linked RMA progress.
+// Used by: ReturnRequestForm/Detail and public UI tests.
+
 import type { Locale } from "@live-commerce/i18n";
+import { returnsCopy } from "../../../admin/lib/returns-copy.ts";
+// Existing closed RMA copy is reused read-only; no merchant controller enters the buyer bundle.
+export const returnProgressCopy = (locale: Locale) => returnsCopy[locale].states;
+export const returnTerminalCopy = {
+  "zh-TW": { approved: "商家已核准", rejected: "商家已拒絕", rejection: "拒絕原因", rma: "退貨處理狀態", approvedBody: "商家已核准售後申請；核准不代表已完成退款。後續將由商家依照退貨進度處理。", rejectedBody: "此申請已由商家審核拒絕；本次未發起退款。買家如對審核結果有疑問，仍可向商店洽詢。" },
+  "zh-CN": { approved: "商家已批准", rejected: "商家已拒绝", rejection: "拒绝原因", rma: "退货处理状态", approvedBody: "商家已批准售后申请；批准不代表已完成退款。后续将由商家按照退货进度处理。", rejectedBody: "此申请已由商家审核拒绝；本次未发起退款。买家如对审核结果有疑问，仍可向商店咨询。" },
+  en: { approved: "Approved by merchant", rejected: "Rejected by merchant", rejection: "Rejection reason", rma: "Current return status", approvedBody: "The merchant approved this request. Approval does not mean a refund is complete. The merchant will handle the next steps according to return progress.", rejectedBody: "The merchant rejected this request. This action did not initiate a refund. Contact the store if you have questions about the decision." },
+} satisfies Record<Locale, { approved: string; rejected: string; rejection: string; rma: string; approvedBody: string; rejectedBody: string }>;
 type Copy = {
   title: string; back: string; select: string; quantity: string; reason: string; damaged: string;
   note: string; photos: string; disclaimer: string; submit: string; invalid: string; loading: string;

@@ -1,6 +1,6 @@
-// Purpose: capability-fenced buyer apply/read/withdraw controller for the reviewed eight-frame slice.
+// Purpose: capability-fenced buyer apply/read/withdraw controller with persisted four-state detail.
 // Depends on: existing buyerRequest/session, Order, closed return grammar, StorefrontState and Detail.
-// Called by: localized orders/[orderID]/return. Invariants: one immutable keyed attempt, no POST retry,
+// Used by: localized orders/[orderID]/return. Invariants: one immutable keyed attempt, no POST retry,
 // no protected facts before active context, persisted GET only for detail, UNKNOWN blocks new commands while mounted.
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -73,7 +73,11 @@ export default function ReturnRequestForm({ locale, orderID, requestID }: { loca
         attempt.current = null; setUnknown(false);
       }
       selectedID.current = detail?.id ?? id;
-      setView({ context: session.context, order, detail }); setChoices(attempt.current ? items : null); setState("ready");
+      // Only a persisted, validated exact GET can install a refresh locator. Never navigate to reset uncertainty.
+      if (detail && !attempt.current) {
+        window.history.replaceState(window.history.state, "", `/${locale}/orders/${orderID}/return?request=${detail.id}`);
+      }
+      setView({ context: session.context, order, detail }); setChoices(items); setState("ready");
     } catch (reason) {
       if (mounted.current && mine === epoch.current) {
         setView(null); setChoices(null); setState(denied(reason) ? "forbidden" : "failed");
@@ -159,9 +163,12 @@ export default function ReturnRequestForm({ locale, orderID, requestID }: { loca
     void mutate(body, `orders/${orderID}/return-requests`, 201);
   }
   const locked = busy || unknown;
-  return <main className={styles.root} lang={locale} aria-busy={busy}>
+  const backClass = view?.detail ? styles.secondary : styles.back;
+  const back = unknown ? <button type="button" disabled className={backClass}>{c.back}</button>
+    : <a className={backClass} href={`/${locale}/orders/${orderID}`}>{c.back}</a>;
+  return <main className={styles.root} lang={locale} aria-busy={busy} data-testid="return-page">
     <div className={view?.detail ? styles.detail : styles.apply}>
-      <a className={styles.back} href={`/${locale}/orders/${orderID}`}>{c.back}</a>
+      {!view?.detail && back}
       {state === "loading" && <p role="status">{c.loading}</p>}
       {(state === "failed" || state === "forbidden") && <StorefrontState locale={locale} variant={state === "forbidden" ? "forbidden" : "offline"} onRead={state === "failed" ? () => void load() : undefined} />}
       {error && <p className={styles.notice} role="alert" tabIndex={-1} ref={errorBox}>{error}</p>}
@@ -183,6 +190,7 @@ export default function ReturnRequestForm({ locale, orderID, requestID }: { loca
             </fieldset>
           </form></>}
       </>}
+      {view?.detail && back}
     </div>
   </main>;
 }
