@@ -1,5 +1,23 @@
 # CI-DRIFT-FN — open structural scanner limits
 
+## CDF4–6 initial candidate history (2026-11-14)
+
+Owner explicitly authorized “解除冻结，另卡修复 CDF4–6”; only the freeze/research-only restriction below is superseded (authority decision `0cec9b15-e962-4980-9277-ed02829b4884`). Historical PR55 facts and raw receipts remain unchanged.
+
+Draft PR [#622](https://github.com/humaux/live_commerce_architecture_v1/pull/622), candidate `182e94a924fc2f1c927d247dfdc86b171202f4ed`: package-qualified opaque dependencies/import provenance, referenced non-path global declaration spans, and sibling assembly-package MOUNT association. Strict test-only baseline `60c644b2fed36f749d832c905fd3bb2fcbfd8610` reproduced all three old failures in [Gates 43564398934](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/43564398934), true exit 1.
+
+Initial `182e94a924` E3 history: [Foundation 43565052851](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/43565052851) and [Gates 43565052882](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/43565052882) PASS, attempt 1, actual merge checkout `3953b1f2c206b6431b149571a96547ea622b9043` into `eeb345f704b48d61502ba0be2540488a9011bab6`. Native unit log records CDF4/5/6 PASS, zero SKIP, each three TOUCHED errors and zero warnings; full scanner package PASS with 335 passing terminal test/subtest records, zero failures/skips. Evidence: `output/cdf46-scanner-repair-1114/REPORT.md`, native logs, receipts and artifact SHA256/CRC checks.
+
+This is bounded syntax-level dependency detection, not general scanner soundness or runtime routing proof. Dynamic receiver/imported-variable behavior remains outside the qualified syntax closure. Independent non-Claude E4 review, strict G07, SQL, current RC, merge and production remain HOLD. The historical entries below describe the original defects, not current acceptance.
+
+## Static local receiver restoration, round 1 (2026-11-14)
+
+The same `TestGoOpaqueLocalReceiverRegression` function (SHA256 `6db6f23cbfc42813ad7b9275746d77a65160b5e0de90cd8a3ad054b2c884b096`) ran on exact old `eeb345f` plus test (`b0431e83ea58f98e011e4a4bb60331ea5fdbbc01`) and exact initial candidate `182e94a924` plus test (`2b1c5ffb9af6e9425a655cf79fb78b43b93e4ec3`). [Old control 43568512778](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/43568512778) passed value/pointer/explicit-var receivers; [current control 43569075083](https://github.com/humaux/live_commerce_architecture_v1/actions/runs/43569075083) failed all three with missing `makeLocal` UNKNOWN coverage. This confirms an introduced static-local receiver regression; the initial 335 passing tests did not cover it.
+
+The bounded restoration reads the parser-bound local declaration (`AssignStmt`/`ValueSpec`) and direct composite/address literal to identify its concrete receiver type, retaining package-qualified method matching and lexical binding. It does not restore arbitrary selector-name traversal or infer dynamic/alias-flow types. Current candidate qualification follows PR622 checks and `output/cdf46-local-receiver-r1-1114` records; the older GREEN above does not qualify this changed source/document tree. Independent delta review, strict G07, SQL, current RC, merge and production remain HOLD.
+
+## Historical PR55 record (unchanged)
+
 Owner decision after the adversarial review of PR #55 at `b8fc5d267431d243e6d1bdde3f3bd432bb736836`: freeze this PR's scanner implementation and capture the following counter-examples as exact-signature expected-fail tests. No further scanner patch is authorized here. A separate research task, `4a0c4279-fe4f-4cce-b426-9557bbd086a4`, covers the name-based, single-package traversal and mount-provenance design.
 
 | ID / regression | Open behavior to capture | Evidence state |
