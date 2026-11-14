@@ -237,17 +237,39 @@ async function observePicker(page) {
       if (!event.target.matches?.('[data-testid="cvs-picker-query"]')) return;
       inputNode = event.target; inputCount++; emit("input", { trusted: event.isTrusted });
     });
+    const inputBoundary = phase => guard(event => {
+      const target = event.target;
+      if (!target.matches?.('[data-testid="cvs-picker-query"]')) return;
+      // Assign a stale target its own identity; state() still reports the current node's identity.
+      if (!nodes.has(target)) nodes.set(target, ++generation);
+      const current = document.querySelector('[data-testid="cvs-picker-query"]');
+      emit("input_boundary", { eventType: event.type, phase, inputType: event.inputType,
+        isTrusted: event.isTrusted, defaultPrevented: event.defaultPrevented,
+        targetIsCurrentNode: target === current, targetGeneration: nodes.get(target),
+        targetExpectedCode: !!codes[brand] && target.value === codes[brand],
+        targetValueClass: target.value === undefined ? "absent" : target.value === "" ? "empty" : target.value === codes[brand] ? "expected" : "other" });
+    });
+    // Document capture precedes React delegated bubbling; document bubble follows the React root if delivered.
+    // An undelivered event stays missing: these observers do not infer React readiness or event delivery.
+    const beforeInputCapture = inputBoundary("capture"), inputCapture = inputBoundary("capture"), inputBubble = inputBoundary("bubble");
     const observer = new MutationObserver(guard(records => {
       if (!iteration) return;
       const node = document.querySelector('[data-testid="cvs-picker-query"]');
       if (node !== beforeNode || records.some(record => record.target.closest?.('[data-testid="cvs-picker"]'))) emit("mutation");
     }));
     document.addEventListener("click", click, true); document.addEventListener("input", input, true);
+    document.addEventListener("beforeinput", beforeInputCapture, { capture: true, passive: true });
+    document.addEventListener("input", inputCapture, { capture: true, passive: true });
+    document.addEventListener("input", inputBubble, { passive: true });
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["aria-pressed", "aria-busy", "disabled", "open", "hidden"] });
     window.__lcCvsDiagnostic = {
       quote: guard((id, cycle) => { if (cycle === iteration) { quoteID = id; emit("quote_match"); } }),
       failure() { try { if (iteration) snapshots.push({ phase: "failure", brand, iteration, ...state() }); } catch { captureFailed = true; } return { events, snapshots, truncated, captureFailed }; },
-      dispose() { observer.disconnect(); document.removeEventListener("click", click, true); document.removeEventListener("input", input, true); delete window.__lcCvsDiagnostic; },
+      dispose() {
+        observer.disconnect(); document.removeEventListener("click", click, true); document.removeEventListener("input", input, true);
+        document.removeEventListener("beforeinput", beforeInputCapture, true); document.removeEventListener("input", inputCapture, true);
+        document.removeEventListener("input", inputBubble, false); delete window.__lcCvsDiagnostic;
+      },
     };
   });
   const events = [], requests = new WeakMap();
