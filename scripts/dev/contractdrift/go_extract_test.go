@@ -619,3 +619,48 @@ func repositoryFunctionContains(t *testing.T, root string, ref location, name st
 	}
 	return false
 }
+
+func TestGoOpaqueLocalReceiverRegression(t *testing.T) {
+	for _, tc := range []struct{ name, binding string }{
+		{"value", "d := localDispatcher{}"},
+		{"pointer", "d := &localDispatcher{}"},
+		{"explicit_var", "var d localDispatcher"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			inv := goFixture(t, map[string]string{
+				"go.mod": "module example\n",
+				"cmd/api/main.go": `package main
+import "net/http"
+type localDispatcher struct{}
+func (d *localDispatcher) serve(w http.ResponseWriter, r *http.Request) {
+ if r.URL.Path == "/local" { return }
+}
+func makeLocal() http.Handler {
+ ` + tc.binding + `
+ return http.HandlerFunc(d.serve)
+}
+func main() { _ = makeLocal() }
+`,
+			})
+			var found bool
+			for _, f := range inv.Unresolved {
+				if f.Detail != "opaque Go handler dispatch makeLocal; route/method coverage is unknown" {
+					continue
+				}
+				found = true
+				hasServe := false
+				for _, ref := range f.Locations {
+					if ref.File == "cmd/api/main.go" && ref.Line == 4 && ref.End >= 6 {
+						hasServe = true
+					}
+				}
+				if !hasServe {
+					t.Errorf("makeLocal UNKNOWN lost serve dependency span: %+v", f)
+				}
+			}
+			if !found {
+				t.Fatalf("makeLocal UNKNOWN coverage missing for %s: %+v", tc.name, inv.Unresolved)
+			}
+		})
+	}
+}
