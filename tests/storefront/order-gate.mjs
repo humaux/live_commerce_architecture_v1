@@ -538,14 +538,33 @@ async function aftersalesPhase() {
   }
   {
     const world=worlds[6],caseID="AS02 committed ACK loss",{p,c:context}=await open(world),c=returnRequestCopy.en;
-    await apply(p,world,"en",caseID);const fault=arm(`orders/${world.order}/return-requests`,{method:"POST",drop:true});
-    await act(caseID,"lost create ACK",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),()=>expect(p.getByText(c.unknown,{exact:true})).toBeVisible());
-    assert.equal(await fault.result.promise,201,"drop occurs only after real upstream COMMIT/201");assert.equal((await readFact(world)).requests,1);
+    await apply(p,world,"en",caseID);
+    const faultURL=`${host}/api/buyer/orders/${world.order}/return-requests`;
+    let completeFault,rejectFault,originalFaultError;
+    const faultDone=new Promise((resolve,reject)=>{completeFault=resolve;rejectFault=reject;});
+    const loseACK=async route=>{
+      if(route.request().method()!=="POST")return route.continue();
+      try {
+        const upstream=await route.fetch({maxRetries:0,maxRedirects:0});
+        assert.equal(upstream.status(),201,"drop occurs only after real upstream COMMIT/201");
+        await route.abort("failed");completeFault(upstream.status());
+      }catch(error){rejectFault(error);await route.abort("failed").catch(()=>{});}
+    };
+    await p.route(faultURL,loseACK);
+    try {
+    const requestFailed=p.waitForEvent("requestfailed",{predicate:r=>r.url()===faultURL&&r.method()==="POST"});
+    const [failed,upstreamStatus]=await Promise.all([requestFailed,faultDone,act(caseID,"lost create ACK",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),()=>expect(p.getByText(c.unknown,{exact:true})).toBeVisible())]);
+    assert(failed.failure(),"actual browser request must fail after committed201");assert.equal(upstreamStatus,201,"drop occurs only after real upstream COMMIT/201");assert.equal((await readFact(world)).requests,1);
+    await expect(p.getByText(c.unknown,{exact:true})).toBeVisible();await expect(p.getByRole("button",{name:c.check,exact:true})).toBeEnabled();
+    await writeFile(path.join(evidence,"aftersales-as02-ack-loss.json"),JSON.stringify({upstream_status:upstreamStatus,browser_request_failed:!!failed.failure(),pg_requests:(await readFact(world)).requests}),{mode:0o600});
     const writes=postCount(),listRead=p.waitForResponse(r=>requestIs(r,"return-requests","GET"));const [records]=await Promise.all([listRead,act(caseID,"GET-only check",()=>p.getByRole("button",{name:c.check,exact:true}).click(),()=>expect(p.getByRole("heading",{name:c.choose,exact:true})).toBeVisible())]);
     assert.equal(records.status(),200);const item=(await records.json()).items.find(x=>x.order_id===world.order);assert(item);
     await act(caseID,"read saved exact detail",()=>p.getByRole("button",{name:item.number,exact:true}).click(),()=>expect(p.getByTestId("return-status")).toHaveAttribute("data-status","requested"));
     await expect(p.getByRole("button",{name:c.withdraw,exact:true})).toBeDisabled();assert.equal(postCount(),writes);assert.equal(new URL(p.url()).searchParams.has("request"),false);
     const write=calls.slice(start).filter(x=>x.path===`/api/buyer/orders/${world.order}/return-requests`&&x.method==="POST");assert.equal(write.length,1);assert.match(write[0].key,/^[A-Za-z0-9_.:-]{8,128}$/);
+    }catch(error){originalFaultError=error;throw error;}finally{
+      try{await p.unroute(faultURL,loseACK);}catch(error){if(!originalFaultError)throw error;}
+    }
     childTests.push(caseID);await context.close();
   }
   {
