@@ -132,7 +132,7 @@ export async function checkContactNative({ browser, origin, evidence }: { browse
       const viewport = `${width}x${height}`;
       const isMobile = width === 390;
       const capture = async (page: Page, state: string) => {
-        if (locale === "zh-TW") await page.screenshot({ path: path.join(evidence, `contact-zh-TW-${viewport}-${state}.png`) });
+        await page.screenshot({ path: path.join(evidence, `contact-${locale}-${viewport}-${state}.png`) });
       };
       const f = (desktop: string, mobile: string) => isMobile ? mobile : desktop;
       const context = await createContext(ctxOpts({ ignoreHTTPSErrors: true, viewport: { width, height }, locale }));
