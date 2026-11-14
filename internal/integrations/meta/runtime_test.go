@@ -92,3 +92,47 @@ func TestWebhookRouterRejectsDuplicateAndForgedEndpointsBeforeDatabase(t *testin
 		}
 	}
 }
+
+// Exercise the real protocol handler behind routing, with no database or provider.
+// Expectations are HTTP contracts, independent of the table representation.
+func TestWebhookDispatchConfiguredIdentityBeforeMethod(t *testing.T) {
+	v, err := NewVerifier(Config{AppID: "123", Object: "page", AppSecret: "1234567890abcdef", VerifyToken: "abcdef1234567890"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	commits := 0
+	h, err := NewHandler(v, func(context.Context, Batch) error { commits++; return nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	router := webhookDispatch(map[string]http.Handler{"/v1/meta/webhooks/123/page": h})
+	for _, tc := range []struct {
+		method, target string
+		status         int
+		body, allow    string
+	}{
+		{"GET", "/v1/meta/webhooks/123/page?hub.mode=subscribe&hub.verify_token=abcdef1234567890&hub.challenge=proof", 200, "proof", ""},
+		{"POST", "/v1/meta/webhooks/123/page", 403, "BAD_SIGNATURE", ""},
+		{"HEAD", "/v1/meta/webhooks/123/page", 405, "METHOD_NOT_ALLOWED", "GET, POST"},
+		{"OPTIONS", "/v1/meta/webhooks/123/page", 405, "METHOD_NOT_ALLOWED", "GET, POST"},
+		{"DELETE", "/v1/meta/webhooks/124/page", 404, "404 page not found\n", ""},
+		{"DELETE", "/v1/meta/webhooks/123/instagram", 404, "404 page not found\n", ""},
+		{"DELETE", "/v1/meta/webhooks/123/%70age", 404, "404 page not found\n", ""},
+	} {
+		t.Run(tc.method+tc.target, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			request := httptest.NewRequest(tc.method, tc.target, nil)
+			request.Header.Set("Content-Type", "application/json")
+			router.ServeHTTP(w, request)
+			if w.Code != tc.status || w.Body.String() != tc.body || w.Header().Get("Allow") != tc.allow || w.Header().Get("Location") != "" {
+				t.Fatalf("status=%d body=%q allow=%q location=%q", w.Code, w.Body.String(), w.Header().Get("Allow"), w.Header().Get("Location"))
+			}
+			if tc.status != 404 && (w.Header().Get("Cache-Control") != "no-store" || w.Header().Get("X-Content-Type-Options") != "nosniff") {
+				t.Fatal("missing protocol security headers")
+			}
+		})
+	}
+	if commits != 0 {
+		t.Fatal("unauthenticated requests reached commit")
+	}
+}

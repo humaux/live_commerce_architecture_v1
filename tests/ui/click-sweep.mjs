@@ -281,7 +281,7 @@ async function storefrontSession(v, placed) {
   const list = storefrontWalk(facts, chrome, main);
   try {
     // cart, checkout and the order page first: they need a pristine cart, which the buyer fills with real clicks (also the first steps of journey J2)
-    if (wanted("/cart") || wanted("/checkout") || wanted("/orders/[orderID]") || run("journeys")) {
+    if (wanted("/cart") || wanted("/checkout") || wanted("/orders/[orderID]") || wanted("/orders/[orderID]/return") || run("journeys")) {
       await addToCartByClicks(page, v, product);
       if (wanted("/cart")) await sweep({ route: "/cart", url: `${base}/cart`, viewport: v.viewport, locale: v.locale }, main);
       if (wanted("/cart")) await addToCartByClicks(page, v, product); // the cart sweep really removed the line (last control): fill the cart again for checkout and the order
@@ -289,6 +289,8 @@ async function storefrontSession(v, placed) {
       const order = await placeCodOrder(page, v, product);
       placed.set(`${v.viewport}/${v.locale}`, order);
       if (wanted("/orders/[orderID]")) await sweep({ route: "/orders/[orderID]", url: `${base}/orders/${order.id}`, viewport: v.viewport, locale: v.locale }, main);
+      // Same actual COD order/session; walking an unshipped apply page is not successful return submission.
+      if (wanted("/orders/[orderID]/return")) await sweep({ route: "/orders/[orderID]/return", url: `${base}/orders/${order.id}/return`, viewport: v.viewport, locale: v.locale }, main);
     }
     for (const r of list) {
       if (!wanted(r.route)) continue;

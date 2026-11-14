@@ -20,6 +20,8 @@ import { expect } from "@playwright/test";
 import { reachCheckout, switchLocale, confirmCheckoutAddress, openCheckoutDetails, recoverPurchase } from "./shop-helpers.mjs";
 import { isWebkitCancelledFetch, launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 import { displayTime } from "../../packages/format/src/index.ts";
+import { createHmac } from "node:crypto";
+import { returnRequestCopy, returnProgressCopy } from "../../apps/storefront/components/order-status/return-request-copy.ts";
 
 const root=process.cwd(), evidence=process.env.LC_ORDER_EVIDENCE;
 assert(evidence && /^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.LC_ORDER_CONTROL));
@@ -185,7 +187,7 @@ async function api(p,method,suffix,body,key) {
   },{method,suffix,body,key});
 }
 async function rememberCookie(c) {
-  const cookie=(await c.cookies(origin))[0];assert(cookie?.httpOnly&&cookie.secure&&cookie.sameSite==="Lax");
+  const cookie=(await c.cookies(origin))[0] ?? (await c.cookies("https://aftersales.example"))[0];assert(cookie?.httpOnly&&cookie.secure&&cookie.sameSite==="Lax");
   secrets.push(cookie.value);const payload=JSON.parse(Buffer.from(cookie.value.split(".")[0],"base64url").toString());if(payload.token)secrets.push(payload.token);
 }
 async function captureContextState(c) {
@@ -445,6 +447,164 @@ async function cartRetry(p,locale,surface,initiate) {
   await writeFile(path.join(evidence,"cart-retry-facts.json"),JSON.stringify(cartRetries,null,2),{mode:0o600});
   pass(caseID);
 }
+// Native aftersales phase owns its results/ledger; fixture controls only seed/decide/read PG.
+// All tested buyer mutations come from real controls through the same Next/Go/PG relay.
+async function aftersalesPhase() {
+  const host="https://aftersales.example", {worlds,view_token,other_owned_order}=await control("aftersales/worlds");
+  assert.equal(worlds.length,9);secrets.push(view_token,...worlds.map(w=>w.token));
+  const childTests=[],ledger=[],facts=[],start=calls.length;
+  let activePage;
+  async function act(caseID,controlName,operation,check) {
+    await operation();await check();
+    // Read measurements only: no note/address/cookie/key is copied into this ledger.
+    const status=activePage.getByTestId("return-status"),rma=activePage.getByTestId("return-rma-state");
+    const actual={request_status:await status.count()?await status.getAttribute("data-status"):null,rma_state:await rma.count()?await rma.getAttribute("data-state"):null,selected_lines:await activePage.getByRole("checkbox",{checked:true}).count(),dialog_visible:await activePage.getByRole("dialog").isVisible()};
+    ledger.push({case_id:caseID,page:new URL(activePage.url()).pathname,control:controlName,action:"real pointer/keyboard/form interaction",expected:`visible assertion: ${controlName}`,actual,status:"PASS"});
+  }
+  async function open(world,locale="en",mobile=false,token=world.token,pathSuffix="") {
+    const c=await newContext(mobile),iat=Math.floor(Date.now()/1000);
+    // Fixture preparation only: same sealed HttpOnly capability technique as refund-buyer.mjs.
+    const payload=Buffer.from(JSON.stringify({v:1,token,iat,exp:iat+3000,origin:host})).toString("base64url");
+    const value=`${payload}.${createHmac("sha256",Buffer.from(process.env.COMMERCE_BUYER_COOKIE_KEY,"base64url")).update("buyer-cookie-v1").update("\0").update(payload).digest("base64url")}`;
+    await c.addCookies([{name:"__Host-commerce_buyer",value,url:host,secure:true,httpOnly:true,sameSite:"Lax"}]);
+    const p=await c.newPage();activePage=p;await p.goto(`${host}/${locale}/orders/${world.order}${pathSuffix}`);return {c,p};
+  }
+  const postCount=()=>calls.slice(start).filter(x=>x.method==="POST"&&/\/return-requests(?:\/[^/]+\/withdraw)?$/.test(x.path)).length;
+  const readFact=world=>control(`aftersales/facts/${world.order}`);
+  async function apply(p,world,locale,caseID,back=false) {
+    const c=returnRequestCopy[locale];
+    if(back)await act(caseID,"return to order",()=>p.getByRole("link",{name:c.back,exact:true}).click(),()=>expect(p.getByTestId("request-after-sales")).toBeVisible());
+    await act(caseID,"order aftersales entry",()=>p.getByTestId("request-after-sales").click(),()=>expect(p.getByTestId("return-page").getByRole("checkbox").first()).toBeVisible());
+    await expect(p).toHaveURL(`${host}/${locale}/orders/${world.order}/return`);
+    await act(caseID,"actual order line",()=>p.getByRole("checkbox").first().click(),()=>expect(p.getByRole("spinbutton")).toBeVisible());
+  }
+  async function submit(p,world,locale,caseID) {
+    const before=await readFact(world),c=returnRequestCopy[locale];
+    const ack=p.waitForResponse(r=>requestIs(r,`orders/${world.order}/return-requests`,"POST"));
+    const get=p.waitForResponse(r=>r.request().method()==="GET"&&/\/api\/buyer\/return-requests\/[a-f0-9-]{36}$/.test(new URL(r.url()).pathname));
+    const [response,persisted]=await Promise.all([ack,get,act(caseID,"submit request",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),()=>expect(p.getByTestId("return-status")).toHaveAttribute("data-status","requested"))]);
+    assert.equal(response.status(),201);const item=await response.json();
+    assert.equal(persisted.status(),200);assert.equal((await persisted.json()).id,item.id);
+    await expect(p).toHaveURL(`${host}/${locale}/orders/${world.order}/return?request=${item.id}`);
+    await expect(p.getByRole("heading",{level:1})).toContainText(item.number);
+    const writes=postCount();await p.reload();await expect(p.getByTestId("return-status")).toHaveAttribute("data-status","requested");assert.equal(postCount(),writes);
+    const after=await readFact(world);assert.equal(after.requests,before.requests+1);assert.equal(after.receipts,before.receipts+1);assert.equal(after.ledger,before.ledger);assert.equal(after.refunds,before.refunds);
+    return item;
+  }
+  async function terminal(p,item,locale,action,state,caseID) {
+    await control(`aftersales/decision/${item.id}/${action}`,"POST");
+    const writes=postCount();await p.reload();assert.equal(postCount(),writes);
+    await expect(p.getByTestId("return-status")).toHaveAttribute("data-status",state);
+    await expect(p.getByRole("button",{name:returnRequestCopy[locale].withdraw,exact:true})).toHaveCount(0);
+    if(state==="rejected") {await expect(p.getByTestId("return-rejection")).toContainText("<script>synthetic rejection</script>");await expect(p.locator("#main script").filter({hasText:"synthetic rejection"})).toHaveCount(0);}
+  }
+  let index=0;
+  const requestIDs=[];
+  for(const locale of ["zh-TW","zh-CN","en"])for(const mobile of [false,true]) {
+    const world=worlds[index],caseID=`AS01 ${locale}/${mobile?"mobile":"desktop"}`,c=returnRequestCopy[locale];
+    const {p,c:context}=await open(world,locale,mobile);
+    await apply(p,world,locale,caseID);
+    if(locale==="zh-TW")await capture(p,`aftersales-zh-TW-${mobile?"mobile":"desktop"}-apply.png`,true,path.join(review,"buyer-aftersales"));
+    await act(caseID,"reason",()=>p.getByRole("combobox").selectOption("damaged"),()=>expect(p.getByRole("combobox")).toHaveValue("damaged"));
+    await act(caseID,"note",()=>p.getByRole("textbox").fill("Synthetic aftersales note 😀"),()=>expect(p.getByRole("textbox")).toHaveValue("Synthetic aftersales note 😀"));
+    if(index===0) {
+      await act(caseID,"excess quantity input",()=>p.getByRole("spinbutton").fill("3"),()=>expect(p.getByRole("spinbutton")).toHaveValue("3"));const denied=p.waitForResponse(r=>requestIs(r,`orders/${world.order}/return-requests`,"POST"));
+      const [deniedResponse]=await Promise.all([denied,act(caseID,"excess quantity refusal",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),()=>expect(p.getByTestId("return-page").getByRole("alert")).toHaveText(c.errors.exceeds_shipped))]);
+      assert.equal(deniedResponse.status(),422);assert.equal((await readFact(world)).requests,0);
+    }
+    await act(caseID,"positive quantity",()=>p.getByRole("spinbutton").fill("1"),()=>expect(p.getByRole("spinbutton")).toHaveValue("1"));
+    const item=await submit(p,world,locale,caseID);requestIDs.push(item.id);const before=await readFact(world);
+    if(locale==="zh-TW")await capture(p,`aftersales-zh-TW-${mobile?"mobile":"desktop"}-requested.png`,true,path.join(review,"buyer-aftersales"));
+    await act(caseID,"withdraw dialog",()=>p.getByRole("button",{name:c.withdraw,exact:true}).click(),()=>expect(p.getByRole("dialog")).toBeVisible());
+    await act(caseID,"dismiss with Escape",()=>p.keyboard.press("Escape"),()=>expect(p.getByRole("dialog")).not.toBeVisible());
+    await act(caseID,"reopen withdrawal",()=>p.getByRole("button",{name:c.withdraw,exact:true}).click(),()=>expect(p.getByRole("dialog")).toBeVisible());
+    await act(caseID,"cancel withdrawal",()=>p.getByRole("button",{name:c.cancel,exact:true}).click(),()=>expect(p.getByRole("dialog")).not.toBeVisible());
+    await act(caseID,"open final confirmation",()=>p.getByRole("button",{name:c.withdraw,exact:true}).click(),()=>expect(p.getByRole("dialog")).toBeVisible());
+    if(locale==="zh-TW")await capture(p,`aftersales-zh-TW-${mobile?"mobile":"desktop"}-withdraw-confirm.png`,true,path.join(review,"buyer-aftersales"));
+    const withdraw=p.waitForResponse(r=>requestIs(r,`return-requests/${item.id}/withdraw`,"POST"));
+    const [withdrawResponse]=await Promise.all([withdraw,act(caseID,"confirm withdrawal",()=>p.getByRole("button",{name:c.confirm,exact:true}).click(),()=>expect(p.getByTestId("return-status")).toHaveAttribute("data-status","withdrawn"))]);
+    assert.equal(withdrawResponse.status(),200);await p.reload();await expect(p.getByTestId("return-status")).toHaveAttribute("data-status","withdrawn");
+    const after=await readFact(world);assert.equal(after.requests,before.requests);assert.equal(after.receipts,before.receipts+1);assert.equal(after.ledger,before.ledger);assert.equal(after.refunds,before.refunds);
+    if(locale==="zh-TW")await capture(p,`aftersales-zh-TW-${mobile?"mobile":"desktop"}-withdrawn.png`,true,path.join(review,"buyer-aftersales"));
+    await apply(p,world,locale,caseID,true);const approved=await submit(p,world,locale,caseID);
+    await terminal(p,approved,locale,"approve","approved",caseID);
+    if(locale==="zh-TW")await capture(p,`aftersales-zh-TW-${mobile?"mobile":"desktop"}-approved.png`,true,path.join(review,"buyer-aftersales"));
+    for(const [action,state] of [[null,"REGISTERED"],["receive","RECEIVED"],["inspect","INSPECTED"],["close","CLOSED"]]) {
+      if(action)await terminal(p,approved,locale,action,"approved",caseID);
+      await expect(p.getByTestId("return-rma-state")).toHaveAttribute("data-state",state);
+      await expect(p.getByTestId("return-rma-state")).toContainText(returnProgressCopy(locale)[state]);
+    }
+    await apply(p,world,locale,caseID,true);const rejected=await submit(p,world,locale,caseID);await terminal(p,rejected,locale,"reject","rejected",caseID);
+    if(locale==="zh-TW")await capture(p,`aftersales-zh-TW-${mobile?"mobile":"desktop"}-rejected.png`,true,path.join(review,"buyer-aftersales"));
+    await apply(p,world,locale,caseID,true);const cancelled=await submit(p,world,locale,caseID);await terminal(p,cancelled,locale,"approve","approved",caseID);await terminal(p,cancelled,locale,"cancel","approved",caseID);
+    await expect(p.getByTestId("return-rma-state")).toContainText(returnProgressCopy(locale).CANCELLED);
+    // Reading geometry only; never inject DOM or force a control to pass.
+    assert(await p.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
+    facts.push({case_id:caseID,...await readFact(world)});childTests.push(caseID);await context.close();index++;
+  }
+  {
+    const world=worlds[6],caseID="AS02 committed ACK loss",{p,c:context}=await open(world),c=returnRequestCopy.en;
+    await apply(p,world,"en",caseID);
+    const faultURL=`${host}/api/buyer/orders/${world.order}/return-requests`;
+    let completeFault,rejectFault,originalFaultError;
+    const faultDone=new Promise((resolve,reject)=>{completeFault=resolve;rejectFault=reject;});
+    const loseACK=async route=>{
+      if(route.request().method()!=="POST")return route.continue();
+      try {
+        const upstream=await route.fetch({maxRetries:0,maxRedirects:0});
+        assert.equal(upstream.status(),201,"drop occurs only after real upstream COMMIT/201");
+        await route.abort("failed");completeFault(upstream.status());
+      }catch(error){rejectFault(error);await route.abort("failed").catch(()=>{});}
+    };
+    await p.route(faultURL,loseACK);
+    try {
+    const requestFailed=p.waitForEvent("requestfailed",{predicate:r=>r.url()===faultURL&&r.method()==="POST"});
+    const [failed,upstreamStatus]=await Promise.all([requestFailed,faultDone,act(caseID,"lost create ACK",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),()=>expect(p.getByText(c.unknown,{exact:true})).toBeVisible())]);
+    assert(failed.failure(),"actual browser request must fail after committed201");assert.equal(upstreamStatus,201,"drop occurs only after real upstream COMMIT/201");assert.equal((await readFact(world)).requests,1);
+    await expect(p.getByText(c.unknown,{exact:true})).toBeVisible();await expect(p.getByRole("button",{name:c.check,exact:true})).toBeEnabled();
+    await writeFile(path.join(evidence,"aftersales-as02-ack-loss.json"),JSON.stringify({upstream_status:upstreamStatus,browser_request_failed:!!failed.failure(),pg_requests:(await readFact(world)).requests}),{mode:0o600});
+    const writes=postCount(),listRead=p.waitForResponse(r=>requestIs(r,"return-requests","GET"));const [records]=await Promise.all([listRead,act(caseID,"GET-only check",()=>p.getByRole("button",{name:c.check,exact:true}).click(),()=>expect(p.getByRole("heading",{name:c.choose,exact:true})).toBeVisible())]);
+    assert.equal(records.status(),200);const item=(await records.json()).items.find(x=>x.order_id===world.order);assert(item);
+    await act(caseID,"read saved exact detail",()=>p.getByRole("button",{name:item.number,exact:true}).click(),()=>expect(p.getByTestId("return-status")).toHaveAttribute("data-status","requested"));
+    await expect(p.getByRole("button",{name:c.withdraw,exact:true})).toBeDisabled();assert.equal(postCount(),writes);assert.equal(new URL(p.url()).searchParams.has("request"),false);
+    const write=calls.slice(start).filter(x=>x.path===`/api/buyer/orders/${world.order}/return-requests`&&x.method==="POST");assert.equal(write.length,1);assert.match(write[0].key,/^[A-Za-z0-9_.:-]{8,128}$/);
+    }catch(error){originalFaultError=error;throw error;}finally{
+      try{await p.unroute(faultURL,loseACK);}catch(error){if(!originalFaultError)throw error;}
+    }
+    childTests.push(caseID);await context.close();
+  }
+  {
+    const world=worlds[7],caseID="AS03 stale CAS winner",{p,c:context}=await open(world),c=returnRequestCopy.en;
+    await apply(p,world,"en",caseID);const item=await submit(p,world,"en",caseID);
+    await act(caseID,"open stale confirmation",()=>p.getByRole("button",{name:c.withdraw,exact:true}).click(),()=>expect(p.getByRole("dialog")).toBeVisible());await control(`aftersales/decision/${item.id}/reject`,"POST");
+    const refusal=p.waitForResponse(r=>requestIs(r,`return-requests/${item.id}/withdraw`,"POST"));
+    const [staleResponse]=await Promise.all([refusal,act(caseID,"stale confirm",()=>p.getByRole("button",{name:c.confirm,exact:true}).click(),()=>expect(p.getByTestId("return-status")).toHaveAttribute("data-status","rejected"))]);
+    assert.equal(staleResponse.status(),409);await p.reload();await expect(p.getByTestId("return-status")).toHaveAttribute("data-status","rejected");await expect(p.getByRole("button",{name:c.withdraw,exact:true})).toHaveCount(0);childTests.push(caseID);await context.close();
+  }
+  {
+    const world=worlds[8],caseID="AS04 expired window",{p,c:context}=await open(world),c=returnRequestCopy.en;
+    await apply(p,world,"en",caseID);const refusal=p.waitForResponse(r=>requestIs(r,`orders/${world.order}/return-requests`,"POST"));
+    const [windowResponse]=await Promise.all([refusal,act(caseID,"expired submit",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),()=>expect(p.getByTestId("return-page").getByRole("alert")).toHaveText(c.errors.window_closed))]);assert.equal(windowResponse.status(),409);assert.equal((await readFact(world)).requests,0);childTests.push(caseID);await context.close();
+  }
+  {
+    const caseID="AS05 owner order view-only denial";
+    for(const [world,token,suffix,status] of [[worlds[0],worlds[1].token,"/return",404],[worlds[0],worlds[0].token,`/return?request=${requestIDs[1]}`,404],[worlds[0],view_token,"/return",403]]) {
+      const expectedPath=suffix.includes("?request=")?`/api/buyer/return-requests/${requestIDs[1]}`:token===view_token?"/api/buyer/return-requests":`/api/buyer/orders/${world.order}`;
+      const first=calls.length,{p,c}=await open(world,"en",false,token,suffix);await expect(p.locator(".sf-state")).toBeVisible();await expect(p.getByRole("checkbox")).toHaveCount(0);await expect(p.getByTestId("return-status")).toHaveCount(0);assert(calls.slice(first).some(x=>x.path===expectedPath&&x.method==="GET"&&x.status===status));await p.reload();await expect(p.locator(".sf-state")).toBeVisible();await act(caseID,"denied recovery navigation",()=>p.locator(".sf-state a").click(),()=>expect(p).toHaveURL(host+"/en"));await c.close();
+    }
+    // Both objects are owned: only the UI's validated order binding must reject this cross-order projection.
+    const {p,c}=await open({...worlds[0],order:other_owned_order},"en",false,worlds[0].token,`/return?request=${requestIDs[0]}`);
+    await expect(p.locator(".sf-state")).toBeVisible();await expect(p.getByTestId("return-status")).toHaveCount(0);
+    const reads=postCount(),retry=p.waitForResponse(r=>requestIs(r,`return-requests/${requestIDs[0]}`,"GET"));const [retryResponse]=await Promise.all([retry,act(caseID,"mismatched order read recovery",()=>p.locator(".sf-state button").click(),()=>expect(p.locator(".sf-state")).toBeVisible())]);assert.equal(retryResponse.status(),200);await expect(p.getByTestId("return-status")).toHaveCount(0);assert.equal(postCount(),reads);await c.close();
+    childTests.push(caseID);
+  }
+  assert.equal(postCount(),35);assert.equal(childTests.length,10);
+  // Repeat privacy audit after the additional contexts; no sealed fixture token enters URL/storage/console.
+  for(const value of secrets) {assert(!JSON.stringify(storageWrites).includes(value));assert(!requestURLs.join("\n").includes(value));assert(!consoleText.join("\n").includes(value));}
+  assert.deepEqual(pageErrors.filter(e=>!isWebkitCancelledFetch(e)).map(e=>e.name),[]);
+  const result={cases:childTests.length,worlds:6,clicks:ledger.length,posts:postCount(),child_tests:childTests,click_ledger:ledger,pg_facts:facts};
+  await writeFile(path.join(evidence,"aftersales-native.json"),JSON.stringify(result,null,2),{mode:0o600});return result;
+}
 try {
   execFileSync("openssl",["req","-x509","-newkey","rsa:2048","-nodes","-keyout",path.join(certDir,"key.pem"),"-out",path.join(certDir,"cert.pem"),"-days","1","-subj","/CN=buyer.example"],{stdio:"ignore"});
   const port=await startNext();
@@ -479,7 +639,7 @@ try {
   });
   const edgePort=await listen(edge);proxy=http.createServer((_,r)=>{r.writeHead(403);r.end();});
   proxy.on("connect",(req,socket,head)=>{
-    if(req.url!=="buyer.example:443"){socket.destroy();return;}
+    if(!["buyer.example:443","aftersales.example:443"].includes(req.url)){socket.destroy();return;}
     const upstream=net.connect(edgePort,"127.0.0.1",()=>{socket.write("HTTP/1.1 200 Connection Established\r\n\r\n");if(head.length)upstream.write(head);socket.pipe(upstream).pipe(socket);});
     for(const s of [socket,upstream]){sockets.add(s);s.on("close",()=>sockets.delete(s));s.on("error",()=>{socket.destroy();upstream.destroy();});}
   });
@@ -851,7 +1011,8 @@ try {
   }
   assert.deepEqual(pageErrors.filter(e=>!isWebkitCancelledFetch(e)).map(e=>e.name),[],"browser application exception"); // WebKit cancelled-fetch console noise: browser-engine.mjs
   pass("BO06 all attempted local/session writes, URLs and console exclude PII/bearer; other owner denied");
-  await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases:observations.length,orders,repeated_orders:[order1,orderB],observations,cart_retries:cartRetries,cart_refreshes:cartRefreshes,click_ledger:clickLedger,storage_write_attempts:storageWrites.length,scope:"actual UI/Next/Go/isolated PG; synthetic TLS and buyer data; no PSP/production",not_run:["full foundation/race/vet and existing browser regression are separate root gates","independent visual review"]},null,2),{mode:0o600});
+  const aftersales=await aftersalesPhase(); // additive result, never counted as an old order case or ledger row
+  await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases:observations.length,orders,repeated_orders:[order1,orderB],observations,cart_retries:cartRetries,cart_refreshes:cartRefreshes,click_ledger:clickLedger,aftersales,storage_write_attempts:storageWrites.length,scope:"actual UI/Next/Go/isolated PG; synthetic TLS/buyer data and MOCK Stripe/ECPay; no production",not_run:["full foundation/race/vet and existing browser regression are separate root gates","independent visual review"]},null,2),{mode:0o600});
 }catch(error){
   // A failed step leaves what the buyer was looking at (screenshot + visible text of every page), so an intermittent failure is diagnosable from its own run.
   // Page indexes restart in each context. A global index keeps later contexts

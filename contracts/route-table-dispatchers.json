@@ -287,5 +287,53 @@
       "var v2Slug"
     ],
     "reviewed": "2026-11-04 integrator + independent closure review (Claude Fable 5.1: approved at bad142733 and re-confirmed on the f26edfdbc delta, output/issue-107/review-375-bad142733-fable.md and review-375-f26edfdbc-fable-delta.md; CodeBuddy Hy4 supplementary read concurred); request: output/buyer-route-table/review-contact-store-pin-request.md"
+  },
+  {
+    "table": "billing.PlatformWebhookRoutes",
+    "dispatcher_sha256": "3e902e1987c246d1f47c6c1195d21438a8ef70b0ede4717a92b67d665fb804c1",
+    "functions": [
+      "PlatformWebhookRouteTable.MatchesPath",
+      "platformWebhookDispatch",
+      "platformWebhookMethodAllowed",
+      "platformWebhookPathMatches"
+    ],
+    "declarations": [
+      "func PlatformWebhookRouteTable.MatchesPath",
+      "func platformWebhookDispatch",
+      "func platformWebhookMethodAllowed",
+      "func platformWebhookPathMatches",
+      "type PlatformWebhookRouteTable"
+    ],
+    "reviewed": "Independent Gemini source and complete closure approval at 5169ddc2eda25912ef6a7461cf0e405d59bf4be2; task_c799aded0779 / ctx_7b2a60125692; APPROVE_SOURCE_AND_PIN_SET; review SHA256 ebac379d15e435facd4383706d4e16a92dc02a4da48f4093752771afdd19eee4; 2026-11-14"
+  },
+  {
+    "table": "meta.WebhookRoutes",
+    "dispatcher_sha256": "5b09285f76512f6d145cf326d2937599b54360610fc2231dc4726b22a6b6320f",
+    "functions": [
+      "WebhookRouteTable.HasPrefix",
+      "matchWebhookPattern",
+      "matchWebhookRoute",
+      "webhookDispatcher.ServeHTTP",
+      "webhookMethodAllowed",
+      "writeCode"
+    ],
+    "declarations": [
+      "func WebhookRouteTable.HasPrefix",
+      "func matchWebhookPattern",
+      "func matchWebhookRoute",
+      "func webhookDispatcher.ServeHTTP",
+      "func webhookMethodAllowed",
+      "func writeCode",
+      "type ClaimsActorKey",
+      "type ConsumerWorker",
+      "type PayloadKeyring",
+      "type WebhookRouteTable",
+      "type inboxJobArgs",
+      "type webhookDispatcher",
+      "type webhookMatch",
+      "type webhookRoute",
+      "var _"
+    ],
+    "reviewed": "Independent Gemini source and complete closure approval at 5169ddc2eda25912ef6a7461cf0e405d59bf4be2; task_c799aded0779 / ctx_7b2a60125692; APPROVE_SOURCE_AND_PIN_SET; review SHA256 ebac379d15e435facd4383706d4e16a92dc02a4da48f4093752771afdd19eee4; 2026-11-14"
   }
 ]

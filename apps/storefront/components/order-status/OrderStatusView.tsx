@@ -284,7 +284,7 @@ export default function OrderStatusView({
             <div className="os-actions">
               <ContactStoreButton label={c.contact} locale={locale} />
               {!(isCard && order.commercial_state === "CANCELLED") && (
-                <ContactStoreButton label={c.after} locale={locale} testId="request-after-sales" />
+                <a className="os-back" data-testid="request-after-sales" href={`/${locale}/orders/${order.order_id}/return`}>{c.after}</a>
               )}
             </div>
           </section>
