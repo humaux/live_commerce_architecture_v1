@@ -271,6 +271,95 @@ func serve(w http.ResponseWriter,r *http.Request) {
 	}
 }
 
+func TestGoOpaqueQualifiedDependenciesAndShadows(t *testing.T) {
+	inv := goFixture(t, map[string]string{
+		"go.mod": "module example\n",
+		"cmd/api/main.go": `package main
+import "net/http"
+import alias "example/internal/mw"
+var label = "unrelated"
+func main() { makeBuyer() }
+func makeBuyer() http.Handler {
+ { alias := struct{ Handler func() http.Handler }{}; _ = alias.Handler }
+ { label := "local"; _ = label }
+ return alias.Handler()
+}
+func Handler() http.Handler { panic("unrelated same name") }
+`,
+		"internal/mw/mw.go": `package mw
+import "net/http"
+import next "example/internal/next"
+var label = "response"
+func Handler() http.Handler { _ = label; return next.Handler() }
+`,
+		"internal/next/next.go": `package next
+import "net/http"
+func Handler() http.Handler { return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { if r.URL.Path == "/qualified" { return } }) }
+`,
+		"internal/mw/worker/worker.go": `package worker
+import "net/http"
+func Handler() http.Handler { return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { if r.URL.Path == "/worker" { return } }) }
+`,
+	})
+	var refs []location
+	for _, f := range inv.Unresolved {
+		if f.Detail == "opaque Go handler dispatch makeBuyer; route/method coverage is unknown" {
+			refs = f.Locations
+		}
+	}
+	for _, want := range []location{{File: "cmd/api/main.go", Line: 3}, {File: "internal/mw/mw.go", Line: 3}, {File: "internal/mw/mw.go", Line: 4}, {File: "internal/mw/mw.go", Line: 5}, {File: "internal/next/next.go", Line: 3}} {
+		found := false
+		for _, ref := range refs {
+			if ref.File == want.File && ref.Line == want.Line {
+				found = true
+			}
+		}
+		if !found {
+			t.Errorf("missing qualified dependency %+v: %+v", want, refs)
+		}
+	}
+	for _, ref := range refs {
+		if strings.Contains(ref.File, "/worker/") || (ref.File == "cmd/api/main.go" && (ref.Line == 4 || ref.Line == 11)) {
+			t.Errorf("unrelated/shadowed dependency contaminated closure: %+v", ref)
+		}
+	}
+}
+
+func TestGoOpaqueSiblingMountOwnership(t *testing.T) {
+	inv := goFixture(t, map[string]string{
+		"go.mod": "module example\n",
+		"cmd/api/main.go": `package main
+import "net/http"
+func main(){ mux:=http.NewServeMux(); mux.Handle("/opaque", buildChild()) }
+`,
+		"cmd/api/factory.go": `package main
+import "net/http"
+func buildChild() http.Handler { return http.HandlerFunc(func(w http.ResponseWriter,r *http.Request){ if r.URL.Path == "/opaque" { return } }) }
+`,
+		"internal/unrelated/router.go": `package unrelated
+import "net/http"
+func buildChild() http.Handler { return http.HandlerFunc(func(w http.ResponseWriter,r *http.Request){ if r.URL.Path == "/unrelated" { return } }) }
+`,
+	})
+	found := false
+	for _, f := range inv.Unresolved {
+		if f.Method != "MOUNT" || f.Path != "/opaque" {
+			continue
+		}
+		for _, ref := range f.Locations {
+			if ref.File == "cmd/api/factory.go" && ref.Line == 3 && ref.End >= ref.Line {
+				found = true
+			}
+			if strings.Contains(ref.File, "unrelated") {
+				t.Errorf("unrelated package attached to mount: %+v", f)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("sibling dispatcher omitted from MOUNT: %+v", inv.Unresolved)
+	}
+}
+
 func TestGoRepositoryInventory(t *testing.T) {
 	root := filepath.Join("..", "..", "..")
 	if _, err := os.Stat(filepath.Join(root, "internal", "httpapi", "handler.go")); err != nil {
@@ -618,4 +707,49 @@ func repositoryFunctionContains(t *testing.T, root string, ref location, name st
 		}
 	}
 	return false
+}
+
+func TestGoOpaqueLocalReceiverRegression(t *testing.T) {
+	for _, tc := range []struct{ name, binding string }{
+		{"value", "d := localDispatcher{}"},
+		{"pointer", "d := &localDispatcher{}"},
+		{"explicit_var", "var d localDispatcher"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			inv := goFixture(t, map[string]string{
+				"go.mod": "module example\n",
+				"cmd/api/main.go": `package main
+import "net/http"
+type localDispatcher struct{}
+func (d *localDispatcher) serve(w http.ResponseWriter, r *http.Request) {
+ if r.URL.Path == "/local" { return }
+}
+func makeLocal() http.Handler {
+ ` + tc.binding + `
+ return http.HandlerFunc(d.serve)
+}
+func main() { _ = makeLocal() }
+`,
+			})
+			var found bool
+			for _, f := range inv.Unresolved {
+				if f.Detail != "opaque Go handler dispatch makeLocal; route/method coverage is unknown" {
+					continue
+				}
+				found = true
+				hasServe := false
+				for _, ref := range f.Locations {
+					if ref.File == "cmd/api/main.go" && ref.Line == 4 && ref.End >= 6 {
+						hasServe = true
+					}
+				}
+				if !hasServe {
+					t.Errorf("makeLocal UNKNOWN lost serve dependency span: %+v", f)
+				}
+			}
+			if !found {
+				t.Fatalf("makeLocal UNKNOWN coverage missing for %s: %+v", tc.name, inv.Unresolved)
+			}
+		})
+	}
 }
