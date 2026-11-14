@@ -776,7 +776,7 @@
     "tests/storefront/merchant-product.mjs": "2c36a724923195cdb9a5dac5397f986457a47612a24d0e31387a5b43de252c16",
     "tests/storefront/offline-buyer.mjs": "29998d0d3132f934c9dfbc1048abd8fb8e1635fb6acd39435533d68dda8f5324",
     "tests/storefront/offline-error.spec.ts": "bf531d759ba26fbb7731aa556a7de6c40a8e1686585e40a8250d62f1abe1969b",
-    "tests/storefront/order-gate.mjs": "c8ea2a4da57848302a424b5df3003662b0babcc676de714558f58d71bbfc4e30",
+    "tests/storefront/order-gate.mjs": "2b8fa5630a7375cd0e2d07ffa3dd2c9bfe6b9464e0cb70ea371f0fe0b6e08a21",
     "tests/storefront/privacy-buyer.mjs": "1823f85a4bdbe4e38a6f5006d847cbb6f664971503ebf9fdd635f57ab3e28c85",
     "tests/storefront/promotions-gate.mjs": "6aa1c207edb599148f71a1da92f97e4c181e1e96537ca16b05207ccf55eeb5bc",
     "tests/storefront/refund-buyer.mjs": "e89297f2997f0153b811175d7c00718dec9657de3e606b759512248ca53acaca",

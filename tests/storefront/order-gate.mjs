@@ -37,6 +37,26 @@ const certDir=await mkdtemp(path.join(tmpdir(),"lc-order-edge-"));
 const review=path.join(evidence,"review/buyer-order");
 const historyReview=path.join(evidence,"review/buyer-history");
 let browser,edge,proxy,hook,sessionResets=0;
+// AS02-only bounded observations; no credentials, bodies, query values or readiness waits.
+const as02={events:[],snapshots:[],clicks:[],truncated:false}, as02Start=Date.now();
+let as02Page,as02Phase="inactive",as02CallStart=0,as02CallEnd=null;
+const as02Path=value=>{try{const u=new URL(value,"https://aftersales.example");return /^\/api\/buyer\/(?:orders\/[a-f0-9-]{36}\/return-requests|return-requests(?:\/[a-f0-9-]{36}(?:\/withdraw)?)?)$/.test(u.pathname)?u.pathname:null;}catch{return null;}};
+function as02Event(kind,data={}) {if(as02.events.length<80)as02.events.push({kind,phase:as02Phase,ms:Date.now()-as02Start,...data});else as02.truncated=true;}
+async function as02Snapshot(phase) {
+  as02Phase=phase;if(!as02Page||as02.snapshots.length>=12)return;
+  const facts=await as02Page.evaluate(({check,unknown,choose})=>{
+    const buttons=[...document.querySelectorAll("button")].filter(b=>b.textContent.trim()===check),status=document.querySelector('[data-testid="return-status"]');
+    return {pathname:location.pathname,hasRequestQuery:new URL(location.href).searchParams.has("request"),checkCount:buttons.length,checkEnabled:buttons.some(b=>!b.disabled),status:status?.getAttribute("data-status")??null,unknownPresent:document.body.innerText.includes(unknown),choosePresent:document.body.innerText.includes(choose)};
+  },{check:returnRequestCopy.en.check,unknown:returnRequestCopy.en.unknown,choose:returnRequestCopy.en.choose});
+  as02.snapshots.push({phase,ms:Date.now()-as02Start,checkClickCompleted:as02.clicks.some(c=>c.control==="GET-only check"),...facts});
+}
+async function saveAS02(outcome) {
+  if(!as02Page)return;await as02Snapshot(outcome).catch(()=>{});
+  const selected=calls.slice(as02CallStart,as02CallEnd??calls.length).filter(c=>as02Path(c.path));
+  const safeCalls=selected.slice(0,80).map(c=>({method:c.method,path:as02Path(c.path),status:c.status??null,dropped:c.dropped??null,upstream201:c.as02Upstream201??false,dropInitiated:c.as02DropInitiated??false}));
+  const data={outcome,...as02,calls:safeCalls,truncated:as02.truncated||selected.length>80};
+  const raw=JSON.stringify(data);if(Buffer.byteLength(raw)<=32768)await writeFile(path.join(evidence,"aftersales-as02-diagnostic.json"),raw,{mode:0o600});
+}
 const calls=[], bo01Warmups=new Map(), bo01Reads=[], bo01Probes=[];
 async function control(resource,method="GET") {
   const response=await fetch(`${process.env.LC_ORDER_CONTROL}/${resource}`,{method,headers:{"X-Gate-Key":process.env.LC_ORDER_CONTROL_KEY}});
@@ -455,7 +475,7 @@ async function aftersalesPhase() {
   const childTests=[],ledger=[],facts=[],start=calls.length;
   let activePage;
   async function act(caseID,controlName,operation,check) {
-    await operation();await check();
+    await operation();if(caseID==="AS02 committed ACK loss"){as02.clicks.push({control:controlName,completed:true,ms:Date.now()-as02Start});as02Event("click-completed",{control:controlName});}await check();
     // Read measurements only: no note/address/cookie/key is copied into this ledger.
     const status=activePage.getByTestId("return-status"),rma=activePage.getByTestId("return-rma-state");
     const actual={request_status:await status.count()?await status.getAttribute("data-status"):null,rma_state:await rma.count()?await rma.getAttribute("data-state"):null,selected_lines:await activePage.getByRole("checkbox",{checked:true}).count(),dialog_visible:await activePage.getByRole("dialog").isVisible()};
@@ -538,14 +558,23 @@ async function aftersalesPhase() {
   }
   {
     const world=worlds[6],caseID="AS02 committed ACK loss",{p,c:context}=await open(world),c=returnRequestCopy.en;
-    await apply(p,world,"en",caseID);const fault=arm(`orders/${world.order}/return-requests`,{method:"POST",drop:true});
+    as02Page=p;as02CallStart=calls.length;as02Phase="start";
+    for(const kind of ["request","response","requestfinished","requestfailed"])p.on(kind,event=>{
+      const request=kind==="response"?event.request():event,pathname=as02Path(request.url());if(!pathname)return;
+      as02Event(kind,{method:request.method(),path:pathname,status:kind==="response"?event.status():null,failed:kind==="requestfailed"});
+    });
+    await apply(p,world,"en",caseID);await as02Snapshot("before-arm");const fault=arm(`orders/${world.order}/return-requests`,{method:"POST",drop:true});
     await act(caseID,"lost create ACK",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),()=>expect(p.getByText(c.unknown,{exact:true})).toBeVisible());
+    await as02Snapshot("after-unknown-act");
     assert.equal(await fault.result.promise,201,"drop occurs only after real upstream COMMIT/201");assert.equal((await readFact(world)).requests,1);
+    await as02Snapshot("before-list-listener");
     const writes=postCount(),listRead=p.waitForResponse(r=>requestIs(r,"return-requests","GET"));const [records]=await Promise.all([listRead,act(caseID,"GET-only check",()=>p.getByRole("button",{name:c.check,exact:true}).click(),()=>expect(p.getByRole("heading",{name:c.choose,exact:true})).toBeVisible())]);
+    await as02Snapshot("after-list-aggregate");
     assert.equal(records.status(),200);const item=(await records.json()).items.find(x=>x.order_id===world.order);assert(item);
     await act(caseID,"read saved exact detail",()=>p.getByRole("button",{name:item.number,exact:true}).click(),()=>expect(p.getByTestId("return-status")).toHaveAttribute("data-status","requested"));
     await expect(p.getByRole("button",{name:c.withdraw,exact:true})).toBeDisabled();assert.equal(postCount(),writes);assert.equal(new URL(p.url()).searchParams.has("request"),false);
     const write=calls.slice(start).filter(x=>x.path===`/api/buyer/orders/${world.order}/return-requests`&&x.method==="POST");assert.equal(write.length,1);assert.match(write[0].key,/^[A-Za-z0-9_.:-]{8,128}$/);
+    as02CallEnd=calls.length;await saveAS02("success").catch(()=>{});
     childTests.push(caseID);await context.close();
   }
   {
@@ -605,6 +634,7 @@ try {
         for(const [page,warmup] of bo01Warmups)if(call.sourcePath==="/en/checkout"&&page.url()===origin+"/en/checkout"&&cookiePairs.includes(warmup.cookie))warmup.served.resolve();
       }
       if(active){active.out=out;active.result.resolve(out.status);}
+      if(as02Page&&as02CallEnd===null&&as02Path(call.path)&&active?.drop){call.as02Upstream201=out.status===201;call.as02DropInitiated=true;as02Event("relay-drop-initiated",{method:call.method,path:as02Path(call.path),status:out.status});}
       call.dropped=!!active?.drop;
       if(active?.drop){res.destroy();return;}
       if(active?.after)await active.release.promise;
@@ -989,6 +1019,7 @@ try {
   const aftersales=await aftersalesPhase(); // additive result, never counted as an old order case or ledger row
   await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases:observations.length,orders,repeated_orders:[order1,orderB],observations,cart_retries:cartRetries,cart_refreshes:cartRefreshes,click_ledger:clickLedger,aftersales,storage_write_attempts:storageWrites.length,scope:"actual UI/Next/Go/isolated PG; synthetic TLS/buyer data and MOCK Stripe/ECPay; no production",not_run:["full foundation/race/vet and existing browser regression are separate root gates","independent visual review"]},null,2),{mode:0o600});
 }catch(error){
+  await saveAS02("failure").catch(()=>{});
   // A failed step leaves what the buyer was looking at (screenshot + visible text of every page), so an intermittent failure is diagnosable from its own run.
   // Page indexes restart in each context. A global index keeps later contexts
   // from overwriting the failing locale-history page's evidence (PR #268).
