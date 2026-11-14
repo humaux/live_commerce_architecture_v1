@@ -69,11 +69,39 @@ func (s *goScanner) opaque(fn *goFunc) {
 				// selector member as every same-name function in this package.
 				var receiver ast.Expr
 				if id, ok := sel.X.(*ast.Ident); ok && id.Obj != nil {
-					if field, ok := id.Obj.Decl.(*ast.Field); ok {
-						receiver = field.Type
+					switch decl := id.Obj.Decl.(type) {
+					case *ast.Field:
+						receiver = decl.Type
+					case *ast.ValueSpec:
+						receiver = decl.Type
+						if receiver == nil && len(decl.Names) == len(decl.Values) {
+							for i, name := range decl.Names {
+								if name.Obj == id.Obj {
+									receiver = decl.Values[i]
+								}
+							}
+						}
+					case *ast.AssignStmt:
+						if decl.Tok == token.DEFINE && len(decl.Lhs) == len(decl.Rhs) {
+							for i, lhs := range decl.Lhs {
+								if name, ok := lhs.(*ast.Ident); ok && name.Obj == id.Obj {
+									receiver = decl.Rhs[i]
+								}
+							}
+						}
 					}
 				}
-				if literal, ok := sel.X.(*ast.CompositeLit); ok {
+				if receiver == nil {
+					if literal, ok := sel.X.(*ast.CompositeLit); ok {
+						receiver = literal
+					}
+				}
+				// Only direct static declarations/literals establish the receiver
+				// type here; do not infer types through calls or alias flow.
+				if address, ok := receiver.(*ast.UnaryExpr); ok && address.Op == token.AND {
+					receiver = address.X
+				}
+				if literal, ok := receiver.(*ast.CompositeLit); ok {
 					receiver = literal.Type
 				}
 				if pointer, ok := receiver.(*ast.StarExpr); ok {
