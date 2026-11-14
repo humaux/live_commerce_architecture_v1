@@ -502,3 +502,49 @@ is not validation of historical native outcomes under the current declaration. T
 47cd25b5-56da-4dfa-9296-1f18b00b78d0 still requires the exact skip reason, actual drift and
 fresh same-run browser evidence. This adapter grants no exemption and changes no G07 judge,
 NOT_RUN catalogue or canonical package. Remote controls and native qualification are NOT_RUN.
+
+### Canonical G07 shard intake (SOURCE candidate, NOT qualified)
+
+Opt in only through Gates `workflow_dispatch` input `canonical_g07=true`, with default
+`modes`, no `extra_env` and no full-browser override. The existing planner expands
+`foundation-shards` plus `--browser-product-editor`; no bundles or narrowed selectors.
+The plan job anchors a shared 150-minute deadline (including finalization), captures compiled
+Go package/case inventory, and binds the current checkout/tree, workflow SHA/ref, dispatch
+run/attempt, source tree, explicit runner-script SHA-256 pins and shard-plan bytes. The unit job runs the existing three matrix
+Node suites in this SAME attempt; the separate Foundation workflow cannot supply them.
+
+Existing `matrix-receipts.mjs` gains `canonical-plan DIR`, `canonical-start DIR`,
+`canonical-end DIR EXIT`, and `canonical-verify DIR OUT` commands. These collect/verify
+facts for the existing jobs; ordinary `write`/`verify` remain unchanged. Per-mode directories
+hold `start.json`, `end.json`, `go.jsonl`, unit `vet.jsonl` and three `node-*.tap` logs,
+plus current browser owner proof/ledger bytes. The exact plan shape is
+`{schema:"g07-shards/v1", context:{identity,pins,clean,source,plan_hash}, anchor,deadline,modes,inventory}`.
+`inventory` maps actual package paths to compiled top-level case names; `modes` is the exact
+planner expansion. `source` hashes the tracked Git tree listing; `plan_hash` hashes shard-plan bytes.
+Start/end snapshots are `{phase,context,anchor,deadline,at,mode}`; end adds the true numeric
+`exit`, and a successful browser end adds the native directory basename `evidence`. Epoch seconds
+and the shared 9000-second maximum bind every phase; `clean` must be true.
+Canonical snapshots reject tracked edits and unexpected untracked files outside `output/`. They are checked against trusted
+workflow context/current checkout, never merely against each other.
+
+The intake directory must not exist before verification; it is populated only by the bounded
+read-only transport. The intake requires official artifact metadata and completed job outcomes from this run
+and attempt, validates downloaded archive digest/CRC/path safety, and rejects every omitted,
+duplicate, stale or unexpected canonical artifact. Transport/API errors are RED; no permissions
+are granted beyond root-authorized `jobs.receipts.permissions: {contents: read, actions: read}`.
+The workflow-level permissions and other jobs remain unchanged; no credential fallback. Canonical ordinary receipts download under `output/g07-ordinary-receipts` so evidence cannot dirty source; ordinary runs retain `receipts`. Plan provenance and raw inventory logs remain part of evidence.
+Each Go JSON event is attributed by Package+Test; nested child transcripts in Output cannot
+create terminals or historical proof. Every compiled top-level case has one start and terminal
+in its assigned partition; package completion, subtest failures/skips, native C1, tail coverage
+and exactly one explicit whole-vet start/end/exit are required. No positive-count shortcut.
+
+`release-gate.sh --strict --only G07 --shard-evidence DIR` revalidates intake and uses the
+existing judge/record/catalogue path. Only independently validated historical matrix drift
+may be conditionally excluded from ordinary-SKIP failure, retaining its SKIP and reason in raw
+JSON. All other skip classification and strict unknown-NOT_RUN exit 3 remain unchanged.
+Canonical proof `identity.evidence=unknown` and fresh source `recorded=unknown` are intentional
+kind-specific fields, not permission to omit CI/Git identity. Fresh artifacts require actual
+TestBrowserCatalogCore terminal PASS, its own logged ledger location matched to the end witness,
+plus current source/case/ledger hashes and official job
+success; a proof emitted before a later harness failure never qualifies. Remote red/green
+controls, one complete native qualification and independent review are still mandatory.
