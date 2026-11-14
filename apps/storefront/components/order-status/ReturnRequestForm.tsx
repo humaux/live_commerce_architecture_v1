@@ -174,7 +174,7 @@ export default function ReturnRequestForm({ locale, orderID, requestID }: { loca
       {error && <p className={styles.notice} role="alert" tabIndex={-1} ref={errorBox}>{error}</p>}
       {state === "ready" && view && <>
         {unknown && <><p className={styles.notice} role="status">{c.unknown}</p><button type="button" className={styles.secondary} disabled={busy} onClick={() => void load()}>{c.check}</button></>}
-        {choices && <section className={styles.card}><h2>{c.choose}</h2>{choices.length === 0 && <p>{c.noMatches}</p>}{choices.map(item => <button type="button" className={styles.secondary} key={item.id} disabled={busy} onClick={() => void load(item.id)}>{item.number}</button>)}</section>}
+        {choices && (choices.length > 0 || unknown) && <section className={styles.card}><h2>{c.choose}</h2>{choices.length === 0 && <p>{c.noMatches}</p>}{choices.map(item => <button type="button" className={styles.secondary} key={item.id} disabled={busy} onClick={() => void load(item.id)}>{item.number}</button>)}</section>}
         {view.detail ? <ReturnRequestDetail locale={locale} request={view.detail} order={view.order} disabled={locked}
           onWithdraw={() => { const body = { expected_version: 1 }; if (view.detail && canWithdraw(view.detail) && validReturnRequestWithdraw(body)) void mutate(body, `return-requests/${view.detail.id}/withdraw`, 200, view.detail.id); }} />
           : <><h1>{c.title}</h1><form className={styles.card} onSubmit={submit}>
