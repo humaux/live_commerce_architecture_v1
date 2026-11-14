@@ -68,6 +68,7 @@ func TestGoFactoryReviewStructuralCLI(t *testing.T) {
 import "net/http"
 func main() {
  mux := http.NewServeMux()
+ mux.HandleFunc("GET /v1/admin/stores/{store_id}/widgets/{widget_id}", func(w http.ResponseWriter, r *http.Request) {})
  mux.Handle("/first", buildFirst())
  mux.Handle("/second", buildSecond())
 }
