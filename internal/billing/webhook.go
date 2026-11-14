@@ -40,16 +40,70 @@ var handledEvents = map[string]bool{
 // that may execute billing.apply_subscription, C-4). A nil/disabled service or nil pool yields a handler
 // that answers 503 so Stripe retries rather than dropping events.
 func (s *Service) WebhookHandler(ingress *pgxpool.Pool) http.Handler {
-	if !s.Enabled() || ingress == nil {
-		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			httperror.Write(w, http.StatusServiceUnavailable, "unavailable")
-		})
+	return NewWebhookHandler(s, ingress)
+}
+
+// NewWebhookHandler is the API assembly seam. Availability is fixed at factory
+// construction, as before; the callback keeps the service and ingress authority.
+func NewWebhookHandler(s *Service, ingress *pgxpool.Pool) http.Handler {
+	return platformWebhookDispatch(s.Enabled() && ingress != nil, func(w http.ResponseWriter, r *http.Request) {
+		s.serveWebhook(w, r, ingress)
+	})
+}
+
+type platformWebhookRoute struct{ Method, Path string }
+type PlatformWebhookRouteTable struct{}
+
+var PlatformWebhookRoutes = PlatformWebhookRouteTable{}
+
+//contractdrift:routes /v1/platform/stripe/webhook platformWebhookPathMatches platformWebhookMethodAllowed exact mount=PlatformWebhookRoutes
+var platformWebhookRows = []platformWebhookRoute{
+	{Method: http.MethodPost, Path: "/v1/platform/stripe/webhook"},
+}
+
+func (PlatformWebhookRouteTable) MatchesPath(path string) bool {
+	return platformWebhookPathMatches(path)
+}
+func platformWebhookPathMatches(path string) bool {
+	for _, entry := range platformWebhookRows {
+		if entry.Path == path {
+			return true
+		}
 	}
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { s.serveWebhook(w, r, ingress) })
+	return false
+}
+func platformWebhookMethodAllowed(method string) bool {
+	for _, entry := range platformWebhookRows {
+		if entry.Method == method {
+			return true
+		}
+	}
+	return false
+}
+
+// Both refusal branches preserve the original disabled-before-method priority.
+// serve is invoked only for an enabled POST and retains all signature/SQL logic.
+func platformWebhookDispatch(enabled bool, serve func(http.ResponseWriter, *http.Request)) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !platformWebhookMethodAllowed(r.Method) {
+			if !enabled {
+				httperror.Write(w, http.StatusServiceUnavailable, "unavailable")
+			} else {
+				w.Header().Set("Allow", http.MethodPost)
+				httperror.Write(w, http.StatusMethodNotAllowed, "method_not_allowed")
+			}
+			return
+		}
+		if !enabled {
+			httperror.Write(w, http.StatusServiceUnavailable, "unavailable")
+			return
+		}
+		serve(w, r)
+	})
 }
 
 func (s *Service) serveWebhook(w http.ResponseWriter, r *http.Request, ingress *pgxpool.Pool) {
-	if r.Method != http.MethodPost {
+	if !platformWebhookMethodAllowed(r.Method) {
 		w.Header().Set("Allow", http.MethodPost)
 		httperror.Write(w, http.StatusMethodNotAllowed, "method_not_allowed")
 		return

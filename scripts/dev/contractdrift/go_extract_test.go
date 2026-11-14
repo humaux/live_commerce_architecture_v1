@@ -4,6 +4,7 @@
 package main
 
 import (
+	"encoding/json"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -377,6 +378,11 @@ func TestGoRepositoryInventory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	dispatcherReviewJSON, dispatcherReviewErr := json.Marshal(inv.Dispatchers)
+	if dispatcherReviewErr != nil {
+		t.Fatal(dispatcherReviewErr)
+	}
+	t.Logf("DISPATCHER_REVIEW_FACTS=%s", dispatcherReviewJSON)
 	t.Logf("real inventory routes=%d unresolved=%d notes=%d", len(inv.Routes), len(inv.Unresolved), len(inv.Notes))
 	coverage := map[string]finding{}
 	for _, u := range inv.Unresolved {
@@ -384,12 +390,12 @@ func TestGoRepositoryInventory(t *testing.T) {
 			coverage[u.Method+" "+u.Path] = u
 		}
 	}
-	for _, want := range []string{"PREFIX /v1/meta", "PREFIX /v1/stripe", "PREFIX /.well-known/lc-domain-check/", "EXACT /v1/platform/stripe/webhook", "EXACT /internal/tls-ask"} {
+	for _, want := range []string{"PREFIX /v1/stripe", "PREFIX /.well-known/lc-domain-check/", "EXACT /internal/tls-ask"} {
 		if _, ok := coverage[want]; !ok {
 			t.Errorf("missing actual cmd/api coverage guard %s", want)
 		}
 	}
-	for _, pair := range [][2]string{{"PREFIX /v1/meta", "internal/integrations/meta/runtime.go"}, {"PREFIX /v1/stripe", "internal/payments/stripewebhook/handler.go"}, {"EXACT /internal/tls-ask", "internal/tlsask/tlsask.go"}} {
+	for _, pair := range [][2]string{{"PREFIX /v1/stripe", "internal/payments/stripewebhook/handler.go"}, {"EXACT /internal/tls-ask", "internal/tlsask/tlsask.go"}} {
 		found := false
 		for _, ref := range coverage[pair[0]].Locations {
 			if ref.File == pair[1] && ref.End > ref.Line {
@@ -403,7 +409,7 @@ func TestGoRepositoryInventory(t *testing.T) {
 
 	// Expected rows come independently from AST declarations, not scanGo or the
 	// scanner's table evaluator. Each must retain its row location AND the table
-	// proof note, replacing the obsolete buyer opaque guard/span expectations.
+	// proof note, replacing obsolete opaque guards with resolved table coverage.
 	keys := goRouteKeys(inv)
 	for _, table := range []struct {
 		file, facade string
@@ -411,6 +417,8 @@ func TestGoRepositoryInventory(t *testing.T) {
 	}{
 		{"internal/buyerhttp/routes.go", "Routes", 53},
 		{"internal/attribution/feed.go", "FeedRoutes", 2},
+		{"internal/integrations/meta/runtime.go", "WebhookRoutes", 2},
+		{"internal/billing/webhook.go", "PlatformWebhookRoutes", 1},
 	} {
 		expected := repositoryTableRows(t, root, table.file, table.facade)
 		if len(expected) != table.count {
@@ -443,16 +451,25 @@ func TestGoRepositoryInventory(t *testing.T) {
 		}
 	}
 	for _, u := range inv.Unresolved {
-		if strings.HasPrefix(u.Path, "/v1/buyer") {
-			t.Errorf("buyer remains unresolved: %+v", u)
+		if strings.HasPrefix(u.Path, "/v1/buyer") || strings.HasPrefix(u.Path, "/v1/meta") || u.Path == "/v1/platform/stripe/webhook" {
+			t.Errorf("reviewed table remains unresolved: %+v", u)
 		}
-		for _, name := range []string{"buildBuyerHandler", "buildBuyerWithCVS", "mountFeed"} {
+		for _, factory := range [][2]string{
+			{"buildBuyerHandler", "cmd/api/buyer.go"},
+			{"buildBuyerWithCVS", "cmd/api/buyer.go"},
+			{"mountFeed", "cmd/api/buyer.go"},
+			{"buildMetaHandler", "cmd/api/meta.go"},
+			{"NewWebhookRouter", "internal/integrations/meta/runtime.go"},
+			{"buildPlatformBilling", "cmd/api/platform_billing.go"},
+			{"NewWebhookHandler", "internal/billing/webhook.go"},
+		} {
+			name, file := factory[0], factory[1]
 			if strings.Contains(u.Detail, "opaque Go handler dispatch "+name+";") {
-				t.Errorf("buyer factory remains unresolved: %+v", u)
+				t.Errorf("reviewed table factory remains unresolved: %+v", u)
 			}
 			for _, ref := range u.Locations {
-				if ref.File == "cmd/api/buyer.go" && repositoryFunctionContains(t, root, ref, name) {
-					t.Errorf("unresolved span on buyer factory %s: %+v", name, u)
+				if ref.File == file && repositoryFunctionContains(t, root, ref, name) {
+					t.Errorf("unresolved span on reviewed table factory %s: %+v", name, u)
 				}
 			}
 		}
