@@ -7,7 +7,7 @@ import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { G07_C1, G07_MATRIX, G07_NODE, G07_ARCHIVE_PY, verifyG07, g07Events, g07Inventory, g07Budget } from "../../scripts/dev/matrix-receipts.mjs";
+import { G07_C1, G07_MATRIX, G07_NODE, G07_ARCHIVE_PY, verifyG07, g07Node, g07Events, g07Inventory, g07Budget } from "../../scripts/dev/matrix-receipts.mjs";
 
 const P = "example/tests/foundation", U = "example/unit", EMPTY = "example/no_tests";
 const rows = (pkg, names, special = {}) => [
@@ -20,6 +20,16 @@ const rows = (pkg, names, special = {}) => [
 ];
 const encode = (events) => events.map((e) => JSON.stringify(e)).join("\n") + "\n";
 const tap = "TAP version 13\nok 1 - actual suite\n1..1\n# tests 1\n# suites 0\n# pass 1\n# fail 0\n# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 1\n";
+test("MODEL_ONLY standard TAP zero TODO summary is complete PASS", () => {
+  assert.doesNotThrow(() => g07Node(tap));
+});
+for (const [directive, indent, gap] of [["SKIP", "", " "], ["todo", "", "\t"], ["sKiP", "    ", ""], ["ToDo", "\t", "\t"]]) {
+  test(`MODEL_ONLY Node rejects ${indent ? "nested" : "top-level"} ${directive} result directive with zero totals`, () => {
+    const point = `${indent}ok 1 - actual suite #${gap}${directive} unavailable\n`;
+    const text = indent ? tap.replace("ok 1 - actual suite\n", point + "ok 1 - actual suite\n") : tap.replace("ok 1 - actual suite\n", point);
+    assert.throws(() => g07Node(text), /Node skip\/todo\/only\/failure/);
+  });
+}
 function fixture() {
   const identity = { subject_sha: "a".repeat(40), workflow_sha: "b".repeat(40), workflow_ref: "owner/repo/.github/workflows/gates.yml@refs/heads/test",
     run_id: "4242", run_attempt: "2", event: "workflow_dispatch", checkout_sha: "a".repeat(40), checkout_tree: "c".repeat(40) };

@@ -350,7 +350,7 @@ export function g07Node(text) {
   need(summaries.length === 1 && summaries[0].index > plans[0].index, "missing/duplicate Node summary");
   const g = summaries[0].groups;
   need(Number(g.pass) > 0 && Number(g.tests) === Number(g.pass) && ["fail", "cancelled", "skipped", "todo"].every((k) => Number(g[k]) === 0), "Node not complete PASS");
-  need(!/^\s*not ok\b|# (?:SKIP|TODO)\b|['"]only['"].*--test-only/im.test(text), "Node skip/todo/only/failure");
+  need(!/^\s*not ok\b|^[ \t]*(?:not[ \t]+)?ok\b[^\r\n]*#[ \t]*(?:SKIP|TODO)\b|['"]only['"].*--test-only/im.test(text), "Node skip/todo/only/failure");
 }
 function g07OwnerIdentity(proof, expected, mode) {
   need(proof?.schema === "matrix-owner-proof/v1", "owner proof schema");
