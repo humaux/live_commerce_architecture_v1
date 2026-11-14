@@ -386,7 +386,8 @@ func ccbMultiWarehousePhase(t *testing.T, ctx context.Context, f *testFixture, s
 	if err := f.owner.QueryRow(ctx, `SELECT id::text FROM catalog.skus WHERE tenant_id=$1 AND store_id=$2 AND code='A12'`, tenant, store).Scan(&a12); err != nil {
 		t.Fatalf("multi-warehouse phase: the C6 A12 SKU: %v", err)
 	}
-	hash := sha256.Sum256([]byte("A12\x00active")) // internal/catalog/ledger.go: normalized query NUL normalized status
+	// Short SKU search is not unique; this cursor uses q=full fixture name.
+	hash := sha256.Sum256([]byte("焦糖托特包\x00active")) // internal/catalog/ledger.go: normalized query NUL normalized status
 	cursor, err := pagination.Encode(pagination.Binding{TenantID: tenant, StoreID: store, Collection: "catalog-ledger", ParentID: secondID, Filter: hex.EncodeToString(hash[:])}, []string{a12})
 	if err != nil {
 		t.Fatal(err)
