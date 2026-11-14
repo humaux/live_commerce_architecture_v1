@@ -3,7 +3,7 @@
 // Used by: ReturnRequestForm. Invariants: no terminal relabeling, no refund/stock/provider action.
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { displayTime } from "@live-commerce/format";
+import { displayTime } from "../../../../packages/format/src/index";
 import type { Locale } from "@live-commerce/i18n";
 import type { Order } from "../../lib/purchase";
 import { canWithdraw, type ReturnRequest } from "./return-request-state";
