@@ -7,8 +7,6 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
-// Registered through this existing Foundation runner module; no new runner or workflow.
-import "./foundation-budget.test.mjs";
 import { countTests, isBrowserMode, main, makeReceipt, receiptFile, verify } from "../../scripts/dev/matrix-receipts.mjs";
 
 const RUN = { runId: "4242", sha: "a".repeat(40) };

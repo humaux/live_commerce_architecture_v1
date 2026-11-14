@@ -1,6 +1,6 @@
 // Purpose: falsify canonical G07 shard identity/completeness/owner-policy and unchanged strict skip semantics.
 // Depends on: existing matrix receipts and release-gate classifier; synthetic MODEL_ONLY fixtures, no Go/PG/browser.
-// Used by: existing matrix-receipts.test.mjs registration in test-node.sh; runtime qualification remains separate.
+// Used by: direct scripts/dev/test-node.sh execution; runtime qualification remains separate.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
