@@ -61,6 +61,57 @@ func trunkFactoryReviewTouched(t *testing.T, name, path, exact string, code int,
 
 func TestGoFactoryReviewStructuralCLI(t *testing.T) {
 	call := reviewCLI(t)
+	t.Run("CDF6 independent sibling chains", func(t *testing.T) {
+		root := fixture(t, "aligned")
+		trunkFactoryWrite(t, root, "go.mod", "module example\n\ngo 1.22\n")
+		trunkFactoryWrite(t, root, "cmd/api/main.go", `package main
+import "net/http"
+func main() {
+ mux := http.NewServeMux()
+ mux.Handle("/first", buildFirst())
+ mux.Handle("/second", buildSecond())
+}
+`)
+		const first = `package main
+import "net/http"
+func buildFirst() http.Handler { return firstHandler() }
+func firstHandler() http.Handler { return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+ if r.URL.Path == "/first" { w.Header().Set("X-First", "legacy") }
+}) }
+`
+		trunkFactoryWrite(t, root, "cmd/api/first.go", first)
+		trunkFactoryWrite(t, root, "cmd/api/second.go", `package main
+import "net/http"
+func buildSecond() http.Handler { return secondHandler() }
+func secondHandler() http.Handler { return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+ if r.URL.Path == "/second" { return }
+}) }
+`)
+		git(t, root, "add", ".")
+		git(t, root, "commit", "-qm", "independent sibling mount chains")
+		git(t, root, "tag", "-f", "trunk")
+		if code, out := call(root); code != 0 || strings.Contains(out, "TOUCHED") {
+			t.Fatalf("legacy sibling setup failed: exit=%d\n%s", code, out)
+		}
+		// Keep diagnostic identity and registrations unchanged on both sides of
+		// the real Git diff: only a dependency in the first chain is edited.
+		trunkFactoryWrite(t, root, "cmd/api/first.go", trunkFactoryReplace(t, first, `"legacy"`, `"changed"`))
+		code, out := call(root)
+		t.Logf("STRICT_CANDIDATE independent siblings exit=%d\n%s", code, out)
+		if code != 1 || !strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED MOUNT /first ") {
+			t.Errorf("real first dependency failed to taint its mount: exit=%d\n%s", code, out)
+		}
+		if !strings.Contains(out, "WARNING (unresolved) UNRESOLVED MOUNT /second ") || strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED MOUNT /second ") {
+			t.Errorf("unrelated sibling mount contaminated by current/base provenance: exit=%d\n%s", code, out)
+		}
+		for _, line := range strings.Split(out, "\n") {
+			if strings.Contains(line, "opaque Go handler dispatch buildSecond;") || strings.Contains(line, "opaque Go handler dispatch secondHandler;") {
+				if !strings.HasPrefix(line, "WARNING (unresolved) ") {
+					t.Errorf("independent handler chain changed severity: %s", line)
+				}
+			}
+		}
+	})
 	for _, name := range []string{"CDF4 cross-package middleware", "CDF5 non-path global", "CDF6 sibling-file route"} {
 		t.Run(name, func(t *testing.T) {
 			source := trunkFactorySource

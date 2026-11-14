@@ -330,11 +330,16 @@ func TestGoOpaqueSiblingMountOwnership(t *testing.T) {
 		"go.mod": "module example\n",
 		"cmd/api/main.go": `package main
 import "net/http"
-func main(){ mux:=http.NewServeMux(); mux.Handle("/opaque", buildChild()) }
+func main(){ mux:=http.NewServeMux(); mux.Handle("/opaque", buildChild()); mux.Handle("/independent", buildIndependent()) }
 `,
 		"cmd/api/factory.go": `package main
 import "net/http"
 func buildChild() http.Handler { return http.HandlerFunc(func(w http.ResponseWriter,r *http.Request){ if r.URL.Path == "/opaque" { return } }) }
+`,
+		"cmd/api/independent.go": `package main
+import "net/http"
+func buildIndependent() http.Handler { return independentHandler() }
+func independentHandler() http.Handler { return http.HandlerFunc(func(w http.ResponseWriter,r *http.Request){ if r.URL.Path == "/independent" { return } }) }
 `,
 		"internal/unrelated/router.go": `package unrelated
 import "net/http"
@@ -349,6 +354,9 @@ func buildChild() http.Handler { return http.HandlerFunc(func(w http.ResponseWri
 		for _, ref := range f.Locations {
 			if ref.File == "cmd/api/factory.go" && ref.Line == 3 && ref.End >= ref.Line {
 				found = true
+			}
+			if ref.File == "cmd/api/independent.go" {
+				t.Errorf("independent same-package chain attached to mount: %+v", f)
 			}
 			if strings.Contains(ref.File, "unrelated") {
 				t.Errorf("unrelated package attached to mount: %+v", f)
