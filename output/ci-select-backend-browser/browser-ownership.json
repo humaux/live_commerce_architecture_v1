@@ -765,7 +765,7 @@
     "tests/storefront/claim-checkout.mjs": "5679a86a4e6d043664d60fbf32e165141b310c02fa99daa27ea04f6198259f1e",
     "tests/storefront/cod-footer.spec.ts": "a6fc969d7189f98edd2c1fb90deb9175aafe5150524046de79a0b69f34fc761b",
     "tests/storefront/collector-buyer.mjs": "6d4dc2824450901bfd2cf9389452ff3013a767ce944023994108b1f54045a7cf",
-    "tests/storefront/contact-native.spec.ts": "ae3fe240431938ce6b6b4dee3f7c29368d31885433b6f621a9bdcde6c2830f4c",
+    "tests/storefront/contact-native.spec.ts": "358bebf777bf57b22a3813e187a375d4b0a9e13625ce993ae69a0a9c9bfa98b8",
     "tests/storefront/cvs-buyer.mjs": "4b8413485bf78e9dc3f4012ebd03caa0187280c15548f31c4c1426074deaf1f7",
     "tests/storefront/cvs-pap-only.mjs": "5cfb53e5dee4fb24445919f5444bfd0540a2eaea25123ff7475a95a5d9e10e14",
     "tests/storefront/cvs-picker.mjs": "53a2935ebb107c1495390c308f5e827836fd820eb9ff7928d2acf383ef6aa905",

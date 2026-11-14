@@ -131,6 +131,9 @@ export async function checkContactNative({ browser, origin, evidence }: { browse
       const height = width === 1440 ? 900 : 844;
       const viewport = `${width}x${height}`;
       const isMobile = width === 390;
+      const capture = async (page: Page, state: string) => {
+        if (locale === "zh-TW") await page.screenshot({ path: path.join(evidence, `contact-zh-TW-${viewport}-${state}.png`) });
+      };
       const f = (desktop: string, mobile: string) => isMobile ? mobile : desktop;
       const context = await createContext(ctxOpts({ ignoreHTTPSErrors: true, viewport: { width, height }, locale }));
       const step = async (frame: string, route: string, control: string, operation: string, expected: string, perform: () => Promise<void>) => {
@@ -166,10 +169,12 @@ export async function checkContactNative({ browser, origin, evidence }: { browse
                 await contactPage.getByTestId("contact-name").fill(synthetic.name);
                 await contactPage.getByTestId("contact-email").fill(synthetic.email);
                 await contactPage.getByTestId("contact-message").fill(synthetic.message);
+                await capture(contactPage, "form-filled");
                 await contactPage.getByTestId("contact-next").click();
                 await expect(contactPage.getByTestId("contact-confirm")).toBeVisible({ timeout: T });
                 assert.equal(attempts.length, 0, "next must not send the message");
                 for (const value of Object.values(synthetic)) await expect(contactPage.getByTestId("contact-confirm")).toContainText(value);
+                await capture(contactPage, "confirm");
                 const otherTab = await context.newPage();
                 await otherTab.goto(`${origin}${route}`);
                 await contactPage.getByTestId("contact-send").click();
@@ -187,11 +192,13 @@ export async function checkContactNative({ browser, origin, evidence }: { browse
                   assert(!contactPage.url().includes(value), "contact value leaked into URL");
                   assert(!storage.includes(value), "contact value leaked into browser storage");
                 }
+                await capture(contactPage, "unknown-recoverable");
                 reply = "received";
                 await contactPage.getByTestId("contact-recover").click();
                 await expect(contactPage.getByTestId("contact-sent")).toBeVisible({ timeout: T });
                 assert.equal(attempts.length, 2, "one explicit recovery request required");
                 assert.deepEqual(attempts[1], attempts[0], "recovery must use the same key and exact body");
+                await capture(contactPage, "sent-recovered");
                 await contactPage.reload();
                 await expect(contactPage.getByTestId("contact-sent")).toBeVisible({ timeout: T });
                 assert.equal(attempts.length, 2, "refresh must not resend");
@@ -220,6 +227,7 @@ export async function checkContactNative({ browser, origin, evidence }: { browse
                   assert.equal(attempts.length, start + 1, "refresh must not resend an uncertain submission");
                   const storage = await fresh.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }));
                   for (const value of Object.values(synthetic)) assert(!storage.includes(value), "contact value leaked into browser storage");
+                  await capture(fresh, "unknown-after-refresh");
                 } finally {
                   await fresh.unroute("**/api/buyer/contact-messages", intercept);
                   await fresh.close();
@@ -252,6 +260,7 @@ export async function checkContactNative({ browser, origin, evidence }: { browse
                   for (const value of ["Fixture Contact", "fixture@example.invalid", "Fixture inquiry only"]) await expect(buyer.getByTestId("contact-summary")).toContainText(value);
                 }
                 assert.equal(posts, 1, "a refusal must not trigger another POST");
+                await capture(buyer, `refused-${status}`);
               } finally { await isolated.close(); }
             });
           }
