@@ -36,50 +36,106 @@ func (s *goScanner) opaque(fn *goFunc) {
 			}
 		}
 	}
-	// Follow local dispatch helpers, including method Handler -> serveWebhook adapters.
-	seen := map[string]bool{}
-	queue := []*goFunc{fn}
+	// Follow references with their owning package. Function identity, not a bare
+	// name, breaks cycles without losing same-name helpers in imported packages.
+	owner, file := s.Package, s.File
+	defer func() { s.Package, s.File = owner, file }()
+	type dependency struct {
+		pkg *goPackage
+		fn  *goFunc
+	}
+	seen := map[*goFunc]bool{}
+	seenGlobals := map[ast.Node]bool{}
+	queue := []dependency{{owner, fn}}
 	dispatch := false
 	refs := []location{s.loc(fn.AST)}
-	for len(queue) > 0 {
-		current := queue[0]
-		queue = queue[1:]
-		if seen[current.Key] {
-			continue
-		}
-		seen[current.Key] = true
-		s.File = current.File
-		// Every visited dependency can change the returned handler, even without
-		// its own route literal. Retain its whole span; never subtract factory code.
-		refs = goRefs(refs, []location{s.loc(current.AST)})
-		ast.Inspect(current.AST.Body, func(n ast.Node) bool {
-			if sel, ok := n.(*ast.SelectorExpr); ok && (sel.Sel.Name == "Path" || sel.Sel.Name == "Method" || strings.HasPrefix(sel.Sel.Name, "Method")) {
-				dispatch = true
-			}
-			if id, ok := n.(*ast.Ident); ok {
-				for _, callee := range s.Package.ByName[id.Name] {
-					queue = append(queue, callee)
+	var inspect func(ast.Node, *goPackage, *goFile)
+	inspect = func(node ast.Node, pkg *goPackage, source *goFile) {
+		ast.Inspect(node, func(n ast.Node) bool {
+			if sel, ok := n.(*ast.SelectorExpr); ok {
+				if sel.Sel.Name == "Path" || sel.Sel.Name == "Method" || strings.HasPrefix(sel.Sel.Name, "Method") {
+					dispatch = true
 				}
-				v := s.Package.Globals.get(id.Name)
-				for _, text := range v.Text {
-					if strings.HasPrefix(text, "/") {
-						refs = goRefs(refs, v.Refs)
-
+				if id, ok := sel.X.(*ast.Ident); ok && id.Obj == nil && source.ImportPaths[id.Name] != "" {
+					if child := s.Packages[source.ImportPaths[id.Name]]; child != nil {
+						if callee := child.Named[sel.Sel.Name]; callee != nil {
+							refs = goRefs(refs, []location{source.ImportRefs[id.Name]})
+							queue = append(queue, dependency{child, callee})
+						}
+					}
+					return false // selector members are not unqualified package references
+				}
+				// Resolve syntactically typed receivers; never treat an arbitrary
+				// selector member as every same-name function in this package.
+				var receiver ast.Expr
+				if id, ok := sel.X.(*ast.Ident); ok && id.Obj != nil {
+					if field, ok := id.Obj.Decl.(*ast.Field); ok {
+						receiver = field.Type
 					}
 				}
-			}
-			if c, ok := n.(*ast.CallExpr); ok {
-				name := goCallName(c.Fun)
-				if sel, ok := c.Fun.(*ast.SelectorExpr); ok {
-					name = sel.Sel.Name
+				if literal, ok := sel.X.(*ast.CompositeLit); ok {
+					receiver = literal.Type
 				}
-				for _, callee := range s.Package.ByName[name] {
-					queue = append(queue, callee)
+				if pointer, ok := receiver.(*ast.StarExpr); ok {
+					receiver = pointer.X
+				}
+				if typ, ok := receiver.(*ast.Ident); ok {
+					for _, callee := range pkg.ByName[sel.Sel.Name] {
+						if goDispatcherReceiver(callee) == typ.Name {
+							queue = append(queue, dependency{pkg, callee})
+						}
+					}
+				}
+				inspect(sel.X, pkg, source)
+				return false
+			}
+			if id, ok := n.(*ast.Ident); ok {
+				if id.Obj != nil && source.AST.Scope.Lookup(id.Name) != id.Obj {
+					return true
+				}
+				if callee := pkg.Named[id.Name]; callee != nil {
+					queue = append(queue, dependency{pkg, callee})
+				}
+				// Read declarations directly: imported package evaluation order must not
+				// determine provenance, and non-path/unknown values can affect a handler.
+				for _, f := range pkg.Files {
+					for _, decl := range f.AST.Decls {
+						gd, ok := decl.(*ast.GenDecl)
+						if !ok || (gd.Tok != token.VAR && gd.Tok != token.CONST) {
+							continue
+						}
+						for _, spec := range gd.Specs {
+							v, ok := spec.(*ast.ValueSpec)
+							if !ok {
+								continue
+							}
+							for _, name := range v.Names {
+								if name.Name == id.Name && !seenGlobals[v] {
+									seenGlobals[v] = true
+									refs = goRefs(refs, []location{s.loc(v)})
+									for _, value := range v.Values {
+										inspect(value, pkg, f)
+									}
+								}
+							}
+						}
+					}
 				}
 			}
 			return true
 		})
 	}
+	for len(queue) > 0 {
+		current := queue[0]
+		queue = queue[1:]
+		if seen[current.fn] {
+			continue
+		}
+		seen[current.fn] = true
+		refs = goRefs(refs, []location{s.loc(current.fn.AST)})
+		inspect(current.fn.AST.Body, current.pkg, current.fn.File)
+	}
+	s.Package, s.File = owner, fn.File
 	// Only actual custom mount guards provide coverage; provider API strings in
 	// underlying handlers cannot define this API's served namespace.
 	if !dispatch {
@@ -146,14 +202,16 @@ func (s *goScanner) mountGuards(fn *goFunc) []finding {
 	return goDedupFindings(out)
 }
 
-// Associate mount guards with opaque dispatchers in the same assembly file and
+// Associate mount guards with opaque dispatchers in the same assembly package and
 // packages that file imports, so changes inside the child router touch its coverage.
 func goBindOpaqueMountSpans(packages map[string]*goPackage, root string, set *token.FileSet, out *inventory) {
 	imports := map[string][]string{}
+	owners := map[string]*goPackage{}
 	for _, p := range packages {
 		for _, file := range p.Files {
 			rel, _ := filepath.Rel(root, set.Position(file.AST.Pos()).Filename)
 			rel = filepath.ToSlash(rel)
+			owners[rel] = p
 			for _, im := range file.AST.Imports {
 				path, _ := strconv.Unquote(im.Path.Value)
 				if i := strings.Index(path, "/internal/"); i >= 0 {
@@ -176,9 +234,9 @@ func goBindOpaqueMountSpans(packages map[string]*goPackage, root string, set *to
 				continue
 			}
 			file := child.Locations[0].File
-			belongs := file == assembly
+			belongs := owners[file] != nil && owners[file] == owners[assembly]
 			for _, pkg := range imports[assembly] {
-				if strings.HasPrefix(file, pkg) {
+				if filepath.ToSlash(filepath.Dir(file))+"/" == pkg {
 					belongs = true
 				}
 			}

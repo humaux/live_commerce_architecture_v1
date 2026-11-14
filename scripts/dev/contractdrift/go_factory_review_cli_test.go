@@ -17,9 +17,9 @@ func trunkFactoryExactTouched(t *testing.T, call func(string, ...string) (int, s
 	t.Logf("STRICT_CANDIDATE exit=%d\n%s", code, out)
 	want := strings.Join([]string{
 		"INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:23 methodless registration; child paths remain absolute unless StripPrefix is explicit",
-		"ERROR (TOUCHED) UNRESOLVED   cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go handler dispatch buildBuyer; route/method coverage is unknown",
-		"ERROR (TOUCHED) UNRESOLVED EXACT " + exact + " cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43, cmd/api/main.go:45 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown",
-		"ERROR (TOUCHED) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go methodless mount; child route identity is unproven",
+		"ERROR (TOUCHED) UNRESOLVED   cmd/api/main.go:9, cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go handler dispatch buildBuyer; route/method coverage is unknown",
+		"ERROR (TOUCHED) UNRESOLVED EXACT " + exact + " cmd/api/main.go:9, cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43, cmd/api/main.go:45 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown",
+		"ERROR (TOUCHED) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:9, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go methodless mount; child route identity is unproven",
 		"SUMMARY routes go=1 contract=1 bff=1; errors=3 warnings=0 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3",
 	}, "\n") + "\n"
 	if code != 1 || out != want {
