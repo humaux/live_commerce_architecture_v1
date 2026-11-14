@@ -3,7 +3,7 @@
 // Purpose: Verify persisted catalog facts after the real admin catalog/product-editor browser workflow.
 // Depends on: isolated PostgreSQL foundation fixture, production Next/Go stack and Playwright merchant clicks, parity-data-ops.spec.ts.
 // Used by: --browser-catalog-core and --browser-product-editor gates; all fixture writes remain caller-owned.
-// Invariants: C6 registration is additive; existing catalog/product-editor assertions and readbacks remain intact.
+// Invariants: parent alone logs validated ledger location after both children complete successfully; C6 registration is additive; existing catalog/product-editor assertions and readbacks remain intact.
 package foundation_test
 
 // CC12 (contracts/storefront-v2.md section A acceptance CC12): the catalog v2 admin pages in real Chromium, desktop and 390 px, zh-TW and en.
@@ -124,13 +124,10 @@ func ccbStartAdmin(t *testing.T, ctx context.Context, f *testFixture, principal,
 
 func TestBrowserCatalogCore(t *testing.T) {
 	ccbRequire(t)
-	if os.Getenv("PRODUCT_EDITOR_ACCEPTANCE") == "1" {
-		t.Run("PE12-17-TWD", func(t *testing.T) { runCatalogCoreBrowser(t, true) })
-	}
-	t.Run("CC12-frozen", func(t *testing.T) { runCatalogCoreBrowser(t, false) })
+	runCatalogCoreBrowserChildren(t, os.Getenv("PRODUCT_EDITOR_ACCEPTANCE") == "1", runCatalogCoreBrowser)
 }
 
-func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
+func runCatalogCoreBrowser(t *testing.T, productEditor bool) *catalogCoreBrowserFacts {
 	ctx, cancel := context.WithTimeout(context.Background(), 24*time.Minute)
 	defer cancel()
 	t04Fixture(t)
@@ -225,7 +222,6 @@ func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
 		if err := os.WriteFile(filepath.Join(evidence, "matrix-owner-proof.json"), append(proofJSON, '\n'), 0600); err != nil {
 			t.Fatal(err)
 		}
-		t.Logf("PASS mobile matrix click ledger: %d declared unique PASS identities; evidence=%s", len(productEditorMatrixLedgerExpected()), ledgerPath)
 		prefix := "pe" + tag
 		// Preserve the original exact four-product fence. Exclude only the
 		// three explicitly named mobile matrices and three axis-removal
@@ -319,7 +315,7 @@ func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
 			}
 		}
 		t.Logf("PASS PE12-17: TWD tenant, original 4 products plus 3 mobile matrices and 3 real axis-removal products with exact archived/replacement SKU readback; evidence=%s", evidence)
-		return
+		return &catalogCoreBrowserFacts{ledgerPath: ledgerPath, identities: len(productEditorMatrixLedgerExpected())}
 	}
 
 	// ---- PG facts after the browser run: the UI drove real, audited, versioned commands ----
@@ -365,6 +361,7 @@ func runCatalogCoreBrowser(t *testing.T, productEditor bool) {
 	cbbrShots(t, evidence, 16, "en", "zh-TW")
 	t.Logf("CC12 BROWSER+REAL_PG: admin catalog v2 pages passed (desktop+390px, en+zh-TW); screenshots hashed; evidence=%s", evidence)
 	ccbMultiWarehousePhase(t, ctx, f, stack, env, tenant, store)
+	return nil
 }
 
 // ccbMultiWarehousePhase (#475 review P1): the signed inventory toolbar keeps the warehouse selector, the active/archived
