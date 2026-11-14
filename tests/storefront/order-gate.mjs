@@ -482,9 +482,9 @@ async function aftersalesPhase() {
     const before=await readFact(world),c=returnRequestCopy[locale];
     const ack=p.waitForResponse(r=>requestIs(r,`orders/${world.order}/return-requests`,"POST"));
     const get=p.waitForResponse(r=>r.request().method()==="GET"&&/\/api\/buyer\/return-requests\/[a-f0-9-]{36}$/.test(new URL(r.url()).pathname));
-    await act(caseID,"submit request",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),()=>expect(p.getByTestId("return-status")).toHaveAttribute("data-status","requested"));
-    const response=await ack;assert.equal(response.status(),201);const item=await response.json();
-    const persisted=await get;assert.equal(persisted.status(),200);assert.equal((await persisted.json()).id,item.id);
+    const [response,persisted]=await Promise.all([ack,get,act(caseID,"submit request",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),()=>expect(p.getByTestId("return-status")).toHaveAttribute("data-status","requested"))]);
+    assert.equal(response.status(),201);const item=await response.json();
+    assert.equal(persisted.status(),200);assert.equal((await persisted.json()).id,item.id);
     await expect(p).toHaveURL(`${host}/${locale}/orders/${world.order}/return?request=${item.id}`);
     await expect(p.getByRole("heading",{level:1})).toContainText(item.number);
     const writes=postCount();await p.reload();await expect(p.getByTestId("return-status")).toHaveAttribute("data-status","requested");assert.equal(postCount(),writes);
@@ -508,8 +508,8 @@ async function aftersalesPhase() {
     await act(caseID,"note",()=>p.getByRole("textbox").fill("Synthetic aftersales note 😀"),()=>expect(p.getByRole("textbox")).toHaveValue("Synthetic aftersales note 😀"));
     if(index===0) {
       await act(caseID,"excess quantity input",()=>p.getByRole("spinbutton").fill("3"),()=>expect(p.getByRole("spinbutton")).toHaveValue("3"));const denied=p.waitForResponse(r=>requestIs(r,`orders/${world.order}/return-requests`,"POST"));
-      await act(caseID,"excess quantity refusal",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),()=>expect(p.getByRole("alert")).toHaveText(c.errors.exceeds_shipped));
-      assert.equal((await denied).status(),422);assert.equal((await readFact(world)).requests,0);
+      const [deniedResponse]=await Promise.all([denied,act(caseID,"excess quantity refusal",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),()=>expect(p.getByTestId("return-page").getByRole("alert")).toHaveText(c.errors.exceeds_shipped))]);
+      assert.equal(deniedResponse.status(),422);assert.equal((await readFact(world)).requests,0);
     }
     await act(caseID,"positive quantity",()=>p.getByRole("spinbutton").fill("1"),()=>expect(p.getByRole("spinbutton")).toHaveValue("1"));
     const item=await submit(p,world,locale,caseID);requestIDs.push(item.id);const before=await readFact(world);
@@ -519,8 +519,8 @@ async function aftersalesPhase() {
     await act(caseID,"cancel withdrawal",()=>p.getByRole("button",{name:c.cancel,exact:true}).click(),()=>expect(p.getByRole("dialog")).not.toBeVisible());
     await act(caseID,"open final confirmation",()=>p.getByRole("button",{name:c.withdraw,exact:true}).click(),()=>expect(p.getByRole("dialog")).toBeVisible());
     const withdraw=p.waitForResponse(r=>requestIs(r,`return-requests/${item.id}/withdraw`,"POST"));
-    await act(caseID,"confirm withdrawal",()=>p.getByRole("button",{name:c.confirm,exact:true}).click(),()=>expect(p.getByTestId("return-status")).toHaveAttribute("data-status","withdrawn"));
-    assert.equal((await withdraw).status(),200);await p.reload();await expect(p.getByTestId("return-status")).toHaveAttribute("data-status","withdrawn");
+    const [withdrawResponse]=await Promise.all([withdraw,act(caseID,"confirm withdrawal",()=>p.getByRole("button",{name:c.confirm,exact:true}).click(),()=>expect(p.getByTestId("return-status")).toHaveAttribute("data-status","withdrawn"))]);
+    assert.equal(withdrawResponse.status(),200);await p.reload();await expect(p.getByTestId("return-status")).toHaveAttribute("data-status","withdrawn");
     const after=await readFact(world);assert.equal(after.requests,before.requests);assert.equal(after.receipts,before.receipts+1);assert.equal(after.ledger,before.ledger);assert.equal(after.refunds,before.refunds);
     await apply(p,world,locale,caseID,true);const approved=await submit(p,world,locale,caseID);
     await terminal(p,approved,locale,"approve","approved",caseID);
@@ -541,8 +541,8 @@ async function aftersalesPhase() {
     await apply(p,world,"en",caseID);const fault=arm(`orders/${world.order}/return-requests`,{method:"POST",drop:true});
     await act(caseID,"lost create ACK",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),()=>expect(p.getByText(c.unknown,{exact:true})).toBeVisible());
     assert.equal(await fault.result.promise,201,"drop occurs only after real upstream COMMIT/201");assert.equal((await readFact(world)).requests,1);
-    const writes=postCount(),listRead=p.waitForResponse(r=>requestIs(r,"return-requests","GET"));await act(caseID,"GET-only check",()=>p.getByRole("button",{name:c.check,exact:true}).click(),()=>expect(p.getByRole("heading",{name:c.choose,exact:true})).toBeVisible());
-    const records=await listRead;assert.equal(records.status(),200);const item=(await records.json()).items.find(x=>x.order_id===world.order);assert(item);
+    const writes=postCount(),listRead=p.waitForResponse(r=>requestIs(r,"return-requests","GET"));const [records]=await Promise.all([listRead,act(caseID,"GET-only check",()=>p.getByRole("button",{name:c.check,exact:true}).click(),()=>expect(p.getByRole("heading",{name:c.choose,exact:true})).toBeVisible())]);
+    assert.equal(records.status(),200);const item=(await records.json()).items.find(x=>x.order_id===world.order);assert(item);
     await act(caseID,"read saved exact detail",()=>p.getByRole("button",{name:item.number,exact:true}).click(),()=>expect(p.getByTestId("return-status")).toHaveAttribute("data-status","requested"));
     await expect(p.getByRole("button",{name:c.withdraw,exact:true})).toBeDisabled();assert.equal(postCount(),writes);assert.equal(new URL(p.url()).searchParams.has("request"),false);
     const write=calls.slice(start).filter(x=>x.path===`/api/buyer/orders/${world.order}/return-requests`&&x.method==="POST");assert.equal(write.length,1);assert.match(write[0].key,/^[A-Za-z0-9_.:-]{8,128}$/);
@@ -553,13 +553,13 @@ async function aftersalesPhase() {
     await apply(p,world,"en",caseID);const item=await submit(p,world,"en",caseID);
     await act(caseID,"open stale confirmation",()=>p.getByRole("button",{name:c.withdraw,exact:true}).click(),()=>expect(p.getByRole("dialog")).toBeVisible());await control(`aftersales/decision/${item.id}/reject`,"POST");
     const refusal=p.waitForResponse(r=>requestIs(r,`return-requests/${item.id}/withdraw`,"POST"));
-    await act(caseID,"stale confirm",()=>p.getByRole("button",{name:c.confirm,exact:true}).click(),()=>expect(p.getByTestId("return-status")).toHaveAttribute("data-status","rejected"));
-    assert.equal((await refusal).status(),409);await p.reload();await expect(p.getByTestId("return-status")).toHaveAttribute("data-status","rejected");await expect(p.getByRole("button",{name:c.withdraw,exact:true})).toHaveCount(0);childTests.push(caseID);await context.close();
+    const [staleResponse]=await Promise.all([refusal,act(caseID,"stale confirm",()=>p.getByRole("button",{name:c.confirm,exact:true}).click(),()=>expect(p.getByTestId("return-status")).toHaveAttribute("data-status","rejected"))]);
+    assert.equal(staleResponse.status(),409);await p.reload();await expect(p.getByTestId("return-status")).toHaveAttribute("data-status","rejected");await expect(p.getByRole("button",{name:c.withdraw,exact:true})).toHaveCount(0);childTests.push(caseID);await context.close();
   }
   {
     const world=worlds[8],caseID="AS04 expired window",{p,c:context}=await open(world),c=returnRequestCopy.en;
     await apply(p,world,"en",caseID);const refusal=p.waitForResponse(r=>requestIs(r,`orders/${world.order}/return-requests`,"POST"));
-    await act(caseID,"expired submit",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),()=>expect(p.getByRole("alert")).toHaveText(c.errors.window_closed));assert.equal((await refusal).status(),409);assert.equal((await readFact(world)).requests,0);childTests.push(caseID);await context.close();
+    const [windowResponse]=await Promise.all([refusal,act(caseID,"expired submit",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),()=>expect(p.getByTestId("return-page").getByRole("alert")).toHaveText(c.errors.window_closed))]);assert.equal(windowResponse.status(),409);assert.equal((await readFact(world)).requests,0);childTests.push(caseID);await context.close();
   }
   {
     const caseID="AS05 owner order view-only denial";
@@ -570,7 +570,7 @@ async function aftersalesPhase() {
     // Both objects are owned: only the UI's validated order binding must reject this cross-order projection.
     const {p,c}=await open({...worlds[0],order:other_owned_order},"en",false,worlds[0].token,`/return?request=${requestIDs[0]}`);
     await expect(p.locator(".sf-state")).toBeVisible();await expect(p.getByTestId("return-status")).toHaveCount(0);
-    const reads=postCount(),retry=p.waitForResponse(r=>requestIs(r,`return-requests/${requestIDs[0]}`,"GET"));await act(caseID,"mismatched order read recovery",()=>p.locator(".sf-state button").click(),()=>expect(p.locator(".sf-state")).toBeVisible());assert.equal((await retry).status(),200);await expect(p.getByTestId("return-status")).toHaveCount(0);assert.equal(postCount(),reads);await c.close();
+    const reads=postCount(),retry=p.waitForResponse(r=>requestIs(r,`return-requests/${requestIDs[0]}`,"GET"));const [retryResponse]=await Promise.all([retry,act(caseID,"mismatched order read recovery",()=>p.locator(".sf-state button").click(),()=>expect(p.locator(".sf-state")).toBeVisible())]);assert.equal(retryResponse.status(),200);await expect(p.getByTestId("return-status")).toHaveCount(0);assert.equal(postCount(),reads);await c.close();
     childTests.push(caseID);
   }
   assert.equal(postCount(),35);assert.equal(childTests.length,10);
