@@ -1,3 +1,8 @@
+// Purpose: open and validate least-privilege media worker, executor and recovery pools.
+// Depends on: pgxpool, platform pool admission helpers and PostgreSQL role/function catalogs.
+// Used by: media worker/executor/recovery runtime wiring and foundation admission tests.
+// Invariants: retain role isolation and exact ABI checks; reject unexpected executable grants.
+
 package platform
 
 import (
@@ -88,7 +93,16 @@ func validateMediaAuthority(ctx context.Context, pool *pgxpool.Pool, role string
      'register_prepared_media','revoke_prepared_media','begin_media_recovery_episode',
      'claim_recovery_observation','record_recovery_observation','finish_recovery_observation',
      'read_media_recovery_episode','witness_media_recovery_episode',
-     'timeout_media_recovery_episode','media_recovery_ready')
+     'timeout_media_recovery_episode','media_recovery_ready',
+     'begin_media_recovery_episode_with_input','claim_media_recovery_observation_with_input',
+     'record_browser_input_recovery_observation','record_media_recovery_observation_with_input',
+     'finish_media_recovery_observation_with_input','read_media_recovery_episode_with_input',
+     'witness_media_recovery_episode_with_input','media_browser_input_recovery_ready',
+     'guard_media_input_recovery_receipt','assert_legacy_media_recovery_scope',
+     'begin_media_recovery_episode_kernel','claim_recovery_observation_kernel',
+     'record_recovery_observation_kernel','finish_recovery_observation_kernel',
+     'read_media_recovery_episode_kernel','witness_media_recovery_episode_kernel',
+     'qualify_mixed_media_recovery_egress')
 	), allowed AS (
 	 SELECT p.oid FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace
 	 WHERE n.nspname='live' AND (
@@ -141,6 +155,19 @@ func validateMediaAuthority(ctx context.Context, pool *pgxpool.Pool, role string
 	  pg_catalog.to_regprocedure('live.timeout_media_recovery_episode(uuid,bigint)'),
 	  pg_catalog.to_regprocedure('live.media_recovery_ready()')
 	 ])::oid AS oid
+	), mixed_optional AS (
+	 -- These exact OIDs are optional on an older database. NULL entries are
+	 -- filtered at the guard below so an absent ABI cannot mask extra grants.
+	 SELECT unnest(ARRAY[
+	  pg_catalog.to_regprocedure('live.begin_media_recovery_episode_with_input(uuid,bigint,integer,boolean)'),
+	  pg_catalog.to_regprocedure('live.claim_media_recovery_observation_with_input(uuid,uuid,bigint,bytea)'),
+	  pg_catalog.to_regprocedure('live.record_browser_input_recovery_observation(uuid,uuid,bigint,bytea,text,text,text,text)'),
+	  pg_catalog.to_regprocedure('live.record_media_recovery_observation_with_input(uuid,uuid,bigint,bytea,text,text,text,text,bigint,bigint,bigint)'),
+	  pg_catalog.to_regprocedure('live.finish_media_recovery_observation_with_input(uuid,uuid,bigint,bytea,text)'),
+	  pg_catalog.to_regprocedure('live.read_media_recovery_episode_with_input(uuid)'),
+	  pg_catalog.to_regprocedure('live.witness_media_recovery_episode_with_input(uuid,uuid,uuid,uuid,bigint)'),
+	  pg_catalog.to_regprocedure('live.media_browser_input_recovery_ready()')
+	 ])::oid AS oid
 	)
 	SELECT EXISTS (SELECT 1 FROM reachable r CROSS JOIN pg_catalog.pg_class c
 	 JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
@@ -181,6 +208,7 @@ func validateMediaAuthority(ctx context.Context, pool *pgxpool.Pool, role string
 	  -- IN/NOT logic cannot hide an unrelated executable function from this guard.
 	  AND NOT ($1='media_executor' AND p.oid IN (SELECT oid FROM allowed WHERE oid IS NOT NULL))
 	  AND NOT ($1='media_recovery' AND p.oid IN (SELECT oid FROM recovery_allowed WHERE oid IS NOT NULL))
+	  AND NOT ($1='media_recovery' AND p.oid IN (SELECT oid FROM mixed_optional WHERE oid IS NOT NULL))
 	  AND pg_catalog.has_function_privilege(r.oid,p.oid,'EXECUTE'))`, role).Scan(&forbidden)
 	if err != nil || forbidden {
 		return errMediaDatabase

@@ -1,10 +1,12 @@
+// Purpose: Bind and validate browser-input project maps.
+// Depends on: Command parsing and the LiveKit integration.
+// Used by: Browser-input processing and the mixed recovery observer.
+// Invariants: Only validated MOCK project/version bindings are retained; construction performs no I/O.
+
 package live
 
 import (
-	"net"
 	"net/http"
-	"net/url"
-	"strconv"
 
 	"livecommerce/internal/command"
 	"livecommerce/internal/integrations/livekit"
@@ -93,36 +95,5 @@ func (r *BrowserInputRuntime) MintPublisher(grant MediaInputGrant) (string, live
 }
 
 func canonicalBrowserInputURL(raw string) bool {
-	if len(raw) == 0 || len(raw) > 256 {
-		return false
-	}
-	for i := range raw {
-		if raw[i] <= ' ' || raw[i] >= 0x7f || raw[i] == '%' || raw[i] == '\\' {
-			return false
-		}
-	}
-	u, err := url.Parse(raw)
-	if err != nil || (u.Scheme != "ws" && u.Scheme != "wss") || u.User != nil ||
-		u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || u.RawFragment != "" ||
-		u.Opaque != "" || u.RawPath != "" || (u.Path != "" && u.Path != "/") {
-		return false
-	}
-	hostname := u.Hostname()
-	if hostname != "127.0.0.1" && hostname != "::1" {
-		return false
-	}
-	portText := u.Port()
-	port, err := strconv.Atoi(portText)
-	if err != nil || port < 1 || port > 65535 || strconv.Itoa(port) != portText {
-		return false
-	}
-	host := net.JoinHostPort(hostname, portText)
-	if u.Host != host {
-		return false
-	}
-	expected := u.Scheme + "://" + host
-	if u.Path == "/" {
-		expected += "/"
-	}
-	return raw == expected
+	return livekit.IsCanonicalBrowserInputURL(raw)
 }

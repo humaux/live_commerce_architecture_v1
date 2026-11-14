@@ -258,6 +258,23 @@ jobs:
           node-version: "24"
           package-manager-cache: false # v5 auto-caches from package.json packageManager before pnpm exists; keep v4 behaviour
       - uses: ./.github/actions/pnpm # pnpm from the cached Corepack home, no per-run registry download (#107)
+      # Native PROCESS cases are also selected by full foundation and shard jobs.
+      - name: Pinned local SFU for native PROCESS tests
+        if: startsWith(matrix.mode, 'focused:') || (startsWith(matrix.mode, 'shard:') && matrix.mode != 'shard:unit') || matrix.mode == 'foundation'
+        timeout-minutes: 3
+        run: |
+          set -euo pipefail
+          test "$(uname -sm)" = 'Linux x86_64'
+          fixture="$RUNNER_TEMP/native-process-sfu"
+          mkdir -p "$fixture"
+          curl --fail --location --proto '=https' --tlsv1.2 --max-time 120 \
+            https://github.com/livekit/livekit/releases/download/v1.13.7/livekit_1.13.7_linux_amd64.tar.gz \
+            -o "$fixture/livekit.tar.gz"
+          echo "6634aeeb2fb1366b6723708ae4320b9d5408106a4c63457c5e845ae3979c90e2  $fixture/livekit.tar.gz" | sha256sum --check --strict
+          tar -xzf "$fixture/livekit.tar.gz" -C "$fixture" livekit-server
+          rm "$fixture/livekit.tar.gz"
+          echo "COMMERCE_R04_LIVEKIT_BINARY=$fixture/livekit-server" >> "$GITHUB_ENV"
+          echo "COMMERCE_R04_LIVEKIT_BINARY_SHA256=$(sha256sum "$fixture/livekit-server" | cut -d' ' -f1)" >> "$GITHUB_ENV"
       - name: Node dependencies (frozen lockfile)
         run: pnpm install --frozen-lockfile --ignore-scripts
       # CI-SPEED: this run's build-once artifact. Never for a calibration/fault-injection dispatch (extra_env may change what a build must contain).
@@ -439,6 +456,9 @@ jobs:
       # MATRIX-RECEIPT (#128): ONE shared step for every mode, after the gate (always, so a failed gate still reports FAIL). test_count is counted
       # from this job's own gate log (go test -v PASS/FAIL lines + node --test summary) and its per-step go test -json logs (*.jsonl, e.g. --browser-webkit),
       # never a static count; the `receipts` job checks it against the plan.
+      - name: Remove native SFU fixture
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/native-process-sfu"
       - name: Run receipt
         if: always() && !matrix.bundle
         env:

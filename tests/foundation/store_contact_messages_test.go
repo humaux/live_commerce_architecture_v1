@@ -381,12 +381,20 @@ func contactDrain(t *testing.T, w *notify.Worker) {
 	t.Helper()
 	// The shared CI database may contain other tests' pending notifications. Drain with MOCK only;
 	// assertions below select this fixture's unique recipient, without deleting anyone else's rows.
+	pending := func() int64 {
+		var count int64
+		if err := fixture(t).owner.QueryRow(context.Background(), `SELECT count(*) FROM notify.outbox WHERE state='PENDING'`).Scan(&count); err != nil {
+			t.Fatal("contact outbox pending count failed")
+		}
+		return count
+	}
 	for range 40 {
+		before := pending()
 		n, err := w.Once(context.Background())
 		if err != nil {
 			t.Fatal("contact outbox worker failed")
 		}
-		if n == 0 {
+		if n == 0 && pending() >= before {
 			return
 		}
 	}
@@ -408,6 +416,14 @@ func TestStoreContactNotificationOutboxAndNoSensitiveLogs(t *testing.T) {
 	in := contactInput()
 	in["email"] = "buyer-" + e.tag + "@buyers.example.test"
 	in["message"] = "Synthetic contact message " + e.tag + " <b>literal text</b>"
+	// An older claim window can be consumed entirely by synthetic rows with no order.
+	skippedOrders := make([]string, 20)
+	for i := range skippedOrders {
+		skippedOrders[i] = randomUUID()
+		if _, err := e.p.f.owner.Exec(context.Background(), `INSERT INTO notify.outbox(tenant_id,store_id,order_id,kind,created_at) VALUES($1,$2,$3,'placed',clock_timestamp()-interval '1 hour')`, e.tenant(), e.store(), skippedOrders[i]); err != nil {
+			t.Fatal("contact skipped-window fixture setup failed")
+		}
+	}
 	first := contactReceived(t, contactSubmit(t, e, key, ip, in))
 	if len(m.messages) != 0 {
 		t.Fatal("submission performed inline SMTP instead of committing outbox intent")
@@ -415,6 +431,15 @@ func TestStoreContactNotificationOutboxAndNoSensitiveLogs(t *testing.T) {
 	contactDrain(t, w)
 	if len(m.to(e)) != 1 {
 		t.Fatal("outbox did not notify only the store profile contact_email")
+	}
+	for _, order := range skippedOrders {
+		var state string
+		if err := e.p.f.owner.QueryRow(context.Background(), `SELECT state||':'||coalesce(skip_reason,'') FROM notify.outbox WHERE tenant_id=$1 AND store_id=$2 AND order_id=$3 AND kind='placed'`, e.tenant(), e.store(), order).Scan(&state); err != nil {
+			t.Fatal("contact skipped-window fixture read failed")
+		}
+		if state != "SKIPPED:no_order" {
+			t.Fatal("contact skipped-window fixture must be SKIPPED:no_order")
+		}
 	}
 	for _, msg := range m.messages {
 		if msg.To == in["email"] {
