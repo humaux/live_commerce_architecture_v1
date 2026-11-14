@@ -4,6 +4,8 @@
 # Used by: developers, CI (gates.yml build job: --prebuild DIR; gate jobs: LC_PREBUILT_DIR), pr-modes.mjs, ci-plan.mjs, check-gates.sh and release-gate.sh.
 # Add a mode in ONE case entry below; browser arms declare lc_browsers for CI dependency selection.
 set -euo pipefail
+# Canonical capture flags never affect ordinary local/CI execution.
+if [[ "${LC_G07_CANONICAL:-}" != 1 ]]; then unset LC_G07_GO_FORMAT LC_G07_GO_LOG; fi
 # Keep the runtime guard before cd, exactly as in the original runner; metadata paths are inert.
 if [[ "${1:-}" != --list && "${1:-}" != --dry-run ]]; then
   if env | grep -qE '=(sk|rk)_live_'; then echo 'refused: live key in test environment' >&2; exit 2; fi
@@ -1451,7 +1453,7 @@ case "$1" in
   mkdir -p output/playwright
     }
     lc_run() {
-  PRODUCT_EDITOR_ACCEPTANCE=1 LC_BROWSER_CATALOG_CORE_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.4 go test -race -tags browser -count=1 -timeout=1700s -run '^TestBrowserCatalogCore$' -v ./tests/foundation
+  PRODUCT_EDITOR_ACCEPTANCE=1 LC_BROWSER_CATALOG_CORE_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.4 go test -race -tags browser -count=1 -timeout=1700s -run '^TestBrowserCatalogCore$' "${LC_G07_GO_FORMAT:--v}" ./tests/foundation | tee "${LC_G07_GO_LOG:-/dev/null}"
   printf 'PASS: PE12-PE17 and review regressions on production admin Next, real Go/isolated PG, followed by mandatory frozen CC12; MOCK identity, no provider or deployment acceptance.\n'
     }
     ;;
@@ -1629,10 +1631,27 @@ case "$1" in
   # tests/foundation groups of scripts/dev/shard-plan.json in parallel (each top-level test in exactly one group, enforced by
   # `node scripts/dev/shard-plan.mjs --check` in check-gates.sh). Unset = the whole suite, unchanged.
   # shellcheck disable=SC2086 # LC_FOUNDATION_PKGS is a deliberate word-split package list
-  GOTOOLCHAIN=go1.27.4 go test -p 1 -race -count=1 -timeout=4500s -v ${LC_FOUNDATION_RUN:+-run "$LC_FOUNDATION_RUN"} ${LC_FOUNDATION_SKIP:+-skip "$LC_FOUNDATION_SKIP"} ${LC_FOUNDATION_PKGS:-./...}
+  GOTOOLCHAIN=go1.27.4 go test -p 1 -race -count=1 -timeout=4500s "${LC_G07_GO_FORMAT:--v}" ${LC_FOUNDATION_RUN:+-run "$LC_FOUNDATION_RUN"} ${LC_FOUNDATION_SKIP:+-skip "$LC_FOUNDATION_SKIP"} ${LC_FOUNDATION_PKGS:-./...} | tee "${LC_G07_GO_LOG:-/dev/null}"
   # go vet ./... checks the whole repository, not the shard's tests: a tests/foundation test-subset shard (RUN/SKIP set) leaves it to the
   # unit shard / the whole-suite run, so a full run vets exactly once instead of once per shard.
-  if [[ -z "${LC_FOUNDATION_RUN:-}${LC_FOUNDATION_SKIP:-}" ]]; then GOTOOLCHAIN=go1.27.4 go vet ./...; fi
+  if [[ -z "${LC_FOUNDATION_RUN:-}${LC_FOUNDATION_SKIP:-}" ]]; then
+    if [[ "${LC_G07_CANONICAL:-}" == 1 ]]; then
+      [[ "$MODE" == shard:unit ]] || return 1
+      printf '{"phase":"start","command":"go vet ./...","at":%s}\n' "$(date +%s)" > "$LC_G07_DIR/vet.jsonl"
+    fi
+    local vet_rc=0
+    GOTOOLCHAIN=go1.27.4 go vet ./... || vet_rc=$?
+    if [[ "${LC_G07_CANONICAL:-}" == 1 ]]; then
+      printf '{"phase":"end","command":"go vet ./...","at":%s,"exit":%s}\n' "$(date +%s)" "$vet_rc" >> "$LC_G07_DIR/vet.jsonl"
+    fi
+    ((vet_rc == 0)) || return "$vet_rc"
+    if [[ "${LC_G07_CANONICAL:-}" == 1 ]]; then
+      local matrix_suite
+      for matrix_suite in ledger execution controls; do
+        command node --test --test-reporter=tap "tests/ci/product-editor-matrix-$matrix_suite.test.mjs" > "$LC_G07_DIR/node-$matrix_suite.tap" 2>&1
+      done
+    fi
+  fi
   printf 'PASS: isolated real PostgreSQL foundation tests; fixture removed at exit.\n'
     }
     ;;

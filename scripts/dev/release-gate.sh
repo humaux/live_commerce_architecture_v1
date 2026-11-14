@@ -19,7 +19,8 @@
 #   summary plus the Playwright matrix-case line, zero of either is FAIL), SANDBOX modes only with the Stripe
 #   TEST key present, then G90 deploy smoke static, G91 deploy smoke full and G99 (no gate rewrote a
 #   tracked .impeccable file, ruling F7; full runs only).
-# Usage: bash scripts/dev/release-gate.sh [--strict] [--list] [--only ID[,ID...]]
+# Usage: bash scripts/dev/release-gate.sh [--strict] [--list] [--only ID[,ID...]] [--shard-evidence DIR]
+# --shard-evidence requires --strict --only G07; verified JSON reuses the existing classifier/catalogue.
 #   --strict  exit 3 when there is no FAIL but at least one UNACCEPTED NOT_RUN (use for release acceptance);
 #             NOT_RUN rows listed in the accepted catalogue below (R1 rulings F11/F12/G3/G4) do not count
 #   --list    print the step ids and exit
@@ -49,10 +50,11 @@
 #   compatible (macOS): no associative arrays, no mapfile.
 set -uo pipefail
 
-strict=0 list=0 only=""
+strict=0 list=0 only="" shard_evidence=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
   --strict) strict=1 ;;
+  --shard-evidence) shift; shard_evidence="${1:-}"; [[ -n "$shard_evidence" ]] || exit 2 ;;
   --list) list=1 ;;
   --only)
     shift
@@ -66,6 +68,7 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
+if [[ -n "$shard_evidence" && ( "$strict" != 1 || "$only" != ",G07," ) ]]; then echo "shard evidence requires --strict --only G07" >&2; exit 2; fi
 cd "$(dirname "$0")/../.." || exit 2
 ROOT=$(pwd)
 export GOTOOLCHAIN="${GOTOOLCHAIN:-go1.27.4}"
@@ -334,16 +337,17 @@ fi
 # line (the tests' statement that a SANDBOX/LIVE/migrator prerequisite is absent); any other skip is
 # "other" and fails the row. Prints "pass fail notrun other"; names go to $2 (NOT_RUN) and $3 (other).
 judge_gotest() { # $1 = go test -v log
-  python3 - "$1" "$2" "$3" <<'PY'
+  python3 - "$1" "$2" "$3" "${4:-verbose}" "${5:-}" <<'PY'
 import json, re, subprocess, sys
 try:
     raw = open(sys.argv[1], "rb").read()
-    out = subprocess.run(["go", "tool", "test2json"], input=raw, capture_output=True, check=True).stdout
+    out = raw if sys.argv[4] == "json" else subprocess.run(["go", "tool", "test2json"], input=raw, capture_output=True, check=True).stdout
 except Exception:
     print(0, 1, 0, 0)  # unreadable log or no converter: never PASS
     sys.exit(0)
 p = f = 0
 msgs, skipped = {}, []
+conditional = open(sys.argv[5]).read() if sys.argv[4] == "json" and sys.argv[5] else ""
 for line in out.decode(errors="replace").splitlines():
     try:
         e = json.loads(line)
@@ -352,6 +356,10 @@ for line in out.decode(errors="replace").splitlines():
     a, t = e.get("Action"), e.get("Test")
     if not t:
         continue
+    key = e.get("Package", "") + "\t" + t if sys.argv[4] == "json" else t
+    if key == conditional:
+        continue  # separately verified historical SKIP, never counted as PASS
+    t = key
     if a == "output":
         msgs[t] = msgs.get(t, "") + e.get("Output", "")
     elif a == "pass":
@@ -362,7 +370,7 @@ for line in out.decode(errors="replace").splitlines():
         skipped.append(t)
 nr = [t for t in skipped if re.search(r"^\s*\S+\.go:\d+: NOT_RUN:", msgs.get(t, ""), re.M)]
 other = [t for t in skipped if t not in nr]
-open(sys.argv[2], "w").write("\n".join(nr))
+open(sys.argv[2], "w").write("\n".join(t.split("\t")[-1] for t in nr))
 open(sys.argv[3], "w").write("\n".join(other))
 print(p, f, len(nr), len(other))
 PY
@@ -370,7 +378,20 @@ PY
 
 # ---- G07 whole foundation package: real PostgreSQL, race detector, vet ----------------------------
 if selected G07; then
-  if ! docker_ok || ! have go || ! have node || ! have python3; then
+  if [[ -n "$shard_evidence" ]]; then
+    run_cmd G07 node scripts/dev/matrix-receipts.mjs canonical-verify "$shard_evidence" "$OUT"
+    if ((rc != 0)); then
+      record G07 REAL_PG FAIL "canonical shard intake failed" "$rc" "$LOG"
+    else
+      read -r gp gf sn so <<<"$(judge_gotest "$OUT/G07.jsonl" "$OUT/G07.skipped" "$OUT/G07.skipped-other" json "$OUT/G07.conditional")"
+      if ((gf > 0 || gp == 0 || so > 0)); then
+        record G07 REAL_PG FAIL "verified shard events pass=$gp fail=$gf ordinary_skip=$so" 1 "$OUT/G07.jsonl"
+      else
+        record G07 REAL_PG PASS "$gp tests/subtests pass; complete shards and explicit vet verified; historical SKIP retained" 0 "$OUT/G07.jsonl"
+        if ((sn > 0)); then record G07+ REAL_PG NOT_RUN "$sn skipped with own NOT_RUN marker" - "$OUT/G07.skipped"; fi
+      fi
+    fi
+  elif ! docker_ok || ! have go || ! have node || ! have python3; then
     record G07 REAL_PG NOT_RUN "docker daemon, go, node or python3 missing"
   else
     run_cmd G07 bash scripts/dev/test-local.sh
