@@ -504,6 +504,7 @@ async function aftersalesPhase() {
     const world=worlds[index],caseID=`AS01 ${locale}/${mobile?"mobile":"desktop"}`,c=returnRequestCopy[locale];
     const {p,c:context}=await open(world,locale,mobile);
     await apply(p,world,locale,caseID);
+    if(locale==="zh-TW")await capture(p,`aftersales-zh-TW-${mobile?"mobile":"desktop"}-apply.png`,true,path.join(review,"buyer-aftersales"));
     await act(caseID,"reason",()=>p.getByRole("combobox").selectOption("damaged"),()=>expect(p.getByRole("combobox")).toHaveValue("damaged"));
     await act(caseID,"note",()=>p.getByRole("textbox").fill("Synthetic aftersales note 😀"),()=>expect(p.getByRole("textbox")).toHaveValue("Synthetic aftersales note 😀"));
     if(index===0) {
@@ -513,23 +514,28 @@ async function aftersalesPhase() {
     }
     await act(caseID,"positive quantity",()=>p.getByRole("spinbutton").fill("1"),()=>expect(p.getByRole("spinbutton")).toHaveValue("1"));
     const item=await submit(p,world,locale,caseID);requestIDs.push(item.id);const before=await readFact(world);
+    if(locale==="zh-TW")await capture(p,`aftersales-zh-TW-${mobile?"mobile":"desktop"}-requested.png`,true,path.join(review,"buyer-aftersales"));
     await act(caseID,"withdraw dialog",()=>p.getByRole("button",{name:c.withdraw,exact:true}).click(),()=>expect(p.getByRole("dialog")).toBeVisible());
     await act(caseID,"dismiss with Escape",()=>p.keyboard.press("Escape"),()=>expect(p.getByRole("dialog")).not.toBeVisible());
     await act(caseID,"reopen withdrawal",()=>p.getByRole("button",{name:c.withdraw,exact:true}).click(),()=>expect(p.getByRole("dialog")).toBeVisible());
     await act(caseID,"cancel withdrawal",()=>p.getByRole("button",{name:c.cancel,exact:true}).click(),()=>expect(p.getByRole("dialog")).not.toBeVisible());
     await act(caseID,"open final confirmation",()=>p.getByRole("button",{name:c.withdraw,exact:true}).click(),()=>expect(p.getByRole("dialog")).toBeVisible());
+    if(locale==="zh-TW")await capture(p,`aftersales-zh-TW-${mobile?"mobile":"desktop"}-withdraw-confirm.png`,true,path.join(review,"buyer-aftersales"));
     const withdraw=p.waitForResponse(r=>requestIs(r,`return-requests/${item.id}/withdraw`,"POST"));
     const [withdrawResponse]=await Promise.all([withdraw,act(caseID,"confirm withdrawal",()=>p.getByRole("button",{name:c.confirm,exact:true}).click(),()=>expect(p.getByTestId("return-status")).toHaveAttribute("data-status","withdrawn"))]);
     assert.equal(withdrawResponse.status(),200);await p.reload();await expect(p.getByTestId("return-status")).toHaveAttribute("data-status","withdrawn");
     const after=await readFact(world);assert.equal(after.requests,before.requests);assert.equal(after.receipts,before.receipts+1);assert.equal(after.ledger,before.ledger);assert.equal(after.refunds,before.refunds);
+    if(locale==="zh-TW")await capture(p,`aftersales-zh-TW-${mobile?"mobile":"desktop"}-withdrawn.png`,true,path.join(review,"buyer-aftersales"));
     await apply(p,world,locale,caseID,true);const approved=await submit(p,world,locale,caseID);
     await terminal(p,approved,locale,"approve","approved",caseID);
+    if(locale==="zh-TW")await capture(p,`aftersales-zh-TW-${mobile?"mobile":"desktop"}-approved.png`,true,path.join(review,"buyer-aftersales"));
     for(const [action,state] of [[null,"REGISTERED"],["receive","RECEIVED"],["inspect","INSPECTED"],["close","CLOSED"]]) {
       if(action)await terminal(p,approved,locale,action,"approved",caseID);
       await expect(p.getByTestId("return-rma-state")).toHaveAttribute("data-state",state);
       await expect(p.getByTestId("return-rma-state")).toContainText(returnProgressCopy(locale)[state]);
     }
     await apply(p,world,locale,caseID,true);const rejected=await submit(p,world,locale,caseID);await terminal(p,rejected,locale,"reject","rejected",caseID);
+    if(locale==="zh-TW")await capture(p,`aftersales-zh-TW-${mobile?"mobile":"desktop"}-rejected.png`,true,path.join(review,"buyer-aftersales"));
     await apply(p,world,locale,caseID,true);const cancelled=await submit(p,world,locale,caseID);await terminal(p,cancelled,locale,"approve","approved",caseID);await terminal(p,cancelled,locale,"cancel","approved",caseID);
     await expect(p.getByTestId("return-rma-state")).toContainText(returnProgressCopy(locale).CANCELLED);
     // Reading geometry only; never inject DOM or force a control to pass.
