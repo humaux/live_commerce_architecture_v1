@@ -1,3 +1,8 @@
+// Purpose: load and mount the API process Meta webhook router.
+// Depends on: integrations/meta, platform PostgreSQL pools and COMMERCE_META_* configuration.
+// Used by: cmd/api startup and the API HTTP routing chain.
+// Invariants: namespace checks never rewrite requests; configuration stays redacted.
+
 package main
 
 import (
