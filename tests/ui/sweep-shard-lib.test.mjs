@@ -28,7 +28,7 @@ function executorWalk(routes = STOREFRONT_ROUTES, facts = walkFacts) {
     (f, c, m) => storefrontWalk(f, c, m, routes), facts, walkChrome, walkMain);
 }
 
-test("storefront executor: exact legacy mappings plus three unique click-only routes", () => {
+test("storefront executor: exact legacy mappings plus four unique click-only routes", () => {
   const expected = [
     { route: "/", path: "", scopes: [walkChrome, ...walkMain] },
     { route: "/products", path: "/products" },
@@ -43,13 +43,14 @@ test("storefront executor: exact legacy mappings plus three unique click-only ro
     { route: "/legal/[slug]", path: "/legal/refunds" },
     { route: "/privacy", path: "/privacy" },
     { route: "/data-deletion", path: "/data-deletion" },
+    { route: "/contact", path: "/contact" },
     { route: "/pages/[slug]", path: "/pages/about" },
   ];
   assert.deepEqual(executorWalk(), expected);
   const special = ["/cart", "/checkout", "/orders/[orderID]", "/orders/[orderID]/return"];
   const all = [...executorWalk().map(r => r.route), ...special];
-  assert.equal(all.length, 18);
-  assert.equal(new Set(all).size, 18);
+  assert.equal(all.length, 19);
+  assert.equal(new Set(all).size, 19);
   assert.deepEqual(all.sort(), [...STOREFRONT_ROUTES].sort());
   const raw = readFileSync("tests/ui/click-sweep.mjs", "utf8");
   const session = raw.slice(raw.indexOf("async function storefrontSession"), raw.indexOf("// ---- journeys by clicks"));
@@ -61,9 +62,14 @@ test("storefront executor: exact legacy mappings plus three unique click-only ro
 });
 
 test("storefront executor: registered contact enters the same ordinary walk", () => {
-  const routes = [...STOREFRONT_ROUTES, "/contact"];
-  assert.deepEqual(executorWalk(routes).at(-1), { route: "/contact", path: "/contact" });
-  assert.equal(executorWalk(routes).filter(r => r.route === "/contact").length, 1);
+  assert.deepEqual(executorWalk().find(r => r.route === "/contact"), { route: "/contact", path: "/contact" });
+  assert.equal(executorWalk().filter(r => r.route === "/contact").length, 1);
+});
+
+test("storefront executor: next registered static route enters the same ordinary walk", () => {
+  const routes = [...STOREFRONT_ROUTES, "/future-static-probe"];
+  assert.deepEqual(executorWalk(routes).at(-1), { route: "/future-static-probe", path: "/future-static-probe" });
+  assert.equal(executorWalk(routes).filter(r => r.route === "/future-static-probe").length, 1);
 });
 
 test("storefront executor: missing dynamic fixture or unsupported template fails explicitly", () => {
@@ -132,7 +138,7 @@ test("planClick: for every N the shards partition the whole universe (every regi
     const plan = planClick(adminRoutes, weights, of);
     const seen = new Map();
     for (const p of plan.pages) { const i = plan.owner.get(p.unit); assert.ok(i >= 1 && i <= of, p.page); assert.ok(!seen.has(p.page), `duplicate page ${p.page}`); seen.set(p.page, i); }
-    assert.equal(seen.size, (adminRoutes.length + 18) * CLICK_VARIANTS.length, "admin routes + 18 storefront routes, each at all variants");
+    assert.equal(seen.size, (adminRoutes.length + 19) * CLICK_VARIANTS.length, "admin routes + 19 storefront routes, each at all variants");
     for (const r of adminRoutes) for (const v of CLICK_VARIANTS) assert.ok(seen.has(`admin|${r.path}|${v.viewport}|${v.locale}`), `${r.path} ${v.viewport}/${v.locale}`);
     for (const [j, unit] of Object.entries(plan.journeyOwner)) assert.ok(plan.owner.has(unit), `journey ${j} has an owning unit`);
     // J2/J3 read the COD order of the storefront desktop/zh-TW session: same shard, always
