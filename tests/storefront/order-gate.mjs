@@ -450,12 +450,17 @@ async function cartRetry(p,locale,surface,initiate) {
 // Native aftersales phase owns its results/ledger; fixture controls only seed/decide/read PG.
 // All tested buyer mutations come from real controls through the same Next/Go/PG relay.
 async function aftersalesPhase() {
+  console.log("AFTERSALES phase-start");
   const host="https://aftersales.example", {worlds,view_token,other_owned_order}=await control("aftersales/worlds");
   assert.equal(worlds.length,9);secrets.push(view_token,...worlds.map(w=>w.token));
   const childTests=[],ledger=[],facts=[],start=calls.length;
   let activePage;
   async function act(caseID,controlName,operation,check) {
-    await operation();await check();
+    console.log("AFTERSALES before-operation",caseID,controlName);
+    await operation();
+    console.log("AFTERSALES after-operation",caseID,controlName);
+    await check();
+    console.log("AFTERSALES after-check",caseID,controlName);
     // Read measurements only: no note/address/cookie/key is copied into this ledger.
     const status=activePage.getByTestId("return-status"),rma=activePage.getByTestId("return-rma-state");
     const actual={request_status:await status.count()?await status.getAttribute("data-status"):null,rma_state:await rma.count()?await rma.getAttribute("data-state"):null,selected_lines:await activePage.getByRole("checkbox",{checked:true}).count(),dialog_visible:await activePage.getByRole("dialog").isVisible()};
@@ -502,6 +507,7 @@ async function aftersalesPhase() {
   const requestIDs=[];
   for(const locale of ["zh-TW","zh-CN","en"])for(const mobile of [false,true]) {
     const world=worlds[index],caseID=`AS01 ${locale}/${mobile?"mobile":"desktop"}`,c=returnRequestCopy[locale];
+    console.log("AFTERSALES world-start",caseID);
     const {p,c:context}=await open(world,locale,mobile);
     await apply(p,world,locale,caseID);
     if(locale==="zh-TW")await capture(p,`aftersales-zh-TW-${mobile?"mobile":"desktop"}-apply.png`,true,path.join(review,"buyer-aftersales"));
@@ -540,9 +546,10 @@ async function aftersalesPhase() {
     await expect(p.getByTestId("return-rma-state")).toContainText(returnProgressCopy(locale).CANCELLED);
     // Reading geometry only; never inject DOM or force a control to pass.
     assert(await p.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth));
-    facts.push({case_id:caseID,...await readFact(world)});childTests.push(caseID);await context.close();index++;
+    facts.push({case_id:caseID,...await readFact(world)});childTests.push(caseID);await context.close();console.log("AFTERSALES world-end",caseID);index++;
   }
   {
+    console.log("AFTERSALES case-start","AS02 committed ACK loss");
     const world=worlds[6],caseID="AS02 committed ACK loss",{p,c:context}=await open(world),c=returnRequestCopy.en;
     await apply(p,world,"en",caseID);
     const faultURL=`${host}/api/buyer/orders/${world.order}/return-requests`;
@@ -574,6 +581,7 @@ async function aftersalesPhase() {
     childTests.push(caseID);await context.close();
   }
   {
+    console.log("AFTERSALES case-start","AS03 stale CAS winner");
     const world=worlds[7],caseID="AS03 stale CAS winner",{p,c:context}=await open(world),c=returnRequestCopy.en;
     await apply(p,world,"en",caseID);const item=await submit(p,world,"en",caseID);
     await act(caseID,"open stale confirmation",()=>p.getByRole("button",{name:c.withdraw,exact:true}).click(),()=>expect(p.getByRole("dialog")).toBeVisible());await control(`aftersales/decision/${item.id}/reject`,"POST");
@@ -582,11 +590,13 @@ async function aftersalesPhase() {
     assert.equal(staleResponse.status(),409);await p.reload();await expect(p.getByTestId("return-status")).toHaveAttribute("data-status","rejected");await expect(p.getByRole("button",{name:c.withdraw,exact:true})).toHaveCount(0);childTests.push(caseID);await context.close();
   }
   {
+    console.log("AFTERSALES case-start","AS04 expired window");
     const world=worlds[8],caseID="AS04 expired window",{p,c:context}=await open(world),c=returnRequestCopy.en;
     await apply(p,world,"en",caseID);const refusal=p.waitForResponse(r=>requestIs(r,`orders/${world.order}/return-requests`,"POST"));
     const [windowResponse]=await Promise.all([refusal,act(caseID,"expired submit",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),()=>expect(p.getByTestId("return-page").getByRole("alert")).toHaveText(c.errors.window_closed))]);assert.equal(windowResponse.status(),409);assert.equal((await readFact(world)).requests,0);childTests.push(caseID);await context.close();
   }
   {
+    console.log("AFTERSALES case-start","AS05 owner order view-only denial");
     const caseID="AS05 owner order view-only denial";
     for(const [world,token,suffix,status] of [[worlds[0],worlds[1].token,"/return",404],[worlds[0],worlds[0].token,`/return?request=${requestIDs[1]}`,404],[worlds[0],view_token,"/return",403]]) {
       const expectedPath=suffix.includes("?request=")?`/api/buyer/return-requests/${requestIDs[1]}`:token===view_token?"/api/buyer/return-requests":`/api/buyer/orders/${world.order}`;
@@ -603,7 +613,7 @@ async function aftersalesPhase() {
   for(const value of secrets) {assert(!JSON.stringify(storageWrites).includes(value));assert(!requestURLs.join("\n").includes(value));assert(!consoleText.join("\n").includes(value));}
   assert.deepEqual(pageErrors.filter(e=>!isWebkitCancelledFetch(e)).map(e=>e.name),[]);
   const result={cases:childTests.length,worlds:6,clicks:ledger.length,posts:postCount(),child_tests:childTests,click_ledger:ledger,pg_facts:facts};
-  await writeFile(path.join(evidence,"aftersales-native.json"),JSON.stringify(result,null,2),{mode:0o600});return result;
+  await writeFile(path.join(evidence,"aftersales-native.json"),JSON.stringify(result,null,2),{mode:0o600});console.log("AFTERSALES phase-end");return result;
 }
 try {
   execFileSync("openssl",["req","-x509","-newkey","rsa:2048","-nodes","-keyout",path.join(certDir,"key.pem"),"-out",path.join(certDir,"cert.pem"),"-days","1","-subj","/CN=buyer.example"],{stdio:"ignore"});

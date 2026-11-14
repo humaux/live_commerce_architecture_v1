@@ -379,7 +379,12 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 	log := browserLog(t, filepath.Join(evidence, "browser.log"))
 	cmd.Stdout, cmd.Stderr = log, log
 	if err = cmd.Run(); err != nil {
-		t.Fatalf("buyer order browser gate failed; evidence=%s", evidence)
+		exitCode, exited, success := -1, false, false
+		if cmd.ProcessState != nil {
+			exitCode, exited, success = cmd.ProcessState.ExitCode(), cmd.ProcessState.Exited(), cmd.ProcessState.Success()
+		}
+		_, hasDeadline := ctx.Deadline()
+		t.Fatalf("buyer order browser gate failed; error_type=%T exit_code=%d exited=%t success=%t ctx_error=%v ctx_cause=%v has_deadline=%t evidence=%s", err, exitCode, exited, success, ctx.Err(), context.Cause(ctx), hasDeadline, evidence)
 	}
 	data, err := os.ReadFile(filepath.Join(evidence, "result.json"))
 	if err != nil {
