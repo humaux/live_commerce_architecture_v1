@@ -43,6 +43,7 @@ test("storefront executor: exact legacy mappings plus three unique click-only ro
     { route: "/legal/[slug]", path: "/legal/refunds" },
     { route: "/privacy", path: "/privacy" },
     { route: "/data-deletion", path: "/data-deletion" },
+    { route: "/contact", path: "/contact" },
     { route: "/pages/[slug]", path: "/pages/about" },
   ];
   assert.deepEqual(executorWalk(), expected);
@@ -61,9 +62,14 @@ test("storefront executor: exact legacy mappings plus three unique click-only ro
 });
 
 test("storefront executor: registered contact enters the same ordinary walk", () => {
-  const routes = [...STOREFRONT_ROUTES, "/contact"];
-  assert.deepEqual(executorWalk(routes).at(-1), { route: "/contact", path: "/contact" });
-  assert.equal(executorWalk(routes).filter(r => r.route === "/contact").length, 1);
+  assert.deepEqual(executorWalk().find(r => r.route === "/contact"), { route: "/contact", path: "/contact" });
+  assert.equal(executorWalk().filter(r => r.route === "/contact").length, 1);
+});
+
+test("storefront executor: next registered static route enters the same ordinary walk", () => {
+  const routes = [...STOREFRONT_ROUTES, "/future-static-probe"];
+  assert.deepEqual(executorWalk(routes).at(-1), { route: "/future-static-probe", path: "/future-static-probe" });
+  assert.equal(executorWalk(routes).filter(r => r.route === "/future-static-probe").length, 1);
 });
 
 test("storefront executor: missing dynamic fixture or unsupported template fails explicitly", () => {
