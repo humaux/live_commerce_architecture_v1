@@ -306,7 +306,7 @@
     "tests/foundation/browser_oc_test.go": "23851ecd8adecca436a21429098c5a7372e5dbab82d82f7e8660cf8aa84f9904",
     "tests/foundation/browser_operations_ads_test.go": "1d25eb9632f10dbef68a6b155046da4d4c2438f3a020819539df7303b14ca7d1",
     "tests/foundation/browser_ops_polish_test.go": "1bd05c73623b63c399f63dd801e8c3c5af2a16c53cf23816cc30074c9b386692",
-    "tests/foundation/browser_order_chain_test.go": "6a1ed38511cb41f4e7470661d790ab199d6ea4171e623bf4d11305d1c21ef442",
+    "tests/foundation/browser_order_chain_test.go": "fc908d75043dfc4af6f09f1c44d8528ce23c5ab053bef08527c353b7acc50a6d",
     "tests/foundation/browser_parity_leftovers_test.go": "07c4714945dcfda9892239bd9a5a110adccc590f178283f7c40c12e96abf2595",
     "tests/foundation/browser_password_auth_test.go": "3a986cf4a303e715cf73547e726f1e850d70124b5c2f11e29a1951d6c593e09d",
     "tests/foundation/browser_pool_capacity_test.go": "4d17106dc62339b8b380692ce440b5b414184f7f0bdda2dd70e81c2855d15814",

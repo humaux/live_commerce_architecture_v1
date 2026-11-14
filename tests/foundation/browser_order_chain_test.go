@@ -574,16 +574,16 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 	if r.CaseID != refreshCase || !uuidPattern.MatchString(r.CartID) || !uuidPattern.MatchString(r.SKUID) || !keyPattern.MatchString(r.Key) || seenCartKeys[r.Key] || len(r.Phases) != 2 {
 		t.Fatal("native-focus race is not uniquely bound to a real persisted cart/key")
 	}
-	current, e := cartFacts(context.Background(), r.CartID, r.Key)
+	current, cartReadErr := cartFacts(context.Background(), r.CartID, r.Key)
 	var currentItems []cartItem
 	itemsError := json.Unmarshal(current.Items, &currentItems)
-	if e == nil {
+	if cartReadErr == nil {
 		data, marshalError := json.MarshalIndent(current, "", "  ")
 		if marshalError != nil || os.WriteFile(filepath.Join(evidence, "cart-refresh-final-pg-facts.json"), data, 0o600) != nil {
 			t.Fatal("cannot preserve independent native-focus race PG facts")
 		}
 	}
-	if e != nil || !browserOrderCartFactsEqual(current, r.Before) || !browserOrderCartFactsEqual(current, r.After) || current.ID != r.CartID || current.Version != 1 || current.Writes != 1 || current.Receipts != 1 || current.ReceiptVersion != 1 || !regexp.MustCompile(`^[a-f0-9]{64}$`).MatchString(current.RequestHash) || itemsError != nil || len(currentItems) != 1 || currentItems[0].SKUID != r.SKUID || currentItems[0].Quantity != 1 {
+	if cartReadErr != nil || !browserOrderCartFactsEqual(current, r.Before) || !browserOrderCartFactsEqual(current, r.After) || current.ID != r.CartID || current.Version != 1 || current.Writes != 1 || current.Receipts != 1 || current.ReceiptVersion != 1 || !regexp.MustCompile(`^[a-f0-9]{64}$`).MatchString(current.RequestHash) || itemsError != nil || len(currentItems) != 1 || currentItems[0].SKUID != r.SKUID || currentItems[0].Quantity != 1 {
 		t.Fatal("independent PostgreSQL re-read disagrees with the retained/reloaded cart or found an extra write")
 	}
 	for i, phase := range r.Phases {
