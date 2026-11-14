@@ -1,0 +1,39 @@
+/* Purpose: scoped Contact presentation for the adopted DESIGN v2 family.
+ * Depends on: shared packages/ui tokens; used by ContactForm.tsx.
+ * Invariants: presentation only; readable multiline content and 44px actions.
+ * Source: 1468:100491/100543 form, 100587/100637 confirm, 100679/100717 sent,
+ * 101014/101061 pending and 100842/100889 throttle; variable roles 13:306–313. */
+.surface {
+  --contact-page: var(--ds-sig-page);
+  --contact-body: var(--ds-sig-label);
+  --contact-navy: var(--ds-ink);
+  --contact-surface: var(--ds-surface);
+  --contact-line: var(--ds-members-border);
+  --contact-action-line: var(--ds-members-action-border);
+  --contact-teal: var(--ds-button-text-kind);
+  --contact-teal-soft: #eaf6f2; /* VariableID:13:313; no exact shared soft-teal token. */
+  background: var(--contact-page);
+  min-height: 100vh;
+  padding: 1px 0;
+}
+.task { width: min(720px, calc(100% - 32px)); margin: 32px auto 120px; color: var(--contact-body, var(--ds-sig-label)); font-size: var(--ds-text-md); line-height: 1.5; overflow-wrap: anywhere; }
+.task h1 { margin: 0 0 28px; color: var(--contact-navy); font-size: var(--ds-text-3xl); font-weight: 500; line-height: 1.5; }
+.panel { background: var(--contact-surface); border-radius: var(--ds-radius-member-dialog); padding: var(--ds-space-4); display: grid; gap: var(--ds-space-3); }
+.panel > p { margin: 0; }
+/* Field radius 13:321 = 8; panel radius 13:322 = 12. */
+.field { display: grid; gap: 0; padding: var(--ds-space-3); border: 1px solid var(--contact-line); border-radius: var(--ds-radius-lg); font-size: var(--ds-text-md); }
+.field input, .field textarea { border: 0; outline: 0; width: 100%; color: inherit; background: transparent; font: inherit; }
+.field :focus-visible, .actions :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+/* 100540/100584: 68px action rail = 44px control + 12px each side;
+ * desktop 900 - 812 - 68 = 20px, mobile 844 - 758 - 68 = 18px. */
+.actions { position: fixed; bottom: var(--ds-space-5); width: min(720px, calc(100% - 32px)); display: flex; gap: var(--ds-space-3); padding: var(--ds-space-3) 0; background: var(--contact-surface); border-radius: var(--ds-radius-member-dialog); z-index: 4; }
+.actions button, .actions a { flex: 1; min-height: 44px; border: 1px solid var(--contact-action-line); border-radius: var(--ds-radius-member-control); font: inherit; font-weight: 500; line-height: 20px; color: var(--contact-navy); background: var(--contact-surface); text-decoration: none; text-align: center; padding: 10px; cursor: pointer; }
+.actions button:first-child { background: var(--contact-navy); border-color: var(--contact-navy); color: var(--ds-on-primary); }
+.actions button:disabled { opacity: .6; cursor: wait; }
+.notice { padding: var(--ds-space-3); border-radius: var(--ds-radius-member-dialog); background: var(--contact-teal-soft); color: var(--contact-teal); }
+.pendingNotice { padding: var(--ds-space-4); border: 1px solid var(--contact-line); border-radius: var(--ds-radius-member-dialog); }
+@media (max-width: 600px) {
+  .task { margin-top: 24px; }
+  .task h1 { font-size: 24px; }
+  .actions { bottom: 18px; }
+}

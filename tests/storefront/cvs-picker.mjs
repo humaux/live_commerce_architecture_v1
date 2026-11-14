@@ -186,7 +186,7 @@ async function observePicker(page) {
   await page.evaluate(() => {
     const codes = { FAMI: "024793", HILIFE: "2656", OKMART: "000005", UNIMART: "231196" };
     const events = [], snapshots = [], nodes = new WeakMap();
-    let brand = "none", iteration = 0, sequence = 0, generation = 0, inputCount = 0, truncated = false, captureFailed = false;
+    let brand = "none", iteration = 0, sequence = 0, generation = 0, inputCount = 0, truncated = false, captureFailed = false, disposed = false;
     let beforeNode = null, inputNode = null, quoteID = "", beforeModes = [], beforeQuotes = [], lastState = "";
     const storage = () => {
       const modes = Object.keys(sessionStorage).filter(key => key.startsWith("commerce-checkout-mode-v2:"));
@@ -233,21 +233,59 @@ async function observePicker(page) {
       try { const current = storage(); beforeModes = current.modes; beforeQuotes = current.quotes; } catch { beforeModes = []; beforeQuotes = []; }
       snapshots.push({ phase: "start", brand, iteration, ...state() }); emit("brand_click", { trusted: event.isTrusted });
     });
+    const queryEvents = ["beforeinput", "input", "change", "focusin", "focusout"];
+    const inputTypes = new Set(["insertText", "insertReplacementText", "insertFromPaste", "insertFromDrop", "insertCompositionText",
+      "deleteContentBackward", "deleteContentForward", "deleteByCut", "deleteByDrag", "historyUndo", "historyRedo"]);
+    // DOM-only samples: document bubble is after root propagation, never proof of React handler acceptance.
+    const eventState = (event, phase) => {
+      const node = event.target, current = document.querySelector('[data-testid="cvs-picker-query"]');
+      let selection = { selectionState: "unknown" };
+      try {
+        const start = node.selectionStart, end = node.selectionEnd;
+        if (typeof start === "number" && typeof end === "number") selection = {
+          selectionState: "supported", selectionCollapsed: start === end,
+          selectionCoversAll: start === 0 && end === node.value.length,
+        };
+      } catch { /* Unsupported selection APIs remain unknown; diagnostics must not affect the product. */ }
+      return { eventKind: queryEvents.includes(event.type) ? event.type : "other", observationPhase: phase,
+        inputType: inputTypes.has(event.inputType) ? event.inputType : "other",
+        isComposing: event.isComposing === true, defaultPrevented: event.defaultPrevented === true, trusted: event.isTrusted === true,
+        dataState: event.data == null ? "null" : event.data === "" ? "empty" : event.data === codes[brand] ? "expected" : "other",
+        activeElementIsQuery: !!current && document.activeElement === current,
+        eventTargetIsCurrentQuery: node === current, eventTargetAttached: !!node.isConnected, ...selection };
+    };
     const input = guard(event => {
-      if (!event.target.matches?.('[data-testid="cvs-picker-query"]')) return;
-      inputNode = event.target; inputCount++; emit("input", { trusted: event.isTrusted });
+      if (disposed || !event.target.matches?.('[data-testid="cvs-picker-query"]')) return;
+      inputNode = event.target; inputCount++; emit("input", eventState(event, "document_capture"));
+    });
+    const captureQueryEvent = guard(event => {
+      if (!disposed && event.target.matches?.('[data-testid="cvs-picker-query"]')) emit("query_event", eventState(event, "document_capture"));
+    });
+    const bubbleQueryEvent = guard(event => {
+      if (!disposed && event.target.matches?.('[data-testid="cvs-picker-query"]')) emit("query_event", eventState(event, "document_bubble"));
     });
     const observer = new MutationObserver(guard(records => {
       if (!iteration) return;
       const node = document.querySelector('[data-testid="cvs-picker-query"]');
       if (node !== beforeNode || records.some(record => record.target.closest?.('[data-testid="cvs-picker"]'))) emit("mutation");
     }));
-    document.addEventListener("click", click, true); document.addEventListener("input", input, true);
+    document.addEventListener("click", click, true);
+    for (const type of queryEvents) {
+      document.addEventListener(type, type === "input" ? input : captureQueryEvent, { capture: true, passive: true });
+      document.addEventListener(type, bubbleQueryEvent, { passive: true });
+    }
     observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["aria-pressed", "aria-busy", "disabled", "open", "hidden"] });
     window.__lcCvsDiagnostic = {
       quote: guard((id, cycle) => { if (cycle === iteration) { quoteID = id; emit("quote_match"); } }),
       failure() { try { if (iteration) snapshots.push({ phase: "failure", brand, iteration, ...state() }); } catch { captureFailed = true; } return { events, snapshots, truncated, captureFailed }; },
-      dispose() { observer.disconnect(); document.removeEventListener("click", click, true); document.removeEventListener("input", input, true); delete window.__lcCvsDiagnostic; },
+      dispose() {
+        disposed = true; observer.disconnect(); document.removeEventListener("click", click, true);
+        for (const type of queryEvents) {
+          document.removeEventListener(type, type === "input" ? input : captureQueryEvent, true);
+          document.removeEventListener(type, bubbleQueryEvent, false);
+        }
+        delete window.__lcCvsDiagnostic;
+      },
     };
   });
   const events = [], requests = new WeakMap();
