@@ -4,6 +4,7 @@
 package main
 
 import (
+	"encoding/json"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -369,6 +370,11 @@ func TestGoRepositoryInventory(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	dispatcherReviewJSON, dispatcherReviewErr := json.Marshal(inv.Dispatchers)
+	if dispatcherReviewErr != nil {
+		t.Fatal(dispatcherReviewErr)
+	}
+	t.Logf("DISPATCHER_REVIEW_FACTS=%s", dispatcherReviewJSON)
 	t.Logf("real inventory routes=%d unresolved=%d notes=%d", len(inv.Routes), len(inv.Unresolved), len(inv.Notes))
 	coverage := map[string]finding{}
 	for _, u := range inv.Unresolved {
