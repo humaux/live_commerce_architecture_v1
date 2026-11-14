@@ -322,7 +322,7 @@ test.describe("PARITY-DATA-OPS inventory warehouse, status, refresh and cursor c
       });
 
       // (d) a real Go-encoded cursor (second warehouse, q=A12, active, after A12) is dropped by either selector.
-      const paged = `${root("zh-TW", "inventory")}&warehouse=${secondID}&q=A12&status=active&cursor=${cursor}`;
+      const paged = `${root("zh-TW", "inventory")}&warehouse=${secondID}&q=${encodeURIComponent("焦糖托特包")}&status=active&cursor=${cursor}`;
       await page.goto(paged); await heading(page, "庫存");
       await expect(empty).toBeVisible(); await expect(page.getByTestId("inventory-page").getByRole("alert")).toHaveCount(0); // the page error, not Next's hidden route announcer
       await action(page, "狀態", "selectOption", "status change drops the cursor", async () => {

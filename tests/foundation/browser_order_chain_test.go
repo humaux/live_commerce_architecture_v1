@@ -11,6 +11,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -36,6 +38,89 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 	harnessWatchCapacity(t, h.f.owner)
 	mustExec(t, h.f.owner, `UPDATE catalog.products SET name='Synthetic browser order product',description='Synthetic acceptance fixture' WHERE id=$1`, h.stock.product.ID)
 	sfiAxisBySKUCode(t, h.f.owner, h.stock.product.ID) // the storefront shell sells variants (one chip per SKU code)
+	// Separate tenant/store and pre-seeded shipped buyers: all old global baselines below
+	// are taken AFTER fixture setup, so no paid/shipped row can replace the seven old orders.
+	e := tcvNew(t, tcvOpts{stripe: true, origin: "https://aftersales.example"})
+	stopAfterPayments := e.r.startWorker(t)
+	e.grantCreator("orders:read", "fulfillment:write", "inventory:write")
+	type afterWorld struct {
+		Order string `json:"order"`
+		Token string `json:"token"`
+	}
+	worlds := []afterWorld{}
+	otherOwnedOrder := ""
+	for i := 0; i < 9; i++ {
+		b := e.newBuyer()
+		order, _ := e.rtPaidOf(b)
+		if i < 8 {
+			e.rtShip(order)
+		} else {
+			// Same trusted historical-shipment fixture as BR06, before the tested UI phase.
+			tx, err := e.p.f.owner.Begin(context.Background())
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, err = tx.Exec(context.Background(), `INSERT INTO fulfillment.manual_shipment_versions
+			(tenant_id,store_id,owner_id,order_id,version,status,carrier_code,tracking_number,principal_id,recorded_at)
+			VALUES($1,$2,$3,$4,1,'SHIPPED','chunghwa_post','SYNTHETIC',$5,clock_timestamp()-interval '337 hours')`, e.tenant(), e.store(), b.cap.Scope.OwnerID, order, e.p.f.principalA)
+			if err == nil {
+				_, err = tx.Exec(context.Background(), `INSERT INTO fulfillment.manual_shipment_heads(tenant_id,store_id,owner_id,order_id,current_version,updated_at) VALUES($1,$2,$3,$4,1,clock_timestamp()-interval '337 hours')`, e.tenant(), e.store(), b.cap.Scope.OwnerID, order)
+			}
+			if err == nil {
+				_, err = tx.Exec(context.Background(), `UPDATE checkout.orders SET fulfillment_state='MERCHANT_SHIPPED' WHERE id=$1`, order)
+			}
+			if err != nil {
+				_ = tx.Rollback(context.Background())
+				t.Fatal(err)
+			}
+			if err = tx.Commit(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+		}
+		worlds = append(worlds, afterWorld{Order: order, Token: b.cap.Token})
+		if i == 0 {
+			otherOwnedOrder, _ = e.rtPaidOf(b)
+			e.rtShip(otherOwnedOrder)
+		}
+	}
+	stopAfterPayments() // fixtures are paid; no background provider work may contaminate old zero-delta assertions
+	viewToken := randomToken()
+	var owner string
+	if err := e.p.f.owner.QueryRow(context.Background(), `SELECT owner_id::text FROM checkout.orders WHERE id=$1`, worlds[0].Order).Scan(&owner); err != nil {
+		t.Fatal(err)
+	}
+	mustExec(t, e.p.f.owner, `SELECT buyer.issue_order_capability($1::uuid,$2::uuid,$3::uuid,sha256($4::bytea),3600::bigint)`, e.store(), owner, worlds[0].Order, []byte(viewToken))
+	afterMoney := e.pgPaymentFingerprint()
+	type afterFact struct {
+		Requests int `json:"requests"`
+		Receipts int `json:"receipts"`
+		Ledger   int `json:"ledger"`
+		Refunds  int `json:"refunds"`
+	}
+	afterFacts := func(order string) afterFact {
+		return afterFact{
+			Requests: e.count(`SELECT count(*) FROM returns.buyer_requests WHERE store_id=$1 AND order_id=$2`, e.store(), order),
+			Receipts: e.count(`SELECT count(*) FROM returns.buyer_request_receipts WHERE store_id=$1 AND response->>'order_id'=$2`, e.store(), order),
+			Ledger:   e.rtAll(), Refunds: e.count(`SELECT count(*) FROM payments.stripe_refunds WHERE store_id=$1`, e.store()),
+		}
+	}
+	// Test-only origin dispatcher keeps real Next -> buyer HTTP -> PG on both worlds.
+	oldURL, _ := url.Parse(h.server.URL)
+	afterURL, _ := url.Parse(e.bh.server.URL)
+	oldProxy, afterProxy := httputil.NewSingleHostReverseProxy(oldURL), httputil.NewSingleHostReverseProxy(afterURL)
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Commerce-Storefront-Origin") == e.origin {
+			if r.Header.Get("X-Commerce-Buyer-BFF-Key") != h.key {
+				http.Error(w, "forbidden", 403)
+				return
+			}
+			r.Header.Set("X-Commerce-Buyer-BFF-Key", e.bh.key)
+			afterProxy.ServeHTTP(w, r)
+			return
+		}
+		oldProxy.ServeHTTP(w, r)
+	}))
+	t.Cleanup(upstream.Close)
 	root, err := filepath.Abs("../..")
 	if err != nil {
 		t.Fatal(err)
@@ -139,6 +224,72 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 		w.Header().Set("Cache-Control", "no-store")
 		fail := func() { http.Error(w, "fixture control failed", 500) }
 		switch {
+		case r.Method == "GET" && r.URL.Path == "/aftersales/worlds":
+			_ = json.NewEncoder(w).Encode(map[string]any{"worlds": worlds, "view_token": viewToken, "other_owned_order": otherOwnedOrder})
+		case r.Method == "GET" && strings.HasPrefix(r.URL.Path, "/aftersales/facts/"):
+			order := strings.TrimPrefix(r.URL.Path, "/aftersales/facts/")
+			known := false
+			for _, world := range worlds {
+				if world.Order == order {
+					known = true
+				}
+			}
+			if !known {
+				http.Error(w, "unknown fixture order", 400)
+				return
+			}
+			_ = json.NewEncoder(w).Encode(afterFacts(order))
+		case r.Method == "POST" && strings.HasPrefix(r.URL.Path, "/aftersales/decision/"):
+			parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/aftersales/decision/"), "/")
+			if len(parts) != 2 || !uuidPattern.MatchString(parts[0]) {
+				http.Error(w, "invalid fixture decision", 400)
+				return
+			}
+			var order, rma string
+			var version int
+			err := e.p.f.owner.QueryRow(r.Context(), `SELECT order_id::text,coalesce(return_id::text,''),version FROM returns.buyer_requests WHERE store_id=$1 AND id::text=$2`, e.store(), parts[0]).Scan(&order, &rma, &version)
+			if err != nil {
+				fail()
+				return
+			}
+			known := false
+			for _, world := range worlds {
+				if world.Order == order {
+					known = true
+				}
+			}
+			if !known {
+				fail()
+				return
+			}
+			st := 0
+			var out map[string]any
+			key := t04Key("browser-after-decision")
+			switch parts[1] {
+			case "approve", "reject":
+				in := map[string]any{"expected_version": version}
+				if parts[1] == "reject" {
+					in["reason"] = strings.Repeat("<script>synthetic rejection</script>", 20)
+				}
+				raw, _ := json.Marshal(in)
+				st, out, _ = e.mcall(e.token(), "POST", e.rtPath("/return-requests/"+parts[0]+"/"+parts[1]), key, string(raw))
+			case "receive":
+				st, out = e.rtReceive(e.token(), rma, key, 1, 1)
+			case "inspect":
+				st, out = e.rtInspect(e.token(), rma, key, 2, 0, 1)
+			case "close":
+				st, out = e.rtClose(e.token(), rma, key, 3, "")
+			case "cancel":
+				st, out, _ = e.mcall(e.token(), "POST", e.rtPath("/returns/"+rma+"/cancel"), key, `{"expected_version":1}`)
+			default:
+				http.Error(w, "invalid fixture action", 400)
+				return
+			}
+			if st != 200 {
+				fail()
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "status": out["status"], "state": out["state"]})
 		case r.Method == "GET" && strings.HasPrefix(r.URL.Path, "/cart-facts/"):
 			parts := strings.Split(strings.TrimPrefix(r.URL.Path, "/cart-facts/"), "/")
 			if len(parts) != 2 || !uuidPattern.MatchString(parts[0]) || !keyPattern.MatchString(parts[1]) {
@@ -220,7 +371,7 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 	}()
 	cmd.Dir = root
 	cmd.Env = browserEnvironment(map[string]string{
-		"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_API_ORIGIN": h.server.URL, "COMMERCE_BUYER_DEMO_LABEL": "1",
+		"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_API_ORIGIN": upstream.URL, "COMMERCE_BUYER_DEMO_LABEL": "1",
 		"COMMERCE_BUYER_BFF_KEY": h.key, "COMMERCE_BUYER_COOKIE_KEY": brToken(), "COMMERCE_BUYER_SESSION_TTL": "3600",
 		"LC_BO01_EARLY_HEAD": os.Getenv("LC_BO01_EARLY_HEAD"), "LC_BO01_REPEAT": os.Getenv("LC_BO01_REPEAT"),
 		"LC_ORDER_EVIDENCE": evidence, "LC_ORDER_PRODUCT": h.stock.product.ID, "LC_ORDER_CONTROL": control.URL, "LC_ORDER_CONTROL_KEY": controlKey,
@@ -311,6 +462,19 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 			Actual   string `json:"actual"`
 			Status   string `json:"status"`
 		} `json:"click_ledger"`
+		Aftersales struct {
+			Cases       int      `json:"cases"`
+			Clicks      int      `json:"clicks"`
+			Posts       int      `json:"posts"`
+			Worlds      int      `json:"worlds"`
+			ChildTests  []string `json:"child_tests"`
+			ClickLedger []struct {
+				CaseID  string          `json:"case_id"`
+				Control string          `json:"control"`
+				Actual  json.RawMessage `json:"actual"`
+				Status  string          `json:"status"`
+			} `json:"click_ledger"`
+		} `json:"aftersales"`
 	}
 	const refreshCase = "BC02 native focus failure preserves held real cart on retained drawer and fresh mount"
 	if json.Unmarshal(data, &result) != nil {
@@ -410,16 +574,16 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 	if r.CaseID != refreshCase || !uuidPattern.MatchString(r.CartID) || !uuidPattern.MatchString(r.SKUID) || !keyPattern.MatchString(r.Key) || seenCartKeys[r.Key] || len(r.Phases) != 2 {
 		t.Fatal("native-focus race is not uniquely bound to a real persisted cart/key")
 	}
-	current, e := cartFacts(context.Background(), r.CartID, r.Key)
+	current, cartReadErr := cartFacts(context.Background(), r.CartID, r.Key)
 	var currentItems []cartItem
 	itemsError := json.Unmarshal(current.Items, &currentItems)
-	if e == nil {
+	if cartReadErr == nil {
 		data, marshalError := json.MarshalIndent(current, "", "  ")
 		if marshalError != nil || os.WriteFile(filepath.Join(evidence, "cart-refresh-final-pg-facts.json"), data, 0o600) != nil {
 			t.Fatal("cannot preserve independent native-focus race PG facts")
 		}
 	}
-	if e != nil || !browserOrderCartFactsEqual(current, r.Before) || !browserOrderCartFactsEqual(current, r.After) || current.ID != r.CartID || current.Version != 1 || current.Writes != 1 || current.Receipts != 1 || current.ReceiptVersion != 1 || !regexp.MustCompile(`^[a-f0-9]{64}$`).MatchString(current.RequestHash) || itemsError != nil || len(currentItems) != 1 || currentItems[0].SKUID != r.SKUID || currentItems[0].Quantity != 1 {
+	if cartReadErr != nil || !browserOrderCartFactsEqual(current, r.Before) || !browserOrderCartFactsEqual(current, r.After) || current.ID != r.CartID || current.Version != 1 || current.Writes != 1 || current.Receipts != 1 || current.ReceiptVersion != 1 || !regexp.MustCompile(`^[a-f0-9]{64}$`).MatchString(current.RequestHash) || itemsError != nil || len(currentItems) != 1 || currentItems[0].SKUID != r.SKUID || currentItems[0].Quantity != 1 {
 		t.Fatal("independent PostgreSQL re-read disagrees with the retained/reloaded cart or found an extra write")
 	}
 	for i, phase := range r.Phases {
@@ -496,6 +660,63 @@ func TestBrowserBuyerOrderUI(t *testing.T) {
 		if countRows(t, h.f.owner, q)-countsBefore[i] != want {
 			t.Fatal("global order/hold/job/receipt or forbidden payment/integration delta")
 		}
+	}
+	// Independent PG reads of the additive phase, with original order assertions above intact.
+	if result.Aftersales.Worlds != 6 || result.Aftersales.Cases != 10 || result.Aftersales.Clicks < 60 || result.Aftersales.Posts != 35 || len(result.Aftersales.ChildTests) != 10 {
+		t.Fatal("incomplete native aftersales evidence")
+	}
+	wantAfter := map[string]bool{"AS02 committed ACK loss": true, "AS03 stale CAS winner": true, "AS04 expired window": true, "AS05 owner order view-only denial": true}
+	for _, locale := range []string{"zh-TW", "zh-CN", "en"} {
+		for _, surface := range []string{"desktop", "mobile"} {
+			wantAfter["AS01 "+locale+"/"+surface] = true
+		}
+	}
+	seenAfter := map[string]bool{}
+	for _, name := range result.Aftersales.ChildTests {
+		if !wantAfter[name] || seenAfter[name] {
+			t.Fatal("missing/duplicate aftersales child test")
+		}
+		seenAfter[name] = true
+	}
+	if result.Aftersales.Clicks != len(result.Aftersales.ClickLedger) {
+		t.Fatal("aftersales click counter/ledger mismatch")
+	}
+	clickedCases := map[string]bool{}
+	for _, row := range result.Aftersales.ClickLedger {
+		if !wantAfter[row.CaseID] || row.Control == "" || len(row.Actual) == 0 || string(row.Actual) == "null" || row.Status != "PASS" {
+			t.Fatal("invalid aftersales real-control evidence")
+		}
+		clickedCases[row.CaseID] = true
+	}
+	if len(clickedCases) != len(wantAfter) {
+		t.Fatal("missing aftersales child control evidence")
+	}
+	finalAfterFacts := []map[string]any{}
+	for i, world := range worlds {
+		wantRequests, wantReceipts := 4, 8
+		if i == 6 {
+			wantRequests, wantReceipts = 1, 1
+		}
+		if i == 7 {
+			wantRequests, wantReceipts = 1, 2
+		}
+		if i == 8 {
+			wantRequests, wantReceipts = 0, 0
+		}
+		f := afterFacts(world.Order)
+		finalAfterFacts = append(finalAfterFacts, map[string]any{"order_id": world.Order, "facts": f})
+		if f.Requests != wantRequests || f.Receipts != wantReceipts || f.Refunds != 0 {
+			t.Fatal("aftersales request/receipt/refund PG mismatch")
+		}
+		if i < 6 && (e.count(`SELECT count(*) FROM returns.buyer_requests WHERE store_id=$1 AND order_id=$2 AND status='withdrawn'`, e.store(), world.Order) != 1 || e.count(`SELECT count(*) FROM returns.buyer_requests WHERE store_id=$1 AND order_id=$2 AND status='approved'`, e.store(), world.Order) != 2 || e.count(`SELECT count(*) FROM returns.buyer_requests WHERE store_id=$1 AND order_id=$2 AND status='rejected'`, e.store(), world.Order) != 1) {
+			t.Fatal("terminal status PG distribution mismatch")
+		}
+	}
+	if e.pgPaymentFingerprint() != afterMoney {
+		t.Fatal("aftersales changed payment/order money facts")
+	}
+	if raw, err := json.MarshalIndent(finalAfterFacts, "", "  "); err != nil || os.WriteFile(filepath.Join(evidence, "aftersales-final-pg-facts.json"), raw, 0o600) != nil {
+		t.Fatal("cannot preserve independent aftersales PG facts")
 	}
 	t.Logf("PASS: actual order UI/history; cases=%d; buyers=%d; orders=%d; exact order/hold/job/receipt/reserve counts (one buyer twice, five once); evidence=%s", result.Cases, len(owners), len(after), evidence)
 }

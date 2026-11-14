@@ -282,9 +282,9 @@ export default function OrderStatusView({
             {(isCard || order.payment_mode === "bank_transfer") && <p>{c.deliveryStatus}{delivery}</p>}
             {order.shipment && <ShipmentBlock shipment={order.shipment} locale={locale} />}
             <div className="os-actions">
-              <ContactStoreButton label={c.contact} locale={locale} />
+              <ContactStoreButton label={c.contact} locale={locale} intent="contact" />
               {!(isCard && order.commercial_state === "CANCELLED") && (
-                <ContactStoreButton label={c.after} locale={locale} testId="request-after-sales" />
+                <a className="os-back" data-testid="request-after-sales" href={`/${locale}/orders/${order.order_id}/return`}>{c.after}</a>
               )}
             </div>
           </section>

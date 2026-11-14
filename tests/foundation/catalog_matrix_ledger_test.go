@@ -1,22 +1,158 @@
 // Purpose: Enforce the product-editor mobile matrix's declared click identities and fail-closed ledger evidence.
-// Depends on: the embedded table, canonical SHA-256 receipts and LC_MATRIX_EVIDENCE_STRICT; no DB/browser required.
+// Depends on: embedded table, canonical receipts, bounded Git metadata and LC_MATRIX_EVIDENCE_STRICT; no DB/browser required.
 // Used by: TestBrowserCatalogCore after product-editor Playwright, and DB-free corruption controls.
 package foundation_test
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 )
+
+// Owner facts only: consumers must independently bind these bytes to official native receipts.
+type productEditorMatrixProof struct {
+	Schema     string                           `json:"schema"`
+	Kind       string                           `json:"kind"`
+	Validation string                           `json:"validation"`
+	Identity   productEditorMatrixProofIdentity `json:"identity"`
+	Files      map[string]string                `json:"files"`
+	Sources    []productEditorMatrixProofSource `json:"sources"`
+	Drift      []string                         `json:"drift"`
+	Reason     string                           `json:"reason"`
+}
+type productEditorMatrixProofSource struct {
+	Path     string `json:"path"`
+	Recorded string `json:"recorded"`
+	Actual   string `json:"actual"`
+}
+type productEditorMatrixProofIdentity struct {
+	CheckoutSHA  string `json:"checkout_sha"`
+	CheckoutTree string `json:"checkout_tree"`
+	TrackedClean string `json:"tracked_clean"`
+	SubjectSHA   string `json:"subject_sha"`
+	WorkflowSHA  string `json:"workflow_sha"`
+	WorkflowRef  string `json:"workflow_ref"`
+	RunID        string `json:"run_id"`
+	RunAttempt   string `json:"run_attempt"`
+	Job          string `json:"job"`
+	Event        string `json:"event"`
+	Test         string `json:"test"`
+	Mode         string `json:"mode"`
+	Evidence     string `json:"evidence"`
+}
+
+func productEditorMatrixDigest(data []byte) string { return fmt.Sprintf("%x", sha256.Sum256(data)) }
+
+// Missing metadata is explicit, never synthesized from another identity field.
+// A single bounded context covers all read-only Git calls; no environment dump is logged.
+func productEditorMatrixIdentity(root, test, evidence string) (productEditorMatrixProofIdentity, error) {
+	if !regexp.MustCompile(`^[A-Za-z0-9_.-]+$`).MatchString(evidence) {
+		return productEditorMatrixProofIdentity{}, errors.New("invalid matrix proof evidence identity")
+	}
+	id := productEditorMatrixProofIdentity{Mode: "foundation", CheckoutSHA: "unknown", CheckoutTree: "unknown", TrackedClean: "unknown", Test: test, Evidence: evidence}
+	for _, field := range []struct {
+		name, pattern string
+		dst           *string
+	}{
+		{"GITHUB_SHA", `^[0-9a-f]{40}$`, &id.SubjectSHA},
+		{"GITHUB_WORKFLOW_SHA", `^[0-9a-f]{40}$`, &id.WorkflowSHA},
+		{"GITHUB_WORKFLOW_REF", `^[A-Za-z0-9_./@:-]+$`, &id.WorkflowRef},
+		{"GITHUB_RUN_ID", `^[1-9][0-9]*$`, &id.RunID},
+		{"GITHUB_RUN_ATTEMPT", `^[1-9][0-9]*$`, &id.RunAttempt},
+		{"GITHUB_JOB", `^[A-Za-z0-9_-]+$`, &id.Job},
+		{"GITHUB_EVENT_NAME", `^[a-z_]+$`, &id.Event},
+	} {
+		value := os.Getenv(field.name)
+		if value == "" {
+			value = "unknown"
+		} else if !regexp.MustCompile(field.pattern).MatchString(value) {
+			return productEditorMatrixProofIdentity{}, fmt.Errorf("invalid matrix proof metadata %s", field.name)
+		}
+		*field.dst = value
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	git := func(args ...string) (string, error) {
+		data, err := exec.CommandContext(ctx, "git", append([]string{"-C", root}, args...)...).Output()
+		return strings.TrimSpace(string(data)), err
+	}
+	top, err := git("rev-parse", "--show-toplevel")
+	actual, rootErr := filepath.EvalSymlinks(root)
+	top, topErr := filepath.EvalSymlinks(top)
+	actual, _ = filepath.Abs(actual)
+	if err != nil || rootErr != nil || topErr != nil || top != actual {
+		return id, nil
+	}
+	head, headErr := git("rev-parse", "HEAD")
+	tree, treeErr := git("rev-parse", "HEAD^{tree}")
+	status, statusErr := git("status", "--porcelain", "--untracked-files=no")
+	if headErr == nil && treeErr == nil && statusErr == nil && regexp.MustCompile(`^[0-9a-f]{40}$`).MatchString(head) && regexp.MustCompile(`^[0-9a-f]{40}$`).MatchString(tree) {
+		id.CheckoutSHA, id.CheckoutTree, id.TrackedClean = head, tree, fmt.Sprint(status == "")
+	}
+	return id, nil
+}
+func productEditorMatrixNewProof(kind string) *productEditorMatrixProof {
+	return &productEditorMatrixProof{Schema: "matrix-owner-proof/v1", Kind: kind, Files: map[string]string{}, Sources: []productEditorMatrixProofSource{}, Drift: []string{}}
+}
+
+// Validate with the same current-table owner before constructing any fresh proof.
+func productEditorMatrixFreshProof(root string, ledger []byte, evidence string) (*productEditorMatrixProof, error) {
+	if err := validateProductEditorMatrixLedger(ledger); err != nil {
+		return nil, err
+	}
+	proof := productEditorMatrixNewProof("fresh-ledger")
+	for _, name := range productEditorMatrixEvidenceSources {
+		data, err := productEditorMatrixEvidenceRead(root, name)
+		if err != nil {
+			return nil, err
+		}
+		if name == productEditorMatrixCasesPath && !bytes.Equal(data, productEditorMatrixLedgerCasesJSON) {
+			return nil, errors.New("matrix proof checkout case table differs from compiled declaration")
+		}
+		proof.Sources = append(proof.Sources, productEditorMatrixProofSource{name, "unknown", productEditorMatrixDigest(data)})
+	}
+	id, err := productEditorMatrixIdentity(root, "TestBrowserCatalogCore", evidence)
+	if err != nil {
+		return nil, err
+	}
+	id.Mode = "--browser-product-editor"
+	proof.Identity, proof.Validation = id, "LEDGER_VALIDATED"
+	proof.Files["product-editor-click-ledger.json"] = productEditorMatrixDigest(ledger)
+	proof.Files[productEditorMatrixCasesPath] = productEditorMatrixDigest(productEditorMatrixLedgerCasesJSON)
+	return proof, nil
+}
+
+// A typed historical drift remains drift, never canonical success. All other errors return no proof.
+func productEditorMatrixCanonicalProof(root string) (*productEditorMatrixProof, error) {
+	proof := productEditorMatrixNewProof("canonical")
+	err := validateProductEditorMatrixEvidenceWithProof(root, proof)
+	var drift productEditorMatrixEvidenceDrift
+	if err != nil && !errors.As(err, &drift) {
+		return nil, err
+	}
+	id, metaErr := productEditorMatrixIdentity(root, "TestProductEditorMatrixLedgerEvidence", "unknown")
+	if metaErr != nil {
+		return nil, metaErr
+	}
+	proof.Identity, proof.Validation = id, "CANONICAL_VALIDATED"
+	if err != nil {
+		proof.Validation, proof.Reason = "HISTORICAL_SOURCE_DRIFT", err.Error()
+		proof.Drift = append(proof.Drift, drift...)
+	}
+	return proof, err
+}
 
 type productEditorMatrixLedgerKey struct {
 	Page    string `json:"page"`
@@ -411,7 +547,15 @@ func (d productEditorMatrixEvidenceDrift) Error() string {
 // Verify the canonical delivery when its producers match. Historical source drift
 // is explicit SKIP by default; delivery verification opts into strict failure.
 func TestProductEditorMatrixLedgerEvidence(t *testing.T) {
-	if err := validateProductEditorMatrixEvidence("../.."); err != nil {
+	proof, err := productEditorMatrixCanonicalProof("../..")
+	if proof != nil {
+		data, marshalErr := json.Marshal(proof)
+		if marshalErr != nil {
+			t.Fatal(marshalErr)
+		}
+		t.Logf("MATRIX_OWNER_PROOF %s", data)
+	}
+	if err != nil {
 		var drift productEditorMatrixEvidenceDrift
 		if errors.As(err, &drift) && os.Getenv("LC_MATRIX_EVIDENCE_STRICT") != "1" {
 			t.Skip(err)
@@ -423,6 +567,11 @@ func TestProductEditorMatrixLedgerEvidence(t *testing.T) {
 // validateProductEditorMatrixEvidence also accepts isolated checkout copies for
 // corruption controls; it never edits the source checkout or canonical artifacts.
 func validateProductEditorMatrixEvidence(root string) error {
+	return validateProductEditorMatrixEvidenceWithProof(root, nil)
+}
+
+// Optional fact collection shares every validation branch with the original owner.
+func validateProductEditorMatrixEvidenceWithProof(root string, proof *productEditorMatrixProof) error {
 	const unit = "output/matrix-ledger-enforce/"
 	delivery, err := os.ReadFile(filepath.Join(root, unit, "DELIVERY.md"))
 	if err != nil {
@@ -510,6 +659,12 @@ func validateProductEditorMatrixEvidence(root string) error {
 	if source.Tested != manifest.Tested || !reflect.DeepEqual(source.Sources, manifest.Sources) {
 		return fmt.Errorf("SOURCE.json must bind the same tested source and source files as the manifest")
 	}
+	if proof != nil {
+		proof.Files[unit+"DELIVERY.md"] = productEditorMatrixDigest(delivery)
+		proof.Files[manifestPath] = productEditorMatrixDigest(manifestData)
+		proof.Files[evidence+"/ARTIFACTS.json"] = productEditorMatrixDigest(indexData)
+		proof.Files[sourcePath] = productEditorMatrixDigest(sourceData)
+	}
 	// Validate receipt structure before classifying drift. Missing or malformed
 	// digests remain failures; only actual checkout-byte differences are history.
 	var drift productEditorMatrixEvidenceDrift
@@ -525,6 +680,9 @@ func validateProductEditorMatrixEvidence(root string) error {
 		data, err := productEditorMatrixEvidenceRead(root, path)
 		if err != nil {
 			return err
+		}
+		if proof != nil {
+			proof.Sources = append(proof.Sources, productEditorMatrixProofSource{path, hash, productEditorMatrixDigest(data)})
 		}
 		if err := productEditorMatrixEvidenceHash(path, data, hash); err != nil {
 			drift = append(drift, path)

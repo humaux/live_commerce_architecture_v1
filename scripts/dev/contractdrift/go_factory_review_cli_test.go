@@ -1,5 +1,5 @@
 // Purpose: retain PR55 structural counterexamples and exact converted CDF1-3 receipts.
-// Depends on: existing real CLI/Git fixture helpers and Go stdlib; scanner stays frozen.
+// Depends on: existing real CLI/Git fixture helpers and Go stdlib; historical receipts stay immutable.
 // Used by: GitHub CI and independent CI-DRIFT review.
 // Invariant: baseline coverage is mandatory; every strict candidate logs its full output.
 package main
@@ -17,9 +17,9 @@ func trunkFactoryExactTouched(t *testing.T, call func(string, ...string) (int, s
 	t.Logf("STRICT_CANDIDATE exit=%d\n%s", code, out)
 	want := strings.Join([]string{
 		"INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:23 methodless registration; child paths remain absolute unless StripPrefix is explicit",
-		"ERROR (TOUCHED) UNRESOLVED   cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go handler dispatch buildBuyer; route/method coverage is unknown",
-		"ERROR (TOUCHED) UNRESOLVED EXACT " + exact + " cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43, cmd/api/main.go:45 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown",
-		"ERROR (TOUCHED) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go methodless mount; child route identity is unproven",
+		"ERROR (TOUCHED) UNRESOLVED   cmd/api/main.go:9, cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go handler dispatch buildBuyer; route/method coverage is unknown",
+		"ERROR (TOUCHED) UNRESOLVED EXACT " + exact + " cmd/api/main.go:9, cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43, cmd/api/main.go:45 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown",
+		"ERROR (TOUCHED) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:9, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go methodless mount; child route identity is unproven",
 		"SUMMARY routes go=1 contract=1 bff=1; errors=3 warnings=0 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3",
 	}, "\n") + "\n"
 	if code != 1 || out != want {
@@ -27,59 +27,92 @@ func trunkFactoryExactTouched(t *testing.T, call func(string, ...string) (int, s
 	}
 }
 
-// These signatures come from Foundation 38499888354/job 115644072791 at
-// 3a3ae4cb9 (merge checkout ca7741b5). Only the complete observed output may skip.
-// Unknown output, setup failures and a repaired scanner all remain fatal.
-func trunkFactoryReviewKnownMiss(t *testing.T, name, path, exact string, code int, out string) {
+// Owner unfreeze 2026-11-14: all three historical misses are now required.
+// Historical exact failure receipts remain in output/ci-drift-fn.
+func trunkFactoryReviewTouched(t *testing.T, name, path, exact string, code int, out string) {
 	t.Helper()
-	wantCode, wantPath, wantExact, id := 0, "cmd/api/main.go", "/v1/trunk-factory", ""
-	var want string
-	switch name {
-	case "CDF4 cross-package middleware":
-		id, wantPath = "CDF-4", "internal/mw/mw.go"
-		want = `INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:14, cmd/api/main.go:16, cmd/api/main.go:24 methodless registration; child paths remain absolute unless StripPrefix is explicit
-WARNING (unresolved) UNRESOLVED   cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
-WARNING (unresolved) UNRESOLVED EXACT /v1/trunk-factory cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38, cmd/api/main.go:40 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
-WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:14, cmd/api/main.go:16, cmd/api/main.go:18, cmd/api/main.go:24, cmd/api/main.go:31, cmd/api/main.go:38 opaque Go methodless mount; child route identity is unproven
-SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=3 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
-`
-	case "CDF5 non-path global":
-		id = "CDF-5"
-		want = `INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:23 methodless registration; child paths remain absolute unless StripPrefix is explicit
-WARNING (unresolved) UNRESOLVED   cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
-WARNING (unresolved) UNRESOLVED EXACT /v1/trunk-factory cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43, cmd/api/main.go:45 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
-WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/main.go:3, cmd/api/main.go:13, cmd/api/main.go:15, cmd/api/main.go:17, cmd/api/main.go:23, cmd/api/main.go:30, cmd/api/main.go:37, cmd/api/main.go:43 opaque Go methodless mount; child route identity is unproven
-SUMMARY routes go=1 contract=1 bff=1; errors=0 warnings=3 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
-`
-	case "CDF6 sibling-file route":
-		id, wantCode, wantPath, wantExact = "CDF-6", 1, "cmd/api/factory.go", "/v1/trunk-factory/changed"
-		want = `INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory cmd/api/factory.go:9, cmd/api/main.go:3, cmd/api/main.go:12, cmd/api/main.go:14 methodless registration; child paths remain absolute unless StripPrefix is explicit
-ERROR (TOUCHED) UNRESOLVED   cmd/api/factory.go:3, cmd/api/factory.go:9, cmd/api/factory.go:16, cmd/api/factory.go:23, cmd/api/factory.go:29 opaque Go handler dispatch buildBuyer; route/method coverage is unknown
-ERROR (TOUCHED) UNRESOLVED EXACT /v1/trunk-factory/changed cmd/api/factory.go:3, cmd/api/factory.go:9, cmd/api/factory.go:16, cmd/api/factory.go:23, cmd/api/factory.go:29, cmd/api/factory.go:31 opaque Go handler dispatch mountTrunkFactory; route/method coverage is unknown
-WARNING (unresolved) UNRESOLVED MOUNT /v1/trunk-factory cmd/api/factory.go:9, cmd/api/main.go:3, cmd/api/main.go:12, cmd/api/main.go:14 opaque Go methodless mount; child route identity is unproven
-SUMMARY routes go=1 contract=1 bff=1; errors=2 warnings=1 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3
-`
-	default:
-		t.Fatalf("unreviewed expected-fail case %q", name)
+	provenance := map[string]string{
+		"CDF4 cross-package middleware": "internal/mw/mw.go:3",
+		"CDF5 non-path global":          "cmd/api/main.go:9",
+		"CDF6 sibling-file route":       "cmd/api/factory.go:29",
+	}[name]
+	if provenance == "" || !strings.HasPrefix(provenance, path+":") {
+		t.Fatalf("invalid strict fixture %q %q", name, path)
 	}
-	if path != wantPath || exact != wantExact {
-		t.Fatalf("expected-fail fixture changed: path=%q exact=%q want path=%q exact=%q", path, exact, wantPath, wantExact)
+	lines := strings.Split(strings.TrimSpace(out), "\n")
+	prefixes := []string{
+		"INFO () GO_MOUNT_OR_FALLBACK  /v1/trunk-factory ",
+		"ERROR (TOUCHED) UNRESOLVED   ",
+		"ERROR (TOUCHED) UNRESOLVED EXACT " + exact + " ",
+		"ERROR (TOUCHED) UNRESOLVED MOUNT /v1/trunk-factory ",
 	}
-	if code == 1 && strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED   ") &&
-		strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED EXACT "+wantExact+" ") &&
-		strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED MOUNT /v1/trunk-factory ") &&
-		strings.Contains(out, "SUMMARY routes go=1 contract=1 bff=1; errors=3 warnings=0 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3\n") &&
-		!strings.Contains(out, "WARNING (") {
-		t.Fatalf("UNEXPECTED_PASS %s: retire its xfail in output/ci-drift-fn/FOLLOWUPS.md\n%s", id, out)
+	if code != 1 || len(lines) != 5 || lines[4] != "SUMMARY routes go=1 contract=1 bff=1; errors=3 warnings=0 GO_MOUNT_OR_FALLBACK=1 UNRESOLVED=3" {
+		t.Fatalf("strict CDF signature mismatch: exit=%d want=1, three errors and zero warnings\n%s", code, out)
 	}
-	if code != wantCode || out != want {
-		t.Fatalf("unrecognized expected-fail signature %s: exit=%d want=%d\nactual:\n%sexpected:\n%s", id, code, wantCode, out, want)
+	for i, prefix := range prefixes {
+		if !strings.HasPrefix(lines[i], prefix) {
+			t.Errorf("diagnostic %d missing %q: %s", i, prefix, lines[i])
+		}
+		if i > 0 && !strings.Contains(lines[i], provenance+" ") && !strings.Contains(lines[i], provenance+",") {
+			t.Errorf("diagnostic %d missing changed dependency provenance %s: %s", i, provenance, lines[i])
+		}
 	}
-	t.Skipf("EXPECTED_FAIL %s: exact Foundation 38499888354 diagnostic reproduced; see output/ci-drift-fn/FOLLOWUPS.md", id)
 }
 
 func TestGoFactoryReviewStructuralCLI(t *testing.T) {
 	call := reviewCLI(t)
+	t.Run("CDF6 independent sibling chains", func(t *testing.T) {
+		root := fixture(t, "aligned")
+		trunkFactoryWrite(t, root, "go.mod", "module example\n\ngo 1.22\n")
+		trunkFactoryWrite(t, root, "cmd/api/main.go", `package main
+import "net/http"
+func main() {
+ mux := http.NewServeMux()
+ mux.HandleFunc("GET /v1/admin/stores/{store_id}/widgets/{widget_id}", func(w http.ResponseWriter, r *http.Request) {})
+ mux.Handle("/first", buildFirst())
+ mux.Handle("/second", buildSecond())
+}
+`)
+		const first = `package main
+import "net/http"
+func buildFirst() http.Handler { return firstHandler() }
+func firstHandler() http.Handler { return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+ if r.URL.Path == "/first" { w.Header().Set("X-First", "legacy") }
+}) }
+`
+		trunkFactoryWrite(t, root, "cmd/api/first.go", first)
+		trunkFactoryWrite(t, root, "cmd/api/second.go", `package main
+import "net/http"
+func buildSecond() http.Handler { return secondHandler() }
+func secondHandler() http.Handler { return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+ if r.URL.Path == "/second" { return }
+}) }
+`)
+		git(t, root, "add", ".")
+		git(t, root, "commit", "-qm", "independent sibling mount chains")
+		git(t, root, "tag", "-f", "trunk")
+		if code, out := call(root); code != 0 || strings.Contains(out, "TOUCHED") {
+			t.Fatalf("legacy sibling setup failed: exit=%d\n%s", code, out)
+		}
+		// Keep diagnostic identity and registrations unchanged on both sides of
+		// the real Git diff: only a dependency in the first chain is edited.
+		trunkFactoryWrite(t, root, "cmd/api/first.go", trunkFactoryReplace(t, first, `"legacy"`, `"changed"`))
+		code, out := call(root)
+		t.Logf("STRICT_CANDIDATE independent siblings exit=%d\n%s", code, out)
+		if code != 1 || !strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED MOUNT /first ") {
+			t.Errorf("real first dependency failed to taint its mount: exit=%d\n%s", code, out)
+		}
+		if !strings.Contains(out, "WARNING (unresolved) UNRESOLVED MOUNT /second ") || strings.Contains(out, "ERROR (TOUCHED) UNRESOLVED MOUNT /second ") {
+			t.Errorf("unrelated sibling mount contaminated by current/base provenance: exit=%d\n%s", code, out)
+		}
+		for _, line := range strings.Split(out, "\n") {
+			if strings.Contains(line, "opaque Go handler dispatch buildSecond;") || strings.Contains(line, "opaque Go handler dispatch secondHandler;") {
+				if !strings.HasPrefix(line, "WARNING (unresolved) ") {
+					t.Errorf("independent handler chain changed severity: %s", line)
+				}
+			}
+		}
+	})
 	for _, name := range []string{"CDF4 cross-package middleware", "CDF5 non-path global", "CDF6 sibling-file route"} {
 		t.Run(name, func(t *testing.T) {
 			source := trunkFactorySource
@@ -128,7 +161,7 @@ func WithHeader(next http.Handler) http.Handler {
 			trunkFactoryWrite(t, root, path, candidate)
 			code, out := call(root)
 			t.Logf("STRICT_CANDIDATE %s path=%s exit=%d\n%s", name, path, code, out)
-			trunkFactoryReviewKnownMiss(t, name, path, exact, code, out)
+			trunkFactoryReviewTouched(t, name, path, exact, code, out)
 		})
 	}
 }

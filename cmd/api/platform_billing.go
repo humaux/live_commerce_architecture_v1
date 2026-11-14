@@ -19,9 +19,6 @@ import (
 	"livecommerce/internal/platform"
 )
 
-// platformWebhookPath is the only path the platform webhook answers (contract §5 Platform).
-const platformWebhookPath = "/v1/platform/stripe/webhook"
-
 // buildPlatformBilling is called once by main.go with the startup context, the merchant pool and
 // os.Getenv (the getenv seam proves disabled billing reads nothing else, like loadStripeWebhookConfig).
 // Disabled (LC_BILLING_ENABLED unset): svc nil and webhook nil; standing and GET billing still work
@@ -62,10 +59,10 @@ func buildPlatformBilling(ctx context.Context, mainPool *pgxpool.Pool, getenv fu
 		ingress.Close()
 		return svc, nil, noop, nil
 	}
-	return svc, svc.WebhookHandler(ingress), ingress.Close, nil
+	return svc, billing.NewWebhookHandler(svc, ingress), ingress.Close, nil
 }
 
-// mountPlatformBilling routes exactly platformWebhookPath to the webhook (the handler itself answers 405 to
+// mountPlatformBilling consumes the billing table for the exact webhook path (the handler answers 405 to
 // non-POST) and everything else to fallback. A nil webhook returns fallback unchanged. Aliases such as
 // //v1/... or /v1/platform/stripe/../stripe/webhook are not rewritten here: they fall through to
 // the ServeMux, which redirects to the clean path instead of feeding Stripe's signed body to the handler
@@ -75,7 +72,7 @@ func mountPlatformBilling(fallback, webhook http.Handler) http.Handler {
 		return fallback
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == platformWebhookPath {
+		if billing.PlatformWebhookRoutes.MatchesPath(r.URL.Path) {
 			webhook.ServeHTTP(w, r)
 			return
 		}

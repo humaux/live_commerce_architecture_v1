@@ -97,7 +97,7 @@ function runGate({ bundle, mode, members = [], fail = [], loudFail = [], stdinEa
   const dir = mkdtempSync(path.join(tmpdir(), "gate-bundle-"));
   // Real copies, not a symlink: a CLI module run through a symlink fails its own `argv[1] === import.meta.url` main guard and silently writes nothing.
   mkdirSync(path.join(dir, "scripts/dev"), { recursive: true });
-  for (const f of ["matrix-receipts.mjs", "ci-plan.mjs", "pr-modes.mjs", "test-local.sh", "shard-plan.json"]) copyFileSync(path.join(repo, "scripts/dev", f), path.join(dir, "scripts/dev", f));
+  for (const f of ["matrix-receipts.mjs", "ci-plan.mjs", "pr-modes.mjs", "test-local.sh", "shard-plan.json", "shard-plan.mjs"]) copyFileSync(path.join(repo, "scripts/dev", f), path.join(dir, "scripts/dev", f));
   const bin = path.join(dir, ".bin");
   mkdirSync(bin);
   writeFileSync(path.join(bin, "xvfb-run"), `#!/usr/bin/env bash

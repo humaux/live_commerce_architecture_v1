@@ -1,6 +1,6 @@
-// Purpose: Exercise canonical matrix evidence with isolated byte, source and run-outcome corruptions.
-// Depends on: the real evidence validator and native canonical receipts; no DB, browser or network calls.
-// Used by: foundation shards; fixture mutations never modify delivered evidence or source files.
+// Purpose: Exercise canonical matrix evidence and own the parent-only ledger location after complete browser children.
+// Depends on: the real evidence validator, canonical receipts and catalog child runner; isolated controls use no DB/browser/network.
+// Used by: foundation shards and the native catalog browser owner; fixture mutations never modify delivered evidence or source files.
 package foundation_test
 
 import (
@@ -760,4 +760,329 @@ func TestProductEditorMatrixLedgerEvidenceRunIdentityMetadata(t *testing.T) {
 	if err := validateProductEditorMatrixEvidence(root); err != nil {
 		t.Fatalf("changed line numbers and durations must preserve identities: %v", err)
 	}
+}
+
+// Validated PE data crosses the child boundary without passing the parent's T to
+// any native operation. Kept untagged so the same orchestration has DB-free controls.
+type catalogCoreBrowserFacts struct {
+	ledgerPath string
+	identities int
+}
+
+func runCatalogCoreBrowserChildren(t *testing.T, productEditor bool, run func(*testing.T, bool) *catalogCoreBrowserFacts) {
+	t.Helper() // The owner log retains the browser parent's source-file location.
+	var facts *catalogCoreBrowserFacts
+	complete := true
+	for _, child := range []struct {
+		name string
+		pe   bool
+	}{{"PE12-17-TWD", true}, {"CC12-frozen", false}} {
+		if child.pe && !productEditor {
+			continue
+		}
+		var childT *testing.T
+		returned := false
+		ok := t.Run(child.name, func(t *testing.T) {
+			childT = t
+			got := run(t, child.pe)
+			if child.pe {
+				facts = got
+			}
+			returned = true
+		})
+		// Run's bool does not distinguish SKIP; FailNow/SkipNow do not return.
+		// These children are sequential, and Run also waits for their cleanups.
+		complete = complete && ok && returned && childT != nil && !childT.Failed() && !childT.Skipped()
+	}
+	if !productEditor || !complete || t.Failed() || t.Skipped() {
+		return
+	}
+	if facts == nil || facts.ledgerPath == "" || facts.identities <= 0 {
+		t.Fatal("successful product-editor child returned incomplete ledger facts")
+	}
+	t.Logf("PASS mobile matrix click ledger: %d declared unique PASS identities; evidence=%s", facts.identities, facts.ledgerPath)
+}
+
+// These are producer controls, not the future conditional G07 admission controls.
+func TestProductEditorMatrixOwnerProof(t *testing.T) {
+	// Isolated current-binary controls use real testing.T child failure/skip behavior;
+	// the callback facts are MODEL_ONLY and never become native browser evidence.
+	if control := os.Getenv("LC_MATRIX_OWNER_LOCATION_CONTROL"); control != "" {
+		switch control {
+		case "success", "pe-fail-now", "pe-skip", "cc12-skip", "cc12-fail", "pe-cleanup-fail", "missing-facts":
+		default:
+			t.Fatal("unknown owner location control")
+		}
+		runCatalogCoreBrowserChildren(t, true, func(child *testing.T, pe bool) *catalogCoreBrowserFacts {
+			if pe {
+				switch control {
+				case "pe-fail-now":
+					child.FailNow()
+				case "pe-skip":
+					child.Skip("MODEL_ONLY PE skip")
+				case "pe-cleanup-fail":
+					child.Cleanup(func() { child.Error("MODEL_ONLY cleanup failure") })
+				case "missing-facts":
+					return nil
+				}
+				return &catalogCoreBrowserFacts{ledgerPath: "output/playwright/owner-control/product-editor-click-ledger.json", identities: 1}
+			}
+			if control == "cc12-skip" {
+				child.Skip("MODEL_ONLY CC12 skip")
+			}
+			if control == "cc12-fail" {
+				child.Error("MODEL_ONLY later CC12 assertion failed")
+			}
+			return nil
+		})
+		return
+	}
+	for _, name := range []string{"GITHUB_SHA", "GITHUB_WORKFLOW_SHA", "GITHUB_WORKFLOW_REF", "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT", "GITHUB_JOB", "GITHUB_EVENT_NAME"} {
+		t.Setenv(name, "")
+	}
+	t.Run("parent-location-after-complete-children", func(t *testing.T) {
+		for _, tc := range []struct {
+			name, parent, pe, cc12 string
+			exit, locations        int
+		}{
+			{"success", "pass", "pass", "pass", 0, 1},
+			{"pe-fail-now", "fail", "fail", "pass", 1, 0},
+			{"pe-skip", "pass", "skip", "pass", 0, 0},
+			{"cc12-skip", "pass", "pass", "skip", 0, 0},
+			{"cc12-fail", "fail", "pass", "fail", 1, 0},
+			{"pe-cleanup-fail", "fail", "fail", "pass", 1, 0},
+			{"missing-facts", "fail", "pass", "pass", 1, 0},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				binary, err := os.Executable()
+				if err != nil {
+					t.Fatal(err)
+				}
+				ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cancel()
+				cmd := exec.CommandContext(ctx, binary, "-test.run=^TestProductEditorMatrixOwnerProof$", "-test.v=test2json")
+				cmd.Env = productEditorMatrixChildEnv("LC_MATRIX_OWNER_LOCATION_CONTROL=" + tc.name)
+				raw, err := cmd.CombinedOutput()
+				code := 0
+				if err != nil {
+					exit, ok := err.(*exec.ExitError)
+					if !ok {
+						t.Fatal(err)
+					}
+					code = exit.ExitCode()
+				}
+				if code != tc.exit {
+					t.Fatalf("control exit %d, want %d: %s", code, tc.exit, raw)
+				}
+				// The standard converter preserves actual T ownership, including NAME
+				// switches back to the parent; nested stdout is not a terminal oracle.
+				convert := exec.CommandContext(ctx, "go", "tool", "test2json", "-p", "livecommerce/tests/foundation")
+				convert.Stdin = strings.NewReader(string(raw))
+				data, err := convert.Output()
+				if err != nil {
+					t.Fatal(err)
+				}
+				const parent = "TestProductEditorMatrixOwnerProof"
+				want := map[string]string{parent: tc.parent, parent + "/PE12-17-TWD": tc.pe, parent + "/CC12-frozen": tc.cc12}
+				starts, ends, endAt := map[string]int{}, map[string]int{}, map[string]int{}
+				locations, locationAt, packageEnds := 0, -1, 0
+				location := regexp.MustCompile(`(?m)^\s*catalog_matrix_evidence_test\.go:\d+: PASS mobile matrix click ledger: 1 declared unique PASS identities; evidence=output/playwright/owner-control/product-editor-click-ledger\.json$`)
+				for i, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+					var event struct{ Action, Package, Test, Output string }
+					if err := json.Unmarshal([]byte(line), &event); err != nil {
+						t.Fatal(err)
+					}
+					if event.Package != "livecommerce/tests/foundation" {
+						t.Fatalf("wrong event package: %+v", event)
+					}
+					if event.Test != "" {
+						if _, ok := want[event.Test]; !ok {
+							t.Fatalf("unexpected test identity: %+v", event)
+						}
+						if event.Action == "run" {
+							starts[event.Test]++
+						}
+					}
+					if event.Action == "pass" || event.Action == "fail" || event.Action == "skip" {
+						if event.Test == "" {
+							packageEnds++
+							if event.Action != tc.parent {
+								t.Fatalf("wrong package terminal: %+v", event)
+							}
+						} else {
+							ends[event.Test]++
+							endAt[event.Test] = i
+							if event.Action != want[event.Test] {
+								t.Fatalf("wrong test terminal: %+v", event)
+							}
+						}
+					}
+					if strings.Contains(event.Output, "PASS mobile matrix click ledger:") {
+						if event.Action != "output" || event.Test != parent || len(location.FindAllString(event.Output, -1)) != 1 {
+							t.Fatalf("location not owned by parent: %+v", event)
+						}
+						locations++
+						locationAt = i
+					}
+				}
+				for name := range want {
+					if starts[name] != 1 || ends[name] != 1 {
+						t.Fatalf("incomplete/duplicate test %s: starts=%d ends=%d", name, starts[name], ends[name])
+					}
+				}
+				if packageEnds != 1 || locations != tc.locations {
+					t.Fatalf("package terminals=%d locations=%d, want 1/%d", packageEnds, locations, tc.locations)
+				}
+				if locations == 1 && (locationAt <= endAt[parent+"/PE12-17-TWD"] || locationAt <= endAt[parent+"/CC12-frozen"] || locationAt >= endAt[parent]) {
+					t.Fatal("parent location emitted before both child terminals or after parent terminal")
+				}
+			})
+		}
+	})
+	t.Run("canonical-matching-and-exact-drift", func(t *testing.T) {
+		root, _ := productEditorMatrixEvidenceFixture(t)
+		proof, err := productEditorMatrixCanonicalProof(root)
+		if err != nil || proof == nil {
+			t.Fatalf("valid canonical fixture: %v", err)
+		}
+		if proof.Schema != "matrix-owner-proof/v1" || proof.Validation != "CANONICAL_VALIDATED" || len(proof.Drift) != 0 || proof.Reason != "" {
+			t.Fatalf("unexpected matching proof: %+v", proof)
+		}
+		if len(proof.Sources) != len(productEditorMatrixEvidenceSources) || len(proof.Files) != 4 {
+			t.Fatal("incomplete canonical bindings")
+		}
+		for _, source := range proof.Sources {
+			if source.Recorded != source.Actual {
+				t.Fatal("matching source fabricated drift")
+			}
+		}
+		originalFiles := proof.Files
+		name := "tests/admin/product-editor.acceptance.ts"
+		before := productEditorMatrixReadFixture(t, root, name)
+		after := append(append([]byte{}, before...), []byte("\n// proof drift control\n")...)
+		if err := os.WriteFile(filepath.Join(root, name), after, 0600); err != nil {
+			t.Fatal(err)
+		}
+		proof, err = productEditorMatrixCanonicalProof(root)
+		if proof == nil || err == nil || proof.Validation != "HISTORICAL_SOURCE_DRIFT" {
+			t.Fatalf("expected typed drift fact: %+v %v", proof, err)
+		}
+		if !reflect.DeepEqual(proof.Drift, []string{name}) || proof.Reason != "canonical evidence is historical (source drift: "+name+")" || !reflect.DeepEqual(originalFiles, proof.Files) {
+			t.Fatal("incorrect drift set/reason or canonical fingerprints changed")
+		}
+		found := false
+		for _, source := range proof.Sources {
+			if source.Path == name {
+				found = true
+				if source.Recorded != productEditorMatrixDigest(before) || source.Actual != productEditorMatrixDigest(after) {
+					t.Fatal("incorrect recorded/actual hash pair")
+				}
+			}
+		}
+		if !found {
+			t.Fatal("drifted source missing from proof")
+		}
+	})
+	t.Run("canonical-invalid-never-produces-proof", func(t *testing.T) {
+		root, canonical := productEditorMatrixEvidenceFixture(t)
+		if err := os.WriteFile(filepath.Join(root, canonical, "playwright.log"), []byte("tampered"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		proof, err := productEditorMatrixCanonicalProof(root)
+		if err == nil || proof != nil {
+			t.Fatal("invalid canonical bytes produced proof")
+		}
+	})
+	t.Run("fresh-ledger-bindings-and-rejections", func(t *testing.T) {
+		root, _ := productEditorMatrixEvidenceFixture(t)
+		// Fresh validation uses the current compiled table, never the historical fixture table.
+		if err := os.WriteFile(filepath.Join(root, productEditorMatrixCasesPath), productEditorMatrixLedgerCasesJSON, 0600); err != nil {
+			t.Fatal(err)
+		}
+		ledger := productEditorMatrixReadFixture(t, "../..", "tests/foundation/testdata/product_editor_mobile_matrix_ledger.json")
+		proof, err := productEditorMatrixFreshProof(root, ledger, "native-suite-control")
+		if err != nil || proof == nil {
+			t.Fatalf("valid recorded ledger: %v", err)
+		}
+		if proof.Validation != "LEDGER_VALIDATED" || proof.Files["product-editor-click-ledger.json"] != productEditorMatrixDigest(ledger) || proof.Files[productEditorMatrixCasesPath] != productEditorMatrixDigest(productEditorMatrixLedgerCasesJSON) {
+			t.Fatal("fresh proof does not bind actual bytes")
+		}
+		if proof.Identity.RunID != "unknown" || proof.Identity.CheckoutSHA != "unknown" || proof.Identity.TrackedClean != "unknown" || proof.Identity.Test != "TestBrowserCatalogCore" || proof.Identity.Evidence != "native-suite-control" {
+			t.Fatal("missing metadata fabricated qualification")
+		}
+		var rows []productEditorMatrixLedgerRow
+		if err := json.Unmarshal(ledger, &rows); err != nil {
+			t.Fatal(err)
+		}
+		duplicate := append(append([]productEditorMatrixLedgerRow{}, rows...), rows[0])
+		missingIdentity := append([]productEditorMatrixLedgerRow{}, rows...)
+		missingIdentity[0].Page = ""
+		failed := append([]productEditorMatrixLedgerRow{}, rows...)
+		failed[0].Actual = "FAIL"
+		mutations := map[string][]byte{"malformed": []byte("{"), "empty": []byte("[]")}
+		for name, values := range map[string][]productEditorMatrixLedgerRow{"duplicate": duplicate, "missing": rows[1:], "missing-identity": missingIdentity, "failed": failed} {
+			data, err := json.Marshal(values)
+			if err != nil {
+				t.Fatal(err)
+			}
+			mutations[name] = data
+		}
+		for name, data := range mutations {
+			t.Run(name, func(t *testing.T) {
+				proof, err := productEditorMatrixFreshProof(root, data, "native-suite-control")
+				if err == nil || proof != nil {
+					t.Fatal("invalid fresh ledger produced proof")
+				}
+			})
+		}
+		name := productEditorMatrixEvidenceSources[0]
+		before := productEditorMatrixReadFixture(t, root, name)
+		after := append(append([]byte{}, before...), []byte("\n// changed producer\n")...)
+		if err := os.WriteFile(filepath.Join(root, name), after, 0600); err != nil {
+			t.Fatal(err)
+		}
+		changed, err := productEditorMatrixFreshProof(root, ledger, "native-suite-control")
+		if err != nil || changed == nil {
+			t.Fatalf("changed producer fingerprint: %v", err)
+		}
+		if changed.Sources[0].Actual == proof.Sources[0].Actual || changed.Sources[0].Actual != productEditorMatrixDigest(after) || changed.Sources[0].Recorded != "unknown" {
+			t.Fatal("source change invisible or historical digest fabricated")
+		}
+		if err := os.WriteFile(filepath.Join(root, productEditorMatrixCasesPath), append(append([]byte{}, productEditorMatrixLedgerCasesJSON...), '\n'), 0600); err != nil {
+			t.Fatal(err)
+		}
+		rejected, err := productEditorMatrixFreshProof(root, ledger, "native-suite-control")
+		if err == nil || rejected != nil {
+			t.Fatal("checkout/compiled case stamp mismatch produced proof")
+		}
+	})
+	t.Run("distinct-CI-and-checkout-identities", func(t *testing.T) {
+		root, _ := productEditorMatrixEvidenceFixture(t)
+		t.Setenv("GITHUB_SHA", strings.Repeat("a", 40))
+		t.Setenv("GITHUB_WORKFLOW_SHA", strings.Repeat("b", 40))
+		t.Setenv("GITHUB_WORKFLOW_REF", "owner/repo/.github/workflows/gates.yml@refs/heads/test")
+		t.Setenv("GITHUB_RUN_ID", "4242")
+		t.Setenv("GITHUB_RUN_ATTEMPT", "2")
+		t.Setenv("GITHUB_JOB", "gate")
+		t.Setenv("GITHUB_EVENT_NAME", "workflow_dispatch")
+		proof, err := productEditorMatrixCanonicalProof(root)
+		if err != nil || proof == nil {
+			t.Fatalf("well-formed identity facts: %v", err)
+		}
+		id := proof.Identity
+		if id.SubjectSHA != strings.Repeat("a", 40) || id.WorkflowSHA != strings.Repeat("b", 40) || id.RunID != "4242" || id.RunAttempt != "2" || id.CheckoutSHA != "unknown" {
+			t.Fatal("CI claims collapsed into actual checkout identity")
+		}
+		if _, err := productEditorMatrixIdentity(root, "TestBrowserCatalogCore", "../elsewhere"); err == nil {
+			t.Fatal("invalid native evidence identity accepted")
+		}
+	})
+	t.Run("malformed-CI-metadata-produces-no-proof", func(t *testing.T) {
+		root, _ := productEditorMatrixEvidenceFixture(t)
+		t.Setenv("GITHUB_RUN_ATTEMPT", "not-an-attempt")
+		proof, err := productEditorMatrixCanonicalProof(root)
+		if err == nil || proof != nil || strings.Contains(err.Error(), "not-an-attempt") {
+			t.Fatal("malformed metadata accepted or echoed")
+		}
+	})
 }

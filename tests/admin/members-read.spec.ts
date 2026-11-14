@@ -2,7 +2,7 @@
 // Depends on: W6 synthetic scoped loyalty fixtures/control, Playwright, frozen copy/token map.
 // Used by: TestBrowserW6Customers/members-read in --browser-customers-billing.
 // Invariants: no successful business response mocks, cookie injection, force clicks or DOM actions; faults are MOCK.
-import { expect, test, type Browser, type Page } from "@playwright/test";
+import { expect, test, type Browser, type Page, type Request } from "@playwright/test";
 import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { membersCopy } from "../../apps/admin/components/members/copy";
@@ -38,17 +38,78 @@ const listURL = (locale: Locale, scope = store) => `${origin}/${locale}/members?
 const detailURL = (locale: Locale, id = member, scope = store) => `${origin}/${locale}/members/${id}?store=${scope}`;
 const links = (page: Page) => page.getByTestId("members-list").locator(`a[href*="/members/"]`);
 const entries = (page: Page) => page.getByTestId("member-ledger").locator("tbody tr");
-async function signed(browser: Browser, locale: Locale = "en", width = 1440, role = "reader") {
+// Preparation only for the real-session-revocation cases. Observe from before sign-in so an
+// old document's standing request cannot be mistaken for the target navigation's readiness.
+async function observeBillingPreparation(page: Page) {
+  let preparedThrough = 0, documentStart = 0, preparedDocument: number | undefined;
+  const reads: { request: Request; done: Promise<{ status: number | null; error: string | null }> }[] = [];
+  const isStanding = (request: Request) => {
+    const url = new URL(request.url());
+    return request.frame() === page.mainFrame() && request.method() === "GET" &&
+      url.origin === new URL(origin).origin && /^\/api\/stores\/[^/]+\/billing\/standing$/.test(url.pathname);
+  };
+  page.on("request", request => {
+    if (!isStanding(request)) return;
+    // Keep failures as data until readiness checks them, avoiding unhandled rejected promises.
+    const done = request.response().then(async response => ({
+      status: response?.status() ?? null,
+      error: response ? await response.finished() : "standing request failed without a response",
+    })).catch(() => ({ status: null, error: "standing request did not finish" }));
+    reads.push({ request, done });
+  });
+  // READ ONLY lifecycle telemetry: no DOM, cookie, fetch or product state changes. The mark
+  // records the real pageshow, including when it precedes hydration; it does not dispatch one.
+  await page.addInitScript(() => {
+    window.addEventListener("pageshow", () => performance.mark("members-read:pageshow"), { once: true });
+  });
+  return async () => {
+    // Same-document router.replace changes the URL and emits framenavigated without
+    // remounting BillingBanner. Keep its completed read; full goto changes timeOrigin.
+    const documentOrigin = await page.evaluate(() => performance.timeOrigin);
+    if (preparedDocument !== documentOrigin) documentStart = preparedThrough;
+    const scope = await page.getByTestId("shell-store-selector").inputValue();
+    const standingPath = `/api/stores/${scope}/billing/standing`;
+    await page.waitForFunction(() => performance.getEntriesByName("members-read:pageshow").length > 0);
+    // Each controlled full navigation follows a successful drain of the prior document.
+    const current = () => reads.slice(documentStart).filter(read =>
+      new URL(read.request.url()).pathname === standingPath);
+    // Listener was armed before navigation. Check captured requests first, so a fast response
+    // is not missed; if hydration is later than pageshow, wait for its actual mount request.
+    if (!current().length) await page.waitForRequest(request => isStanding(request) &&
+      new URL(request.url()).pathname === standingPath);
+    expect(current().length, "current document/store standing request observed").toBeGreaterThan(0);
+    // BillingBanner receives a resolved store from WorkspaceFrame. Its mount and pageshow
+    // callbacks dispatch standing synchronously; after both, drain every observed request,
+    // including prior documents, through response.finished rather than response headers only.
+    let completed = 0;
+    while (completed < reads.length) {
+      const batch = reads.slice(completed);
+      for (const result of await Promise.all(batch.map(read => read.done))) {
+        expect(result.error, "background standing body completed before revocation").toBeNull();
+        expect(result.status, "background standing remains authorized during preparation").toBe(200);
+      }
+      completed += batch.length;
+    }
+    expect(await page.evaluate(() => performance.timeOrigin)).toBe(documentOrigin);
+    expect(await page.getByTestId("shell-store-selector").inputValue()).toBe(scope);
+    preparedDocument = documentOrigin; preparedThrough = reads.length;
+  };
+}
+async function signed(browser: Browser, locale: Locale = "en", width = 1440, role = "reader", prepareRevocation = false) {
   await ctl("actor", role);
   const context = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width, height: 900 } });
   const page = await context.newPage();
+  const billingReady = prepareRevocation ? await observeBillingPreparation(page) : undefined;
   await page.goto(`${origin}/en/`);
   await step(page, "identity sign-in", "signed native callback loads workspace", async () => {
     await page.getByRole("button", { name: "Sign in with identity service" }).click();
     await expect(page.getByTestId("shell-store-selector")).toBeVisible();
     return { selector: await page.getByTestId("shell-store-selector").count() };
   });
-  await page.goto(listURL(locale)); return { page, context };
+  if (billingReady) await billingReady();
+  await page.goto(listURL(locale));
+  if (billingReady) await billingReady();
+  return { page, context, billingReady };
 }
 async function search(page: Page, q: string, keyboard = false) {
   await step(page, "search input", "draft matches typed value", async () => { await page.getByTestId("members-search-input").fill(q); await expect(page.getByTestId("members-search-input")).toHaveValue(q); return { length: q.length }; }, "fill");
@@ -340,10 +401,11 @@ for (const target of ["query", "store", "logout", "detail-logout"] as const) tes
 });
 
 for (const target of ["list", "detail"] as const) test(`MOCK 401 clears ${target} private content`, async ({ browser }) => {
- const { page, context } = await signed(browser);
+ const { page, context, billingReady } = await signed(browser, "en", 1440, "reader", true);
  try {
   await expect(links(page)).toHaveCount(20);
   if (target === "detail") { await page.goto(detailURL("en")); await expect(entries(page)).toHaveCount(50); }
+  await billingReady!();
   await ctl("members-revoke");
   await step(page, `${target} 401`, "refused native read clears private content", async () => {
    const response = page.waitForResponse(r => new URL(r.url()).pathname.includes("/members") && r.status() === 401);

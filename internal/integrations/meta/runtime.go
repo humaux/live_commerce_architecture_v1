@@ -1,3 +1,6 @@
+// Purpose: assemble Meta ingress and isolated consumers; API/worker callers supply scoped pools.
+// Depends on: existing inbox, verifier, platform pool checks and River.
+// Invariant: literal configured identity admission precedes methods; no worker starts in the API.
 package meta
 
 import (
@@ -6,6 +9,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -55,21 +60,85 @@ func NewWebhookRouter(ctx context.Context, pool *pgxpool.Pool, keys *PayloadKeyr
 	return webhookDispatch(routes), nil
 }
 
+// webhookRoute rows govern transport shape, never configured identity admission.
+type webhookRoute struct{ Method, Path string }
+type WebhookRouteTable struct{}
+
+var WebhookRoutes = WebhookRouteTable{}
+
+func (WebhookRouteTable) HasPrefix(path string) bool { return strings.HasPrefix(path, "/v1/meta") }
+
+//contractdrift:routes /v1/meta matchWebhookRoute webhookMethodAllowed mount=WebhookRoutes
+var webhookRows = []webhookRoute{
+	{Method: http.MethodGet, Path: "/v1/meta/webhooks/{app_id}/{object}"},
+	{Method: http.MethodPost, Path: "/v1/meta/webhooks/{app_id}/{object}"},
+}
+
+type webhookMatch struct{ pattern, literalPath string }
+
+func matchWebhookRoute(u *url.URL) webhookMatch {
+	for _, entry := range webhookRows {
+		if match, ok := matchWebhookPattern(entry, u); ok {
+			return match
+		}
+	}
+	return webhookMatch{}
+}
+
+func webhookMethodAllowed(pattern, method string) bool {
+	for _, entry := range webhookRows {
+		if entry.Path == pattern && entry.Method == method {
+			return true
+		}
+	}
+	return false
+}
+
+// Match the original URL without cleaning or unescaping. The resulting literal
+// key must still be admitted by the constructor's configured endpoint map.
+func matchWebhookPattern(entry webhookRoute, u *url.URL) (webhookMatch, bool) {
+	if u.RawPath != "" || u.EscapedPath() != u.Path {
+		return webhookMatch{}, false
+	}
+	pattern, path := strings.Split(entry.Path, "/"), strings.Split(u.Path, "/")
+	if len(pattern) != len(path) {
+		return webhookMatch{}, false
+	}
+	for i, segment := range pattern {
+		if strings.HasPrefix(segment, "{") && strings.HasSuffix(segment, "}") {
+			if path[i] == "" || path[i] == "." || path[i] == ".." {
+				return webhookMatch{}, false
+			}
+		} else if segment != path[i] {
+			return webhookMatch{}, false
+		}
+	}
+	return webhookMatch{pattern: entry.Path, literalPath: u.Path}, true
+}
+
+type webhookDispatcher struct{ routes map[string]http.Handler }
+
 func webhookDispatch(routes map[string]http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// EscapedPath differs for any percent encoding, including encoded slashes
-		// and dot segments. Never let ServeMux clean a callback first.
-		if r.URL.RawPath != "" || r.URL.EscapedPath() != r.URL.Path {
-			http.NotFound(w, r)
-			return
-		}
-		h := routes[r.URL.Path]
-		if h == nil {
-			http.NotFound(w, r)
-			return
-		}
-		h.ServeHTTP(w, r)
-	})
+	return &webhookDispatcher{routes: routes}
+}
+
+// ServeHTTP owns path and method admission; the configured handler retains all
+// challenge, signature, body, security-header and durable inbox behavior.
+func (d *webhookDispatcher) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	match := matchWebhookRoute(r.URL)
+	h := d.routes[match.literalPath]
+	if match.literalPath == "" || h == nil {
+		http.NotFound(w, r)
+		return
+	}
+	if !webhookMethodAllowed(match.pattern, r.Method) {
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Allow", "GET, POST")
+		writeCode(w, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED")
+		return
+	}
+	h.ServeHTTP(w, r)
 }
 
 // NewConsumerClient creates only the fixed Meta queue and worker. Its separate

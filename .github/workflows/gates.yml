@@ -52,12 +52,19 @@ on:
           on the current HEAD; any other value = use `modes`.
         default: 'false'
         required: false
+      canonical_g07:
+        description: "Strict complete G07 shard attempt; default modes and no overrides only"
+        default: 'false'
+        required: false
       extra_env:
         description: >-
           Optional space-separated LC_*=value pairs exported for every mode (fault-injection calibration of a new gate,
           e.g. LC_PM_UI_INJECT_FAULT=missing-detail or LC_INBOX_CALIBRATION=retain-thread for --browser-inbox). Empty for normal runs.
         default: ''
         required: false
+
+env:
+  LC_G07_CANONICAL: ${{ github.event_name == 'workflow_dispatch' && inputs.canonical_g07 == 'true' && '1' || '' }}
 
 permissions:
   contents: read
@@ -72,6 +79,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10 # + contract drift (go run, ~1-2 min)
     outputs:
+      g07_anchor: ${{ steps.g07_anchor.outputs.anchor }}
+      g07_deadline: ${{ steps.g07_anchor.outputs.deadline }}
       matrix: ${{ steps.plan.outputs.matrix }}
       jobs: ${{ steps.plan.outputs.jobs }}
       sweep_n: ${{ steps.plan.outputs.sweep_n }}
@@ -80,6 +89,17 @@ jobs:
       prebuilt_modes: ${{ steps.plan.outputs.prebuilt_modes }}
       prebuild: ${{ steps.plan.outputs.prebuild }}
     steps:
+      - id: g07_anchor
+        if: inputs.canonical_g07 == 'true'
+        env:
+          INPUT_MODES: ${{ inputs.modes }}
+          INPUT_FULL: ${{ inputs.full_browser_universe }}
+          INPUT_EXTRA: ${{ inputs.extra_env }}
+        run: |
+          [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && "$INPUT_MODES" == '["foundation-shards"]' && "$INPUT_FULL" == false && -z "$INPUT_EXTRA" ]] || exit 2
+          anchor=$(date +%s); deadline=$((anchor + 9000))
+          printf 'anchor=%s\ndeadline=%s\n' "$anchor" "$deadline" >> "$GITHUB_OUTPUT"
+          printf 'LC_G07_ANCHOR=%s\nLC_G07_DEADLINE=%s\n' "$anchor" "$deadline" >> "$GITHUB_ENV"
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
@@ -97,7 +117,7 @@ jobs:
         run: printf '.github/workflows/gates.yml\n' | node scripts/dev/pr-modes.mjs --stdin >/dev/null
       # CI-DRIFT (owner 2026-10-10): contract drift blocks `required` through this plan job. Go routes x contracts x BFF allowlist;
       # new drift, a touched legacy route, a stale or grown baseline -> exit 1; untouched legacy -> warning. Base = the PR base SHA.
-      - if: github.event_name == 'pull_request'
+      - if: github.event_name == 'pull_request' || inputs.canonical_g07 == 'true'
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
@@ -118,7 +138,21 @@ jobs:
           # CI-SPEED-2: pack short legs for PR / push / schedule and the full-universe dispatch; an explicit modes list (single `@i/N` slice, calibration) or any
           # extra_env dispatch keeps one job per mode.
           BUNDLE: ${{ github.event_name != 'workflow_dispatch' || (inputs.full_browser_universe == 'true' && inputs.extra_env == '') }}
-        run: node scripts/dev/ci-plan.mjs
+        run: |
+          if [[ "${LC_G07_CANONICAL:-}" == 1 ]]; then export MODES='["foundation-shards","--browser-product-editor"]' BUNDLE=false; fi
+          node scripts/dev/ci-plan.mjs
+      - name: Canonical compiled inventory
+        if: inputs.canonical_g07 == 'true'
+        run: node scripts/dev/matrix-receipts.mjs canonical-plan output/g07-plan
+      - name: Canonical plan artifact
+        if: inputs.canonical_g07 == 'true'
+        timeout-minutes: 2
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: g07-a${{ github.run_attempt }}-plan
+          path: output/g07-plan/
+          retention-days: 14
+          if-no-files-found: error
 
   # CI-SPEED build-once: the Next builds and the Go compile every prebuilt_modes leg used to repeat, done once for this run's SHA. Same commands as the legs
   # (test-local.sh's own lc_build_* under lc_environment; go test -race [-tags browser] over ./tests/foundation runs vet and links exactly like the arms).
@@ -184,6 +218,8 @@ jobs:
       GOTOOLCHAIN: go1.27.4
       GOFLAGS: -mod=readonly
       PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+      LC_G07_ANCHOR: ${{ needs.plan.outputs.g07_anchor }}
+      LC_G07_DEADLINE: ${{ needs.plan.outputs.g07_deadline }}
       MODE: ${{ matrix.mode }}
       BUNDLE: ${{ matrix.bundle }}
       MEMBERS: ${{ join(matrix.members.*.mode, ' ') }}
@@ -192,6 +228,9 @@ jobs:
       LC_SWEEP_WORKERS: "1"
       EXTRA_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.extra_env || '' }} # never on pull_request
     steps:
+      - name: Canonical remaining setup budget
+        if: inputs.canonical_g07 == 'true'
+        run: test "$((LC_G07_DEADLINE - $(date +%s)))" -gt 300
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           persist-credentials: false
@@ -353,6 +392,19 @@ jobs:
               *) echo "unknown mode: $MODE" >&2; exit 2 ;;
             esac
           }
+          if [[ "${LC_G07_CANONICAL:-}" == 1 ]]; then
+            [[ "$BUNDLE" != true && -z "$EXTRA_ENV" ]] || exit 2
+            export LC_G07_DIR="$PWD/output/g07" LC_G07_GO_FORMAT=-json
+            export LC_G07_GO_LOG="$LC_G07_DIR/go.jsonl"
+            node scripts/dev/matrix-receipts.mjs canonical-start "$LC_G07_DIR"
+            remaining=$((LC_G07_DEADLINE - $(date +%s) - 300))
+            ((remaining > 0)) || exit 1
+            export -f gate_one
+            code=0
+            timeout --kill-after=30s "${remaining}s" bash -c 'set -eo pipefail; gate_one "$1"' _ "$MODE" || code=$?
+            node scripts/dev/matrix-receipts.mjs canonical-end "$LC_G07_DIR" "$code"
+            exit "$code"
+          fi
           if [[ "$BUNDLE" != true ]]; then gate_one "$MODE"; exit; fi
           # CI-SPEED-2 bundle: EVERY member runs, each under its own 150 min bound (the solo job bound) in a fresh output tree; its receipt is written from that
           # tree alone (same command as the solo "Run receipt" step), then the tree moves to output/members/<art>/ for that member's own artifacts.
@@ -375,6 +427,15 @@ jobs:
             for d in ci-gates playwright receipt; do if [[ -e "output/$d" ]]; then mv "output/$d" "output/members/$art/"; fi; done
           done 3< <(jq -r '.[] | "\(.mode) \(.art)"' <<<"$MEMBERS_JSON")
           exit "$rc"
+      - name: Canonical evidence ${{ matrix.mode }}
+        if: always() && inputs.canonical_g07 == 'true'
+        timeout-minutes: 2
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: g07-a${{ github.run_attempt }}-${{ matrix.art }}
+          path: output/g07/
+          retention-days: 14
+          if-no-files-found: error
       # MATRIX-RECEIPT (#128): ONE shared step for every mode, after the gate (always, so a failed gate still reports FAIL). test_count is counted
       # from this job's own gate log (go test -v PASS/FAIL lines + node --test summary) and its per-step go test -json logs (*.jsonl, e.g. --browser-webkit),
       # never a static count; the `receipts` job checks it against the plan.
@@ -609,6 +670,10 @@ jobs:
   # MATRIX-RECEIPT verifier (#128): for every mode the plan job emitted (whatever the event planned: a push to r3/integration plans only the foundation shards),
   # exactly one receipt from THIS run id and sha, status PASS, test_count > 0. Missing, duplicate, stale, unplanned or zero-count = red. Feeds `required`.
   receipts:
+    # Root amendment 2026-11-13: official canonical artifact/job reads only.
+    permissions:
+      contents: read
+      actions: read
     needs: [plan, gate]
     if: ${{ always() && needs.plan.result == 'success' }}
     runs-on: ubuntu-24.04
@@ -625,11 +690,37 @@ jobs:
         continue-on-error: true # no receipt at all is reported by the verifier per planned mode, not as a download error
         with:
           pattern: receipt-gate-*
-          path: receipts
+          path: ${{ inputs.canonical_g07 == 'true' && 'output/g07-ordinary-receipts' || 'receipts' }}
       - name: Every planned mode has one fresh PASS receipt with tests
         env:
           PLANNED: ${{ needs.plan.outputs.matrix }}
-        run: node scripts/dev/matrix-receipts.mjs verify receipts
+        run: |
+          if [[ "${LC_G07_CANONICAL:-}" == 1 ]]; then node scripts/dev/matrix-receipts.mjs verify output/g07-ordinary-receipts
+          else node scripts/dev/matrix-receipts.mjs verify receipts; fi
+      - name: Strict canonical G07 intake
+        if: inputs.canonical_g07 == 'true'
+        env:
+          LC_G07_ANCHOR: ${{ needs.plan.outputs.g07_anchor }}
+          LC_G07_DEADLINE: ${{ needs.plan.outputs.g07_deadline }}
+          GITHUB_TOKEN: ${{ github.token }}
+          LC_RELEASE_GATE_OUT: output/g07-verdict
+        run: bash scripts/dev/release-gate.sh --strict --only G07 --shard-evidence output/g07-intake
+      - name: Canonical verdict and raw intake
+        if: always() && inputs.canonical_g07 == 'true'
+        timeout-minutes: 1
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: g07-verdict-a${{ github.run_attempt }}
+          path: |
+            output/g07-verdict/
+            output/g07-intake/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Canonical finalization deadline
+        if: always() && inputs.canonical_g07 == 'true'
+        env:
+          LC_G07_DEADLINE: ${{ needs.plan.outputs.g07_deadline }}
+        run: test "$(date +%s)" -lt "$LC_G07_DEADLINE"
 
   # deploy-smoke.yml as a reusable workflow: when deploy/ or scripts/deploy* changed it runs inside this run, so `required` waits for it (see deploy-smoke.yml header).
   deploy:
@@ -646,6 +737,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     env:
+      LC_G07_DEADLINE: ${{ needs.plan.outputs.g07_deadline }}
       PLAN: ${{ needs.plan.result }}
       BUILD: ${{ needs.build.result }}
       BUILD_EXPECTED: ${{ needs.plan.outputs.prebuild == 'true' }}
@@ -657,6 +749,7 @@ jobs:
       DEPLOY_EXPECTED: ${{ needs.plan.outputs.deploy == 'true' }}
     steps:
       - run: |
+          if [[ "${LC_G07_CANONICAL:-}" == 1 ]]; then test "$(date +%s)" -lt "$LC_G07_DEADLINE" || exit 1; fi
           echo "plan=$PLAN build=$BUILD (expected $BUILD_EXPECTED) gate=$GATE aggregate=$AGG (expected $AGG_EXPECTED) deploy=$DEPLOY (expected $DEPLOY_EXPECTED) receipts=$RECEIPTS"
           rc=0
           if [[ "$BUILD_EXPECTED" == true ]]; then [[ "$BUILD" == success ]] || rc=1; else [[ "$BUILD" == skipped ]] || rc=1; fi

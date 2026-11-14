@@ -52,7 +52,7 @@ const STOREFRONT = (facts) => {
     { route: "/data-deletion", path: "/data-deletion" }, { route: "/pages/[slug]", path: "/pages/about" },
   ];
 };
-const STOREFRONT_CART = [{ route: "/cart", path: "/cart" }, { route: "/checkout", path: "/checkout" }, { route: "/orders/[orderID]", path: null }];
+const STOREFRONT_CART = [{ route: "/cart", path: "/cart" }, { route: "/checkout", path: "/checkout" }, { route: "/orders/[orderID]", path: null }, { route: "/orders/[orderID]/return", path: null }];
 const PLATFORM_PAGES = ["home", "privacy", "terms", "data-deletion", "contact"];
 const PLATFORM = { host: "platform.example.invalid", adminHost: "admin.example.invalid", email: "contact@example.invalid" }; // the build-time values of test-local.sh
 
@@ -404,6 +404,8 @@ export async function main() {
         try { orderID = await buy(); } catch (e) { log(`storefront ${locale}/${v.name}: placing the COD order failed: ${String(e.message || e).split("\n")[0]}`); }
         const u = storefrontUnits.find((x) => x.route === "/orders/[orderID]");
         if (u && orderID) await capture(s, unit(u, `${origin}/${locale}/orders/${orderID}`));
+        const returns = storefrontUnits.find((x) => x.route === "/orders/[orderID]/return");
+        if (returns && orderID) await capture(s, unit(returns, `${origin}/${locale}/orders/${orderID}/return`));
       }
       for (const u of storefrontUnits) if (u.path !== null && !STOREFRONT_CART.some((c) => c.route === u.route)) await capture(s, unit(u, `${origin}/${locale}${u.path}`));
     } finally { await s.c.close().catch(() => {}); }

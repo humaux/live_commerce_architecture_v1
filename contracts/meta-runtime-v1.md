@@ -76,7 +76,11 @@ func platform.ValidateSameDatabase(context.Context, *pgxpool.Pool, *pgxpool.Pool
 ```
 
 Paths are derived only from validated config:
-`/v1/meta/webhooks/{app_id}/{object}`. Different apps/objects have distinct
+
+- `GET /v1/meta/webhooks/{app_id}/{object}`
+- `POST /v1/meta/webhooks/{app_id}/{object}`
+
+Different apps/objects have distinct
 verifiers and cannot select tenants/stores. Router admission rejects nil/invalid
 verifiers, forged paths and duplicates. It never trusts forwarded Host.
 Only exact unescaped configured paths dispatch; escaped, trailing-slash,
