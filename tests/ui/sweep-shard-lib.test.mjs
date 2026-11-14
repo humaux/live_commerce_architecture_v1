@@ -28,7 +28,7 @@ function executorWalk(routes = STOREFRONT_ROUTES, facts = walkFacts) {
     (f, c, m) => storefrontWalk(f, c, m, routes), facts, walkChrome, walkMain);
 }
 
-test("storefront executor: exact legacy mappings plus three unique click-only routes", () => {
+test("storefront executor: exact legacy mappings plus four unique click-only routes", () => {
   const expected = [
     { route: "/", path: "", scopes: [walkChrome, ...walkMain] },
     { route: "/products", path: "/products" },
@@ -49,8 +49,8 @@ test("storefront executor: exact legacy mappings plus three unique click-only ro
   assert.deepEqual(executorWalk(), expected);
   const special = ["/cart", "/checkout", "/orders/[orderID]", "/orders/[orderID]/return"];
   const all = [...executorWalk().map(r => r.route), ...special];
-  assert.equal(all.length, 18);
-  assert.equal(new Set(all).size, 18);
+  assert.equal(all.length, 19);
+  assert.equal(new Set(all).size, 19);
   assert.deepEqual(all.sort(), [...STOREFRONT_ROUTES].sort());
   const raw = readFileSync("tests/ui/click-sweep.mjs", "utf8");
   const session = raw.slice(raw.indexOf("async function storefrontSession"), raw.indexOf("// ---- journeys by clicks"));
@@ -138,7 +138,7 @@ test("planClick: for every N the shards partition the whole universe (every regi
     const plan = planClick(adminRoutes, weights, of);
     const seen = new Map();
     for (const p of plan.pages) { const i = plan.owner.get(p.unit); assert.ok(i >= 1 && i <= of, p.page); assert.ok(!seen.has(p.page), `duplicate page ${p.page}`); seen.set(p.page, i); }
-    assert.equal(seen.size, (adminRoutes.length + 18) * CLICK_VARIANTS.length, "admin routes + 18 storefront routes, each at all variants");
+    assert.equal(seen.size, (adminRoutes.length + 19) * CLICK_VARIANTS.length, "admin routes + 19 storefront routes, each at all variants");
     for (const r of adminRoutes) for (const v of CLICK_VARIANTS) assert.ok(seen.has(`admin|${r.path}|${v.viewport}|${v.locale}`), `${r.path} ${v.viewport}/${v.locale}`);
     for (const [j, unit] of Object.entries(plan.journeyOwner)) assert.ok(plan.owner.has(unit), `journey ${j} has an owning unit`);
     // J2/J3 read the COD order of the storefront desktop/zh-TW session: same shard, always

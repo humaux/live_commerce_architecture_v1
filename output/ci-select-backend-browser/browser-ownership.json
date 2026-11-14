@@ -807,7 +807,7 @@
     "tests/ui/product-media-journey.mjs": "40f7470c598b5b1aae51af7ab5c5d03bd59e6161ca9ff0e1092072b3d2ba9dc9",
     "tests/ui/sweep-aggregate.mjs": "96b17bae5f7ed4cc3df60671b12b7a42bb23ebca24c473eb0c819924720d9c3a",
     "tests/ui/sweep-shard-lib.mjs": "4e5b619b399a59470edadbaa2d23bd7207a73587b0e117a10d5bb02ae10f5fc4",
-    "tests/ui/sweep-shard-lib.test.mjs": "e0b0a9c2c9bc30c7a9eb388092f52c07500e697056e8969937b7504ee22e7a7d",
+    "tests/ui/sweep-shard-lib.test.mjs": "fda5727d35f9b3ab7c39948bc44ce747e3e77afea5a752c03f6b798aad682d3b",
     "tests/ui/visual-audit.mjs": "52e331c22624ebe2f63b26b25cab744b57647e300954e9e00aed47f034cefc32",
     "tests/ui/visual-lint-canary.mjs": "31f23d3e13a38aa3c1ae4fc62515bc28e0805e1960810e8668eca660cde02745",
     "tests/ui/visual-lint-lib.mjs": "d236975b2c2843ff536400d26507e7cf5d3230a18e6fca5e31235f28ee1ce480",
