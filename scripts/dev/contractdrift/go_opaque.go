@@ -230,8 +230,8 @@ func (s *goScanner) mountGuards(fn *goFunc) []finding {
 	return goDedupFindings(out)
 }
 
-// Associate mount guards with opaque dispatchers in the same assembly package and
-// packages that file imports, so changes inside the child router touch its coverage.
+// Associate mount guards with opaque dispatchers through existing dependency roots
+// in the assembly package, retaining the direct imported-package boundary.
 func goBindOpaqueMountSpans(packages map[string]*goPackage, root string, set *token.FileSet, out *inventory) {
 	imports := map[string][]string{}
 	owners := map[string]*goPackage{}
@@ -262,7 +262,22 @@ func goBindOpaqueMountSpans(packages map[string]*goPackage, root string, set *to
 				continue
 			}
 			file := child.Locations[0].File
-			belongs := owners[file] != nil && owners[file] == owners[assembly]
+			belongs := false
+			if owners[file] != nil && owners[file] == owners[assembly] {
+				// Existing qualified dependency closures retain their root first.
+				// A mount must reference this child, or a child builder must
+				// reference this guard; sharing an assembly package is not an edge.
+				for _, ref := range f.Locations {
+					if ref == child.Locations[0] {
+						belongs = true
+					}
+				}
+				for _, ref := range child.Locations {
+					if ref == f.Locations[0] {
+						belongs = true
+					}
+				}
+			}
 			for _, pkg := range imports[assembly] {
 				if filepath.ToSlash(filepath.Dir(file))+"/" == pkg {
 					belongs = true
