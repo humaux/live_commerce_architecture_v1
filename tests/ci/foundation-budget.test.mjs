@@ -2,12 +2,39 @@
 // Depends on: existing matrix receipts and release-gate classifier; synthetic MODEL_ONLY fixtures, no Go/PG/browser.
 // Used by: direct scripts/dev/test-node.sh execution; runtime qualification remains separate.
 import test from "node:test";
+import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync, rmSync, openSync, closeSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
-import { G07_C1, G07_MATRIX, G07_NODE, G07_ARCHIVE_PY, verifyG07, g07Node, g07Events, g07Inventory, g07Budget } from "../../scripts/dev/matrix-receipts.mjs";
+import { spawnSync, execFileSync } from "node:child_process";
+import { G07_C1, G07_MATRIX, G07_NODE, G07_ARCHIVE_PY, main, verifyG07, g07Node, g07Events, g07Inventory, g07Budget } from "../../scripts/dev/matrix-receipts.mjs";
+
+test("MODEL_ONLY public canonical-start captures complete real Git tree beyond default buffer", (t) => {
+  const dir = mkdtempSync(path.join(tmpdir(), "g07-git-capture-"));
+  try {
+    const file = path.join(dir, "tree.txt"), fd = openSync(file, "w");
+    try {
+      const capture = spawnSync("git", ["ls-tree", "-r", "HEAD"], { stdio: ["ignore", fd, "pipe"], timeout: 10000 });
+      assert.equal(capture.status, 0, String(capture.stderr));
+    } finally { closeSync(fd); }
+    const bytes = readFileSync(file);
+    assert.ok(bytes.length > 1024 * 1024, "real tree must exceed the old default buffer");
+    const digest = (text) => createHash("sha256").update(text).digest("hex");
+    const full = digest(bytes.toString("utf8").trim());
+    assert.notEqual(full, digest(bytes.subarray(0, 1024 * 1024).toString("utf8").trim()));
+    assert.throws(() => execFileSync("git", ["ls-tree", "-r", "HEAD"], { encoding: "utf8", timeout: 10000 }), { code: "ENOBUFS" });
+    const sha = execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8", timeout: 10000 }).trim();
+    const anchor = Math.floor(Date.now() / 1000);
+    const env = { GITHUB_EVENT_NAME: "workflow_dispatch", LC_G07_CANONICAL: "1",
+      GITHUB_SHA: sha, GITHUB_WORKFLOW_SHA: sha, GITHUB_WORKFLOW_REF: "model/repo/.github/workflows/gates.yml@refs/heads/model",
+      GITHUB_RUN_ID: "1", GITHUB_RUN_ATTEMPT: "1", MODE: "shard:unit", GOFLAGS: "-mod=readonly",
+      LC_G07_ANCHOR: String(anchor), LC_G07_DEADLINE: String(anchor + 9000) };
+    assert.equal(main(["canonical-start", dir], env), 0);
+    assert.equal(JSON.parse(readFileSync(path.join(dir, "start.json"), "utf8")).context.source, full);
+    t.diagnostic(`MODEL_ONLY real tree bytes=${bytes.length}; old default=ENOBUFS; full source=${full}`);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
 
 const P = "example/tests/foundation", U = "example/unit", EMPTY = "example/no_tests";
 const rows = (pkg, names, special = {}) => [

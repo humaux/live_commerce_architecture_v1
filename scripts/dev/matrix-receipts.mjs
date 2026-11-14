@@ -278,7 +278,7 @@ const save = (file, value) => writeFileSync(file, `${JSON.stringify(value)}\n`);
 const equal = isDeepStrictEqual;
 const need = (ok, why) => { if (!ok) throw new Error(`canonical G07: ${why}`); };
 const clock = () => Math.floor(Date.now() / 1000);
-const git = (...args) => execFileSync("git", args, { encoding: "utf8", timeout: 10000 }).trim();
+const git = (...args) => execFileSync("git", args, { encoding: "utf8", timeout: 10000, maxBuffer: 2 * 1024 * 1024 }).trim();
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 const sourceNames = () => {
   const src = readFileSync(path.join(ROOT, "tests/foundation/catalog_matrix_ledger_test.go"), "utf8");
