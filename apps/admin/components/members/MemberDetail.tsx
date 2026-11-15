@@ -22,6 +22,7 @@ import { MemberReadState, type MembersProps } from "./MemberList";
 import { membersCopy } from "./copy";
 import s from "./members.module.css";
 import { MemberForms } from "./MemberForms";
+import { MemberEditDialog } from "./MemberEditDialog";
 export function MemberDetail({
   locale,
   store,
@@ -65,6 +66,15 @@ export function MemberDetail({
               <Badge>{c.readOnly}</Badge>
             ) : undefined
           }
+        />
+        <MemberEditDialog
+          locale={locale}
+          store={store}
+          member={data?.member}
+          scope={`${renderKey}|${locale}|${store?.id}|${member}`}
+          boundary={read.boundary}
+          status={read.status}
+          onRefresh={read.reload}
         />
         <MemberForms
           locale={locale}
