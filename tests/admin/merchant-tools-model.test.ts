@@ -236,8 +236,10 @@ test("manual result: optional member_award carries Go's awarded / not_awarded ou
   const plain = parseManualResult(result()) as unknown as Record<string, unknown>;
   assert.equal("member_award" in plain, false);
   // ValidAward bounds: one award, 1..1,000,000 whole points.
-  assert.equal((parseManualResult(result({ member_award: { member_id: member, points: 1, state: "awarded", entry_id: entry } })) as unknown as any).member_award.points, 1);
-  assert.equal((parseManualResult(result({ member_award: { member_id: member, points: 1_000_000, state: "not_awarded", reason: "limit_reached" } })) as unknown as any).member_award.points, 1_000_000);
+  const one = parseManualResult(result({ member_award: { member_id: member, points: 1, state: "awarded", entry_id: entry } })) as unknown as Record<string, unknown>;
+  assert.deepEqual(one.member_award, { member_id: member, points: 1, state: "awarded", entry_id: entry });
+  const max = parseManualResult(result({ member_award: { member_id: member, points: 1_000_000, state: "not_awarded", reason: "limit_reached" } })) as unknown as Record<string, unknown>;
+  assert.deepEqual(max.member_award, { member_id: member, points: 1_000_000, state: "not_awarded", reason: "limit_reached" });
 });
 
 test("manual result: member_award is a closed Go outcome (keys, ids, integers, bounds, state/reason pairs)", () => {
@@ -271,11 +273,11 @@ test("manual result: member_award is a closed Go outcome (keys, ids, integers, b
     notGiven({ points: 0 }),
     notGiven({ points: 1_000_001 }),
     notGiven({ points: "30" }),
-    result({ member_award: null }), // absent only; Go omitempty never writes null
-    result({ member_award: [] }),
-    result({ member_award: "awarded" }),
-    result({ member_award: { ...award(), state: "not_awarded" } }),
-  ]) assert.throws(() => parseManualResult(bad), /unavailable/);
+    null, // absent only; Go omitempty never writes null
+    [],
+    "awarded",
+    { ...award(), state: "not_awarded" },
+  ]) assert.throws(() => parseManualResult(result({ member_award: bad })), /unavailable/);
 });
 
 const draft = (over: Partial<ManualDraft> = {}): ManualDraft => ({
