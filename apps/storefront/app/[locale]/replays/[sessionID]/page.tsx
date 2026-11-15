@@ -1,3 +1,6 @@
+// Purpose: render public buyer live replay detail route on /{locale}/replays/{sessionID}.
+// Depends on: gate(), getReplay() and storeCurrency() via lib/shop-upstream; official Meta video embed slot.
+// Used by: storefront buyer navigation to view past live replay session and featured products.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -21,11 +24,11 @@ export async function generateMetadata({
   params: Promise<{ locale: string; sessionID: string }>;
 }): Promise<Metadata> {
   const { locale: raw, sessionID } = await params;
-  if (!isLocale(raw) || !UUID.test(sessionID)) return noindex;
+  if (!isLocale(raw) || !UUID.test(sessionID)) return { robots: noindex };
   const locale = raw as Locale;
   const { shop } = await gate();
   const replayResult = await getReplay(sessionID);
-  if (replayResult.state !== "ok") return noindex;
+  if (replayResult.state !== "ok") return { robots: noindex };
   return {
     title: `${replayResult.value.title} | ${shop.design.profile.name}`,
     description: replayResult.value.title,

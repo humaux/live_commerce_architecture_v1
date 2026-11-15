@@ -1,3 +1,6 @@
+// Purpose: render public buyer live replay list route on /{locale}/replays.
+// Depends on: gate() and listReplays() via lib/shop-upstream; shopCopy and replayPath.
+// Used by: storefront buyer navigation to browse past live sessions.
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -14,7 +17,7 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale: raw } = await params;
-  if (!isLocale(raw)) return noindex;
+  if (!isLocale(raw)) return { robots: noindex };
   const locale = raw as Locale;
   const { shop } = await gate();
   const copy = shopCopy[locale];
