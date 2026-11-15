@@ -1505,12 +1505,14 @@
       "specs": [
         "apps/storefront/tests/order-link.test.mjs",
         "tests/admin/merchant-tools-model.test.ts",
+        "tests/admin/order-points.spec.ts",
         "tests/ci/next-startup.test.mjs",
         "tests/storefront/manual-order-link-gate.mjs"
       ],
       "inputs": [
         "apps/storefront/tests/order-link.test.mjs",
         "tests/admin/merchant-tools-model.test.ts",
+        "tests/admin/order-points.spec.ts",
         "tests/browser-evidence.mjs",
         "tests/ci/next-startup.test.mjs",
         "tests/helpers/next-startup.mjs",
@@ -1552,8 +1554,10 @@
         "tests/foundation/browser_manual_order_link_test.go -> tests/storefront/manual-order-link-gate.mjs",
         "tests/foundation/browser_manual_order_points_test.go -> tests/storefront/manual-order-link-gate.mjs",
         "tests/storefront/legal-pages.mjs:server/import apps/storefront",
+        "tests/storefront/manual-order-link-gate.mjs -> tests/admin/order-points.spec.ts",
         "tests/storefront/manual-order-link-gate.mjs:server/import apps/admin",
-        "tests/storefront/manual-order-link-gate.mjs:server/import apps/storefront"
+        "tests/storefront/manual-order-link-gate.mjs:server/import apps/storefront",
+        "tests/storefront/manual-order-link-gate.mjs:suite=order-points -> tests/admin/order-points.spec.ts"
       ]
     },
     "--browser-merchant-orders-bff": {

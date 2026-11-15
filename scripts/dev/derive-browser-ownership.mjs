@@ -123,11 +123,12 @@ for (const entry of modeEntries(registry).filter((entry) => browserModes(registr
     if (!tracked.has(file)) return; // Source literals also include diagnostic/sample output, not executable spec arguments.
     specs.add(file); evidence.add(`${from} -> ${file}`);
   }
-  function scan(raw, from) {
-    for (const m of raw.matchAll(/((?:tests|apps)\/[A-Za-z0-9_.@/-]+\.(?:spec\.[jt]s|[cm]js|test\.[cm]?[jt]s))/g)) addSpec(m[1], from);
+  function scan(raw, from, executedOnly = false) {
+    if (executedOnly) raw = raw.split("\n").filter((line) => !/^\s*(?:\/\/|\*|\/\*)/.test(line)).join("\n");
+    for (const m of raw.matchAll(/((?:tests|apps)\/[A-Za-z0-9_.@/-]+\.(?:spec\.[jt]s|[cm]js|test\.[cm]?[jt]s))/g)) if (!executedOnly || /\.spec\.[jt]s$/.test(m[1])) addSpec(m[1], from);
     for (const m of raw.matchAll(/["']([A-Za-z0-9_.@-]+\.(?:spec\.[jt]s|[cm]js))["']/g)) {
       const matches = specDirs.map((dir) => `${dir}/${m[1]}`).filter((file) => tracked.has(file));
-      for (const file of matches) addSpec(file, from);
+      for (const file of matches) if (!executedOnly || /\.spec\.[jt]s$/.test(file)) addSpec(file, from);
     }
     const suiteTexts = [...raw.matchAll(/LC_BROWSER_SUITE[\\"'\s]*(?::|=)[\\"'\s]*([a-z0-9-]+)/g)].map((m) => m[1]);
     for (const line of raw.split("\n")) if ([...forwarders].some((name) => new RegExp(`\\b${name}\\(`).test(line)))
@@ -163,6 +164,12 @@ for (const entry of modeEntries(registry).filter((entry) => browserModes(registr
     for (const m of raw.matchAll(/apps\/([a-z0-9-]+)(?:\/|["'])/g)) {
       apps.add(m[1]); evidence.add(`${file}:server/import apps/${m[1]}`);
     }
+    // Reachable JS drivers may launch another spec or select a suite rather than import it.
+    // Reuse literal discovery and enqueue only newly discovered specs for their import closure.
+    const knownSpecs = new Set(specs);
+    if (/\.[cm]?js$/.test(file) && !/\.test\.[cm]?js$/.test(file) && /\b(?:spawn|spawnSync|execFile|execFileSync)\s*\(/.test(raw)) scan(raw, file, true);
+    for (const spec of specs) if (!knownSpecs.has(spec))
+      queue.push({ file: spec, foundation: foundationRoots.has(spec) });
     const references = moduleReferences(raw);
     for (const ref of references) {
       if (ref === null) {
