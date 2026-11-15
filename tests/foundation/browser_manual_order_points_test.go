@@ -253,6 +253,11 @@ type pointsEvidence struct {
 		Reason  string `json:"reason"`
 		Locale  string `json:"locale"`
 	} `json:"mock_awards"`
+	Permission map[string]struct {
+		OrderID            string   `json:"order_id"`
+		DirectAdjustStatus int      `json:"direct_adjust_status"`
+		MemberReads        []string `json:"member_reads"`
+	} `json:"permission"`
 }
 
 // check pins the REAL_PG effects of the one-lifecycle browser corpus as DELTAS from the two store-scoped snapshots: no absolute-zero
@@ -268,17 +273,44 @@ func (s *mtPointsSeam) check(t *testing.T, e *tcvEnv, evidence string) {
 	if err := json.Unmarshal(raw, &ev); err != nil {
 		t.Fatal(err)
 	}
-	if ev.Cases == 0 || len(ev.Phases) != 3 {
+	if ev.Cases == 0 || strings.Join(ev.Phases, ",") != "full,readonly,noread" {
 		t.Fatalf("points evidence: cases=%d phases=%v", ev.Cases, ev.Phases)
 	}
 	awarded := 0
+	full, readonly, noread := 0, 0, 0
+	readonlyID, noreadID := "", ""
+	seenOrders := make(map[string]bool, len(ev.RealOrders))
 	for _, order := range ev.RealOrders {
+		if order.OrderID == "" || seenOrders[order.OrderID] {
+			t.Fatal("points evidence has an empty or duplicate order id")
+		}
+		seenOrders[order.OrderID] = true
+		switch order.Permission {
+		case "":
+			full++
+		case "customers:read only":
+			readonly++
+			readonlyID = order.OrderID
+		case "no customers:read":
+			noread++
+			noreadID = order.OrderID
+		default:
+			t.Fatal("points evidence has an unknown permission phase")
+		}
+		if order.Permission != "" && order.MemberID != nil {
+			t.Fatal("a permission-refusal order carries a member award")
+		}
 		if order.MemberID != nil {
 			awarded++
 		}
 	}
-	if len(ev.RealOrders) != 7 || len(ev.RealMembers) != 11 || len(ev.MockAwards) != 12 || awarded != 6 {
-		t.Fatalf("points corpus: orders=%d awarded=%d members=%d mock=%d", len(ev.RealOrders), awarded, len(ev.RealMembers), len(ev.MockAwards))
+	// The single lifecycle places seven full-permission orders and one in each refusal phase.
+	if len(ev.RealOrders) != 9 || full != 7 || readonly != 1 || noread != 1 || len(ev.RealMembers) != 11 || len(ev.MockAwards) != 12 || awarded != 6 {
+		t.Fatalf("points corpus: orders=%d phases=%d/%d/%d awarded=%d members=%d mock=%d", len(ev.RealOrders), full, readonly, noread, awarded, len(ev.RealMembers), len(ev.MockAwards))
+	}
+	if len(ev.Permission) != 2 || ev.Permission["readonly"].OrderID != readonlyID || ev.Permission["readonly"].DirectAdjustStatus != 403 ||
+		ev.Permission["noread"].OrderID != noreadID || len(ev.Permission["noread"].MemberReads) != 0 {
+		t.Fatal("points permission evidence does not match the two refusal orders")
 	}
 	after := s.snapshotAt(ctx, e, s.store)
 	delta := func(before, now int, what string, want int) {
