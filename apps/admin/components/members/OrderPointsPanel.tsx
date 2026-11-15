@@ -33,7 +33,7 @@ export function OrderPointsPanel({locale,store,order,scope,boundary}:{locale:Loc
   return <section className={s.panel} data-testid="order-points-panel" data-order-points-role={role}><h2>{c.title}</h2>
     {role==="Loading"?<p role="status">{c.loading}</p>:!data?<p role="status">{c.failed}</p>:<>
       {!data.entries.length&&<p>{c.empty}</p>}
-      {data.entries.map(entry=><div key={entry.id} className={s.panel}><Link href={`/${locale}/members/${entry.member_id}?store=${store.id}`}>{entry.member_display_name} · {c.record}</Link>
+      {data.entries.map(entry=><div key={entry.id} className={s.panel}><Link prefetch={false} href={`/${locale}/members/${entry.member_id}?store=${store.id}`}>{entry.member_display_name} · {c.record}</Link>
         <p className={entry.delta>0?s.success:undefined}>{entry.reason==="manual_order_award"?c.points:c.adjustment}: {entry.delta>0?"+":""}{entry.delta} · {displayTime(locale,entry.created_at)}</p>
         {entry.note&&<p>{entry.note}</p>}
       </div>)}
