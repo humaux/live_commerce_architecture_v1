@@ -444,6 +444,71 @@ func w6uiRun(t *testing.T, mode string) {
 				t.Fatal(err)
 			}
 		})
+		// Isolated LP1/LP11/LP12 privacy corpus: fresh store/actors, never the forms corpus above.
+		t.Run("members-privacy", func(t *testing.T) {
+			privacyStore, privacyAlt := randomUUID(), randomUUID()
+			for _, id := range []string{privacyStore, privacyAlt} {
+				mustExec(t, x.w.f.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'M7 synthetic privacy','TWD')`, x.w.tenant, id)
+			}
+			owner, ownerToken := lcPrincipal(t, x.w.f, x.w.tenant, []string{privacyStore}, "store:read", "customers:read", "customers:points", "customers:privacy")
+			reader, _ := lcPrincipal(t, x.w.f, x.w.tenant, []string{privacyStore}, "store:read", "customers:read")
+			x.mu.Lock()
+			x.actors["privacy-owner"], x.actors["privacy-reader"] = owner, reader
+			x.mu.Unlock()
+			// The alternate store exists only for the native scope-switch boundary.
+			for _, permission := range []string{"store:read", "customers:read"} {
+				mustExec(t, x.w.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4)`, x.w.tenant, privacyAlt, owner, permission)
+			}
+			ids := make([]string, 9)
+			for i := range ids {
+				var m loyalty.Member
+				contact, note := "PRIVACY_CONTACT_CANARY", "PRIVACY_NOTE_CANARY"
+				err := platform.WithScope(ctx, x.w.f.runtime, ownerToken, privacyStore, "customers:points", func(tx pgx.Tx, sc platform.Scope) error {
+					created, _, e := loyalty.CreateMember(ctx, tx, sc, ownerToken, t04Key(fmt.Sprintf("m7-privacy-%02d", i)), loyalty.MemberInput{DisplayName: fmt.Sprintf("Synthetic privacy %02d", i), ContactNote: &contact, Notes: &note})
+					if e != nil {
+						return e
+					}
+					m = created
+					_, _, e = loyalty.Adjust(ctx, tx, sc, ownerToken, t04Key(fmt.Sprintf("m7-privacy-adj-%02d", i)), m.ID, loyalty.AdjustInput{Delta: 100, Note: "PRIVACY_LEDGER_CANARY"})
+					return e
+				})
+				if err != nil {
+					t.Fatal(err)
+				}
+				ids[i] = m.ID
+			}
+			env["LC_W6UI_PRIVACY_STORE"], env["LC_W6UI_PRIVACY_ALT"] = privacyStore, privacyAlt
+			env["LC_W6UI_PRIVACY_MEMBER"] = strings.Join(ids, ",")
+			w6uiSpecs(t, ctx, stack, "members-privacy", env)
+			var members, erased, entries, exportAudits, eraseAudits, exportReceipts, eraseReceipts, receiptsWithPII, redacted int64
+			err := x.w.f.owner.QueryRow(ctx, `SELECT
+			 (SELECT count(*) FROM loyalty.members WHERE store_id=$1),
+			 (SELECT count(*) FROM loyalty.members WHERE store_id=$1 AND erased_at IS NOT NULL),
+			 (SELECT count(*) FROM loyalty.point_entries WHERE store_id=$1),
+			 (SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='member.exported'),
+			 (SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='member.erased'),
+			 (SELECT count(*) FROM ops.command_results WHERE store_id=$1 AND operation='loyalty.member.export'),
+			 (SELECT count(*) FROM ops.command_results WHERE store_id=$1 AND operation='loyalty.member.erase'),
+			 (SELECT count(*) FROM ops.command_results WHERE store_id=$1 AND (response::text LIKE '%PRIVACY_%' OR response::text LIKE '%Synthetic privacy%')),
+			 (SELECT count(*) FROM loyalty.members m WHERE m.store_id=$1 AND m.erased_at IS NOT NULL AND m.display_name='[erased]' AND m.contact_note IS NULL AND m.notes IS NULL
+			   AND NOT EXISTS (SELECT 1 FROM loyalty.point_entries e WHERE e.store_id=m.store_id AND e.member_id=m.id AND e.note IS NOT NULL AND e.note<>'[erased]'))`, privacyStore).
+				Scan(&members, &erased, &entries, &exportAudits, &eraseAudits, &exportReceipts, &eraseReceipts, &receiptsWithPII, &redacted)
+			if err != nil {
+				t.Fatal(err)
+			}
+			// Six locale/size happy journeys export+erase; one lost-response export replay keeps one receipt/audit;
+			// the bounded too_large refusal writes nothing; the UNKNOWN erasure commits exactly once.
+			if members != 9 || erased != 7 || entries != 9 || exportAudits != 7 || eraseAudits != 7 || exportReceipts != 7 || eraseReceipts != 7 || receiptsWithPII != 0 || redacted != 7 {
+				t.Fatalf("M7 privacy SQL effects members=%d erased=%d entries=%d exportAudits=%d eraseAudits=%d exportReceipts=%d eraseReceipts=%d receiptsWithPII=%d redacted=%d", members, erased, entries, exportAudits, eraseAudits, exportReceipts, eraseReceipts, receiptsWithPII, redacted)
+			}
+			body, err := json.MarshalIndent(map[string]any{"members": members, "erased": erased, "entries": entries, "exportAudits": exportAudits, "eraseAudits": eraseAudits, "exportReceipts": exportReceipts, "eraseReceipts": eraseReceipts, "receiptsWithPII": receiptsWithPII, "redacted": redacted, "classification": "REAL_PG; one audit per successful export/erasure, replay reuses receipt"}, "", "  ")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(evidence, "members-privacy-sql.json"), body, 0600); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 	x.mu.Lock()
 	requests := append([]w6uiRequest(nil), x.requests...)
@@ -971,6 +1036,8 @@ func w6uiSpecs(t *testing.T, ctx context.Context, s *brfStack, mode string, env 
 		configName, logName = "playwright.w6.members-edit.config.ts", "playwright-members-edit.log"
 	} else if mode == "members-forms" {
 		configName, logName = "playwright.w6.members-forms.config.ts", "playwright-members-forms.log"
+	} else if mode == "members-privacy" {
+		configName, logName = "playwright.w6.members-privacy.config.ts", "playwright-members-privacy.log"
 	}
 	config := filepath.Join(s.evidence, configName)
 	spec := "reports.spec.ts"
@@ -982,6 +1049,8 @@ func w6uiSpecs(t *testing.T, ctx context.Context, s *brfStack, mode string, env 
 		spec = "members-edit.spec.ts"
 	} else if mode == "members-forms" {
 		spec = "members-forms.spec.ts"
+	} else if mode == "members-privacy" {
+		spec = "members-privacy.spec.ts"
 	}
 	body := fmt.Sprintf(`import {defineConfig} from "@playwright/test";
 export default defineConfig({testDir:%q,testMatch:%q,workers:1,retries:0,timeout:120000,expect:{timeout:15000},reporter:[["list"]],outputDir:%q,use:{baseURL:%q,headless:true,ignoreHTTPSErrors:true,trace:"retain-on-failure",screenshot:"only-on-failure"}});`, filepath.Join(s.root, "tests/admin"), spec, filepath.Join(s.evidence, "results"), s.origin)
