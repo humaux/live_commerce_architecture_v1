@@ -422,12 +422,26 @@ func w6uiRun(t *testing.T, mode string) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			env["LC_W6UI_EDIT_STORE"], env["LC_W6UI_EDIT_MEMBER"] = x.formsStore, target
+			env["LC_W6UI_EDIT_STORE"], env["LC_W6UI_EDIT_MEMBER"], env["LC_W6UI_EDIT_ALT"] = x.formsStore, target, x.formsAlt
 			w6uiSpecs(t, ctx, stack, "members-edit", env)
 			var version int64
 			var erased bool
 			if err := x.w.f.owner.QueryRow(ctx, `SELECT version,erased_at IS NOT NULL FROM loyalty.members WHERE store_id=$1 AND id=$2`, x.formsStore, target).Scan(&version, &erased); err != nil || version < 19 || !erased {
 				t.Fatalf("M7 edit persisted version=%d erased=%t err=%v", version, erased, err)
+			}
+			var updates, commands, entries, altCommands int64
+			if err := x.w.f.owner.QueryRow(ctx, `SELECT (SELECT count(*) FROM ops.command_results WHERE store_id=$1 AND operation='loyalty.member.update'),(SELECT count(*) FROM ops.command_results WHERE store_id=$1 AND operation LIKE 'loyalty.%'),(SELECT count(*) FROM loyalty.point_entries WHERE store_id=$1),(SELECT count(*) FROM ops.command_results WHERE store_id=$2 AND operation LIKE 'loyalty.%')`, x.formsStore, x.formsAlt).Scan(&updates, &commands, &entries, &altCommands); err != nil {
+				t.Fatal(err)
+			}
+			if version != 20 || updates != 18 || commands != 20 || entries != 0 || altCommands != 0 {
+				t.Fatalf("M7 edit SQL effects version=%d updates=%d commands=%d entries=%d altCommands=%d", version, updates, commands, entries, altCommands)
+			}
+			body, err := json.MarshalIndent(map[string]any{"version": version, "updates": updates, "commands": commands, "entries": entries, "altCommands": altCommands, "erased": erased}, "", "  ")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(evidence, "members-edit-sql.json"), body, 0600); err != nil {
+				t.Fatal(err)
 			}
 		})
 	}
