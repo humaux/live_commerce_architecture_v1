@@ -737,9 +737,10 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
   ]) {
     api.state.replays = [replayInStock];
     const page = await DEVICES[dev]().newPage();
-    // Intercept official Facebook iframe URL with explicit minimal MOCK child (no external networking)
-    await page.route(/^https:\/\/www\.facebook\.com\/plugins\/video\.php/, (route) =>
-      route.fulfill({ status: 200, contentType: "text/html", body: "<title>MOCK official player transport</title>" })
+    // Intercept exact known fixture embed URLs with explicit minimal MOCK child (no external networking)
+    await page.route(
+      (url) => url.href === replayInStock.embed_url || url.href === replaySoldOut.embed_url,
+      (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>MOCK official player transport</title>" })
     );
     const c = new Check(page, `replays ${dev}`);
 
@@ -758,7 +759,10 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
     const watchBtn = btn(page, "觀看回放");
     const [detailRes] = await Promise.all([
       page.waitForResponse(
-        (r) => r.request().resourceType() === "document" && r.frame() === page.mainFrame(),
+        (r) =>
+          r.request().resourceType() === "document" &&
+          r.frame() === page.mainFrame() &&
+          r.url() === `${origin}/zh-TW/replays/${replayInStock.session_id}`,
         { timeout: 10000 }
       ),
       page.waitForURL(new RegExp(`/zh-TW/replays/${replayInStock.session_id}$`), { timeout: 10000 }),
@@ -777,11 +781,10 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
     assert.equal(await iframe.count(), 1);
     assert.equal(await iframe.getAttribute("src"), replayInStock.embed_url);
     assert.equal(await iframe.getAttribute("title"), "Facebook 官方影片");
-    const frame = iframe.contentFrame();
-    if (frame) {
-      await frame.waitForLoadState().catch(() => {});
-      assert.equal(await frame.title(), "MOCK official player transport");
-    }
+    assert.equal(
+      await iframe.contentFrame().locator("title").textContent({ timeout: 10000 }),
+      "MOCK official player transport"
+    );
     c.text(
       "秋日選物直播",
       "10/30 14:00 已結束",
@@ -809,9 +812,14 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
 
     // 5. Click 查看商品 -> navigates to product, restores standard chrome
     const viewProdBtn = btn(page, "查看商品");
+    const expectedProductHref = await viewProdBtn.first().getAttribute("href");
+    const expectedProductURL = new URL(expectedProductHref, origin).href;
     const [prodRes] = await Promise.all([
       page.waitForResponse(
-        (r) => r.request().resourceType() === "document" && r.frame() === page.mainFrame(),
+        (r) =>
+          r.request().resourceType() === "document" &&
+          r.frame() === page.mainFrame() &&
+          r.url() === expectedProductURL,
         { timeout: 10000 }
       ),
       page.waitForURL(new RegExp(`/zh-TW/products/`), { timeout: 10000 }),
@@ -826,7 +834,10 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
     await c.load();
     const [backListRes] = await Promise.all([
       page.waitForResponse(
-        (r) => r.request().resourceType() === "document" && r.frame() === page.mainFrame(),
+        (r) =>
+          r.request().resourceType() === "document" &&
+          r.frame() === page.mainFrame() &&
+          r.url() === `${origin}/zh-TW/replays`,
         { timeout: 10000 }
       ),
       page.waitForURL(/\/zh-TW\/replays$/, { timeout: 10000 }),
@@ -852,11 +863,10 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
     assert.equal(await soldIframe.count(), 1);
     assert.equal(await soldIframe.getAttribute("src"), replaySoldOut.embed_url);
     assert.equal(await soldIframe.getAttribute("title"), "Facebook 官方影片");
-    const soldFrame = soldIframe.contentFrame();
-    if (soldFrame) {
-      await soldFrame.waitForLoadState().catch(() => {});
-      assert.equal(await soldFrame.title(), "MOCK official player transport");
-    }
+    assert.equal(
+      await soldIframe.contentFrame().locator("title").textContent({ timeout: 10000 }),
+      "MOCK official player transport"
+    );
     c.text(
       "秋日選物直播",
       "10/30 14:00 已結束",
@@ -907,12 +917,16 @@ test("replays · locale, negative refusals, and no-cartwrite integrity", async (
   const resMissing = await page.goto(`${origin}/zh-TW/replays/00000000-0000-4000-8000-000000000999`);
   assert.equal(resMissing?.status(), 404);
 
-  // Bounded actual Next response header checks for 3 valid locales
-  const testUUID = "00000000-0000-4000-8000-000000000999";
+  // Bounded actual Next response header checks for 3 valid locales (header path coverage using missing canonical UUID 404)
+  const probeUUID = "00000000-0000-4000-8000-000000000999";
   for (const loc of ["zh-CN", "zh-TW", "en"]) {
-    const locRes = await page.goto(`${origin}/${loc}/replays/${testUUID}`);
+    const locRes = await page.goto(`${origin}/${loc}/replays/${probeUUID}`);
+    assert.equal(locRes?.status(), 404, `${loc} probe is header path coverage with missing UUID 404`);
     const csp = locRes?.headers()["content-security-policy"] || "";
-    assert.ok(csp.includes("frame-src https://www.facebook.com/plugins/video.php"), `${loc} replay detail must deliver frame-src directive`);
+    assert.ok(
+      csp.includes("frame-src https://www.facebook.com/plugins/video.php"),
+      `${loc} replay detail route must deliver frame-src directive`
+    );
   }
 
   // Paths that must lack new frame-src permission
@@ -920,8 +934,8 @@ test("replays · locale, negative refusals, and no-cartwrite integrity", async (
     "/zh-TW/replays",
     "/zh-TW/products/sample-slug",
     "/zh-TW/replays/not-a-valid-uuid",
-    "/fr/replays/" + testUUID,
-    "/zh-TW/replays/" + testUUID + "/extra",
+    "/fr/replays/" + probeUUID,
+    "/zh-TW/replays/" + probeUUID + "/extra",
   ];
   for (const p of negativePaths) {
     const r = await page.goto(`${origin}${p}`);
@@ -930,18 +944,23 @@ test("replays · locale, negative refusals, and no-cartwrite integrity", async (
     assert.ok(!csp.includes("facebook.com"), `${p} must lack facebook.com permission`);
   }
 
-  // Neutral payment return policy retained (not matching shopping CSP)
+  // Neutral payment return policy retained (positive assertion from lib/payment-return.ts)
   const payRetRes = await page.goto(`${origin}/payment/return`);
+  assert.equal(payRetRes?.headers()["referrer-policy"], "no-referrer", "payment/return must deliver no-referrer");
   const payCsp = payRetRes?.headers()["content-security-policy"] || "";
+  assert.ok(payCsp.includes("default-src 'none'"), "payment/return must include default-src 'none'");
+  assert.ok(payCsp.includes("base-uri 'none'"), "payment/return must include base-uri 'none'");
+  assert.ok(payCsp.includes("frame-ancestors 'none'"), "payment/return must include frame-ancestors 'none'");
+  assert.ok(payCsp.includes("form-action 'none'"), "payment/return must include form-action 'none'");
+  assert.ok(payCsp.includes("style-src 'sha256-"), "payment/return must include style-src 'sha256-'");
   assert.ok(!payCsp.includes("https://logistics-stage.ecpay.com.tw"), "payment/return retains its own policy, not shopping CSP");
 
-  // Claim and order-link retain restrictive policy and no-referrer
+  // Claim and order-link retain exact current policy from next.config.ts and no-referrer
+  const claimOrderCSP = "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'none'; connect-src 'self'";
   for (const pageName of ["claim", "order-link"]) {
     const r = await page.goto(`${origin}/zh-TW/${pageName}`);
     assert.equal(r?.headers()["referrer-policy"], "no-referrer", `${pageName} must retain no-referrer`);
-    const csp = r?.headers()["content-security-policy"] || "";
-    assert.ok(csp.includes("form-action 'none'"), `${pageName} must retain form-action none`);
-    assert.ok(!csp.includes("frame-src"), `${pageName} must lack frame-src`);
+    assert.equal(r?.headers()["content-security-policy"], claimOrderCSP, `${pageName} must retain exact restrictive policy`);
   }
 
   // Upstream down -> 500 error page
