@@ -281,7 +281,7 @@
     "tests/foundation/browser_checkout_offline_test.go": "6199cd3dd28ce70a726ebc6883db06a74795f767c6c5eebe3a35fc77b6ceedaf",
     "tests/foundation/browser_claim_checkout_test.go": "d0b7d2eb285373130f715ae81cca5e5b2bdd718bc6fc6569ea8235dc9c941605",
     "tests/foundation/browser_click_sweep_test.go": "bc98113f553c204dea9fb694747cae943c6803231258b8613c1c3ea7254eb039",
-    "tests/foundation/browser_customers_billing_test.go": "2676e835fccbfc4bddc974702770f455115ed8cc5bdec9fc717130c914ede84e",
+    "tests/foundation/browser_customers_billing_test.go": "a26e146568ceaa8ba845672057f6e88b1597ca05605f124acb967a2535a9bdf8",
     "tests/foundation/browser_e2e_test.go": "4f505d1737552573b6656ae7951521d4f4859539b50bcc7f9bbf6349c66293f5",
     "tests/foundation/browser_evidence_paths_test.go": "65109e53f089ee43574dd25582648f8e0f12b465ff9569fc7eff8e92ce896a29",
     "tests/foundation/browser_home_cod_test.go": "3948c9563f0db01a4e594ba42700ac981b0f1c98cc81af325fdde97a8c7e8666",
