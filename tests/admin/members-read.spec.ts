@@ -123,11 +123,13 @@ async function search(page: Page, q: string, keyboard = false) {
   }, keyboard ? "keyboard Enter" : "click");
 }
 async function privacy(page: Page, urls: string[], consoleTexts: string[]) {
-  for (const url of urls) {
+  for (const [index, url] of urls.entries()) {
     const u = new URL(url);
     expect(url.includes(marker) || url.includes("LP2%20synthetic"), "no private marker in request/history URL").toBe(false);
     if (u.pathname.includes("/members") && !u.pathname.startsWith("/api/")) {
-      expect([...u.searchParams.keys()].filter(k => k !== "_rsc")).toEqual(["store"]);
+      const route = /^\/(?:en|zh-TW|zh-CN)\/members\/?$/.test(u.pathname) ? "/:locale/members" : "/:locale/members/:id";
+      const diagnostic = JSON.stringify({ index, route, keys: [...u.searchParams.keys()].filter(k => k !== "_rsc") });
+      expect([...u.searchParams.keys()].filter(k => k !== "_rsc"), diagnostic).toEqual(["store"]);
     }
     expect(u.searchParams.has("q")).toBe(false);
   }

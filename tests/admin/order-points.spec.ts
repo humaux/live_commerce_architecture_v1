@@ -15,7 +15,7 @@
 // Invariants: every placement/deduction below is a real click on the real admin UI and real Go/PG writes; the only MOCK is the LPU07
 //   BFF-boundary DTO (documented fixture prep, never a positive replacement). No page.evaluate mutation, no forced actions, no sleeps,
 //   no first-match hiding of ambiguity. Search terms and member names never travel in a URL, storage, console or analytics.
-import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
+import { expect, test, type Browser, type BrowserContext, type Page, type Request } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { browserEvidenceDirectory } from "../browser-evidence.mjs";
@@ -173,18 +173,32 @@ async function createMember(page: Page, name: string, contact: string, kind: str
   await page.getByTestId("manual-member-create-open").click();
   await page.getByTestId("manual-member-create-name").fill(name);
   await page.getByTestId("manual-member-create-contact").fill(contact);
-  const created = page.waitForResponse(
-    (reply) => reply.request().method() === "POST" && new URL(reply.url()).pathname === memberCreatePath,
-  );
-  await page.getByTestId("manual-member-create-submit").click();
-  const reply = await created;
-  expect(reply.status(), "member create").toBe(201);
-  const answer = (await reply.json()) as { member: { id: string; display_name: string; balance: number } };
-  expect(answer.member.display_name).toBe(name);
-  expect(answer.member.balance).toBe(0); // the member starts at the authoritative balance 0
-  await expect(page.getByTestId("manual-member-selected")).toBeVisible();
-  realMembers.push({ member_id: answer.member.id, kind, display_name_length: Array.from(name).length });
-  return { memberId: answer.member.id, memberName: name };
+  let createPosts = 0;
+  const countCreate = (request: Request) => {
+    if (request.method() === "POST" && new URL(request.url()).pathname === memberCreatePath) createPosts++;
+  };
+  page.on("request", countCreate);
+  try {
+    await page.getByTestId("manual-member-create-submit").click();
+    await expect(page.getByTestId("manual-member-create-name")).toBeDisabled();
+    await expect(page.getByTestId("manual-member-create-submit")).toBeEnabled();
+    expect(createPosts, "local member review sends no create POST").toBe(0);
+    const created = page.waitForResponse(
+      (reply) => reply.request().method() === "POST" && new URL(reply.url()).pathname === memberCreatePath,
+    );
+    await page.getByTestId("manual-member-create-submit").click();
+    const reply = await created;
+    expect(reply.status(), "member create").toBe(201);
+    const answer = (await reply.json()) as { member: { id: string; display_name: string; balance: number } };
+    expect(answer.member.display_name).toBe(name);
+    expect(answer.member.balance).toBe(0); // the member starts at the authoritative balance 0
+    await expect(page.getByTestId("manual-member-selected")).toBeVisible();
+    realMembers.push({ member_id: answer.member.id, kind, display_name_length: Array.from(name).length });
+    expect(createPosts, "confirmed member creation sends exactly one POST").toBe(1);
+    return { memberId: answer.member.id, memberName: name };
+  } finally {
+    page.off("request", countCreate);
+  }
 }
 
 /** Real "change member" -> search -> pick flow. Asserts the search travels in the POST body only (LPU06/HTTP2). */
@@ -246,8 +260,12 @@ const insufficientHant = "積分不足";
 test.describe.configure({ mode: "serial" });
 
 test.beforeAll(async ({ browser }) => {
+  console.info("LPU_PHASE full.before");
   await setLevel("full"); // phase 1 of the one suite process
+  console.info("LPU_PHASE full.after");
+  console.info("LPU_PHASE freshSession.before");
   const state = await freshSession(browser);
+  console.info("LPU_PHASE freshSession.after");
   session = state;
 });
 
@@ -255,7 +273,9 @@ test.beforeAll(async ({ browser }) => {
 async function freshSession(browser: Browser) {
   const context = await browser.newContext({ baseURL: origin, ignoreHTTPSErrors: true, viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
+  console.info("LPU_PHASE signIn.before");
   await signIn(page);
+  console.info("LPU_PHASE signIn.after");
   const state = await context.storageState();
   await context.close();
   return state;
@@ -284,15 +304,23 @@ test.afterAll(async () => {
 for (const cell of cells) {
     test(`LPU03 award 30 -> order panel +30 -> deduct -30 -> balance 0 -> persisted ledger -> award-sized deduct refused (${cell.locale}/${cell.device})`, async ({ browser }) => {
       test.setTimeout(240_000);
+      console.info("LPU_PHASE context.before", cell.locale, cell.device);
       const context = await openContext(browser, cell);
+      console.info("LPU_PHASE context.after", cell.locale, cell.device);
       const page = await context.newPage();
       const watched = watch(page);
       const memberName = `Synthetic member ${canary} ${cell.locale} ${cell.device}`;
       const orderName = `Synthetic customer ${canary} ${cell.locale} ${cell.device}`; // merchant-edited, independent of the member (LP17)
       try {
+        console.info("LPU_PHASE manual.before", cell.locale, cell.device);
         await openManualOrder(page, cell.locale);
+        console.info("LPU_PHASE manual.after", cell.locale, cell.device);
+        console.info("LPU_PHASE product.before", cell.locale, cell.device);
         await addProduct(page);
+        console.info("LPU_PHASE product.after", cell.locale, cell.device);
+        console.info("LPU_PHASE create.before", cell.locale, cell.device);
         const { memberId } = await createMember(page, memberName, `line-${canary}-${cell.locale}-${cell.device}`, "awarded");
+        console.info("LPU_PHASE create.after", cell.locale, cell.device);
         // LP17 prefill from the selected member, then a real edit of the order's customer name.
         await expect(page.getByTestId("mo-name")).toHaveValue(memberName);
         await expect(page.getByTestId("mo-name")).toBeEditable();
@@ -303,7 +331,9 @@ for (const cell of cells) {
         await chooseHomeDelivery(page);
         await fillRecipient(page, orderName, "0912000000");
 
+        console.info("LPU_PHASE place.before", cell.locale, cell.device);
         const placed = await reviewAndPlace(page);
+        console.info("LPU_PHASE place.after", cell.locale, cell.device);
         expect(placed.status, "manual order placement").toBe(201);
         expect(placed.body.member_award).toEqual({ member_id: memberId, points: 30 });
         const award = placed.answer.member_award;
@@ -317,12 +347,16 @@ for (const cell of cells) {
         await expect(page.getByTestId("manual-member-award-result")).toHaveAttribute("data-award-state", "awarded");
 
         // The order page reads the ledger entries of this order: 本單積分 shows the +30 award.
+        console.info("LPU_PHASE orderPanel.before", cell.locale, cell.device);
         const panel = await openOrderPanel(page, cell.locale, orderId);
+        console.info("LPU_PHASE orderPanel.after", cell.locale, cell.device);
         await expect(panel).toContainText("30");
         await expect(page.getByTestId("order-points-deduct-open")).toBeVisible();
 
         // LP19: the dialog is prefilled with this order's award, and the note is mandatory.
+        console.info("LPU_PHASE deductOpen.before", cell.locale, cell.device);
         const deduct = await openDeduct(page);
+        console.info("LPU_PHASE deductOpen.after", cell.locale, cell.device);
         let adjustWrites = 0;
         page.on("request", (request) => {
           if (request.method() === "POST" && new URL(request.url()).pathname === adjustPath(memberId)) adjustWrites++;
@@ -333,7 +367,9 @@ for (const cell of cells) {
         await expect(deduct.amount).toHaveValue("30");
 
         await deduct.note.fill(`Manual deduct ${canary} ${orderId}`);
+        console.info("LPU_PHASE deductSubmit.before", cell.locale, cell.device);
         const adjustment = await submitDeduct(page, memberId);
+        console.info("LPU_PHASE deductSubmit.after", cell.locale, cell.device);
         expect(adjustment.status, "deduct").toBe(201);
         expect(adjustment.body).toEqual({ delta: -30, order_id: orderId, note: `Manual deduct ${canary} ${orderId}` });
         expect(adjustment.answer!.entry.delta).toBe(-30);
@@ -354,7 +390,9 @@ for (const cell of cells) {
         await expect(second.amount).toHaveValue("31");
         await second.amount.fill("30");
         await second.note.fill(`Second deduct ${canary} ${orderId}`);
+        console.info("LPU_PHASE deductRefused.before", cell.locale, cell.device);
         const refused = await submitDeduct(page, memberId);
+        console.info("LPU_PHASE deductRefused.after", cell.locale, cell.device);
         expect(refused.status, "an award-sized deduct beyond the balance is refused").toBe(409);
         await expect(second.dialog).toHaveAttribute("data-order-points-role", "Insufficient");
         if (cell.locale === "zh-TW") await expect(second.dialog).toContainText(insufficientHant);
