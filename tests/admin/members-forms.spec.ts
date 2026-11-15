@@ -1369,11 +1369,11 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
           async () => {
             await expect(page.locator('[name="sign"]')).toBeFocused();
             await page.keyboard.press("Shift+Tab");
-            await expect(page.getByTestId("member-form-submit")).toBeFocused();
+            await expect(page.getByTestId("member-form-cancel")).toBeFocused();
             await page.keyboard.press("Tab");
             await expect(page.locator('[name="sign"]')).toBeFocused();
             await page.keyboard.press("Shift+Tab");
-            await expect(page.getByTestId("member-form-submit")).toBeFocused();
+            await expect(page.getByTestId("member-form-cancel")).toBeFocused();
             await page.keyboard.press("Escape");
             await expect(page.getByTestId("member-adjust-open")).toBeFocused();
           },

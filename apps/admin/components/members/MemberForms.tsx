@@ -339,6 +339,12 @@ export function MemberForms({
         : adjusting
           ? c.adjust
           : c.create;
+  // Display-only projection; validate() remains the sole command admission path.
+  const previewCount = Number(amount);
+  const previewBalance = snapshot ? snapshot.balance + sign * previewCount : null;
+  const showPreview = snapshot !== null && /^\d+$/.test(amount) &&
+    Number.isSafeInteger(previewCount) && previewCount >= 1 && previewCount <= 1e6 &&
+    previewBalance !== null && previewBalance >= 0 && previewBalance <= 1e12;
   const input = (
     field: string,
     label: string,
@@ -363,6 +369,7 @@ export function MemberForms({
         />
       ) : (
         <input
+          className={field === "amount" ? s.formAmountInput : undefined}
           id={`member-form-${field}`}
           name={field}
           value={value}
@@ -374,6 +381,16 @@ export function MemberForms({
           aria-describedby={invalid === field ? "member-form-error" : undefined}
           onChange={(e) => change(e.target.value)}
         />
+      )}
+      {field === "amount" && (
+        <span className={s.formAmountUnit} data-testid="member-form-point-unit">
+          {c.pointUnit}
+        </span>
+      )}
+      {invalid === field && error && (
+        <p id="member-form-error" role="alert" className={s.formError}>
+          {error}
+        </p>
       )}
     </div>
   );
@@ -444,6 +461,10 @@ export function MemberForms({
                   {adjusting ? (
                     <>
                       <p>{snapshot?.name}</p>
+                      <p>
+                        {c.balance}: <span data-testid="member-form-balance-value">{snapshot?.balance}</span>{" "}
+                        <span data-testid="member-form-point-unit">{c.pointUnit}</span>
+                      </p>
                       <label htmlFor="member-form-sign">{c.direction}</label>
                       <select
                         id="member-form-sign"
@@ -456,6 +477,12 @@ export function MemberForms({
                       </select>
                       {input("amount", c.amount, amount, setAmount, 7)}
                       {input("note", c.note, note, setNote, 200, true)}
+                      {showPreview && (
+                        <p>
+                          {c.preview}: <span data-testid="member-form-preview-value">{previewBalance}</span>{" "}
+                          <span data-testid="member-form-point-unit">{c.pointUnit}</span>
+                        </p>
+                      )}
                     </>
                   ) : (
                     <>
@@ -466,7 +493,7 @@ export function MemberForms({
                     </>
                   )}
                 </fieldset>
-                {error && (
+                {error && !invalid && (
                   <p
                     id="member-form-error"
                     role="alert"
@@ -479,20 +506,20 @@ export function MemberForms({
                 <div className={s.formActions}>
                   <Button
                     size="lg"
-                    data-testid="member-form-cancel"
-                    disabledReason={busy ? c.pending : undefined}
-                    onClick={close}
-                  >
-                    {c.cancel}
-                  </Button>
-                  <Button
-                    size="lg"
                     type="submit"
                     variant="primary"
                     data-testid="member-form-submit"
                     disabledReason={busy ? c.pending : undefined}
                   >
-                    {busy ? c.pending : adjusting ? c.review : c.create}
+                    {busy ? c.pendingAction : adjusting ? c.review : c.create}
+                  </Button>
+                  <Button
+                    size="lg"
+                    data-testid="member-form-cancel"
+                    disabledReason={busy ? c.pending : undefined}
+                    onClick={close}
+                  >
+                    {c.cancel}
                   </Button>
                 </div>
               </form>
@@ -514,6 +541,15 @@ export function MemberForms({
                 <div className={s.formActions}>
                   <Button
                     size="lg"
+                    variant="primary"
+                    data-testid="member-form-confirm"
+                    disabledReason={busy ? c.pending : undefined}
+                    onClick={() => void submit()}
+                  >
+                    {busy ? c.pendingAction : sign > 0 ? c.confirmAdd : c.confirmDeduct}
+                  </Button>
+                  <Button
+                    size="lg"
                     data-testid="member-form-back"
                     disabledReason={busy ? c.pending : undefined}
                     onClick={() => {
@@ -521,15 +557,6 @@ export function MemberForms({
                     }}
                   >
                     {c.back}
-                  </Button>
-                  <Button
-                    size="lg"
-                    variant="primary"
-                    data-testid="member-form-confirm"
-                    disabledReason={busy ? c.pending : undefined}
-                    onClick={() => void submit()}
-                  >
-                    {busy ? c.pending : sign > 0 ? c.confirmAdd : c.confirmDeduct}
                   </Button>
                 </div>
               </>
@@ -542,13 +569,7 @@ export function MemberForms({
                 <div className={s.formActions}>
                   <Button
                     size="lg"
-                    data-testid="member-form-close"
-                    onClick={close}
-                  >
-                    {c.close}
-                  </Button>
-                  <Button
-                    size="lg"
+                    variant="primary"
                     data-testid="member-form-back"
                     disabledReason={erasedTarget.current ? c.erased : undefined}
                     onClick={() => {
@@ -559,20 +580,32 @@ export function MemberForms({
                   >
                     {c.back}
                   </Button>
+                  <Button
+                    size="lg"
+                    data-testid="member-form-close"
+                    onClick={close}
+                  >
+                    {c.close}
+                  </Button>
                 </div>
               </>
             )}
             {unresolved && (
               <>
+                <span data-testid="member-form-unknown-badge" className={s.formUnknownBadge}>
+                  {c.unknownBadge}
+                </span>
                 <p role="status">{error}</p>
-                <Button
-                  size="lg"
-                  variant="primary"
-                  data-testid="member-form-refresh"
-                  onClick={onRefresh}
-                >
-                  {c.refresh}
-                </Button>
+                <div className={s.formRefreshActions}>
+                  <Button
+                    size="lg"
+                    variant="primary"
+                    data-testid="member-form-refresh"
+                    onClick={onRefresh}
+                  >
+                    {c.refresh}
+                  </Button>
+                </div>
               </>
             )}
           </>

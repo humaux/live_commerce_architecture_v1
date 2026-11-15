@@ -263,6 +263,19 @@
   font-size: var(--ds-text-member-value);
   line-height: 1.5;
 }
+.formField .formAmountInput {
+  grid-area: 2 / 1;
+  /* Reserve the localized suffix width plus separation from editable digits. */
+  padding-inline-end: calc(6ch + var(--ds-space-6));
+}
+.formAmountUnit {
+  grid-area: 2 / 1;
+  justify-self: end;
+  align-self: center;
+  margin-inline-end: var(--ds-space-3);
+  font-size: var(--ds-text-member-value);
+  pointer-events: none;
+}
 .formField textarea {
   block-size: var(--ds-control-member-note-height);
   resize: vertical;
@@ -286,11 +299,26 @@
   gap: var(--ds-space-3);
   margin-block-start: var(--ds-space-6);
 }
+.formRefreshActions button,
 .formActions button,
 .formDialog > button {
   min-block-size: var(--ds-target);
   min-inline-size: var(--ds-control-member-action-width);
   line-height: var(--ds-control-member-action-leading);
+}
+.formRefreshActions {
+  display: flex;
+  justify-content: flex-end;
+}
+.formUnknownBadge {
+  /* Adopted Unknown Tag: HUG, 2px/8px padding, pill radius; existing amber DS palette. */
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 2px var(--ds-space-2);
+  border-radius: 999px;
+  background: var(--ds-warn-bg);
+  color: var(--ds-warn-text);
+  font-size: var(--ds-text-sm);
 }
 .formDialog [data-variant="primary"] {
   background: var(--ds-members-action-bg);
@@ -331,6 +359,7 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .formRefreshActions button,
   .formActions button {
     inline-size: 100%;
     min-inline-size: 0;
