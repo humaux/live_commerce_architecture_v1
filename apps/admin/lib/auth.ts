@@ -312,6 +312,14 @@ export async function privateIdentity(
   }
 }
 
+// Failure-only, closed metadata for the local card-boundary diagnostic.
+function storesDiagnostic(stage: "transport" | "UNKNOWN" | "json_shape" | "store_shape", response?: Response) {
+  if (process.env.LC_GATE_SAFE_ERROR_DIAG !== "1") return;
+  const contentType = response?.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
+  const mime = !contentType ? "absent" : contentType === "application/json" ? "json" : contentType === "text/html" ? "html" : "other";
+  console.error(`LC_GATE_SAFE_ERROR_DIAG stage=${stage} status=${response?.status ?? "UNKNOWN"} mime=${mime} error_code=UNKNOWN request_id=UNKNOWN`);
+}
+
 export async function merchantBackend(
   path: string,
   token: string,
@@ -332,6 +340,7 @@ export async function merchantBackend(
       signal: AbortSignal.timeout(6000),
     });
   } catch {
+    if (path === "/v1/admin/stores") storesDiagnostic("transport");
     return localError(503, "retry_later");
   }
 }
@@ -526,13 +535,18 @@ export async function authenticatedStores(token: string) {
   const response = await merchantBackend("/v1/admin/stores", token, {
     method: "GET",
   });
-  if (!response.ok) return { response, stores: null as Store[] | null };
+  if (!response.ok) {
+    storesDiagnostic("UNKNOWN", response);
+    return { response, stores: null as Store[] | null };
+  }
   const body = await safeJSON<{ items?: unknown }>(response);
-  if (!Array.isArray(body?.items))
+  if (!Array.isArray(body?.items)) {
+    storesDiagnostic("json_shape", response);
     return {
       response: localError(503, "retry_later"),
       stores: null as Store[] | null,
     };
+  }
   const stores = body.items.filter(
     (item): item is Store =>
       !!item &&
@@ -546,10 +560,12 @@ export async function authenticatedStores(token: string) {
         (Array.isArray((item as Store).permissions) &&
           (item as Store).permissions!.every((p) => typeof p === "string" && /^[a-z_]+:[a-z_]+$/.test(p)))),
   );
-  if (stores.length !== body.items.length)
+  if (stores.length !== body.items.length) {
+    storesDiagnostic("store_shape", response);
     return {
       response: localError(503, "retry_later"),
       stores: null as Store[] | null,
     };
+  }
   return { response, stores };
 }

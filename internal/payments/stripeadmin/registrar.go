@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"os"
 	"regexp"
 	"time"
 
@@ -212,6 +213,31 @@ func (r *Registrar) scanRow(ctx context.Context, dest []any, sql string, args ..
 	bounded, cancel := context.WithTimeout(ctx, sqlBudget)
 	defer cancel()
 	if err := r.db.QueryRow(bounded, sql, args...).Scan(dest...); err != nil {
+		if os.Getenv("LC_GATE_SAFE_ERROR_DIAG") == "1" && sql == `SELECT payments.allow_platform_stripe($1::uuid,$2::uuid,$3::uuid,$4::uuid,$5::uuid,$6::text,$7::boolean,$8::text,$9::text)` {
+			class, state, done := "other", "UNKNOWN", "none"
+			var pg *pgconn.PgError
+			switch {
+			case errors.As(err, &pg):
+				class = "pg_error"
+				if matched, _ := regexp.MatchString(`^[A-Z0-9]{5}$`, pg.Code); matched {
+					state = pg.Code
+				}
+			case errors.Is(err, context.DeadlineExceeded):
+				class = "deadline_exceeded"
+			case errors.Is(err, context.Canceled):
+				class = "canceled"
+			}
+			switch bounded.Err() {
+			case nil:
+			case context.DeadlineExceeded:
+				done = "deadline"
+			case context.Canceled:
+				done = "canceled"
+			default:
+				done = "other"
+			}
+			fmt.Fprintf(os.Stderr, "LC_GATE_SAFE_ERROR_DIAG operation_class=allow_platform_stripe pool_category=stripe_registrar error_class=%s sqlstate=%s context_done=%s\n", class, state, done)
+		}
 		return sqlError(err)
 	}
 	return nil
