@@ -218,7 +218,14 @@ func Erase(ctx context.Context, tx pgx.Tx, s platform.Scope, token, key, id stri
 	}
 	var out Erasure
 	replay, e := write(ctx, tx, s, token, key, "loyalty.member.erase", "customers:privacy", map[string]string{"member_id": id}, &out, `SELECT loyalty.erase_member($1,$2::uuid,$3::uuid)`, id)
-	return out, replay, e
+	if e != nil {
+		return Erasure{}, false, e
+	}
+	h := sha256.Sum256([]byte(token))
+	if _, err := tx.Exec(ctx, `SELECT loyalty.require_recent_privacy($1,$2::uuid)`, h[:], s.StoreID); err != nil {
+		return Erasure{}, false, dbError(err)
+	}
+	return out, replay, nil
 }
 func Export(ctx context.Context, tx pgx.Tx, s platform.Scope, token, key, id string) ([]byte, bool, error) {
 	if !command.ValidID(id) {
