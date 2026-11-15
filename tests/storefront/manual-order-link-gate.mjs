@@ -81,6 +81,30 @@ async function startNext(app, requestedPort) {
 
   });
 }
+// M7 order points v3: ONE run, same Next/Go/PG lifecycle as the legacy ten cases. The spec itself exercises full -> readonly ->
+// noread through the Go fixture's permission control (X-Gate-Key), signing a fresh context after each level change. The control is
+// stamped with the legacy baseline right here, i.e. AFTER the old ten cases created their two orders/audits.
+async function runOrderPointsSpec() {
+  const control = process.env.LC_LINK_POINTS_CONTROL, controlKey = process.env.LC_LINK_POINTS_CONTROL_KEY;
+  const stamp = await fetch(`${control}/points-baseline`, {method: "POST", headers: {"X-Gate-Key": controlKey}});
+  if (!stamp.ok) throw new Error(`points legacy baseline stamp: ${stamp.status}`);
+  const env = {...process.env};
+  for (const name of Object.keys(env)) if (name.startsWith("LC_LINK_")) delete env[name]; // the runner needs no gate control secret
+  Object.assign(env, {
+    LC_BROWSER_SUITE: "order-points",
+    LC_BROWSER_PUBLIC_ORIGIN: adminOrigin,
+    LC_BROWSER_ORDER_STORE: process.env.LC_LINK_POINTS_STORE,
+    LC_BROWSER_EVIDENCE: evidence,
+    LC_POINTS_CONTROL: process.env.LC_LINK_POINTS_CONTROL,
+    LC_POINTS_CONTROL_KEY: process.env.LC_LINK_POINTS_CONTROL_KEY,
+    LC_POINTS_CANARY: process.env.LC_LINK_POINTS_CANARY,
+    NEXT_TELEMETRY_DISABLED: "1",
+  });
+  const child = spawn("pnpm", ["exec", "playwright", "test", "tests/admin/order-points.spec.ts", "--reporter=list", "--output=" + path.join(evidence, "order-points", "results")], {cwd: root, env, stdio: ["ignore", "inherit", "inherit"]});
+  const code = await new Promise(resolve => child.on("exit", value => resolve(value)));
+  if (code !== 0) throw new Error(`order-points spec failed (exit ${code})`);
+}
+
 try {
   execFileSync("openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", path.join(certDir, "key.pem"), "-out", path.join(certDir, "cert.pem"), "-days", "1", "-subj", "/CN=buyer.example"], {stdio: "ignore"});
   if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.LC_LINK_CONTROL) || !process.env.LC_LINK_CONTROL_KEY)
@@ -320,6 +344,7 @@ try {
   assert.deepEqual(uiErrors, []);
   pass("no page errors");
   await writeFile(path.join(evidence, "result.json"), JSON.stringify({cases, order_id: body.order_id, cod_order_id: codBody.order_id, link_locale: "zh-TW", boundary: "production Next; signed MOCK IdP; synthetic local TLS/CONNECT; no provider or deployment DNS/TLS acceptance"}, null, 2), {mode: 0o600});
+  if (process.env.LC_LINK_POINTS_CONTROL) await runOrderPointsSpec();
 } catch (error) {
   if (browser) for (const context of browser.contexts()) for (const [index, page] of context.pages().entries()) {
     await page.screenshot({path: path.join(evidence, `failure-${context.pages().length}-${index}.png`), fullPage: true}).catch(() => {});
