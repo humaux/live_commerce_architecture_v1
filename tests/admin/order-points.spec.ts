@@ -542,6 +542,8 @@ test("session/logout boundary clears the private search intent and late handlers
       // Start a search and sign out while it is in flight: the boundary handler must ignore the late answer.
       await page.getByTestId("manual-member-change").click();
       await page.getByTestId("manual-member-query").fill(name);
+      await page.locator("summary").filter({ hasText: "Account" }).click();
+      await expect(page.getByTestId("workspace-sign-out")).toBeVisible();
       await page.getByTestId("workspace-sign-out").click();
       await expect(page.getByRole("button", { name: "Sign in with identity service", exact: true })).toBeVisible();
       await expect(page.getByTestId("manual-member-results")).toHaveCount(0);
