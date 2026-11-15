@@ -67,6 +67,9 @@ export default async function ReplayDetailPage({
             <p className={styles.cardTime}>{formatReplayEnded(replay.ended_at, locale)}</p>
 
             <div className={styles.videoSlot} data-name="Official Meta embed slot · no fabricated playback">
+              <div className={styles.videoHeader}>
+                <p className={styles.videoLabel}>{copy.replayVideo}</p>
+              </div>
               <iframe
                 src={replay.embed_url}
                 title={copy.replayVideo}

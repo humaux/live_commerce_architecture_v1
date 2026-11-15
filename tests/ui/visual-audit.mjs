@@ -43,6 +43,10 @@ const ctxOptions = (v, locale, extra = {}) => ({ viewport: v.size, screen: v.siz
 // storefront routes of docs/engineering/ui-architecture.md section 4 (the same list the click sweep walks); cart/checkout/order need the cart the buyer fills.
 const STOREFRONT = (facts) => {
   const product = facts.products[1];
+  const replayUUID = (value, route) => {
+    if (typeof value !== "string" || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(value)) throw new Error(`storefront fixture missing for ${route}`);
+    return value;
+  };
   return [
     { route: "/", path: "" }, { route: "/products", path: "/products" }, { route: "/collections", path: "/collections" },
     { route: "/collections/[slug]", path: `/collections/${facts.collections[0].slug}` }, { route: "/products/[slug]", path: `/products/${product.slug}` },
@@ -50,6 +54,8 @@ const STOREFRONT = (facts) => {
     { route: "/order-link", path: "/order-link", expectDegraded: true }, { route: "/claim", path: "/claim", expectDegraded: true },
     { route: "/legal/anti-fraud", path: "/legal/anti-fraud" }, { route: "/legal/[slug]", path: "/legal/refunds" }, { route: "/privacy", path: "/privacy" },
     { route: "/data-deletion", path: "/data-deletion" }, { route: "/pages/[slug]", path: "/pages/about" },
+    { route: "/replays", path: "/replays" },
+    { route: "/replays/[sessionID]", path: `/replays/${replayUUID(facts.replay, "/replays/[sessionID]")}` },
   ];
 };
 const STOREFRONT_CART = [{ route: "/cart", path: "/cart" }, { route: "/checkout", path: "/checkout" }, { route: "/orders/[orderID]", path: null }, { route: "/orders/[orderID]/return", path: null }];

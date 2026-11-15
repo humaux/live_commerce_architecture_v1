@@ -15,7 +15,7 @@ import { CLICK_VARIANTS, JOURNEY_PAGES, STOREFRONT_ROUTES, VISUAL_LOCALES, VISUA
 const weights = await loadWeights();
 
 // Evaluate the actual executor's list expression with the shared helper, without starting a browser.
-const walkFacts = { products: [{}, { slug: "fixture-product" }], collections: [{ slug: "fixture-collection" }] };
+const walkFacts = { products: [{}, { slug: "fixture-product" }], collections: [{ slug: "fixture-collection" }], replay: "44444444-4444-4444-8444-444444444444" };
 const walkChrome = { name: "chrome", selector: "body", exclude: "#main" };
 const walkMain = [{ name: "main", selector: "#main" }];
 function executorWalk(routes = STOREFRONT_ROUTES, facts = walkFacts) {
@@ -45,12 +45,14 @@ test("storefront executor: exact legacy mappings plus four unique click-only rou
     { route: "/data-deletion", path: "/data-deletion" },
     { route: "/contact", path: "/contact" },
     { route: "/pages/[slug]", path: "/pages/about" },
+    { route: "/replays", path: "/replays" },
+    { route: "/replays/[sessionID]", path: "/replays/44444444-4444-4444-8444-444444444444" },
   ];
   assert.deepEqual(executorWalk(), expected);
   const special = ["/cart", "/checkout", "/orders/[orderID]", "/orders/[orderID]/return"];
   const all = [...executorWalk().map(r => r.route), ...special];
-  assert.equal(all.length, 19);
-  assert.equal(new Set(all).size, 19);
+  assert.equal(all.length, 21);
+  assert.equal(new Set(all).size, 21);
   assert.deepEqual(all.sort(), [...STOREFRONT_ROUTES].sort());
   const raw = readFileSync("tests/ui/click-sweep.mjs", "utf8");
   const session = raw.slice(raw.indexOf("async function storefrontSession"), raw.indexOf("// ---- journeys by clicks"));
@@ -73,7 +75,16 @@ test("storefront executor: next registered static route enters the same ordinary
 });
 
 test("storefront executor: missing dynamic fixture or unsupported template fails explicitly", () => {
-  for (const facts of [{}, { products: [{}], collections: [{}] }, { ...walkFacts, collections: [] }, { ...walkFacts, products: [{}, {slug: ""}] }]) {
+  for (const facts of [
+    {},
+    { products: [{}], collections: [{}], replay: "44444444-4444-4444-8444-444444444444" },
+    { ...walkFacts, collections: [] },
+    { ...walkFacts, products: [{}, {slug: ""}] },
+    { ...walkFacts, replay: undefined },
+    { ...walkFacts, replay: "" },
+    { ...walkFacts, replay: "not-a-uuid" },
+    { ...walkFacts, replay: "[sessionID]" },
+  ]) {
     assert.throws(() => executorWalk(STOREFRONT_ROUTES, facts), /storefront.*fixture/i);
   }
   assert.throws(() => executorWalk([...STOREFRONT_ROUTES, "/future/[slug]"]), /unsupported storefront route template/i);

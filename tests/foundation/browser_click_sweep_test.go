@@ -100,6 +100,7 @@ type csFacts struct {
 	Customer    string            `json:"customer"`
 	Member      string            `json:"member"`
 	Session     string            `json:"session"`
+	Replay      string            `json:"replay"`
 	Promo       string            `json:"promo"`
 	MetaPage    string            `json:"meta_page"`
 	JourneyTag  string            `json:"journey_tag"`
@@ -476,6 +477,53 @@ func TestBrowserClickSweep(t *testing.T) {
 	}
 	facts.Session = draft.ID
 
+	// ---- one public ended replay session (storefront /replays and /replays/[sessionID] routes) -------------------------------------------
+	var replayDraft live.Draft
+	if err := platform.WithScope(ctx, f.runtime, e.token(), e.store(), "live:manage", func(tx pgx.Tx, s platform.Scope) (err error) {
+		replayDraft, err = live.CreateDraft(ctx, tx, s, e.token(), t04Key("cs-replay-draft"), live.DraftInput{Title: "Sweep live replay " + t04Tag(), AspectRatio: "9:16"})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+	replaySession := replayDraft.ID
+
+	if err := platform.WithScope(ctx, f.runtime, e.token(), e.store(), "live:manage", func(tx pgx.Tx, s platform.Scope) error {
+		_, err := claims.CreateOffer(ctx, tx, s, e.token(), t04Key("cs-replay-offer"), replaySession, claims.OfferInput{
+			Keyword:             "SWEEPREPLAY",
+			SKUID:               e.p.stock.sku.ID,
+			MaxQuantityPerClaim: 2,
+		})
+		return err
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	call("PUT", "/live-sessions/"+replaySession+"/claim-source", t04Key("cs-replay-source"),
+		map[string]any{
+			"input":            "https://www.facebook.com/" + page.ID + "/posts/777",
+			"private_reply":    false,
+			"reply_locale":     "zh-TW",
+			"active":           true,
+			"expected_version": int64(0),
+		}, 200, nil)
+
+	var bindingID, postID string
+	if err := owner.QueryRow(ctx, `SELECT id::text FROM integration.bindings WHERE tenant_id=$1 AND store_id=$2 AND enabled LIMIT 1`, f.tenantA, e.store()).Scan(&bindingID); err != nil {
+		t.Fatal(err)
+	}
+	if err := owner.QueryRow(ctx, `SELECT source_object_id FROM live.claim_sources WHERE session_id=$1`, replaySession).Scan(&postID); err != nil {
+		t.Fatal(err)
+	}
+
+	mustExec(t, owner, `UPDATE live.sessions SET lifecycle='ended',lifecycle_at=clock_timestamp() WHERE id=$1`, replaySession)
+
+	permalink := "https://www.facebook.com/" + page.ID + "/videos/777/"
+	mustExec(t, owner, `INSERT INTO live.replay_videos(tenant_id,store_id,binding_id,video_id,post_id,permalink_url)
+		VALUES($1,$2,$3,'777',$4,$5)`, f.tenantA, e.store(), bindingID, postID, permalink)
+
+	call("PUT", "/live-sessions/"+replaySession+"/replay", t04Key("cs-replay-public"),
+		map[string]any{"public": true, "expected_version": int64(1)}, 200, nil)
+
 	// ---- the stack: buyer API (storefront Next is started by the runner), admin Next ----------------------------------------------------------
 	bffKey := base64.RawURLEncoding.EncodeToString(randomBytes(32))
 	buyerHandler, err := buyerhttp.New(ctx, e.p.a.issuer, e.p.a.runtime, e.svc, bffKey, time.Hour)
@@ -483,6 +531,50 @@ func TestBrowserClickSweep(t *testing.T) {
 		t.Fatalf("buyer HTTP constructor: %v", err)
 	}
 	buyerAPI := newHTTPServer(t, buyerHandler)
+
+	// Verify public buyer replays list and detail (live_replay_test.go:212-223)
+	buyerRead := func(target string) map[string]any {
+		req := httptest.NewRequest(http.MethodGet, target, nil)
+		req.Host = "buyer.example"
+		rec := httptest.NewRecorder()
+		buyerHandler.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("buyer read %s: status=%d body=%s", target, rec.Code, rec.Body.String())
+		}
+		var out map[string]any
+		if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+			t.Fatalf("unmarshal %s: %v", target, err)
+		}
+		return out
+	}
+	publicList := buyerRead("/v1/buyer/replays")
+	listItems, ok := publicList["items"].([]any)
+	if !ok || len(listItems) == 0 {
+		t.Fatalf("public replays list must return seeded replay: %+v", publicList)
+	}
+	foundReplay := false
+	for _, it := range listItems {
+		m, _ := it.(map[string]any)
+		if m["session_id"] == replaySession {
+			foundReplay = true
+			break
+		}
+	}
+	if !foundReplay {
+		t.Fatalf("public replays list missing session %s: %+v", replaySession, publicList)
+	}
+	replayDetail := buyerRead("/v1/buyer/replays/" + replaySession)
+	if replayDetail["session_id"] != replaySession || replayDetail["permalink_url"] != permalink || replayDetail["title"] == "" {
+		t.Fatalf("replay detail mismatch: %+v", replayDetail)
+	}
+	if _, err := time.Parse(time.RFC3339Nano, fmt.Sprint(replayDetail["ended_at"])); err != nil {
+		t.Fatal("ended_at must be the persisted session end time")
+	}
+	embedURL, err := url.Parse(fmt.Sprint(replayDetail["embed_url"]))
+	if err != nil || embedURL.Scheme != "https" || embedURL.Host != "www.facebook.com" || embedURL.Path != "/plugins/video.php" || embedURL.Query().Get("href") != permalink {
+		t.Fatal("replay must use only Facebook's official embedded video player")
+	}
+	facts.Replay = fmt.Sprint(replayDetail["session_id"])
 	// Password login (the /signup and /reset routes, the Team page's BFF) is on next to the MOCK IdP: the same wiring as TestBrowserPasswordAuth
 	// (loopback SMTP + HIBP fakes), one private BFF key for both identity handlers.
 	pw := newPwa(t, pwaCap(5000))

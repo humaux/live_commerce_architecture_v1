@@ -755,6 +755,10 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
     await c.load();
 
     // 3. Detail page (in-stock)
+    const iframe = page.locator("iframe");
+    assert.equal(await iframe.count(), 1);
+    assert.equal(await iframe.getAttribute("src"), replayInStock.embed_url);
+    assert.equal(await iframe.getAttribute("title"), "Facebook 官方影片");
     c.text(
       "秋日選物直播",
       "10/30 14:00 已結束",
@@ -801,9 +805,14 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
     api.state.replays = [replaySoldOut];
     await page.goto(`${origin}/zh-TW/replays/${replaySoldOut.session_id}`);
     await c.load();
+    const soldIframe = page.locator("iframe");
+    assert.equal(await soldIframe.count(), 1);
+    assert.equal(await soldIframe.getAttribute("src"), replaySoldOut.embed_url);
+    assert.equal(await soldIframe.getAttribute("title"), "Facebook 官方影片");
     c.text(
       "秋日選物直播",
       "10/30 14:00 已結束",
+      "Facebook 官方影片",
       "本場商品",
       "焦糖托特包 · NT$1,280",
       "目前已售完",

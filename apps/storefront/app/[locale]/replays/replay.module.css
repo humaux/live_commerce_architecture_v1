@@ -175,20 +175,38 @@
 .videoSlot {
   background-color: var(--color-navy);
   border-radius: var(--radius-panel);
+  padding: 16px;
   overflow: clip;
   width: 100%;
   box-sizing: border-box;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.videoHeader {
+  width: 100%;
   display: flex;
   align-items: center;
-  justify-content: center;
+}
+
+.videoLabel {
+  font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #ffffff;
+  margin: 0;
+  word-break: break-word;
 }
 
 .videoIframe {
   width: 100%;
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   border: 0;
   display: block;
+  border-radius: 4px;
 }
 
 /* Product section */
