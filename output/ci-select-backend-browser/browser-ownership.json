@@ -151,7 +151,7 @@
     "tests/admin/operations-model.test.ts": "57c33347733823f50e60db4d6f969511323855d26b4c3961ff38d68baf61f29d",
     "tests/admin/ops-polish-model.test.ts": "287b334747ae9889c5a1a001f0dc91737483b1114839b3c78c9d7675ab69b029",
     "tests/admin/ops-polish.spec.ts": "252462c1640eeb71bd34494874a12eddb60216a598aba252871e76885fd7782d",
-    "tests/admin/order-points.spec.ts": "829e1f128b36a3a756e880c9ec357dfaf58c28292e10d9effeecf26f3c27179f",
+    "tests/admin/order-points.spec.ts": "3083e03476995ebf0cb55a4643a87de848f8c8349de564ea4fbdc40b0696e4c3",
     "tests/admin/orders-bff.spec.ts": "28963e8f589eed64858f7e41c48b67f1f7bc3cbc211a5dadf4a682e875fd756a",
     "tests/admin/orders-fixture-date.ts": "215706c948bf6638f32bf2896f312d546394498fb956083a5bd9ba9d7326e542",
     "tests/admin/orders-model.test.ts": "aaa4b12d5a6c4a2c876341b98fd73c5a812b94a7ee05bd51f1415058d1d427c0",
