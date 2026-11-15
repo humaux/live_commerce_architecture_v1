@@ -46,6 +46,13 @@ const claimState = { redeem: "ok" };
 const SKU = uid(900), OTHER_SKU = uid(901);
 const NAME = { tote: "焦糖托特包", bag: "收納袋" };
 
+// FULL production shopping CSP, pinned as an independent literal from the frozen f319 storefront next.config.ts (script-src 'self' 'unsafe-inline' is
+// its production-only branch). The golden is never derived from the response under test, so a weakened base policy cannot pass.
+const PROD_BASELINE_CSP =
+  "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self' https://logistics-stage.ecpay.com.tw/Express/map https://logistics.ecpay.com.tw/Express/map";
+// The single storefront-v2 §G6 exception: the same complete policy plus the official player frame.
+const REPLAY_DETAIL_CSP = `${PROD_BASELINE_CSP}; frame-src https://www.facebook.com/plugins/video.php`;
+
 function makeOrder(n, o = {}) {
   const mode = o.mode ?? "card", kind = o.kind ?? "home", line = o.line ?? "tote";
   const unit = o.unit ?? 128000, total = unit;
@@ -673,6 +680,342 @@ test("claim link · confirm, expired and unconfirmed result", async () => {
     await c.shot(frames.gone);
     try { c.done(); } finally { await page.close(); }
   }
+});
+
+// ---- live replays ------------------------------------------------------------------------------------------------------------------------------------------------
+// M8 formal roots 1468:107106–107471: logical CSS pixels, independent of screenshot DPR.
+async function replayGeometry(page, frame, dev) {
+  const mobile = dev === "m", x = mobile ? 16 : 360, width = mobile ? 358 : 720;
+  const dock = page.locator('[data-name="Fixed actions · outside scroll viewport"]');
+  const video = page.locator('[data-name="Official Meta embed slot · no fabricated playback"]');
+  const targets = [
+    ["dock", dock, [x, mobile ? 758 : 812, width, 68]],
+    ["bottom control", dock.locator("a"), [x, mobile ? 770 : 824, width, 44]],
+    ["viewport", page.locator('[data-name="Task viewport · original request stays in this state"]'), [x, mobile ? 148 : 164, width, mobile ? 586 : 610]],
+    ["Back", page.locator('[data-name="Control · 返回"]'), [mobile ? 238 : 928, 10, mobile ? 100 : 140, 44]],
+    ["title", page.locator("main h1"), [x, mobile ? 88 : 96, width, 44]],
+    ["app bar", page.locator('[data-name="Buyer app bar"]'), [0, 0, mobile ? 390 : 1440, 64]],
+  ];
+  if (await video.count()) targets.push(["video", video, [mobile ? 32 : 376, mobile ? 200 : 216, mobile ? 326 : 688, mobile ? 182 : 340]]);
+  const observed = await Promise.all(targets.map(async ([name, locator, expected]) => ({ name, expected, actual: await locator.boundingBox() })));
+  console.log("M8 geometry", JSON.stringify({ frame, viewport: page.viewportSize(), observed }));
+  for (const { name, expected, actual } of observed) {
+    assert.ok(actual, `${frame} ${name} has a visible bounding box`);
+    for (const [i, axis] of ["x", "y", "width", "height"].entries())
+      assert.ok(Math.abs(actual[axis] - expected[i]) <= 0.5, `${frame} ${name}.${axis}: observed ${actual[axis]}, formal ${expected[i]} CSS px`);
+  }
+}
+
+test("replays · list, detail in-stock, sold-out, empty list, navigation, and persistence", async () => {
+  const replayInStock = {
+    session_id: uid(501),
+    title: "秋日選物直播",
+    ended_at: "2026-10-30T14:00:00Z",
+    permalink_url: "https://www.facebook.com/synthetic.page/videos/777/",
+    embed_url: "https://www.facebook.com/plugins/video.php?href=https%3A%2F%2Fwww.facebook.com%2Fsynthetic.page%2Fvideos%2F777%2F",
+    offers: [{
+      offer_id: uid(601),
+      sku_id: SKU,
+      product: {
+        id: uid(100),
+        slug: "tote-bag",
+        title: "焦糖托特包",
+        description: "輕量純棉帆布托特包",
+        seo: { title: "", description: "" },
+        images: [{ id: uid(101), width: 480, height: 600 }],
+        detail_images: [],
+        image_axis: null,
+        option_images: [],
+        options: [],
+        variants: [{
+          sku_id: SKU,
+          sku_code: "TOTE",
+          title: "預設",
+          option_values: [],
+          price_minor: 128000,
+          compare_at_minor: null,
+          stock: "in",
+          image_id: null,
+        }],
+        collections: [],
+      },
+    }],
+  };
+
+  const replaySoldOut = {
+    session_id: uid(502),
+    title: "秋日選物直播",
+    ended_at: "2026-10-30T14:00:00Z",
+    permalink_url: "https://www.facebook.com/synthetic.page/videos/888/",
+    embed_url: "https://www.facebook.com/plugins/video.php?href=https%3A%2F%2Fwww.facebook.com%2Fsynthetic.page%2Fvideos%2F888%2F",
+    offers: [{
+      offer_id: uid(602),
+      sku_id: SKU,
+      product: {
+        ...replayInStock.offers[0].product,
+        variants: [{
+          ...replayInStock.offers[0].product.variants[0],
+          stock: "out",
+        }],
+      },
+    }],
+  };
+
+  for (const [dev, frames] of [
+    ["d", { list: "1468:107106", detail: "1468:107197", soldout: "1468:107292", empty: "1468:107387" }],
+    ["m", { list: "1468:107151", detail: "1468:107244", soldout: "1468:107339", empty: "1468:107430" }],
+  ]) {
+    api.state.replays = [replayInStock];
+    const page = await DEVICES[dev]().newPage();
+    // Intercept exact known fixture embed URLs with explicit minimal MOCK child (no external networking)
+    await page.route(
+      (url) => url.href === replayInStock.embed_url || url.href === replaySoldOut.embed_url,
+      (route) => route.fulfill({ status: 200, contentType: "text/html", body: "<title>MOCK official player transport</title>" })
+    );
+    const c = new Check(page, `replays ${dev}`);
+
+    // 1. List page: the full production baseline is the pinned literal, never the response under test.
+    const listRes = await page.goto(`${origin}/zh-TW/replays`);
+    await c.load();
+    assert.equal(
+      listRes?.headers()["content-security-policy"],
+      PROD_BASELINE_CSP,
+      "list page must deliver the full production baseline CSP"
+    );
+    c.text("直播回放", "秋日選物直播", "10/30 14:00 已結束", "返回", "返回商店", "晨光選物");
+    await need(c, "返回", "觀看回放", "返回商店");
+    await c.step("formal geometry", () => replayGeometry(page, frames.list, dev));
+    await c.shot(frames.list);
+
+    // 2. Click 觀看回放 -> navigates to detail (crosses CSP boundary with real document navigation)
+    const watchBtn = btn(page, "觀看回放");
+    const [detailRes] = await Promise.all([
+      page.waitForResponse(
+        (r) =>
+          r.request().resourceType() === "document" &&
+          r.frame() === page.mainFrame() &&
+          r.url() === `${origin}/zh-TW/replays/${replayInStock.session_id}`,
+        { timeout: 10000 }
+      ),
+      page.waitForURL(new RegExp(`/zh-TW/replays/${replayInStock.session_id}$`), { timeout: 10000 }),
+      click(page, watchBtn.first(), { page: "直播回放列表", control: "觀看回放", expected: "直播回放詳情" }),
+    ]);
+    await c.load();
+    const detailCSP = detailRes?.headers()["content-security-policy"] || "";
+    assert.equal(
+      detailCSP,
+      REPLAY_DETAIL_CSP,
+      "detail page must deliver exact baseline CSP plus single frame-src directive"
+    );
+
+    // 3. Detail page (in-stock)
+    const iframe = page.locator("iframe");
+    assert.equal(await iframe.count(), 1);
+    assert.equal(await iframe.getAttribute("src"), replayInStock.embed_url);
+    assert.equal(await iframe.getAttribute("title"), "Facebook 官方影片");
+    assert.equal(
+      await iframe.contentFrame().locator("title").textContent({ timeout: 10000 }),
+      "MOCK official player transport"
+    );
+    c.text(
+      "秋日選物直播",
+      "10/30 14:00 已結束",
+      "Facebook 官方影片",
+      "本場商品",
+      "焦糖托特包 · NT$1,280",
+      "目前有貨",
+      "以目前價格與庫存為準。",
+      "查看商品",
+      "返回回放列表",
+      "返回",
+    );
+    await need(c, "返回", "查看商品", "返回回放列表");
+    await c.step("formal geometry", () => replayGeometry(page, frames.detail, dev));
+    await c.shot(frames.detail);
+
+    // 4. Persistence after refresh
+    const reloadRes = await page.reload();
+    await c.load();
+    assert.equal(
+      reloadRes?.headers()["content-security-policy"],
+      REPLAY_DETAIL_CSP,
+      "reloaded detail retains detail CSP"
+    );
+    c.text("秋日選物直播", "10/30 14:00 已結束", "目前有貨", "查看商品");
+
+    // 5. Click 查看商品 -> navigates to product, restores standard chrome
+    const viewProdBtn = btn(page, "查看商品");
+    const expectedProductHref = await viewProdBtn.first().getAttribute("href");
+    const expectedProductURL = new URL(expectedProductHref, origin).href;
+    const [prodRes] = await Promise.all([
+      page.waitForResponse(
+        (r) =>
+          r.request().resourceType() === "document" &&
+          r.frame() === page.mainFrame() &&
+          r.url() === expectedProductURL,
+        { timeout: 10000 }
+      ),
+      page.waitForURL(new RegExp(`/zh-TW/products/`), { timeout: 10000 }),
+      click(page, viewProdBtn.first(), { page: "直播回放詳情", control: "查看商品", expected: "商品詳情" }),
+    ]);
+    await c.load();
+    assert.equal(await page.locator(".sf-header").count() > 0, true);
+    assert.equal(prodRes?.headers()["content-security-policy"], PROD_BASELINE_CSP, "product page restores baseline CSP");
+
+    // 6. Navigation back to replays and store
+    await page.goto(`${origin}/zh-TW/replays/${replayInStock.session_id}`);
+    await c.load();
+    const [backListRes] = await Promise.all([
+      page.waitForResponse(
+        (r) =>
+          r.request().resourceType() === "document" &&
+          r.frame() === page.mainFrame() &&
+          r.url() === `${origin}/zh-TW/replays`,
+        { timeout: 10000 }
+      ),
+      page.waitForURL(/\/zh-TW\/replays$/, { timeout: 10000 }),
+      click(page, btn(page, "返回回放列表").first(), { page: "直播回放詳情", control: "返回回放列表", expected: "/zh-TW/replays" }),
+    ]);
+    await c.load();
+    assert.equal(backListRes?.headers()["content-security-policy"], PROD_BASELINE_CSP, "back to list restores baseline CSP");
+    await Promise.all([
+      page.waitForURL(/\/zh-TW$/, { timeout: 10000 }),
+      click(page, btn(page, "返回商店").first(), { page: "直播回放列表", control: "返回商店", expected: "/zh-TW" }),
+    ]);
+
+    // 7. Sold-out detail
+    api.state.replays = [replaySoldOut];
+    const soldRes = await page.goto(`${origin}/zh-TW/replays/${replaySoldOut.session_id}`);
+    await c.load();
+    assert.equal(
+      soldRes?.headers()["content-security-policy"],
+      REPLAY_DETAIL_CSP,
+      "sold-out detail delivers baseline CSP plus frame-src"
+    );
+    const soldIframe = page.locator("iframe");
+    assert.equal(await soldIframe.count(), 1);
+    assert.equal(await soldIframe.getAttribute("src"), replaySoldOut.embed_url);
+    assert.equal(await soldIframe.getAttribute("title"), "Facebook 官方影片");
+    assert.equal(
+      await soldIframe.contentFrame().locator("title").textContent({ timeout: 10000 }),
+      "MOCK official player transport"
+    );
+    c.text(
+      "秋日選物直播",
+      "10/30 14:00 已結束",
+      "Facebook 官方影片",
+      "本場商品",
+      "焦糖托特包 · NT$1,280",
+      "目前已售完",
+      "以目前價格與庫存為準。",
+      "查看商品",
+      "返回回放列表",
+    );
+    await need(c, "查看商品", "返回回放列表");
+    await c.step("formal geometry", () => replayGeometry(page, frames.soldout, dev));
+    await c.shot(frames.soldout);
+
+    // 8. Empty list
+    api.state.replays = [];
+    const emptyRes = await page.goto(`${origin}/zh-TW/replays`);
+    await c.load();
+    assert.equal(emptyRes?.headers()["content-security-policy"], PROD_BASELINE_CSP, "empty list has baseline CSP");
+    c.text("直播回放", "目前沒有公開回放", "先逛逛商店的商品。", "返回商店", "返回");
+    await need(c, "返回商店", "返回");
+    await c.step("formal geometry", () => replayGeometry(page, frames.empty, dev));
+    await c.shot(frames.empty);
+
+    try { c.done(); } finally { await page.close(); }
+  }
+});
+
+test("replays · locale, negative refusals, and no-cartwrite integrity", async () => {
+  const page = await DEVICES.d().newPage();
+  const c = new Check(page, "replays negative and locale");
+
+  // Locale zh-CN empty
+  api.state.replays = [];
+  await page.goto(`${origin}/zh-CN/replays`);
+  await c.load();
+  c.text("直播回放", "目前没有公开回放", "先逛逛商店的商品。", "返回商店", "返回");
+
+  // Locale en empty
+  await page.goto(`${origin}/en/replays`);
+  await c.load();
+  c.text("Live Replays", "No public replays yet", "Browse products in the shop instead.", "Back to shop", "Back");
+
+  // Malformed session ID refusal (not a UUID) -> 404
+  const resBad = await page.goto(`${origin}/zh-TW/replays/not-a-valid-uuid`);
+  assert.equal(resBad?.status(), 404);
+
+  // Non-existent session ID -> 404
+  const resMissing = await page.goto(`${origin}/zh-TW/replays/00000000-0000-4000-8000-000000000999`);
+  assert.equal(resMissing?.status(), 404);
+
+  // Bounded actual Next response header checks for 3 valid locales (header path coverage using missing canonical UUID 404). Each probe must carry the
+  // exact detail policy (baseline + single frame-src), never an empty or partial header.
+  const probeUUID = "00000000-0000-4000-8000-000000000999";
+  for (const loc of ["zh-CN", "zh-TW", "en"]) {
+    const locRes = await page.goto(`${origin}/${loc}/replays/${probeUUID}`);
+    assert.equal(locRes?.status(), 404, `${loc} probe is header path coverage with missing UUID 404`);
+    assert.equal(
+      locRes?.headers()["content-security-policy"],
+      REPLAY_DETAIL_CSP,
+      `${loc} replay detail route must deliver the exact detail policy`
+    );
+  }
+
+  // Paths that must deliver the exact production baseline CSP: no frame-src permission and no empty-header pass.
+  const negativePaths = [
+    "/zh-TW/replays",
+    "/zh-TW/products/sample-slug",
+    "/zh-TW/replays/not-a-valid-uuid",
+    "/fr/replays/" + probeUUID,
+    "/zh-TW/replays/" + probeUUID + "/extra",
+  ];
+  for (const p of negativePaths) {
+    const r = await page.goto(`${origin}${p}`);
+    assert.equal(
+      r?.headers()["content-security-policy"],
+      PROD_BASELINE_CSP,
+      `${p} must deliver the exact baseline CSP (no frame-src, no empty header)`
+    );
+  }
+
+  // Neutral payment return policy retained (positive assertion from lib/payment-return.ts)
+  const payRetRes = await page.goto(`${origin}/payment/return`);
+  assert.equal(payRetRes?.headers()["referrer-policy"], "no-referrer", "payment/return must deliver no-referrer");
+  const payCsp = payRetRes?.headers()["content-security-policy"] || "";
+  assert.ok(payCsp.includes("default-src 'none'"), "payment/return must include default-src 'none'");
+  assert.ok(payCsp.includes("base-uri 'none'"), "payment/return must include base-uri 'none'");
+  assert.ok(payCsp.includes("frame-ancestors 'none'"), "payment/return must include frame-ancestors 'none'");
+  assert.ok(payCsp.includes("form-action 'none'"), "payment/return must include form-action 'none'");
+  assert.ok(payCsp.includes("style-src 'sha256-"), "payment/return must include style-src 'sha256-'");
+  assert.ok(!payCsp.includes("https://logistics-stage.ecpay.com.tw"), "payment/return retains its own policy, not shopping CSP");
+
+  // Claim and order-link retain exact current policy from next.config.ts and no-referrer
+  const claimOrderCSP = "frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'none'; connect-src 'self'";
+  for (const pageName of ["claim", "order-link"]) {
+    const r = await page.goto(`${origin}/zh-TW/${pageName}`);
+    assert.equal(r?.headers()["referrer-policy"], "no-referrer", `${pageName} must retain no-referrer`);
+    assert.equal(r?.headers()["content-security-policy"], claimOrderCSP, `${pageName} must retain exact restrictive policy`);
+  }
+
+  // Upstream down -> 500 error page
+  api.state.replayError = "down";
+  const resDown = await page.goto(`${origin}/zh-TW/replays`);
+  assert.equal(resDown?.status(), 500);
+  api.state.replayError = null;
+
+  // Cart unchanged (no replay cartwrite)
+  const cartRes = await page.request.get(`${origin}/api/shop/replays`, { headers: { accept: "application/json" } });
+  assert.equal(cartRes.status(), 200);
+
+  // Refuse replay POST
+  const postRes = await page.request.post(`${origin}/api/shop/replays`, { data: {} });
+  assert.equal(postRes.status(), 405);
+
+  try { c.done(); } finally { await page.close(); }
 });
 
 // Frames the real routes cannot reach with existing data; recorded in manifest.json and the PR body, never silently dropped.

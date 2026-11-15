@@ -12,17 +12,47 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"net"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 const harnessCapacityMargin = 3
 
 var errHarnessCapacityTimeout = errors.New("PG capacity observation timed out")
+
+// Retain only safe metadata: the raw error (including PG details/DSN) is discarded.
+func harnessCapacityError(safe error, raw error) error {
+	class, sqlstate := "other", "none"
+	var pgErr *pgconn.PgError
+	var netErr net.Error
+	switch {
+	case errors.Is(safe, errHarnessCapacityTimeout) || errors.Is(raw, context.DeadlineExceeded):
+		class = "deadline"
+	case errors.Is(raw, context.Canceled):
+		class = "canceled"
+	case errors.As(raw, &pgErr):
+		class = "postgres"
+		code := pgErr.Code
+		if len(code) == 5 && strings.IndexFunc(code, func(r rune) bool {
+			return !(r >= '0' && r <= '9' || r >= 'A' && r <= 'Z' || r >= 'a' && r <= 'z')
+		}) == -1 {
+			sqlstate = code
+		}
+	case errors.As(raw, &netErr):
+		class = "network"
+	case errors.Is(raw, io.EOF):
+		class = "eof"
+	}
+	return fmt.Errorf("%w [class=%s go_type=%T sqlstate=%s]", safe, class, raw, sqlstate)
+}
 
 type harnessCapacitySample struct {
 	ClientBackends, MaxConnections, ReservedConnections, SuperuserReservedConnections int
@@ -44,9 +74,9 @@ func harnessReadCapacityFrom(ctx context.Context, q harnessCapacityQuerier) (har
 		&s.ClientBackends, &s.MaxConnections, &s.ReservedConnections, &s.SuperuserReservedConnections)
 	if err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) || errors.Is(err, context.DeadlineExceeded) {
-			return s, errHarnessCapacityTimeout
+			return s, harnessCapacityError(errHarnessCapacityTimeout, err)
 		}
-		return s, errors.New("PG capacity observation failed") // never include connection configuration in evidence
+		return s, harnessCapacityError(errors.New("PG capacity observation failed"), err)
 	}
 	return s, nil
 }
@@ -129,24 +159,29 @@ func harnessWatchCapacity(t *testing.T, owner *pgxpool.Pool) {
 		err := conn.Close(ctx)
 		cancel()
 		if err != nil {
-			return errors.New("PG capacity observer replacement cleanup failed")
+			return harnessCapacityError(errors.New("PG capacity observer replacement cleanup failed"), err)
 		}
 		ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		replacement, err := pgx.ConnectConfig(ctx, config.Copy())
 		if err != nil {
-			return errors.New("PG capacity observer replacement connection failed")
+			return harnessCapacityError(errors.New("PG capacity observer replacement connection failed"), err)
 		}
 		conn = replacement
 		return nil
 	}
-	sample := func(context.Context) {
+	firstErrorPhase := ""
+	samplePhase := func(phase string) {
 		state.sample(read, reconnect)
+		if state.err != nil && firstErrorPhase == "" {
+			firstErrorPhase = phase
+		}
 	}
-	sample(context.Background())
+	sample := func(context.Context) { samplePhase("periodic") }
+	samplePhase("initial")
 	if state.err != nil {
 		closeObserver()
-		t.Fatal(state.err)
+		t.Fatalf("phase=%s: %v", firstErrorPhase, state.err)
 	}
 	ticker := time.NewTicker(50 * time.Millisecond)
 	stop, done := harnessStartCapacitySampler(ticker.C, sample)
@@ -154,13 +189,13 @@ func harnessWatchCapacity(t *testing.T, owner *pgxpool.Pool) {
 		stop()
 		<-done
 		ticker.Stop()
-		sample(context.Background())
+		samplePhase("final")
 		closeObserver()
 		t.Logf("HARNESS_PG_CAPACITY sampled_peak=%d samples=%d limit=%d max=%d reserved=%d super=%d margin=%d observer_timeout_retries=%d",
 			state.peak, state.samples, state.last.limit(), state.last.MaxConnections,
 			state.last.ReservedConnections, state.last.SuperuserReservedConnections, harnessCapacityMargin, state.timeoutRetries)
 		if state.err != nil {
-			t.Error(state.err)
+			t.Errorf("phase=%s: %v", firstErrorPhase, state.err)
 		}
 	})
 }
@@ -197,6 +232,37 @@ func TestHarnessPoolCapacityBoundary(t *testing.T) {
 				t.Fatalf("capacity boundary: err=%v peak=%d samples=%d", err, state.peak, state.samples)
 			}
 		})
+	}
+}
+
+func TestHarnessPoolCapacitySafeDiagnostics(t *testing.T) {
+	// MODEL_ONLY: synthetic private text must never survive diagnostic formatting.
+	const private = "private-dsn-user-query-parameter"
+	for _, tc := range []struct {
+		raw             error
+		class, sqlstate string
+	}{
+		{errors.New(private), "other", "none"},
+		{fmt.Errorf("%s: %w", private, context.Canceled), "canceled", "none"},
+		{context.DeadlineExceeded, "deadline", "none"},
+		{io.EOF, "eof", "none"},
+		{&net.OpError{Op: private, Err: errors.New(private)}, "network", "none"},
+		{fmt.Errorf("%s: %w", private, &pgconn.PgError{Code: "08006", Message: private}), "postgres", "08006"},
+		{&pgconn.PgError{Code: "28P01", Message: private}, "postgres", "28P01"},
+		{&pgconn.PgError{Code: "a0Z19", Message: private}, "postgres", "a0Z19"},
+		{&pgconn.PgError{Code: "08\n06", Message: private}, "postgres", "none"},
+		{&pgconn.PgError{Code: "é001", Message: private}, "postgres", "none"},
+		{&pgconn.PgError{Code: private, Message: private}, "postgres", "none"},
+	} {
+		got := harnessCapacityError(errHarnessCapacityTimeout, tc.raw)
+		// Use an ordinary safe error to check raw classification independently.
+		want := fmt.Sprintf("PG capacity observation failed [class=%s go_type=%T sqlstate=%s]", tc.class, tc.raw, tc.sqlstate)
+		if text := harnessCapacityError(errors.New("PG capacity observation failed"), tc.raw).Error(); text != want || strings.Contains(text, private) {
+			t.Fatalf("unsafe or incorrect diagnostic: type=%T", tc.raw)
+		}
+		if !errors.Is(got, errHarnessCapacityTimeout) || strings.Contains(got.Error(), private) {
+			t.Fatal("timeout identity lost or private text exposed")
+		}
 	}
 }
 

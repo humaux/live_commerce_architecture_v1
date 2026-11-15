@@ -114,6 +114,19 @@ const en = {
   railNext: "Next products",
   save: "Save {amount}",
   priceFrom: "from {price}",
+  replaysTitle: "Live Replays",
+  back: "Back",
+  backToShop: "Back to shop",
+  watchReplay: "Watch replay",
+  backToReplays: "Back to replays",
+  viewProduct: "View product",
+  noReplaysTitle: "No public replays yet",
+  noReplaysHint: "Browse products in the shop instead.",
+  replayVideo: "Official Facebook video",
+  replayProducts: "Featured products",
+  replayInStock: "In stock",
+  replaySoldOut: "Sold out",
+  replayPriceNotice: "Current prices and availability apply.",
 };
 type Copy = { [K in keyof typeof en]: string };
 
@@ -228,6 +241,19 @@ const zhTW: Copy = {
   railNext: "下一組商品",
   save: "省 {amount}",
   priceFrom: "{price} 起",
+  replaysTitle: "直播回放",
+  back: "返回",
+  backToShop: "返回商店",
+  watchReplay: "觀看回放",
+  backToReplays: "返回回放列表",
+  viewProduct: "查看商品",
+  noReplaysTitle: "目前沒有公開回放",
+  noReplaysHint: "先逛逛商店的商品。",
+  replayVideo: "Facebook 官方影片",
+  replayProducts: "本場商品",
+  replayInStock: "目前有貨",
+  replaySoldOut: "目前已售完",
+  replayPriceNotice: "以目前價格與庫存為準。",
 };
 
 const zhCN: Copy = {
@@ -341,9 +367,39 @@ const zhCN: Copy = {
   railNext: "下一组商品",
   save: "省 {amount}",
   priceFrom: "{price} 起",
+  replaysTitle: "直播回放",
+  back: "返回",
+  backToShop: "返回商店",
+  watchReplay: "观看回放",
+  backToReplays: "返回回放列表",
+  viewProduct: "查看商品",
+  noReplaysTitle: "目前没有公开回放",
+  noReplaysHint: "先逛逛商店的商品。",
+  replayVideo: "Facebook 官方视频",
+  replayProducts: "本场商品",
+  replayInStock: "目前有货",
+  replaySoldOut: "目前已售完",
+  replayPriceNotice: "以目前价格与库存为准。",
 };
 
 export const shopCopy: Record<Locale, Copy> = { en, "zh-TW": zhTW, "zh-CN": zhCN };
+
+export function formatReplayEnded(isoString: string, locale: Locale): string {
+  try {
+    const d = new Date(isoString);
+    if (Number.isNaN(d.getTime())) return "";
+    const m = d.getUTCMonth() + 1;
+    const day = d.getUTCDate();
+    const h = String(d.getUTCHours()).padStart(2, "0");
+    const min = String(d.getUTCMinutes()).padStart(2, "0");
+    const time = `${m}/${day} ${h}:${min}`;
+    if (locale === "en") return `Ended at ${time}`;
+    if (locale === "zh-CN") return `${time} 已结束`;
+    return `${time} 已結束`;
+  } catch {
+    return "";
+  }
+}
 
 // "{n}" style placeholders; unknown names are left untouched so a typo is visible, not silently blank.
 export function fmt(template: string, vars: Record<string, string | number>): string {

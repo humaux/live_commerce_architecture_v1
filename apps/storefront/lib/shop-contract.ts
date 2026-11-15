@@ -51,6 +51,29 @@ export type ProductDetail = {
 export type CollectionCard = { id: string; slug: string; title: string; image_id: string | null; product_count: number };
 export type CollectionInfo = { id: string; slug: string; title: string; description: string; image_id: string | null };
 
+export type ReplayCard = {
+  session_id: string;
+  title: string;
+  ended_at: string;
+  permalink_url: string;
+};
+export type ReplayList = {
+  items: ReplayCard[];
+};
+export type ReplayOffer = {
+  offer_id: string;
+  sku_id: string;
+  product: ProductDetail;
+};
+export type ReplayDetail = {
+  session_id: string;
+  title: string;
+  ended_at: string;
+  permalink_url: string;
+  embed_url: string;
+  offers: ReplayOffer[];
+};
+
 // Only Host-scoped PUBLIC catalog responses belong here, never an admin catalog or a global cache.
 export const relatedCards = (cards: ProductCard[], currentID: string): ProductCard[] =>
   cards.filter((card, i) => card.id !== currentID && cards.findIndex((other) => other.id === card.id) === i).slice(0, 8);
@@ -179,6 +202,98 @@ export function parseCollections(v: unknown): CollectionCard[] | null {
 export function parseCollection(v: unknown): CollectionInfo | null {
   if (!rec(v) || !uuid(v.id) || !str(v.slug, 80) || !str(v.title, 200) || !str(v.description, 4000) || !maybe(v.image_id, uuid)) return null;
   return { id: v.id, slug: v.slug, title: v.title, description: v.description, image_id: v.image_id as string | null };
+}
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+const isoDate = (v: unknown): v is string => typeof v === "string" && ISO_DATE.test(v) && !Number.isNaN(Date.parse(v));
+const FB_PERMALINK_PATH = /^(?:\/[A-Za-z0-9_.-]+)?\/videos\/\d+\/?$/;
+
+export function isValidFacebookPermalink(url: unknown): url is string {
+  if (typeof url !== "string" || url.length > 500) return false;
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== "https:") return false;
+  if (parsed.hostname !== "facebook.com" && parsed.hostname !== "www.facebook.com") return false;
+  if (parsed.port !== "" && parsed.port !== "443") return false;
+  if (parsed.username !== "" || parsed.password !== "") return false;
+  if (parsed.search !== "" || parsed.hash !== "") return false;
+  if (parsed.pathname.includes("%")) return false;
+  if (!FB_PERMALINK_PATH.test(parsed.pathname)) return false;
+  return true;
+}
+
+export function isValidFacebookEmbedUrl(embedUrl: unknown, expectedPermalink: string): embedUrl is string {
+  if (typeof embedUrl !== "string" || embedUrl.length > 1000) return false;
+  let parsed: URL;
+  try {
+    parsed = new URL(embedUrl);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== "https:") return false;
+  if (parsed.hostname !== "www.facebook.com" && parsed.hostname !== "facebook.com") return false;
+  if (parsed.port !== "" && parsed.port !== "443") return false;
+  if (parsed.username !== "" || parsed.password !== "") return false;
+  if (parsed.pathname !== "/plugins/video.php") return false;
+  if (parsed.hash !== "") return false;
+  const keys = Array.from(parsed.searchParams.keys());
+  if (keys.length !== 1 || keys[0] !== "href") return false;
+  const allHrefs = parsed.searchParams.getAll("href");
+  if (allHrefs.length !== 1) return false;
+  if (allHrefs[0] !== expectedPermalink) return false;
+  return true;
+}
+
+function parseReplayCard(v: unknown): ReplayCard | null {
+  if (!rec(v) || !uuid(v.session_id) || !str(v.title, 300) || !isoDate(v.ended_at) || !isValidFacebookPermalink(v.permalink_url)) return null;
+  return {
+    session_id: v.session_id,
+    title: v.title,
+    ended_at: v.ended_at,
+    permalink_url: v.permalink_url,
+  };
+}
+
+export function parseReplayList(v: unknown): ReplayList | null {
+  if (!rec(v) || !Array.isArray(v.items) || v.items.length > 50) return null;
+  const items: ReplayCard[] = [];
+  for (const item of v.items) {
+    const parsed = parseReplayCard(item);
+    if (!parsed) return null;
+    items.push(parsed);
+  }
+  return { items };
+}
+
+export function parseReplayDetail(v: unknown): ReplayDetail | null {
+  if (!rec(v) || !uuid(v.session_id) || !str(v.title, 300) || !isoDate(v.ended_at) || !isValidFacebookPermalink(v.permalink_url)) return null;
+  if (!isValidFacebookEmbedUrl(v.embed_url, v.permalink_url)) return null;
+  if (!Array.isArray(v.offers) || v.offers.length > 100) return null;
+  const offers: ReplayOffer[] = [];
+  for (const o of v.offers) {
+    if (!rec(o) || !uuid(o.offer_id) || !uuid(o.sku_id)) continue;
+    const product = parseProductDetail(o.product);
+    if (!product) continue;
+    const variant = product.variants.find((x) => x.sku_id === o.sku_id);
+    if (!variant) continue;
+    offers.push({
+      offer_id: o.offer_id,
+      sku_id: o.sku_id,
+      product,
+    });
+  }
+  return {
+    session_id: v.session_id,
+    title: v.title,
+    ended_at: v.ended_at,
+    permalink_url: v.permalink_url,
+    embed_url: v.embed_url,
+    offers,
+  };
 }
 
 // ---- derived display helpers (no I/O) ---------------------------------------------------------------------------------

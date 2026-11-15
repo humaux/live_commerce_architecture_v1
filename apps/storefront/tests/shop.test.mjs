@@ -4,7 +4,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { accentText, contrast, defaultDesign, internalHref, normalizeDesign, onAccent, resolveNav, safeExternal, withPreview } from "../lib/design.ts";
-import { MAX_DETAIL_IMAGES, MAX_MAIN_IMAGES, freeShippingProgress, initialChoice, parseCollections, parseProductDetail, parseProductList, priceBounds, resolveVariant, valueAvailable } from "../lib/shop-contract.ts";
+import { MAX_DETAIL_IMAGES, MAX_MAIN_IMAGES, freeShippingProgress, initialChoice, isValidFacebookEmbedUrl, isValidFacebookPermalink, parseCollections, parseProductDetail, parseProductList, parseReplayDetail, parseReplayList, priceBounds, resolveVariant, valueAvailable } from "../lib/shop-contract.ts";
 import { parseListQuery } from "../lib/shop-query.ts";
 import { productJsonLd, robotsTxt, sitemapXml } from "../lib/seo.ts";
 import { formatMoney, majorToMinor, minorToMajor } from "../lib/money.ts";
@@ -226,4 +226,146 @@ test("design text limits count code points like Go, never splitting a surrogate 
   const over = normalizeDesign({ profile: { name: "Shop", announcement: emoji.repeat(141) } });
   assert.equal([...over.profile.announcement].length, 140);
   assert.ok(!/[\ud800-\udbff](?![\udc00-\udfff])|(?<![\ud800-\udbff])[\udc00-\udfff]/.test(over.profile.announcement), "no lone surrogate");
+});
+
+test("replays: strict facebook permalink validation and negative refusal cases", () => {
+  // Valid permalinks: HTTPS facebook.com/www.facebook.com with optional single page slug and numeric video id
+  assert.equal(isValidFacebookPermalink("https://www.facebook.com/synthetic.page/videos/777/"), true);
+  assert.equal(isValidFacebookPermalink("https://facebook.com/page-123/videos/456"), true);
+  assert.equal(isValidFacebookPermalink("https://www.facebook.com/videos/12345/"), true);
+  assert.equal(isValidFacebookPermalink("https://facebook.com/videos/999"), true);
+
+  // Negative / hostile cases
+  assert.equal(isValidFacebookPermalink("http://facebook.com/videos/777/"), false, "not https");
+  assert.equal(isValidFacebookPermalink("https://facebook.com.attacker.com/videos/777/"), false, "host suffix");
+  assert.equal(isValidFacebookPermalink("https://attacker.com/videos/777/"), false, "hostile domain");
+  assert.equal(isValidFacebookPermalink("https://user:pass@facebook.com/videos/777/"), false, "credentials");
+  assert.equal(isValidFacebookPermalink("https://facebook.com:8080/videos/777/"), false, "non-default port");
+  assert.equal(isValidFacebookPermalink("https://facebook.com/videos/777/?utm_source=fb"), false, "query forbidden");
+  assert.equal(isValidFacebookPermalink("https://facebook.com/videos/777/#time"), false, "fragment forbidden");
+  assert.equal(isValidFacebookPermalink("https://facebook.com/videos/%37%37%37/"), false, "encoded path forbidden");
+  assert.equal(isValidFacebookPermalink("https://facebook.com/plugins/video.php?href=test"), false, "plugin url refused as permalink");
+  assert.equal(isValidFacebookPermalink("https://facebook.com/videos/abc/"), false, "non-numeric video id refused");
+  assert.equal(isValidFacebookPermalink("https://facebook.com/sub/extra/videos/777/"), false, "multiple page segments refused");
+  assert.equal(isValidFacebookPermalink("https://instagram.com/videos/777/"), false, "instagram refused");
+  assert.equal(isValidFacebookPermalink(""), false, "empty refused");
+  assert.equal(isValidFacebookPermalink(null), false, "null refused");
+});
+
+test("replays: strict official facebook embed url validation and negative refusal cases", () => {
+  const permalink = "https://www.facebook.com/synthetic.page/videos/777/";
+  const validEmbed = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(permalink)}`;
+
+  assert.equal(isValidFacebookEmbedUrl(validEmbed, permalink), true);
+
+  // Negative / hostile embed cases
+  assert.equal(isValidFacebookEmbedUrl("https://evil.com/plugins/video.php?href=test", permalink), false, "hostile host");
+  assert.equal(isValidFacebookEmbedUrl(`https://www.facebook.com.attacker.com/plugins/video.php?href=${encodeURIComponent(permalink)}`, permalink), false, "host suffix");
+  assert.equal(isValidFacebookEmbedUrl(`https://user:pass@www.facebook.com/plugins/video.php?href=${encodeURIComponent(permalink)}`, permalink), false, "credentials in embed");
+  assert.equal(isValidFacebookEmbedUrl(`https://www.facebook.com:8443/plugins/video.php?href=${encodeURIComponent(permalink)}`, permalink), false, "non-default port in embed");
+  assert.equal(isValidFacebookEmbedUrl(`https://www.facebook.com/other/path?href=${encodeURIComponent(permalink)}`, permalink), false, "wrong path in embed");
+  assert.equal(isValidFacebookEmbedUrl(`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(permalink)}&href=extra`, permalink), false, "duplicate href refused");
+  assert.equal(isValidFacebookEmbedUrl(`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(permalink)}&autoplay=1`, permalink), false, "extra params refused");
+  assert.equal(isValidFacebookEmbedUrl(`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent("https://www.facebook.com/other/videos/888/")}`, permalink), false, "mismatched href refused");
+  assert.equal(isValidFacebookEmbedUrl("javascript:alert(1)", permalink), false, "javascript protocol refused");
+});
+
+test("replays: parseReplayList accepts frozen wire shape and caps at 50", () => {
+  const validItem = {
+    session_id: U(10),
+    title: "測試回放",
+    ended_at: "2026-10-30T14:00:00Z",
+    permalink_url: "https://www.facebook.com/synthetic.page/videos/777/",
+  };
+
+  assert.deepEqual(parseReplayList({ items: [validItem] }), { items: [validItem] });
+  assert.deepEqual(parseReplayList({ items: [] }), { items: [] });
+  assert.equal(parseReplayList(null), null);
+  assert.equal(parseReplayList({ items: "not array" }), null);
+  assert.equal(parseReplayList({ items: [{ ...validItem, session_id: "not-a-uuid" }] }), null);
+  assert.equal(parseReplayList({ items: [{ ...validItem, ended_at: "not-a-date" }] }), null);
+  assert.equal(parseReplayList({ items: [{ ...validItem, permalink_url: "http://insecure/videos/1/" }] }), null);
+
+  // Cap at 50 items
+  const fifty = Array.from({ length: 50 }, (_, i) => ({ ...validItem, session_id: U(i + 1) }));
+  assert.equal(parseReplayList({ items: fifty })?.items.length, 50);
+  const fiftyOne = Array.from({ length: 51 }, (_, i) => ({ ...validItem, session_id: U(i + 1) }));
+  assert.equal(parseReplayList({ items: fiftyOne }), null, "over 50 items must be refused");
+});
+
+test("replays: parseReplayDetail validates offers, SKU match, and omits invalid SKUs", () => {
+  const permalink = "https://www.facebook.com/synthetic.page/videos/777/";
+  const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(permalink)}`;
+  const validProduct = {
+    id: U(20),
+    slug: "tote-bag",
+    title: "焦糖托特包",
+    description: "純棉托特包",
+    seo: { title: "", description: "" },
+    images: [{ id: U(21), width: 100, height: 100 }],
+    detail_images: [],
+    image_axis: null,
+    option_images: [],
+    options: [],
+    variants: [{
+      sku_id: U(1),
+      title: "預設",
+      option_values: [],
+      price_minor: 128000,
+      compare_at_minor: null,
+      stock: "in",
+      image_id: null,
+    }],
+    collections: [],
+  };
+
+  const validDetail = {
+    session_id: U(10),
+    title: "秋日選物直播",
+    ended_at: "2026-10-30T14:00:00Z",
+    permalink_url: permalink,
+    embed_url: embedUrl,
+    offers: [{
+      offer_id: U(30),
+      sku_id: U(1),
+      product: validProduct,
+    }],
+  };
+
+  const parsed = parseReplayDetail(validDetail);
+  assert.ok(parsed);
+  assert.equal(parsed.session_id, U(10));
+  assert.equal(parsed.offers.length, 1);
+  assert.equal(parsed.offers[0].sku_id, U(1));
+  assert.equal(parsed.offers[0].product.variants[0].price_minor, 128000);
+
+  // Missing SKU in product variants -> offer omitted
+  const missingSkuDetail = {
+    ...validDetail,
+    offers: [{
+      offer_id: U(30),
+      sku_id: U(999), // not in validProduct.variants
+      product: validProduct,
+    }],
+  };
+  const parsedMissingSku = parseReplayDetail(missingSkuDetail);
+  assert.ok(parsedMissingSku);
+  assert.equal(parsedMissingSku.offers.length, 0, "offer with missing SKU in variants must be omitted");
+
+  // Sold out variant retains out stock state
+  const soldOutProduct = {
+    ...validProduct,
+    variants: [{ ...validProduct.variants[0], stock: "out" }],
+  };
+  const soldOutDetail = {
+    ...validDetail,
+    offers: [{ offer_id: U(31), sku_id: U(1), product: soldOutProduct }],
+  };
+  const parsedSoldOut = parseReplayDetail(soldOutDetail);
+  assert.ok(parsedSoldOut);
+  assert.equal(parsedSoldOut.offers[0].product.variants[0].stock, "out");
+
+  // Hostile embed or permalink in detail fails entirely
+  assert.equal(parseReplayDetail({ ...validDetail, embed_url: "https://attacker.com/plugins/video.php" }), null);
+  assert.equal(parseReplayDetail({ ...validDetail, permalink_url: "https://facebook.com.evil.com/videos/777/" }), null);
 });

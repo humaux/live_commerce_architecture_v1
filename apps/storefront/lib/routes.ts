@@ -9,6 +9,8 @@ export const checkoutPath = (locale: Locale) => `/${locale}/checkout`;
 export const cartPath = (locale: Locale) => `/${locale}/cart`;
 export const productPath = (locale: Locale, slugOrID: string) => `/${locale}/products/${slugOrID}`;
 export const collectionPath = (locale: Locale, slug: string) => `/${locale}/collections/${slug}`;
+export const replaysPath = (locale: Locale) => `/${locale}/replays`;
+export const replayPath = (locale: Locale, sessionID: string) => `/${locale}/replays/${sessionID}`;
 export const productImage = (productID: string, imageID: string) => `/media/p/${productID}/${imageID}`;
 // Native img candidates share the Host-scoped media route; never use Next's cross-Host optimizer cache.
 export const productImageSet = (productID: string, imageID: string, sizes: ImageSize[] = []) => {

@@ -1,0 +1,342 @@
+/* Replay list/detail layout; consumed only by their two route pages, using storefront tokens.
+   Keep the action dock outside the scrolling task viewport; official player content never shrinks. */
+/* Shell isolation via :has selector */
+:global(body:has(.replay-root)) {
+  background: var(--color-canvas, #f6f7f8);
+}
+:global(body:has(.replay-root)) :global(.sf-header),
+:global(body:has(.replay-root)) :global(.sf-announce),
+:global(body:has(.replay-root)) :global(.sf-footer) {
+  display: none !important;
+}
+
+.root {
+  --color-navy: #142942;
+  --color-body: #1f2937;
+  --color-ink: #1f2937;
+  --color-muted: #596579;
+  --color-canvas: #f6f7f8;
+  --color-line: #dde5ee;
+  --color-surface: #ffffff;
+  --radius-panel: 12px;
+  --radius-control: 5px;
+  --control-touch: 44px;
+  --space-3: 12px;
+  --space-4: 16px;
+
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--color-canvas);
+  color: var(--color-body);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-bottom: 40px;
+}
+
+/* Buyer app bar */
+.appBar {
+  width: 100%;
+  height: 64px;
+  background-color: var(--color-surface);
+  border-radius: var(--radius-panel);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-3);
+  flex-shrink: 0;
+  padding: 16px;
+  box-sizing: border-box;
+  overflow: clip;
+}
+
+.storeBrand {
+  font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--color-navy);
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appBarBackBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 0 16px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  color: var(--color-navy);
+  font-family: 'PingFang SC', 'Noto Sans SC', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+/* Page content column */
+.contentColumn {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.pageTitle {
+  font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--color-navy);
+  margin: 0;
+  word-break: break-word;
+}
+
+/* Task viewport / card list */
+.taskViewport {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: var(--space-4);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Card */
+.taskCard {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-panel);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: var(--space-3);
+  width: 100%;
+  box-sizing: border-box;
+  overflow: clip;
+}
+
+.cardTitle {
+  font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--color-ink);
+  margin: 0;
+  word-break: break-word;
+}
+
+.cardTime {
+  font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-muted);
+  margin: 0;
+  height: 24px;
+  flex-shrink: 0;
+  word-break: break-word;
+}
+
+.cardHint {
+  font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-muted);
+  margin: 0;
+  word-break: break-word;
+}
+
+/* Controls / Buttons */
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  color: var(--color-navy);
+  font-family: 'PingFang SC', 'Noto Sans SC', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+/* Video slot */
+.videoSlot {
+  background-color: var(--color-navy);
+  border-radius: var(--radius-panel);
+  padding: 16px;
+  overflow: clip;
+  width: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: var(--space-3);
+}
+
+.videoHeader {
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.videoLabel {
+  font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #ffffff;
+  margin: 0;
+  word-break: break-word;
+}
+
+.videoIframe {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
+  border: 0;
+  display: block;
+  border-radius: 4px;
+}
+
+/* Product section */
+.productSectionTitle {
+  font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--color-ink);
+  margin: 0;
+  word-break: break-word;
+}
+
+.productDetails {
+  font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-ink);
+  word-break: break-word;
+}
+
+.productDetails p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.priceNotice {
+  font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--color-muted);
+  margin: 0;
+  word-break: break-word;
+}
+
+/* Bottom fixed actions */
+.bottomActions {
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
+  background-color: var(--color-surface);
+  border-radius: var(--radius-panel);
+  display: flex;
+  align-items: flex-start;
+  padding: 12px 0;
+  box-sizing: border-box;
+  overflow: clip;
+}
+
+/* Desktop sizing */
+@media (min-width: 768px) {
+  .appBar {
+    max-width: 1440px;
+  }
+  .appBarBackBtn {
+    width: 140px;
+  }
+  .storeBrand {
+    width: 900px;
+  }
+  .contentColumn {
+    max-width: 720px;
+  }
+  .pageTitle {
+    font-size: 28px;
+    height: 44px;
+    margin-top: 32px;
+    margin-bottom: 24px;
+  }
+  .taskViewport {
+    height: 610px;
+    max-height: calc(100dvh - 290px);
+    overflow-x: clip;
+    overflow-y: auto;
+  }
+  .videoSlot {
+    height: 340px;
+  }
+  .bottomActions {
+    max-width: 720px;
+    height: 68px;
+  }
+}
+
+/* Mobile sizing */
+@media (max-width: 767px) {
+  .appBar {
+    max-width: 390px;
+  }
+  .appBarBackBtn {
+    width: 100px;
+  }
+  .storeBrand {
+    width: 210px;
+  }
+  .contentColumn {
+    width: min(358px, calc(100% - 32px));
+  }
+  .pageTitle {
+    font-size: 24px;
+    height: 44px;
+    margin-top: 24px;
+    margin-bottom: 16px;
+  }
+  .taskViewport {
+    height: 586px;
+    max-height: calc(100dvh - 258px);
+    overflow-x: clip;
+    overflow-y: auto;
+  }
+  .videoSlot {
+    height: 182px;
+  }
+  .bottomActions {
+    bottom: 18px;
+    width: min(358px, calc(100% - 32px));
+    height: 68px;
+  }
+}
