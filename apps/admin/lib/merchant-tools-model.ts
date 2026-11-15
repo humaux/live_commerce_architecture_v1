@@ -137,15 +137,33 @@ const validDiscount = (v: unknown): v is ManualDiscount => {
  return Object.keys(d).sort().join(",") === "amount_minor,name" && typeof d.name === "string" &&
   Array.from(d.name.trim()).length >= 1 && Array.from(d.name.trim()).length <= 30 && !/[\p{Cc}\p{Cf}\p{Cs}\p{Zl}\p{Zp}]/u.test(d.name) && money(d.amount_minor) && (d.amount_minor as number) > 0;
 };
+/** LP18: a placed manual order records the award outcome; both states are a successful order (ids, numbers, state only). */
+export type ManualMemberAward =
+  | { member_id: string; points: number; state: "awarded"; entry_id: string }
+  | { member_id: string; points: number; state: "not_awarded"; reason: "member_erased" | "member_unavailable" | "forbidden" | "limit_reached" };
+const awardReasons = ["member_erased", "member_unavailable", "forbidden", "limit_reached"];
+/** The exact wire shape of internal/loyalty.AwardOutcome: awarded carries entry_id, not_awarded carries reason, never both. */
+function validAwardOutcome(value: unknown): value is ManualMemberAward {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const a = value as Record<string, unknown>;
+  if (typeof a.member_id !== "string" || !canonicalUUID.test(a.member_id) || !count(a.points) || (a.points as number) < 1 || (a.points as number) > 1_000_000) return false;
+  const keys = Object.keys(a).sort().join(",");
+  if (a.state === "awarded") return keys === "entry_id,member_id,points,state" && typeof a.entry_id === "string" && canonicalUUID.test(a.entry_id);
+  if (a.state === "not_awarded") return keys === "member_id,points,reason,state" && typeof a.reason === "string" && awardReasons.includes(a.reason);
+  return false;
+}
 export type ManualResult = {
   order_id: string; commercial_state: "AWAITING_TRANSFER" | "CONFIRMED" | "AWAITING_COLLECTION"; payment_mode: ManualPaymentMode; total_minor: number; currency: string;
   expires_at: string; buyer_link: string | null; link_state: "configured" | "storefront_unavailable" | "domain_selection_required"; source: "merchant_manual"; discount?: ManualDiscount;
+  member_award?: ManualMemberAward;
 };
 export function parseManualResult(value: unknown): ManualResult {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw fail();
   const raw = value as Record<string, unknown>;
   if ("discount" in raw && (!validDiscount(raw.discount) || raw.discount.name !== raw.discount.name.trim())) throw fail();
-  const v = object(raw, ["order_id", "commercial_state", "payment_mode", "total_minor", "currency", "expires_at", "buyer_link", "link_state", "source", ...("discount" in raw ? ["discount"] : [])]);
+  if ("member_award" in raw && !validAwardOutcome(raw.member_award)) throw fail();
+  const v = object(raw, ["order_id", "commercial_state", "payment_mode", "total_minor", "currency", "expires_at", "buyer_link", "link_state", "source",
+    ...("discount" in raw ? ["discount"] : []), ...("member_award" in raw ? ["member_award"] : [])]);
   if (typeof v.order_id !== "string" || !canonicalUUID.test(v.order_id) ||
     !(manualPaymentModes as readonly string[]).includes(String(v.payment_mode)) || v.commercial_state !== placementState[v.payment_mode as ManualPaymentMode] ||
     !money(v.total_minor) || !/^[A-Z]{3}$/.test(String(v.currency)) ||
