@@ -902,10 +902,10 @@ test("privacy erasure accepts only matching tombstone summary", async (t) => {
 for (const [mode, call, value] of [
   ["export", exportMember, exported], ["erasure", eraseMember, erased],
 ] as const) {
-  for (const finish of ["success", "cancel", "session", "store", "member"] as const) {
-    test(`privacy ${mode} actual reauth wait over15s ${finish} preserves keyed admission`, async (t) => {
+  for (const finish of ["success", "cancel", "session", "store", "member", "caller_timeout"] as const) {
+    test(`privacy ${mode} actual reauth wait over15s ${finish} preserves keyed admission`, {timeout:10000}, async (t) => {
       const env=environment(t), host=env.mount(()=>null), effects=logoutEffects(t,env);
-      Object.assign(env.window,{location:{href:"https://admin.invalid/en/members"}});
+      Object.assign(env.window,{location:{href:"https://admin.invalid/en/members",origin:"https://admin.invalid"}});
       t.mock.timers.enable({apis:["setTimeout"]});
       const confirm=deferred<boolean>(), asked=deferred<void>(), controller=new AbortController();
       t.after(()=>{controller.abort();confirm.resolve(false);});
@@ -926,7 +926,7 @@ for (const [mode, call, value] of [
       assert.equal(settled,false,"human reauth wait is not an in-flight network deadline");
       assert.equal(requests.length,1);assert.equal(writes,0);
       if(finish==="session")env.document.cookie=`__Host-commerce_csrf=${"b".repeat(43)}`;
-      if(finish==="store"||finish==="member")controller.abort(new DOMException(`${finish} scope changed`,"AbortError"));
+      if(finish==="store"||finish==="member"||finish==="caller_timeout")controller.abort(new DOMException(`${finish} scope changed`,finish==="caller_timeout"?"TimeoutError":"AbortError"));
       confirm.resolve(finish!=="cancel");
       await pending;await host.settle();
       if(finish==="success"){
@@ -942,8 +942,8 @@ for (const [mode, call, value] of [
     });
   }
   for(const phase of ["initial", "replay"] as const){
-    test(`privacy ${mode} actual reauth ${phase} network still has15s deadline`,async(t)=>{
-      const env=environment(t),host=env.mount(()=>null);Object.assign(env.window,{location:{href:"https://admin.invalid/en/members"}});
+    test(`privacy ${mode} actual reauth ${phase} network still has15s deadline`,{timeout:10000},async(t)=>{
+      const env=environment(t),host=env.mount(()=>null);Object.assign(env.window,{location:{href:"https://admin.invalid/en/members",origin:"https://admin.invalid"}});
       t.mock.timers.enable({apis:["setTimeout"]});
       const entered=deferred<void>(),controller=new AbortController();t.after(()=>controller.abort());let calls=0;
       const native:typeof fetch=async(_url,init)=>{
