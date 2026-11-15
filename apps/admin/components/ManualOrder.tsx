@@ -16,6 +16,9 @@ import Link from "next/link";
 import { orderOpsCopy, localeNames, type Locale } from "@live-commerce/i18n";
 import { displayTime } from "@live-commerce/format";
 import { Badge, Field, FormRow } from "@live-commerce/ui";
+import { ManualOrderMemberFields, type OrderMemberSelection } from "./members/ManualOrderMemberFields";
+import { ManualOrderAwardResult } from "./members/ManualOrderAwardResult";
+import { orderPointsCopy, validOrderPoints } from "./members/order-points-copy";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
@@ -56,6 +59,26 @@ export function ManualOrder({
     return () => { live = false; };
   }, [renderKey]);
 
+  const [memberBusy, setMemberBusy] = useState(false);
+  const canPoints = !!store?.permissions?.includes("customers:points");
+  const memberCopy = orderPointsCopy[locale];
+  const memberScope = `${renderKey}|${store?.id ?? ""}|${boundary}|${store?.permissions?.join(",") ?? ""}`;
+  const [selectionState,setSelectionState] = useState<{scope:string;value:OrderMemberSelection}>({scope:memberScope,value:{member:null,points:""}});
+  const memberSelection:OrderMemberSelection = selectionState.scope===memberScope ? selectionState.value : {member:null,points:""};
+  const setMemberSelection = (value:OrderMemberSelection) => setSelectionState({scope:memberScope,value});
+  const activeMemberScope = useRef(memberScope);
+  activeMemberScope.current = memberScope;
+  const orderAuthority = useRef({scope:memberScope,status:options.status,generation:0});
+  if(orderAuthority.current.scope!==memberScope || orderAuthority.current.status!==options.status) {
+    orderAuthority.current={scope:memberScope,status:options.status,generation:orderAuthority.current.generation+1};
+  }
+  const memberProblem = canPoints && memberSelection.points !== "" && (!memberSelection.member || !validOrderPoints(memberSelection.points));
+  useEffect(() => {
+    setMemberSelection({member:null,points:""}); setMemberBusy(false);
+  }, [memberScope]);
+  useEffect(() => {
+    if(options.status!=="ready") {setMemberSelection({member:null,points:""});setMemberBusy(false);}
+  }, [options.status]);
   const [lines, setLines] = useState<Line[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -69,11 +92,12 @@ export function ManualOrder({
   const [failure, setFailure] = useState("");
   const [uncertain, setUncertain] = useState(false);
   const [placed, setPlaced] = useState<ManualResult | null>(null);
+  const placedScope=useRef("");
   const [codDue, setCodDue] = useState<number | null>(null); // total + fee the carrier collects (COD orders only), from the options the order was placed with
   const [copied, setCopied] = useState(false);
   const [regenBusy, setRegenBusy] = useState(false);
   const [regenFailure, setRegenFailure] = useState("");
-  const attempt = useRef<{ body: string; key: string } | null>(null);
+  const attempt = useRef<{ body: string; key: string; payload: ReturnType<typeof manualBody> & {member_award?:{member_id:string;points:number}} } | null>(null);
   const regen = useRef<{ body: string; key: string } | null>(null);
 
   const [reviewing, setReviewing] = useState(false);
@@ -94,22 +118,41 @@ export function ManualOrder({
     const next = available.find((item) => item.option_key === key);
     setMode(next && next.payment_modes.length === 1 ? next.payment_modes[0] : "");
   }
+  useEffect(() => {
+    attempt.current=null; setBusy(false); setUncertain(false); setPlaced(null);
+  }, [memberScope]);
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!store || mapOnly || busy) return;
+    if (!store || mapOnly || busy || memberBusy || options.status!=="ready" || !boundary) return;
+    if (!uncertain && memberProblem) return;
     if (gaps.length) { setMissing(true); setReviewing(false); return; } // submission stays blocked until the recipient is complete
     if (problem) return;
     if (!reviewing) { setReviewing(true); return; }
-    const body = manualBody(draft);
+    const body = uncertain && attempt.current ? attempt.current.payload : {
+      ...manualBody(draft), ...(canPoints && memberSelection.member && memberSelection.points!=="" ?
+        {member_award:{member_id:memberSelection.member.id,points:Number(memberSelection.points)}} : {})
+    };
+    const submittedScope=memberScope, submittedGeneration=orderAuthority.current.generation;
     const text = JSON.stringify(body);
-    // A new key only when the request differs; the same body after an uncertain answer re-sends the same key (replay).
-    if (!attempt.current || attempt.current.body !== text) attempt.current = { body: text, key: crypto.randomUUID() };
+    // An uncertain answer retains the exact submitted payload/key; edits cannot create a replacement order.
+    if (!attempt.current || attempt.current.body !== text) attempt.current = { body: text, key: crypto.randomUUID(), payload: body };
     setBusy(true);
     setFailure("");
-    const outcome = await placeManualOrder(store.id, attempt.current.key, body, boundary);
+    const submittedAttempt=attempt.current;
+    const outcome = await placeManualOrder(store.id, submittedAttempt.key, body, boundary);
+    const sameSession=(await sessionBoundary().catch(()=>""))===boundary;
+    if (!sameSession || activeMemberScope.current!==submittedScope || orderAuthority.current.generation!==submittedGeneration || orderAuthority.current.status!=="ready") {
+      if(attempt.current===submittedAttempt) {
+        setBusy(false);
+        if(sameSession && activeMemberScope.current===submittedScope) {setUncertain(true);setFailure(c.retrySame);}
+        else {attempt.current=null;setUncertain(false);setPlaced(null);}
+      }
+      return;
+    }
     setBusy(false);
     if (outcome.ok) {
       setCodDue(outcome.value.payment_mode === "cash_on_delivery" ? outcome.value.total_minor + (option?.cod_surcharge_minor ?? 0) : null);
+      placedScope.current=submittedScope;
       setPlaced(outcome.value);
       return;
     }
@@ -118,7 +161,7 @@ export function ManualOrder({
     if (!outcome.uncertain) attempt.current = null; // a definite refusal: the next send is a new attempt
   }
   function reset() {
-    setReviewing(false); setChoosingCVS(false);
+    setReviewing(false); setChoosingCVS(false); setMemberSelection({member:null,points:""}); setMemberBusy(false);
     setPlaced(null); setCodDue(null); setLines([]); setName(""); setPhone(""); setEmail(""); setHome(blankHome); setCVS(blankCVS);
     setOptionKey(""); setMode(""); setFailure(""); setUncertain(false); setCopied(false); attempt.current = null;
     setRegenFailure(""); regen.current = null;
@@ -180,6 +223,7 @@ export function ManualOrder({
                 [home.region, home.city, home.postal_code, home.line1, home.line2].filter(Boolean).join(" ") : `${cvs.store_name} · ${cvs.store_code} · ${cvs.store_address}`}</dd></div>
               <div><dt>{c.paymentTitle}</dt><dd>{placed.payment_mode === "bank_transfer" ? c.bank : placed.payment_mode === "cash_on_delivery" ? c.cod : c.pickup}</dd></div>
             </dl>
+            {placedScope.current===memberScope && placed.member_award && options.status==="ready" && <ManualOrderAwardResult key={`${memberScope}|${placed.order_id}`} award={placed.member_award} locale={locale} store={store} scope={memberScope} boundary={boundary}/>}
             <h3>{c.linkTitle}</h3>
             {placed.buyer_link ? (
               <>
@@ -216,6 +260,7 @@ export function ManualOrder({
                   <div><dt>{signed.pickup}</dt><dd>{cvs.store_name} · {cvs.store_code}<br />{cvs.store_address}</dd></div>}
                 <div><dt>{c.paymentTitle}</dt><dd>{mode === "bank_transfer" ? c.bank : mode === "cash_on_delivery" ? c.cod : c.pickup}</dd></div>
               </dl>
+              {options.status==="ready" && canPoints && memberSelection.member && memberSelection.points!=="" && <section data-testid="manual-member-award-review"><h3>{memberCopy.title}</h3><p>{memberSelection.member.display_name}</p><p>{memberCopy.points}: +{memberSelection.points}</p></section>}
               <p>{signed.quote}</p>
               {mode === "cash_on_delivery" && option?.cod_max_minor !== undefined && option.cod_carrier && <p>{c.codNote(
                 money(locale, option.currency, option.cod_surcharge_minor ?? 0), money(locale, option.currency, option.cod_max_minor),
@@ -284,11 +329,14 @@ export function ManualOrder({
               </Field></FormRow></details>
             </fieldset>
             </>}
+            <div hidden={reviewing}>
+              <ManualOrderMemberFields key={memberScope} locale={locale} store={store} scope={memberScope} boundary={boundary} enabled={options.status==="ready"} disabled={busy||uncertain||reviewing} value={memberSelection} onChange={setMemberSelection} onName={setName} onBusy={setMemberBusy}/>
+            </div>
             {failure && <p className="mt-warn" role="alert" data-testid="manual-order-error">{failure}{uncertain ? ` ${c.retrySame}` : ""}</p>}
             {problem && <p className="mt-note" data-testid="manual-order-hint">{c.problems[problem]}</p>}
             <div className="mt-actions">
               {/* Both steps submit through the guarded handler: changing a clicked button's type can place before review. */}
-              <button type="submit" className="primary" data-testid={reviewing ? "manual-order-submit" : undefined} disabled={(!!problem && gaps.length === 0) || mapOnly || busy || !boundary}>
+              <button type="submit" className="primary" data-testid={reviewing ? "manual-order-submit" : undefined} disabled={(!!problem && gaps.length === 0) || mapOnly || busy || memberBusy || (!uncertain && memberProblem) || !boundary}>
                 {reviewing ? busy ? c.submitting : uncertain ? c.retryButton : c.submit : signed.review}
               </button>
               <Link href={`/${locale}/orders${storeQuery}`}>{c.back}</Link>

@@ -266,6 +266,29 @@ export function readMember(
   );
 }
 
+/** LP19 reads contain no actor or balance; at most the oldest 100 entries. */
+export type OrderPointEntry = {
+  id: string; member_id: string; member_display_name: string; delta: number;
+  reason: "manual_order_award" | "manual_adjust"; note: string | null; created_at: string;
+};
+export type OrderPointEntries = { entries: OrderPointEntry[]; truncated: boolean };
+export function parseOrderPointEntries(value: unknown): OrderPointEntries {
+  const p = obj(value);
+  if (p.truncated !== undefined && typeof p.truncated !== "boolean") return invalid();
+  const entries = rows(p.entries, 100, (value): OrderPointEntry => {
+    const e = obj(value), delta = num(e.delta, -1e6, 1e6);
+    if (delta === 0 || (e.reason !== "manual_order_award" && e.reason !== "manual_adjust") ||
+        (e.reason === "manual_order_award" && delta < 1)) return invalid();
+    return { id: id(e.id), member_id: id(e.member_id), member_display_name: str(e.member_display_name),
+      delta, reason: e.reason, note: nullable(e.note), created_at: date(e.created_at) };
+  });
+  return { entries, truncated: p.truncated === true };
+}
+export function readOrderPointEntries(store: string, order: string, signal: AbortSignal) {
+  id(store); id(order);
+  return read(`/api/stores/${store}/members/entries?order_id=${order}`, signal, parseOrderPointEntries);
+}
+
 // Guarded head read owns logout/visibility; extra pages share its boundary and are never exposed across head/scope changes.
 export function useMemberPages<T>(
   scope: string,

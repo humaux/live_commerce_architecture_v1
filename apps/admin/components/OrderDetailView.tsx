@@ -10,12 +10,14 @@ import {putShipment, readShipmentHistory} from "@/lib/orders-client";
 import {trackingNumber, type CarrierCode, type OrderDetail} from "@/lib/orders-model";
 import type {OrdersCopy} from "@/lib/orders-copy";
 import {amount, badge, detailPanel, type Sections} from "./OrderDetailPanel";
+import type {Store} from "@/lib/model";
+import {OrderPointsPanel} from "./members/OrderPointsPanel";
 import {parityCopy, shortOrderNumber} from "./orders/parity-copy";
 
 const signedCarriers:CarrierCode[]=["black_cat","hsinchu","chunghwa_post","sf_express","seven_eleven_cvs","familymart_cvs","hilife_cvs","okmart_cvs","other"];
 
 /** Signed compact flow; other existing order operations remain in its native disclosure. */
-export function OrderDetailView({detail,locale,c,sections,onBack}:{detail:OrderDetail;locale:Locale;c:OrdersCopy;sections:Sections;onBack:()=>void}) {
+export function OrderDetailView({detail,locale,c,sections,onBack,memberStore}:{memberStore:Store;detail:OrderDetail;locale:Locale;c:OrdersCopy;sections:Sections;onBack:()=>void}) {
   const p=parityCopy[locale];
   const [stage,setStage]=useState<"record"|"carrier"|"review">("record");
   const [carrier,setCarrier]=useState<CarrierCode>("black_cat");
@@ -81,6 +83,7 @@ export function OrderDetailView({detail,locale,c,sections,onBack}:{detail:OrderD
       </div> : <p className="signed-order-panel">{parcel??c.shipNotEligible}</p>}
       {head&&<><p className="signed-order-note">{p.handover}</p><button className="signed-order-return" type="button" onClick={onBack}>{p.returnOrders}</button></>}
       {problem&&<div role="alert"><p>{problem}</p>{!uncertain&&<button type="button" onClick={()=>{setProblem("");setTick(value=>value+1);void sections.onChanged();}}>{c.retry}</button>}</div>}
+      <OrderPointsPanel key={`${sections.store}|${sections.boundary}|${detail.order_id}|${memberStore.permissions?.join(",")??""}`} locale={locale} store={memberStore} order={detail.order_id} scope={`${sections.store}|${detail.order_id}`} boundary={sections.boundary}/>
       <details className="signed-order-advanced" data-testid="order-more-details"><summary>{p.facts}</summary>
         {detailPanel(detail,locale,c,{...sections,orderNumber:shortOrderNumber(detail.order_id),onBack:undefined})}
       </details>
