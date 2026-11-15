@@ -41,7 +41,7 @@ export function OrderPointsPanel({locale,store,order,scope,boundary}:{locale:Loc
       {data.truncated&&<p className={s.muted}>{c.truncated}</p>}
       {canWrite&&award&&!data.balances[award.member_id]?.erased_at&&<Button type="button" data-testid="order-points-deduct-open" onClick={()=>setDeduct(award)}>{c.deduct}</Button>}
     </>}
-    <Button type="button" variant="secondary" data-testid="order-points-refresh" onClick={()=>{if(data)void read.refresh();else read.reload();}}>{c.refresh}</Button>
+    <Button type="button" variant="secondary" data-testid="order-points-refresh" onClick={read.reload}>{c.refresh}</Button>
     {deduct&&data&&canWrite&&<OrderDeductDialog key={`${scope}|${boundary}|${deduct.member_id}|${deduct.id}`} locale={locale} store={store.id} order={order} boundary={boundary} award={deduct} member={data.balances[deduct.member_id]??null} permitted={canWrite&&read.status==="ready"} onClose={()=>setDeduct(null)} onRefresh={read.refresh}/>}
   </section>;
 }
