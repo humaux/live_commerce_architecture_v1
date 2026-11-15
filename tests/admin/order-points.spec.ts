@@ -586,8 +586,11 @@ test("session/logout boundary clears the private search intent and late handlers
       await expect(page.getByTestId("order-points-deduct-open")).toHaveCount(0);
 
       // A direct adjust call with this staff session is refused by the server and changes nothing.
+      const csrf = (await context.cookies(origin)).filter(cookie => cookie.name === "__Host-commerce_csrf");
+      expect(csrf.length, "the signed-in context has one CSRF cookie").toBe(1);
+      expect(/^[A-Za-z0-9_-]{43}$/.test(csrf[0]?.value ?? ""), "the fixture CSRF cookie is valid").toBe(true);
       const refused = await page.request.post(abs(adjustPath(uuid())), {
-        headers: { "Content-Type": "application/json", "Idempotency-Key": randomKey() },
+        headers: { Origin: origin, "Content-Type": "application/json", "Idempotency-Key": randomKey(), "X-CSRF-Token": csrf[0].value },
         data: { delta: -1, note: `Synthetic refusal ${canary}` },
       });
       expect(refused.status(), "direct adjust without customers:points").toBe(403);
