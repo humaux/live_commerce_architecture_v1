@@ -85,7 +85,8 @@ const (
 
 // tcgLexToken is one token of the closed TypeScript subset these source guards read: identifiers, quoted strings, template literals whose only
 // interpolation is a bare identifier, punctuation, and comments (dropped). It is deliberately not a parser: anything outside the subset is an error,
-// so an unrecognised construct fails closed instead of being skipped silently.
+// so an unrecognised construct fails closed instead of being skipped silently. Backslash escapes inside quoted/template literals are refused outright:
+// the inspected next.config.ts files at HEAD and at tcgBase contain none, and silently decoding (or dropping) them could change a CSP directive's meaning.
 type tcgLexToken struct {
 	kind string // ident | string | template | punct
 	text string // literal content for string/template, source spelling otherwise
@@ -119,10 +120,8 @@ func tcgLex(src string) ([]tcgLexToken, error) {
 			var b strings.Builder
 			j := i + 1
 			for ; j < len(src); j++ {
-				if src[j] == '\\' && j+1 < len(src) {
-					j++
-					b.WriteByte(src[j])
-					continue
+				if src[j] == '\\' {
+					return nil, fmt.Errorf("unsupported backslash escape in a %c string at byte %d: this guard's closed literal subset refuses escapes instead of guessing JavaScript/CSP escape semantics", quote, j)
 				}
 				if src[j] == quote {
 					break
@@ -138,10 +137,8 @@ func tcgLex(src string) ([]tcgLexToken, error) {
 			var b strings.Builder
 			j := i + 1
 			for ; j < len(src); j++ {
-				if src[j] == '\\' && j+1 < len(src) {
-					j++
-					b.WriteByte(src[j])
-					continue
+				if src[j] == '\\' {
+					return nil, fmt.Errorf("unsupported backslash escape in a template literal at byte %d: this guard's closed literal subset refuses escapes instead of guessing JavaScript/CSP escape semantics", j)
 				}
 				if src[j] == '`' {
 					break
@@ -180,20 +177,21 @@ func tcgLex(src string) ([]tcgLexToken, error) {
 	return toks, nil
 }
 
-// tcgCSPFrameSrc returns the frame-src directives of one CSP literal. A directive starts the value or follows ';'; prose that merely mentions
-// frame-src is refused as unrecognised instead of becoming an allowance.
+// tcgCSPFrameSrc returns the frame-src directives of one CSP literal. A directive starts the value or follows ';'; the directive name is matched
+// ASCII case-insensitively (a `FRAME-SRC` value is still a frame permission) and prose that merely mentions frame-src in any case is refused as
+// unrecognised instead of becoming an allowance.
 func tcgCSPFrameSrc(policy string) ([]string, error) {
 	var out []string
 	recognised := false
 	for _, part := range strings.Split(policy, ";") {
 		fields := strings.Fields(part)
-		if len(fields) == 0 || fields[0] != "frame-src" {
+		if len(fields) == 0 || !strings.EqualFold(fields[0], "frame-src") {
 			continue
 		}
 		recognised = true
 		out = append(out, strings.Join(fields, " "))
 	}
-	if strings.Contains(policy, "frame-src") && !recognised {
+	if strings.Contains(strings.ToLower(policy), "frame-src") && !recognised {
 		return nil, fmt.Errorf("frame-src text is not a CSP directive: %q", policy)
 	}
 	return out, nil
@@ -562,6 +560,12 @@ func TestCvsNoIframeAndPrivacy(t *testing.T) {
 			{"other player path", strings.Replace(now, tcgReplayValue, "${shoppingCSP}; frame-src https://www.facebook.com/plugins/video2.php", 1), false},
 			{"duplicate replay exception", insert(extraRule(tcgReplaySource, tcgReplayValue)), false},
 			{"missing base interpolation", strings.Replace(now, tcgReplayValue, "frame-src https://www.facebook.com/plugins/video.php", 1), false},
+			// Correction-1 A: the directive name is ASCII case-insensitive, so an upper-case frame permission on another policy is still a frame
+			// permission and must not slip past the base comparison.
+			{"uppercase frame-src on an extra checkout policy", insert(extraRule("/checkout", "default-src 'self'; FRAME-SRC https://logistics.ecpay.com.tw/Express/map")), false},
+			// Correction-1 B: a JS-escaped directive name must be refused, not silently decoded. The inserted source carries exactly ONE backslash
+			// (`frame-\x73rc` in the JS text, written as "frame-\\x73rc" here) so the literal is genuinely escaped, not a double-escaped no-op.
+			{"JS-escaped frame-src on an extra policy", insert(strings.Replace(extraRule("/checkout", "default-src 'self'; frame-src https://www.facebook.com/plugins/video.php"), "frame-src", "frame-\\x73rc", 1)), false},
 		}
 		for _, c := range cases {
 			if c.src == now {
