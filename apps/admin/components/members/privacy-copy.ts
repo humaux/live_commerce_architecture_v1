@@ -1,4 +1,6 @@
-// Purpose: member privacy copy; depends on LP1 §3 and promoted M7 sources; used by MemberPrivacyDialogs.
+// Purpose: member privacy copy.
+// Depends on: LP1 §3 and promoted M7 sources.
+// Used by: MemberPrivacyDialogs.
 export const privacyCopy = {
   "zh-TW": {
     export:"匯出資料", erase:"刪除資料", exportTitle:"匯出會員資料", eraseTitle:"刪除會員資料？",

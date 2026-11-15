@@ -1,5 +1,6 @@
 // Purpose: sibling export/erasure intents with memory-only downloads and authoritative erasure reads.
 // Depends on: members-client, sessionBoundary and existing DS; mounted by MemberDetail.
+// Used by: MemberDetail member-detail page.
 // Invariants: no automatic retry, immutable target/key, no private data across scope/session/permission changes.
 "use client";
 import { useEffect, useRef, useState } from "react";
