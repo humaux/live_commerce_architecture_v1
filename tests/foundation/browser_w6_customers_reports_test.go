@@ -411,6 +411,25 @@ func w6uiRun(t *testing.T, mode string) {
 			}
 			w6uiVerifyFormsC(t, x, evidence)
 		})
+		t.Run("members-edit", func(t *testing.T) {
+			w6uiPrepareForms(t, x)
+			var target string
+			err := platform.WithScope(ctx, x.w.f.runtime, x.formsToken, x.formsStore, "customers:points", func(tx pgx.Tx, sc platform.Scope) error {
+				m, _, e := loyalty.CreateMember(ctx, tx, sc, x.formsToken, t04Key("m7-edit-seed"), loyalty.MemberInput{DisplayName: "Synthetic edit seed"})
+				target = m.ID
+				return e
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			env["LC_W6UI_EDIT_STORE"], env["LC_W6UI_EDIT_MEMBER"] = x.formsStore, target
+			w6uiSpecs(t, ctx, stack, "members-edit", env)
+			var version int64
+			var erased bool
+			if err := x.w.f.owner.QueryRow(ctx, `SELECT version,erased_at IS NOT NULL FROM loyalty.members WHERE store_id=$1 AND id=$2`, x.formsStore, target).Scan(&version, &erased); err != nil || version < 19 || !erased {
+				t.Fatalf("M7 edit persisted version=%d erased=%t err=%v", version, erased, err)
+			}
+		})
 	}
 	x.mu.Lock()
 	requests := append([]w6uiRequest(nil), x.requests...)
@@ -663,6 +682,17 @@ func w6uiStart(t *testing.T, ctx context.Context, x *w6uiFixture, evidence strin
 				}
 			} else if e == nil {
 				e = fmt.Errorf("synthetic member absent")
+			}
+		case "/edit-erase":
+			var present int
+			e = x.w.f.owner.QueryRow(r.Context(), `SELECT count(*) FROM loyalty.members WHERE store_id=$1 AND id=$2`, x.formsStore, in.Mode).Scan(&present)
+			if e == nil && present == 1 {
+				e = platform.WithScope(r.Context(), x.w.f.runtime, x.formsFixtureToken, x.formsStore, "customers:privacy", func(tx pgx.Tx, sc platform.Scope) error {
+					_, _, err := loyalty.Erase(r.Context(), tx, sc, x.formsFixtureToken, t04Key("m7-edit-erase"), in.Mode)
+					return err
+				})
+			} else if e == nil {
+				e = fmt.Errorf("synthetic edit member absent")
 			}
 		case "/forms-state":
 			phase, member, ok := strings.Cut(in.Mode, "|")
@@ -923,6 +953,8 @@ func w6uiSpecs(t *testing.T, ctx context.Context, s *brfStack, mode string, env 
 	configName, logName := "playwright.w6.config.ts", "playwright.log"
 	if mode == "members-read" {
 		configName, logName = "playwright.w6.members-read.config.ts", "playwright-members-read.log"
+	} else if mode == "members-edit" {
+		configName, logName = "playwright.w6.members-edit.config.ts", "playwright-members-edit.log"
 	} else if mode == "members-forms" {
 		configName, logName = "playwright.w6.members-forms.config.ts", "playwright-members-forms.log"
 	}
@@ -932,6 +964,8 @@ func w6uiSpecs(t *testing.T, ctx context.Context, s *brfStack, mode string, env 
 		spec = "customer-tags.spec.ts"
 	} else if mode == "members-read" {
 		spec = "members-read.spec.ts"
+	} else if mode == "members-edit" {
+		spec = "members-edit.spec.ts"
 	} else if mode == "members-forms" {
 		spec = "members-forms.spec.ts"
 	}
