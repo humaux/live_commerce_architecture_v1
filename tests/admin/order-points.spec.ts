@@ -517,7 +517,6 @@ test("session/logout boundary clears the private search intent and late handlers
       await context.close();
     }
   });
-}
 
   test("LPU04 customers:read without customers:points: no picker/points, no deduct, order panel readable, direct API refused", async ({ browser }) => {
     test.setTimeout(180_000);
@@ -557,7 +556,6 @@ test("session/logout boundary clears the private search intent and late handlers
       await context.close();
     }
   });
-}
 
 test("LPU04 no customers:read: picker, points, entries panel and member reads are absent or refused", async ({ browser }) => {
     test.setTimeout(180_000);
