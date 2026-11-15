@@ -146,6 +146,16 @@ try {
   await merchant.getByRole("button", {name: "Sign in with identity service", exact: true}).click();
   await expect(merchant.getByTestId("dashboard-page")).toBeVisible(); // the landing is the dashboard now
   pass("signed MOCK IdP sign-in lands on the dashboard");
+  // The points fixture adds a second store; select the legacy store through real shell navigation before its old ten cases.
+  const legacyStore = process.env.LC_LINK_STORE;
+  const shellStore = merchant.getByTestId("shell-store-selector");
+  if (await shellStore.inputValue() !== legacyStore) {
+    await shellStore.selectOption(legacyStore);
+    await expect(merchant).toHaveURL(new URL(`/en?store=${legacyStore}`, adminOrigin).href);
+    await expect(merchant.getByTestId("dashboard-page")).toBeVisible();
+  }
+  await expect(shellStore).toHaveValue(legacyStore);
+  await expect(merchant.getByTestId("action-create-order")).toHaveAttribute("href", `/en/orders/new?store=${legacyStore}`);
   await merchant.getByTestId("action-create-order").click();
   await expect(merchant.getByTestId("manual-order-page")).toBeVisible();
   await merchant.getByTestId("mo-open-picker").click();
