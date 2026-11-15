@@ -1,3 +1,5 @@
+/* Replay list/detail layout; consumed only by their two route pages, using storefront tokens.
+   Keep the action dock outside the scrolling task viewport; official player content never shrinks. */
 /* Shell isolation via :has selector */
 :global(body:has(.replay-root)) {
   background: var(--color-canvas, #f6f7f8);
@@ -41,7 +43,9 @@
   border-radius: var(--radius-panel);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: var(--space-3);
+  flex-shrink: 0;
   padding: 16px;
   box-sizing: border-box;
   overflow: clip;
@@ -54,6 +58,7 @@
   line-height: 1.5;
   color: var(--color-navy);
   margin: 0;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -101,6 +106,7 @@
 .taskViewport {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   gap: var(--space-4);
   width: 100%;
   box-sizing: border-box;
@@ -113,6 +119,7 @@
   padding: 16px;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   gap: var(--space-3);
   width: 100%;
   box-sizing: border-box;
@@ -136,6 +143,8 @@
   line-height: 1.5;
   color: var(--color-muted);
   margin: 0;
+  height: 24px;
+  flex-shrink: 0;
   word-break: break-word;
 }
 
@@ -181,7 +190,8 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  flex-shrink: 0;
+  gap: var(--space-3);
 }
 
 .videoHeader {
@@ -246,7 +256,11 @@
 
 /* Bottom fixed actions */
 .bottomActions {
-  width: 100%;
+  position: fixed;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  width: calc(100% - 32px);
   background-color: var(--color-surface);
   border-radius: var(--radius-panel);
   display: flex;
@@ -254,7 +268,6 @@
   padding: 12px 0;
   box-sizing: border-box;
   overflow: clip;
-  margin-top: 24px;
 }
 
 /* Desktop sizing */
@@ -278,7 +291,9 @@
     margin-bottom: 24px;
   }
   .taskViewport {
-    max-height: 610px;
+    height: 610px;
+    max-height: calc(100dvh - 290px);
+    overflow-x: clip;
     overflow-y: auto;
   }
   .videoSlot {
@@ -302,8 +317,7 @@
     width: 210px;
   }
   .contentColumn {
-    width: 358px;
-    margin: 0 16px;
+    width: min(358px, calc(100% - 32px));
   }
   .pageTitle {
     font-size: 24px;
@@ -312,14 +326,17 @@
     margin-bottom: 16px;
   }
   .taskViewport {
-    max-height: 586px;
+    height: 586px;
+    max-height: calc(100dvh - 258px);
+    overflow-x: clip;
     overflow-y: auto;
   }
   .videoSlot {
-    height: 200px;
+    height: 182px;
   }
   .bottomActions {
-    width: 358px;
+    bottom: 18px;
+    width: min(358px, calc(100% - 32px));
     height: 68px;
   }
 }
