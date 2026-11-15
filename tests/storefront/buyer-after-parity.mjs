@@ -675,6 +675,197 @@ test("claim link · confirm, expired and unconfirmed result", async () => {
   }
 });
 
+// ---- live replays ------------------------------------------------------------------------------------------------------------------------------------------------
+test("replays · list, detail in-stock, sold-out, empty list, navigation, and persistence", async () => {
+  const replayInStock = {
+    session_id: uid(501),
+    title: "秋日選物直播",
+    ended_at: "2026-10-30T14:00:00Z",
+    permalink_url: "https://www.facebook.com/synthetic.page/videos/777/",
+    embed_url: "https://www.facebook.com/plugins/video.php?href=https%3A%2F%2Fwww.facebook.com%2Fsynthetic.page%2Fvideos%2F777%2F",
+    offers: [{
+      offer_id: uid(601),
+      sku_id: SKU,
+      product: {
+        id: uid(100),
+        slug: "tote-bag",
+        title: "焦糖托特包",
+        description: "輕量純棉帆布托特包",
+        seo: { title: "", description: "" },
+        images: [{ id: uid(101), width: 480, height: 600 }],
+        detail_images: [],
+        image_axis: null,
+        option_images: [],
+        options: [],
+        variants: [{
+          sku_id: SKU,
+          sku_code: "TOTE",
+          title: "預設",
+          option_values: [],
+          price_minor: 128000,
+          compare_at_minor: null,
+          stock: "in",
+          image_id: null,
+        }],
+        collections: [],
+      },
+    }],
+  };
+
+  const replaySoldOut = {
+    session_id: uid(502),
+    title: "秋日選物直播",
+    ended_at: "2026-10-30T14:00:00Z",
+    permalink_url: "https://www.facebook.com/synthetic.page/videos/888/",
+    embed_url: "https://www.facebook.com/plugins/video.php?href=https%3A%2F%2Fwww.facebook.com%2Fsynthetic.page%2Fvideos%2F888%2F",
+    offers: [{
+      offer_id: uid(602),
+      sku_id: SKU,
+      product: {
+        ...replayInStock.offers[0].product,
+        variants: [{
+          ...replayInStock.offers[0].product.variants[0],
+          stock: "out",
+        }],
+      },
+    }],
+  };
+
+  for (const [dev, frames] of [
+    ["d", { list: "1468:107106", detail: "1468:107197", soldout: "1468:107292", empty: "1468:107387" }],
+    ["m", { list: "1468:107151", detail: "1468:107244", soldout: "1468:107339", empty: "1468:107430" }],
+  ]) {
+    api.state.replays = [replayInStock];
+    const page = await DEVICES[dev]().newPage();
+    const c = new Check(page, `replays ${dev}`);
+
+    // 1. List page
+    await page.goto(`${origin}/zh-TW/replays`);
+    await c.load();
+    c.text("直播回放", "秋日選物直播", "10/30 14:00 已結束", "返回", "返回商店", "晨光選物");
+    await need(c, "返回", "觀看回放", "返回商店");
+    await c.shot(frames.list);
+
+    // 2. Click 觀看回放 -> navigates to detail
+    const watchBtn = btn(page, "觀看回放");
+    await Promise.all([
+      page.waitForURL(new RegExp(`/zh-TW/replays/${replayInStock.session_id}$`), { timeout: 10000 }),
+      click(page, watchBtn.first(), { page: "直播回放列表", control: "觀看回放", expected: "直播回放詳情" }),
+    ]);
+    await c.load();
+
+    // 3. Detail page (in-stock)
+    c.text(
+      "秋日選物直播",
+      "10/30 14:00 已結束",
+      "Facebook 官方影片",
+      "本場商品",
+      "焦糖托特包 · NT$1,280",
+      "目前有貨",
+      "以目前價格與庫存為準。",
+      "查看商品",
+      "返回回放列表",
+      "返回",
+    );
+    await need(c, "返回", "查看商品", "返回回放列表");
+    await c.shot(frames.detail);
+
+    // 4. Persistence after refresh
+    await page.reload();
+    await c.load();
+    c.text("秋日選物直播", "10/30 14:00 已結束", "目前有貨", "查看商品");
+
+    // 5. Click 查看商品 -> navigates to product, restores standard chrome
+    const viewProdBtn = btn(page, "查看商品");
+    await Promise.all([
+      page.waitForURL(new RegExp(`/zh-TW/products/`), { timeout: 10000 }),
+      click(page, viewProdBtn.first(), { page: "直播回放詳情", control: "查看商品", expected: "商品詳情" }),
+    ]);
+    await c.load();
+    assert.equal(await page.locator(".sf-header").count() > 0, true);
+
+    // 6. Navigation back to replays and store
+    await page.goto(`${origin}/zh-TW/replays/${replayInStock.session_id}`);
+    await c.load();
+    await Promise.all([
+      page.waitForURL(/\/zh-TW\/replays$/, { timeout: 10000 }),
+      click(page, btn(page, "返回回放列表").first(), { page: "直播回放詳情", control: "返回回放列表", expected: "/zh-TW/replays" }),
+    ]);
+    await c.load();
+    await Promise.all([
+      page.waitForURL(/\/zh-TW$/, { timeout: 10000 }),
+      click(page, btn(page, "返回商店").first(), { page: "直播回放列表", control: "返回商店", expected: "/zh-TW" }),
+    ]);
+
+    // 7. Sold-out detail
+    api.state.replays = [replaySoldOut];
+    await page.goto(`${origin}/zh-TW/replays/${replaySoldOut.session_id}`);
+    await c.load();
+    c.text(
+      "秋日選物直播",
+      "10/30 14:00 已結束",
+      "本場商品",
+      "焦糖托特包 · NT$1,280",
+      "目前已售完",
+      "以目前價格與庫存為準。",
+      "查看商品",
+      "返回回放列表",
+    );
+    await need(c, "查看商品", "返回回放列表");
+    await c.shot(frames.soldout);
+
+    // 8. Empty list
+    api.state.replays = [];
+    await page.goto(`${origin}/zh-TW/replays`);
+    await c.load();
+    c.text("直播回放", "目前沒有公開回放", "先逛逛商店的商品。", "返回商店", "返回");
+    await need(c, "返回商店", "返回");
+    await c.shot(frames.empty);
+
+    try { c.done(); } finally { await page.close(); }
+  }
+});
+
+test("replays · locale, negative refusals, and no-cartwrite integrity", async () => {
+  const page = await DEVICES.d().newPage();
+  const c = new Check(page, "replays negative and locale");
+
+  // Locale zh-CN empty
+  api.state.replays = [];
+  await page.goto(`${origin}/zh-CN/replays`);
+  await c.load();
+  c.text("直播回放", "目前没有公开回放", "先逛逛商店的商品。", "返回商店", "返回");
+
+  // Locale en empty
+  await page.goto(`${origin}/en/replays`);
+  await c.load();
+  c.text("Live Replays", "No public replays yet", "Browse products in the shop instead.", "Back to shop", "Back");
+
+  // Malformed session ID refusal (not a UUID) -> 404
+  const resBad = await page.goto(`${origin}/zh-TW/replays/not-a-valid-uuid`);
+  assert.equal(resBad?.status(), 404);
+
+  // Non-existent session ID -> 404
+  const resMissing = await page.goto(`${origin}/zh-TW/replays/00000000-0000-4000-8000-000000000999`);
+  assert.equal(resMissing?.status(), 404);
+
+  // Upstream down -> 500 error page
+  api.state.replayError = "down";
+  const resDown = await page.goto(`${origin}/zh-TW/replays`);
+  assert.equal(resDown?.status(), 500);
+  api.state.replayError = null;
+
+  // Cart unchanged (no replay cartwrite)
+  const cartRes = await page.request.get(`${origin}/api/shop/replays`, { headers: { accept: "application/json" } });
+  assert.equal(cartRes.status(), 200);
+
+  // Refuse replay POST
+  const postRes = await page.request.post(`${origin}/api/shop/replays`, { data: {} });
+  assert.equal(postRes.status(), 405);
+
+  try { c.done(); } finally { await page.close(); }
+});
+
 // Frames the real routes cannot reach with existing data; recorded in manifest.json and the PR body, never silently dropped.
 deferred.push(
   { frames: ["26:773", "26:1050", "26:815", "26:1087"], reason: "after-sales request form / request R-1001: no storefront route or buyer API for it in this module; the 申請售後 control on the order page is asserted, its destination is not" },

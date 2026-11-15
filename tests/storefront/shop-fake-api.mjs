@@ -153,7 +153,7 @@ function design(extra = {}) {
 // ---- server -------------------------------------------------------------------------------------------------------------
 export function createFakeApi({ port = 0, origin = "https://shop.example", bffKey }) {
   const products = buildCatalog();
-  const state = { requests: [], sessions: new Map(), carts: new Map(), receipts: new Map(), quotes: new Map(), unpublished: false, down: false, primaryDown: false, hideProductSlug: null, imagelessSlug: null, hiddenCollectionSlug: null, emptyCollectionSlug: null, designAccent: null };
+  const state = { requests: [], sessions: new Map(), carts: new Map(), receipts: new Map(), quotes: new Map(), unpublished: false, down: false, primaryDown: false, hideProductSlug: null, imagelessSlug: null, hiddenCollectionSlug: null, emptyCollectionSlug: null, designAccent: null, replays: [], replayError: null };
   const idsOf = design()._ids;
   const imageSeeds = new Map([[idsOf.hero, ["hero", "wide"]], [idsOf.about, ["about", "square"]], [idsOf.logo, ["logo", "square"]], [uid(44), ["collection", "square"]]]);
   for (const p of products) for (const img of p.images) imageSeeds.set(img.id, [img.id, "portrait"]);
@@ -237,6 +237,22 @@ export function createFakeApi({ port = 0, origin = "https://shop.example", bffKe
         return json(res, 200, { id: p.id, slug: p.slug, title: p.title, description: p.description, seo: { title: "", description: "" }, images: p.slug === state.imagelessSlug ? [] : p.images, options: p.options, variants: p.variants.map(({ sku_id, title, option_values, price_minor, compare_at_minor, stock }) => ({ sku_id, title, option_values, price_minor, compare_at_minor, stock })), collections: p.collections.map((s) => ({ slug: s, title: COLLECTIONS.find((c) => c.slug === s).title })) });
       }
       return error(res, 404, "not_found");
+    }
+
+    if (path === "replays") {
+      if (!sameOrigin) return error(res, 404, "not_found");
+      if (state.replayError === "down") return error(res, 503, "unavailable");
+      if (req.method !== "GET") return error(res, 405, "method_not_allowed");
+      return json(res, 200, { items: (state.replays ?? []).map((r) => ({ session_id: r.session_id, title: r.title, ended_at: r.ended_at, permalink_url: r.permalink_url })) });
+    }
+    const replayMatch = /^replays\/([0-9a-f-]{36})$/.exec(path);
+    if (replayMatch) {
+      if (!sameOrigin) return error(res, 404, "not_found");
+      if (state.replayError === "down") return error(res, 503, "unavailable");
+      if (req.method !== "GET") return error(res, 405, "method_not_allowed");
+      const r = (state.replays ?? []).find((x) => x.session_id === replayMatch[1]);
+      if (!r) return error(res, 404, "not_found");
+      return json(res, 200, r);
     }
 
     // session-bound routes (the existing BFF contract)

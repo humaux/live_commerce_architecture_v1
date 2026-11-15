@@ -1,0 +1,28 @@
+{
+  "task_id": "task_bfbc8f74d025",
+  "dispatch_id": "ctx_5732d72c65a7",
+  "base_sha": "f31999ddc098743a82adc6d308043e5c801af513",
+  "base_tree": "9b2a2fca247fba0403841a607661439542c033bd",
+  "branch": "luogangan7-lgtm/fb-m8-replay-ui-1115",
+  "outcome": "succeeded",
+  "files_created": [
+    "apps/storefront/app/[locale]/replays/page.tsx",
+    "apps/storefront/app/[locale]/replays/[sessionID]/page.tsx",
+    "apps/storefront/app/[locale]/replays/replay.module.css",
+    "output/m8-replay-ui-1115/REPORT.md",
+    "output/m8-replay-ui-1115/RESULT.json"
+  ],
+  "files_modified": [
+    "apps/storefront/lib/shop-contract.ts",
+    "apps/storefront/lib/shop-upstream.ts",
+    "apps/storefront/lib/shop-copy.ts",
+    "apps/storefront/lib/routes.ts",
+    "apps/storefront/tests/shop.test.mjs",
+    "tests/storefront/shop-fake-api.mjs",
+    "tests/storefront/buyer-after-parity.mjs",
+    "output/ci-select-backend-browser/browser-ownership.json"
+  ],
+  "not_run": [
+    "local tests/builds/lint/typecheck/devservers per explicit execution limits"
+  ]
+}

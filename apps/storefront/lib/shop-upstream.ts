@@ -22,8 +22,10 @@ import {
   parseCollections,
   parseProductDetail,
   parseProductList,
+  parseReplayDetail,
+  parseReplayList,
 } from "./shop-contract.ts";
-import type { CollectionCard, CollectionInfo, ProductDetail, ProductList } from "./shop-contract.ts";
+import type { CollectionCard, CollectionInfo, ProductDetail, ProductList, ReplayDetail, ReplayList } from "./shop-contract.ts";
 
 export type Fetched<T> = { state: "ok"; value: T } | { state: "missing" } | { state: "down" };
 
@@ -166,5 +168,5 @@ export async function allProducts(maxPages = 50): Promise<Fetched<ProductList["p
 
 
 // Replay data is already closed by the Go transport; this server-only read forwards no caller authority.
-export const listReplays = async (): Promise<Fetched<unknown>> => getJSON("replays");
-export const getReplay = async (session: string): Promise<Fetched<unknown>> => getJSON(`replays/${encodeURIComponent(session)}`);
+export const listReplays = cache(async (): Promise<Fetched<ReplayList>> => parsed(await getJSON("replays"), parseReplayList));
+export const getReplay = cache(async (session: string): Promise<Fetched<ReplayDetail>> => parsed(await getJSON(`replays/${encodeURIComponent(session)}`), parseReplayDetail));
