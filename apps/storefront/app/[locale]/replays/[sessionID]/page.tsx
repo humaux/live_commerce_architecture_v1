@@ -2,7 +2,6 @@
 // Depends on: gate(), getReplay() and storeCurrency() via lib/shop-upstream; official Meta video embed slot.
 // Used by: storefront buyer navigation to view past live replay session and featured products.
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isLocale } from "@live-commerce/i18n";
 import type { Locale } from "@live-commerce/i18n";
@@ -54,9 +53,9 @@ export default async function ReplayDetailPage({
     <div className={`${styles.root} replay-root`}>
       <header className={styles.appBar} data-name="Buyer app bar">
         <p className={styles.storeBrand}>{shop.design.profile.name}</p>
-        <Link href={listHref} className={styles.appBarBackBtn} data-name="Control · 返回">
+        <a href={listHref} className={styles.appBarBackBtn} data-name="Control · 返回">
           {copy.back}
-        </Link>
+        </a>
       </header>
 
       <main className={styles.contentColumn}>
@@ -93,13 +92,13 @@ export default async function ReplayDetailPage({
                     <p>{isSoldOut ? copy.replaySoldOut : copy.replayInStock}</p>
                   </div>
                   <p className={styles.priceNotice}>{copy.replayPriceNotice}</p>
-                  <Link
+                  <a
                     href={productPath(locale, offer.product.slug || offer.product.id)}
                     className={styles.actionBtn}
                     data-name="Control · 查看商品"
                   >
                     {copy.viewProduct}
-                  </Link>
+                  </a>
                 </div>
               );
             })}
@@ -107,9 +106,9 @@ export default async function ReplayDetailPage({
         </div>
 
         <div className={styles.bottomActions} data-name="Fixed actions · outside scroll viewport">
-          <Link href={listHref} className={styles.actionBtn} data-name="Control · 返回回放列表">
+          <a href={listHref} className={styles.actionBtn} data-name="Control · 返回回放列表">
             {copy.backToReplays}
-          </Link>
+          </a>
         </div>
       </main>
     </div>

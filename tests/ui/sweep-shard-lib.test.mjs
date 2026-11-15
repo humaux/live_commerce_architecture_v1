@@ -149,7 +149,7 @@ test("planClick: for every N the shards partition the whole universe (every regi
     const plan = planClick(adminRoutes, weights, of);
     const seen = new Map();
     for (const p of plan.pages) { const i = plan.owner.get(p.unit); assert.ok(i >= 1 && i <= of, p.page); assert.ok(!seen.has(p.page), `duplicate page ${p.page}`); seen.set(p.page, i); }
-    assert.equal(seen.size, (adminRoutes.length + 19) * CLICK_VARIANTS.length, "admin routes + 19 storefront routes, each at all variants");
+    assert.equal(seen.size, (adminRoutes.length + 21) * CLICK_VARIANTS.length, "admin routes + 21 storefront routes, each at all variants");
     for (const r of adminRoutes) for (const v of CLICK_VARIANTS) assert.ok(seen.has(`admin|${r.path}|${v.viewport}|${v.locale}`), `${r.path} ${v.viewport}/${v.locale}`);
     for (const [j, unit] of Object.entries(plan.journeyOwner)) assert.ok(plan.owner.has(unit), `journey ${j} has an owning unit`);
     // J2/J3 read the COD order of the storefront desktop/zh-TW session: same shard, always

@@ -737,28 +737,51 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
   ]) {
     api.state.replays = [replayInStock];
     const page = await DEVICES[dev]().newPage();
+    // Intercept official Facebook iframe URL with explicit minimal MOCK child (no external networking)
+    await page.route(/^https:\/\/www\.facebook\.com\/plugins\/video\.php/, (route) =>
+      route.fulfill({ status: 200, contentType: "text/html", body: "<title>MOCK official player transport</title>" })
+    );
     const c = new Check(page, `replays ${dev}`);
 
     // 1. List page
-    await page.goto(`${origin}/zh-TW/replays`);
+    const listRes = await page.goto(`${origin}/zh-TW/replays`);
     await c.load();
+    const baselineCSP = listRes?.headers()["content-security-policy"] || "";
+    assert.ok(baselineCSP, "list page must deliver Content-Security-Policy");
+    assert.ok(!baselineCSP.includes("frame-src"), "baseline shopping CSP must not include frame-src");
+    assert.ok(!baselineCSP.includes("facebook.com"), "baseline shopping CSP must not include facebook.com");
     c.text("直播回放", "秋日選物直播", "10/30 14:00 已結束", "返回", "返回商店", "晨光選物");
     await need(c, "返回", "觀看回放", "返回商店");
     await c.shot(frames.list);
 
-    // 2. Click 觀看回放 -> navigates to detail
+    // 2. Click 觀看回放 -> navigates to detail (crosses CSP boundary with real document navigation)
     const watchBtn = btn(page, "觀看回放");
-    await Promise.all([
+    const [detailRes] = await Promise.all([
+      page.waitForResponse(
+        (r) => r.request().resourceType() === "document" && r.frame() === page.mainFrame(),
+        { timeout: 10000 }
+      ),
       page.waitForURL(new RegExp(`/zh-TW/replays/${replayInStock.session_id}$`), { timeout: 10000 }),
       click(page, watchBtn.first(), { page: "直播回放列表", control: "觀看回放", expected: "直播回放詳情" }),
     ]);
     await c.load();
+    const detailCSP = detailRes?.headers()["content-security-policy"] || "";
+    assert.equal(
+      detailCSP,
+      `${baselineCSP}; frame-src https://www.facebook.com/plugins/video.php`,
+      "detail page must deliver exact baseline CSP plus single frame-src directive"
+    );
 
     // 3. Detail page (in-stock)
     const iframe = page.locator("iframe");
     assert.equal(await iframe.count(), 1);
     assert.equal(await iframe.getAttribute("src"), replayInStock.embed_url);
     assert.equal(await iframe.getAttribute("title"), "Facebook 官方影片");
+    const frame = iframe.contentFrame();
+    if (frame) {
+      await frame.waitForLoadState().catch(() => {});
+      assert.equal(await frame.title(), "MOCK official player transport");
+    }
     c.text(
       "秋日選物直播",
       "10/30 14:00 已結束",
@@ -775,27 +798,42 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
     await c.shot(frames.detail);
 
     // 4. Persistence after refresh
-    await page.reload();
+    const reloadRes = await page.reload();
     await c.load();
+    assert.equal(
+      reloadRes?.headers()["content-security-policy"],
+      `${baselineCSP}; frame-src https://www.facebook.com/plugins/video.php`,
+      "reloaded detail retains detail CSP"
+    );
     c.text("秋日選物直播", "10/30 14:00 已結束", "目前有貨", "查看商品");
 
     // 5. Click 查看商品 -> navigates to product, restores standard chrome
     const viewProdBtn = btn(page, "查看商品");
-    await Promise.all([
+    const [prodRes] = await Promise.all([
+      page.waitForResponse(
+        (r) => r.request().resourceType() === "document" && r.frame() === page.mainFrame(),
+        { timeout: 10000 }
+      ),
       page.waitForURL(new RegExp(`/zh-TW/products/`), { timeout: 10000 }),
       click(page, viewProdBtn.first(), { page: "直播回放詳情", control: "查看商品", expected: "商品詳情" }),
     ]);
     await c.load();
     assert.equal(await page.locator(".sf-header").count() > 0, true);
+    assert.equal(prodRes?.headers()["content-security-policy"], baselineCSP, "product page restores baseline CSP");
 
     // 6. Navigation back to replays and store
     await page.goto(`${origin}/zh-TW/replays/${replayInStock.session_id}`);
     await c.load();
-    await Promise.all([
+    const [backListRes] = await Promise.all([
+      page.waitForResponse(
+        (r) => r.request().resourceType() === "document" && r.frame() === page.mainFrame(),
+        { timeout: 10000 }
+      ),
       page.waitForURL(/\/zh-TW\/replays$/, { timeout: 10000 }),
       click(page, btn(page, "返回回放列表").first(), { page: "直播回放詳情", control: "返回回放列表", expected: "/zh-TW/replays" }),
     ]);
     await c.load();
+    assert.equal(backListRes?.headers()["content-security-policy"], baselineCSP, "back to list restores baseline CSP");
     await Promise.all([
       page.waitForURL(/\/zh-TW$/, { timeout: 10000 }),
       click(page, btn(page, "返回商店").first(), { page: "直播回放列表", control: "返回商店", expected: "/zh-TW" }),
@@ -803,12 +841,22 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
 
     // 7. Sold-out detail
     api.state.replays = [replaySoldOut];
-    await page.goto(`${origin}/zh-TW/replays/${replaySoldOut.session_id}`);
+    const soldRes = await page.goto(`${origin}/zh-TW/replays/${replaySoldOut.session_id}`);
     await c.load();
+    assert.equal(
+      soldRes?.headers()["content-security-policy"],
+      `${baselineCSP}; frame-src https://www.facebook.com/plugins/video.php`,
+      "sold-out detail delivers baseline CSP plus frame-src"
+    );
     const soldIframe = page.locator("iframe");
     assert.equal(await soldIframe.count(), 1);
     assert.equal(await soldIframe.getAttribute("src"), replaySoldOut.embed_url);
     assert.equal(await soldIframe.getAttribute("title"), "Facebook 官方影片");
+    const soldFrame = soldIframe.contentFrame();
+    if (soldFrame) {
+      await soldFrame.waitForLoadState().catch(() => {});
+      assert.equal(await soldFrame.title(), "MOCK official player transport");
+    }
     c.text(
       "秋日選物直播",
       "10/30 14:00 已結束",
@@ -825,8 +873,9 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
 
     // 8. Empty list
     api.state.replays = [];
-    await page.goto(`${origin}/zh-TW/replays`);
+    const emptyRes = await page.goto(`${origin}/zh-TW/replays`);
     await c.load();
+    assert.equal(emptyRes?.headers()["content-security-policy"], baselineCSP, "empty list has baseline CSP");
     c.text("直播回放", "目前沒有公開回放", "先逛逛商店的商品。", "返回商店", "返回");
     await need(c, "返回商店", "返回");
     await c.shot(frames.empty);
@@ -857,6 +906,43 @@ test("replays · locale, negative refusals, and no-cartwrite integrity", async (
   // Non-existent session ID -> 404
   const resMissing = await page.goto(`${origin}/zh-TW/replays/00000000-0000-4000-8000-000000000999`);
   assert.equal(resMissing?.status(), 404);
+
+  // Bounded actual Next response header checks for 3 valid locales
+  const testUUID = "00000000-0000-4000-8000-000000000999";
+  for (const loc of ["zh-CN", "zh-TW", "en"]) {
+    const locRes = await page.goto(`${origin}/${loc}/replays/${testUUID}`);
+    const csp = locRes?.headers()["content-security-policy"] || "";
+    assert.ok(csp.includes("frame-src https://www.facebook.com/plugins/video.php"), `${loc} replay detail must deliver frame-src directive`);
+  }
+
+  // Paths that must lack new frame-src permission
+  const negativePaths = [
+    "/zh-TW/replays",
+    "/zh-TW/products/sample-slug",
+    "/zh-TW/replays/not-a-valid-uuid",
+    "/fr/replays/" + testUUID,
+    "/zh-TW/replays/" + testUUID + "/extra",
+  ];
+  for (const p of negativePaths) {
+    const r = await page.goto(`${origin}${p}`);
+    const csp = r?.headers()["content-security-policy"] || "";
+    assert.ok(!csp.includes("frame-src"), `${p} must lack frame-src permission`);
+    assert.ok(!csp.includes("facebook.com"), `${p} must lack facebook.com permission`);
+  }
+
+  // Neutral payment return policy retained (not matching shopping CSP)
+  const payRetRes = await page.goto(`${origin}/payment/return`);
+  const payCsp = payRetRes?.headers()["content-security-policy"] || "";
+  assert.ok(!payCsp.includes("https://logistics-stage.ecpay.com.tw"), "payment/return retains its own policy, not shopping CSP");
+
+  // Claim and order-link retain restrictive policy and no-referrer
+  for (const pageName of ["claim", "order-link"]) {
+    const r = await page.goto(`${origin}/zh-TW/${pageName}`);
+    assert.equal(r?.headers()["referrer-policy"], "no-referrer", `${pageName} must retain no-referrer`);
+    const csp = r?.headers()["content-security-policy"] || "";
+    assert.ok(csp.includes("form-action 'none'"), `${pageName} must retain form-action none`);
+    assert.ok(!csp.includes("frame-src"), `${pageName} must lack frame-src`);
+  }
 
   // Upstream down -> 500 error page
   api.state.replayError = "down";

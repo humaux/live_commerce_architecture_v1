@@ -60,13 +60,13 @@ export default async function ReplaysPage({ params }: { params: Promise<{ locale
               <div key={item.session_id} className={styles.taskCard} data-name="Task content">
                 <p className={styles.cardTitle}>{item.title}</p>
                 <p className={styles.cardTime}>{formatReplayEnded(item.ended_at, locale)}</p>
-                <Link
+                <a
                   href={replayPath(locale, item.session_id)}
                   className={styles.actionBtn}
                   data-name="Control · 觀看回放"
                 >
                   {copy.watchReplay}
-                </Link>
+                </a>
               </div>
             ))
           )}

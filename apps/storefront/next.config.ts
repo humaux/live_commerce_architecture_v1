@@ -4,6 +4,9 @@ import type { NextConfig } from "next";
 // permanent issue badge. Only the development server gets it; the production policy (next build/start) stays eval-free (R4S-04).
 const scriptSrc = process.env.NODE_ENV === "development" ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'" : "script-src 'self' 'unsafe-inline'";
 
+// Base shopping Content-Security-Policy (R4S-04): same-origin fetch/img/font/script sources only.
+const shoppingCSP = `default-src 'self'; ${scriptSrc}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self' https://logistics-stage.ecpay.com.tw/Express/map https://logistics.ecpay.com.tw/Express/map`;
+
 // Approved B product surface shares the verified buyer BFF. There are no public
 // fixture routes. DNS/TLS/ingress remain independent deployment gates.
 const config: NextConfig = {
@@ -32,10 +35,20 @@ const config: NextConfig = {
           { key: "Referrer-Policy", value: "same-origin" },
           {
             key: "Content-Security-Policy",
-            value:
-              // R4S-04: same-origin fetch/img/font/script sources only (no exfiltration path if an encoder ever slips); Next's inline
-              // bootstrap needs 'unsafe-inline' until nonce-based script-src (post-pilot, output/r4-backlog/P2.md).
-              `default-src 'self'; ${scriptSrc}; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self' https://logistics-stage.ecpay.com.tw/Express/map https://logistics.ecpay.com.tw/Express/map`,
+            value: shoppingCSP,
+          },
+        ],
+      },
+      {
+        // Replay detail pages frame Facebook's official embedded video player (contracts/storefront-v2.md §G6).
+        // Scoped strictly to valid UUID session IDs: later rule overrides the base shopping Content-Security-Policy
+        // with the addition of frame-src for Facebook's video plugin path only.
+        source:
+          "/:locale(zh-CN|zh-TW|en)/replays/:sessionID([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value: `${shoppingCSP}; frame-src https://www.facebook.com/plugins/video.php`,
           },
         ],
       },
