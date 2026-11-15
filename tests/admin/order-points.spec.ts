@@ -211,7 +211,11 @@ async function pickMemberBySearch(page: Page, name: string, memberId: string) {
   });
   // A selected member offers "change"; a fresh form already starts in the query state (documented seam difference).
   if (await page.getByTestId("manual-member-change").isVisible().catch(() => false)) await page.getByTestId("manual-member-change").click();
+  const intended = page.waitForResponse(reply => reply.request().method() === "POST"
+    && new URL(reply.url()).pathname === searchPath && reply.request().postDataJSON().q === name);
   await page.getByTestId("manual-member-query").fill(name);
+  const reply = await intended;
+  expect(reply.status(), "typed member search").toBe(200);
   const results = page.getByTestId("manual-member-results");
   const option = results.locator(`[data-member-id="${memberId}"]`);
   await expect(option).toBeVisible();
@@ -219,7 +223,7 @@ async function pickMemberBySearch(page: Page, name: string, memberId: string) {
   await expect(page.getByTestId("manual-member-selected")).toContainText(name);
   expect(searches.length, "the member search is a POST").toBeGreaterThan(0);
   for (const search of searches) expect(new URL(search.url).search, "the search term never travels in a URL").toBe("");
-  expect(JSON.parse(searches.at(-1)!.body).q, "the final search carries the typed term in the body").toBe(name);
+  expect(reply.request().postDataJSON().q, "the intended search carries the typed term in the body").toBe(name);
 }
 
 async function openOrderPanel(page: Page, locale: Locale, orderId: string, role: RegExp | string = "Ready") {
