@@ -1,6 +1,6 @@
-// Purpose: scoped read-only member search and incremental list, with private query held only in memory.
+// Purpose: scoped member search/list and the manual-create entry; private queries remain in memory.
 // Depends on: LP1 members-client, WorkspaceFrame, DS, shared format and native Next links.
-// Used by: members/page.tsx; no member mutations or query-bearing page links.
+// Used by: members/page.tsx; MemberForms owns keyed writes, never query-bearing links.
 "use client";
 import { useEffect, useState, type FormEvent } from "react";
 import Link from "next/link";
@@ -28,6 +28,7 @@ import { WorkspaceFrame } from "../WorkspaceFrame";
 import AdminLoading from "../AdminLoading";
 import { membersCopy, type MembersCopy } from "./copy";
 import s from "./members.module.css";
+import { MemberForms } from "./MemberForms";
 export type MembersProps = {
   locale: Locale;
   stores: Store[];
@@ -118,6 +119,19 @@ function MemberListScope({
           breadcrumbLabel={c.title}
           title={c.title}
           description={c.description}
+        />
+        <MemberForms
+          locale={locale}
+          store={store}
+          scope={`${renderKey}|${locale}|${store?.id}`}
+          boundary={read.boundary}
+          status={read.status}
+          onSaved={() => {
+            setDraft("");
+            setQ("");
+            setRevision((n) => n + 1);
+          }}
+          onRefresh={read.reload}
         />
         {read.status !== "signed-out" && read.status !== "hidden" && (
           <form
