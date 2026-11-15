@@ -122,7 +122,7 @@ async function search(page: Page, q: string, keyboard = false) {
     return { status: r.status(), cursor: body.cursor };
   }, keyboard ? "keyboard Enter" : "click");
 }
-type URLObservation = { kind: "request" | "mainframe"; method?: string; resourceType?: string; isNavigationRequest: boolean; rsc?: boolean; routerPrefetch?: boolean };
+type URLObservation = { kind: "request" | "mainframe"; method?: string; resourceType?: string; isNavigationRequest: boolean };
 function safeMemberPath(path: string) {
   const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   const segments = path.split("/").filter(Boolean);
@@ -273,13 +273,10 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [144
     const { page, context } = await signed(browser, locale, width);
     const urls: string[] = [], consoleTexts: string[] = [];
     const observations: URLObservation[] = []; let mutation = 0; let initialEntryIDs: string[] = [];
-    page.on("request", async r => {
+    page.on("request", r => {
       const index = urls.push(r.url()) - 1;
       observations[index] = { kind: "request", method: r.method(), resourceType: r.resourceType(), isNavigationRequest: r.isNavigationRequest() };
       if (new URL(r.url()).pathname.includes("/members") && !["GET", "HEAD"].includes(r.method()) && !r.url().endsWith("/members/search")) mutation++;
-      const [rsc, prefetch] = await Promise.all([r.headerValue("rsc"), r.headerValue("next-router-prefetch")]);
-      observations[index].rsc = rsc !== null;
-      observations[index].routerPrefetch = prefetch !== null;
     });
     page.on("framenavigated", f => {
       if (f === page.mainFrame()) {
