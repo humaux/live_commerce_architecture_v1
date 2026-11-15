@@ -1,7 +1,7 @@
 // Purpose: single-attempt member command transport with bounded private response handling.
 // Depends on: settings-client CSRF/session fences, session-events and native Fetch/AbortController.
-// Used by: members-client stateless create/update/adjust/export/erase methods; no React or member DTO dependency.
-// Invariants: caller key retained, no automatic replay/storage/logging, one 15s deadline and 1MiB response bound.
+// Used by: members-client commands; ReauthDialog consumes only the privacy admission type. No React or member DTO dependency.
+// Invariants: caller key retained, no automatic replay/storage/logging, 15s network phases and 1MiB response bound.
 import { csrfCookie, sessionBoundary } from "./settings-client";
 import { signalLogout } from "./session-events";
 
@@ -30,13 +30,17 @@ export class MemberWriteError extends Error {
 export const invalidWrite = (): never => {
   throw new MemberWriteError("invalid_request", "not-sent");
 };
+/** Only the shared reauth wrapper may suspend a privacy command after a definitive refusal. */
+export type MemberReauthRequestInit = RequestInit & {
+  memberReauth?: { pause: () => boolean; resume: () => Promise<boolean> };
+};
 /** Decode only refusal envelopes; successful private DTO validation belongs to the caller. */
 function errorObject(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value))
     throw new Error("invalid refusal");
   return value as Record<string, unknown>;
 }
-/** One keyed command, no receipt inference/replay/storage; all awaits share one 15s deadline and caller scope signal. */
+/** One keyed command; human waiting after a definitive reauth refusal is outside the 15s network deadline. */
 export async function writeMemberCommand<T>(
   path: string,
   body: string,
@@ -49,9 +53,10 @@ export async function writeMemberCommand<T>(
   if (new TextEncoder().encode(body).length > 16384) return invalidWrite();
   const csrf = csrfCookie(),
     controller = new AbortController();
-  const deadline = setTimeout(() => controller.abort(), 15000);
+  let deadline = setTimeout(() => controller.abort(), 15000);
   const fence = AbortSignal.any([signal, controller.signal]);
-  let dispatched = false,
+  let finished = false,
+    dispatched = false,
     before = "";
   const bounded = <V>(promise: Promise<V>): Promise<V> =>
     new Promise((resolve, reject) => {
@@ -100,20 +105,31 @@ export async function writeMemberCommand<T>(
     if (fence.aborted)
       throw new MemberWriteError("invalid_request", "not-sent");
     dispatched = true;
-    const response = await bounded(
-      fetch(path, {
-        method,
-        credentials: "same-origin",
-        cache: "no-store",
-        signal: fence,
-        body,
-        headers: {
-          "Content-Type": "application/json",
-          "X-CSRF-Token": csrf,
-          "Idempotency-Key": key,
-        },
-      }),
-    );
+    const init: MemberReauthRequestInit = {
+      method,
+      credentials: "same-origin",
+      cache: "no-store",
+      signal: fence,
+      body,
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": csrf,
+        "Idempotency-Key": key,
+      },
+    };
+    if (privacy) init.memberReauth = {
+      pause: () => {
+        if (finished || fence.aborted) return false;
+        clearTimeout(deadline);
+        return true;
+      },
+      resume: async () => {
+        if (finished || fence.aborted) return false;
+        deadline = setTimeout(() => controller.abort(), 15000);
+        return (await sameSession()) && !finished && !fence.aborted;
+      },
+    };
+    const response = await bounded(fetch(path, init));
     if (response.status === 401) {
       signalLogout();
       throw new MemberWriteError("signed-out", "rejected");
@@ -198,6 +214,7 @@ export async function writeMemberCommand<T>(
       dispatched ? "unknown" : "not-sent",
     );
   } finally {
+    finished = true;
     clearTimeout(deadline);
     // Do not await cancellation: a hostile/stalled body must not hold the deadline open.
     if (reader) {

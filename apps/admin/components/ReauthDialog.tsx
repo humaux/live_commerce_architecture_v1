@@ -5,7 +5,7 @@
 //   (app/api/auth/password/reauth/[step]/route.ts) and the OIDC callback's #reauth-done / #reauth-failed return
 //   (app/api/auth/callback/route.ts).
 //   reauth-client also fetches the existing orders/finance CSV anchors through this shared re-auth handler.
-// Used by: app/[locale]/layout.tsx (mounted once per page); tests/admin/oc/reauth.spec.ts.
+// Used by: app/[locale]/layout.tsx (mounted once per page); tests/admin/oc/reauth.spec.ts and members-client-write.test.ts.
 // Invariants: a 403 reauth_required never signs out - every same-origin /api/ call (except /api/auth/*) that gets one waits for
 //   the dialog; on success the ORIGINAL request (same method, URL, headers - including its Idempotency-Key - and body, from the
 //   caller's own arguments) is sent again exactly once and its answer is what the caller sees; on cancel the caller gets the
@@ -17,6 +17,7 @@ import type { Locale } from "@live-commerce/i18n";
 import { Alert, Button, ConfirmDialog, Field, Stack, TextInput } from "@live-commerce/ui/ds";
 import { reauthCopy, reauthError } from "../lib/reauth-copy";
 import { reauthDownload, reauthMethod, reauthStep, type ReauthMethod } from "../lib/reauth-client";
+import type { MemberReauthRequestInit } from "../lib/members-write-client";
 
 const CHANNEL = "commerce-reauth";
 const POPUP = "commerce-reauth";
@@ -34,7 +35,17 @@ export function reauthFetch(native: typeof fetch, confirm: () => Promise<boolean
     const response = await native(input, init);
     if (response.status !== 403) return response;
     const code = await response.clone().json().then((b: { code?: unknown } | null) => b?.code, () => null);
-    if (code !== "reauth_required" || !(await confirm())) return response;
+    if (code !== "reauth_required") return response;
+    const admission = (init as MemberReauthRequestInit | undefined)?.memberReauth;
+    if (admission && !admission.pause()) return response;
+    const confirmed = await confirm();
+    if (admission) {
+      // The member transport retains its caller scope and session fence while the person waits.
+      // Resume its unchanged 15s network bound before checking the session and replaying once.
+      if (!(await admission.resume()) || !confirmed || init?.signal?.aborted) return response;
+      return native(source, init);
+    }
+    if (!confirmed) return response;
     // Same URL, method, headers (Idempotency-Key included) and body. The caller's own timeout may have run out while the person
     // re-authenticated; an explicit abort still applies.
     const signal = init?.signal ?? (input instanceof Request ? input.signal : undefined);

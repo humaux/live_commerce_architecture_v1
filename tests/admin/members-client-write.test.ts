@@ -4,6 +4,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { environment } from "./inbox-review-host.test.ts";
+import { registerHooks } from "node:module";
+// Presentation is never rendered here; actual reauthFetch and member transport stay production source.
+registerHooks({resolve(specifier, context, next) {
+  if (specifier === "@live-commerce/ui/ds") return {shortCircuit:true,url:`data:text/javascript,${encodeURIComponent("export const Alert=()=>null,Button=()=>null,ConfirmDialog=()=>null,Field=()=>null,Stack=()=>null,TextInput=()=>null;")}`};
+  return next(specifier, context);
+}});
+const { reauthFetch } = await import("../../apps/admin/components/ReauthDialog.tsx");
 const { useGuardedRead } =
   await import("../../apps/admin/lib/customers-client.ts");
 const {
@@ -889,3 +896,67 @@ test("privacy erasure accepts only matching tombstone summary", async (t) => {
     );
   }
 });
+
+
+// Actual-source composition, E3 MOCK only: no React rendering, browser or PG is claimed.
+for (const [mode, call, value] of [
+  ["export", exportMember, exported], ["erasure", eraseMember, erased],
+] as const) {
+  for (const finish of ["success", "cancel", "session", "store", "member", "caller_timeout"] as const) {
+    test(`privacy ${mode} actual reauth wait over15s ${finish} preserves keyed admission`, {timeout:10000}, async (t) => {
+      const env=environment(t), host=env.mount(()=>null), effects=logoutEffects(t,env);
+      Object.assign(env.window,{location:{href:"https://admin.invalid/en/members",origin:"https://admin.invalid"}});
+      t.mock.timers.enable({apis:["setTimeout"]});
+      const confirm=deferred<boolean>(), asked=deferred<void>(), controller=new AbortController();
+      t.after(()=>{controller.abort();confirm.resolve(false);});
+      const requests:{url:string;method:unknown;body:unknown;key:unknown}[]=[];
+      let writes=0;
+      const native:typeof fetch=async(url,init)=>{
+        requests.push({url:String(url),method:init?.method,body:init?.body,key:(init?.headers as Record<string,string>)["Idempotency-Key"]});
+        if(init?.signal?.aborted)throw new DOMException("aborted","AbortError");
+        if(requests.length===1)return response({code:"reauth_required"},403);
+        writes++;return response(value(),200);
+      };
+      globalThis.fetch=reauthFetch(native,()=>{asked.resolve();return confirm.promise;});
+      let settled=false, result:any;
+      const pending=call(sid,mid,key,controller.signal).then(v=>{settled=true;result={value:v};},e=>{settled=true;result={error:e};});
+      await asked.promise;
+      t.mock.timers.tick(15001);
+      await host.settle();
+      assert.equal(settled,false,"human reauth wait is not an in-flight network deadline");
+      assert.equal(requests.length,1);assert.equal(writes,0);
+      if(finish==="session")env.document.cookie=`__Host-commerce_csrf=${"b".repeat(43)}`;
+      if(finish==="store"||finish==="member"||finish==="caller_timeout")controller.abort(new DOMException(`${finish} scope changed`,finish==="caller_timeout"?"TimeoutError":"AbortError"));
+      confirm.resolve(finish!=="cancel");
+      await pending;await host.settle();
+      if(finish==="success"){
+        assert.deepEqual(result,{value:value()});assert.equal(requests.length,2);assert.equal(writes,1);
+        assert.deepEqual(requests[1],requests[0],"one exact original target/body/key replay");
+      }else{
+        assert.equal(requests.length,1,"cancel/session/scope change sends no late replay");assert.equal(writes,0);
+        assert.ok(result.error instanceof MemberWriteError);
+        assert.equal(result.error.code,finish==="cancel"?"reauth_required":finish==="session"?"signed-out":"unknown");
+      }
+      assert.deepEqual(requests[0],{url:`/api/stores/${sid}/members/${mid}/${mode}`,method:"POST",body:"{}",key});
+      if(finish!=="session")assert.deepEqual(effects,{event:0,broadcast:0,storage:0},"ordinary cancel/scope abort retains authentication");
+    });
+  }
+  for(const phase of ["initial", "replay"] as const){
+    test(`privacy ${mode} actual reauth ${phase} network still has15s deadline`,{timeout:10000},async(t)=>{
+      const env=environment(t),host=env.mount(()=>null);Object.assign(env.window,{location:{href:"https://admin.invalid/en/members",origin:"https://admin.invalid"}});
+      t.mock.timers.enable({apis:["setTimeout"]});
+      const entered=deferred<void>(),controller=new AbortController();t.after(()=>controller.abort());let calls=0;
+      const native:typeof fetch=async(_url,init)=>{
+        calls++;if(phase==="replay"&&calls===1)return response({code:"reauth_required"},403);
+        entered.resolve();return new Promise<Response>((_resolve,reject)=>{
+          const abort=()=>reject(new DOMException("aborted","AbortError"));
+          if(init?.signal?.aborted)abort();else init?.signal?.addEventListener("abort",abort,{once:true});
+        });
+      };
+      globalThis.fetch=reauthFetch(native,async()=>true);
+      const pending=call(sid,mid,key,controller.signal).catch(e=>e);
+      await entered.promise;t.mock.timers.tick(15000);await host.settle();
+      assert.ok(error("unknown","unknown")(await pending));assert.equal(calls,phase==="initial"?1:2,"no automatic third attempt");
+    });
+  }
+}
