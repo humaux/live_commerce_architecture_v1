@@ -490,7 +490,7 @@ func TestBrowserClickSweep(t *testing.T) {
 	if err := platform.WithScope(ctx, f.runtime, e.token(), e.store(), "live:manage", func(tx pgx.Tx, s platform.Scope) error {
 		_, err := claims.CreateOffer(ctx, tx, s, e.token(), t04Key("cs-replay-offer"), replaySession, claims.OfferInput{
 			Keyword:             "SWEEPREPLAY",
-			SKUID:               e.p.stock.sku.ID,
+			SKUID:               e.p.stock.skus[0].ID,
 			MaxQuantityPerClaim: 2,
 		})
 		return err
@@ -508,10 +508,7 @@ func TestBrowserClickSweep(t *testing.T) {
 		}, 200, nil)
 
 	var bindingID, postID string
-	if err := owner.QueryRow(ctx, `SELECT id::text FROM integration.bindings WHERE tenant_id=$1 AND store_id=$2 AND enabled LIMIT 1`, f.tenantA, e.store()).Scan(&bindingID); err != nil {
-		t.Fatal(err)
-	}
-	if err := owner.QueryRow(ctx, `SELECT source_object_id FROM live.claim_sources WHERE session_id=$1`, replaySession).Scan(&postID); err != nil {
+	if err := owner.QueryRow(ctx, `SELECT binding_id::text,source_object_id FROM live.claim_sources WHERE tenant_id=$1 AND store_id=$2 AND session_id=$3 AND active AND platform='facebook'`, f.tenantA, e.store(), replaySession).Scan(&bindingID, &postID); err != nil {
 		t.Fatal(err)
 	}
 
@@ -536,6 +533,8 @@ func TestBrowserClickSweep(t *testing.T) {
 	buyerRead := func(target string) map[string]any {
 		req := httptest.NewRequest(http.MethodGet, target, nil)
 		req.Host = "buyer.example"
+		req.Header.Set("X-Commerce-Buyer-BFF-Key", bffKey)
+		req.Header.Set("X-Commerce-Storefront-Origin", csOrigin)
 		rec := httptest.NewRecorder()
 		buyerHandler.ServeHTTP(rec, req)
 		if rec.Code != http.StatusOK {
