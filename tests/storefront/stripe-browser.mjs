@@ -187,7 +187,7 @@ async function context(mobile=false){
   c.on("page",p=>{attach(p);attachStep(p);});
   return c;
 }
-// SU07 fourth newOrder only: passive provenance, never handler/lock acceptance evidence.
+// SU07 second newOrder onward: passive provenance, never handler/lock acceptance evidence.
 // ponytail: two bounded local event streams; no trace, response bodies, product hooks or new requests.
 // Schema 2 clickEvents holds native mouse down/up/click phases only between click-before and click-after (or failure).
 const su07DiagnosticPages=new WeakMap();
@@ -616,6 +616,7 @@ async function su07(){
   assert.equal(paymentCalls(id,"prepare").length,1,"Continue does not prepare again");assert.equal(paymentCalls(id,"handoff").length,2);
   passed("SU07 child closed => Continue reuses the same session (1 session row, 1 prepare, 2 handoffs)");
   // 3. double click + second tab => 1 prepare, 1 session
+  startSU07Diagnostic(page);
   id=await newOrder(page);
   const other=await c.newPage();await other.goto(checkout);await ex(other.getByTestId("order-id")).toHaveText(id);await ex(payBtn(other,l)).toBeVisible();
   const popups=[];c.on("page",p=>popups.push(p));
@@ -627,7 +628,6 @@ async function su07(){
   passed("SU07 double click + second tab => 1 prepare, 1 session");
   // 4. reload while CREATING => no POST
   await act("worker-stop");
-  startSU07Diagnostic(page);
   id=await newOrder(page);
   pop=page.waitForEvent("popup");await payBtn(page,l).click();child=await pop;
   await until(()=>paymentCalls(id,"prepare").length===1,30000,"prepare while the worker is stopped");
