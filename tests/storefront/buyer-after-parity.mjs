@@ -683,6 +683,29 @@ test("claim link · confirm, expired and unconfirmed result", async () => {
 });
 
 // ---- live replays ------------------------------------------------------------------------------------------------------------------------------------------------
+// M8 formal roots 1468:107106–107471: logical CSS pixels, independent of screenshot DPR.
+async function replayGeometry(page, frame, dev) {
+  const mobile = dev === "m", x = mobile ? 16 : 360, width = mobile ? 358 : 720;
+  const dock = page.locator('[data-name="Fixed actions · outside scroll viewport"]');
+  const video = page.locator('[data-name="Official Meta embed slot · no fabricated playback"]');
+  const targets = [
+    ["dock", dock, [x, mobile ? 758 : 812, width, 68]],
+    ["bottom control", dock.locator("a"), [x, mobile ? 770 : 824, width, 44]],
+    ["viewport", page.locator('[data-name="Task viewport · original request stays in this state"]'), [x, mobile ? 148 : 164, width, mobile ? 586 : 610]],
+    ["Back", page.locator('[data-name="Control · 返回"]'), [mobile ? 238 : 928, 10, mobile ? 100 : 140, 44]],
+    ["title", page.locator("main h1"), [x, mobile ? 88 : 96, width, 44]],
+    ["app bar", page.locator('[data-name="Buyer app bar"]'), [0, 0, mobile ? 390 : 1440, 64]],
+  ];
+  if (await video.count()) targets.push(["video", video, [mobile ? 32 : 376, mobile ? 200 : 216, mobile ? 326 : 688, mobile ? 182 : 340]]);
+  const observed = await Promise.all(targets.map(async ([name, locator, expected]) => ({ name, expected, actual: await locator.boundingBox() })));
+  console.log("M8 geometry", JSON.stringify({ frame, viewport: page.viewportSize(), observed }));
+  for (const { name, expected, actual } of observed) {
+    assert.ok(actual, `${frame} ${name} has a visible bounding box`);
+    for (const [i, axis] of ["x", "y", "width", "height"].entries())
+      assert.ok(Math.abs(actual[axis] - expected[i]) <= 0.5, `${frame} ${name}.${axis}: observed ${actual[axis]}, formal ${expected[i]} CSS px`);
+  }
+}
+
 test("replays · list, detail in-stock, sold-out, empty list, navigation, and persistence", async () => {
   const replayInStock = {
     session_id: uid(501),
@@ -761,6 +784,7 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
     );
     c.text("直播回放", "秋日選物直播", "10/30 14:00 已結束", "返回", "返回商店", "晨光選物");
     await need(c, "返回", "觀看回放", "返回商店");
+    await c.step("formal geometry", () => replayGeometry(page, frames.list, dev));
     await c.shot(frames.list);
 
     // 2. Click 觀看回放 -> navigates to detail (crosses CSP boundary with real document navigation)
@@ -806,6 +830,7 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
       "返回",
     );
     await need(c, "返回", "查看商品", "返回回放列表");
+    await c.step("formal geometry", () => replayGeometry(page, frames.detail, dev));
     await c.shot(frames.detail);
 
     // 4. Persistence after refresh
@@ -887,6 +912,7 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
       "返回回放列表",
     );
     await need(c, "查看商品", "返回回放列表");
+    await c.step("formal geometry", () => replayGeometry(page, frames.soldout, dev));
     await c.shot(frames.soldout);
 
     // 8. Empty list
@@ -896,6 +922,7 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
     assert.equal(emptyRes?.headers()["content-security-policy"], PROD_BASELINE_CSP, "empty list has baseline CSP");
     c.text("直播回放", "目前沒有公開回放", "先逛逛商店的商品。", "返回商店", "返回");
     await need(c, "返回商店", "返回");
+    await c.step("formal geometry", () => replayGeometry(page, frames.empty, dev));
     await c.shot(frames.empty);
 
     try { c.done(); } finally { await page.close(); }
