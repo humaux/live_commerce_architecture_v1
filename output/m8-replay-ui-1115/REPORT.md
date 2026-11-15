@@ -67,7 +67,17 @@ In accordance with strict card instructions:
 
 ---
 
-## 4. Humaux Unit Proxy Text
+## 4. PR and CI Receipts
+
+- **Draft PR**: [#636](https://github.com/humaux/live_commerce_architecture_v1/pull/636)
+- **Head SHA**: `144884f844e9740d7f67e1ae219ad05e51b6772c`
+- **Tree SHA**: `e668fb286cb469854a8d1ecbb76ea47c8d9bec6b`
+- **Automatic CI Run 1**: `43693928786` (Foundation checks, https://github.com/humaux/live_commerce_architecture_v1/actions/runs/43693928786)
+- **Automatic CI Run 2**: `43693928804` (Gates (GitHub runners), https://github.com/humaux/live_commerce_architecture_v1/actions/runs/43693928804)
+
+---
+
+## 5. Humaux Unit Proxy Text
 
 ```json
 {
