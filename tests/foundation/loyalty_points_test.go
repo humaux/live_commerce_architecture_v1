@@ -17,6 +17,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"log/slog"
 	"net/http"
@@ -25,6 +26,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -204,6 +206,61 @@ func (s *lpStore) entries(member string) int {
 	return countRows(s.t, s.f.owner, `SELECT count(*) FROM loyalty.point_entries WHERE member_id=$1`, member)
 }
 
+type lpSessionAuth struct {
+	token     string
+	hash      []byte
+	principal string
+	issuer    string
+	subject   string
+	age       func(interval string)
+	reauth    func()
+}
+
+// newSessionAuth provisions a dedicated synthetic session and binds a synthetic OIDC external identity.
+// Freshness is aged with UPDATE authenticated_at and restored by identity.complete_oidc_reauth.
+func (s *lpStore) newSessionAuth(permissions ...string) *lpSessionAuth {
+	s.t.Helper()
+	ctx := context.Background()
+	var perms []string
+	if !slices.Contains(permissions, "store:read") {
+		perms = append(perms, "store:read")
+	}
+	perms = append(perms, permissions...)
+	principal, token := lcPrincipal(s.t, s.f, s.tenant, []string{s.store}, perms...)
+	hash := sha256.Sum256([]byte(token))
+	var original time.Time
+	if err := s.f.owner.QueryRow(ctx, `SELECT authenticated_at FROM identity.sessions WHERE token_hash=$1`, hash[:]).Scan(&original); err != nil {
+		s.t.Fatalf("query authenticated_at: %v", err)
+	}
+	issuer := "https://loyalty-reauth.example.test/" + randomUUID()
+	subject := "synthetic-loyalty-actor-" + randomUUID()
+	mustExec(s.t, s.f.owner, `INSERT INTO identity.external_identities(issuer,subject,principal_id) VALUES($1,$2,$3)`, issuer, subject, principal)
+	s.t.Cleanup(func() {
+		mustExec(s.t, s.f.owner, `UPDATE identity.sessions SET authenticated_at=$2 WHERE token_hash=$1`, hash[:], original)
+		mustExec(s.t, s.f.owner, `DELETE FROM identity.external_identities WHERE issuer=$1 AND subject=$2`, issuer, subject)
+	})
+	age := func(interval string) {
+		s.t.Helper()
+		mustExec(s.t, s.f.owner, `UPDATE identity.sessions SET authenticated_at=clock_timestamp()-$2::interval WHERE token_hash=$1`, hash[:], interval)
+	}
+	reauth := func() {
+		s.t.Helper()
+		var outcome string
+		if err := s.f.owner.QueryRow(ctx, `SELECT outcome FROM identity.complete_oidc_reauth($1,$2,$3,clock_timestamp())`, hash[:], issuer, subject).Scan(&outcome); err != nil || outcome != "REAUTHENTICATED" {
+			s.t.Fatalf("complete_oidc_reauth: outcome=%q error=%v", outcome, err)
+		}
+	}
+	return &lpSessionAuth{
+		token:     token,
+		hash:      hash[:],
+		principal: principal,
+		issuer:    issuer,
+		subject:   subject,
+		age:       age,
+		reauth:    reauth,
+	}
+}
+
 // lpClassify is the refusal the merchant sees: loyalty.Classify first (the members.go order), then the shared platform sentinels.
 func lpClassify(err error) (int, string) {
 	if err == nil {
@@ -213,6 +270,10 @@ func lpClassify(err error) (int, string) {
 		return status, code
 	}
 	switch {
+	case errors.Is(err, platform.ErrReauthRequired):
+		return 403, "reauth_required"
+	case errors.Is(err, platform.ErrOwnerRoleDisabled):
+		return 403, "owner_role_disabled"
 	case errors.Is(err, platform.ErrUnauthorized):
 		return 401, "unauthorized"
 	case errors.Is(err, platform.ErrForbidden):
@@ -956,6 +1017,94 @@ func TestLoyaltyLPG05Rights(t *testing.T) {
 		_, _, err = s.adjust(s.admin, s.key("lpg05"), fm.ID, 1, "他店", nil)
 		lpWant(t, "adjust of another store's member", err, 404, "not_found")
 	})
+	t.Run("direct SQL definers require recent auth within ten minutes", func(t *testing.T) {
+		d := lpNewStore(t)
+		m := d.mustMember("測試會員-直接SQL", lpStr("lp-contact-direct"), lpStr("lp-notes-direct"))
+		d.mustAdjust(m.ID, 10, "lp-ledger-direct")
+		mErase := d.mustMember("測試會員-直接刪除", lpStr("lp-contact-erase"), lpStr("lp-notes-erase"))
+		sa := d.newSessionAuth("customers:privacy")
+
+		// 9 minutes old session is within the 10-minute window -> succeeds.
+		sa.age("9 minutes")
+		var baselineExport []byte
+		err := d.run(sa.token, func(ctx context.Context, tx pgx.Tx, _ platform.Scope) error {
+			return tx.QueryRow(ctx, `SELECT loyalty.export_member($1,$2::uuid,$3::uuid)`, sa.hash, d.store, m.ID).Scan(&baselineExport)
+		})
+		if err != nil || len(baselineExport) == 0 {
+			t.Fatalf("nine-minute session direct export: %v", err)
+		}
+
+		// Fixed intervals that fail closed: 11 minutes (stale), 2 hours (stale), -2 minutes (future clock skew), infinity, -infinity.
+		for _, interval := range []string{"11 minutes", "2 hours", "-2 minutes", "infinity", "-infinity"} {
+			t.Run("refuse_"+interval, func(t *testing.T) {
+				sa.age(interval)
+				var out []byte
+				err := d.run(sa.token, func(ctx context.Context, tx pgx.Tx, _ platform.Scope) error {
+					return tx.QueryRow(ctx, `SELECT loyalty.export_member($1,$2::uuid,$3::uuid)`, sa.hash, d.store, m.ID).Scan(&out)
+				})
+				var pg *pgconn.PgError
+				if !errors.As(err, &pg) || pg.Code != "PT403" || pg.Message != "reauth_required" {
+					t.Errorf("stale (%s) direct export: got err=%v (pg=%+v), want PT403 reauth_required", interval, err, pg)
+				}
+				if len(out) > 0 {
+					t.Errorf("refused direct export released bytes: %s", string(out))
+				}
+				var eraseOut []byte
+				err = d.run(sa.token, func(ctx context.Context, tx pgx.Tx, _ platform.Scope) error {
+					return tx.QueryRow(ctx, `SELECT loyalty.erase_member($1,$2::uuid,$3::uuid)`, sa.hash, d.store, mErase.ID).Scan(&eraseOut)
+				})
+				if !errors.As(err, &pg) || pg.Code != "PT403" || pg.Message != "reauth_required" {
+					t.Errorf("stale (%s) direct erase: got err=%v (pg=%+v), want PT403 reauth_required", interval, err, pg)
+				}
+			})
+		}
+
+		// Direct SQL fails closed for null and unknown session hash
+		for name, h := range map[string][]byte{"null hash": nil, "unknown hash": lpHash(randomToken())} {
+			t.Run(name, func(t *testing.T) {
+				var out []byte
+				err := d.run(sa.token, func(ctx context.Context, tx pgx.Tx, _ platform.Scope) error {
+					return tx.QueryRow(ctx, `SELECT loyalty.export_member($1,$2::uuid,$3::uuid)`, h, d.store, m.ID).Scan(&out)
+				})
+				var pg *pgconn.PgError
+				if !errors.As(err, &pg) || pg.Code != "PT403" || pg.Message != "reauth_required" {
+					t.Errorf("%s direct export: got err=%v, want PT403 reauth_required", name, err)
+				}
+			})
+		}
+
+		// Unknown member still yields PT404
+		sa.age("9 minutes")
+		err = d.run(sa.token, func(ctx context.Context, tx pgx.Tx, _ platform.Scope) error {
+			var out []byte
+			return tx.QueryRow(ctx, `SELECT loyalty.export_member($1,$2::uuid,$3::uuid)`, sa.hash, d.store, randomUUID()).Scan(&out)
+		})
+		var pg *pgconn.PgError
+		if !errors.As(err, &pg) || pg.Code != "PT404" {
+			t.Errorf("unknown member direct export: got err=%v, want PT404", err)
+		}
+
+		// OIDC re-auth restores freshness for the same session and actor
+		sa.age("2 hours")
+		sa.reauth()
+		var restoredExport []byte
+		err = d.run(sa.token, func(ctx context.Context, tx pgx.Tx, _ platform.Scope) error {
+			return tx.QueryRow(ctx, `SELECT loyalty.export_member($1,$2::uuid,$3::uuid)`, sa.hash, d.store, m.ID).Scan(&restoredExport)
+		})
+		if err != nil || !bytes.Equal(restoredExport, baselineExport) {
+			t.Fatalf("re-authenticated direct export: %v, equal=%t", err, bytes.Equal(restoredExport, baselineExport))
+		}
+		var eraseResult []byte
+		err = d.run(sa.token, func(ctx context.Context, tx pgx.Tx, _ platform.Scope) error {
+			return tx.QueryRow(ctx, `SELECT loyalty.erase_member($1,$2::uuid,$3::uuid)`, sa.hash, d.store, mErase.ID).Scan(&eraseResult)
+		})
+		if err != nil {
+			t.Fatalf("re-authenticated direct erase: %v", err)
+		}
+		if n := countRows(t, d.f.owner, `SELECT count(*) FROM loyalty.members WHERE id=$1 AND erased_at IS NOT NULL`, mErase.ID); n != 1 {
+			t.Fatalf("mErase was not erased after reauth: %d", n)
+		}
+	})
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------
@@ -1108,6 +1257,103 @@ func TestLoyaltyLPG06Erasure(t *testing.T) {
 		if dn != "[erased]" || cn != nil || nn != nil || erasedAt == nil || leaked != 0 {
 			t.Fatalf("after replay: name=%q contact=%v notes=%v erased_at=%v unredacted notes=%d", dn, cn, nn, erasedAt, leaked)
 		}
+	})
+	t.Run("export and erasure recent auth across aging replay and new keys", func(t *testing.T) {
+		s2 := lpNewStore(t)
+		mExp := s2.mustMember("測試會員-匯出重放", lpStr("LINE:lp-exp-contact"), lpStr("lp-exp-notes"))
+		s2.mustAdjust(mExp.ID, 30, "lp-exp-ledger")
+		mErs := s2.mustMember("測試會員-刪除重放", lpStr("LINE:lp-ers-contact"), lpStr("lp-ers-notes"))
+		s2.mustAdjust(mErs.ID, 20, "lp-ers-ledger")
+		sa := s2.newSessionAuth("customers:privacy", "customers:points", "customers:read")
+
+		// 1. Fresh session (9 minutes) produces allowed export with key1.
+		sa.age("9 minutes")
+		expKey1 := s2.key("reauth-exp")
+		initialExport, replayed, err := s2.export(sa.token, expKey1, mExp.ID)
+		if err != nil || replayed || len(initialExport) == 0 {
+			t.Fatalf("fresh export: err=%v replayed=%t len=%d", err, replayed, len(initialExport))
+		}
+		if got := countRows(t, s2.f.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='member.exported'`, s2.tenant, s2.store); got != 1 {
+			t.Fatalf("expected 1 member.exported audit row, got %d", got)
+		}
+
+		// 2. Session ages to 11 minutes (stale).
+		sa.age("11 minutes")
+
+		// Same-key replay of export: since export builds fresh body via guarded SQL definer, stale session MUST refuse with reauth_required.
+		_, _, err = s2.export(sa.token, expKey1, mExp.ID)
+		lpWant(t, "same-key export after age", err, 403, "reauth_required")
+
+		// New-key export also refuses.
+		expKey2 := s2.key("reauth-exp")
+		_, _, err = s2.export(sa.token, expKey2, mExp.ID)
+		lpWant(t, "new-key export after age", err, 403, "reauth_required")
+
+		// Erase on mErs with eraseKey1: must refuse with 403 reauth_required.
+		eraseKey1 := s2.key("reauth-erase")
+		_, _, err = s2.erase(sa.token, eraseKey1, mErs.ID)
+		lpWant(t, "erase after age", err, 403, "reauth_required")
+
+		// Assert mErs was not erased and no audit or receipt was written.
+		if n := countRows(t, s2.f.owner, `SELECT count(*) FROM loyalty.members WHERE id=$1 AND erased_at IS NOT NULL`, mErs.ID); n != 0 {
+			t.Fatalf("refused erase marked member erased: %d", n)
+		}
+		if got := countRows(t, s2.f.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='member.erased'`, s2.tenant, s2.store); got != 0 {
+			t.Fatalf("refused erase recorded audit: %d", got)
+		}
+		if got := countRows(t, s2.f.owner, `SELECT count(*) FROM ops.command_results WHERE tenant_id=$1 AND store_id=$2 AND idempotency_key=$3`, s2.tenant, s2.store, eraseKey1); got != 0 {
+			t.Fatalf("refused erase recorded command receipt: %d", got)
+		}
+
+		// Assert session is still valid (not logged out or revoked).
+		var sessionCount int
+		if err := s2.f.owner.QueryRow(context.Background(), `SELECT count(*) FROM identity.sessions WHERE token_hash=$1 AND revoked_at IS NULL AND expires_at>clock_timestamp()`, sa.hash).Scan(&sessionCount); err != nil || sessionCount != 1 {
+			t.Fatalf("stale session must remain valid: count=%d err=%v", sessionCount, err)
+		}
+
+		// 3. Restore freshness via real OIDC re-auth.
+		sa.reauth()
+
+		// Same-key replay of export now succeeds, replayed=true, content matches, audit count unchanged (audit once!).
+		replayedExport, replayed, err := s2.export(sa.token, expKey1, mExp.ID)
+		if err != nil || !replayed || !bytes.Equal(replayedExport, initialExport) {
+			t.Fatalf("reauth same-key export replay: err=%v replayed=%t equal=%t", err, replayed, bytes.Equal(replayedExport, initialExport))
+		}
+		if got := countRows(t, s2.f.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='member.exported'`, s2.tenant, s2.store); got != 1 {
+			t.Fatalf("same-key export replay must not emit second audit row: %d", got)
+		}
+
+		// New-key export succeeds, replayed=false, audit count becomes 2.
+		freshExport, replayed, err := s2.export(sa.token, expKey2, mExp.ID)
+		if err != nil || replayed || len(freshExport) == 0 {
+			t.Fatalf("reauth new-key export: err=%v replayed=%t", err, replayed)
+		}
+		if got := countRows(t, s2.f.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='member.exported'`, s2.tenant, s2.store); got != 2 {
+			t.Fatalf("new-key export must emit audit row: %d", got)
+		}
+
+		// Erase with eraseKey1 now succeeds.
+		erasure, replayed, err := s2.erase(sa.token, eraseKey1, mErs.ID)
+		if err != nil || replayed || erasure.MemberID != mErs.ID || erasure.EntriesRedacted != 1 {
+			t.Fatalf("reauth erase: err=%v replayed=%t erasure=%+v", err, replayed, erasure)
+		}
+		if got := countRows(t, s2.f.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='member.erased'`, s2.tenant, s2.store); got != 1 {
+			t.Fatalf("erase must emit member.erased audit row: %d", got)
+		}
+
+		// 4. Age session again to 2 hours.
+		sa.age("2 hours")
+
+		// Replay of erase with eraseKey1 returns stored receipt (LP12 erasure stored response).
+		erasureReplay, replayed, err := s2.erase(sa.token, eraseKey1, mErs.ID)
+		if err != nil || !replayed || erasureReplay != erasure {
+			t.Fatalf("erasure replay with stored receipt: err=%v replayed=%t got=%+v want=%+v", err, replayed, erasureReplay, erasure)
+		}
+
+		// New key on already-erased member: executes definer, which refuses with 403 reauth_required (recent-auth checked before member_erased).
+		eraseKey2 := s2.key("reauth-erase")
+		_, _, err = s2.erase(sa.token, eraseKey2, mErs.ID)
+		lpWant(t, "new-key erase on erased member while stale", err, 403, "reauth_required")
 	})
 }
 
@@ -1323,6 +1569,82 @@ func TestLoyaltyLPG09HTTPRoutesLogNoPII(t *testing.T) {
 	if strings.Contains(logs.String(), lpMarker) || strings.Contains(logs.String(), "測試會員") {
 		t.Errorf("member PII in the Go API log:\n%s", logs.String())
 	}
+	t.Run("privacy routes refuse stale auth with 403 reauth_required on the wire", func(t *testing.T) {
+		sHTTP := lpNewStore(t)
+		mHTTP := sHTTP.mustMember("測試會員-HTTP", lpStr("LINE:lp-http-contact"), lpStr("lp-http-notes"))
+		sHTTP.mustAdjust(mHTTP.ID, 12, "lp-http-ledger")
+		mHTTPErase := sHTTP.mustMember("測試會員-HTTP-刪除", lpStr("LINE:lp-http-erase"), lpStr("lp-http-erase-notes"))
+		sa := sHTTP.newSessionAuth("customers:privacy", "customers:points", "customers:read")
+
+		httpCall := func(tok, method, path, key string) (int, map[string]any, http.Header, []byte) {
+			t.Helper()
+			req, _ := http.NewRequest(method, srv.URL+"/v1/admin/stores/"+sHTTP.store+path, bytes.NewReader([]byte("{}")))
+			req.Header.Set("Authorization", "Bearer "+tok)
+			req.Header.Set("Content-Type", "application/json")
+			if key != "" {
+				req.Header.Set("Idempotency-Key", key)
+			}
+			res, err := http.DefaultClient.Do(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer res.Body.Close()
+			bodyBytes, _ := io.ReadAll(res.Body)
+			var out map[string]any
+			_ = json.Unmarshal(bodyBytes, &out)
+			return res.StatusCode, out, res.Header, bodyBytes
+		}
+
+		// Fresh 9 minutes session succeeds.
+		sa.age("9 minutes")
+		expKey := sHTTP.key("http-exp")
+		code, _, hdr, body := httpCall(sa.token, "POST", "/members/"+mHTTP.ID+"/export", expKey)
+		if code != 200 || !strings.Contains(hdr.Get("Content-Disposition"), "attachment;") {
+			t.Fatalf("fresh session export: code=%d hdr=%v body=%s", code, hdr, string(body))
+		}
+
+		// Stale sessions (11 minutes, 2 hours) refuse with exact 403 reauth_required on both export and erasure.
+		for _, interval := range []string{"11 minutes", "2 hours"} {
+			t.Run("refuse_"+interval, func(t *testing.T) {
+				sa.age(interval)
+
+				// Export refusal
+				c, out, h, b := httpCall(sa.token, "POST", "/members/"+mHTTP.ID+"/export", sHTTP.key("http-exp-stale"))
+				if c != http.StatusForbidden || out["code"] != "reauth_required" {
+					t.Errorf("export refusal status=%d code=%v (want 403 reauth_required), body=%s", c, out["code"], string(b))
+				}
+				if disp := h.Get("Content-Disposition"); disp != "" {
+					t.Errorf("refused export released attachment header: %q", disp)
+				}
+				if bytes.Contains(b, []byte("lp-http-notes")) || bytes.Contains(b, []byte("lp-http-contact")) {
+					t.Errorf("refused export released member PII in body: %s", string(b))
+				}
+
+				// Erasure refusal
+				c, out, _, b = httpCall(sa.token, "POST", "/members/"+mHTTPErase.ID+"/erasure", sHTTP.key("http-erase-stale"))
+				if c != http.StatusForbidden || out["code"] != "reauth_required" {
+					t.Errorf("erasure refusal status=%d code=%v (want 403 reauth_required), body=%s", c, out["code"], string(b))
+				}
+				if n := countRows(t, sHTTP.f.owner, `SELECT count(*) FROM loyalty.members WHERE id=$1 AND erased_at IS NOT NULL`, mHTTPErase.ID); n != 0 {
+					t.Fatalf("member was erased during refused call: %d", n)
+				}
+				if count := countRows(t, sHTTP.f.owner, `SELECT count(*) FROM ops.audit_events WHERE tenant_id=$1 AND store_id=$2 AND action='member.erased'`, sHTTP.tenant, sHTTP.store); count != 0 {
+					t.Fatalf("refused erasure emitted audit row: %d", count)
+				}
+			})
+		}
+
+		// Reauth restores freshness
+		sa.reauth()
+		eraseKey := sHTTP.key("http-erase-fresh")
+		c, _, _, b := httpCall(sa.token, "POST", "/members/"+mHTTPErase.ID+"/erasure", eraseKey)
+		if c != 200 {
+			t.Fatalf("re-authenticated erasure: code=%d body=%s", c, string(b))
+		}
+		if n := countRows(t, sHTTP.f.owner, `SELECT count(*) FROM loyalty.members WHERE id=$1 AND erased_at IS NOT NULL`, mHTTPErase.ID); n != 1 {
+			t.Fatalf("member was not erased after reauth: %d", n)
+		}
+	})
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------

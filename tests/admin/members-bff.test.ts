@@ -50,6 +50,9 @@ test('unauthenticated/cross-store/CSRF/query/MIME/malformed JSON refusals never 
 test('permission/refusal status and code preserved safely; never retries or leaks upstream diagnostics',async()=>{
  for(const [code,n] of [['forbidden',403],['points_insufficient',409],['member_erased',409],['export_too_large',409],['limit_reached',422],['retry_later',503]] as const){ status=n;payload=JSON.stringify({code,message:'Synthetic private diagnostic'});const before=seen.length;const r=await call('[member]/adjustments','POST',{delta:1,note:'test'});assert.equal(r.status,n);const text=await r.text();assert.equal(JSON.parse(text).code,code);assert.ok(!text.includes('Synthetic private'));assert.equal(seen.length,before+1);assert.equal(seen.at(-1)!.key,'members-samekey-123');}
 });
+test('export and erasure preserve upstream 403 reauth_required envelope without attachment or retry',async()=>{
+ for(const path of ['[member]/export','[member]/erasure'] as const){ status=403;payload=JSON.stringify({code:'reauth_required',message:'Synthetic private diagnostic'});const before=seen.length;const r=await call(path,'POST',{});assert.equal(r.status,403,path);assert.equal(r.headers.get('content-disposition'),null,'refused export/erasure must not send attachment header');const text=await r.text();assert.equal(JSON.parse(text).code,'reauth_required');assert.ok(!text.includes('Synthetic private'));assert.equal(seen.length,before+1);assert.equal(seen.at(-1)!.key,'members-samekey-123');}
+});
 test('manual BFF admits only frozen optional member_award with/without discount',async()=>{
  const {validManualBody}=await import('../../apps/admin/lib/merchant-tools-model.ts');
  const base={customer:{name:'Synthetic'},delivery:{},items:[],locale:'en',payment_mode:'cash_on_delivery'};
