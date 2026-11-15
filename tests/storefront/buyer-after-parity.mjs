@@ -46,6 +46,13 @@ const claimState = { redeem: "ok" };
 const SKU = uid(900), OTHER_SKU = uid(901);
 const NAME = { tote: "焦糖托特包", bag: "收納袋" };
 
+// FULL production shopping CSP, pinned as an independent literal from the frozen f319 storefront next.config.ts (script-src 'self' 'unsafe-inline' is
+// its production-only branch). The golden is never derived from the response under test, so a weakened base policy cannot pass.
+const PROD_BASELINE_CSP =
+  "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self' https://logistics-stage.ecpay.com.tw/Express/map https://logistics.ecpay.com.tw/Express/map";
+// The single storefront-v2 §G6 exception: the same complete policy plus the official player frame.
+const REPLAY_DETAIL_CSP = `${PROD_BASELINE_CSP}; frame-src https://www.facebook.com/plugins/video.php`;
+
 function makeOrder(n, o = {}) {
   const mode = o.mode ?? "card", kind = o.kind ?? "home", line = o.line ?? "tote";
   const unit = o.unit ?? 128000, total = unit;
@@ -744,13 +751,14 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
     );
     const c = new Check(page, `replays ${dev}`);
 
-    // 1. List page
+    // 1. List page: the full production baseline is the pinned literal, never the response under test.
     const listRes = await page.goto(`${origin}/zh-TW/replays`);
     await c.load();
-    const baselineCSP = listRes?.headers()["content-security-policy"] || "";
-    assert.ok(baselineCSP, "list page must deliver Content-Security-Policy");
-    assert.ok(!baselineCSP.includes("frame-src"), "baseline shopping CSP must not include frame-src");
-    assert.ok(!baselineCSP.includes("facebook.com"), "baseline shopping CSP must not include facebook.com");
+    assert.equal(
+      listRes?.headers()["content-security-policy"],
+      PROD_BASELINE_CSP,
+      "list page must deliver the full production baseline CSP"
+    );
     c.text("直播回放", "秋日選物直播", "10/30 14:00 已結束", "返回", "返回商店", "晨光選物");
     await need(c, "返回", "觀看回放", "返回商店");
     await c.shot(frames.list);
@@ -772,7 +780,7 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
     const detailCSP = detailRes?.headers()["content-security-policy"] || "";
     assert.equal(
       detailCSP,
-      `${baselineCSP}; frame-src https://www.facebook.com/plugins/video.php`,
+      REPLAY_DETAIL_CSP,
       "detail page must deliver exact baseline CSP plus single frame-src directive"
     );
 
@@ -805,7 +813,7 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
     await c.load();
     assert.equal(
       reloadRes?.headers()["content-security-policy"],
-      `${baselineCSP}; frame-src https://www.facebook.com/plugins/video.php`,
+      REPLAY_DETAIL_CSP,
       "reloaded detail retains detail CSP"
     );
     c.text("秋日選物直播", "10/30 14:00 已結束", "目前有貨", "查看商品");
@@ -827,7 +835,7 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
     ]);
     await c.load();
     assert.equal(await page.locator(".sf-header").count() > 0, true);
-    assert.equal(prodRes?.headers()["content-security-policy"], baselineCSP, "product page restores baseline CSP");
+    assert.equal(prodRes?.headers()["content-security-policy"], PROD_BASELINE_CSP, "product page restores baseline CSP");
 
     // 6. Navigation back to replays and store
     await page.goto(`${origin}/zh-TW/replays/${replayInStock.session_id}`);
@@ -844,7 +852,7 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
       click(page, btn(page, "返回回放列表").first(), { page: "直播回放詳情", control: "返回回放列表", expected: "/zh-TW/replays" }),
     ]);
     await c.load();
-    assert.equal(backListRes?.headers()["content-security-policy"], baselineCSP, "back to list restores baseline CSP");
+    assert.equal(backListRes?.headers()["content-security-policy"], PROD_BASELINE_CSP, "back to list restores baseline CSP");
     await Promise.all([
       page.waitForURL(/\/zh-TW$/, { timeout: 10000 }),
       click(page, btn(page, "返回商店").first(), { page: "直播回放列表", control: "返回商店", expected: "/zh-TW" }),
@@ -856,7 +864,7 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
     await c.load();
     assert.equal(
       soldRes?.headers()["content-security-policy"],
-      `${baselineCSP}; frame-src https://www.facebook.com/plugins/video.php`,
+      REPLAY_DETAIL_CSP,
       "sold-out detail delivers baseline CSP plus frame-src"
     );
     const soldIframe = page.locator("iframe");
@@ -885,7 +893,7 @@ test("replays · list, detail in-stock, sold-out, empty list, navigation, and pe
     api.state.replays = [];
     const emptyRes = await page.goto(`${origin}/zh-TW/replays`);
     await c.load();
-    assert.equal(emptyRes?.headers()["content-security-policy"], baselineCSP, "empty list has baseline CSP");
+    assert.equal(emptyRes?.headers()["content-security-policy"], PROD_BASELINE_CSP, "empty list has baseline CSP");
     c.text("直播回放", "目前沒有公開回放", "先逛逛商店的商品。", "返回商店", "返回");
     await need(c, "返回商店", "返回");
     await c.shot(frames.empty);
@@ -917,19 +925,20 @@ test("replays · locale, negative refusals, and no-cartwrite integrity", async (
   const resMissing = await page.goto(`${origin}/zh-TW/replays/00000000-0000-4000-8000-000000000999`);
   assert.equal(resMissing?.status(), 404);
 
-  // Bounded actual Next response header checks for 3 valid locales (header path coverage using missing canonical UUID 404)
+  // Bounded actual Next response header checks for 3 valid locales (header path coverage using missing canonical UUID 404). Each probe must carry the
+  // exact detail policy (baseline + single frame-src), never an empty or partial header.
   const probeUUID = "00000000-0000-4000-8000-000000000999";
   for (const loc of ["zh-CN", "zh-TW", "en"]) {
     const locRes = await page.goto(`${origin}/${loc}/replays/${probeUUID}`);
     assert.equal(locRes?.status(), 404, `${loc} probe is header path coverage with missing UUID 404`);
-    const csp = locRes?.headers()["content-security-policy"] || "";
-    assert.ok(
-      csp.includes("frame-src https://www.facebook.com/plugins/video.php"),
-      `${loc} replay detail route must deliver frame-src directive`
+    assert.equal(
+      locRes?.headers()["content-security-policy"],
+      REPLAY_DETAIL_CSP,
+      `${loc} replay detail route must deliver the exact detail policy`
     );
   }
 
-  // Paths that must lack new frame-src permission
+  // Paths that must deliver the exact production baseline CSP: no frame-src permission and no empty-header pass.
   const negativePaths = [
     "/zh-TW/replays",
     "/zh-TW/products/sample-slug",
@@ -939,9 +948,11 @@ test("replays · locale, negative refusals, and no-cartwrite integrity", async (
   ];
   for (const p of negativePaths) {
     const r = await page.goto(`${origin}${p}`);
-    const csp = r?.headers()["content-security-policy"] || "";
-    assert.ok(!csp.includes("frame-src"), `${p} must lack frame-src permission`);
-    assert.ok(!csp.includes("facebook.com"), `${p} must lack facebook.com permission`);
+    assert.equal(
+      r?.headers()["content-security-policy"],
+      PROD_BASELINE_CSP,
+      `${p} must deliver the exact baseline CSP (no frame-src, no empty header)`
+    );
   }
 
   // Neutral payment return policy retained (positive assertion from lib/payment-return.ts)
