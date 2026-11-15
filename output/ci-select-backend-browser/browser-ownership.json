@@ -250,7 +250,7 @@
     "tests/admin/w6-real-route-loader.mjs": "64c32f6e3c9088d1395c5fc8cb5aeaa2b62c635e37f41558daef4932af4ccc73",
     "tests/admin/w6-route-seam.test.mjs": "8e2254dcb729b718a962dd849e2ec119a1ec9dafc6ff07990d205f85582fee87",
     "tests/browser-evidence.mjs": "37fca6070130b26a900e723a767c6d3034c6e721a43fdf3e188a7b9e91fd829a",
-    "tests/e2e/deal-loop.spec.ts": "070afc2c1ab9d815c1e7e6b5e18abbe7289ad2ec64b93d4168ad05453366de5a",
+    "tests/e2e/deal-loop.spec.ts": "6492af3c299472a378f334788c864b799c16a8e48141086e2c2175e8f84e8308",
     "tests/e2e/live-tools.spec.ts": "71b8ca6cfeb2a186eb6f78f820670c2fd7300fb2a9fbb90ea1e49e5f65adb16c",
     "tests/foundation/acceptance_test.go": "6ed85632c5029cfa218c3ea7ac32ccf69d361c71a5ac9d673663250d9b8688e4",
     "tests/foundation/account_onboarding_test.go": "e573d6f56f0eabe35231d87f21335463d1790801ca09a52d3e81f973941fcade",
