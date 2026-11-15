@@ -22,6 +22,7 @@ import { MemberReadState, type MembersProps } from "./MemberList";
 import { membersCopy } from "./copy";
 import s from "./members.module.css";
 import { MemberForms } from "./MemberForms";
+import { MemberPrivacyDialogs } from "./MemberPrivacyDialogs";
 import { MemberEditDialog } from "./MemberEditDialog";
 export function MemberDetail({
   locale,
@@ -50,7 +51,7 @@ export function MemberDetail({
       storeName={store?.name ?? c.noStore}
       active="members"
     >
-      <main className={s.page} data-testid="member-detail">
+      <main className={s.page} data-testid="member-detail" data-privacy-role={read.status === "ready" && data?.member.erased_at ? "Tombstone" : undefined}>
         <Link
           data-testid="member-back"
           prefetch={false}
@@ -68,6 +69,15 @@ export function MemberDetail({
           }
         />
         <MemberEditDialog
+          locale={locale}
+          store={store}
+          member={data?.member}
+          scope={`${renderKey}|${locale}|${store?.id}|${member}`}
+          boundary={read.boundary}
+          status={read.status}
+          onRefresh={read.reload}
+        />
+        <MemberPrivacyDialogs
           locale={locale}
           store={store}
           member={data?.member}
