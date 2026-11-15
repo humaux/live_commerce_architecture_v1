@@ -303,6 +303,18 @@ test("T12 deal loop: wizard store, Studio, claim source, signed Meta comment, pr
     await page.getByTestId("toggle-order-history").click();
     const detailResponse = page.waitForResponse((r) => new URL(r.url()).pathname === `/api/buyer/orders/${order}` && r.request().method() === "GET");
     await page.locator(`button[data-order-id="${order}"]`).click();
+    const observedDetail = await detailResponse;
+    if (observedDetail.status() === 503) {
+      // Temporary boundary diagnostic: selected headers only; never read the buyer response body.
+      const mime = await observedDetail.headerValue("content-type");
+      const requestID = await observedDetail.headerValue("x-request-id");
+      await writeFile(path.join(evidence, "buyer-order-503.json"), JSON.stringify({
+        status: observedDetail.status(),
+        mime: mime === null ? "missing" : mime.split(";", 1)[0].trim().toLowerCase() === "application/json" ? "json" : "other",
+        request_id: requestID !== null && /^[0-9a-f]{32}$/i.test(requestID) ? requestID : "UNKNOWN",
+        code: "UNKNOWN",
+      }, null, 2), { mode: 0o600 });
+    }
     expect((await detailResponse).status()).toBe(200);
     await expect(page.getByTestId("order-id")).toHaveText(order);
   }

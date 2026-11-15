@@ -56,6 +56,28 @@ const INBOUND_DEADLINE = 12_000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const KEY = /^[A-Za-z0-9_.:-]{8,128}$/;
 const TOKEN = /^[A-Za-z0-9_-]{43}$/;
+// Temporary diagnostic identity only: never changes transport or response handling.
+const orderDetailTransportFailures = new WeakSet<Response>();
+
+function logOrderDetail503(
+  response: Response,
+  stage: "transport" | "upstream-http" | "upstream-json",
+  upstream?: Response,
+  code: "unavailable" | "UNKNOWN" = "UNKNOWN",
+): void {
+  if (response.status !== 503) return;
+  const requestID = response.headers.get("X-Request-ID");
+  const mime = upstream?.headers.get("content-type") ?? null;
+  // Bind only the final public response ID; no upstream IDs, body, URL or exception text.
+  console.info(JSON.stringify({
+    stage,
+    request_id: requestID !== null && /^[0-9a-f]{32}$/i.test(requestID) ? requestID : "UNKNOWN",
+    status: response.status,
+    upstream_mime: mime === null ? "missing" : mime.split(";", 1)[0].trim().toLowerCase() === "application/json" ? "json" : "other",
+    upstream_status: upstream?.status ?? "UNKNOWN",
+    code,
+  }));
+}
 
 type Config = { api: string; bff: string; signing: Buffer; ttl: number };
 type Envelope = {
@@ -827,7 +849,10 @@ async function upstream(
       signal: AbortSignal.any([request.signal, AbortSignal.timeout(12000)]),
     });
   } catch {
-    return failure(503, "unavailable");
+    const response = failure(503, "unavailable");
+    if (method === "GET" && path.startsWith("orders/") && UUID.test(path.slice(7)))
+      orderDetailTransportFailures.add(response);
+    return response;
   }
 }
 
@@ -1079,6 +1104,7 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
   if (selected.invalidID) return fail(422, "invalid_request");
   if (!selected.route) return fail(405, "method_not_allowed");
   const target = selected.route;
+  const orderDetail = request.method === "GET" && target.privatePath.startsWith("orders/") && UUID.test(target.privatePath.slice(7));
   // The claim token travels only in its header and only on the two claim routes; it is
   // never read from a path, query or body and never echoed (live-keyword-claims-v1 §7.2).
   const claimToken = request.headers.get("x-commerce-claim-token");
@@ -1238,7 +1264,11 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
     key ?? undefined,
     claimToken ?? undefined,
   );
-  if (request.signal.aborted) return fail(503, "unavailable");
+  if (request.signal.aborted) {
+    const final = fail(503, "unavailable");
+    if (orderDetail) logOrderDetail503(final, "transport", orderDetailTransportFailures.has(response) ? undefined : response, "unavailable");
+    return final;
+  }
   // Erasure revokes the capability (customers-billing-v1 §5): the cookie is cleared on the 200 and on the replay 410.
   const erasure = target.privatePath === "privacy/erasure";
   const revoked = {
@@ -1249,10 +1279,19 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
     gone.headers.append("Set-Cookie", revoked["Set-Cookie"]);
     return gone;
   }
-  if (!response.ok) return upstreamError(response, handoff || !!target.returnRequest);
+  if (!response.ok) {
+    if (!orderDetail) return upstreamError(response, handoff || !!target.returnRequest);
+    const final = await upstreamError(response, handoff || !!target.returnRequest);
+    const transport = orderDetailTransportFailures.has(response);
+    logOrderDetail503(final, transport ? "transport" : "upstream-http", transport ? undefined : response);
+    return final;
+  }
   const data = await upstreamJSON(response, !!target.payment || !!target.returnRequest);
-  if (request.signal.aborted || data === null || typeof data !== "object")
-    return fail(503, "unavailable");
+  if (request.signal.aborted || data === null || typeof data !== "object") {
+    const final = fail(503, "unavailable");
+    if (orderDetail) logOrderDetail503(final, request.signal.aborted ? "transport" : "upstream-json", response, "unavailable");
+    return final;
+  }
   if (!validBuyerReturnResponse(target, response.status, data)) return fail(503, "unavailable");
   if (
     target.cvs &&
