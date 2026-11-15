@@ -407,7 +407,7 @@
     "tests/foundation/external_operation_authority_test.go": "63e1ed2169231aae49c4326913a5b7ac179eaa818fe84ec49ee046a27ccffca3",
     "tests/foundation/external_operation_test.go": "876a051238201e084e984d1810d255002cbf0d155b7c2d4b8de8bcb4fa81e478",
     "tests/foundation/foundation_integration_test.go": "ff41c0959a9e6418527268173cf5017c9bc688feb6532712305097f0780ad1a6",
-    "tests/foundation/harness_pool_capacity_test.go": "362eb9943bfa7635a4cf783ee1714900cfbb16cae4a1a779ce14ee19319f746d",
+    "tests/foundation/harness_pool_capacity_test.go": "9980f37cdb95946ea8fd81be8afaa756824f80b14ac52296f12900aa0b5e2ea4",
     "tests/foundation/harness_pool_release_test.go": "6adb76d92a9ef5c32b5e38d1c11fd6a3db22c497a6f887868cb55b546e429331",
     "tests/foundation/home_cod_defect_test.go": "e12ff163a199022675a2d394496f8cacd486c6a26d29f28e0a55f14279c0ed5b",
     "tests/foundation/home_cod_review_test.go": "570f533e9612f02f1b527418965ce030571b3616a5d56f62e2e021930fe736b9",
