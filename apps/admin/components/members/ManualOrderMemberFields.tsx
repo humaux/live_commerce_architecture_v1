@@ -1,5 +1,6 @@
 // Purpose: embedded member search/create/selection for the manual order snapshot.
-// Depends on: existing guarded reads and immutable member commands; used only by ManualOrder.
+// Depends on: existing guarded reads and immutable member commands.
+// Used by: ManualOrder.
 // Invariants: no write retries after UNKNOWN; query/cursor/body remain private memory; read authority never grants points permission.
 "use client";
 import { useEffect, useRef, useState } from "react";
@@ -36,6 +37,7 @@ export function ManualOrderMemberFields(p:Props) {
   },[p.enabled,permitted,p.boundary,read.status]);
   if(!authority.current.enabled || !p.boundary) return null;
   const locked=p.disabled||step==="pending"||step==="unknown";
+  const lockedReason=locked?(step==="unknown"?c.unknown:c.loading):undefined;
   function choose(member:MemberRow) { if(locked)return; p.onChange({...p.value,member});p.onName(member.display_name);setCreating(false);setQuery("");setAfter(null); }
   async function save() {
     if(locked || active.current || !name.trim() || Array.from(name.trim()).length>60)return;
@@ -66,16 +68,16 @@ export function ManualOrderMemberFields(p:Props) {
       <label>{c.name}<input data-testid="manual-member-create-name" value={name} maxLength={60} disabled={locked||step==="confirm"} onChange={e=>{setName(e.target.value);setStep("edit");}}/></label>
       <label>{c.contact}<input data-testid="manual-member-create-contact" value={contact} maxLength={120} disabled={locked||step==="confirm"} onChange={e=>setContact(e.target.value)}/></label>
       {error&&<p role="alert" className={s.error}>{error}</p>}
-      <div className={s.actions}><Button type="button" data-testid="manual-member-create-submit" disabled={locked||!name.trim()} onClick={()=>void save()}>{step==="pending"?c.loading:step==="confirm"?c.confirm:c.select}</Button>
-      <Button type="button" variant="secondary" data-testid="manual-member-create-cancel" disabled={locked} onClick={()=>{setCreating(false);setStep("edit");setError("");p.onBusy(false);}}>{c.cancel}</Button></div></>}
+      <div className={s.actions}><Button type="button" data-testid="manual-member-create-submit" disabledReason={lockedReason||(!name.trim()?c.name:undefined)} loading={step==="pending"} loadingLabel={c.loading} onClick={()=>void save()}>{step==="pending"?c.loading:step==="confirm"?c.confirm:c.select}</Button>
+      <Button type="button" variant="secondary" data-testid="manual-member-create-cancel" disabledReason={lockedReason} onClick={()=>{setCreating(false);setStep("edit");setError("");p.onBusy(false);}}>{c.cancel}</Button></div></>}
     </div> : p.value.member ? <div className={s.selected} data-testid="manual-member-selected"><div><strong>{p.value.member.display_name}</strong><small>{p.value.member.contact_note}</small></div>
-      <Button type="button" variant="secondary" data-testid="manual-member-change" disabled={locked} onClick={()=>p.onChange({...p.value,member:null})}>{c.change}</Button>
-      <Button type="button" variant="secondary" data-testid="manual-member-remove" disabled={locked} onClick={()=>p.onChange({member:null,points:""})}>{c.remove}</Button></div> : <>
+      <Button type="button" variant="secondary" data-testid="manual-member-change" disabledReason={lockedReason} onClick={()=>p.onChange({...p.value,member:null})}>{c.change}</Button>
+      <Button type="button" variant="secondary" data-testid="manual-member-remove" disabledReason={lockedReason} onClick={()=>p.onChange({member:null,points:""})}>{c.remove}</Button></div> : <>
       {readAllowed&&<><label>{c.member}<input data-testid="manual-member-query" placeholder={c.query} value={query} maxLength={60} disabled={locked} onChange={e=>{setQuery(e.target.value);setAfter(null);}}/></label>
       {read.status==="loading"?<p role="status">{c.loading}</p>:read.status==="ready"?<div className={s.results} data-testid="manual-member-results">
         {read.data?.members.length===0&&<p>{c.empty}</p>}{read.data?.members.map(member=><button type="button" key={member.id} data-member-id={member.id} disabled={locked} onClick={()=>choose(member)}><strong>{member.display_name}</strong><small>{member.contact_note}</small></button>)}
-        {read.data?.next_cursor&&<Button type="button" disabled={locked} onClick={()=>setAfter(read.data!.next_cursor)}>{c.more}</Button>}</div>:<p role="status">{c.failed}<Button type="button" onClick={read.reload}>{c.refresh}</Button></p>}</>}
-      <Button type="button" data-testid="manual-member-create-open" disabled={locked} onClick={()=>{setCreating(true);setName(query);setStep("edit");}}>{c.create}</Button>
+        {read.data?.next_cursor&&<Button type="button" disabledReason={lockedReason} onClick={()=>setAfter(read.data!.next_cursor)}>{c.more}</Button>}</div>:<p role="status">{c.failed}<Button type="button" onClick={read.reload}>{c.refresh}</Button></p>}</>}
+      <Button type="button" data-testid="manual-member-create-open" disabledReason={lockedReason} onClick={()=>{setCreating(true);setName(query);setStep("edit");}}>{c.create}</Button>
     </>}
     {!creating&&<><label>{c.points}<input data-testid="manual-member-points" inputMode="numeric" value={p.value.points} disabled={locked} aria-invalid={invalid} onChange={e=>p.onChange({...p.value,points:e.target.value})}/></label><p className={s.muted}>{c.optional}</p>
     {(invalid || (p.value.points!==""&&!p.value.member))&&<p role="alert" className={s.error} data-testid="manual-member-error">{invalid?c.invalid:c.needMember}</p>}</>}

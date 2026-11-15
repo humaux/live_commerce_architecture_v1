@@ -1,4 +1,5 @@
 // Purpose: typed three-language order loyalty copy; used by order member fields, results and deduct panel.
+// Used by: manual order member fields, award result, order points panel and deduct dialog.
 // Depends on: Locale only. No server facts are inferred from display copy.
 import type { Locale } from "@live-commerce/i18n";
 type Copy = { truncated:string; title:string; member:string; query:string; search:string; create:string; name:string; contact:string;

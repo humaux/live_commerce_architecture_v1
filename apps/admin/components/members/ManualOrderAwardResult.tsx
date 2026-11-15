@@ -1,6 +1,8 @@
-// Purpose: successful-order award outcome; depends on DSH frozen ManualMemberAward and current permitted member read.
-// Used by ManualOrder; never resubmits the order to repair an award and never adds points to a stale selected balance.
+// Purpose: successful-order award outcome.
+// Depends on: frozen ManualMemberAward, permitted member read and centralized decimal formatting.
+// Used by: ManualOrder; never resubmits the order to repair an award and never adds points to a stale selected balance.
 "use client";
+import { decimal } from "@live-commerce/format";
 import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
 import type { Store } from "@/lib/model";
@@ -16,6 +18,6 @@ export function ManualOrderAwardResult({award,locale,store,scope,boundary}:{awar
   return <section className={s.panel} data-testid="manual-member-award-result" data-award-state={award.state} data-award-reason={award.state==="not_awarded"?award.reason:undefined}>
     <h3>{award.state==="awarded"?c.awarded:c.notAwarded}</h3><p>{award.points}</p>
     {award.state==="not_awarded"&&<p>{c.reasons[award.reason]}</p>}
-    {allowed&&read.status==="ready"&&read.data&&<><p>{read.data.member.display_name} · {c.balance}: {read.data.member.balance.toLocaleString(locale)}</p><Link href={`/${locale}/members/${award.member_id}?store=${store.id}`}>{c.record}</Link></>}
+    {allowed&&read.status==="ready"&&read.data&&<><p>{read.data.member.display_name} · {c.balance}: {decimal(locale,read.data.member.balance,0)}</p><Link href={`/${locale}/members/${award.member_id}?store=${store.id}`}>{c.record}</Link></>}
   </section>;
 }

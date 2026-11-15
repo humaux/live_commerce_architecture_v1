@@ -1,7 +1,9 @@
-// Purpose: dedicated LP19 editable deduct confirmation; used by OrderPointsPanel.
+// Purpose: dedicated LP19 editable deduct confirmation.
+// Used by: OrderPointsPanel.
 // Depends on: existing adjustPoints and session fence, DS controls. UNKNOWN can only refresh reads.
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { decimal } from "@live-commerce/format";
 import { Button } from "@live-commerce/ui/ds";
 import type { Locale } from "@live-commerce/i18n";
 import { adjustPoints, MemberWriteError, type Member, type OrderPointEntry } from "@/lib/members-client";
@@ -18,6 +20,7 @@ export function OrderDeductDialog(p:Props) {
   const confirmed=useRef(false);
   const authority=useRef(p);authority.current=p;
   const blocked=role==="Pending"||role==="Unknown";
+  const blockedReason=blocked?(role==="Unknown"?c.unknown:c.loading):undefined;
   useEffect(()=>{
     const opener=document.activeElement;
     dialog.current?.showModal();
@@ -51,7 +54,7 @@ export function OrderDeductDialog(p:Props) {
   return <dialog ref={dialog} className={s.dialog} data-testid="order-points-deduct-dialog" data-order-points-role={role} aria-labelledby="order-points-deduct-title" onCancel={e=>{e.preventDefault();if(!blocked)p.onClose();}}>
     <div className={s.panel}><h2 id="order-points-deduct-title">{c.deduct}</h2>
     <p>{c.member}: {p.award.member_display_name}</p><p className={s.muted}>{c.adjustment} · {p.order.slice(0,8)}</p>
-    {p.member&&<p>{c.balance}: {p.member.balance.toLocaleString(p.locale)}</p>}
+    {p.member&&<p>{c.balance}: {decimal(p.locale,p.member.balance,0)}</p>}
     {role==="Unknown"?<><p role="status">{error||c.unknown}</p><Button type="button" data-testid="order-points-deduct-refresh" onClick={()=>void p.onRefresh().then(ok=>{if(ok&&confirmed.current)p.onClose();})}>{c.refresh}</Button></>:<>
       <label>{c.amount}<input data-testid="order-points-deduct-amount" inputMode="numeric" value={amount} disabled={blocked} aria-invalid={!validOrderPoints(amount)||role==="Insufficient"} onChange={e=>{setAmount(e.target.value);setRole("Confirm");setError("");}}/></label>
       {!validOrderPoints(amount)&&<p className={s.error}>{c.invalid}</p>}
@@ -59,8 +62,8 @@ export function OrderDeductDialog(p:Props) {
       {role==="EmptyNote"&&<p className={s.error} role="alert">{c.required}</p>}
       {p.member&&validOrderPoints(amount)&&<p>{c.preview}: {p.member.balance} → {p.member.balance-Number(amount)}</p>}
       {error&&<p className={s.error} role="alert">{error}</p>}
-      <div className={s.actions}><Button type="button" data-testid="order-points-deduct-submit" disabled={blocked||!validOrderPoints(amount)||!p.permitted} onClick={()=>void submit()}>{role==="Pending"?c.loading:c.confirm}</Button>
-      <Button type="button" variant="secondary" data-testid="order-points-deduct-cancel" disabled={blocked} onClick={p.onClose}>{c.cancel}</Button></div>
+      <div className={s.actions}><Button type="button" data-testid="order-points-deduct-submit" disabledReason={blockedReason||(!validOrderPoints(amount)?c.invalid:!p.permitted?c.refused:undefined)} loading={role==="Pending"} loadingLabel={c.loading} onClick={()=>void submit()}>{role==="Pending"?c.loading:c.confirm}</Button>
+      <Button type="button" variant="secondary" data-testid="order-points-deduct-cancel" disabledReason={blockedReason} onClick={p.onClose}>{c.cancel}</Button></div>
     </>}
     </div></dialog>;
 }
