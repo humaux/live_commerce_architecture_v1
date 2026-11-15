@@ -14,6 +14,8 @@ const corpus = required("LC_W6UI_PRIVACY_MEMBER").split(",");
 if (corpus.length !== 9 || new Set(corpus).size !== 9) throw Error("LC_W6UI_PRIVACY_MEMBER requires 9 distinct ids");
 const evidenceLedger: { case: string; page?: string; control?: string; action: string; expected?: string; actual?: string; result: string }[] = [];
 const completed: string[] = [];
+// Artifact retention only: role/locale/viewport/evidence path, never member ids or PII.
+const visual: { role: string; locale: string; width: number; height: number; path: string }[] = [];
 test.describe.configure({ mode: "serial" });
 test.beforeEach(async ({}, info) => { completed.push(info.title); });
 test.afterEach(async ({}, info) => {
@@ -22,6 +24,7 @@ test.afterEach(async ({}, info) => {
 });
 test.afterAll(async () => {
   await writeFile(path.join(evidence, "members-privacy-completion.json"), JSON.stringify({ cases: completed }, null, 2));
+  await writeFile(path.join(evidence, "members-privacy-visual.json"), JSON.stringify({ captures: visual }, null, 2));
 });
 
 async function ctl(resource: string, mode = "") {
@@ -45,6 +48,23 @@ async function signed(browser: Browser, member: string, locale = "en", width = 1
   return { page, context, consoleText };
 }
 const dialog = (page: Page) => page.getByTestId("member-privacy-dialog");
+/** Full native viewport capture at the already-asserted role; safe static basename. */
+async function capture(page: Page, role: string, locale: string) {
+  // Observe the exact role being recorded (also settles responsive reflow after resize); role strings are internal.
+  await expect(page.locator(`[data-privacy-role="${role}"]`)).toBeVisible();
+  const viewport = page.viewportSize()!;
+  const file = `members-privacy-${role}-${locale}-${viewport.width}.png`;
+  await page.screenshot({ path: path.join(evidence, file) });
+  visual.push({ role, locale, width: viewport.width, height: viewport.height, path: file });
+}
+/** Edge roles are single-locale: capture the actual role at 1440 then 375, restore before continuing. */
+async function captureBoth(page: Page, role: string, locale: string) {
+  const original = page.viewportSize()!;
+  await capture(page, role, locale);
+  await page.setViewportSize({ width: 375, height: original.height });
+  await capture(page, role, locale);
+  await page.setViewportSize(original);
+}
 const privacyRole = (page: Page, role: string) => expect(dialog(page)).toHaveAttribute("data-privacy-role", role);
 async function click(page: Page, id: string) {
   const row = { case: test.info().title, page: new URL(page.url()).pathname, control: id, action: "click", expected: "native control accepts interaction; case asserts visible outcome", actual: "pending", result: "fail" };
@@ -80,6 +100,7 @@ for (const [index, locale] of (["en", "zh-TW", "zh-CN"] as const).entries()) for
       });
       await click(page, "member-export-open");
       await privacyRole(page, "ExportPrompt");
+      await capture(page, "ExportPrompt", locale);
       const [download] = await Promise.all([page.waitForEvent("download"), click(page, "member-export-submit")]);
       await privacyRole(page, "ExportDownloaded");
       // LP12 fixes the payload bound, not a filename template: require an opaque bounded .json name,
@@ -99,6 +120,7 @@ for (const [index, locale] of (["en", "zh-TW", "zh-CN"] as const).entries()) for
         expect(entry.actor_principal_id).toMatch(/^[0-9a-f-]{36}$/);
       }
       expect(exportPosts).toBe(1);
+      await capture(page, "ExportDownloaded", locale);
       await assertNoPrivateMaterial(page, consoleText);
 
       // Explicit close + reload: the downloaded file is not retained as page state.
@@ -113,6 +135,7 @@ for (const [index, locale] of (["en", "zh-TW", "zh-CN"] as const).entries()) for
       // LP11/LPU05: the confirm copy must say the member's past order snapshot keeps its 訂購人 name.
       const confirmText = await dialog(page).innerText();
       expect(confirmText).toMatch(locale === "en" ? /order/i : /訂購人|订购人/);
+      await capture(page, "EraseConfirm", locale);
       await click(page, "member-erase-submit");
       // Official source role Tombstone is the inline erased-member detail page, never a modal.
       const tombstone = page.locator('[data-privacy-role="Tombstone"]');
@@ -131,6 +154,7 @@ for (const [index, locale] of (["en", "zh-TW", "zh-CN"] as const).entries()) for
       expect(pageText).not.toContain("PRIVACY_LEDGER_CANARY");
       expect(await tombstone.getByText("[erased]", { exact: true }).count()).toBeGreaterThanOrEqual(2);
       await expect(page.getByTestId("member-export-open")).toHaveCount(0);
+      await capture(page, "Tombstone", locale);
       await assertNoPrivateMaterial(page, consoleText);
     } finally { await context.close(); }
   });
@@ -149,11 +173,14 @@ test("REAL_PG same-key export recovery writes one audit", async ({ browser }) =>
     await page.route(`**/api/stores/${store}/members/${member}/export`, async route => {
       const response = await route.fetch();
       expect(response.status()).toBe(200);
+      // The client is still pending here, so this is the real transient role; hold only for the capture.
+      await captureBoth(page, "ExportPreparing", "en");
       await route.fulfill({ status: 503, contentType: "application/json", headers: { "cache-control": "private, no-store" }, body: JSON.stringify({ code: "retry_later" }) });
     });
     await click(page, "member-export-open");
     await click(page, "member-export-submit");
     await privacyRole(page, "ExportFailed");
+    await captureBoth(page, "ExportFailed", "en");
     await page.unroute(`**/api/stores/${store}/members/${member}/export`);
     // Explicit user recovery keeps the immutable key/body/target; it must not mint a new key.
     const [download] = await Promise.all([page.waitForEvent("download"), click(page, "member-export-retry")]);
@@ -179,6 +206,7 @@ test("MOCK BFF bounded export_too_large refusal", async ({ browser }) => {
     await click(page, "member-export-submit");
     await privacyRole(page, "ExportTooLarge");
     await expect(dialog(page)).toContainText("匯出資料超過 1 MiB 上限，無法匯出。");
+    await captureBoth(page, "ExportTooLarge", "zh-TW");
     await expect(page.getByTestId("member-export-submit")).toHaveCount(0);
     await expect(page.getByTestId("member-export-retry")).toHaveCount(0);
     expect(posts).toBe(1);
@@ -202,6 +230,7 @@ test("REAL_PG erase UNKNOWN loss refreshes read-only and never resends", async (
     await click(page, "member-erase-submit");
     await privacyRole(page, "EraseUnknown");
     await expect(page.getByTestId("member-erase-submit")).toHaveCount(0);
+    await captureBoth(page, "EraseUnknown", "en");
     expect(posts).toBe(1);
     await page.unroute(`**/api/stores/${store}/members/${target}/erasure`);
     // Refresh only reads: redacted tombstone, no second erasure request.
