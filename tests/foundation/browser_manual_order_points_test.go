@@ -60,16 +60,17 @@ type mtPointsBaseline struct {
 }
 
 type mtPointsSeam struct {
-	t          *testing.T
-	store      string
-	legacy     string
-	principal  string
-	canary     string
-	control    *httptest.Server
-	key        string
-	created    bool
-	base       mtPointsBaseline // points store, taken BEFORE the browser run: the oracle is delta-based, never an absolute zero
-	legacyBase mtPointsBaseline
+	t           *testing.T
+	productName string
+	store       string
+	legacy      string
+	principal   string
+	canary      string
+	control     *httptest.Server
+	key         string
+	created     bool
+	base        mtPointsBaseline // points store, taken BEFORE the browser run: the oracle is delta-based, never an absolute zero
+	legacyBase  mtPointsBaseline
 	// legacyStamped records that the control stamped the legacy baseline AFTER the old ten cases (the only correct instant: the
 	// legacy gate itself creates two orders/audits). Without the stamp the legacy comparison is refused instead of guessed.
 	legacyStamped bool
@@ -144,6 +145,7 @@ func (s *mtPointsSeam) seed(t *testing.T, e *tcvEnv) {
 			f.tenantA, f.storeA1, f.principalA, perm)
 	}
 	stock := t04CreateStock(t, &f, f.tokens["a"], f.storeA1, 10, 20)
+	s.productName = stock.product.Name
 	view.p.stock = stock // re-bound to the real new stock/warehouse; the legacy stock is never reused
 	market, err := pricingScoped(ctx, &f, f.tokens["a"], f.storeA1, "pricing:write", func(tx pgx.Tx, scope platform.Scope) (pricing.Market, error) {
 		return pricing.CreateMarket(ctx, tx, scope, t04Key("points-market"), pricing.MarketInput{Code: "tw", Name: "Order points market", Currency: "TWD"})
@@ -171,6 +173,7 @@ func (s *mtPointsSeam) seed(t *testing.T, e *tcvEnv) {
 // env is merged into the existing child env map by the parent hook; the spec reads exactly these names.
 func (s *mtPointsSeam) env() map[string]string {
 	return map[string]string{
+		"LC_POINTS_PRODUCT":          s.productName,
 		"LC_LINK_POINTS_STORE":       s.store,
 		"LC_LINK_POINTS_CONTROL":     s.control.URL,
 		"LC_LINK_POINTS_CONTROL_KEY": s.key,

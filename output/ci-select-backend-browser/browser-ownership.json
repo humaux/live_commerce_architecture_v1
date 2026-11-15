@@ -299,7 +299,7 @@
     "tests/foundation/browser_live_settings_test.go": "82940e2343aea47e6fd2dab88aaf0cc8f52c20e5107481270a7009151c1fe176",
     "tests/foundation/browser_live_tools_test.go": "a2338a21eac70e1738c5786e87b23dfb2e32371e91c00f81635d2ba42284145b",
     "tests/foundation/browser_manual_order_link_test.go": "d5c668716671a0aca8533548d6549c583f30ec1cd22260e09805a000b741a9fa",
-    "tests/foundation/browser_manual_order_points_test.go": "726f37748bef0a438a79463655c97bec807e275c3d709d164a6b0703c70fd601",
+    "tests/foundation/browser_manual_order_points_test.go": "817e578143db76348134ea15cafaf3263932b2360912b54ef30f889923d25120",
     "tests/foundation/browser_merchant_buyer_chain_test.go": "df9a330c2dc7aff2fbd8e988b9b5896ced523101c4d7fb5d0c15537565bc3a45",
     "tests/foundation/browser_merchant_orders_bff_test.go": "ab218bc4b8e2ff2f8777948083756399aa31227eb34bc7393a16c0287c221998",
     "tests/foundation/browser_merchant_orders_ui_test.go": "f43011820c0c2e3a2b2897bd815e9cfb1c4312368666518f16827836985e47d6",
