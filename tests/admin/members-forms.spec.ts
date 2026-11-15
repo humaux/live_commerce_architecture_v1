@@ -573,6 +573,7 @@ test.afterEach(async ({}, info) => {
     JSON.stringify(ledger, null, 2),
   );
 });
+const presentationFailures: string[] = [];
 test.afterAll(async () => {
   await writeFile(
     path.join(evidence, "members-forms-completion.json"),
@@ -586,6 +587,7 @@ test.afterAll(async () => {
       2,
     ),
   );
+  expect(presentationFailures, "foreground presentation across captured roles").toEqual([]);
 });
 async function step(
   page: Page,
@@ -725,6 +727,17 @@ async function captureRole(page: Page, locale: Locale, role: string) {
         scrollWidth: e.scrollWidth,
       };
     };
+    const visible = (e: HTMLElement) => {
+      const r = e.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 && e.getClientRects().length > 0 &&
+        getComputedStyle(e).visibility === "visible" &&
+        !e.closest('[hidden],[aria-hidden="true"]');
+    };
+    // Future semantic seams must contain actual visible values, never metadata.
+    const displayed = (id: string) => Array.from(
+      d.querySelectorAll<HTMLElement>(`[data-testid="${id}"]`),
+    ).map((e) => ({ text: e.innerText.trim(), visible: visible(e), rect: box(e) }));
+    const badge = d.querySelector<HTMLElement>('[data-testid="member-form-unknown-badge"]');
     const tokenNames = [
       "--ds-control-member-dialog-width",
       "--ds-control-member-dialog-pad",
@@ -767,6 +780,36 @@ async function captureRole(page: Page, locale: Locale, role: string) {
     };
     return {
       scrim,
+      presentation: {
+        balance: displayed("member-form-balance-value"),
+        preview: displayed("member-form-preview-value"),
+        unit: displayed("member-form-point-unit"),
+        // This existing detail value is asserted against the scenario balance
+        // after create/adjust; only edit display checks use it, never UNKNOWN.
+        detailBalance: document.querySelector<HTMLElement>('[data-testid="member-detail"] strong')?.innerText.trim(),
+        amount: d.querySelector<HTMLInputElement>('[name="amount"]')?.value,
+        sign: d.querySelector<HTMLSelectElement>('[name="sign"]')?.value,
+        badge: badge ? {
+          visible: visible(badge), text: badge.innerText.trim(), rect: box(badge),
+          radius: parseFloat(getComputedStyle(badge).borderTopLeftRadius),
+          passive: !badge.matches('button,a,input,select,textarea,[role="button"],[tabindex]') &&
+            !badge.querySelector('button,a,input,select,textarea,[role="button"],[tabindex]'),
+        } : null,
+        errors: Array.from(d.querySelectorAll<HTMLElement>('[aria-invalid="true"]')).map((e) => {
+          const ids = (e.getAttribute("aria-describedby") ?? "").split(/\s+/).filter(Boolean);
+          const alerts = ids.map((id) => document.getElementById(id)).filter(
+            (n): n is HTMLElement => n !== null && n.getAttribute("role") === "alert",
+          );
+          return {
+            name: e.getAttribute("name"),
+            placed: alerts.length === 1 && alerts.every((a) =>
+              visible(a) && !!a.innerText.trim() && e.parentElement?.contains(a) &&
+              !!(e.compareDocumentPosition(a) & Node.DOCUMENT_POSITION_FOLLOWING) &&
+              a.getBoundingClientRect().top >= e.getBoundingClientRect().bottom - 0.5 &&
+              Array.from(document.querySelectorAll('[id]')).filter((n) => n.id === a.id).length === 1),
+          };
+        }),
+      },
       rect: box(d),
       viewport: innerWidth,
       dpr: devicePixelRatio,
@@ -800,9 +843,39 @@ async function captureRole(page: Page, locale: Locale, role: string) {
           e.getAttribute("aria-invalid") !== "true" ||
           !!document.getElementById(e.getAttribute("aria-describedby") ?? ""),
       })),
+      // Native SELECT is an authorized extension, not a replacement for the
+      // immutable formal input/textarea scalar map above.
+      selects: Array.from(d.querySelectorAll<HTMLSelectElement>("select:not(:disabled)"))
+        .map((e) => ({ name: e.name, rect: box(e) })),
+      actionText: Array.from(d.querySelectorAll<HTMLButtonElement>("button"))
+        .map((e) => {
+          const r = e.getBoundingClientRect();
+          const style = getComputedStyle(e);
+          const bounds = {
+            left: r.left + parseFloat(style.borderLeftWidth),
+            right: r.right - parseFloat(style.borderRightWidth),
+            top: r.top + parseFloat(style.borderTopWidth),
+            bottom: r.bottom - parseFloat(style.borderBottomWidth),
+          };
+          // Read actual text fragments; allow multiple lines, but reject either
+          // leading or trailing clipping (scrollWidth alone misses centered text).
+          const walker = document.createTreeWalker(e, NodeFilter.SHOW_TEXT);
+          const fragments: { left: number; right: number; top: number; bottom: number }[] = [];
+          for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+            if (!node.textContent?.trim()) continue;
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            for (const rect of Array.from(range.getClientRects())) {
+              fragments.push({ left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom });
+            }
+          }
+          return { alias: e.dataset.testid, bounds, fragments };
+        }),
       actions: Array.from(d.querySelectorAll<HTMLButtonElement>("button")).map(
         (e) => ({
           alias: e.dataset.testid,
+          variant: e.dataset.variant,
+          visible: visible(e),
           rect: box(e),
           disabled: e.disabled || e.getAttribute("aria-disabled") === "true",
         }),
@@ -907,6 +980,70 @@ async function captureRole(page: Page, locale: Locale, role: string) {
     expect(a.rect.x + a.rect.width).toBeLessThanOrEqual(
       measurement.x + measurement.rect.width,
     );
+  }
+  const presentationCheck = (ok: boolean, detail: string) => {
+    if (!ok) presentationFailures.push(`${activeCase}/${role}/${locale}/${width}: ${detail}`);
+  };
+  for (const select of measurement.selects) {
+    presentationCheck(select.rect.height >= 44 && select.rect.width >= 44,
+      `native SELECT ${select.name} target below 44px`);
+  }
+  for (const action of measurement.actionText) {
+    presentationCheck(action.fragments.length > 0 && action.fragments.every((r) =>
+      r.left >= action.bounds.left - 0.5 && r.right <= action.bounds.right + 0.5 &&
+      r.top >= action.bounds.top - 0.5 && r.bottom <= action.bounds.bottom + 0.5),
+      `button ${action.alias} foreground label clipped`);
+  }
+  const presentation = measurement.presentation;
+  for (const error of presentation.errors) {
+    presentationCheck(error.placed, `${error.name} alert must follow control in its labeled field`);
+  }
+  const pair = role.endsWith("Refused") ? ["back", "close"] :
+    role.includes("Confirm") || role === "AdjustSubmitting" ? ["confirm", "back"] :
+    role === "Create" || role === "CreateEmptyName" || role === "CreateSubmitting" ||
+    role === "Adjust" || role === "AdjustEmptyNote" || role === "AdjustInsufficient" ? ["submit", "cancel"] : null;
+  if (pair) {
+    const [primary, secondary] = pair.map((id) =>
+      measurement.actions.find((a) => a.alias === `member-form-${id}`));
+    presentationCheck(!!primary && !!secondary && primary.visible && secondary.visible &&
+      primary.variant === "primary" && secondary.variant !== "primary" &&
+      measurement.actions.indexOf(primary) < measurement.actions.indexOf(secondary) &&
+      (primary.rect.y + primary.rect.height <= secondary.rect.y + 0.5 ||
+        (Math.abs(primary.rect.y - secondary.rect.y) <= 0.5 &&
+          primary.rect.x + primary.rect.width <= secondary.rect.x + 0.5)),
+      "primary action must precede secondary in DOM and visible layout");
+  }
+  if (role === "Adjust" || role === "AdjustEmptyNote" || role === "AdjustInsufficient") {
+    const balance = Number(presentation.detailBalance);
+    presentationCheck(presentation.detailBalance !== undefined && Number.isFinite(balance) &&
+      presentation.balance.length === 1 && presentation.balance[0].visible &&
+      presentation.balance[0].text === String(balance), "visible current balance must match existing detail snapshot");
+    const unit = locale === "en" ? "points" : locale === "zh-TW" ? "點" : "点";
+    presentationCheck(presentation.unit.length > 0 && presentation.unit.every((u) =>
+      u.visible && u.text === unit), "visible localized point unit");
+    // Existing finite valid edit amounts only: insufficient input has no preview oracle.
+    if (role !== "AdjustInsufficient") {
+      const amount = Number(presentation.amount);
+      const sign = Number(presentation.sign);
+      presentationCheck(!!presentation.amount && Number.isFinite(amount) &&
+        (sign === 1 || sign === -1) && presentation.preview.length === 1 &&
+        presentation.preview[0].visible &&
+        presentation.preview[0].text === String(balance + sign * amount),
+        "visible local preview must equal snapshot plus signed entered amount");
+    }
+  }
+  if (role === "Unknown" || role === "CreateUnknown") {
+    const badge = presentation.badge;
+    presentationCheck(!!badge && badge.visible && !!badge.text && badge.passive &&
+      badge.radius >= badge.rect.height / 2, "UNKNOWN requires a visible noninteractive status pill");
+    const actions = measurement.actions;
+    const refresh = actions[0];
+    const left = measurement.x + measurement.padding[3];
+    const right = measurement.x + measurement.rect.width - measurement.padding[1];
+    presentationCheck(actions.length === 1 && refresh?.alias === "member-form-refresh" &&
+      refresh.visible && Math.abs(refresh.rect.x + refresh.rect.width - right) <= 0.5 &&
+      (width !== 375 || Math.abs(refresh.rect.x - left) <= 0.5),
+      "UNKNOWN single refresh CTA: right aligned desktop, full content width mobile");
   }
   row.passed = true;
   await writeFile(
