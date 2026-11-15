@@ -117,7 +117,7 @@
     "tests/admin/live-console-bff.test.ts": "a20322ab400e8b94fce460d800affbe69cdd2c2a15d8ef03956403c97168606f",
     "tests/admin/live-console-model.test.ts": "9c070a0bf6db86d83fe6e2c7473b30b902aead66c31ad7ce24ce7edb1369d998",
     "tests/admin/live-console-render.test.ts": "1a1734c4668bfe368227ab8318f17517d49621df38285756b6ba5162996b5421",
-    "tests/admin/live-console.spec.ts": "2b77213e652d2440113dc5091559a2625a46a8feb8ea6b84d0749e1f7a414689",
+    "tests/admin/live-console.spec.ts": "a18bcbc703d8104953f22639c1b7015900c4a13eacd71991d3f1994ac4dcb0f1",
     "tests/admin/live-settings-bff.test.ts": "ba91758bb638280ca1c9b9b0feee294ca50aa84da50b6b663f73be3bd8d286f2",
     "tests/admin/live-settings-hooks.test.ts": "46cc13b98bdca7ee3e59bc1d3feea6abfba26512f05fdacafbfdbc0b4433cbfe",
     "tests/admin/live-settings-model.test.ts": "fb79c838bedd7e2d33cd832224925f10963ec10fc60a6541eaf57eec8544a706",

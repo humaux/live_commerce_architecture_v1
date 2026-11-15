@@ -1890,7 +1890,7 @@ for (const [locale, viewport] of [["en", parityViewports[0]], ["zh-TW", parityVi
     diagnostic.note("copy-submit-start");
     await c4MetadataClick(page, c.copyReview);
     await test.step("SETUP_REAL_200: commit and original Retry exist before attempting departure", async () => {
-      await expect.poll(() => upstreamStatus).toBe(200);
+      await expect.poll(() => upstreamStatus === 200 && committedID !== "").toBe(true);
       expect(committedID).toMatch(/^[0-9a-f-]{36}$/); expect(committedID).not.toBe(scene);
       await expect(page.getByRole("button", { name: m.retry, exact: true })).toBeVisible();
       const receipts = (await facts(request)).receipts.slice(before.receipts.length);
