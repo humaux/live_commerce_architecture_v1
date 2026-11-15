@@ -56,6 +56,8 @@ test("named discount survives the strict manual-order response parser", () => {
 const id = "11111111-1111-4111-8111-111111111111";
 const market = "22222222-2222-4222-8222-222222222222";
 const sku = "33333333-3333-4333-8333-333333333333";
+const member = "66666666-6666-4666-8666-666666666666";
+const entry = "77777777-7777-4777-8777-777777777777";
 const order = {
   order_id: id, created_at: "2026-10-01T00:00:00.000000Z", updated_at: "2026-10-01T00:00:00.000000Z", currency: "TWD", total_minor: 2500,
   commercial_state: "AWAITING_TRANSFER", fulfillment_state: "MANUAL_UNASSIGNED", payment_state: "NOT_STARTED", test_mode: false, work_state: "NONE",
@@ -205,6 +207,77 @@ test("manual result: link is https with the order id and a 43-char capability in
     result({ commercial_state: "AWAITING_TRANSFER", payment_mode: "cash_on_delivery" }),
     result({ payment_mode: "card" }),
   ]) assert.throws(() => parseManualResult(bad), /unavailable/);
+});
+
+// LP7/LP18 (loyalty-points-v1 §2, internal/merchanttools/manual.go manualReceipt.MemberAward, internal/loyalty/types.go
+// AwardOutcome): the optional award outcome travels on the 201/replay body. The order is already placed in both states, so
+// both parse as a success; only the exact Go shape is accepted (no guessed extra state or reason).
+test("manual result: optional member_award carries Go's awarded / not_awarded outcome without touching the order", () => {
+  const awarded = parseManualResult(result({
+    discount: { name: "直播優惠", amount_minor: 100 },
+    member_award: { member_id: member, points: 30, state: "awarded", entry_id: entry },
+  })) as unknown as Record<string, unknown>;
+  assert.equal(awarded.order_id, id);
+  assert.equal(awarded.total_minor, 2500);
+  assert.equal(awarded.payment_mode, "bank_transfer");
+  assert.equal(awarded.buyer_link, result().buyer_link);
+  assert.deepEqual(awarded.discount, { name: "直播優惠", amount_minor: 100 });
+  assert.deepEqual(awarded.member_award, { member_id: member, points: 30, state: "awarded", entry_id: entry });
+  // A definitive not_awarded answer still is a placed order: every order oracle survives; it is never an order failure.
+  for (const reason of ["member_erased", "member_unavailable", "forbidden", "limit_reached"] as const) {
+    const notGiven = parseManualResult(result({ member_award: { member_id: member, points: 30, state: "not_awarded", reason } })) as unknown as Record<string, unknown>;
+    assert.equal(notGiven.order_id, id);
+    assert.equal(notGiven.total_minor, 2500);
+    assert.equal(notGiven.link_state, "configured");
+    assert.equal(notGiven.buyer_link, result().buyer_link);
+    assert.deepEqual(notGiven.member_award, { member_id: member, points: 30, state: "not_awarded", reason });
+  }
+  // Backward compatible: a pre-LP answer (Go omitempty) has no key at all, so the parsed object must not grow one.
+  const plain = parseManualResult(result()) as unknown as Record<string, unknown>;
+  assert.equal("member_award" in plain, false);
+  // ValidAward bounds: one award, 1..1,000,000 whole points.
+  const one = parseManualResult(result({ member_award: { member_id: member, points: 1, state: "awarded", entry_id: entry } })) as unknown as Record<string, unknown>;
+  assert.deepEqual(one.member_award, { member_id: member, points: 1, state: "awarded", entry_id: entry });
+  const max = parseManualResult(result({ member_award: { member_id: member, points: 1_000_000, state: "not_awarded", reason: "limit_reached" } })) as unknown as Record<string, unknown>;
+  assert.deepEqual(max.member_award, { member_id: member, points: 1_000_000, state: "not_awarded", reason: "limit_reached" });
+});
+
+test("manual result: member_award is a closed Go outcome (keys, ids, integers, bounds, state/reason pairs)", () => {
+  const award = (over: Record<string, unknown> = {}) => ({ member_id: member, points: 30, state: "awarded", entry_id: entry, ...over });
+  const notGiven = (over: Record<string, unknown> = {}) => ({ member_id: member, points: 30, state: "not_awarded", reason: "member_erased", ...over });
+  for (const bad of [
+    { ...award(), extra: 1 }, // closed object: no hostile/unknown outcome field
+    { ...award(), reason: "member_erased" }, // awarded carries no reason
+    award({ entry_id: undefined }), // entry_id is required with awarded
+    award({ entry_id: "not-a-uuid" }),
+    award({ entry_id: null }),
+    award({ member_id: "not-a-uuid" }),
+    award({ member_id: undefined }),
+    award({ points: 0 }),
+    award({ points: -1 }),
+    award({ points: 1_000_001 }),
+    award({ points: 1.5 }),
+    award({ points: "30" }),
+    award({ points: null }),
+    award({ state: "Awarded" }),
+    award({ state: "pending" }),
+    award({ state: null }),
+    { member_id: member, points: 30, state: "awarded" }, // entry_id omitted
+    { ...notGiven(), extra: 1 },
+    { ...notGiven(), entry_id: entry }, // not_awarded carries no entry
+    notGiven({ reason: undefined }),
+    notGiven({ reason: "" }),
+    notGiven({ reason: "member_missing" }), // closed enum, never inferred
+    notGiven({ reason: null }),
+    notGiven({ member_id: "nope" }),
+    notGiven({ points: 0 }),
+    notGiven({ points: 1_000_001 }),
+    notGiven({ points: "30" }),
+    null, // absent only; Go omitempty never writes null
+    [],
+    "awarded",
+    { ...award(), state: "not_awarded" },
+  ]) assert.throws(() => parseManualResult(result({ member_award: bad })), /unavailable/);
 });
 
 const draft = (over: Partial<ManualDraft> = {}): ManualDraft => ({
