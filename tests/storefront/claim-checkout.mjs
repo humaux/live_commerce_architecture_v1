@@ -1,4 +1,4 @@
-// Purpose: real-click CDC04/CDC05 journeys and C8 state behavior evidence (visual source UNKNOWN).
+// Purpose: real-click CDC04/CDC05 journeys and source-aligned C8 behavior evidence (pixel acceptance pending).
 // Depends on: production Next/Go/PG fixture, Playwright, browser-engine and shop-helpers.
 // Used by: TestBrowserClaimDirectCheckout, Chromium and iPhone 15 WebKit gates.
 // Fixture control only prepares/ages synthetic claims; buyer writes always start with a real click.
@@ -139,76 +139,97 @@ async function place(page, link, locale = "zh-TW", loseReply = false, deplete = 
   assert.equal(await page.getByTestId("pay-order").count(), 0);
   return id;
 }
+// C8 has its own quantity-one oracle; legacy checkout() remains byte-identical.
+async function c8Checkout(page, link, locale = "zh-TW") {
+  await action(page, "c8-claim-add", () => page.getByTestId("claim-add").click(), "claim quantity one and prior cart quantity one reach checkout", async () => {
+    await expect(page).toHaveURL(new RegExp(`/${locale}/checkout(?:\\?|$)`));
+    await expect(page.getByTestId("claim-checkout-notice")).toContainText(copy[locale].merge);
+    await expect(page.getByTestId("cart-line")).toHaveCount(2);
+    const claimed = page.locator(`[data-testid="cart-line"][data-sku="${link.sku}"]`);
+    await expect(claimed).toBeVisible();
+    await expect.poll(() => page.seen.cart?.items.find((item) => item.sku_id === link.sku)?.quantity).toBe(1);
+    assert.equal(page.seen.redeem, 1, "one explicit C8 redeem");
+    if (link.sold_sku) {
+      assert(!page.seen.cart.items.some((item) => item.sku_id === link.sold_sku));
+      assert(page.seen.redeemed.skipped.some((item) => item.sku_id === link.sold_sku && item.reason === "sold_out"));
+    }
+  });
+  await noLeaks(page, link);
+  assert.equal(new URL(page.url()).searchParams.has("from"), false, "checkout consumes C8 from=claim");
+}
 // Reuse each already-bound buyer context: issuing the same fixture token in a new
 // context would test a different owner and return 404, not another viewport.
-async function c8StateMatrix(page, link, state) {
+async function c8StateMatrix(page, link, state, mobile) {
   const sourcePins = {};
   for (const file of ["tests/storefront/claim-checkout.mjs", "apps/storefront/components/ClaimLink.tsx", "apps/storefront/lib/claim-copy.ts", "tests/foundation/browser_claim_checkout_test.go"])
     sourcePins[file] = createHash("sha256").update(await readFile(file)).digest("hex");
-  for (const mobile of [false, true]) {
-    const viewport = mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 };
-    await page.setViewportSize(viewport);
-    for (const locale of ["zh-TW", "zh-CN", "en"]) {
-      page.seen.redeem = 0;
-      await openClaim(page, link);
-      await action(page, `c8-${state}-language-${locale}`, () => page.locator("header select").selectOption(locale), "claim language changes without losing its in-memory link", async () => {
-        await expect(page.locator("html")).toHaveAttribute("lang", locale);
-        await expect(page).toHaveURL(`${origin}/${locale}/claim`);
-      });
-      const verify = async () => {
-        const line = page.getByTestId("claim-line-A1");
-        if (state === "unavailable") {
-          assert.equal(page.seen.preview.lines.find((item) => item.sku_id === link.sku).available, false);
-          await expect(line.locator(".claim-flag")).toHaveText(claimCopy[locale].unavailable);
-          await expect(page.getByTestId("claim-add")).toBeDisabled();
-        } else {
-          await expect(line.locator(".claim-flag.done")).toHaveText(claimCopy[locale].inCart);
-          await expect(page.getByTestId("claim-add")).toBeEnabled();
-          assert.equal(page.seen.preview.lines.find((item) => item.sku_id === link.sku).pending, false);
-          assert.equal(page.seen.cart.items.find((item) => item.sku_id === link.sku).quantity, 2);
-          if (state === "partial") {
-            const skipped = page.seen.preview.lines.find((item) => item.sku_id === link.sold_sku);
-            assert.equal(skipped.available, false); assert.equal(skipped.pending, true);
-            await expect(page.getByTestId("claim-line-B2").locator(".claim-flag")).toHaveText(claimCopy[locale].unavailable);
-            const others = page.seen.cart.items.filter((item) => item.sku_id !== link.sku);
-            assert.equal(others.length, 1, "partial retains an unrelated unpaid cart SKU");
-            const quantity = others.reduce((total, item) => total + item.quantity, 0);
-            await expect(page.getByTestId("claim-merge-notice")).toHaveText(claimCopy[locale].mergedNote(quantity, quantity + 2));
-          }
+  const viewport = mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 };
+  await page.setViewportSize(viewport);
+  for (const locale of ["zh-TW", "zh-CN", "en"]) {
+    page.seen.redeem = 0;
+    await openClaim(page, link);
+    await action(page, `c8-${state}-language-${locale}`, () => page.locator("header select").selectOption(locale), "claim language changes without losing its in-memory link", async () => {
+      await expect(page.locator("html")).toHaveAttribute("lang", locale);
+      await expect(page).toHaveURL(`${origin}/${locale}/claim`);
+    });
+    const verify = async () => {
+      const line = page.getByTestId("claim-line-A1");
+      if (state === "sold-out") {
+        const sold = page.seen.preview.lines.find((item) => item.sku_id === link.sku);
+        assert.equal(sold.available, true); assert.equal(sold.sold_out, true);
+        assert.equal(sold.quantity, 1); assert.equal(sold.pending, true);
+        await expect(line.locator(".claim-flag")).toHaveText(claimCopy[locale].soldOut);
+        await expect(page.getByTestId("claim-add")).toBeDisabled();
+      } else {
+        await expect(line.locator(".claim-flag.done")).toHaveText(claimCopy[locale].inCart);
+        await expect(page.getByTestId("claim-add")).toBeEnabled();
+        assert.equal(page.seen.preview.lines.find((item) => item.sku_id === link.sku).pending, false);
+        assert.equal(page.seen.cart.items.find((item) => item.sku_id === link.sku).quantity, 1);
+        const others = page.seen.cart.items.filter((item) => item.sku_id !== link.sku);
+        assert.equal(others.length, 1, "C8 retains exactly one unrelated unpaid cart SKU");
+        assert.equal(others[0].quantity, 1, "source quantity is one prior cart item");
+        await expect(page.getByTestId("claim-merge-notice")).toHaveText(claimCopy[locale].mergedNote(1, 2));
+        await expect(page.getByTestId("claim-add")).toHaveText(claimCopy[locale].checkoutAll(2));
+        if (state === "partial") {
+          const skipped = page.seen.preview.lines.find((item) => item.sku_id === link.sold_sku);
+          assert.equal(skipped.available, true); assert.equal(skipped.sold_out, true);
+          assert.equal(skipped.quantity, 1); assert.equal(skipped.pending, true);
+          await expect(page.getByTestId("claim-line-B2").locator(".claim-flag")).toHaveText(claimCopy[locale].soldOut);
         }
-        await noLeaks(page, link);
-      };
-      await verify();
-      const frame = `66:${(state === "already-in-cart" ? 1748 : state === "unavailable" ? 1750 : 1752) + Number(mobile)}`;
-      const png = `c8-${frame.replace(":", "-")}-${locale}-${viewport.width}.png`;
-      await page.screenshot({ path: path.join(evidence, png), fullPage: true });
-      const row = { frame, locale, viewport, state, visualSource: "UNKNOWN", formalFrameAcceptance: false,
-        sourcePins, png, pngSha256: createHash("sha256").update(await readFile(path.join(evidence, png))).digest("hex"), behavior: "pending" };
-      c8Behavior.push(row);
-      ledger.push({ page: `/${locale}/claim`, control: `c8-${state}`, operation: "readback and success screenshot after language selection", expected: "current claim state; visual source UNKNOWN", actual: state, pass: true, ...row });
-      const items = page.seen.cart.items.map(({ sku_id, quantity }) => ({ sku_id, quantity }));
-      if (state !== "unavailable") {
-        await checkout(page, link, locale, state === "partial");
-        page.seen.cart = null; // Require a fresh UI-triggered cart read after reload.
-        await page.reload();
-        await expect.poll(() => page.seen.cart?.items.map(({ sku_id, quantity }) => ({ sku_id, quantity }))).toEqual(items);
-        await expect(page.getByTestId("cart-line")).toHaveCount(items.length);
-        for (const item of items)
-          await expect(page.locator(`[data-testid="cart-line"][data-sku="${item.sku_id}"] .sf-line__unit`)).toContainText(`× ${item.quantity}`);
       }
-      // Reload intentionally forgets the memory-only token. Reopen the original
-      // synthetic message link to verify durable server state, not token storage.
-      page.seen.redeem = 0;
-      await openClaim(page, link, locale);
+      await noLeaks(page, link);
+    };
+    await verify();
+    const frame = `66:${(state === "already-in-cart" ? 1748 : state === "sold-out" ? 1750 : 1752) + Number(mobile)}`;
+    const png = `c8-${frame.replace(":", "-")}-${locale}-${viewport.width}.png`;
+    await page.screenshot({ path: path.join(evidence, png), fullPage: true });
+    const row = { frame, locale, viewport, state, sourceBundleSha256: "adc1ac630744c2b11bd185dd893deb744d03d9a833f3b973800b1aa094656f19",
+      sourceLocale: "zh-TW", sourceBinding: "ROOT_ACCEPTED_BOUNDED_SEMANTIC_SOURCE", visualSource: "PIXEL_ACCEPTANCE_PENDING", formalFrameAcceptance: false,
+      sourcePins, png, pngSha256: createHash("sha256").update(await readFile(path.join(evidence, png))).digest("hex"), behavior: "pending" };
+    c8Behavior.push(row);
+    ledger.push({ page: `/${locale}/claim`, control: `c8-${state}`, operation: "readback and success screenshot after language selection", expected: "source-aligned quantities and stock state; pixel acceptance pending", actual: state, pass: true, ...row });
+    const items = page.seen.cart.items.map(({ sku_id, quantity }) => ({ sku_id, quantity }));
+    if (state !== "sold-out") {
+      await c8Checkout(page, link, locale);
+      page.seen.cart = null; // Require a fresh UI-triggered cart read after reload.
       await page.reload();
-      await expect(page.getByTestId("claim-not-found")).toBeVisible();
-      assert.equal(new URL(page.url()).hash, "");
-      await openClaim(page, link, locale);
-      await verify();
-      assert.deepEqual(page.seen.cart.items.map(({ sku_id, quantity }) => ({ sku_id, quantity })), items);
-      assert.equal(page.seen.redeem, 0, "reopening state never redeems automatically");
-      row.behavior = "observed assertions passed";
+      await expect.poll(() => page.seen.cart?.items.map(({ sku_id, quantity }) => ({ sku_id, quantity }))).toEqual(items);
+      await expect(page.getByTestId("cart-line")).toHaveCount(items.length);
+      for (const item of items)
+        await expect(page.locator(`[data-testid="cart-line"][data-sku="${item.sku_id}"] .sf-line__unit`)).toContainText(`× ${item.quantity}`);
     }
+    // Reload intentionally forgets the memory-only token. Reopen the original
+    // synthetic message link to verify durable server state, not token storage.
+    page.seen.redeem = 0;
+    await openClaim(page, link, locale);
+    await page.reload();
+    await expect(page.getByTestId("claim-not-found")).toBeVisible();
+    assert.equal(new URL(page.url()).hash, "");
+    await openClaim(page, link, locale);
+    await verify();
+    assert.deepEqual(page.seen.cart.items.map(({ sku_id, quantity }) => ({ sku_id, quantity })), items);
+    assert.equal(page.seen.redeem, 0, "reopening state never redeems automatically");
+    row.behavior = "observed assertions passed";
   }
 }
 const pass = (name) => { cases++; console.log(`PASS CDC ${name}`); };
@@ -290,14 +311,20 @@ try {
   assert.equal(partial.seen.redeemed.applied.length, 0, "revisit redeems nothing");
   await partial.reload(); await expect(partial.getByTestId("cart-line")).toHaveCount(1);
   pass("partial claim revisit checks out applied A despite pending sold-out B");
-  // C8 is one behavior package, not extra CDC cases/orders. These contexts
-  // already own their links; all original journeys and fixed Go counters stay intact.
-  await c8StateMatrix(merged, mergeLink, "already-in-cart");
-  await fixture("merge", "archive-other", undefined, mergeLink.sku);
-  await c8StateMatrix(merged, mergeLink, "unavailable");
-  await addToCart(partial, origin, "zh-TW", process.env.LC_CDC_PRODUCT);
-  await fixture("partial", "archive-other", undefined, partialLink.sold_sku);
-  await c8StateMatrix(partial, partialLink, "partial");
+  // One source-aligned package, separate fixture links/owners from all old journeys.
+  // No order is placed here: the original exact 19-case/6-order contract is unchanged.
+  for (const mobile of [false, true]) {
+    for (const [name, state] of [["c8-merge", "already-in-cart"], ["c8-sold", "sold-out"], ["c8-partial", "partial"]]) {
+      const page = await newPage(mobile), link = await fixture(`${name}-${mobile ? "mobile" : "desktop"}`);
+      if (state !== "sold-out") {
+        await addToCart(page, origin, "zh-TW", process.env.LC_CDC_PRODUCT);
+        await openClaim(page, link);
+        assert.equal(page.seen.preview.lines.find((item) => item.sku_id === link.sku).quantity, 1);
+        await c8Checkout(page, link);
+      }
+      await c8StateMatrix(page, link, state, mobile);
+    }
+  }
 
   const sold = await newPage(engine === "webkit"), soldLink = await fixture("sold");
   await openClaim(sold, soldLink); await expect(sold.getByTestId("claim-add")).toBeDisabled(); assert.equal(sold.seen.redeem, 0); pass("all sold out is disabled");
