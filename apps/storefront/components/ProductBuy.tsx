@@ -1,25 +1,27 @@
 "use client";
 
 // Purpose: product option/quantity controls and cart actions; selected options also drive ProductMedia's gallery.
-// Depends on: catalog-v2 ProductDetail, CartProvider (/api/buyer/session/cart -> Go buyer routes), shop copy and Next router.
+// Depends on: catalog-v2 ProductDetail, CartProvider (/api/buyer/session/cart -> Go buyer routes), MobileProductOptions, shop copy and Next router.
 // Used by: ProductMedia on the product detail page; Go remains the stock and amount authority.
 // Buy box of the product page: option selectors that resolve to one variant (SKU), price + compare-at, stock hint, quantity,
 // Add to cart and Buy now. BFF routes (via CartProvider): /api/buyer/session, /api/buyer/cart -> Go /v1/buyer/session, /cart.
 // The variant list comes from the server-rendered catalog-v2 detail (Go decides price and stock hint; this only picks which
 // SKU). Add = merge into the shared multi-SKU cart (CartProvider.add, journalled + CAS); Buy now = add, then go to checkout.
 // A sold-out variant cannot be added (button disabled); a combination that has no in-stock variant is disabled in the chips.
-// A sticky phone bar repeats the add action only while the inline actions are scrolled out of view (never two visible CTAs).
-import { useEffect, useMemo, useRef, useState } from "react";
+// A sticky phone bar opens the same local option draft while the inline actions are scrolled out of view.
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
 import { formatMoney } from "../lib/money";
-import { checkoutPath } from "../lib/routes";
+import { cartPath, checkoutPath } from "../lib/routes";
 import { resolveVariant, valueAvailable } from "../lib/shop-contract";
 import type { ProductDetail } from "../lib/shop-contract";
 import { fmt, shopCopy } from "../lib/shop-copy";
 import { useCart } from "./CartProvider";
 import { CartNotice } from "./CartLines";
 import { CheckIcon, MinusIcon, PlusIcon } from "./icons";
+import MobileProductOptions from "./product/MobileProductOptions";
+import styles from "./product/MobileProductOptions.module.css";
 
 /** Render controlled variant choices and initiate the existing journalled cart add/checkout actions. */
 export default function ProductBuy({ locale, product, currency, chosen, onChoose }: {
@@ -33,10 +35,64 @@ export default function ProductBuy({ locale, product, currency, chosen, onChoose
   const [added, setAdded] = useState(false);
   const [sticky, setSticky] = useState(false);
   const actions = useRef<HTMLDivElement>(null);
+  const [optionsOpen, setOptionsOpen] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [recovery, setRecovery] = useState<{ values: string[]; quantity: number } | null>(null);
+  const confirmation = useRef(false);
+  const uncertainSeen = useRef(false);
+  const optionsTrigger = useRef<HTMLButtonElement | null>(null);
   const variant = useMemo(() => resolveVariant(product.options, product.variants, chosen), [product, chosen]);
   const qty = Math.min(99, Math.max(1, Math.floor(Number(quantity)) || 1));
   const soldOut = !variant || variant.stock === "out";
   const onSale = variant?.compare_at_minor != null && variant.compare_at_minor > variant.price_minor;
+
+  function openOptions(trigger: HTMLButtonElement) {
+    if (cart.busy || confirmation.current) return;
+    optionsTrigger.current = trigger;
+    setOptionsOpen(true);
+  }
+
+  function closeOptions() {
+    if (confirmation.current || cart.busy) return;
+    setOptionsOpen(false);
+  }
+
+  useEffect(() => {
+    if (!optionsOpen) optionsTrigger.current?.focus();
+  }, [optionsOpen]);
+
+  const completeOptions = useCallback((values: string[], amount: number) => {
+    onChoose(values);
+    setQuantity(String(amount));
+    setOptionsOpen(false);
+    setRecovery(null);
+    router.push(cartPath(locale));
+  }, [onChoose, router, locale]);
+
+  useEffect(() => {
+    if (!recovery || cart.busy) return;
+    // CartNotice's existing Retry settles the same journal; never call add again after UNKNOWN.
+    if (cart.problem === "uncertain") { uncertainSeen.current = true; return; }
+    if (uncertainSeen.current && cart.problem === null) completeOptions(recovery.values, recovery.quantity);
+    else setRecovery(null);
+  }, [recovery, cart.busy, cart.problem, completeOptions]);
+
+  async function confirmOptions(values: string[], amount: number) {
+    const selected = resolveVariant(product.options, product.variants, values);
+    if (!selected || selected.stock === "out" || confirmation.current || cart.busy || cart.problem === "uncertain" || recovery) return;
+    confirmation.current = true;
+    setConfirming(true);
+    uncertainSeen.current = false;
+    try {
+      // One existing cart.add owns CAS, stock validation and durable idempotent UNKNOWN recovery.
+      const ok = await cart.add(selected.sku_id, amount);
+      if (ok) completeOptions(values, amount);
+      else setRecovery({ values, quantity: amount });
+    } finally {
+      confirmation.current = false;
+      setConfirming(false);
+    }
+  }
 
   useEffect(() => {
     const el = actions.current;
@@ -80,7 +136,14 @@ export default function ProductBuy({ locale, product, currency, chosen, onChoose
   const stockText = !variant ? copy.selectionIncomplete : variant.stock === "in" ? copy.inStock : variant.stock === "low" ? copy.lowStock : copy.outOfStock;
   const addLabel = soldOut ? copy.outOfStock : copy.addToCart;
   return (
-    <div className="sf-buy" data-testid="product-buy" data-sku={variant?.sku_id}>
+    <div className="sf-buy" data-testid={optionsOpen ? undefined : "product-buy"} data-sku={variant?.sku_id}>
+      <div className={styles.taskEntry} data-testid="product-options-task-entry">
+        <button type="button" disabled={cart.busy || confirming} onClick={(event) => openOptions(event.currentTarget)}>
+          <strong>{copy.c7ChooseOptions}</strong>
+          <span>{chosen.filter(Boolean).join(" · ")} · {qty}</span>
+          <i aria-hidden="true">›</i>
+        </button>
+      </div>
       <div className="sf-buy__price" aria-live="polite">
         {variant ? (
           <>
@@ -155,16 +218,19 @@ export default function ProductBuy({ locale, product, currency, chosen, onChoose
       <CartNotice locale={locale} />
 
       {sticky && (
-        <div className="sf-sticky" data-testid="sticky-buy">
+        <div className={`sf-sticky ${styles.entryDock}`} data-testid="sticky-buy">
           <div>
             <strong>{variant ? formatMoney(locale, variant.price_minor, currency) : "—"}</strong>
             <span>{product.title}</span>
           </div>
-          <button type="button" className="sf-btn sf-btn--primary" disabled={soldOut || cart.busy} onClick={() => void addToCart(false)}>
-            {addLabel}
+          <button type="button" className="sf-btn sf-btn--primary" disabled={cart.busy || confirming} onClick={(event) => openOptions(event.currentTarget)} data-testid="product-options-dock-entry">
+            {copy.c7ChooseOptions}
           </button>
         </div>
       )}
+      {optionsOpen && <MobileProductOptions locale={locale} product={product} currency={currency}
+        chosen={chosen} quantity={quantity} busy={cart.busy || confirming} locked={cart.problem === "uncertain" || recovery !== null}
+        onClose={closeOptions} onConfirm={confirmOptions} />}
     </div>
   );
 }

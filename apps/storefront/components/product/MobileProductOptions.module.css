@@ -1,0 +1,64 @@
+/* Purpose: scoped 51:1380 full-viewport task and 4:9532 mobile option entries.
+ * Depends on: existing storefront sf-* controls and signed DS tokens (local fallbacks for the storefront shell).
+ * Used by: ProductBuy and MobileProductOptions; no desktop or global selectors.
+ * Invariants: 64px header, 84px minimum dock, independently scrolling content and wrapping product labels. */
+.task {
+  --c7-page: var(--ds-sig-page, #f6f7f8);
+  --c7-line: var(--ds-sig-line, #dce3ed);
+  --c7-ink: var(--ds-ink, var(--ink));
+  --c7-muted: var(--ds-sig-muted, #52637d);
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100vh;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: var(--c7-page);
+  color: var(--c7-ink);
+  font-family: var(--sf-font);
+  overflow: hidden;
+}
+.task[open] { display: grid; grid-template-rows: 64px minmax(0, 1fr) minmax(84px, max-content); }
+.task::backdrop { background: var(--c7-page); }
+.header { display: flex; align-items: center; gap: 8px; padding: 8px; border-bottom: 1px solid var(--c7-line); background: var(--ds-surface, #fff); }
+.header h2 { margin: 0; min-width: 0; font-size: 16px; line-height: 24px; font-weight: 700; overflow-wrap: anywhere; }
+.header button { flex: 0 0 44px; width: 44px; height: 44px; padding: 0; border: 1px solid var(--c7-line); border-radius: 6px; background: var(--ds-surface, #fff); color: var(--c7-ink); }
+.content { min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 16px; }
+.summary { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: center; gap: 16px; margin-bottom: 16px; }
+.summary img, .noImage { width: 88px; height: 88px; object-fit: cover; border-radius: 12px; }
+.noImage { display: grid; place-items: center; background: var(--sf-paper); font-size: 12px; color: var(--c7-muted); }
+.summary h3 { margin: 0 0 8px; font-size: 20px; line-height: 28px; overflow-wrap: anywhere; }
+.summary p { margin: 0; font-size: 20px; line-height: 28px; font-weight: 600; overflow-wrap: anywhere; }
+.controls { display: grid; gap: 16px; }
+.controls :global(.sf-opt legend), .controls :global(.sf-qty > label) { color: var(--ds-sig-label, #1f2937); font-size: 14px; }
+.controls :global(.sf-opt legend) { margin-bottom: 16px; }
+.controls :global(.sf-opt__chips) { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.controls :global(.sf-chip) { min-width: 0; min-height: 44px; padding: 10px 12px; border: 1px solid var(--c7-line); border-radius: 6px; color: var(--c7-ink); background: var(--ds-surface, #fff); font-size: 14px; line-height: 22px; text-align: center; overflow-wrap: anywhere; }
+.controls :global(.sf-chip.is-on) { border-color: var(--c7-ink); background: var(--c7-ink); color: var(--ds-on-primary, #fff); box-shadow: none; }
+.controls :global(.sf-chip.is-out) { opacity: .55; }
+.controls :global(.sf-qty) { display: grid; justify-content: start; gap: 16px; }
+.controls :global(.sf-stepper) { gap: 16px; border: 0; background: transparent; }
+.controls :global(.sf-stepper button) { border: 1px solid var(--c7-line); border-radius: 6px; background: var(--ds-surface, #fff); color: var(--c7-ink); }
+.controls :global(.sf-stepper input) { width: 44px; font-size: 20px; color: var(--c7-ink); }
+.controls :global(.sf-stepper input:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; }
+.limit { margin: 0; font-size: 12px; line-height: 18px; color: var(--c7-muted); }
+.delivery { margin: 0; padding: 12px; border-radius: 8px; font-size: 12px; line-height: 18px; color: var(--ds-sig-go-text, #0c736c); background: var(--ds-sig-go-soft, #e8f5f2); }
+.dock { display: flex; align-items: center; padding: 16px; padding-bottom: max(16px, env(safe-area-inset-bottom)); border-top: 1px solid var(--c7-line); background: var(--ds-surface, #fff); }
+.dock :global(.sf-btn--primary) { width: 100%; min-width: 0; min-height: 44px; height: auto; padding: 10px 12px; border-radius: 6px; background: var(--c7-ink); color: var(--ds-on-primary, #fff); font-size: 14px; line-height: 22px; white-space: normal; overflow-wrap: anywhere; }
+.dock :global(.sf-btn--primary:disabled) { background: var(--action-disabled); color: var(--muted); }
+.task button:disabled { cursor: not-allowed; }
+.taskEntry { display: none; }
+@media (max-width: 899.98px) {
+  .taskEntry { display: block; }
+  .taskEntry button { position: relative; width: 100%; min-height: 88px; padding: 16px 44px 16px 16px; display: grid; gap: 8px; text-align: start; border: 1px solid var(--line); border-radius: 12px; background: #fff; color: var(--ink); }
+  .taskEntry strong { font-size: 16px; line-height: 24px; overflow-wrap: anywhere; }
+  .taskEntry span { font-size: 12px; line-height: 18px; color: var(--muted); overflow-wrap: anywhere; }
+  .taskEntry i { position: absolute; inset-inline-end: 16px; inset-block-start: 24px; font-size: 24px; font-style: normal; }
+  .entryDock { min-height: 84px; box-shadow: none; animation: none; background: #fff; border-color: var(--line); }
+  .entryDock :global(.sf-btn) { min-width: 0; max-width: 55%; white-space: normal; overflow-wrap: anywhere; }
+}
