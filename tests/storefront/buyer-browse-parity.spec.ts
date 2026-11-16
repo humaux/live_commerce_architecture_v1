@@ -87,7 +87,7 @@ type C7Cell = {
   locale: "zh-TW" | "zh-CN" | "en"; width: number; kind: "mobile" | "desktop" | "cas";
   status: "NOT_RUN" | "PASS" | "FAIL"; failure?: string;
   actions: { control: string; route: string; operation: string; expected: string; actual: string; status: "PASS" | "FAIL" }[];
-  screenshots: { file: string; requested: string; actualPNG: string; actualCSS: string }[];
+  screenshots: { file: string; sha256: string; requested: string; requestedDPR: number; actualPNG: string; actualCSS: string; actualDPR: number }[];
   writes: { method: string; keySHA256: string; bodySHA256: string }[];
 };
 type C7Cart = { version: number; items: { sku_id: string; quantity: number }[] };
@@ -116,11 +116,13 @@ export async function checkC7Matrix({ browser, origin, evidence, facts }: {
   await save();
   for (const cell of cells) {
     let context: BrowserContext | undefined;
+    let routedPage: Page | undefined;
     try {
       const height = cell.width === 1440 ? 900 : 844;
       context = await browser.newContext(ctxOpts({ ignoreHTTPSErrors: true, viewport: { width: cell.width, height }, deviceScaleFactor: 1,
         locale: cell.locale, isMobile: cell.width < 900, hasTouch: cell.width < 900 }));
       const page = await context.newPage(), copy = shopCopy[cell.locale];
+      routedPage = page;
       const calls: { method: string; key: string; body: string }[] = [];
       const observe = (target: Page) => target.on("request", request => {
         if (new URL(request.url()).pathname !== "/api/buyer/cart" || ["GET", "HEAD"].includes(request.method())) return;
@@ -142,8 +144,9 @@ export async function checkC7Matrix({ browser, origin, evidence, facts }: {
         const png = await page.screenshot({ path: path.join(evidence, file), fullPage: false });
         assert.equal(png.subarray(1, 4).toString(), "PNG");
         // Read-only measurement: record CSS and unmodified PNG dimensions independently (DPR may differ by engine).
-        const css = await page.evaluate(() => `${window.innerWidth}x${window.innerHeight}`);
-        cell.screenshots.push({ file, requested: `${cell.width}x${height}`, actualPNG: `${png.readUInt32BE(16)}x${png.readUInt32BE(20)}`, actualCSS: css });
+        const css = await page.evaluate(() => ({ size: `${window.innerWidth}x${window.innerHeight}`, dpr: window.devicePixelRatio }));
+        cell.screenshots.push({ file, sha256: createHash("sha256").update(png).digest("hex"), requested: `${cell.width}x${height}`, requestedDPR: 1,
+          actualPNG: `${png.readUInt32BE(16)}x${png.readUInt32BE(20)}`, actualCSS: css.size, actualDPR: css.dpr });
       };
       const gotoProduct = (target: Page, slug = candle.slug) => target.goto(`${origin}/${cell.locale}/products/${slug}`);
       const inline = () => page.getByTestId("product-buy");
@@ -327,7 +330,10 @@ export async function checkC7Matrix({ browser, origin, evidence, facts }: {
       cell.status = "FAIL"; cell.failure = error instanceof Error ? error.name : "UnknownError";
       throw error;
     } finally {
-      try { await save(); } finally { await context?.close(); }
+      try { await save(); } finally {
+        // CAS's inner finally releases its real response before waiting for route handlers and closing both pages.
+        try { await routedPage?.unrouteAll({ behavior: "wait" }); } finally { await context?.close(); }
+      }
     }
   }
 }
