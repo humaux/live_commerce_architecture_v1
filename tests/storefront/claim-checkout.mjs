@@ -161,8 +161,8 @@ async function c8Checkout(page, link, locale = "zh-TW") {
 async function c8AssertResultParity(page, { frame, locale, state, mobile }) {
   console.log("C8_PARITY_BASELINE", JSON.stringify({ frame, locale, state, geometry: "passed" }));
   const parity = { page: `/${locale}/claim`, frame, locale, state, control: "c8-result-parity", operation: "read-only visible anchors and layout measurements",
-    expected: "state result header/back/card and applicable fixed dock/partial explanation", actual: "pending", pass: false,
-    checking: "header", checks: { header: "NOT_RUN", back: "NOT_RUN", card: "NOT_RUN", headerTop: "NOT_RUN",
+    expected: "state result header/card, mobile back/top/fixed dock and applicable partial explanation", actual: "pending", pass: false,
+    checking: "header", checks: { header: "NOT_RUN", back: mobile ? "NOT_RUN" : "NOT_APPLICABLE", card: "NOT_RUN", headerTop: mobile ? "NOT_RUN" : "NOT_APPLICABLE",
       dock: mobile ? "NOT_RUN" : "NOT_APPLICABLE", partial: state === "partial" ? "NOT_RUN" : "NOT_APPLICABLE" } };
   ledger.push(parity);
   try {
@@ -170,20 +170,22 @@ async function c8AssertResultParity(page, { frame, locale, state, mobile }) {
     await expect(header).toBeVisible();
     await expect(header).toHaveAttribute("data-claim-state", state);
     parity.checks.header = "PASS";
-    parity.checking = "back";
-    await expect(header.getByTestId("claim-result-back")).toBeVisible();
-    parity.checks.back = "PASS";
+    if (mobile) {
+      parity.checking = "back";
+      await expect(header.getByTestId("claim-result-back")).toBeVisible();
+      parity.checks.back = "PASS";
+    }
     parity.checking = "card";
     const card = page.getByTestId("claim-result-card");
     await expect(card).toBeVisible();
     await expect(card.getByTestId("claim-line-A1")).toBeVisible();
     parity.checks.card = "PASS";
-    parity.checking = "headerTop";
-    // READ/MEASURE only: formal result headers start at viewport top, not below generic chrome.
-    parity.headerRect = await header.evaluate((node) => node.getBoundingClientRect().toJSON());
-    assert.equal(parity.headerRect.top, 0, "C8 result header starts at viewport top");
-    parity.checks.headerTop = "PASS";
     if (mobile) {
+      parity.checking = "headerTop";
+      // READ/MEASURE only: mobile back/status headers start at viewport top; desktop keeps shop chrome.
+      parity.headerRect = await header.evaluate((node) => node.getBoundingClientRect().toJSON());
+      assert.equal(parity.headerRect.top, 0, "C8 mobile result header starts at viewport top");
+      parity.checks.headerTop = "PASS";
       parity.checking = "dock";
       const dock = page.getByTestId("claim-result-dock");
       await expect(dock).toBeVisible();
