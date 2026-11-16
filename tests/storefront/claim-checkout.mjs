@@ -100,19 +100,45 @@ function checkoutRequestCount(page) {
 }
 async function returnProductsAndReopen(page, link, locale = "zh-TW") {
   const items = structuredClone(page.seen.cart.items), redeems = page.seen.redeem, writes = checkoutRequestCount(page);
-  await expectReturnProducts(page, locale);
-  await action(page, "claim-return-products", () => page.getByTestId("claim-return-products").click(), "return opens products without redeeming or changing the cart", async () => {
-    await expect(page).toHaveURL(`${origin}/${locale}/products`);
-    await expect(page.locator("main.sf-wrap")).toBeVisible();
-    assert.equal(page.seen.redeem, redeems, "return does not duplicate redemption");
-    assert.equal(checkoutRequestCount(page), writes, "return does not quote or create an order");
-  });
-  // The original synthetic seller message, not browser/token storage, restores the claim.
-  await openClaim(page, link, locale);
-  assert.equal(page.seen.redeem, redeems);
-  assert.equal(checkoutRequestCount(page), writes);
-  assert.deepEqual(page.seen.cart.items, items, "return/reopen preserves every cart item");
-  await expectReturnProducts(page, locale);
+  let cartWrites = 0, reopening = false, freshCartRequest = null;
+  const observeCart = (request) => {
+    const pathname = new URL(request.url()).pathname, method = request.method();
+    if (!/^\/api\/buyer\/cart(?:\/|$)/.test(pathname)) return;
+    if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) cartWrites++;
+    // Match a new request event after the reopen barrier, never a late response to an earlier GET.
+    if (reopening && method === "GET" && pathname === "/api/buyer/cart" && !freshCartRequest)
+      freshCartRequest = request;
+  };
+  page.on("request", observeCart);
+  try {
+    await expectReturnProducts(page, locale);
+    await action(page, "claim-return-products", () => page.getByTestId("claim-return-products").click(), "return and message-link reopen preserve the fresh server cart without writes", async () => {
+      await expect(page).toHaveURL(`${origin}/${locale}/products`);
+      await expect(page.locator("main.sf-wrap")).toBeVisible();
+      assert.equal(page.seen.redeem, redeems, "return does not duplicate redemption");
+      assert.equal(checkoutRequestCount(page), writes, "return does not quote or create an order");
+      assert.equal(cartWrites, 0, "return does not write the cart");
+      // The original synthetic message restores the claim. Discard stale readback before observing its GET.
+      page.seen.cart = null;
+      reopening = true;
+      await openClaim(page, link, locale);
+      await expect.poll(() => freshCartRequest !== null).toBe(true);
+      // No response waiter is created until navigation succeeds; finally always removes the scoped listener.
+      const freshCartResponse = await freshCartRequest.response();
+      assert(freshCartResponse, "the fresh cart request must have a response");
+      assert.equal(freshCartResponse.request(), freshCartRequest, "cart readback belongs to the post-barrier request");
+      assert.equal(freshCartResponse.status(), 200, "fresh UI cart read succeeds");
+      const freshCart = await freshCartResponse.json();
+      assert.deepEqual(freshCart.items, items, "fresh server cart preserves every item after return/reopen");
+      await expect.poll(() => page.seen.cart?.items).toEqual(freshCart.items);
+      assert.equal(page.seen.redeem, redeems);
+      assert.equal(checkoutRequestCount(page), writes);
+      await expectReturnProducts(page, locale);
+      assert.equal(cartWrites, 0, "return/reopen does not issue a cart write");
+    });
+  } finally {
+    page.off("request", observeCart);
+  }
 }
 async function checkout(page, link, locale = "zh-TW", partial = false) {
   await action(page, "claim-add", () => page.getByTestId("claim-add").click(), "one click opens checkout with chosen SKU and quantity", async () => {
