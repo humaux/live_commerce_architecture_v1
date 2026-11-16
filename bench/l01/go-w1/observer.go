@@ -1,6 +1,7 @@
 // Purpose: Package w1 measures a fixed, bounded Go signed-webhook pilot.
 // Depends on: standard library HTTP, HMAC, JSON and monotonic time; no provider calls.
 // Used by: TestL01GoW1's existing compiled API / isolated PG fixture bridge.
+// Owns: bounded observation collection and verdict accounting for synthetic W1 requests.
 // Invariants: I01, I04, I11, I18, I23; never infers business correctness from ACK.
 // Package w1 records bounded observations; it never implements webhook business logic.
 package w1
