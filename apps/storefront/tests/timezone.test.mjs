@@ -64,6 +64,7 @@ test("OrderHistory renders server order instant in Taipei", () => {
 test("ClaimLink renders claim expiry in Taipei", () => {
   const preview = { expires_at: instant, lines: [] };
   const component = load("ClaimLink", ["en", "ready", "context", preview, { items: [] }, false, null, false], {
+    "./ClaimLink.module.css": { surface: "surface", main: "main", header: "header", back: "back", language: "language", card: "card", badge: "badge", lines: "lines", product: "product", value: "value", summary: "summary", dock: "dock", checkout: "checkout", returnProducts: "returnProducts", support: "support" },
     "../lib/buyer-client": { BuyerClientError: Error }, "../lib/purchase": { knownOrderID: () => null, pendingPurchase: () => null },
     "../lib/routes": {}, "../lib/claim-contract": {}, "../lib/claim-copy": { claimCopy }, "../lib/money": { formatMoney: () => "NT$1" },
   }).default;

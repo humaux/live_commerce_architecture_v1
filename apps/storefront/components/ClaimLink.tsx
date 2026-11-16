@@ -266,6 +266,7 @@ export default function ClaimLink({
   // A pending claim is not an applied cart result. B1 flags and the actual cart decide the presentation.
   const unavailableLines = preview?.lines.some((line) => !line.available || line.sold_out) ?? false;
   const allSoldOut = !!preview?.lines.length && preview.lines.every((line) => line.available && line.sold_out);
+  const allIneligible = !!preview?.lines.length && preview.lines.every((line) => !line.available || line.sold_out);
   const resultState = view !== "ready" ? undefined : allSoldOut ? "sold-out" :
     applicable && unavailableLines ? "partial" : applicable && preview?.lines.every((line) => !line.pending &&
       cart?.items.some((item) => item.sku_id === line.sku_id && item.quantity === line.quantity)) ? "already-in-cart" : undefined;
@@ -345,7 +346,7 @@ export default function ClaimLink({
                     ) : null}
 
                     <strong className={styles.product}>{line.product_name} · {line.sku_code}</strong>
-                    <div className={styles.value}><span>{copy.quantity}</span><span>{line.quantity}</span></div>
+                    <div className={styles.value}><span>{copy.quantity}{" "}</span><span>{line.quantity}</span></div>
                     <div className={styles.value}><span>{copy.subtotal}</span><strong>{money(line.unit_price_minor * line.quantity, line.currency)}</strong></div>
                   </li>
                 ))}
@@ -360,7 +361,7 @@ export default function ClaimLink({
               )}
             </section>
             <div className={styles.dock} data-testid="claim-result-dock">
-              {applicable ? (
+              {!allIneligible ? (
                 <button className={`primary claim-add ${styles.checkout}`} data-testid="claim-add" disabled={busy || !applicable} onClick={() => void redeem()}>
                   {busy ? copy.adding : copy.checkoutAll(checkoutCount)}
                 </button>

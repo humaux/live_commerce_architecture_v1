@@ -11,6 +11,7 @@ import { engine, launch, ctxOpts, phone, iosZoomOffenders, isWebkitCancelledFetc
 import { addToCart, confirmCheckoutAddress } from "./shop-helpers.mjs";
 import { displayTime } from "../../packages/format/src/index.ts";
 import { claimCopy } from "../../apps/storefront/lib/claim-copy.ts";
+import { shopCopy } from "../../apps/storefront/lib/shop-copy.ts";
 
 const origin = process.env.LC_CDC_ORIGIN, evidence = process.env.LC_CDC_EVIDENCE;
 assert(origin && evidence && process.env.LC_CDC_CONTROL_KEY);
@@ -114,7 +115,16 @@ async function returnProductsAndReopen(page, link, locale = "zh-TW") {
     await expectReturnProducts(page, locale);
     await action(page, "claim-return-products", () => page.getByTestId("claim-return-products").click(), "return and message-link reopen preserve the fresh server cart without writes", async () => {
       await expect(page).toHaveURL(`${origin}/${locale}/products`);
-      await expect(page.locator("main.sf-wrap")).toBeVisible();
+      const products = page.locator('main.sf-wrap:not([aria-busy="true"])').filter({
+        has: page.getByRole("heading", { level: 1, name: shopCopy[locale].allProducts, exact: true }),
+      });
+      await expect(products).toHaveCount(1);
+      await expect(products).toBeVisible();
+      await expect(page.getByTestId("page-error")).toHaveCount(0);
+      const content = products.getByTestId("product-grid").filter({ has: page.getByTestId("product-card") })
+        .or(products.getByTestId("list-empty"));
+      await expect(content).toHaveCount(1);
+      await expect(content).toBeVisible();
       assert.equal(page.seen.redeem, redeems, "return does not duplicate redemption");
       assert.equal(checkoutRequestCount(page), writes, "return does not quote or create an order");
       assert.equal(cartWrites, 0, "return does not write the cart");
