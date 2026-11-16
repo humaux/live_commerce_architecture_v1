@@ -340,7 +340,7 @@ export default function ClaimLink({
                     {resultState === "partial" && (!line.available || line.sold_out) ? (
                       <>
                         <p className={styles.partialProduct}>{line.product_name} · {line.sku_code} × {line.quantity}</p>
-                        <p className={`claim-flag ${styles.partialWarning}`}>{copy.unavailable}</p>
+                        <p className={styles.partialWarning}>{copy.unavailable}</p>
                       </>
                     ) : (
                       <>
