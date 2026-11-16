@@ -1,0 +1,25 @@
+{
+  "base": "bc6c54a429c211c16a3fdd25dd50e5f78acadbb4",
+  "base_tree": "1124fde6eea005d36433eb35beabbffbcd385889",
+  "old_PR440_readonly": "1182b74433a486f3fc477594f14a08603c19da08",
+  "formal_current_admission": "UNKNOWN: missing root-promoted version/export manifest for full signed 73-frame set and 13 product/12 cart plans; historical cache is not proof of current promotion",
+  "figma_file": "iJ9lDdFIXgTlKkt5Tvrc0X",
+  "historical_raw_root": "/Volumes/data/live_commerce_architecture_v1/output/integrator/tools/logs/ci-evidence-1238/c7-live-1853",
+  "historical_raw": {
+    "base-context.txt": "ce616518a5a699a3d1df79c20df5c63986c8e06c640640516e00554480f20c5c",
+    "options-context.txt": "8f029714baf91f0d70286d2824f6ccb799d544888168523c52f904895f0ba77c",
+    "get_design_context-51-1380-1793559184906-0.png": "6e75fbaf2baf7fc3a0ad2b49bdb54830612012becc3cb935a54cb13c83eefe3d"
+  },
+  "actually_viewed_png": "get_design_context-51-1380-1793559184906-0.png",
+  "current_source_sha256": {
+    "apps/storefront/components/ProductBuy.tsx": "9ef14b68630f707bb866889b2cd17316e65be176bf9ad0a6744bc6311625e08b",
+    "tests/storefront/shop-real-gate.mjs": "bb247981c341596cf7761c82e6fb364f5f4f8844fa11ec5038055361177789f1",
+    "tests/foundation/browser_storefront_test.go": "8e36753e60463942b15384ba18e03666173bc5d7777506f6459046d2c18b3f6a",
+    "tests/storefront/buyer-browse-parity.spec.ts": "895a5b6a2783898476f806e88097b11547a8544c16b76c05c4132c7a357d9a74"
+  },
+  "inventory": {
+    "path": "/Volumes/data/live_commerce_architecture_v1/output/ui-parity/FIGMA-INVENTORY.md",
+    "sha256": "2d99283a59de36c3b3d035a4c91e6e3b41b5c33b17ad581a8c15f3b1dc49291b",
+    "limitation": "2026-10-30 structural inventory only; not current visual acceptance"
+  }
+}
