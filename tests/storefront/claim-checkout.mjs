@@ -157,6 +157,14 @@ async function c8Checkout(page, link, locale = "zh-TW") {
   await noLeaks(page, link);
   assert.equal(new URL(page.url()).searchParams.has("from"), false, "checkout consumes C8 from=claim");
 }
+// Checks camera geometry only; document/body extents are measurements, not fit gates.
+function c8AssertCameraGeometry(camera) {
+  assert.deepEqual(camera.playwrightViewport, camera.requestedViewport, "C8 Playwright viewport differs from requested");
+  assert.deepEqual({ width: camera.actual.innerWidth, height: camera.actual.innerHeight }, camera.requestedViewport,
+    "C8 actual CSS viewport differs from requested");
+  assert.equal(camera.pngHeaderValid, true, "C8 native capture must have a PNG IHDR");
+  assert.deepEqual(camera.pngDimensions, camera.requestedViewport, "C8 native CSS-scale PNG dimensions differ from requested");
+}
 // Reuse each already-bound buyer context: issuing the same fixture token in a new
 // context would test a different owner and return 404, not another viewport.
 async function c8StateMatrix(page, link, state, mobile) {
@@ -202,12 +210,35 @@ async function c8StateMatrix(page, link, state, mobile) {
     await verify();
     const frame = `66:${(state === "already-in-cart" ? 1748 : state === "sold-out" ? 1750 : 1752) + Number(mobile)}`;
     const png = `c8-${frame.replace(":", "-")}-${locale}-${viewport.width}.png`;
-    await page.screenshot({ path: path.join(evidence, png), fullPage: true });
+    // READ/MEASURE only: preserve real CSS layout and device DPR without changing either.
+    const camera = { requestedViewport: { ...viewport }, playwrightViewport: page.viewportSize(),
+      screenshotOptions: { fullPage: false, scale: "css" },
+      actual: await page.evaluate(() => {
+        const extents = (element) => element ? { clientWidth: element.clientWidth, clientHeight: element.clientHeight,
+          scrollWidth: element.scrollWidth, scrollHeight: element.scrollHeight } : null;
+        return { innerWidth: window.innerWidth, innerHeight: window.innerHeight, devicePixelRatio: window.devicePixelRatio,
+          document: extents(document.documentElement), body: extents(document.body) };
+      }) };
+    await page.screenshot({ path: path.join(evidence, png), ...camera.screenshotOptions });
+    const pngBytes = await readFile(path.join(evidence, png));
+    camera.pngHeaderValid = pngBytes.length >= 24 && pngBytes.subarray(0, 8).toString("hex") === "89504e470d0a1a0a" &&
+      pngBytes.subarray(12, 16).toString("ascii") === "IHDR";
+    camera.pngDimensions = camera.pngHeaderValid ? { width: pngBytes.readUInt32BE(16), height: pngBytes.readUInt32BE(20) } : null;
     const row = { frame, locale, viewport, state, sourceBundleSha256: "adc1ac630744c2b11bd185dd893deb744d03d9a833f3b973800b1aa094656f19",
       sourceLocale: "zh-TW", sourceBinding: "ROOT_ACCEPTED_BOUNDED_SEMANTIC_SOURCE", visualSource: "PIXEL_ACCEPTANCE_PENDING", formalFrameAcceptance: false,
-      sourcePins, png, pngSha256: createHash("sha256").update(await readFile(path.join(evidence, png))).digest("hex"), behavior: "pending" };
+      sourcePins, png, pngSha256: createHash("sha256").update(pngBytes).digest("hex"), camera, geometry: "pending", behavior: "pending" };
     c8Behavior.push(row);
-    ledger.push({ page: `/${locale}/claim`, control: `c8-${state}`, operation: "readback and success screenshot after language selection", expected: "source-aligned quantities and stock state; pixel acceptance pending", actual: state, pass: true, ...row });
+    const cameraLedger = { page: `/${locale}/claim`, control: `c8-${state}`, operation: "readback and native viewport screenshot after language selection",
+      expected: "source-aligned quantities/stock and actual CSS/native PNG viewport; pixel acceptance pending", actual: state, pass: false, ...row };
+    ledger.push(cameraLedger);
+    // Save the original PNG and measurements before a geometry mismatch can fail the gate.
+    const cameraReceipt = path.join(evidence, `${png}.json`);
+    await writeFile(cameraReceipt, JSON.stringify(row, null, 2));
+    c8AssertCameraGeometry(camera);
+    row.geometry = "observed assertions passed";
+    cameraLedger.geometry = row.geometry;
+    cameraLedger.pass = true;
+    await writeFile(cameraReceipt, JSON.stringify(row, null, 2));
     const items = page.seen.cart.items.map(({ sku_id, quantity }) => ({ sku_id, quantity }));
     if (state !== "sold-out") {
       await c8Checkout(page, link, locale);
@@ -234,6 +265,13 @@ async function c8StateMatrix(page, link, state, mobile) {
 }
 const pass = (name) => { cases++; console.log(`PASS CDC ${name}`); };
 try {
+  // MODEL_ONLY calibration: rejects mislabeled 1024px layout/capture without new business cases.
+  const calibratedCamera = { requestedViewport: { width: 390, height: 844 }, playwrightViewport: { width: 390, height: 844 },
+    actual: { innerWidth: 390, innerHeight: 844, devicePixelRatio: 2.625 }, pngHeaderValid: true, pngDimensions: { width: 390, height: 844 } };
+  assert.doesNotThrow(() => c8AssertCameraGeometry(calibratedCamera));
+  assert.throws(() => c8AssertCameraGeometry({ ...calibratedCamera, actual: { ...calibratedCamera.actual, innerWidth: 1024 } }), /C8 actual CSS viewport differs/);
+  assert.throws(() => c8AssertCameraGeometry({ ...calibratedCamera, pngDimensions: { width: 1024, height: 844 } }), /C8 native CSS-scale PNG dimensions differ/);
+  console.log("MODEL_ONLY C8 camera calibration: valid 390 accepted; invalid 1024 layout/capture rejected");
   // One full purchase per locale; phone profile runs every matrix cell on WebKit.
   let previous, previousLink;
   for (const locale of ["zh-TW", "zh-CN", "en"]) {
