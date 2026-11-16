@@ -1,5 +1,8 @@
 //go:build browser
 
+// Purpose: T12 real-browser deal loop and local NEVERMERGE buyer-status research candidate.
+// Depends on: existing browser/PG/provider fixtures and net/http ResponseController.
+// Used by: existing --browser-e2e mode. Invariants: I11, I18, I21, I23.
 package foundation_test
 
 // T12 (docs/delivery/units/t12-e2e.md): the core deal loop in ONE real-browser chain, driven by
@@ -53,6 +56,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -111,6 +115,7 @@ type e2eRun struct {
 	adminOrigin   string
 	adminRelay    *browserAdminRelay
 	adminAPI      *httptest.Server
+	buyerStatus   *e2eBuyerStatusObserver // NEVERMERGE: bounded API-hop metadata only
 	buyerAPI      *httptest.Server
 	ingress       *httptest.Server
 	bffKey        string
@@ -146,6 +151,9 @@ func e2eRequire(t *testing.T) {
 
 func TestBrowserE2EDealLoop(t *testing.T) {
 	e2eRequire(t)
+	if !t.Run("MODEL_ONLY_buyer_status_calibration", e2eBuyerStatusCalibration) {
+		t.Fatal("buyer status research calibration failed")
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 26*time.Minute)
 	defer cancel()
 	x := &e2eRun{t: t, ctx: ctx, actions: make(chan e2eAction), secrets: map[string]string{}}
@@ -333,7 +341,8 @@ func (x *e2eRun) startAPIs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("buyer HTTP constructor: %v", err)
 	}
-	x.buyerAPI = httptest.NewServer(handler)
+	x.buyerStatus = &e2eBuyerStatusObserver{started: time.Now()}
+	x.buyerAPI = httptest.NewServer(x.buyerStatus.wrap(handler))
 	t.Cleanup(x.buyerAPI.Close)
 	x.secrets["buyer BFF key"] = buyerKey
 	x.buyerKeyValue = buyerKey
@@ -1096,6 +1105,12 @@ func e2eScan(dir string, needles map[string]string) (label, file string) {
 // fail first (PROCESS §2.4): a planted needle in a scratch directory must be found, a clean one must not.
 func (x *e2eRun) finish(t *testing.T) {
 	t.Helper()
+	// Snapshot only: active/later requests remain UNKNOWN; no cleanup or cancellation changes.
+	if x.buyerStatus != nil {
+		if data, emit := x.buyerStatus.snapshot(); emit {
+			t.Logf("T12 buyer API status research NEVERMERGE: %s", data)
+		}
+	}
 	needles := map[string]string{"recipient": "Synthetic Gate Recipient", "phone": "+886900000091", "address": "Synthetic Address Ninety One"}
 	for label, value := range x.secrets {
 		needles[label] = value
@@ -1140,3 +1155,231 @@ func TestBrowserE2EDealLoopSandbox(t *testing.T) {
 	}
 	t.Skip("NOT_RUN: SANDBOX tier is not wired in T12 (owner ruling needed: card entry on the real hosted page); the SP18 harness of tests/foundation/browser_stripe_test.go remains the only SANDBOX evidence")
 }
+
+// NEVERMERGE research only. Closed metadata cannot identify/correlate a buyer request;
+// absence, overflow, unfinished or later requests never imply no Go execution.
+var e2eBuyerDetailPath = regexp.MustCompile(`^/v1/buyer/orders/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+
+type e2eBuyerStatusEvent struct {
+	Method       string `json:"method"`
+	PathClass    string `json:"path_class"`
+	Status       int    `json:"first_final_status"`
+	OffsetNS     int64  `json:"offset_ns"`
+	ElapsedNS    int64  `json:"elapsed_ns"`
+	Returned     bool   `json:"handler_returned"`
+	ContentType  bool   `json:"content_type_handler_header_present"`
+	CacheControl bool   `json:"cache_control_handler_header_present"`
+	NoSniff      bool   `json:"x_content_type_options_handler_header_present"`
+	RetryAfter   bool   `json:"retry_after_handler_header_present"`
+	ErrorCode    string `json:"error_code"`
+}
+
+type e2eBuyerStatusObserver struct {
+	mu       sync.Mutex
+	started  time.Time
+	events   [64]e2eBuyerStatusEvent
+	count    int
+	dropped  uint64
+	inflight uint64
+	emitted  bool
+}
+
+// wrap observes only the plain synthetic order-detail GET; all other writers retain identity.
+func (o *e2eBuyerStatusObserver) wrap(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet || r.URL == nil || !e2eBuyerDetailPath.MatchString(r.URL.Path) {
+			next.ServeHTTP(w, r)
+			return
+		}
+		start := time.Now()
+		o.mu.Lock()
+		o.inflight++
+		o.mu.Unlock()
+		sw := &e2eBuyerStatusWriter{ResponseWriter: w}
+		returned := false
+		defer func() {
+			if returned && sw.status == 0 {
+				sw.final(http.StatusOK) // implicit status when a handler returns without writing
+			}
+			event := e2eBuyerStatusEvent{
+				Method: "GET", PathClass: "BUYER_ORDER_DETAIL", Status: sw.status,
+				OffsetNS: start.Sub(o.started).Nanoseconds(), ElapsedNS: time.Since(start).Nanoseconds(),
+				Returned: returned, ContentType: sw.contentType, CacheControl: sw.cacheControl,
+				NoSniff: sw.noSniff, RetryAfter: sw.retryAfter, ErrorCode: "NOT_OBSERVED",
+			}
+			o.mu.Lock()
+			defer o.mu.Unlock()
+			o.inflight--
+			if o.count == len(o.events) {
+				o.dropped++
+				return
+			}
+			o.events[o.count] = event
+			o.count++
+		}()
+		next.ServeHTTP(sw, r)
+		returned = true
+	})
+}
+
+// snapshot marshals a bounded copy once on the test goroutine, never logging from HTTP goroutines.
+func (o *e2eBuyerStatusObserver) snapshot() ([]byte, bool) {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+	if o.emitted {
+		return nil, false
+	}
+	o.emitted = true
+	// All members are numeric, boolean or fixed literals: Marshal cannot fail for these types.
+	data, _ := json.Marshal(struct {
+		Events   []e2eBuyerStatusEvent `json:"events"`
+		Dropped  uint64                `json:"dropped"`
+		Inflight uint64                `json:"inflight_at_snapshot"`
+	}{o.events[:o.count], o.dropped, o.inflight})
+	return data, true
+}
+
+type e2eBuyerStatusWriter struct {
+	http.ResponseWriter
+	status                                         int
+	contentType, cacheControl, noSniff, retryAfter bool
+}
+
+func (w *e2eBuyerStatusWriter) final(status int) {
+	if w.status != 0 {
+		return
+	}
+	w.status = status
+	// Presence in the handler header map only; no claim about transport-added headers.
+	h := w.Header()
+	w.contentType = len(h.Values("Content-Type")) != 0
+	w.cacheControl = len(h.Values("Cache-Control")) != 0
+	w.noSniff = len(h.Values("X-Content-Type-Options")) != 0
+	w.retryAfter = len(h.Values("Retry-After")) != 0
+}
+
+// WriteHeader forwards informational and duplicate headers unchanged; only the first final is recorded.
+func (w *e2eBuyerStatusWriter) WriteHeader(status int) {
+	w.ResponseWriter.WriteHeader(status)
+	if status >= 200 || status == http.StatusSwitchingProtocols {
+		w.final(status)
+	}
+}
+
+// Write lets the underlying writer commit/sniff before recording its implicit 200.
+func (w *e2eBuyerStatusWriter) Write(p []byte) (int, error) {
+	n, err := w.ResponseWriter.Write(p)
+	if w.status == 0 {
+		w.final(http.StatusOK)
+	}
+	return n, err
+}
+
+// Unwrap preserves the buyer handler's transport-deadline ResponseController chain.
+func (w *e2eBuyerStatusWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
+
+// FlushError delegates controller capability (including ErrNotSupported), without claiming
+// http.Flusher/Hijacker/Pusher support. A successful flush commits the default 200.
+func (w *e2eBuyerStatusWriter) FlushError() error {
+	err := http.NewResponseController(w.ResponseWriter).Flush()
+	if err == nil && w.status == 0 {
+		w.final(http.StatusOK)
+	}
+	return err
+}
+
+// e2eBuyerStatusCalibration is MODEL_ONLY, nested in existing T12; no native cause claim.
+func e2eBuyerStatusCalibration(t *testing.T) {
+	path := "/v1/buyer/orders/00000000-0000-0000-0000-000000000091"
+	for _, status := range []int{0, 503} {
+		t.Run(fmt.Sprintf("response_%d", status), func(t *testing.T) {
+			serve := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("X-Content-Type-Options", "nosniff")
+				w.Header().Set("Retry-After", "private_response_header_sentinel")
+				if status != 0 {
+					w.WriteHeader(status)
+					w.WriteHeader(202) // duplicate must not replace the first final
+				}
+				_, _ = w.Write([]byte("synthetic private body sentinel"))
+			})
+			direct, observed := httptest.NewRecorder(), httptest.NewRecorder()
+			request := httptest.NewRequest("GET", path+"?private_query_sentinel", nil)
+			request.Header.Set("Authorization", "private_header_sentinel")
+			request.Header.Set("Cookie", "private_cookie_sentinel")
+			serve.ServeHTTP(direct, request)
+			o := &e2eBuyerStatusObserver{started: time.Now()}
+			o.wrap(serve).ServeHTTP(observed, request)
+			a, b := direct.Result(), observed.Result()
+			if a.StatusCode != b.StatusCode || direct.Body.String() != observed.Body.String() || fmt.Sprint(a.Header) != fmt.Sprint(b.Header) {
+				t.Fatal("adapter changed status/body/header/sniff behavior")
+			}
+			data, _ := o.snapshot()
+			for _, sentinel := range []string{path, "private_query_sentinel", "private_header_sentinel", "private_cookie_sentinel", "private_response_header_sentinel", "synthetic private body sentinel"} {
+				if bytes.Contains(data, []byte(sentinel)) {
+					t.Fatal("private sentinel escaped into metadata")
+				}
+			}
+			if o.count != 1 || o.events[0].Status != a.StatusCode || o.events[0].ErrorCode != "NOT_OBSERVED" {
+				t.Fatal("metadata did not record first final status")
+			}
+			if _, again := o.snapshot(); again {
+				t.Fatal("snapshot emitted twice")
+			}
+		})
+	}
+	t.Run("controller_and_negative_control", func(t *testing.T) {
+		underlying := &e2eBuyerDeadlineWriter{ResponseRecorder: httptest.NewRecorder()}
+		sw := &e2eBuyerStatusWriter{ResponseWriter: underlying}
+		deadline := time.Now().Add(time.Second)
+		controller := http.NewResponseController(sw)
+		if controller.SetReadDeadline(deadline) != nil || controller.SetWriteDeadline(deadline) != nil || controller.Flush() != nil {
+			t.Fatal("ResponseController capability lost")
+		}
+		if underlying.read != deadline || underlying.write != deadline || !underlying.Flushed || sw.status != 200 {
+			t.Fatal("controller did not reach underlying writer")
+		}
+		sw.WriteHeader(503) // flush has already committed 200
+		if sw.status != 200 || underlying.Code != 200 {
+			t.Fatal("flush status overwritten")
+		}
+		bad := struct{ http.ResponseWriter }{underlying} // MODEL_ONLY: deliberately hides Unwrap/deadlines
+		if http.NewResponseController(bad).SetReadDeadline(deadline) != http.ErrNotSupported {
+			t.Fatal("negative wrapper control was not detected")
+		}
+	})
+	t.Run("bound_and_non_target_identity", func(t *testing.T) {
+		o := &e2eBuyerStatusObserver{started: time.Now()}
+		original := httptest.NewRecorder()
+		target := false
+		h := o.wrap(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if !target && w != original {
+				t.Fatal("non-target writer was wrapped")
+			}
+		}))
+		for _, tc := range []struct{ method, path string }{
+			{"POST", path}, {"GET", path + "/payment"}, {"GET", path + "/"},
+			{"GET", "/v1/buyer/orders/lookup"}, {"GET", "/v1/buyer/orders/link"}, {"GET", "/other"},
+		} {
+			h.ServeHTTP(original, httptest.NewRequest(tc.method, tc.path, nil))
+		}
+		if o.count != 0 {
+			t.Fatal("non-target recorded")
+		}
+		target = true
+		for i := 0; i < 67; i++ {
+			h.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", path, nil))
+		}
+		if o.count != 64 || o.dropped != 3 || o.inflight != 0 {
+			t.Fatal("bounded event accounting failed")
+		}
+	})
+}
+
+// e2eBuyerDeadlineWriter is the MODEL_ONLY transport capability probe (httperror/error_test.go pattern).
+type e2eBuyerDeadlineWriter struct {
+	*httptest.ResponseRecorder
+	read, write time.Time
+}
+
+func (w *e2eBuyerDeadlineWriter) SetReadDeadline(at time.Time) error  { w.read = at; return nil }
+func (w *e2eBuyerDeadlineWriter) SetWriteDeadline(at time.Time) error { w.write = at; return nil }
