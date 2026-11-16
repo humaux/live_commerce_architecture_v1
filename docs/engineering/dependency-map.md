@@ -5,6 +5,14 @@ Internal = packages in this module; third-party = everything outside the module
 and the standard library. See `docs/engineering/dependencies.md` for why each
 third-party module was admitted.
 
+## `bench/l01/go-w1`
+
+Purpose: Package w1 measures a fixed, bounded Go signed-webhook pilot.
+
+- Depends on (internal): —
+- Depends on (third-party): —
+- Used by: — (entry point or unused)
+
 ## `cmd/admin-fixture`
 
 Command admin-fixture owns a disposable local fixture for the admin ledger UI: it migrates an empty lc_admin_fixture database on 127.0.0.1, seeds one store with nine sample SKUs and a dev session, writes a private 0600 env file for the dev Next adapter and serves the Go admin API on 127.0.0.1:18081.
