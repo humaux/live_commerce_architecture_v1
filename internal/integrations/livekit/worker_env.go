@@ -87,11 +87,6 @@ func LoadWorkerEnvironment(getenv func(string) string) (WorkerEnvironment, error
 	if getenv == nil {
 		return out, ErrWorkerEnvironment
 	}
-	inputEnabled, flagErr := workerBrowserInputEnabled(getenv)
-	if flagErr != nil {
-		return out, flagErr
-	}
-	out.BrowserInputEnabled = inputEnabled
 	switch getenv("COMMERCE_MEDIA_WORKER_ENABLED") {
 	case "", "0":
 		return out, nil
@@ -100,6 +95,11 @@ func LoadWorkerEnvironment(getenv func(string) string) (WorkerEnvironment, error
 	default:
 		return WorkerEnvironment{}, ErrWorkerEnvironment
 	}
+	inputEnabled, flagErr := workerBrowserInputEnabled(getenv)
+	if flagErr != nil {
+		return out, flagErr
+	}
+	out.BrowserInputEnabled = inputEnabled
 	out.WorkerDSN = getenv("COMMERCE_MEDIA_WORKER_DATABASE_URL")
 	out.ExecutorDSN = getenv("COMMERCE_MEDIA_EXECUTOR_DATABASE_URL")
 	if !workerDSNValid(out.WorkerDSN) || !workerDSNValid(out.ExecutorDSN) {
