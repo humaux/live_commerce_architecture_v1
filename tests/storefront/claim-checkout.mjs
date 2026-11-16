@@ -157,6 +157,59 @@ async function c8Checkout(page, link, locale = "zh-TW") {
   await noLeaks(page, link);
   assert.equal(new URL(page.url()).searchParams.has("from"), false, "checkout consumes C8 from=claim");
 }
+// Checks the source-bound result controls after state/camera baselines, without actions or writes.
+async function c8AssertResultParity(page, { frame, locale, state, mobile }) {
+  console.log("C8_PARITY_BASELINE", JSON.stringify({ frame, locale, state, geometry: "passed" }));
+  const parity = { page: `/${locale}/claim`, frame, locale, state, control: "c8-result-parity", operation: "read-only visible anchors and layout measurements",
+    expected: "state result header/back/card and applicable fixed dock/partial explanation", actual: "pending", pass: false,
+    checking: "header", checks: { header: "NOT_RUN", back: "NOT_RUN", card: "NOT_RUN", headerTop: "NOT_RUN",
+      dock: mobile ? "NOT_RUN" : "NOT_APPLICABLE", partial: state === "partial" ? "NOT_RUN" : "NOT_APPLICABLE" } };
+  ledger.push(parity);
+  try {
+    const header = page.getByTestId("claim-result-header");
+    await expect(header).toBeVisible();
+    await expect(header).toHaveAttribute("data-claim-state", state);
+    parity.checks.header = "PASS";
+    parity.checking = "back";
+    await expect(header.getByTestId("claim-result-back")).toBeVisible();
+    parity.checks.back = "PASS";
+    parity.checking = "card";
+    const card = page.getByTestId("claim-result-card");
+    await expect(card).toBeVisible();
+    await expect(card.getByTestId("claim-line-A1")).toBeVisible();
+    parity.checks.card = "PASS";
+    parity.checking = "headerTop";
+    // READ/MEASURE only: formal result headers start at viewport top, not below generic chrome.
+    parity.headerRect = await header.evaluate((node) => node.getBoundingClientRect().toJSON());
+    assert.equal(parity.headerRect.top, 0, "C8 result header starts at viewport top");
+    parity.checks.headerTop = "PASS";
+    if (mobile) {
+      parity.checking = "dock";
+      const dock = page.getByTestId("claim-result-dock");
+      await expect(dock).toBeVisible();
+      parity.dock = await dock.evaluate((node) => ({ position: getComputedStyle(node).position,
+        rect: node.getBoundingClientRect().toJSON(), viewport: { width: window.innerWidth, height: window.innerHeight } }));
+      assert.equal(parity.dock.position, "fixed", "C8 mobile result dock uses fixed positioning");
+      assert.equal(parity.dock.rect.bottom, parity.dock.viewport.height, "C8 mobile result dock meets viewport bottom");
+      assert(parity.dock.rect.left >= 0 && parity.dock.rect.right <= parity.dock.viewport.width, "C8 mobile result dock stays within horizontal viewport bounds");
+      parity.checks.dock = "PASS";
+    }
+    if (state === "partial") {
+      parity.checking = "partial";
+      const explanation = page.getByTestId("claim-partial-result");
+      await expect(explanation).toBeVisible();
+      await expect(explanation).toHaveText(claimCopy[locale].skipped);
+      parity.checks.partial = "PASS";
+    }
+    parity.checking = null;
+    parity.actual = "all applicable result parity checks passed";
+    parity.pass = true;
+  } catch (error) {
+    parity.checks[parity.checking] = "FAIL";
+    parity.actual = `failed ${parity.checking}; subsequent checks NOT_RUN`;
+    throw error;
+  }
+}
 // Checks camera geometry only; document/body extents are measurements, not fit gates.
 function c8AssertCameraGeometry(camera) {
   assert.deepEqual(camera.playwrightViewport, camera.requestedViewport, "C8 Playwright viewport differs from requested");
@@ -239,6 +292,7 @@ async function c8StateMatrix(page, link, state, mobile) {
     cameraLedger.geometry = row.geometry;
     cameraLedger.pass = true;
     await writeFile(cameraReceipt, JSON.stringify(row, null, 2));
+    await c8AssertResultParity(page, { frame, locale, state, mobile });
     const items = page.seen.cart.items.map(({ sku_id, quantity }) => ({ sku_id, quantity }));
     if (state !== "sold-out") {
       await c8Checkout(page, link, locale);
