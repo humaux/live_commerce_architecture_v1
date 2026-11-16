@@ -1,3 +1,6 @@
+// Responsibility: default-OFF native media entrypoint and shared loader mapping.
+// Dependencies: LiveKit configuration, platform pools, River lifecycle.
+// Callers: main and supervised exec child; readiness precedes release.
 package main
 
 import (
@@ -8,6 +11,9 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/riverqueue/river"
 
 	"livecommerce/internal/integrations/livekit"
 	"livecommerce/internal/jobqueue"
@@ -69,12 +75,9 @@ func runNative(ctx context.Context, getenv func(string) string, ready func() err
 	if ctx == nil {
 		return errWorkerConfig
 	}
-	projects := make([]live.MediaProject, 0, len(env.Projects))
-	for _, project := range env.Projects {
-		projects = append(projects, live.MediaProject{
-			ProjectID: project.ProjectID, CredentialVersion: project.CredentialVersion,
-			Config: project.Config, Transport: project.Transport,
-		})
+	projects, input, err := workerRuntimes(env.Projects, env.BrowserInputEnabled)
+	if err != nil {
+		return errWorkerConfig
 	}
 	startup, done := context.WithTimeout(ctx, 10*time.Second)
 	workerPool, err := platform.OpenMediaWorkerPool(startup, env.WorkerDSN)
@@ -89,7 +92,12 @@ func runNative(ctx context.Context, getenv func(string) string, ready func() err
 		return errWorkerDatabase
 	}
 	defer executorPool.Close()
-	client, err := live.NewMediaClient(startup, workerPool, executorPool, env.Keys, projects, env.Concurrency)
+	var client *river.Client[pgx.Tx]
+	if env.BrowserInputEnabled {
+		client, err = live.NewMediaClientWithBrowserInput(startup, workerPool, executorPool, env.Keys, projects, input, env.Concurrency)
+	} else {
+		client, err = live.NewMediaClient(startup, workerPool, executorPool, env.Keys, projects, env.Concurrency)
+	}
 	done()
 	if err != nil {
 		return errWorkerDatabase
@@ -106,4 +114,28 @@ func runNative(ctx context.Context, getenv func(string) string, ready func() err
 	default:
 		return err
 	}
+}
+
+// workerRuntimes maps the shared strict loader output in both parent and exec
+// child. Neither process receives an in-memory runtime from the other.
+func workerRuntimes(loaded []livekit.WorkerProject, mixed bool) ([]live.MediaProject, *live.BrowserInputRuntime, error) {
+	projects := make([]live.MediaProject, 0, len(loaded))
+	inputs := make([]live.BrowserInputProject, 0, len(loaded))
+	for _, p := range loaded {
+		projects = append(projects, live.MediaProject{ProjectID: p.ProjectID, CredentialVersion: p.CredentialVersion, Config: p.Config, Transport: p.Transport})
+		if p.BrowserInput != nil {
+			if !mixed {
+				return nil, nil, errWorkerConfig
+			}
+			inputs = append(inputs, live.BrowserInputProject{ProjectID: p.ProjectID, CredentialVersion: p.CredentialVersion, Config: p.BrowserInput.Config, Transport: p.BrowserInput.Transport, BrowserURL: p.BrowserInput.BrowserURL})
+		}
+	}
+	if !mixed {
+		return projects, nil, nil
+	}
+	input, err := live.NewBrowserInputRuntime(inputs)
+	if err != nil {
+		return nil, nil, errWorkerConfig
+	}
+	return projects, input, nil
 }

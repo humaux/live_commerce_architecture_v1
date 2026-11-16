@@ -1,3 +1,5 @@
+// Worker environment loading owns strict local MOCK configuration for native and recovery callers.
+// It reuses decodeObject and New; construction never performs network I/O.
 package livekit
 
 import (
@@ -9,6 +11,7 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -19,6 +22,7 @@ var ErrWorkerEnvironment = errors.New("media_worker_invalid_config")
 // WorkerEnvironment owns platform configuration; its formatted forms never expose DSNs or keys.
 type WorkerEnvironment struct {
 	Enabled                bool
+	BrowserInputEnabled    bool
 	WorkerDSN, ExecutorDSN string
 	Concurrency            int
 	Keys                   *MaterialKeyring
@@ -36,6 +40,7 @@ type WorkerProject struct {
 	CredentialVersion int64
 	Config            Config
 	Transport         http.RoundTripper
+	BrowserInput      *WorkerBrowserInput
 }
 
 func (WorkerProject) String() string     { return "livekit.WorkerProject{redacted}" }
@@ -44,11 +49,45 @@ func (WorkerProject) MarshalJSON() ([]byte, error) {
 	return []byte(`"livekit.WorkerProject{redacted}"`), nil
 }
 
+// WorkerBrowserInput binds explicit input credentials and fixed local transport
+// to its owning Worker's project identity, endpoint and stream-host policy.
+type WorkerBrowserInput struct {
+	Config     Config
+	Transport  http.RoundTripper
+	BrowserURL string
+}
+
+func (WorkerBrowserInput) String() string     { return "livekit.WorkerBrowserInput{redacted}" }
+func (p WorkerBrowserInput) GoString() string { return p.String() }
+func (WorkerBrowserInput) MarshalJSON() ([]byte, error) {
+	return []byte(`"livekit.WorkerBrowserInput{redacted}"`), nil
+}
+
+func workerBrowserInputEnabled(getenv func(string) string) (bool, error) {
+	if getenv == nil {
+		return false, ErrWorkerEnvironment
+	}
+	switch getenv("COMMERCE_MEDIA_BROWSER_INPUT_ENABLED") {
+	case "", "0":
+		return false, nil
+	case "1":
+		if getenv("COMMERCE_MEDIA_WORKER_ENABLED") == "1" && getenv("COMMERCE_MEDIA_RECOVERY_SUPERVISED") == "1" {
+			return true, nil
+		}
+	}
+	return false, ErrWorkerEnvironment
+}
+
 func LoadWorkerEnvironment(getenv func(string) string) (WorkerEnvironment, error) {
 	var out WorkerEnvironment
 	if getenv == nil {
 		return out, ErrWorkerEnvironment
 	}
+	inputEnabled, flagErr := workerBrowserInputEnabled(getenv)
+	if flagErr != nil {
+		return out, flagErr
+	}
+	out.BrowserInputEnabled = inputEnabled
 	switch getenv("COMMERCE_MEDIA_WORKER_ENABLED") {
 	case "", "0":
 		return out, nil
@@ -116,6 +155,11 @@ func LoadWorkerProjects(getenv func(string) string) ([]WorkerProject, error) {
 	if getenv == nil {
 		return nil, ErrWorkerEnvironment
 	}
+	inputEnabled, err := workerBrowserInputEnabled(getenv)
+	if err != nil {
+		return nil, err
+	}
+	inputCount := 0
 	var projects []WorkerProject
 	projectsJSON := getenv("COMMERCE_MEDIA_PROJECTS_JSON")
 	if len(projectsJSON) == 0 || len(projectsJSON) > 65536 {
@@ -132,7 +176,11 @@ func LoadWorkerProjects(getenv func(string) string) ([]WorkerProject, error) {
 	seen := make(map[string]bool, len(items))
 	for _, item := range items {
 		obj, ok := item.(map[string]any)
-		if !ok || !exactWorkerFields(obj, "project_id", "credential_version", "endpoint", "api_key", "api_secret", "stream_hosts", "mock_dial_address", "mock_ca_pem") {
+		fields := []string{"project_id", "credential_version", "endpoint", "api_key", "api_secret", "stream_hosts", "mock_dial_address", "mock_ca_pem"}
+		if _, present := obj["browser_input"]; inputEnabled && present {
+			fields = append(fields, "browser_input")
+		}
+		if !ok || !exactWorkerFields(obj, fields...) {
 			return nil, ErrWorkerEnvironment
 		}
 		id, okID := obj["project_id"].(string)
@@ -163,26 +211,43 @@ func LoadWorkerProjects(getenv func(string) string) ([]WorkerProject, error) {
 			}
 			hosts = append(hosts, host)
 		}
-		address, ok := canonicalWorkerLoopback(dialAddress)
-		if !ok || len(caPEM) == 0 || len(caPEM) > 16384 {
-			return nil, ErrWorkerEnvironment
-		}
-		roots := x509.NewCertPool()
-		if !roots.AppendCertsFromPEM([]byte(caPEM)) {
+		transport, err := workerLocalTransport(dialAddress, caPEM)
+		if err != nil {
 			return nil, ErrWorkerEnvironment
 		}
 		config := Config{Environment: "MOCK", Endpoint: endpoint, APIKey: apiKey, APISecret: apiSecret, StreamHosts: hosts}
-		// The transport has no ambient proxy or DNS route. TLS still verifies the original endpoint name.
-		transport := &http.Transport{Proxy: nil, DisableKeepAlives: true,
-			TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots},
-			DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
-				return (&net.Dialer{Timeout: 5 * time.Second}).DialContext(ctx, "tcp", address)
-			},
-		}
 		if _, err := New(config, transport); err != nil {
 			return nil, ErrWorkerEnvironment
 		}
-		projects = append(projects, WorkerProject{ProjectID: id, CredentialVersion: version, Config: config, Transport: transport})
+		project := WorkerProject{ProjectID: id, CredentialVersion: version, Config: config, Transport: transport}
+		if raw, present := obj["browser_input"]; present {
+			nested, ok := raw.(map[string]any)
+			if !ok || !exactWorkerFields(nested, "api_key", "api_secret", "mock_dial_address", "mock_ca_pem", "browser_url") {
+				return nil, ErrWorkerEnvironment
+			}
+			key, keyOK := nested["api_key"].(string)
+			secret, secretOK := nested["api_secret"].(string)
+			dial, dialOK := nested["mock_dial_address"].(string)
+			ca, caOK := nested["mock_ca_pem"].(string)
+			browserURL, urlOK := nested["browser_url"].(string)
+			if !keyOK || !secretOK || !dialOK || !caOK || !urlOK || !IsCanonicalBrowserInputURL(browserURL) {
+				return nil, ErrWorkerEnvironment
+			}
+			inputTransport, err := workerLocalTransport(dial, ca)
+			if err != nil {
+				return nil, ErrWorkerEnvironment
+			}
+			inputConfig := Config{Environment: config.Environment, Endpoint: config.Endpoint, APIKey: key, APISecret: secret, StreamHosts: append([]string(nil), config.StreamHosts...)}
+			if _, err := New(inputConfig, inputTransport); err != nil {
+				return nil, ErrWorkerEnvironment
+			}
+			project.BrowserInput = &WorkerBrowserInput{Config: inputConfig, Transport: inputTransport, BrowserURL: browserURL}
+			inputCount++
+		}
+		projects = append(projects, project)
+	}
+	if inputEnabled && inputCount == 0 {
+		return nil, ErrWorkerEnvironment
 	}
 	return projects, nil
 }
@@ -227,4 +292,58 @@ func canonicalWorkerLoopback(raw string) (string, bool) {
 		return "", false
 	}
 	return raw, true
+}
+
+// workerLocalTransport fixes the dial route without weakening logical TLS identity.
+func workerLocalTransport(dialAddress, caPEM string) (http.RoundTripper, error) {
+	address, ok := canonicalWorkerLoopback(dialAddress)
+	if !ok || len(caPEM) == 0 || len(caPEM) > 16384 {
+		return nil, ErrWorkerEnvironment
+	}
+	roots := x509.NewCertPool()
+	if !roots.AppendCertsFromPEM([]byte(caPEM)) {
+		return nil, ErrWorkerEnvironment
+	}
+	return &http.Transport{Proxy: nil, DisableKeepAlives: true,
+		TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots},
+		DialContext: func(ctx context.Context, _, _ string) (net.Conn, error) {
+			return (&net.Dialer{Timeout: 5 * time.Second}).DialContext(ctx, "tcp", address)
+		},
+	}, nil
+}
+
+// IsCanonicalBrowserInputURL validates the shared local browser-input URL grammar.
+func IsCanonicalBrowserInputURL(raw string) bool {
+	if len(raw) == 0 || len(raw) > 256 {
+		return false
+	}
+	for i := range raw {
+		if raw[i] <= ' ' || raw[i] >= 0x7f || raw[i] == '%' || raw[i] == '\\' {
+			return false
+		}
+	}
+	u, err := url.Parse(raw)
+	if err != nil || (u.Scheme != "ws" && u.Scheme != "wss") || u.User != nil ||
+		u.RawQuery != "" || u.ForceQuery || u.Fragment != "" || u.RawFragment != "" ||
+		u.Opaque != "" || u.RawPath != "" || (u.Path != "" && u.Path != "/") {
+		return false
+	}
+	hostname := u.Hostname()
+	if hostname != "127.0.0.1" && hostname != "::1" {
+		return false
+	}
+	portText := u.Port()
+	port, err := strconv.Atoi(portText)
+	if err != nil || port < 1 || port > 65535 || strconv.Itoa(port) != portText {
+		return false
+	}
+	host := net.JoinHostPort(hostname, portText)
+	if u.Host != host {
+		return false
+	}
+	expected := u.Scheme + "://" + host
+	if u.Path == "/" {
+		expected += "/"
+	}
+	return raw == expected
 }
