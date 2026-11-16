@@ -66,7 +66,7 @@ func TestL01GoW1(t *testing.T) {
 		if t.Failed() {
 			report["status"] = "FAIL"
 		}
-		dir := filepath.Join("..", "..", "output", "t19-l01-go-w1-1116")
+		dir := filepath.Join("..", "..", "output", "ci-gates", "l01-go-w1")
 		if err := os.MkdirAll(dir, 0700); err != nil {
 			t.Error("artifact directory", err)
 			return
