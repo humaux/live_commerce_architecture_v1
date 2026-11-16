@@ -72,13 +72,13 @@ async function noLeaks(page, link) {
   if (engine === "webkit") assert.deepEqual(await iosZoomOffenders(page), [], "iPhone input fonts must be >=16px");
   assert.deepEqual(page.seen.errors, [], "no uncaught error or server error");
 }
-async function openClaim(page, link, locale = "zh-TW") {
+async function openClaim(page, link, locale = "zh-TW", reopenReads = null) {
   activePage = page;
   page.seen.preview = null;
-  const previewReply = page.waitForResponse((r) => r.status() === 200 && r.request().method() === "GET" &&
+  const previewReply = reopenReads ? null : page.waitForResponse((r) => r.status() === 200 && r.request().method() === "GET" &&
     new URL(r.url()).pathname === "/api/buyer/claim-link" && r.request().headers()["x-commerce-claim-token"] === link.token);
   await page.goto(`${origin}/${locale}/claim#t=${link.token}`);
-  const freshPreview = await (await previewReply).json();
+  const freshPreview = reopenReads ? (await reopenReads.read("preview")).json : await (await previewReply).json();
   await expect(page.getByTestId("claim-line-A1")).toBeVisible();
   await expect.poll(() => page.seen.preview?.expires_at).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   assert.equal(page.seen.preview.expires_at, freshPreview.expires_at, "visible preview belongs to the fresh GET");
@@ -99,16 +99,109 @@ function checkoutRequestCount(page) {
   // READBACK only: count already-observed quote/order requests; do not issue a probe.
   return page.seen.urls.filter((url) => /^\/api\/buyer\/(?:quotes|checkout|orders)(?:\/|$)/.test(new URL(url).pathname)).length;
 }
+// Only the return/reopen proof opts in: a main-document commit, not an early boolean, owns these reads.
+function c8ReopenBoundary(mainFrame, target, token) {
+  let started = false, navigation = false, committed = false, left = false;
+  const selected = {};
+  const isTarget = (url) => { const value = new URL(url); return value.origin === target.origin && value.pathname === target.pathname; };
+  return {
+    start() { started = true; },
+    current() { return committed; },
+    stop() { started = false; committed = false; },
+    commit(frame) {
+      if (started && navigation && frame === mainFrame && isTarget(frame.url())) {
+        committed = true; navigation = false;
+      }
+      // Hash/history changes have no pending navigation request and do not re-arm or reset selection.
+    },
+    request(request) {
+      if (!started) return null;
+      let frame;
+      try { frame = request.frame(); } catch { return null; } // A worker without a frame cannot prove main-document ownership.
+      if (frame !== mainFrame) return null;
+      if (request.isNavigationRequest()) {
+        if (committed) left = true;
+        committed = false; navigation = !left && isTarget(request.url()); return null;
+      }
+      if (!committed || !isTarget(frame.url()) || request.method() !== "GET") return null;
+      const url = new URL(request.url());
+      if (url.origin !== target.origin) return null;
+      const kind = url.pathname === "/api/buyer/cart" ? "cart" :
+        url.pathname === "/api/buyer/claim-link" && request.headers()["x-commerce-claim-token"] === token ? "preview" : null;
+      if (!kind || selected[kind]) return null;
+      selected[kind] = request; // Sticky first read: a later success must never replace its failure.
+      return kind;
+    },
+  };
+}
+function c8AssertReopenReceipt(slot, kind) {
+  assert(!slot.error, `C8_REOPEN_${kind}: ${slot.error}`);
+  assert(slot.response, kind === "cart" ? "the fresh cart request must have a response" : "C8_REOPEN_preview: no_response");
+  assert.equal(slot.response.request(), slot.request, `C8_REOPEN_${kind}: response_identity`);
+  assert.equal(slot.response.status(), 200, `C8_REOPEN_${kind}: HTTP status`);
+  return slot;
+}
+function c8ObserveReopen(page, link, locale) {
+  const boundary = c8ReopenBoundary(page.mainFrame(), new URL(`${origin}/${locale}/claim`), link.token);
+  const slots = {}, tasks = [];
+  const fail = (slot, phase) => {
+    slot.error ??= phase; slot.done = true;
+    slot.row.actual = `C8_REOPEN_${slot.kind}: ${slot.error}`; slot.row.pass = false;
+  };
+  const onRequest = (request) => {
+    const kind = boundary.request(request);
+    if (!kind) return;
+    const row = { page: `/${locale}/claim`, control: `c8-reopen-${kind}`, operation: "real UI GET readback",
+      expected: "first target-document request has matching HTTP200 JSON", actual: "pending", pass: false };
+    ledger.push(row); slots[kind] = { kind, request, response: null, done: false, row };
+  };
+  const find = (request) => Object.values(slots).find((slot) => slot.request === request);
+  const onResponse = (response) => {
+    const slot = find(response.request());
+    if (!slot) return; // In particular, a late response to a precommit request is never selected here.
+    slot.response = response; slot.row.status = response.status();
+    if (!boundary.current()) { fail(slot, "document_left"); return; }
+    if (response.request() !== slot.request) { fail(slot, "response_identity"); return; }
+    if (response.status() !== 200) { fail(slot, "http_non200"); return; }
+    // Begin body capture at the response event, before later UI checks/navigation can discard it.
+    tasks.push((async () => {
+      try {
+        const json = await response.json();
+        if (!boundary.current()) { fail(slot, "document_left"); return; }
+        if (!slot.error) { slot.json = json; slot.done = true; }
+      } catch { fail(slot, "body_decode_failed"); }
+    })());
+  };
+  const onFailed = (request) => { const slot = find(request); if (slot) fail(slot, "request_failed"); };
+  const onFinished = (request) => { const slot = find(request); if (slot && !slot.response) fail(slot, "no_response"); };
+  const onCommit = (frame) => boundary.commit(frame);
+  const listeners = { request: onRequest, response: onResponse, requestfailed: onFailed, requestfinished: onFinished, framenavigated: onCommit };
+  for (const [event, listener] of Object.entries(listeners)) page.on(event, listener);
+  return {
+    start: () => boundary.start(),
+    async read(kind) {
+      await expect.poll(() => slots[kind]?.done === true, { message: `C8_REOPEN_${kind}: first document receipt settles` }).toBe(true);
+      if (!boundary.current()) fail(slots[kind], "document_left");
+      const slot = c8AssertReopenReceipt(slots[kind], kind);
+      slot.row.actual = "matching target-document HTTP200 JSON captured"; slot.row.pass = true;
+      return slot;
+    },
+    async dispose() {
+      boundary.stop();
+      for (const [event, listener] of Object.entries(listeners)) page.off(event, listener);
+      // No deferred response waiter survives an earlier click/goto failure; observe every started body read.
+      await Promise.allSettled(tasks);
+    },
+  };
+}
 async function returnProductsAndReopen(page, link, locale = "zh-TW") {
   const items = structuredClone(page.seen.cart.items), redeems = page.seen.redeem, writes = checkoutRequestCount(page);
-  let cartWrites = 0, reopening = false, freshCartRequest = null;
+  let cartWrites = 0;
+  const reopenReads = c8ObserveReopen(page, link, locale);
   const observeCart = (request) => {
     const pathname = new URL(request.url()).pathname, method = request.method();
     if (!/^\/api\/buyer\/cart(?:\/|$)/.test(pathname)) return;
     if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) cartWrites++;
-    // Match a new request event after the reopen barrier, never a late response to an earlier GET.
-    if (reopening && method === "GET" && pathname === "/api/buyer/cart" && !freshCartRequest)
-      freshCartRequest = request;
   };
   page.on("request", observeCart);
   try {
@@ -130,15 +223,14 @@ async function returnProductsAndReopen(page, link, locale = "zh-TW") {
       assert.equal(cartWrites, 0, "return does not write the cart");
       // The original synthetic message restores the claim. Discard stale readback before observing its GET.
       page.seen.cart = null;
-      reopening = true;
-      await openClaim(page, link, locale);
-      await expect.poll(() => freshCartRequest !== null).toBe(true);
-      // No response waiter is created until navigation succeeds; finally always removes the scoped listener.
-      const freshCartResponse = await freshCartRequest.response();
+      reopenReads.start();
+      await openClaim(page, link, locale, reopenReads);
+      const freshCartReceipt = await reopenReads.read("cart");
+      const freshCartRequest = freshCartReceipt.request, freshCartResponse = freshCartReceipt.response;
       assert(freshCartResponse, "the fresh cart request must have a response");
       assert.equal(freshCartResponse.request(), freshCartRequest, "cart readback belongs to the post-barrier request");
       assert.equal(freshCartResponse.status(), 200, "fresh UI cart read succeeds");
-      const freshCart = await freshCartResponse.json();
+      const freshCart = freshCartReceipt.json;
       assert.deepEqual(freshCart.items, items, "fresh server cart preserves every item after return/reopen");
       await expect.poll(() => page.seen.cart?.items).toEqual(freshCart.items);
       assert.equal(page.seen.redeem, redeems);
@@ -148,6 +240,7 @@ async function returnProductsAndReopen(page, link, locale = "zh-TW") {
     });
   } finally {
     page.off("request", observeCart);
+    await reopenReads.dispose();
   }
 }
 async function checkout(page, link, locale = "zh-TW", partial = false) {
@@ -396,6 +489,28 @@ try {
   assert.throws(() => c8AssertCameraGeometry({ ...calibratedCamera, actual: { ...calibratedCamera.actual, innerWidth: 1024 } }), /C8 actual CSS viewport differs/);
   assert.throws(() => c8AssertCameraGeometry({ ...calibratedCamera, pngDimensions: { width: 1024, height: 844 } }), /C8 native CSS-scale PNG dimensions differ/);
   console.log("MODEL_ONLY C8 camera calibration: valid 390 accepted; invalid 1024 layout/capture rejected");
+  // MODEL_ONLY: drive the very same commit/selection predicate with old-document and wrong-frame events.
+  const modelFrame = { url: () => `${origin}/zh-TW/claim` }, wrongFrame = { url: () => `${origin}/zh-TW/claim` };
+  const modelRequest = (pathname, frame = modelFrame, navigation = false) => ({ frame: () => frame,
+    isNavigationRequest: () => navigation, method: () => "GET", url: () => `${origin}${pathname}`, headers: () => ({ "x-commerce-claim-token": "MODEL_ONLY" }) });
+  const modelBoundary = c8ReopenBoundary(modelFrame, new URL(`${origin}/zh-TW/claim`), "MODEL_ONLY");
+  modelBoundary.start();
+  const oldDocumentCart = modelRequest("/api/buyer/cart");
+  assert.equal(modelBoundary.request(oldDocumentCart), null, "MODEL_ONLY rejects precommit GET accepted by the old boolean");
+  modelBoundary.request(modelRequest("/zh-TW/claim", modelFrame, true));
+  modelBoundary.commit(modelFrame);
+  assert.equal(modelBoundary.request(modelRequest("/api/buyer/cart", wrongFrame)), null, "MODEL_ONLY rejects iframe GET");
+  assert.equal(modelBoundary.request({ ...modelRequest("/api/buyer/claim-link"), headers: () => ({}) }), null, "MODEL_ONLY rejects another preview token");
+  assert.equal(modelBoundary.request(modelRequest("/api/buyer/claim-link")), "preview", "MODEL_ONLY accepts correlated current preview");
+  const currentCart = modelRequest("/api/buyer/cart");
+  assert.equal(modelBoundary.request(currentCart), "cart", "MODEL_ONLY accepts first target-document GET");
+  const modelResponse = (request) => ({ request: () => request, status: () => 200 });
+  assert.equal(c8AssertReopenReceipt({ request: currentCart, response: modelResponse(currentCart) }, "cart").request, currentCart);
+  assert.throws(() => c8AssertReopenReceipt({ request: currentCart, response: modelResponse(oldDocumentCart) }, "cart"), /C8_REOPEN_cart: response_identity/);
+  assert.throws(() => c8AssertReopenReceipt({ request: currentCart, error: "request_failed" }, "cart"), /C8_REOPEN_cart: request_failed/);
+  modelBoundary.commit(modelFrame); // Same-document history/hash event does not reset the failed first selection.
+  assert.equal(modelBoundary.request(modelRequest("/api/buyer/cart")), null, "MODEL_ONLY rejects replacement success after first failure");
+  console.log("MODEL_ONLY C8 reopen boundary: precommit/iframe rejected; target commit accepted; first failure remains fatal");
   // One full purchase per locale; phone profile runs every matrix cell on WebKit.
   let previous, previousLink;
   for (const locale of ["zh-TW", "zh-CN", "en"]) {
