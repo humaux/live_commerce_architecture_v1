@@ -79,7 +79,7 @@ export async function checkC7DraftCancel({ browser, origin, evidence, productSlu
 
 // C7 final preparation is additive: the original first-RED journey above remains byte-for-byte frozen.
 import { createHash } from "node:crypto";
-import type { BrowserContext, Request, Response } from "@playwright/test";
+import type { BrowserContext, Page, Request, Response } from "@playwright/test";
 import { shopCopy } from "../../apps/storefront/lib/shop-copy.ts";
 
 type C7Facts = { products: { key: string; slug: string; title: string; variants: { values: string[]; stock: number }[] }[] };
