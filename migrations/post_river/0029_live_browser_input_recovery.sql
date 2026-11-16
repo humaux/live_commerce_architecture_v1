@@ -1,3 +1,6 @@
+-- Purpose: mixed input/Egress recovery SQL and exact catalog readiness.
+-- Depends on: legacy 0041 kernels, 0195 snapshot fix and post_river 0007-0011 native guards.
+-- Used by: recovery supervisor through private recovery-role entrypoints.
 -- Responsibility: mixed input/Egress recovery SQL and exact catalog readiness.
 -- Dependencies: legacy 0041 kernels, 0195 snapshot fix, post_river 0007-0011 native guards.
 -- Called by: recovery supervisor; owner-only helpers are not worker APIs.

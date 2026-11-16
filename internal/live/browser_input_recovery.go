@@ -1,3 +1,6 @@
+// Purpose: observe required input and Egress recovery sides under the original fenced lease.
+// Depends on: immutable runtime maps, LiveKit reads and private recovery SQL.
+// Used by: MediaRecoveryObserver.Observe.
 // Responsibility: mixed recovery observation under the original fenced lease.
 // Dependencies: immutable runtime maps, LiveKit reads and private recovery SQL.
 // Callers: MediaRecoveryObserver.Observe. Invariants: durable proof precedes retry;

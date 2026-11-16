@@ -1,3 +1,7 @@
+// Purpose: check legacy recovery admission against optional future catalog ABIs.
+// Depends on: historical migrations, isolated PostgreSQL fixtures and platform validators.
+// Used by: MRR06 compatibility foundation gate.
+// Invariants: exact optional ABIs only; isolated legacy grants restored; stubs are MODEL_ONLY.
 package foundation_test
 
 // Responsibility: legacy DB admission with optional future recovery catalog.

@@ -1,3 +1,7 @@
+// Purpose: diagnostic recovery ledger and constructed-mode observation dispatch.
+// Depends on: pgx, private recovery SQL ABI and LiveKit observation adapters.
+// Used by: media-worker recovery supervision.
+// Invariants: diagnostic mixed mode has no provider admission.
 // Responsibility: diagnostic ledger and constructed-mode recovery dispatch.
 // Dependencies: pgx, private SQL ABI and LiveKit observation adapters.
 // Callers: recovery supervision. Invariant: diagnostic mixed mode has no provider admission.

@@ -1,3 +1,7 @@
+// Purpose: default-OFF native media entrypoint and shared loader mapping.
+// Depends on: LiveKit worker environment, platform pools and River lifecycle.
+// Used by: main and supervised exec child; readiness precedes release.
+// Invariants: default OFF; readiness precedes release; no provider activation by construction.
 // Responsibility: default-OFF native media entrypoint and shared loader mapping.
 // Dependencies: LiveKit configuration, platform pools, River lifecycle.
 // Callers: main and supervised exec child; readiness precedes release.

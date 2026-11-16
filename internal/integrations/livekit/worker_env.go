@@ -1,3 +1,7 @@
+// Purpose: load strict local MOCK native-worker and recovery configuration.
+// Depends on: decodeObject, New, environment variables and fixed-loopback TLS transport.
+// Used by: media-worker native parent and exec child.
+// Invariants: strict opt-in, redacted configuration and no network I/O during loading.
 // Worker environment loading owns strict local MOCK configuration for native and recovery callers.
 // It reuses decodeObject and New; construction never performs network I/O.
 package livekit

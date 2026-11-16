@@ -1,3 +1,6 @@
+// Purpose: native Egress execution and opt-in combined queue construction.
+// Depends on: scoped PostgreSQL kernels, LiveKit and River.
+// Used by: media-worker native process.
 // Responsibility: native Egress execution and opt-in dualqueue construction.
 // Dependencies: scoped PG kernels, LiveKit, River. Caller: media-worker.
 // Invariants: exact queue/profile/job binding, one lifecycle, unchanged retry rules.

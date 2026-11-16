@@ -1,3 +1,7 @@
+// Purpose: supervise bounded media recovery and native child lifecycle.
+// Depends on: live recovery ledger DTOs, scoped PostgreSQL and native exec child.
+// Used by: media-worker supervised entrypoint.
+// Invariants: original parent monotonic deadline and immutable admission precede witness writes.
 // Parent recovery supervision depends on live ledger DTOs and native child lifecycle.
 // Mixed composition is private and opt-in; admission and whole batches precede state writes.
 package main
