@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registryHash": "315cfc7f14e7e5a0997e352622fcb35a081b167cb5e717119d0d9240df1328f2",
+  "registryHash": "d87d813128d1ec63c2eb7839b6aa9246f6fdaa00f946939419967c11efa1283e",
   "sources": {
     "tests/admin/ads-model.test.ts": "a89483826fba28e2e86fcc1196475cefe1851cec367e66cfdc7bb69def18f309",
     "tests/admin/ads-request.test.ts": "190103fd72ab76050512616cef988d13d7e3725659883f142710555f36686de5",
@@ -428,6 +428,7 @@
     "tests/foundation/k3_lc_b4_adversarial_test.go": "26d3265cbe63884bb8a1abf5986b6ccc8b8ae9d9d118e8940ddeb09d94501418",
     "tests/foundation/keyword_tools_live_price_test.go": "d517b05a8560ab88bf936499dda5cf51954a0fbf89e79c33302218d25595fba9",
     "tests/foundation/keyword_tools_test.go": "41478c36aa38587df122deb612d5f4f990f0ec4c7f6480e4aef0c35b234f2d41",
+    "tests/foundation/l01_go_w1_test.go": "1c6b62630f8deb8e0d8be3a08c82be88b64678d336f6fc5582863e2049bc9e46",
     "tests/foundation/legacy_runtime_admission_test.go": "435c1ae4cb6de7ca943bfd7b12450ab0a2444fd8e75d758fc9e48c455e358fd0",
     "tests/foundation/legacy_runtime_isolation_test.go": "b3daf36b0f0d55f73d7cb71ae79103d73d8b09d6b52712ef9464b35c4b2d35ba",
     "tests/foundation/legacy_runtime_upgrade_test.go": "5bc4c759691a6f2dedd95a1ccc7bf369be8fcec1ce7c67a560af1670d886495b",
@@ -823,7 +824,7 @@
     "tests/ui/visual-lint-lib.test.mjs": "5e28a7b30ab357bb6bf266c3426d6fbd1122811fc7a156a077b213095086edd0",
     "tests/ui/visual-scroll-capture.mjs": "538525d5cb94cdc26e91954c0589a48372b5d4ce771721dcbbeb76e6b81a0229",
     "tests/ui/visual-scroll-capture.test.mjs": "1cf6d1a8bcb8481c65d19cd69e7bc1e25701067d4041e86f29b9a0a8cc8a58a5",
-    "scripts/dev/test-local.sh": "315cfc7f14e7e5a0997e352622fcb35a081b167cb5e717119d0d9240df1328f2",
+    "scripts/dev/test-local.sh": "d87d813128d1ec63c2eb7839b6aa9246f6fdaa00f946939419967c11efa1283e",
     "playwright.config.ts": "1678f3d7c57ef17965b2b3478b166faaaebc3cc1eb0af190ebfa771f39647960",
     "apps/admin/package.json": "8ff4057bb534e821455b9cb47b93429a0d66040faad1d9c25edeabd4864dbbb4",
     "apps/storefront/package.json": "e25eed3dcbc88ef821828200325f2cb7f92934447e1978998efdd4fa58eb8987",
