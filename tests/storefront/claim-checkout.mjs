@@ -1,9 +1,10 @@
-// Purpose: real-click CDC04/CDC05 storefront claim checkout and recovery journeys.
+// Purpose: real-click CDC04/CDC05 journeys and C8 state behavior evidence (visual source UNKNOWN).
 // Depends on: production Next/Go/PG fixture, Playwright, browser-engine and shop-helpers.
 // Used by: TestBrowserClaimDirectCheckout, Chromium and iPhone 15 WebKit gates.
 // Fixture control only prepares/ages synthetic claims; buyer writes always start with a real click.
 import assert from "node:assert/strict";
-import { writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import path from "node:path";
 import { expect } from "@playwright/test";
 import { engine, launch, ctxOpts, phone, iosZoomOffenders, isWebkitCancelledFetch } from "./browser-engine.mjs";
@@ -16,6 +17,7 @@ assert(origin && evidence && process.env.LC_CDC_CONTROL_KEY);
 const browser = await launch({ proxy: { server: process.env.LC_CDC_PROXY } });
 const ledger = [], orders = [], contexts = [], tokens = [];
 let cases = 0, activePage = null;
+const c8Behavior = [];
 const copy = {
   "zh-TW": { checkout: /前往結帳（共 \d+ 件）/, delivery: "選擇配送", quote: "取得目前總額", pickup: /取貨付款/, merge: /其他商品也會一起結帳/ },
   "zh-CN": { checkout: /前往结账（共 \d+ 件）/, delivery: "选择配送", quote: "获取当前总额", pickup: /取货付款/, merge: /其他商品也会一起结账/ },
@@ -137,6 +139,78 @@ async function place(page, link, locale = "zh-TW", loseReply = false, deplete = 
   assert.equal(await page.getByTestId("pay-order").count(), 0);
   return id;
 }
+// Reuse each already-bound buyer context: issuing the same fixture token in a new
+// context would test a different owner and return 404, not another viewport.
+async function c8StateMatrix(page, link, state) {
+  const sourcePins = {};
+  for (const file of ["tests/storefront/claim-checkout.mjs", "apps/storefront/components/ClaimLink.tsx", "apps/storefront/lib/claim-copy.ts", "tests/foundation/browser_claim_checkout_test.go"])
+    sourcePins[file] = createHash("sha256").update(await readFile(file)).digest("hex");
+  for (const mobile of [false, true]) {
+    const viewport = mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 };
+    await page.setViewportSize(viewport);
+    for (const locale of ["zh-TW", "zh-CN", "en"]) {
+      page.seen.redeem = 0;
+      await openClaim(page, link);
+      await action(page, `c8-${state}-language-${locale}`, () => page.locator("header select").selectOption(locale), "claim language changes without losing its in-memory link", async () => {
+        await expect(page.locator("html")).toHaveAttribute("lang", locale);
+        await expect(page).toHaveURL(`${origin}/${locale}/claim`);
+      });
+      const verify = async () => {
+        const line = page.getByTestId("claim-line-A1");
+        if (state === "unavailable") {
+          assert.equal(page.seen.preview.lines.find((item) => item.sku_id === link.sku).available, false);
+          await expect(line.locator(".claim-flag")).toHaveText(claimCopy[locale].unavailable);
+          await expect(page.getByTestId("claim-add")).toBeDisabled();
+        } else {
+          await expect(line.locator(".claim-flag.done")).toHaveText(claimCopy[locale].inCart);
+          await expect(page.getByTestId("claim-add")).toBeEnabled();
+          assert.equal(page.seen.preview.lines.find((item) => item.sku_id === link.sku).pending, false);
+          assert.equal(page.seen.cart.items.find((item) => item.sku_id === link.sku).quantity, 2);
+          if (state === "partial") {
+            const skipped = page.seen.preview.lines.find((item) => item.sku_id === link.sold_sku);
+            assert.equal(skipped.available, false); assert.equal(skipped.pending, true);
+            await expect(page.getByTestId("claim-line-B2").locator(".claim-flag")).toHaveText(claimCopy[locale].unavailable);
+            const others = page.seen.cart.items.filter((item) => item.sku_id !== link.sku);
+            assert.equal(others.length, 1, "partial retains an unrelated unpaid cart SKU");
+            const quantity = others.reduce((total, item) => total + item.quantity, 0);
+            await expect(page.getByTestId("claim-merge-notice")).toHaveText(claimCopy[locale].mergedNote(quantity, quantity + 2));
+          }
+        }
+        await noLeaks(page, link);
+      };
+      await verify();
+      const frame = `66:${(state === "already-in-cart" ? 1748 : state === "unavailable" ? 1750 : 1752) + Number(mobile)}`;
+      const png = `c8-${frame.replace(":", "-")}-${locale}-${viewport.width}.png`;
+      await page.screenshot({ path: path.join(evidence, png), fullPage: true });
+      const row = { frame, locale, viewport, state, visualSource: "UNKNOWN", formalFrameAcceptance: false,
+        sourcePins, png, pngSha256: createHash("sha256").update(await readFile(path.join(evidence, png))).digest("hex"), behavior: "pending" };
+      c8Behavior.push(row);
+      ledger.push({ page: `/${locale}/claim`, control: `c8-${state}`, operation: "readback and success screenshot after language selection", expected: "current claim state; visual source UNKNOWN", actual: state, pass: true, ...row });
+      const items = page.seen.cart.items.map(({ sku_id, quantity }) => ({ sku_id, quantity }));
+      if (state !== "unavailable") {
+        await checkout(page, link, locale, state === "partial");
+        page.seen.cart = null; // Require a fresh UI-triggered cart read after reload.
+        await page.reload();
+        await expect.poll(() => page.seen.cart?.items.map(({ sku_id, quantity }) => ({ sku_id, quantity }))).toEqual(items);
+        await expect(page.getByTestId("cart-line")).toHaveCount(items.length);
+        for (const item of items)
+          await expect(page.locator(`[data-testid="cart-line"][data-sku="${item.sku_id}"] .sf-line__unit`)).toContainText(`× ${item.quantity}`);
+      }
+      // Reload intentionally forgets the memory-only token. Reopen the original
+      // synthetic message link to verify durable server state, not token storage.
+      page.seen.redeem = 0;
+      await openClaim(page, link, locale);
+      await page.reload();
+      await expect(page.getByTestId("claim-not-found")).toBeVisible();
+      assert.equal(new URL(page.url()).hash, "");
+      await openClaim(page, link, locale);
+      await verify();
+      assert.deepEqual(page.seen.cart.items.map(({ sku_id, quantity }) => ({ sku_id, quantity })), items);
+      assert.equal(page.seen.redeem, 0, "reopening state never redeems automatically");
+      row.behavior = "observed assertions passed";
+    }
+  }
+}
 const pass = (name) => { cases++; console.log(`PASS CDC ${name}`); };
 try {
   // One full purchase per locale; phone profile runs every matrix cell on WebKit.
@@ -216,6 +290,15 @@ try {
   assert.equal(partial.seen.redeemed.applied.length, 0, "revisit redeems nothing");
   await partial.reload(); await expect(partial.getByTestId("cart-line")).toHaveCount(1);
   pass("partial claim revisit checks out applied A despite pending sold-out B");
+  // C8 is one behavior package, not extra CDC cases/orders. These contexts
+  // already own their links; all original journeys and fixed Go counters stay intact.
+  await c8StateMatrix(merged, mergeLink, "already-in-cart");
+  await fixture("merge", "archive-other", undefined, mergeLink.sku);
+  await c8StateMatrix(merged, mergeLink, "unavailable");
+  await addToCart(partial, origin, "zh-TW", process.env.LC_CDC_PRODUCT);
+  await fixture("partial", "archive-other", undefined, partialLink.sold_sku);
+  await c8StateMatrix(partial, partialLink, "partial");
+
   const sold = await newPage(engine === "webkit"), soldLink = await fixture("sold");
   await openClaim(sold, soldLink); await expect(sold.getByTestId("claim-add")).toBeDisabled(); assert.equal(sold.seen.redeem, 0); pass("all sold out is disabled");
   await fixture("sold", "replenish");
@@ -271,7 +354,7 @@ try {
   await expect(bad.getByTestId("cart-line")).toHaveCount(0);
   bad.seen.redeem=0;await openClaim(bad,badLink);await checkout(bad,badLink);pass("409 cart recovery through actual remove click");
   assert.equal(new Set(orders).size, orders.length);
-  await writeFile(path.join(evidence, "result.json"), JSON.stringify({ cases, orders, engine }, null, 2));
+  await writeFile(path.join(evidence, "result.json"), JSON.stringify({ cases, orders, engine, c8Behavior }, null, 2));
 } catch (error) {
   const page = activePage ?? contexts.flatMap((context) => context.pages()).at(-1);
   if (page && !page.isClosed()) await page.screenshot({ path: path.join(evidence, "failure.png"), fullPage: true }).catch(() => {});
