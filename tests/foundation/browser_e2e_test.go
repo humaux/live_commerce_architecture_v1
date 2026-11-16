@@ -45,6 +45,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -1343,7 +1344,7 @@ func e2eBuyerStatusCalibration(t *testing.T) {
 			t.Fatal("flush status overwritten")
 		}
 		bad := struct{ http.ResponseWriter }{underlying} // MODEL_ONLY: deliberately hides Unwrap/deadlines
-		if http.NewResponseController(bad).SetReadDeadline(deadline) != http.ErrNotSupported {
+		if !errors.Is(http.NewResponseController(bad).SetReadDeadline(deadline), http.ErrNotSupported) {
 			t.Fatal("negative wrapper control was not detected")
 		}
 	})
