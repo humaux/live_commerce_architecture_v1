@@ -58,7 +58,7 @@ Purpose: own expiry jobs and independently opted-in notification mail loops.
 Command media-worker owns the process that runs the live-media River queue: LiveKit Cloud Egress start/stop, recovery and browser-input plan execution through internal/live.NewMediaClient, on the media worker and executor DB logins.
 
 - Depends on (internal): `internal/integrations/livekit`, `internal/jobqueue`, `internal/live`, `internal/platform`
-- Depends on (third-party): `github.com/jackc/pgx/v5/pgxpool`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgxpool`, `github.com/riverqueue/river`
 - Used by: — (entry point or unused)
 
 ## `cmd/meta-admin`
@@ -607,7 +607,7 @@ Package stripewebhook owns admission of signed Stripe webhook deliveries for one
 
 ## `internal/platform`
 
-Package platform owns the narrow HTTP and database foundation shared by the API process: pool opening per DB role, WithScope (token to tenant/store scope inside one transaction) and permission checks.
+Purpose: validate scoped media worker, executor and recovery database authority.
 
 - Depends on (internal): `internal/httperror`, `internal/integrations/psp/stripe`
 - Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgconn`, `github.com/jackc/pgx/v5/pgxpool`
