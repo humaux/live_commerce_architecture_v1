@@ -17,6 +17,9 @@
 .lines small[class~="done"], .badge { color: #0f766e; background: #eaf6f2; }
 .badge { display: block; margin-bottom: 12px; }
 .product { display: block; color: var(--ink); font-size: 18px; line-height: 27px; overflow-wrap: anywhere; }
+/* Partial source nodes1881/1882 and2066/2067: global muted differs; keep source tokens local. */
+.partialProduct { --partial-muted: #596579; color: var(--partial-muted); font-size: 16px; line-height: 24px; font-weight: 500; overflow-wrap: anywhere; }
+.partialWarning { --partial-danger: #b42318; color: var(--partial-danger); font-size: 14px; line-height: 21px; font-weight: 500; overflow-wrap: anywhere; }
 .value { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 14px; line-height: 26px; }
 .value strong { color: #0f766e; font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums; }
 .summary { margin-top: 12px; border-radius: 8px; background: #f6f7f8; padding: 12px; font-size: 12px; line-height: 18px; }

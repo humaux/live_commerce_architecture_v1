@@ -337,17 +337,26 @@ export default function ClaimLink({
               <ul className={styles.lines}>
                 {preview.lines.map((line) => (
                   <li key={line.sku_id} data-testid={`claim-line-${line.keyword}`}>
-                    {!line.available ? (
-                      <small className="claim-flag">{copy.unavailable}</small>
-                    ) : line.sold_out ? (
-                      <small className="claim-flag">{copy.soldOut}</small>
-                    ) : !line.pending && cart?.items.some((item) => item.sku_id === line.sku_id && item.quantity === line.quantity) ? (
-                      <small className="claim-flag done">{copy.inCart}</small>
-                    ) : null}
+                    {resultState === "partial" && (!line.available || line.sold_out) ? (
+                      <>
+                        <p className={styles.partialProduct}>{line.product_name} · {line.sku_code} × {line.quantity}</p>
+                        <p className={`claim-flag ${styles.partialWarning}`}>{copy.unavailable}</p>
+                      </>
+                    ) : (
+                      <>
+                        {!line.available ? (
+                          <small className="claim-flag">{copy.unavailable}</small>
+                        ) : line.sold_out ? (
+                          <small className="claim-flag">{copy.soldOut}</small>
+                        ) : resultState !== "partial" && !line.pending && cart?.items.some((item) => item.sku_id === line.sku_id && item.quantity === line.quantity) ? (
+                          <small className="claim-flag done">{copy.inCart}</small>
+                        ) : null}
 
-                    <strong className={styles.product}>{line.product_name} · {line.sku_code}</strong>
-                    <div className={styles.value}><span>{copy.quantity}{" "}</span><span>{line.quantity}</span></div>
-                    <div className={styles.value}><span>{copy.subtotal}</span><strong>{money(line.unit_price_minor * line.quantity, line.currency)}</strong></div>
+                        <strong className={styles.product}>{line.product_name} · {line.sku_code}</strong>
+                        <div className={styles.value}><span>{copy.quantity}{" "}</span><span>{line.quantity}</span></div>
+                        <div className={styles.value}><span>{copy.subtotal}</span><strong>{money(line.unit_price_minor * line.quantity, line.currency)}</strong></div>
+                      </>
+                    )}
                   </li>
                 ))}
               </ul>
