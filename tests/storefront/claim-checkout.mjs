@@ -319,7 +319,9 @@ async function c8AssertResultParity(page, { frame, locale, state, mobile }) {
   const parity = { page: `/${locale}/claim`, frame, locale, state, control: "c8-result-parity", operation: "read-only visible anchors and layout measurements",
     expected: "state result header/card, mobile back/top/fixed dock and applicable partial explanation", actual: "pending", pass: false,
     checking: "header", checks: { header: "NOT_RUN", back: mobile ? "NOT_RUN" : "NOT_APPLICABLE", card: "NOT_RUN", headerTop: mobile ? "NOT_RUN" : "NOT_APPLICABLE",
-      dock: mobile ? "NOT_RUN" : "NOT_APPLICABLE", partial: state === "partial" ? "NOT_RUN" : "NOT_APPLICABLE" } };
+      dock: mobile ? "NOT_RUN" : "NOT_APPLICABLE", partial: state === "partial" ? "NOT_RUN" : "NOT_APPLICABLE",
+      partialBadges: state === "partial" ? "NOT_RUN" : "NOT_APPLICABLE", partialCompact: state === "partial" ? "NOT_RUN" : "NOT_APPLICABLE",
+      partialForm: state === "partial" ? "NOT_RUN" : "NOT_APPLICABLE", partialWarning: state === "partial" ? "NOT_RUN" : "NOT_APPLICABLE" } };
   ledger.push(parity);
   try {
     const header = page.getByTestId("claim-result-header");
@@ -353,6 +355,54 @@ async function c8AssertResultParity(page, { frame, locale, state, mobile }) {
       parity.checks.dock = "PASS";
     }
     if (state === "partial") {
+      // Formal 66:1752 nodes1881/1882 and 66:1753 nodes2066/2067: one availability badge, compact muted B2 and danger warning.
+      parity.checking = "partialBadges";
+      const availableBadge = card.getByText(claimCopy[locale].availableCount(1), { exact: true });
+      parity.partialSource = { classification: "partial-unavailable", availableBadgeCount: await availableBadge.count(),
+        doneBadgeCount: await card.locator(".claim-flag.done").count(), compact: "NOT_RUN", form: "NOT_RUN", warning: "NOT_RUN" };
+      await expect(card.locator(".claim-flag.done")).toHaveCount(0);
+      await expect(availableBadge).toHaveCount(1);
+      await expect(availableBadge).toBeVisible();
+      parity.checks.partialBadges = "PASS";
+      parity.checking = "partialCompact";
+      const skippedLine = card.getByTestId("claim-line-B2");
+      await expect(skippedLine).toBeVisible();
+      const skipped = page.seen.preview.lines.find((item) => item.keyword === "B2");
+      assert(skipped, "C8 partial unavailable fixture line exists");
+      // READ/MEASURE only: compare server-derived text inside B2; retain only safe counts/styles, never names or response bodies.
+      const compact = await skippedLine.evaluate((line, expected) => {
+        const normalize = (text) => (text ?? "").replace(/\s+/g, " ").trim();
+        const matches = [...line.querySelectorAll("*")].filter((node) => normalize(node.textContent) === normalize(expected) &&
+          ![...node.children].some((child) => normalize(child.textContent) === normalize(expected)));
+        if (matches.length !== 1) return { count: matches.length };
+        const node = matches[0], style = getComputedStyle(node), rect = node.getBoundingClientRect();
+        return { count: 1, visible: rect.width > 0 && rect.height > 0 && style.display !== "none" && style.visibility === "visible",
+          color: style.color, fontSize: style.fontSize, lineHeight: style.lineHeight, fontWeight: style.fontWeight };
+      }, `${skipped.product_name} · ${skipped.sku_code} × ${skipped.quantity}`);
+      parity.partialSource.compact = compact;
+      assert.equal(compact.count, 1, "C8 partial B2 has one server-derived compact name/variant and quantity line");
+      assert.equal(compact.visible, true, "C8 partial B2 compact line is visible");
+      assert.equal(compact.color, "rgb(89, 101, 121)", "C8 partial compact line uses source muted color");
+      assert.equal(compact.fontSize, "16px", "C8 partial compact font size");
+      assert.equal(compact.lineHeight, "24px", "C8 partial compact line height");
+      assert.equal(compact.fontWeight, "500", "C8 partial compact line uses source medium weight");
+      parity.checks.partialCompact = "PASS";
+      parity.checking = "partialForm";
+      parity.partialSource.form = { boldCount: await skippedLine.locator("strong, b").count(),
+        quantityLabelCount: await skippedLine.getByText(claimCopy[locale].quantity, { exact: true }).count(),
+        subtotalLabelCount: await skippedLine.getByText(claimCopy[locale].subtotal, { exact: true }).count() };
+      assert.deepEqual(parity.partialSource.form, { boldCount: 0, quantityLabelCount: 0, subtotalLabelCount: 0 },
+        "C8 partial B2 omits the full bold product/quantity/subtotal form");
+      parity.checks.partialForm = "PASS";
+      parity.checking = "partialWarning";
+      const warning = skippedLine.getByText(claimCopy[locale].unavailable, { exact: true });
+      await expect(warning).toHaveCount(1);
+      await expect(warning).toBeVisible();
+      parity.partialSource.warning = await warning.evaluate((node) => { const style = getComputedStyle(node);
+        return { color: style.color, fontSize: style.fontSize, lineHeight: style.lineHeight }; });
+      assert.deepEqual(parity.partialSource.warning, { color: "rgb(180, 35, 24)", fontSize: "14px", lineHeight: "21px" },
+        "C8 partial B2 warning uses source danger color and type size");
+      parity.checks.partialWarning = "PASS";
       parity.checking = "partial";
       const explanation = page.getByTestId("claim-partial-result");
       await expect(explanation).toBeVisible();
@@ -400,7 +450,7 @@ async function c8StateMatrix(page, link, state, mobile) {
         await expect(line.locator(".claim-flag")).toHaveText(claimCopy[locale].soldOut);
         await expectReturnProducts(page, locale);
       } else {
-        await expect(line.locator(".claim-flag.done")).toHaveText(claimCopy[locale].inCart);
+        if (state === "already-in-cart") await expect(line.locator(".claim-flag.done")).toHaveText(claimCopy[locale].inCart);
         await expect(page.getByTestId("claim-add")).toBeEnabled();
         assert.equal(page.seen.preview.lines.find((item) => item.sku_id === link.sku).pending, false);
         assert.equal(page.seen.cart.items.find((item) => item.sku_id === link.sku).quantity, 1);
@@ -413,7 +463,7 @@ async function c8StateMatrix(page, link, state, mobile) {
           const skipped = page.seen.preview.lines.find((item) => item.sku_id === link.sold_sku);
           assert.equal(skipped.available, true); assert.equal(skipped.sold_out, true);
           assert.equal(skipped.quantity, 1); assert.equal(skipped.pending, true);
-          await expect(page.getByTestId("claim-line-B2").locator(".claim-flag")).toHaveText(claimCopy[locale].soldOut);
+          // Partial B2 presentation is asserted against the source after the unchanged business and camera baselines.
         }
       }
       await noLeaks(page, link);
