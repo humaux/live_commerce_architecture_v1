@@ -87,6 +87,33 @@ async function openClaim(page, link, locale = "zh-TW") {
   assert.equal(page.seen.redeem, 0, "opening a claim is read-only");
   await noLeaks(page, link);
 }
+// Source 66:1750/1751: a real return action replaces redemption when no line is buyable.
+async function expectReturnProducts(page, locale = "zh-TW") {
+  await expect(page.getByTestId("claim-add")).toHaveCount(0);
+  const link = page.getByTestId("claim-return-products");
+  await expect(link).toBeVisible();
+  await expect(link).toHaveAttribute("href", `/${locale}/products`);
+}
+function checkoutRequestCount(page) {
+  // READBACK only: count already-observed quote/order requests; do not issue a probe.
+  return page.seen.urls.filter((url) => /^\/api\/buyer\/(?:quotes|checkout|orders)(?:\/|$)/.test(new URL(url).pathname)).length;
+}
+async function returnProductsAndReopen(page, link, locale = "zh-TW") {
+  const items = structuredClone(page.seen.cart.items), redeems = page.seen.redeem, writes = checkoutRequestCount(page);
+  await expectReturnProducts(page, locale);
+  await action(page, "claim-return-products", () => page.getByTestId("claim-return-products").click(), "return opens products without redeeming or changing the cart", async () => {
+    await expect(page).toHaveURL(`${origin}/${locale}/products`);
+    await expect(page.locator("main.sf-wrap")).toBeVisible();
+    assert.equal(page.seen.redeem, redeems, "return does not duplicate redemption");
+    assert.equal(checkoutRequestCount(page), writes, "return does not quote or create an order");
+  });
+  // The original synthetic seller message, not browser/token storage, restores the claim.
+  await openClaim(page, link, locale);
+  assert.equal(page.seen.redeem, redeems);
+  assert.equal(checkoutRequestCount(page), writes);
+  assert.deepEqual(page.seen.cart.items, items, "return/reopen preserves every cart item");
+  await expectReturnProducts(page, locale);
+}
 async function checkout(page, link, locale = "zh-TW", partial = false) {
   await action(page, "claim-add", () => page.getByTestId("claim-add").click(), "one click opens checkout with chosen SKU and quantity", async () => {
     await expect(page).toHaveURL(new RegExp(`/${locale}/checkout(?:\\?|$)`));
@@ -242,7 +269,7 @@ async function c8StateMatrix(page, link, state, mobile) {
         assert.equal(sold.available, true); assert.equal(sold.sold_out, true);
         assert.equal(sold.quantity, 1); assert.equal(sold.pending, true);
         await expect(line.locator(".claim-flag")).toHaveText(claimCopy[locale].soldOut);
-        await expect(page.getByTestId("claim-add")).toBeDisabled();
+        await expectReturnProducts(page, locale);
       } else {
         await expect(line.locator(".claim-flag.done")).toHaveText(claimCopy[locale].inCart);
         await expect(page.getByTestId("claim-add")).toBeEnabled();
@@ -296,6 +323,11 @@ async function c8StateMatrix(page, link, state, mobile) {
     await writeFile(cameraReceipt, JSON.stringify(row, null, 2));
     await c8AssertResultParity(page, { frame, locale, state, mobile });
     const items = page.seen.cart.items.map(({ sku_id, quantity }) => ({ sku_id, quantity }));
+    if (state === "sold-out") {
+      assert.equal(page.seen.redeem, 0, "sold-out state never redeems");
+      assert.equal(checkoutRequestCount(page), 0, "sold-out state never quotes or creates an order");
+      await returnProductsAndReopen(page, link, locale);
+    }
     if (state !== "sold-out") {
       await c8Checkout(page, link, locale);
       page.seen.cart = null; // Require a fresh UI-triggered cart read after reload.
@@ -421,7 +453,9 @@ try {
   }
 
   const sold = await newPage(engine === "webkit"), soldLink = await fixture("sold");
-  await openClaim(sold, soldLink); await expect(sold.getByTestId("claim-add")).toBeDisabled(); assert.equal(sold.seen.redeem, 0); pass("all sold out is disabled");
+  await openClaim(sold, soldLink); await expectReturnProducts(sold); assert.equal(sold.seen.redeem, 0);
+  assert.equal(checkoutRequestCount(sold), 0, "all sold-out claim never quotes or creates an order");
+  await returnProductsAndReopen(sold, soldLink); pass("all sold out returns to products without cart or order writes");
   await fixture("sold", "replenish");
   await openClaim(sold,soldLink);
   await expect(sold.getByTestId("claim-add")).toBeEnabled();
@@ -436,8 +470,9 @@ try {
   await openClaim(race, raceLink); await fixture("race", "deplete");
   await race.getByTestId("claim-add").click();
   await expect.poll(() => race.seen.preview?.lines.some((line) => line.sold_out)).toBe(true);
-  await expect(race.getByTestId("claim-add")).toHaveText(/前往結帳（共 \d+ 件）/);
-  await expect(race.getByTestId("claim-add")).toBeDisabled();
+  await expectReturnProducts(race);
+  assert.equal(race.seen.redeem, 1, "stock refusal does not duplicate the original redemption");
+  assert.equal(checkoutRequestCount(race), 0, "stock refusal never quotes or creates an order");
   await expect(race.getByText("購物車裡已有這些商品。",{exact:true})).toHaveCount(0);
   assert.equal(race.seen.redeemed.skipped[0].reason,"sold_out"); assert.deepEqual(race.seen.redeemed.cart.items,[]);
   assert.equal(new URL(race.url()).pathname, "/zh-TW/claim"); pass("B1/B2 stock race settles sold-out without cart write/navigation");

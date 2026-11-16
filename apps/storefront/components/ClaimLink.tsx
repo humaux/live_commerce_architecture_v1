@@ -37,6 +37,7 @@ import {
   type ClaimPreview,
 } from "../lib/claim-contract";
 import { claimCopy } from "../lib/claim-copy";
+import styles from "./ClaimLink.module.css";
 import { formatMoney } from "../lib/money";
 import { displayTime } from "../../../packages/format/src/index";
 
@@ -262,11 +263,23 @@ export default function ClaimLink({
     // The explicit checkout handler still fails closed on unreadable recovery state.
   }
 
+  // A pending claim is not an applied cart result. B1 flags and the actual cart decide the presentation.
+  const unavailableLines = preview?.lines.some((line) => !line.available || line.sold_out) ?? false;
+  const allSoldOut = !!preview?.lines.length && preview.lines.every((line) => line.available && line.sold_out);
+  const resultState = view !== "ready" ? undefined : allSoldOut ? "sold-out" :
+    applicable && unavailableLines ? "partial" : applicable && preview?.lines.every((line) => !line.pending &&
+      cart?.items.some((item) => item.sku_id === line.sku_id && item.quantity === line.quantity)) ? "already-in-cart" : undefined;
+  const title = view === "not-found" ? copy.goneTitle : view === "failed" ? copy.unknownTitle :
+    view === "ready" && !applicable ? copy.unavailable : resultState === "partial" ? copy.partialTitle :
+    resultState === "already-in-cart" ? copy.inCart : copy.confirmTitle;
+
   return (
-    <>
-      <header className="shop-header">
-        <span>{copy.store}</span>
-        <label className="locale">
+    <div className={styles.surface}>
+      <main className={`purchase-main claim-main ${styles.main}`} aria-busy={view === "loading" || busy}>
+        <header className={styles.header} data-testid="claim-result-header" data-claim-state={resultState}>
+          <a className={styles.back} data-testid="claim-result-back" href={`/${locale}/products`} aria-label={copy.back}>‹</a>
+          <h1>{title}</h1>
+        <label className={styles.language}>
           <span className="sr-only">{copy.language}</span>
           <select
             value={locale}
@@ -283,10 +296,8 @@ export default function ClaimLink({
             <option value="en">English</option>
           </select>
         </label>
-      </header>
-      {demonstration && <p className="demonstration">{copy.demonstration}</p>}
-      <main className="purchase-main claim-main" aria-busy={view === "loading" || busy}>
-        <h1>{view === "not-found" ? copy.goneTitle : view === "failed" ? copy.unknownTitle : copy.confirmTitle}</h1>
+        </header>
+        {demonstration && <p className="demonstration">{copy.demonstration}</p>}
         {view === "loading" && <p role="status">{copy.loading}</p>}
         {view === "not-found" && (
           <section role="alert" className="purchase-error claim-alert" data-testid="claim-not-found">
@@ -319,14 +330,12 @@ export default function ClaimLink({
           </div>
         )}
         {view === "ready" && preview && (
-          <section className="claim-preview" aria-labelledby="claim-lines-title">
-            <h2 id="claim-lines-title">{copy.fromComments}</h2>
-            <ul className="claim-lines">
-              {preview.lines.map((line) => (
-                <li key={line.sku_id} data-testid={`claim-line-${line.keyword}`}>
-                  <div>
-                    <strong>{line.product_name}</strong>
-                    <span>{line.sku_code} · {copy.quantity} {line.quantity}</span>
+          <>
+            <section className={styles.card} data-testid="claim-result-card" aria-label={title}>
+              {resultState === "partial" && <span className={styles.badge}>{copy.availableCount(buyable.reduce((n, line) => n + line.quantity, 0))}</span>}
+              <ul className={styles.lines}>
+                {preview.lines.map((line) => (
+                  <li key={line.sku_id} data-testid={`claim-line-${line.keyword}`}>
                     {!line.available ? (
                       <small className="claim-flag">{copy.unavailable}</small>
                     ) : line.sold_out ? (
@@ -334,39 +343,42 @@ export default function ClaimLink({
                     ) : !line.pending && cart?.items.some((item) => item.sku_id === line.sku_id && item.quantity === line.quantity) ? (
                       <small className="claim-flag done">{copy.inCart}</small>
                     ) : null}
-                  </div>
-                  <div className="claim-amounts">
-                    <span>{copy.subtotal}</span>
-                    <strong>{money(line.unit_price_minor * line.quantity, line.currency)}</strong>
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <p className="claim-note">{copy.noPay}</p>
-            {cartOthers > 0 && <p className="claim-note" data-testid="claim-merge-notice">{copy.mergedNote(cartOthers, checkoutCount)}</p>}
-            <p className="claim-note">
-              {copy.expires(displayTime(locale, preview.expires_at))} · {copy.taipeiTime}
-            </p>
-            {notice === "added" && <p role="status" className="claim-success" data-testid="claim-added">{copy.added}</p>}
-            {notice === "recovery" && <p role="status">{copy.recovery}</p>}
-            {notice === "unavailable" && <a href={cartPath(locale)}>{copy.cartLink}</a>}
-            {notice === "nothing" && <p role="status" className="claim-success">{copy.nothing}</p>}
-            {skipped && <p role="status" className="claim-note">{copy.skipped}</p>}
-            {previousOrder &&
-              <p className="claim-note" data-testid="claim-previous-order">{copy.previousOrder}</p>}
-            <div className="claim-actions">
-              <button
-                className="primary claim-add"
-                data-testid="claim-add"
-                disabled={busy || !applicable}
-                onClick={() => void redeem()}
-              >
-                {busy ? copy.adding : copy.checkoutAll(checkoutCount)}
-              </button>
-              {/* ponytail: the claim preview carries no product id or slug, so this opens the product list; a per-product link needs an additive preview field. */}
-              <a className="tap-link" href={`/${locale}/products`}>{copy.viewProduct}</a>
+
+                    <strong className={styles.product}>{line.product_name} · {line.sku_code}</strong>
+                    <div className={styles.value}><span>{copy.quantity}</span><span>{line.quantity}</span></div>
+                    <div className={styles.value}><span>{copy.subtotal}</span><strong>{money(line.unit_price_minor * line.quantity, line.currency)}</strong></div>
+                  </li>
+                ))}
+              </ul>
+              {(cartOthers > 0 || resultState === "partial" || skipped || resultState === "sold-out" || previousOrder) && (
+                <div className={styles.summary}>
+                  {resultState === "sold-out" && <p>{copy.soldOut}</p>}
+                  {(resultState === "partial" || skipped) && <p role="status" data-testid="claim-partial-result">{copy.skipped}</p>}
+                  {cartOthers > 0 && <p data-testid="claim-merge-notice">{copy.mergedNote(cartOthers, checkoutCount)}</p>}
+                  {previousOrder && <p data-testid="claim-previous-order">{copy.previousOrder}</p>}
+                </div>
+              )}
+            </section>
+            <div className={styles.dock} data-testid="claim-result-dock">
+              {applicable ? (
+                <button className={`primary claim-add ${styles.checkout}`} data-testid="claim-add" disabled={busy || !applicable} onClick={() => void redeem()}>
+                  {busy ? copy.adding : copy.checkoutAll(checkoutCount)}
+                </button>
+              ) : (
+                <a className={styles.returnProducts} data-testid="claim-return-products" href={`/${locale}/products`}>{copy.returnProducts}</a>
+              )}
             </div>
-          </section>
+            <section className={styles.support} aria-label={copy.price}>
+              <p className="claim-note">{copy.price} · {copy.stock}</p>
+              <p className="claim-note">{copy.noPay}</p>
+              <p className="claim-note">{copy.expires(displayTime(locale, preview.expires_at))} · {copy.taipeiTime}</p>
+              {notice === "added" && <p role="status" className="claim-success" data-testid="claim-added">{copy.added}</p>}
+              {notice === "recovery" && <p role="status">{copy.recovery}</p>}
+              {notice === "unavailable" && <a href={cartPath(locale)}>{copy.cartLink}</a>}
+              {notice === "nothing" && <p role="status" className="claim-success">{copy.nothing}</p>}
+              {applicable && <a className="tap-link" href={`/${locale}/products`}>{copy.viewProduct}</a>}
+            </section>
+          </>
         )}
         {cartVisible && (
           <section id="claim-cart" className="claim-cart" aria-labelledby="claim-cart-title" data-testid="claim-cart">
@@ -388,6 +400,6 @@ export default function ClaimLink({
           </section>
         )}
       </main>
-    </>
+    </div>
   );
 }
