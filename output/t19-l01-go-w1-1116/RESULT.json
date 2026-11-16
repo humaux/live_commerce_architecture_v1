@@ -1,0 +1,56 @@
+{
+  "status": "NOT_RUN",
+  "protocol": "Go+River SAME_HOST_PILOT integration reference v1",
+  "comparable_languages": false,
+  "neutral_intent": false,
+  "implementation_commit": "1cab4eacd79c12be4e28f0e0e5cc1a12bdcd618a",
+  "implementation_tree": "6057b2454118e1b78acdb0fcba09a7083b03a863",
+  "base": "bc6c54a429c211c16a3fdd25dd50e5f78acadbb4",
+  "base_tree": "1124fde6eea005d36433eb35beabbffbcd385889",
+  "branch": "luogangan7-lgtm/fb-t19-go-w1-1116",
+  "role": "test_worker experiment author",
+  "actual_model": "UNKNOWN",
+  "actual_effort": "UNKNOWN",
+  "blocks_expected": 5,
+  "attempts_per_block": 100,
+  "arrival_window_ns": 5000000000,
+  "max_inflight": 8,
+  "request_deadline_ns": 2000000000,
+  "seeds": [
+    1901101,
+    1901102,
+    1901103,
+    1901104,
+    1901105
+  ],
+  "blocks": [],
+  "runtime_red": "NOT_RUN",
+  "runtime_green": "NOT_RUN",
+  "negative_calibration": "NOT_RUN",
+  "api_cpu": "NOT_MEASURED",
+  "api_rss": "NOT_MEASURED",
+  "source_sha256": {
+    "bench/l01/go-w1/observer.go": "7fd08ab91c4497aa62cf1d913792cd38e5f0a4998e3a6cf90ad5ab793865e042",
+    "bench/l01/go-w1/observer_test.go": "6d3b1a122a4bf69e8c718b697942da86168848e3c5192057851f6d261db9e031",
+    "tests/foundation/l01_go_w1_test.go": "9e193dc2faa12b7c613462cf5459ca8030da16a7f7f802ed459f9d18dd9212a0"
+  },
+  "static_checks": {
+    "gofmt": 0,
+    "git_diff_check": 0,
+    "check_headers": 0,
+    "hook_apply_check": 0
+  },
+  "not_run": [
+    "Go compilation/type checking",
+    "Go tests/race/vet",
+    "native API/PG",
+    "check-gates.sh",
+    "CI",
+    "independent review",
+    "neutral L01/W1",
+    "Rust/Node/W2/W3/provider/hardware qualification",
+    "full L01/T19/G12/G15/T20/T22",
+    "production"
+  ],
+  "memory_id": "e4ef4b13-8f0c-47b9-96e7-744982467ae0"
+}
