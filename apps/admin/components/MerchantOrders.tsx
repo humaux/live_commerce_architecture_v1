@@ -667,7 +667,7 @@ export function MerchantOrders({
         )}
         </details>
         {order && current.status === "ready" && <>
-          {current.detailStatus === "ready" && current.detail && store ? <OrderDetailView key={`${order}:${locale}`} detail={current.detail} locale={locale} c={c} onBack={returnToList}
+          {current.detailStatus === "ready" && current.detail && store ? <OrderDetailView key={`${order}:${locale}`} detail={current.detail} locale={locale} c={c} onBack={returnToList} memberStore={store}
             sections={{store:store.id,actions:actions??noActions,boundary:session.current,onChanged:reload,
               onShipmentRefused:(code:string)=>setPollGen(v=>parcelGenAfterShipmentRefusal(v,code)),
               parcelBadge:groupOf(order)?parcelC.badge(groupOf(order)!.short):undefined,

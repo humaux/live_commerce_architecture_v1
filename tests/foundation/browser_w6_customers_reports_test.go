@@ -1052,8 +1052,9 @@ func w6uiSpecs(t *testing.T, ctx context.Context, s *brfStack, mode string, env 
 	} else if mode == "members-privacy" {
 		spec = "members-privacy.spec.ts"
 	}
+	// Isolate suite output: later Playwright runs clear their outputDir before starting.
 	body := fmt.Sprintf(`import {defineConfig} from "@playwright/test";
-export default defineConfig({testDir:%q,testMatch:%q,workers:1,retries:0,timeout:120000,expect:{timeout:15000},reporter:[["list"]],outputDir:%q,use:{baseURL:%q,headless:true,ignoreHTTPSErrors:true,trace:"retain-on-failure",screenshot:"only-on-failure"}});`, filepath.Join(s.root, "tests/admin"), spec, filepath.Join(s.evidence, "results"), s.origin)
+export default defineConfig({testDir:%q,testMatch:%q,workers:1,retries:0,timeout:120000,expect:{timeout:15000},reporter:[["list"]],outputDir:%q,use:{baseURL:%q,headless:true,ignoreHTTPSErrors:true,trace:"retain-on-failure",screenshot:"only-on-failure"}});`, filepath.Join(s.root, "tests/admin"), spec, filepath.Join(s.evidence, "results", mode), s.origin)
 	if e := os.WriteFile(config, []byte(body), 0600); e != nil {
 		t.Fatal(e)
 	}

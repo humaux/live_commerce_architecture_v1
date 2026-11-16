@@ -1,0 +1,21 @@
+/* Purpose: promoted order loyalty foreground; depends on existing member/DS tokens. Used by the four order loyalty siblings. */
+.panel { display:grid; gap:var(--ds-space-4); min-width:0; padding:var(--ds-space-6); border-radius:var(--ds-radius-control); background:var(--ds-members-surface); color:var(--ds-members-ink); overflow-wrap:anywhere; }
+.panel h2,.panel h3,.panel p { margin:0; }
+.panel label { display:grid; gap:var(--ds-space-2); color:var(--ds-members-muted); }
+.panel :is(input,textarea) { width:100%; min-width:0; box-sizing:border-box; min-height:var(--ds-target); border:1px solid transparent; border-radius:var(--ds-radius-control); background:var(--ds-members-control-bg); color:var(--ds-members-ink); padding:var(--ds-space-3); font:inherit; }
+.panel textarea { min-height:88px; resize:vertical; }
+.panel :is(input,textarea)[aria-invalid=true] { border-color:var(--ds-danger); }
+.panel :is(button,a) { min-height:var(--ds-target); }
+.panel a { color:var(--ds-members-link); display:inline-flex; align-items:center; }
+.panel :is(input,textarea,button,a):focus-visible { outline:2px solid var(--ds-focus); outline-offset:2px; }
+.actions { display:flex; flex-wrap:wrap; gap:var(--ds-space-2); }
+.selected { background:var(--ds-members-control-bg); padding:var(--ds-space-3); display:flex; flex-wrap:wrap; gap:var(--ds-space-3); align-items:center; }
+.results { border:1px solid var(--ds-members-border); border-radius:var(--ds-radius-control); display:grid; }
+.results button { text-align:start; white-space:normal; border-bottom:1px solid var(--ds-members-border); }
+.results small { display:block; color:var(--ds-members-muted); }
+.error { color:var(--ds-danger-text); }
+.muted { color:var(--ds-members-muted); }
+.success { color:var(--ds-members-action-bg); }
+.dialog { border:0; padding:0; border-radius:var(--ds-radius-control); max-width:520px; width:calc(100% - 32px); max-height:calc(100dvh - 32px); overflow:auto; color:var(--ds-members-ink); }
+.dialog::backdrop { background:var(--ds-members-scrim); }
+@media(max-width:600px) { .panel { padding:var(--ds-space-4); } .dialog { margin: auto 0 0; width:100%; max-width:none; max-height:90dvh; } .actions>* { flex:1; } }

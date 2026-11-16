@@ -99,9 +99,9 @@ test("ManualOrder bank-transfer expiry uses Taipei at the year boundary", () => 
   let state = 0;
   const placed = { order_id: "order-123456", payment_mode: "bank_transfer", commercial_state: "AWAITING_TRANSFER",
     currency: "TWD", total_minor: 100, expires_at: instant, buyer_link: null };
-  // ManualOrder's 14th direct useState owns `placed`; preceding hook additions must update this fixture.
+  // ManualOrder's 16th direct useState owns `placed`; preceding hook additions must update this fixture.
   // The literal expiry assertion below fails if this injection stops reaching the loaded result view.
-  const hooks = { ...react, useState(value) { return [state++ === 13 ? placed : value, () => {}]; } };
+  const hooks = { ...react, useState(value) { return [state++ === 15 ? placed : value, () => {}]; } };
   const { ManualOrder } = compile("apps/admin/components/ManualOrder.tsx", {
     react: hooks,
     "@/lib/customers-client": { useGuardedRead: () => ({ status: "ready", data: [] }) },
@@ -112,6 +112,9 @@ test("ManualOrder bank-transfer expiry uses Taipei at the year boundary", () => 
     "next/link": { default: passthrough }, "@/lib/catalog-v2-client": {}, "@/lib/merchant-tools-client": {}, "@/lib/cod-copy": {},
     "./customers.css": {}, "./merchant-tools.css": {}, "./order-ops.css": {},
     "./CvsLookup": { CvsLookup: passthrough },
+    "./members/ManualOrderMemberFields": { ManualOrderMemberFields: passthrough },
+    "./members/ManualOrderAwardResult": { ManualOrderAwardResult: passthrough },
+    "./members/order-points-copy": compile("apps/admin/components/members/order-points-copy.ts", {}),
     "./orders/ManualOrderMissing": { ManualOrderMissing: passthrough },
     "@live-commerce/i18n": { orderOpsCopy: compile("packages/i18n/src/order-ops.ts", {}).orderOpsCopy },
   });

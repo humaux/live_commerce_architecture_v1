@@ -122,12 +122,23 @@ async function search(page: Page, q: string, keyboard = false) {
     return { status: r.status(), cursor: body.cursor };
   }, keyboard ? "keyboard Enter" : "click");
 }
-async function privacy(page: Page, urls: string[], consoleTexts: string[]) {
-  for (const url of urls) {
+type URLObservation = { kind: "request" | "mainframe"; method?: string; resourceType?: string; isNavigationRequest: boolean };
+function safeMemberPath(path: string) {
+  const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const segments = path.split("/").filter(Boolean);
+  const fixed = new Set(["_next", "static", "chunks", "app", "en", "zh-TW", "zh-CN", "members", "page"]);
+  const shape = "/" + segments.map(segment => fixed.has(segment) ? segment : uuid.test(segment) ? ":id" : segment.endsWith(".js") ? ":js" : segment.endsWith(".css") ? ":css" : ":segment").join("/");
+  const locale = ["en", "zh-TW", "zh-CN"].includes(segments[0]);
+  const pathClass = segments[0] === "_next" ? "next-resource" : locale && segments[1] === "members" && segments.length === 2 ? "members-list" : locale && segments[1] === "members" && segments.length === 3 && uuid.test(segments[2]) ? "members-detail" : "other";
+  return { pathClass, shape };
+}
+async function privacy(page: Page, urls: string[], consoleTexts: string[], observations: URLObservation[]) {
+  for (const [index, url] of urls.entries()) {
     const u = new URL(url);
     expect(url.includes(marker) || url.includes("LP2%20synthetic"), "no private marker in request/history URL").toBe(false);
     if (u.pathname.includes("/members") && !u.pathname.startsWith("/api/")) {
-      expect([...u.searchParams.keys()].filter(k => k !== "_rsc")).toEqual(["store"]);
+      const diagnostic = JSON.stringify({ index, ...observations[index], ...safeMemberPath(u.pathname), keys: [...u.searchParams.keys()].filter(k => k !== "_rsc") });
+      expect([...u.searchParams.keys()].filter(k => k !== "_rsc"), diagnostic).toEqual(["store"]);
     }
     expect(u.searchParams.has("q")).toBe(false);
   }
@@ -260,9 +271,19 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [144
   test(`REAL_PG members read ${locale}/${width}`, async ({ browser }) => {
     const c = membersCopy[locale], sc = shellCopy[locale];
     const { page, context } = await signed(browser, locale, width);
-    const urls: string[] = [], consoleTexts: string[] = []; let mutation = 0; let initialEntryIDs: string[] = [];
-    page.on("request", r => { urls.push(r.url()); if (new URL(r.url()).pathname.includes("/members") && !["GET", "HEAD"].includes(r.method()) && !r.url().endsWith("/members/search")) mutation++; });
-    page.on("framenavigated", f => { if (f === page.mainFrame()) urls.push(f.url()); });
+    const urls: string[] = [], consoleTexts: string[] = [];
+    const observations: URLObservation[] = []; let mutation = 0; let initialEntryIDs: string[] = [];
+    page.on("request", r => {
+      const index = urls.push(r.url()) - 1;
+      observations[index] = { kind: "request", method: r.method(), resourceType: r.resourceType(), isNavigationRequest: r.isNavigationRequest() };
+      if (new URL(r.url()).pathname.includes("/members") && !["GET", "HEAD"].includes(r.method()) && !r.url().endsWith("/members/search")) mutation++;
+    });
+    page.on("framenavigated", f => {
+      if (f === page.mainFrame()) {
+        const index = urls.push(f.url()) - 1;
+        observations[index] = { kind: "mainframe", isNavigationRequest: true };
+      }
+    });
     page.on("console", m => consoleTexts.push(m.text()));
     try {
       await expect(links(page)).toHaveCount(20);
@@ -353,7 +374,7 @@ for (const locale of ["zh-TW", "zh-CN", "en"] as const) for (const width of [144
         await stateShot(page, `${locale}-${width}-empty-store`, c.empty, empty);
         return { store: new URL(page.url()).searchParams.get("store"), empty: true };
       }, "selectOption/click");
-      await privacy(page, urls, consoleTexts); expect(mutation).toBe(0);
+      await privacy(page, urls, consoleTexts, observations); expect(mutation).toBe(0);
       await step(page, "account/logout", "signout removes private member content", async () => { await logout(page, locale); await expect(links(page)).toHaveCount(0); return { privateRows: await links(page).count() }; });
     } finally { await context.close(); }
   });

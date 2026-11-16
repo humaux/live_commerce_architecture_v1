@@ -100,7 +100,8 @@ func TestBrowserManualOrderLink(t *testing.T) {
 		}
 	}()
 	cmd.Dir = root
-	cmd.Env = browserEnvironment(map[string]string{
+	points := mtPointsSeamNew(t, e, "")
+	childEnv := map[string]string{
 		"COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1",
 		"COMMERCE_PUBLIC_ORIGIN": adminOrigin, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": adminKey,
 		"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_DEMO_LABEL": "1", "COMMERCE_BUYER_API_ORIGIN": e.bh.server.URL, "COMMERCE_BUYER_BFF_KEY": e.bh.key,
@@ -108,7 +109,11 @@ func TestBrowserManualOrderLink(t *testing.T) {
 		"LC_LINK_EVIDENCE": evidence, "LC_LINK_CONTROL": control.URL, "LC_LINK_CONTROL_KEY": controlKey,
 		"LC_LINK_STORE": e.store(), "LC_LINK_PRODUCT_NAME": "Synthetic manual order",
 		"LC_LINK_ACCOUNT": "123-456-7890", "LC_LINK_AMOUNT": "12.50",
-	})
+	}
+	for name, value := range points.env() {
+		childEnv[name] = value
+	}
+	cmd.Env = browserEnvironment(childEnv)
 	log := browserLog(t, filepath.Join(evidence, "browser.log"))
 	cmd.Stdout, cmd.Stderr = log, log
 	if err := cmd.Run(); err != nil {
@@ -161,5 +166,6 @@ func TestBrowserManualOrderLink(t *testing.T) {
 	if n := e.count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='order.manual_link_regenerated'`, e.store()); n != 1 {
 		t.Fatalf("manual-link-regenerated audit rows: %d", n)
 	}
+	points.check(t, e, evidence)
 	t.Logf("PASS: merchant UI manual order -> link -> fresh browser exchange -> bank details -> transfer proof; single use; cases=%d; evidence=%s", result.Cases, evidence)
 }
