@@ -772,7 +772,7 @@
     "tests/storefront/buyer-comms-gate.mjs": "5cca8c34aba74ccc04e2531be4d30f79798b3ebcfe5f47f9d28b87043cadd28a",
     "tests/storefront/catalog-media-gate.mjs": "7c30bb93b241c69621656f78cdb3efb13169a88b6ab0b6c5fc886834e0223e3e",
     "tests/storefront/checkout-v2.mjs": "07954b3a2ae0de1972cec1eea63548d5e8abc1efe3501887f60517b4623fb299",
-    "tests/storefront/claim-checkout.mjs": "94034e586296f8ea57b01ad80c98e513b30471d24e4ecd905dc1404eff58b8a2",
+    "tests/storefront/claim-checkout.mjs": "5b879dcf19f967c459f571bda00256cc32eae314b11b9b41f89dfb56d2ae9afd",
     "tests/storefront/cod-footer.spec.ts": "a6fc969d7189f98edd2c1fb90deb9175aafe5150524046de79a0b69f34fc761b",
     "tests/storefront/collector-buyer.mjs": "6d4dc2824450901bfd2cf9389452ff3013a767ce944023994108b1f54045a7cf",
     "tests/storefront/contact-native.spec.ts": "b81fcea4f270b67f93783090ec7e956410cb7962e94968057b80047cf3b2133f",
