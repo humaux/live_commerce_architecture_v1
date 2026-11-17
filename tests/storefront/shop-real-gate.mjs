@@ -238,7 +238,7 @@ try {
   pass("SFR04 variants and stock hints from real stock, sold-out and out-of-stock variants not addable, compare-at, 3-photo gallery from PG, id URL 308 -> slug, draft/archived/unknown/removed /products/Checkout are 404");
 
   await checkC7DraftCancel({ browser, origin, evidence, productSlug: P("candle").slug });
-  await checkC7Matrix({ browser, origin, evidence, facts });
+  await checkC7Matrix({ browser, origin, evidence, facts, control });
 
   // ---- SFR05 cart, free-shipping hint and the quote's shipping come from the real delivery policy ------------------------------------------------
   const { thresholdMinor: T, feeMinor: F } = { thresholdMinor: facts.free_shipping.threshold_minor, feeMinor: facts.free_shipping.fee_minor };

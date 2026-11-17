@@ -82,9 +82,12 @@ import { createHash } from "node:crypto";
 import type { BrowserContext, Page, Request, Response } from "@playwright/test";
 import { shopCopy } from "../../apps/storefront/lib/shop-copy.ts";
 
-type C7Facts = { currency: string; products: { key: string; id: string; slug: string; title: string; variants: { values: string[]; price_minor: number; stock: number }[] }[] };
+type C7Facts = {
+  currency: string; c7_long_label_sku?: string;
+  products: { key: string; id: string; slug: string; title: string; variants: { values: string[]; price_minor: number; stock: number }[] }[];
+};
 type C7Cell = {
-  locale: "zh-TW" | "zh-CN" | "en"; width: number; kind: "mobile" | "desktop" | "cas";
+  locale: "zh-TW" | "zh-CN" | "en"; width: number; kind: "mobile" | "desktop" | "cas" | "long-label";
   status: "NOT_RUN" | "PASS" | "FAIL"; failure?: string;
   actions: { control: string; route: string; operation: string; expected: string; actual: string; status: "PASS" | "FAIL" }[];
   screenshots: { file: string; sha256: string; requested: string; requestedDPR: number; actualPNG: string; actualCSS: string; actualDPR: number }[];
@@ -94,10 +97,12 @@ type C7Cart = { version: number; items: { sku_id: string; quantity: number }[] }
 const c7Hash = (value: string) => createHash("sha256").update(value).digest("hex");
 const c7CartRequest = (request: Request) => new URL(request.url()).pathname === "/api/buyer/cart" && request.method() === "PUT";
 const c7CartResponse = (response: Response) => c7CartRequest(response.request());
+const c7LongOptionValue = "超長規格名稱測試".repeat(5);
 
 /** Extend the existing REAL SFR journey with synthetic real-click option/cancel/cart and fault cases; write bounded evidence only. */
-export async function checkC7Matrix({ browser, origin, evidence, facts }: {
+export async function checkC7Matrix({ browser, origin, evidence, facts, control }: {
   browser: Browser; origin: string; evidence: string; facts: C7Facts;
+  control: (action: "c7-long-label-enable" | "c7-long-label-disable") => Promise<void>;
 }) {
   const products = (key: string) => {
     const product = facts.products.find(p => p.key === key);
@@ -105,16 +110,52 @@ export async function checkC7Matrix({ browser, origin, evidence, facts }: {
     return product;
   };
   const candle = products("candle"), scarf = products("scarf"), diffuser = products("diffuser");
-  const cells: C7Cell[] = (["zh-TW", "zh-CN", "en"] as const).flatMap(locale =>
+  const locales = ["zh-TW", "zh-CN", "en"] as const;
+  const cells: C7Cell[] = locales.flatMap(locale =>
     [375, 390, 1440].map(width => ({ locale, width, kind: width === 1440 ? "desktop" as const : "mobile" as const,
       status: "NOT_RUN" as const, actions: [], screenshots: [], writes: [] })));
   cells.push({ locale: "en", width: 375, kind: "cas", status: "NOT_RUN", actions: [], screenshots: [], writes: [] });
-  const gaps = [{ case: "long-label", status: "GAP", reason: "Existing SFR candle/scarf option values are short; no long-label fixture is authorized." }];
+  for (const locale of locales) {
+    for (const width of [375, 390] as const) {
+      cells.push({ locale, width, kind: "long-label", status: "NOT_RUN", actions: [], screenshots: [], writes: [] });
+    }
+  }
+  const gaps: { case: string; status: string; reason: string }[] = [
+    { case: "long-label", status: "GAP", reason: "Pending C7 40-rune long-label cells and draft cleanup." },
+  ];
   const save = () => writeFile(path.join(evidence, "c7-matrix.json"), JSON.stringify({
     environment: "SYNTHETIC_REAL_STACK", cells, gaps, visualAcceptance: "NOT_EVALUATED",
   }, null, 2));
   await save();
+  let longLabelProduct: C7Facts["products"][number] | undefined;
+  let longLabelShort = "";
+  let longLabelSKU = "";
+  let longLabelEnabled = false;
+  let allCellsPassed = false;
+  try {
   for (const cell of cells) {
+    if (cell.kind === "long-label" && !longLabelEnabled) {
+      try {
+        assert.equal(typeof control, "function", "C7 long-label control callback is required");
+        const candidate = facts.products.find(p => p.key === "c7_long_label");
+        assert(candidate && candidate.slug === "c7-long-option" && candidate.variants.length === 2, "C7 c7_long_label fixture missing or malformed");
+        const shortValue = candidate.variants[0]?.values?.[0] ?? "";
+        const longValue = candidate.variants[1]?.values?.[0] ?? "";
+        assert(shortValue.length > 0 && [...shortValue].length < 40 && shortValue !== longValue, "C7 short option value invalid");
+        assert.equal(longValue, c7LongOptionValue, "C7 long option value must equal 40-rune fixture string");
+        assert.equal([...longValue].length, 40, "C7 long option value must be 40 runes");
+        assert(facts.c7_long_label_sku, "C7 facts.c7_long_label_sku is required");
+        longLabelProduct = candidate;
+        longLabelShort = shortValue;
+        longLabelSKU = facts.c7_long_label_sku;
+        longLabelEnabled = true;
+        await control("c7-long-label-enable");
+      } catch (setupError) {
+        gaps[0] = { case: "long-label", status: "SETUP", reason: setupError instanceof Error ? setupError.message : "long-label setup failed" };
+        await save();
+        throw setupError;
+      }
+    }
     let context: BrowserContext | undefined;
     let routedPage: Page | undefined;
     try {
@@ -180,7 +221,7 @@ export async function checkC7Matrix({ browser, origin, evidence, facts }: {
         await page.goto(`${origin}/${cell.locale}/cart`);
         await expect(page.getByTestId("cart-empty")).toBeVisible();
       });
-      await gotoProduct(page);
+      await gotoProduct(page, cell.kind === "long-label" ? longLabelProduct!.slug : candle.slug);
       if (cell.kind === "desktop") {
         await step("desktop controls retain drawer add", async () => {
           await expect(entry()).not.toBeVisible();
@@ -329,7 +370,7 @@ export async function checkC7Matrix({ browser, origin, evidence, facts }: {
           assert.equal(calls.length, 3);
           await shot("recovered-cart");
         });
-      } else {
+      } else if (cell.kind === "cas") {
         await step("real stale cart snapshot produces server CAS refusal", async () => {
           const sku = await inline().getAttribute("data-sku"); assert(sku);
           await putClick(() => page.getByTestId("add-to-cart").click());
@@ -365,6 +406,80 @@ export async function checkC7Matrix({ browser, origin, evidence, facts }: {
             assert.equal(calls.length, 3); await shot("cas-refused");
           } finally { release(); }
         });
+      } else {
+        await step("40-rune long option label radio, non-clipping bounds, geometry and Back/Escape draft restore", async () => {
+          const product = longLabelProduct!;
+          await expect(page.getByRole("heading", { level: 1, name: product.title, exact: true })).toBeVisible();
+          const shortSKU = await inline().getAttribute("data-sku");
+          assert(shortSKU && shortSKU !== longLabelSKU, "initial committed selection must resolve the short-label SKU");
+          await expect(inline().getByRole("radio", { name: longLabelShort, exact: true })).toBeChecked();
+          await expect(inline().getByRole("radio", { name: c7LongOptionValue, exact: true })).not.toBeChecked();
+          await expect(inline().getByTestId("qty-input")).toHaveValue("1");
+          const shortPrice = await inline().getByTestId("variant-price").innerText();
+          const activeImg = await page.getByTestId("product-gallery-active-image").getAttribute("src");
+          assert(activeImg && activeImg.startsWith(`/media/p/${product.id}/`));
+          await expect(entry()).toBeVisible();
+          await entry().click();
+          await expect(task()).toBeVisible();
+          await expect(task().getByRole("heading", { name: copy.c7ChooseOptions, exact: true })).toBeVisible();
+          const summary = task().getByTestId("product-options-summary");
+          await expect(summary.getByRole("heading", { level: 3, name: product.title, exact: true })).toBeVisible();
+          await expect(summary.locator("img")).toHaveAttribute("src", activeImg);
+          await expect(summary.getByTestId("variant-price")).toHaveText(shortPrice);
+          await expect(task().getByTestId("product-buy")).toHaveAttribute("data-sku", shortSKU);
+          const longRadio = task().getByRole("radio", { name: c7LongOptionValue, exact: true });
+          const longChip = task().locator("label.sf-chip", { has: longRadio });
+          const longSpan = longChip.locator("> span");
+          await expect(longChip).toBeVisible();
+          await longChip.click();
+          await expect(longRadio).toBeChecked();
+          await expect(longRadio).toHaveValue(c7LongOptionValue);
+          await expect(longChip).toContainText(c7LongOptionValue);
+          const renderedText = await longSpan.innerText();
+          assert(renderedText.includes(c7LongOptionValue) && [...c7LongOptionValue].length === 40, "full 40-rune option label must remain visible");
+          await expect(task().getByTestId("product-buy")).toHaveAttribute("data-sku", longLabelSKU);
+          const longPrice = await summary.getByTestId("variant-price").innerText();
+          assert(shortPrice.includes(String(product.variants[0].price_minor / 100)) && longPrice.includes(String(product.variants[1].price_minor / 100)) && shortPrice !== longPrice);
+          await expect(task().getByTestId("add-to-cart")).toHaveText(`${copy.addToCart} · ${longPrice}`);
+          assert(await task().evaluate(node => node.scrollWidth <= node.clientWidth), "task has horizontal overflow");
+          assert(await longChip.evaluate(node => node.scrollWidth <= node.clientWidth), "long-label chip has horizontal overflow");
+          assert(await longSpan.evaluate(node => node.scrollWidth <= node.clientWidth), "long-label text span has horizontal overflow");
+          const [taskBox, chipBox, spanBox] = await Promise.all([task().boundingBox(), longChip.boundingBox(), longSpan.boundingBox()]);
+          assert(taskBox && chipBox && spanBox && chipBox.width > 0 && chipBox.height > 0 && spanBox.width > 0 && spanBox.height > 0);
+          assert(chipBox.x >= taskBox.x && chipBox.x + chipBox.width <= taskBox.x + taskBox.width, "long-label chip must stay inside task width");
+          assert(spanBox.x >= chipBox.x && spanBox.x + spanBox.width <= chipBox.x + chipBox.width + 1, "long-label text must not clip horizontally");
+          assert(spanBox.y >= chipBox.y && spanBox.y + spanBox.height <= chipBox.y + chipBox.height + 1, "long-label text must not clip vertically");
+          await checkTaskGeometry();
+          await task().getByTestId("qty-input").locator("xpath=following-sibling::button").click();
+          await expect(task().getByTestId("qty-input")).toHaveValue("2");
+          await shot("draft");
+          await task().getByRole("button", { name: copy.c7BackToProduct, exact: true }).click();
+          await expect(task()).not.toBeVisible();
+          await expect(entry()).toBeFocused();
+          await expect(inline()).toHaveAttribute("data-sku", shortSKU);
+          await expect(inline().getByRole("radio", { name: longLabelShort, exact: true })).toBeChecked();
+          await expect(inline().getByRole("radio", { name: c7LongOptionValue, exact: true })).not.toBeChecked();
+          await expect(inline().getByTestId("qty-input")).toHaveValue("1");
+          await entry().click();
+          await expect(task()).toBeVisible();
+          await expect(task().getByTestId("product-buy")).toHaveAttribute("data-sku", shortSKU);
+          await expect(task().getByRole("radio", { name: longLabelShort, exact: true })).toBeChecked();
+          await expect(task().getByTestId("qty-input")).toHaveValue("1");
+          await longChip.click();
+          await expect(longRadio).toBeChecked();
+          await expect(task().getByTestId("product-buy")).toHaveAttribute("data-sku", longLabelSKU);
+          await task().getByTestId("qty-input").locator("xpath=following-sibling::button").click();
+          await expect(task().getByTestId("qty-input")).toHaveValue("2");
+          await page.keyboard.press("Escape");
+          await expect(task()).not.toBeVisible();
+          await expect(entry()).toBeFocused();
+          await expect(inline()).toHaveAttribute("data-sku", shortSKU);
+          await expect(inline().getByRole("radio", { name: longLabelShort, exact: true })).toBeChecked();
+          await expect(inline().getByRole("radio", { name: c7LongOptionValue, exact: true })).not.toBeChecked();
+          await expect(inline().getByTestId("qty-input")).toHaveValue("1");
+          assert.equal(calls.length, 0);
+          assert.equal(cell.writes.length, 0);
+        });
       }
       cell.status = "PASS";
     } catch (error) {
@@ -374,6 +489,20 @@ export async function checkC7Matrix({ browser, origin, evidence, facts }: {
       try { await save(); } finally {
         // CAS's inner finally releases its real response before waiting for route handlers and closing both pages.
         try { await routedPage?.unrouteAll({ behavior: "wait" }); } finally { await context?.close(); }
+      }
+    }
+  }
+  allCellsPassed = true;
+  } finally {
+    if (longLabelEnabled) {
+      try {
+        await control("c7-long-label-disable");
+        if (allCellsPassed) gaps.length = 0;
+      } catch (disableError) {
+        gaps[0] = { case: "long-label", status: "SETUP", reason: disableError instanceof Error ? disableError.message : "long-label disable failed" };
+        throw disableError;
+      } finally {
+        await save();
       }
     }
   }
