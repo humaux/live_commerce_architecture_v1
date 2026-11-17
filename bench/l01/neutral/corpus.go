@@ -50,7 +50,6 @@ const (
 	ClassInvalidSignature = "invalid_signature"
 
 	maxCorpusBytes = 1 << 20
-	maxJSONDepth   = 32
 )
 
 var (
@@ -242,7 +241,7 @@ func Parse(raw []byte) (Corpus, error) {
 	if len(raw) == 0 || len(raw) > maxCorpusBytes || !utf8.Valid(raw) {
 		return Corpus{}, fmt.Errorf("%w: invalid raw size or UTF-8", ErrInvalidCorpus)
 	}
-	if err := rejectDuplicateJSONKeys(raw); err != nil {
+	if err := validateCorpusJSON(raw); err != nil {
 		return Corpus{}, err
 	}
 	dec := json.NewDecoder(bytes.NewReader(raw))
@@ -522,10 +521,38 @@ func writeJSONField(buf *bytes.Buffer, name string, val any, comma bool) {
 	buf.WriteByte('\n')
 }
 
-func rejectDuplicateJSONKeys(raw []byte) error {
+var (
+	envelopeKeySet = makeKeySet(
+		"schema", "evidence_class", "seed", "synthetic_only",
+		"app_id", "object", "hmac_secret", "authoritative_asset_id",
+		"authoritative_tenant_id", "spoofed_tenant_header", "counts", "cases",
+	)
+	countsKeySet = makeKeySet(
+		"total", "unique_valid", "duplicate_replay", "invalid_signature",
+	)
+	caseKeySet = makeKeySet(
+		"index", "classification", "expected_admit", "expected_intent_delta",
+		"event_id", "content_type", "signature_header", "untrusted_tenant_header",
+		"body_bytes", "body_sha256", "raw_body",
+	)
+	caseOptionalKeySet = makeKeySet("replay_of_index")
+)
+
+func makeKeySet(keys ...string) map[string]struct{} {
+	m := make(map[string]struct{}, len(keys))
+	for _, k := range keys {
+		m[k] = struct{}{}
+	}
+	return m
+}
+
+// validateCorpusJSON enforces exact canonical member names, no duplicate keys, mandatory field presence
+// and non-null scalar/container tokens before encoding/json struct decoding (which otherwise case-folds
+// keys and defaults omitted or null scalars to Go zero values).
+func validateCorpusJSON(raw []byte) error {
 	dec := json.NewDecoder(bytes.NewReader(raw))
 	dec.UseNumber()
-	if err := walkJSONNoDup(dec, 0); err != nil {
+	if err := validateEnvelopeObject(dec); err != nil {
 		return err
 	}
 	if _, err := dec.Token(); err != io.EOF {
@@ -534,52 +561,119 @@ func rejectDuplicateJSONKeys(raw []byte) error {
 	return nil
 }
 
-func walkJSONNoDup(dec *json.Decoder, depth int) error {
+func validateEnvelopeObject(dec *json.Decoder) error {
+	tok, err := dec.Token()
+	if err != nil || tok != json.Delim('{') {
+		return fmt.Errorf("%w: expected root JSON object", ErrInvalidCorpus)
+	}
+	seen := make(map[string]struct{}, len(envelopeKeySet))
+	for dec.More() {
+		key, err := readObjectKey(dec, seen)
+		if err != nil {
+			return err
+		}
+		if _, ok := envelopeKeySet[key]; !ok {
+			return fmt.Errorf("%w: unknown or non-canonical JSON key %q", ErrInvalidCorpus, key)
+		}
+		switch key {
+		case "counts":
+			if err := validateObjectScalars(dec, countsKeySet, nil); err != nil {
+				return err
+			}
+		case "cases":
+			if err := validateCasesArray(dec); err != nil {
+				return err
+			}
+		default:
+			if err := validateNonNullScalar(dec, key); err != nil {
+				return err
+			}
+		}
+	}
+	if end, err := dec.Token(); err != nil || end != json.Delim('}') {
+		return fmt.Errorf("%w: malformed root object end", ErrInvalidCorpus)
+	}
+	if len(seen) != len(envelopeKeySet) {
+		return fmt.Errorf("%w: missing required envelope JSON key", ErrInvalidCorpus)
+	}
+	return nil
+}
+
+func validateCasesArray(dec *json.Decoder) error {
+	tok, err := dec.Token()
+	if err != nil || tok != json.Delim('[') {
+		return fmt.Errorf("%w: cases must be a JSON array", ErrInvalidCorpus)
+	}
+	for dec.More() {
+		if err := validateObjectScalars(dec, caseKeySet, caseOptionalKeySet); err != nil {
+			return err
+		}
+	}
+	if end, err := dec.Token(); err != nil || end != json.Delim(']') {
+		return fmt.Errorf("%w: malformed cases array end", ErrInvalidCorpus)
+	}
+	return nil
+}
+
+func validateObjectScalars(dec *json.Decoder, required, optional map[string]struct{}) error {
+	tok, err := dec.Token()
+	if err != nil || tok != json.Delim('{') {
+		return fmt.Errorf("%w: expected JSON object", ErrInvalidCorpus)
+	}
+	seen := make(map[string]struct{}, len(required)+len(optional))
+	reqSeen := 0
+	for dec.More() {
+		key, err := readObjectKey(dec, seen)
+		if err != nil {
+			return err
+		}
+		_, isReq := required[key]
+		_, isOpt := optional[key]
+		if !isReq && !isOpt {
+			return fmt.Errorf("%w: unknown or non-canonical JSON key %q", ErrInvalidCorpus, key)
+		}
+		if isReq {
+			reqSeen++
+		}
+		if err := validateNonNullScalar(dec, key); err != nil {
+			return err
+		}
+	}
+	if end, err := dec.Token(); err != nil || end != json.Delim('}') {
+		return fmt.Errorf("%w: malformed object end", ErrInvalidCorpus)
+	}
+	if reqSeen != len(required) {
+		return fmt.Errorf("%w: missing required JSON key", ErrInvalidCorpus)
+	}
+	return nil
+}
+
+func readObjectKey(dec *json.Decoder, seen map[string]struct{}) (string, error) {
+	kTok, err := dec.Token()
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", ErrInvalidCorpus, err)
+	}
+	key, ok := kTok.(string)
+	if !ok {
+		return "", fmt.Errorf("%w: non-string object key", ErrInvalidCorpus)
+	}
+	if _, dup := seen[key]; dup {
+		return "", fmt.Errorf("%w: duplicate JSON key %q", ErrInvalidCorpus, key)
+	}
+	seen[key] = struct{}{}
+	return key, nil
+}
+
+func validateNonNullScalar(dec *json.Decoder, key string) error {
 	tok, err := dec.Token()
 	if err != nil {
 		return fmt.Errorf("%w: %v", ErrInvalidCorpus, err)
 	}
-	delim, ok := tok.(json.Delim)
-	if !ok {
-		return nil
+	if tok == nil {
+		return fmt.Errorf("%w: null JSON value for key %q", ErrInvalidCorpus, key)
 	}
-	if depth >= maxJSONDepth {
-		return fmt.Errorf("%w: JSON depth exceeded", ErrInvalidCorpus)
-	}
-	switch delim {
-	case '{':
-		seen := make(map[string]struct{})
-		for dec.More() {
-			kTok, err := dec.Token()
-			if err != nil {
-				return fmt.Errorf("%w: %v", ErrInvalidCorpus, err)
-			}
-			key, ok := kTok.(string)
-			if !ok {
-				return fmt.Errorf("%w: non-string object key", ErrInvalidCorpus)
-			}
-			if _, dup := seen[key]; dup {
-				return fmt.Errorf("%w: duplicate JSON key %q", ErrInvalidCorpus, key)
-			}
-			seen[key] = struct{}{}
-			if err := walkJSONNoDup(dec, depth+1); err != nil {
-				return err
-			}
-		}
-		end, err := dec.Token()
-		if err != nil || end != json.Delim('}') {
-			return fmt.Errorf("%w: malformed object end", ErrInvalidCorpus)
-		}
-	case '[':
-		for dec.More() {
-			if err := walkJSONNoDup(dec, depth+1); err != nil {
-				return err
-			}
-		}
-		end, err := dec.Token()
-		if err != nil || end != json.Delim(']') {
-			return fmt.Errorf("%w: malformed array end", ErrInvalidCorpus)
-		}
+	if _, isDelim := tok.(json.Delim); isDelim {
+		return fmt.Errorf("%w: non-scalar JSON value for key %q", ErrInvalidCorpus, key)
 	}
 	return nil
 }

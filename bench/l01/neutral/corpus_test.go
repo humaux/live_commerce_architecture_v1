@@ -213,6 +213,187 @@ func TestVerifierNegativeMutationsAndPersistedRoundTrip(t *testing.T) {
 	})
 }
 
+func TestStrictJSONMemberSpellingAndMandatoryFields(t *testing.T) {
+	raw, err := os.ReadFile(neutral.DefaultFilename)
+	if err != nil {
+		t.Fatalf("read persisted fixture: %v", err)
+	}
+	replaceOnce := func(t *testing.T, old, repl string) []byte {
+		t.Helper()
+		if !bytes.Contains(raw, []byte(old)) {
+			t.Fatalf("fixture anchor not found: %s", old)
+		}
+		return bytes.Replace(raw, []byte(old), []byte(repl), 1)
+	}
+
+	rejections := []struct {
+		name string
+		raw  []byte
+	}{
+		{
+			name: "case_folded_alias_overrides_expected_admit",
+			raw:  replaceOnce(t, `"expected_admit":true,`, `"expected_admit":false,"EXPECTED_ADMIT":true,`),
+		},
+		{
+			name: "case_folded_alias_replaces_expected_admit",
+			raw:  replaceOnce(t, `"expected_admit":true,`, `"EXPECTED_ADMIT":true,`),
+		},
+		{
+			name: "envelope_case_folded_seed_alias",
+			raw:  replaceOnce(t, `"seed": 1901101,`, `"SEED": 1901101,`),
+		},
+		{
+			name: "counts_case_folded_total_alias",
+			raw:  replaceOnce(t, `"total":100,`, `"TOTAL":100,`),
+		},
+		{
+			name: "case_folded_replay_of_index_alias",
+			raw:  replaceOnce(t, `"replay_of_index":10,`, `"REPLAY_OF_INDEX":10,`),
+		},
+		{
+			name: "case_index_omitted",
+			raw:  replaceOnce(t, `"index":0,`, ``),
+		},
+		{
+			name: "case_index_null",
+			raw:  replaceOnce(t, `"index":0,`, `"index":null,`),
+		},
+		{
+			name: "case_expected_intent_delta_omitted",
+			raw:  replaceOnce(t, `"expected_intent_delta":0,`, ``),
+		},
+		{
+			name: "case_expected_intent_delta_null",
+			raw:  replaceOnce(t, `"expected_intent_delta":0,`, `"expected_intent_delta":null,`),
+		},
+		{
+			name: "case_expected_admit_false_omitted",
+			raw:  replaceOnce(t, `"expected_admit":false,`, ``),
+		},
+		{
+			name: "case_expected_admit_null",
+			raw:  replaceOnce(t, `"expected_admit":false,`, `"expected_admit":null,`),
+		},
+		{
+			name: "replay_case_replay_of_index_null",
+			raw:  replaceOnce(t, `"replay_of_index":10,`, `"replay_of_index":null,`),
+		},
+		{
+			name: "replay_case_replay_of_index_omitted",
+			raw:  replaceOnce(t, `"replay_of_index":10,`, ``),
+		},
+		{
+			name: "non_replay_case_replay_of_index_zero",
+			raw:  replaceOnce(t, `"index":0,"classification":"unique_valid",`, `"index":0,"classification":"unique_valid","replay_of_index":0,`),
+		},
+		{
+			name: "non_replay_case_replay_of_index_null",
+			raw:  replaceOnce(t, `"index":0,"classification":"unique_valid",`, `"index":0,"classification":"unique_valid","replay_of_index":null,`),
+		},
+		{
+			name: "cases_array_null_element",
+			raw:  replaceOnce(t, `{"index":0,`, `null,{"index":0,`),
+		},
+		{
+			name: "envelope_seed_omitted",
+			raw:  replaceOnce(t, `"seed": 1901101,`, ``),
+		},
+		{
+			name: "envelope_seed_null",
+			raw:  replaceOnce(t, `"seed": 1901101,`, `"seed": null,`),
+		},
+		{
+			name: "envelope_synthetic_only_null",
+			raw:  replaceOnce(t, `"synthetic_only": true,`, `"synthetic_only": null,`),
+		},
+		{
+			name: "envelope_counts_null",
+			raw:  replaceOnce(t, `"counts": {"total":100,"unique_valid":60,"duplicate_replay":20,"invalid_signature":20},`, `"counts": null,`),
+		},
+		{
+			name: "counts_unique_valid_omitted",
+			raw:  replaceOnce(t, `"unique_valid":60,`, ``),
+		},
+		{
+			name: "counts_invalid_signature_null",
+			raw:  replaceOnce(t, `"invalid_signature":20`, `"invalid_signature":null`),
+		},
+	}
+
+	tmpDir := t.TempDir()
+	for _, tc := range rejections {
+		t.Run("reject_"+tc.name, func(t *testing.T) {
+			if _, pErr := neutral.Parse(tc.raw); !errors.Is(pErr, neutral.ErrInvalidCorpus) {
+				t.Errorf("Parse(%s) err=%v, want ErrInvalidCorpus", tc.name, pErr)
+			}
+			p := filepath.Join(tmpDir, tc.name+".json")
+			if wErr := os.WriteFile(p, tc.raw, 0o600); wErr != nil {
+				t.Fatalf("write %s: %v", p, wErr)
+			}
+			if _, lErr := neutral.LoadFile(p); !errors.Is(lErr, neutral.ErrInvalidCorpus) {
+				t.Errorf("LoadFile(%s) err=%v, want ErrInvalidCorpus", tc.name, lErr)
+			}
+		})
+	}
+
+	t.Run("accept_seed_zero_explicit_false_and_zero_including_replay_of_zero", func(t *testing.T) {
+		var sawReplayZero bool
+		for _, seed := range []int64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, -1, 42} {
+			built := neutral.Build(seed)
+			for _, tc := range built.Cases {
+				if tc.ReplayOfIndex != nil && *tc.ReplayOfIndex == 0 {
+					sawReplayZero = true
+				}
+			}
+			enc, err := neutral.Encode(built)
+			if err != nil {
+				t.Fatalf("Encode(Build(%d)): %v", seed, err)
+			}
+			parsed, err := neutral.Parse(enc)
+			if err != nil || parsed.Seed != seed {
+				t.Fatalf("Parse(Encode(Build(%d))) seed=%d err=%v", seed, parsed.Seed, err)
+			}
+			if seed == 0 {
+				p := filepath.Join(tmpDir, "seed_zero.json")
+				if err := os.WriteFile(p, enc, 0o600); err != nil {
+					t.Fatalf("write seed_zero: %v", err)
+				}
+				loaded, err := neutral.LoadFile(p)
+				if err != nil || loaded.Seed != 0 {
+					t.Fatalf("LoadFile(seed_zero) seed=%d err=%v", loaded.Seed, err)
+				}
+			}
+		}
+		if !sawReplayZero {
+			t.Fatal("expected at least one deterministic seed to exercise replay_of_index=0")
+		}
+	})
+
+	t.Run("accept_reordered_fields_whitespace_and_optional_replay_pointer", func(t *testing.T) {
+		base, err := neutral.LoadFile(neutral.DefaultFilename)
+		if err != nil {
+			t.Fatalf("LoadFile baseline: %v", err)
+		}
+		reordered := marshalReorderedIndentedJSON(base)
+		parsed, err := neutral.Parse(reordered)
+		if err != nil {
+			t.Fatalf("Parse(reordered) failed: %v", err)
+		}
+		p := filepath.Join(tmpDir, "reordered.json")
+		if err := os.WriteFile(p, reordered, 0o600); err != nil {
+			t.Fatalf("write reordered: %v", err)
+		}
+		loaded, err := neutral.LoadFile(p)
+		if err != nil {
+			t.Fatalf("LoadFile(reordered) failed: %v", err)
+		}
+		canonical, err := neutral.Encode(loaded)
+		if err != nil || !bytes.Equal(canonical, raw) || parsed.Seed != base.Seed {
+			t.Fatalf("reordered corpus did not round-trip to canonical fixture bytes: err=%v", err)
+		}
+	})
+}
+
 func cloneCorpus(src neutral.Corpus) neutral.Corpus {
 	out := src
 	out.Cases = make([]neutral.Case, len(src.Cases))
@@ -264,4 +445,31 @@ func marshalUncheckedJSON(c neutral.Corpus) ([]byte, error) {
 	}
 	buf.WriteString("]}\n")
 	return buf.Bytes(), nil
+}
+
+func marshalReorderedIndentedJSON(c neutral.Corpus) []byte {
+	var buf bytes.Buffer
+	buf.WriteString("{\n\t\"cases\": [\n")
+	for i, tc := range c.Cases {
+		if i > 0 {
+			buf.WriteString(",\n")
+		}
+		replayLine := ""
+		if tc.ReplayOfIndex != nil {
+			replayLine = fmt.Sprintf("\n\t\t\t\"replay_of_index\": %d,", *tc.ReplayOfIndex)
+		}
+		buf.WriteString(fmt.Sprintf(
+			"\t\t{\n\t\t\t\"raw_body\": %q,\n\t\t\t\"body_sha256\": %q,\n\t\t\t\"body_bytes\": %d,\n\t\t\t\"untrusted_tenant_header\": %q,\n\t\t\t\"signature_header\": %q,\n\t\t\t\"content_type\": %q,\n\t\t\t\"event_id\": %q,%s\n\t\t\t\"expected_intent_delta\": %d,\n\t\t\t\"expected_admit\": %v,\n\t\t\t\"classification\": %q,\n\t\t\t\"index\": %d\n\t\t}",
+			tc.RawBody, tc.BodySHA256, tc.BodyBytes, tc.UntrustedTenantHeader,
+			tc.SignatureHeader, tc.ContentType, tc.EventID, replayLine,
+			tc.ExpectedIntentDelta, tc.ExpectedAdmit, tc.Classification, tc.Index,
+		))
+	}
+	buf.WriteString(fmt.Sprintf(
+		"\n\t],\n\t\"counts\": {\n\t\t\"invalid_signature\": %d,\n\t\t\"duplicate_replay\": %d,\n\t\t\"unique_valid\": %d,\n\t\t\"total\": %d\n\t},\n\t\"spoofed_tenant_header\": %q,\n\t\"authoritative_tenant_id\": %q,\n\t\"authoritative_asset_id\": %q,\n\t\"hmac_secret\": %q,\n\t\"object\": %q,\n\t\"app_id\": %q,\n\t\"synthetic_only\": %v,\n\t\"seed\": %d,\n\t\"evidence_class\": %q,\n\t\"schema\": %q\n}\n",
+		c.Counts.InvalidSignature, c.Counts.DuplicateReplay, c.Counts.UniqueValid, c.Counts.Total,
+		c.SpoofedTenantHeader, c.AuthoritativeTenantID, c.AuthoritativeAssetID,
+		c.HMACSecret, c.Object, c.AppID, c.SyntheticOnly, c.Seed, c.EvidenceClass, c.Schema,
+	))
+	return buf.Bytes()
 }
