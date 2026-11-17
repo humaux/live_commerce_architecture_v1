@@ -76,6 +76,28 @@ func TestBrowserClaimDirectCheckout(t *testing.T) {
 			}
 			fixtures[name] = cdcLink{Token: string(link.Token), Bundle: c.BundleID, SKU: sku, Code: offer.SKUCode, SoldSKU: sold}
 		}
+		// C8 source-aligned synthetic bundles are isolated from the legacy corpus.
+		// Reuse the existing claim harness and control map; old A1+2 fixtures stay intact.
+		for _, name := range []string{"c8-merge-desktop", "c8-sold-desktop", "c8-partial-desktop", "c8-merge-mobile", "c8-sold-mobile", "c8-partial-mobile"} {
+			sku := e.sku(30000, 100)
+			if strings.HasPrefix(name, "c8-sold-") {
+				mustExec(t, e.p.f.owner, `UPDATE inventory.balances SET on_hand=0 WHERE sku_id=$1`, sku)
+			}
+			session := e.h.draft(t, e.store())
+			e.h.open(t, session, claims.MatchExact)
+			offer := e.h.livePriceOffer(t, session, "A1", sku, 5, 20000)
+			c := e.h.accepted(t, session, "", "synthetic CDC "+name, "A1+1")
+			sold := ""
+			if strings.HasPrefix(name, "c8-partial-") {
+				sold = e.sku(30000, 1)
+				mustExec(t, e.p.f.owner, `UPDATE inventory.balances SET on_hand=0 WHERE sku_id=$1`, sold)
+				e.h.offer(t, session, "B2", sold, 5)
+				c = e.h.accepted(t, session, c.BundleID, "", "B2")
+			}
+			link := e.h.link(t, session, c.BundleID, 0, false)
+			e.h.closeWindow(t, session)
+			fixtures[name] = cdcLink{Token: string(link.Token), Bundle: c.BundleID, SKU: sku, Code: offer.SKUCode, SoldSKU: sold}
+		}
 		transport := &claimsTransportLog{}
 		api := httptest.NewServer(transport.wrap(e.bh.server.Config.Handler))
 		t.Cleanup(api.Close)

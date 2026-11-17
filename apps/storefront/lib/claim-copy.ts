@@ -9,6 +9,7 @@
 import type { Locale } from "@live-commerce/i18n";
 
 const en = {
+  back: "Back to products", returnProducts: "Return to products", partialTitle: "Some items are available", availableCount: (n: number) => `${n} item(s) available`,
   store: "Storefront", language: "Language", demonstration: "Synthetic data · test environment",
   // Signed frames 4:12347 / 4:12417 (confirm), 66:1746 / 66:1747 (link gone), 66:1754 / 66:1755 (result not confirmed).
   confirmTitle: "Confirm your live claim", fromComments: "Added from your comment", noPay: "A claim link is not a payment; the price and available quantity are checked again at checkout.",
@@ -40,11 +41,14 @@ const en = {
   cart: "Your cart", emptyCart: "Your cart is empty.", otherItem: "Other item",
   remove: "Remove", cartFailed: "Your cart could not be updated. Reload the claim and try again.",
 };
+/** Define the shared claim UI vocabulary, including result and recovery states. */
 export type ClaimCopy = typeof en;
 
+/** Supply locale-specific claim text without network, storage or transaction effects. */
 export const claimCopy: Record<Locale, ClaimCopy> = {
   en,
   "zh-CN": {
+    back: "返回商品", returnProducts: "返回商品", partialTitle: "部分商品可购买", availableCount: (n: number) => `${n} 件可买`,
     store: "店铺前台", language: "语言", demonstration: "合成数据 · 测试环境",
   confirmTitle: "确认直播认领", fromComments: "已从留言带入商品", noPay: "认领链接不代表已付款；价格与可售数量会在结账时再次确认。",
   mergedNote: (cartQty: number, total: number) => `购物车原有其他商品 ${cartQty} 件，共 ${total} 件一起结账。`,
@@ -76,6 +80,7 @@ export const claimCopy: Record<Locale, ClaimCopy> = {
     remove: "移除", cartFailed: "无法更新购物车。请重新读取登记后再试。",
   },
   "zh-TW": {
+    back: "返回商品", returnProducts: "返回商品", partialTitle: "部分商品可購買", availableCount: (n: number) => `${n} 件可買`,
     store: "商店前台", language: "語言", demonstration: "合成資料 · 測試環境",
   confirmTitle: "確認直播認領", fromComments: "已從留言帶入商品", noPay: "認領連結不代表已付款；價格與可售數量會在結帳時再次確認。",
   mergedNote: (cartQty: number, total: number) => `購物車原有其他商品 ${cartQty} 件，共 ${total} 件一起結帳。`,

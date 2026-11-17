@@ -1,3 +1,6 @@
+// Purpose: server-owned shop identity, authentication context and cart shell; direct claim chrome is a scoped client slot.
+// Depends on: loadShop, locale validation, design tokens, CartProvider and ClaimShellBoundary.
+// Used by: every storefront locale route; no client-derived tenant/origin is accepted.
 // Storefront shell for every /{locale}/... page: document language, accent colour variables, announcement bar, header,
 // footer, the cart provider/drawer and the preview banner, all from the published design document (or the draft when a
 // preview token is present). BFF/Go: GET /v1/buyer/design/published | design/preview through lib/shop-upstream.ts
@@ -13,6 +16,7 @@ import { isLocale } from "@live-commerce/i18n";
 import type { Locale } from "@live-commerce/i18n";
 import CartDrawer from "../../components/CartDrawer";
 import CartProvider from "../../components/CartProvider";
+import ClaimShellBoundary from "../../components/ClaimShellBoundary";
 import { ShopNameProvider } from "../../components/ShopName";
 import { Announcement, PreviewBanner, ShopFooter, ShopHeader } from "../../components/ShopChrome";
 import { accentText, defaultDesign, onAccent } from "../../lib/design";
@@ -24,6 +28,7 @@ import "../shop.css";
 
 export const dynamic = "force-dynamic";
 
+/** Read published shop metadata under the existing server shop context. */
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
   const shop = await loadShop(await previewToken());
@@ -40,6 +45,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   };
 }
 
+/** Render the server-resolved shop shell and preserve cart/session providers around all routes. */
 export default async function Layout({ children, params }: { children: React.ReactNode; params: Promise<{ locale: string }> }) {
   const { locale: raw } = await params;
   if (!isLocale(raw)) notFound();
@@ -60,13 +66,18 @@ export default async function Layout({ children, params }: { children: React.Rea
           <a className="sf-skip" href="#main">
             {copy.skip}
           </a>
-          {shop.state === "ok" && shop.draft && <PreviewBanner locale={locale} />}
-          {design.profile.announcement && <Announcement text={design.profile.announcement} />}
-          <ShopHeader locale={locale} design={design} preview={keep} closed={shop.state === "closed"} />
-          <div id="main" tabIndex={-1} className="sf-main">
-            <ShopNameProvider name={design.profile.name}>{children}</ShopNameProvider>
-          </div>
-          <ShopFooter locale={locale} design={design} preview={keep} />
+          <ClaimShellBoundary
+            warning={shop.state === "ok" && shop.draft && <PreviewBanner locale={locale} />}
+            header={<>
+              {design.profile.announcement && <Announcement text={design.profile.announcement} />}
+              <ShopHeader locale={locale} design={design} preview={keep} closed={shop.state === "closed"} />
+            </>}
+            footer={<ShopFooter locale={locale} design={design} preview={keep} />}
+          >
+            <div id="main" tabIndex={-1} className="sf-main">
+              <ShopNameProvider name={design.profile.name}>{children}</ShopNameProvider>
+            </div>
+          </ClaimShellBoundary>
           <CartDrawer locale={locale} />
         </CartProvider>
       </body>

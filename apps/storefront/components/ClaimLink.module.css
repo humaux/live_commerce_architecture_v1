@@ -1,0 +1,42 @@
+/* Purpose: source-bound claim result cards, compact mobile status header and native fixed action dock.
+ * Depends on: ClaimLink's real B1/cart state, existing ink/action/line tokens and the 900px storefront breakpoint.
+ * Used by: ClaimLink only; formal roots 66:1748–1753 (current-primary bundle adc1ac63).
+ * Invariants: all product/price/quantity values remain server data; cart/recovery controls remain in document flow. */
+.surface { color: var(--ink); background: #f6f7f8; min-height: 56vh; }
+.surface .main { max-width: none; margin: 0; padding: 32px 64px 40px; }
+.header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+.header h1 { color: var(--ink); font-size: 28px; line-height: 42px; margin: 0; }
+.back { display: none; }
+.language { margin-left: auto; }
+.language select { width: auto; max-width: 128px; min-height: 44px; font-size: 16px; border: 1px solid var(--line); border-radius: 6px; background: #fff; color: var(--ink); padding: 6px 8px; }
+.card { max-width: 840px; padding: 24px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+.lines { list-style: none; margin: 0; padding: 0; }
+.lines > li { display: grid; gap: 12px; padding: 0; }
+.lines > li + li { border-top: 1px solid var(--line); margin-top: 16px; padding-top: 12px; }
+.lines small, .badge { justify-self: start; width: fit-content; padding: 5px 10px; border-radius: 6px; background: #f6f7f8; color: var(--muted); font-size: 12px; line-height: 18px; }
+.lines small[class~="done"], .badge { color: #0f766e; background: #eaf6f2; }
+.badge { display: block; margin-bottom: 12px; }
+.product { display: block; color: var(--ink); font-size: 18px; line-height: 27px; overflow-wrap: anywhere; }
+/* Partial source nodes1881/1882 and2066/2067: global muted differs; keep source tokens local. */
+.partialProduct { --partial-muted: #596579; color: var(--partial-muted); font-size: 16px; line-height: 24px; font-weight: 500; overflow-wrap: anywhere; }
+.partialWarning { --partial-danger: #b42318; color: var(--partial-danger); font-size: 14px; line-height: 21px; font-weight: 500; overflow-wrap: anywhere; }
+.value { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 14px; line-height: 26px; }
+.value strong { color: #0f766e; font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.summary { margin-top: 12px; border-radius: 8px; background: #f6f7f8; padding: 12px; font-size: 12px; line-height: 18px; }
+.dock { margin-top: 24px; max-width: 840px; }
+.dock .checkout, .returnProducts { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; margin: 0; padding: 10px 16px; border: 1px solid var(--line); border-radius: 6px; font-size: 14px; line-height: 22px; text-decoration: none; white-space: nowrap; }
+.dock .checkout { width: 240px; background: var(--action); color: #fff; border-color: var(--action); }
+.dock .checkout:hover:not(:disabled) { background: var(--navy); }
+.dock .checkout:disabled { background: var(--action-disabled); color: var(--muted); }
+.returnProducts { background: #fff; color: var(--ink); min-width: 120px; }
+.support { max-width: 840px; margin-top: 24px; }
+@media (max-width: 899.98px) {
+  .surface .main { padding: 16px 16px 24px; }
+  .header { position: fixed; inset: 0 0 auto; height: 64px; z-index: 60; margin: 0; padding: 8px; gap: 6px; border-bottom: 1px solid var(--line); background: #fff; }
+  .header h1 { flex: 1; min-width: 0; font-size: 18px; line-height: 27px; }
+  .back { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 44px; height: 44px; border: 1px solid var(--line); border-radius: 6px; text-decoration: none; }
+  .language select { max-width: 112px; }
+  .card { padding: 16px; }
+  .dock { position: fixed; inset: auto 0 0; z-index: 50; margin: 0; max-width: none; padding: 15px 16px 23px; border-top: 1px solid var(--line); background: #fff; }
+  .dock .checkout, .dock .returnProducts { width: 100%; min-height: 44px; }
+}
