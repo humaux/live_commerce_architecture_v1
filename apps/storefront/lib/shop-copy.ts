@@ -1,3 +1,6 @@
+// Purpose: storefront chrome copy, including the namespaced C7 option task, in three UI locales.
+// Depends on: locale types; no transport or business state.
+// Used by: storefront shell, ProductBuy and MobileProductOptions.
 // UI chrome copy of the storefront shell in the three UI locales (zh-CN / zh-TW / en). Merchant content (titles,
 // descriptions, page bodies, nav labels, announcement) is single-language and is never translated here
 // (contracts/storefront-v2.md preamble). Checkout/payment/CVS wording stays in its own copy modules.
@@ -60,6 +63,10 @@ const en = {
   decrease: "Decrease quantity",
   increase: "Increase quantity",
   chooseOption: "Choose {name}",
+  c7ChooseOptions: "Choose options",
+  c7BackToProduct: "Back to product",
+  c7QuantityLimit: "Each purchase is subject to available stock.",
+  c7DeliveryNotice: "Choose available delivery options at checkout.",
   selectionIncomplete: "Choose every option first",
   description: "Description",
   inCollections: "In collections",
@@ -187,6 +194,10 @@ const zhTW: Copy = {
   decrease: "減少數量",
   increase: "增加數量",
   chooseOption: "選擇{name}",
+  c7ChooseOptions: "選擇規格",
+  c7BackToProduct: "返回商品",
+  c7QuantityLimit: "每次購買數量依商品庫存限制。",
+  c7DeliveryNotice: "結帳時選擇可用的配送方式。",
   selectionIncomplete: "請先選好所有規格",
   description: "商品說明",
   inCollections: "所屬分類",
@@ -313,6 +324,10 @@ const zhCN: Copy = {
   decrease: "减少数量",
   increase: "增加数量",
   chooseOption: "选择{name}",
+  c7ChooseOptions: "选择规格",
+  c7BackToProduct: "返回商品",
+  c7QuantityLimit: "每次购买数量依商品库存限制。",
+  c7DeliveryNotice: "结账时选择可用的配送方式。",
   selectionIncomplete: "请先选好所有规格",
   description: "商品说明",
   inCollections: "所属分类",
