@@ -1606,6 +1606,11 @@ case "$1" in
   :
     }
     lc_run() {
+  if [[ "${W1_PG_SELECTED:-}" == true ]]; then
+    docker exec "$test_container" createdb -U postgres lc_neutral_w1_test
+    LC_W1_PG_CONTAINER="$test_container" PGHOST=127.0.0.1 PGUSER=postgres PGPASSWORD="$POSTGRES_PASSWORD" \
+      node bench/l01/neutral/pg/check.mjs smoke
+  fi
   # Serial gates include two independent worker crash-rescue suites and fresh
   # migration clusters. Only this additive package envelope grows; individual
   # gate deadlines and production rescue defaults are unchanged.

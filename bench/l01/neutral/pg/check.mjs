@@ -1,5 +1,6 @@
-// Drives the bench SQL via psql and verifies committed rows against signed wire inputs.
-// Uses Node built-ins only. Adapter correctness and timing require separate runs.
+// Purpose: verify committed W1 bench rows against the signed wire corpus.
+// Depends on: Node built-ins, the portable corpus, and PostgreSQL 18 / psql for runtime modes.
+// Used by: the ordinary CI unit shard and neutral W1 adapter tests.
 import assert from 'node:assert/strict';
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { readFileSync } from 'node:fs';
@@ -19,6 +20,8 @@ const bindings = [
 ];
 const keyId = 'neutral_w1_fixture';
 const key = Buffer.alloc(32, 0x31);
+const inboxRole = 'l01_w1_ingress';
+const readerRole = 'l01_w1_reader';
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 const mac = (raw) => createHmac('sha256', corpus.hmac_secret).update(raw).digest();
 
@@ -87,6 +90,7 @@ const aad = (id, e) => Buffer.from(JSON.stringify([
 ]));
 
 function seal(e) {
+  assert.ok(Buffer.byteLength(e.raw) <= 1048576);
   const id = randomUUID();
   const nonce = randomBytes(12);
   const cipher = createCipheriv('aes-256-gcm', key, nonce);
@@ -96,7 +100,10 @@ function seal(e) {
 }
 
 function open(e, [id, actualKey, nonce, ciphertext]) {
+  assert.match(id, /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/);
   assert.equal(actualKey, keyId);
+  assert.equal(nonce.length, 12);
+  assert.ok(ciphertext.length >= 17 && ciphertext.length <= 1048592);
   const decipher = createDecipheriv('aes-256-gcm', key, nonce);
   decipher.setAAD(aad(id, e));
   decipher.setAuthTag(ciphertext.subarray(-16));
@@ -109,13 +116,20 @@ const literal = (v) => Buffer.isBuffer(v)
 const args = (values) => values.map(literal).join(',');
 const admit = (e, envelope = []) => `SELECT l01_w1.admit(${args([...quarantineTuple(e), ...envelope])});\n`;
 
-function psql(sql, expectedError) {
+function psql(sql, { user = process.env.PGUSER, password = process.env.PGPASSWORD, expectedError } = {}) {
   const { PGHOST, PGHOSTADDR, PGSERVICE, PGOPTIONS, LC_TEST_DATABASE_ALLOWED } = process.env;
   assert.equal(LC_TEST_DATABASE_ALLOWED, '1', 'requires explicit disposable database opt-in');
   assert.ok(['127.0.0.1', '::1'].includes(PGHOST) && !PGHOSTADDR && !PGSERVICE && !PGOPTIONS,
     'requires explicit loopback PGHOST with no routing overrides');
-  const run = spawnSync('psql', ['-XqAtw', '-h', PGHOST, '-d', 'lc_neutral_w1_test',
-    '-v', 'ON_ERROR_STOP=1', '-v', 'VERBOSITY=verbose'], {
+  assert.ok(user, 'requires explicit PGUSER');
+  const args = ['-XqAtw', '-h', PGHOST, '-U', user, '-d', 'lc_neutral_w1_test',
+    '-v', 'ON_ERROR_STOP=1', '-v', 'VERBOSITY=verbose'];
+  const container = process.env.LC_W1_PG_CONTAINER;
+  const env = { ...process.env };
+  if (password !== undefined) env.PGPASSWORD = password;
+  const run = spawnSync(container ? 'docker' : 'psql',
+    container ? ['exec', '-i', '-e', 'PGPASSWORD', container, 'psql', '-p', '5432', ...args] : args, {
+    env,
     input: `SET statement_timeout = '10s'; SET lock_timeout = '5s';
       SET standard_conforming_strings = on; SET default_transaction_isolation = 'read committed';\n${sql}`,
     encoding: 'utf8', timeout: 30_000,
@@ -123,25 +137,28 @@ function psql(sql, expectedError) {
   if (run.error) throw run.error;
   if (expectedError) {
     assert.equal(run.status, 3, run.stderr);
-    assert.ok(run.stderr.includes(expectedError), run.stderr);
+    assert.ok(run.stderr.includes(`ERROR:  ${expectedError}:`), run.stderr);
     return [];
   }
   assert.equal(run.status, 0, run.stderr);
   return run.stdout.trim().split('\n').filter(Boolean);
 }
 
-function setup() {
+function setup(roles = []) {
   const version = Number(psql('SHOW server_version_num;')[0]);
   assert.ok(version >= 180000 && version < 190000, 'requires PostgreSQL 18');
   const rows = bindings.map((binding) => `(${args([app, object, ...binding])})`).join(',');
-  psql(`BEGIN;\n${read('./schema.sql')}\nINSERT INTO l01_w1.binding VALUES ${rows};\nCOMMIT;`);
+  const enableLogins = roles.map(({ user, password }) => `ALTER ROLE ${user} LOGIN PASSWORD ${literal(password)};`).join('\n');
+  psql(`BEGIN;\n${read('./schema.sql')}\n${enableLogins}\nINSERT INTO l01_w1.binding VALUES ${rows};\nCOMMIT;`);
   console.log('W1 benchmark fixtures seeded on PostgreSQL ' + version);
 }
 
-function readback(extended) {
+function readback(extended, credentials = { user: process.env.PGUSER }, initialEnvelopes = []) {
+  assert.equal(credentials.user, readerRole);
   const columns = 'i.app_id, i.object, i.asset_id, i.tenant_id, i.store_id, i.binding_id, i.external_key, i.body_sha256';
-  const [inbox, intent, quarantine, registry] = psql(`
+  const [principal, inbox, intent, quarantine, registry] = psql(`
     BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY;
+    SELECT to_json(current_user::text);
     SELECT coalesce(json_agg(json_build_array(${columns})), '[]') FROM l01_w1.inbox i;
     SELECT coalesce(json_agg(json_build_array(${columns})), '[]')
         FROM l01_w1.intent n LEFT JOIN l01_w1.inbox i ON i.id = n.inbox_id;
@@ -149,7 +166,8 @@ function readback(extended) {
         id, key_id, encode(nonce,'hex'), encode(ciphertext,'hex'))), '[]') FROM l01_w1.quarantine;
     SELECT coalesce(json_agg(json_build_array(app_id, object, asset_id, tenant_id, store_id, binding_id, active)),
         '[]') FROM l01_w1.binding;
-    COMMIT;`).map(JSON.parse);
+    COMMIT;`, credentials).map(JSON.parse);
+  assert.equal(principal, readerRole);
 
   const expected = extended ? expectedExtended : expectedPrimary;
   checkPairs(inbox, intent, expected);
@@ -157,6 +175,9 @@ function readback(extended) {
   exactRows(registry, bindings.map((binding) => [app, object, ...binding]), 'trusted bindings differ');
   const expectedQuarantine = extended ? unscoped : [];
   exactRows(quarantine.map((row) => row.slice(0, 5)), expectedQuarantine.map(quarantineTuple), 'quarantine rows differ');
+  if (initialEnvelopes.length) {
+    exactRows(quarantine, initialEnvelopes, 'redelivery replaced the quarantine envelope');
+  }
   for (const [appId, obj, asset, mid, digest, id, actualKey, nonce, ciphertext] of quarantine) {
     const event = expectedQuarantine.find((e) => e.asset === asset && e.mid === mid && e.digest === digest);
     assert.equal(appId, app);
@@ -167,31 +188,61 @@ function readback(extended) {
 }
 
 function smoke() {
-  setup();
+  const login = (user) => ({ user, password: randomBytes(24).toString('hex') });
+  const ingress = login(inboxRole);
+  const reader = login(readerRole);
+  setup([ingress, reader]);
+  const apply = (sql, expectedError) => psql(sql, { ...ingress, expectedError });
+  assert.deepEqual(apply(`
+    SELECT current_user;
+    SELECT r.rolname FROM pg_proc p JOIN pg_roles r ON r.oid = p.proowner
+    WHERE p.oid = 'l01_w1.admit(text,text,text,text,text,uuid,text,bytea,bytea)'::regprocedure
+      AND p.prosecdef AND NOT (r.rolsuper OR r.rolbypassrls OR r.rolcreatedb OR r.rolcreaterole OR r.rolcanlogin);
+  `), [inboxRole, 'l01_w1_owner']);
+  apply('CREATE TEMP TABLE outside_boundary (id int);', '42501');
+  for (const table of ['binding', 'inbox', 'intent', 'quarantine']) {
+    apply(`SELECT * FROM l01_w1.${table} LIMIT 0;`, '42501');
+    apply(`INSERT INTO l01_w1.${table} DEFAULT VALUES;`, '42501');
+  }
+  psql(admit(first), { ...reader, expectedError: '42501' });
+  psql('INSERT INTO l01_w1.inbox DEFAULT VALUES;', { ...reader, expectedError: '42501' });
+  apply(admit(first, seal(first)), '22023');
+  apply('BEGIN ISOLATION LEVEL REPEATABLE READ;\n' + admit(first), '25001');
+  const oversized = `decode(repeat('00', 1048593), 'hex')`;
+  const [id, idKey, nonce] = seal(unscoped[0]);
+  apply(`SELECT l01_w1.admit(${args([...quarantineTuple(unscoped[0]), id, idKey, nonce])},${oversized});`, '22023');
+
+  // Install the fault as the fixture administrator, then take the same ingress
+  // login and commit boundary used for successful admissions.
+  psql(`
+    CREATE FUNCTION l01_w1.fail_intent() RETURNS trigger LANGUAGE plpgsql AS
+      $$ BEGIN RAISE EXCEPTION 'W1 injected intent failure' USING ERRCODE = 'P1901'; END; $$;
+    CREATE TRIGGER fail_intent BEFORE INSERT ON l01_w1.intent
+      FOR EACH STATEMENT EXECUTE FUNCTION l01_w1.fail_intent();`);
+  apply('BEGIN;\n' + admit(rollback) + 'COMMIT;', 'P1901');
+  psql('DROP TRIGGER fail_intent ON l01_w1.intent; DROP FUNCTION l01_w1.fail_intent();');
+
   const seen = new Set();
   const statuses = valid.map((e) => {
     const result = seen.has(e.mid) ? 'replay' : 'routed';
     seen.add(e.mid);
     return result;
   });
-  assert.deepEqual(psql(valid.map((e) => admit(e)).join('')), statuses);
-  readback(false);
+  assert.deepEqual(apply(valid.map((e) => admit(e)).join('')), statuses);
+  readback(false, reader);
   const changed = { ...first, digest: hash(first.raw.replace('fixed-body', 'changed-body')) };
-  assert.deepEqual(psql(admit(second) + admit(first) + admit(changed)), ['routed', 'replay', 'conflict']);
-  for (const e of unscoped) {
-    const sql = admit(e, seal(e));
-    assert.deepEqual(psql('BEGIN;\n' + admit(e) + sql + 'COMMIT;\n' + sql),
-      ['needs_quarantine', 'quarantined', 'quarantined']);
-  }
-  psql(`
-    BEGIN;
-    CREATE FUNCTION l01_w1.fail_intent() RETURNS trigger LANGUAGE plpgsql AS
-      $$ BEGIN RAISE EXCEPTION 'W1 injected intent failure' USING ERRCODE = 'P1901'; END; $$;
-    CREATE TRIGGER fail_intent BEFORE INSERT ON l01_w1.intent
-      FOR EACH STATEMENT EXECUTE FUNCTION l01_w1.fail_intent();
-    ${admit(rollback)}
-    COMMIT;`, 'P1901: W1 injected intent failure');
-  readback(true);
+  assert.deepEqual(apply(admit(second) + admit(first) + admit(changed)), ['routed', 'replay', 'conflict']);
+  const initialEnvelopes = unscoped.map((e) => {
+    const original = seal(e);
+    const retry = seal(e);
+    assert.notEqual(original[0], retry[0]);
+    assert.notDeepEqual(original[2], retry[2]);
+    const transaction = (envelope) => 'BEGIN;\n' + admit(e) + admit(e, envelope) + 'COMMIT;\n';
+    assert.deepEqual(apply(transaction(original) + transaction(retry)),
+      ['needs_quarantine', 'quarantined', 'needs_quarantine', 'quarantined']);
+    return [...quarantineTuple(e), original[0], original[1], original[2].toString('hex'), original[3].toString('hex')];
+  });
+  readback(true, reader, initialEnvelopes);
 }
 
 switch (process.argv[2]) {

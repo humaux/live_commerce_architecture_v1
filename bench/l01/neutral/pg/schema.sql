@@ -1,6 +1,13 @@
--- Disposable W1 benchmark schema. Called by the three W1 adapters after verification.
--- The registrar seeds bindings, and ingress can execute admit without table privileges.
-CREATE SCHEMA l01_w1;
+-- Purpose: disposable W1 persistence with one trusted-scope Inbox and intent boundary.
+-- Depends on: PostgreSQL 18 and an empty, task-owned lc_neutral_w1_test database.
+-- Used by: check.mjs and the neutral W1 adapters.
+CREATE ROLE l01_w1_owner NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOINHERIT;
+CREATE ROLE l01_w1_ingress NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOINHERIT;
+CREATE ROLE l01_w1_reader NOLOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOINHERIT;
+REVOKE ALL ON DATABASE lc_neutral_w1_test FROM PUBLIC;
+GRANT CONNECT ON DATABASE lc_neutral_w1_test TO l01_w1_ingress, l01_w1_reader;
+CREATE SCHEMA l01_w1 AUTHORIZATION l01_w1_owner;
+SET ROLE l01_w1_owner;
 
 CREATE TABLE l01_w1.binding (
     app_id text NOT NULL,
@@ -42,7 +49,7 @@ CREATE TABLE l01_w1.quarantine (
     body_sha256 text NOT NULL CHECK (body_sha256 ~ '^[0-9a-f]{64}$'),
     key_id text NOT NULL CHECK (key_id ~ '^[A-Za-z0-9_-]{1,64}$'),
     nonce bytea NOT NULL CHECK (octet_length(nonce) = 12),
-    ciphertext bytea NOT NULL CHECK (octet_length(ciphertext) > 16),
+    ciphertext bytea NOT NULL CHECK (octet_length(ciphertext) BETWEEN 17 AND 1048592),
     PRIMARY KEY (app_id, object, asset_id, external_key, body_sha256)
 );
 
@@ -58,6 +65,9 @@ DECLARE
     new_id bigint;
     existing_digest text;
 BEGIN
+    IF current_setting('transaction_isolation') <> 'read committed' THEN
+        RAISE EXCEPTION 'W1 requires READ COMMITTED' USING ERRCODE = '25001';
+    END IF;
     IF p_app IS NULL OR p_app !~ '^[0-9]{1,40}$' OR p_object IS DISTINCT FROM 'page'
         OR p_asset IS NULL OR p_asset !~ '^[0-9]{1,40}$'
         OR p_external_key IS NULL OR octet_length(p_external_key) NOT BETWEEN 1 AND 1024
@@ -74,10 +84,18 @@ BEGIN
         IF p_quarantine_id IS NULL THEN
             RETURN 'needs_quarantine';
         END IF;
+        IF p_key_id !~ '^[A-Za-z0-9_-]{1,64}$' OR octet_length(p_nonce) <> 12
+            OR octet_length(p_ciphertext) NOT BETWEEN 17 AND 1048592
+        THEN
+            RAISE EXCEPTION 'invalid W1 quarantine envelope' USING ERRCODE = '22023';
+        END IF;
         INSERT INTO l01_w1.quarantine (id, app_id, object, asset_id, external_key, body_sha256, key_id, nonce, ciphertext)
             VALUES (p_quarantine_id, p_app, p_object, p_asset, p_external_key, p_body_sha256, p_key_id, p_nonce, p_ciphertext)
             ON CONFLICT (app_id, object, asset_id, external_key, body_sha256) DO NOTHING;
         RETURN 'quarantined';
+    END IF;
+    IF p_quarantine_id IS NOT NULL THEN
+        RAISE EXCEPTION 'sealed envelope for active W1 binding' USING ERRCODE = '22023';
     END IF;
 
     INSERT INTO l01_w1.inbox (app_id, object, asset_id, tenant_id, store_id, binding_id, external_key, body_sha256)
@@ -102,3 +120,7 @@ $$;
 
 REVOKE ALL ON SCHEMA l01_w1 FROM PUBLIC;
 REVOKE ALL ON FUNCTION l01_w1.admit(text, text, text, text, text, uuid, text, bytea, bytea) FROM PUBLIC;
+GRANT USAGE ON SCHEMA l01_w1 TO l01_w1_ingress, l01_w1_reader;
+GRANT EXECUTE ON FUNCTION l01_w1.admit(text, text, text, text, text, uuid, text, bytea, bytea) TO l01_w1_ingress;
+GRANT SELECT ON ALL TABLES IN SCHEMA l01_w1 TO l01_w1_reader;
+RESET ROLE;
