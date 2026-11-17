@@ -630,7 +630,13 @@ try {
 
   const partial = await newPage(engine === "webkit"), partialLink = await fixture("partial");
   await openClaim(partial, partialLink);
-  await expect(partial.getByTestId("claim-line-B2")).toContainText(/售完|售罄|Sold out/);
+  const partialB2 = partial.seen.preview.lines.find((item) => item.keyword === "B2");
+  assert(partialB2, "legacy partial B2 server preview line exists");
+  assert.equal(partialB2.available, true, "legacy partial B2 offer remains available");
+  assert.equal(partialB2.sold_out, true, "legacy partial B2 is sold out");
+  assert.equal(partialB2.quantity, 1, "legacy partial B2 retains quantity");
+  assert.equal(partialB2.pending, true, "legacy partial B2 remains pending");
+  await expect(partial.getByTestId("claim-line-B2").getByText(claimCopy["zh-TW"].unavailable, { exact: true })).toBeVisible();
   await checkout(partial, partialLink, "zh-TW", true); pass("partial sold-out skip");
   partial.seen.redeem = 0; await openClaim(partial, partialLink);
   await expect(partial.getByTestId("claim-add")).toContainText(/前往結帳（共 \d+ 件）/); // the frame has one checkout label; the sold-out line above carries the partial signal
