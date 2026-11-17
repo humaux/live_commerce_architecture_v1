@@ -235,6 +235,30 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0 # live_media_stop_legacy_test builds a pinned pre-LMR binary from git history
+      - name: Select neutral W1 readback for the ordinary unit shard
+        if: matrix.mode == 'shard:unit' && (github.event_name == 'pull_request' || github.event_name == 'push')
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          if [[ "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            # Test the same candidate tree and base that determine whether W1 is affected.
+            test "$(git rev-parse HEAD^1)" = "$BASE_SHA"
+            test "$(git rev-parse HEAD^2)" = "$PR_HEAD_SHA"
+            rc=0
+            git diff --no-renames --quiet "$BASE_SHA" HEAD -- bench/l01/neutral \
+              .github/workflows/{gates,foundation}.yml \
+              scripts/dev/{test-local,test-local-runtime,test-lock,check-headers}.sh || rc=$?
+            case "$rc" in
+              0) echo 'W1 SQL smoke NOT_RUN (no relevant changes)'; exit 0 ;;
+              1) bash scripts/dev/check-headers.sh "$BASE_SHA" ;;
+              *) exit "$rc" ;;
+            esac
+          fi
+          echo "W1 SQL smoke candidate=$GITHUB_SHA tree=$(git rev-parse 'HEAD^{tree}') base=$BASE_SHA pr_head=$PR_HEAD_SHA"
+          echo "W1_PG_SELECTED=true" >> "$GITHUB_ENV"
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
