@@ -153,6 +153,18 @@ export async function checkC7Matrix({ browser, origin, evidence, facts }: {
       const task = () => page.getByTestId("product-options-task");
       const entry = () => page.getByTestId("product-options-task-entry").getByRole("button");
       const cartLine = () => page.getByTestId("cart-line");
+      const checkTaskGeometry = async () => {
+        const [taskBox, headerBox, dockBox] = await Promise.all([
+          task().boundingBox(), task().locator("header").boundingBox(), task().locator("footer").boundingBox(),
+        ]);
+        assert(taskBox && headerBox && dockBox, "C7 task, header and dock must have rendered bounds");
+        assert.equal(taskBox.x, 0); assert.equal(taskBox.y, 0);
+        assert.equal(taskBox.width, cell.width); assert.equal(taskBox.height, height);
+        assert.equal(headerBox.x, 0); assert.equal(headerBox.y, 0);
+        assert.equal(headerBox.width, cell.width); assert.equal(headerBox.height, 64);
+        assert.equal(dockBox.x, 0); assert.equal(dockBox.y, height - 84);
+        assert.equal(dockBox.width, cell.width); assert.equal(dockBox.height, 84);
+      };
       const checkCart = async (sku: string, qty: number) => {
         await expect(cartLine()).toHaveCount(1);
         await expect.poll(async () => (await cartLine().getAttribute("data-sku")) === sku).toBe(true);
@@ -205,6 +217,7 @@ export async function checkC7Matrix({ browser, origin, evidence, facts }: {
           await expect(task().getByTestId("add-to-cart")).toHaveText(`${copy.addToCart} · ${committedPrice}`);
           // Read-only layout measurement; screenshot bytes remain unmodified.
           assert(await task().evaluate(node => node.scrollWidth <= node.clientWidth), "task has horizontal overflow");
+          await checkTaskGeometry();
           await task().locator("label.sf-chip", { has: page.getByRole("radio", { name: "180g", exact: true }) }).click();
           await expect(task().getByRole("radio", { name: "180g", exact: true })).toBeChecked();
           await expect(summary.locator("img")).toHaveAttribute("src", activeImg);
@@ -266,6 +279,7 @@ export async function checkC7Matrix({ browser, origin, evidence, facts }: {
           await expect(task().getByTestId("product-options-summary").locator("img")).toHaveAttribute("src", diffuserImg);
           await expect(task().getByTestId("product-options-summary").getByTestId("variant-price")).toHaveText(diffuserPrice);
           await expect(task().getByTestId("add-to-cart")).toBeDisabled();
+          await checkTaskGeometry();
           await shot("soldout"); await page.keyboard.press("Escape");
           assert.equal(calls.length, 0);
         });
@@ -296,6 +310,7 @@ export async function checkC7Matrix({ browser, origin, evidence, facts }: {
           await task().getByTestId("add-to-cart").click();
           await expect(task().getByTestId("cart-problem")).toContainText(copy.cartUncertain);
           await expect(task().getByTestId("add-to-cart")).toBeDisabled();
+          await checkTaskGeometry();
           assert.equal(calls.length, 2);
           assert(calls[1].key && calls[1].key !== calls[0].key, "new explicit add gets a distinct request identity");
           await shot("unknown");
