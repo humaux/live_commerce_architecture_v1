@@ -1,0 +1,14 @@
+/* Purpose: scope the mobile claim shell without changing shared shop chrome or other routes.
+ * Depends on: ClaimShellBoundary slots, ClaimLink's 64px app bar and the existing 900px shop breakpoint.
+ * Used by: ClaimShellBoundary in the locale layout. */
+.claim {
+  min-height: 100vh;
+  background: #f6f7f8;
+  color: var(--ink);
+}
+@media (max-width: 899.98px) {
+  .claim { padding-top: 64px; padding-bottom: 84px; }
+  /* Direct header/announcement/footer slots only; preserve their desktop sibling/sticky layout.
+     The content slot retains its server-owned #main div, and the preview warning is a div. */
+  .claim > header, .claim > p, .claim > footer { display: none; }
+}

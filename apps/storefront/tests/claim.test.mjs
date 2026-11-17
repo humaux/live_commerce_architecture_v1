@@ -246,6 +246,7 @@ function claimPage({ lines, items, refreshedLines = lines, view = "ready", recov
     "../lib/routes": { cartPath: locale => `/${locale}/cart`, checkoutPath: locale => `/${locale}/checkout` },
     "../lib/claim-contract": claimContract, "../lib/claim-copy": { claimCopy }, "../lib/money": { formatMoney: () => "NT$200" },
     "../../../packages/format/src/index": format,
+    "./ClaimLink.module.css": { surface: "surface", main: "main", header: "header", back: "back", language: "language", card: "card", badge: "badge", lines: "lines", product: "product", value: "value", summary: "summary", dock: "dock", checkout: "checkout", returnProducts: "returnProducts", support: "support" },
   };
   const exports = {};
   runInNewContext(compiled, { exports, require: name => { assert(name in modules, name); return modules[name]; }, window: { location: { assign: url => calls.navigation.push(url) } } });

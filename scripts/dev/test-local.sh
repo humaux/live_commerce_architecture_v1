@@ -1703,6 +1703,20 @@ case "$1" in
   node --test --test-reporter=spec --experimental-strip-types tests/storefront/buyer-after-parity.mjs
     }
     ;;
+  --l01-go-w1)
+    lc_build=none
+    lc_fixture=pg
+    lc_prepare() {
+  :
+    }
+    lc_run() {
+  test -f tests/foundation/l01_go_w1_test.go
+  grep -q '^func TestL01GoW1(t \*testing.T)' tests/foundation/l01_go_w1_test.go
+  GOTOOLCHAIN=go1.27.4 go test -race -count=1 -timeout=60s -v ./bench/l01/go-w1
+  GOTOOLCHAIN=go1.27.4 go test -race -count=1 -timeout=600s -run '^TestL01GoW1$' -v ./tests/foundation
+  printf 'Measured: Go+River SAME_HOST_PILOT only; neutral L01, language comparison and capacity qualification NOT_RUN.\n'
+    }
+    ;;
   # APPEND MODES HERE
   *) return 1 ;;
 esac
