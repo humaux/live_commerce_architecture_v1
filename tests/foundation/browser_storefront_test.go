@@ -67,15 +67,16 @@ type sfrCollection struct {
 
 // sfrFacts is everything the browser gate asserts against (it never reads PG).
 type sfrFacts struct {
-	Origin       string          `json:"origin"`
-	Currency     string          `json:"currency"`
-	StoreName    string          `json:"store_name"`
-	Products     []sfrProduct    `json:"products"`
-	Collections  []sfrCollection `json:"collections"`
-	ActiveCount  int             `json:"active_count"`
-	Design       map[string]any  `json:"design"`
-	PreviewToken string          `json:"preview_token"`
-	FreeShipping struct {
+	Origin         string          `json:"origin"`
+	Currency       string          `json:"currency"`
+	StoreName      string          `json:"store_name"`
+	Products       []sfrProduct    `json:"products"`
+	C7LongLabelSKU string          `json:"c7_long_label_sku,omitempty"`
+	Collections    []sfrCollection `json:"collections"`
+	ActiveCount    int             `json:"active_count"`
+	Design         map[string]any  `json:"design"`
+	PreviewToken   string          `json:"preview_token"`
+	FreeShipping   struct {
 		ThresholdMinor int64 `json:"threshold_minor"`
 		FeeMinor       int64 `json:"fee_minor"`
 	} `json:"free_shipping"`
@@ -163,9 +164,16 @@ func TestBrowserStorefront(t *testing.T) {
 		products = append(products, sfrProduct{Key: fmt.Sprintf("item%02d", i), Slug: fmt.Sprintf("item-%02d", i), Title: fmt.Sprintf("Everyday Item %02d", i), Description: "Everyday item.", Images: 1,
 			Collection: map[bool]string{true: "tableware", false: ""}[i <= 10], Status: "active", Variants: []sfrVariant{{Code: fmt.Sprintf("ITM-%02d", i), Price: money(10) + int64(i)*150, Stock: 10}}})
 	}
+	const c7ShortOption = "標準規格"
+	c7LongOption := strings.Repeat("超長規格名稱測試", 5)
+	var c7LongProductID string
 	products = append(products,
 		sfrProduct{Key: "draft", Slug: "secret-draft-mug", Title: "Secret Draft Mug", Description: "Not for sale yet.", Images: 1, Status: "draft", Variants: []sfrVariant{{Code: "DRF-001", Price: money(30), Stock: 5}}},
-		sfrProduct{Key: "retired", Slug: "retired-plate", Title: "Retired Plate", Description: "No longer sold.", Images: 1, Status: "archived", Variants: []sfrVariant{{Code: "RET-001", Price: money(40), Stock: 5}}})
+		sfrProduct{Key: "retired", Slug: "retired-plate", Title: "Retired Plate", Description: "No longer sold.", Images: 1, Status: "archived", Variants: []sfrVariant{{Code: "RET-001", Price: money(40), Stock: 5}}},
+		sfrProduct{Key: "c7_long_label", Slug: "c7-long-option", Title: "C7 Long Option Fixture", Description: "Synthetic long-label option fixture.",
+			Axes: []v2Axis{{Name: "Option", Values: []string{c7ShortOption, c7LongOption}}}, Images: 1, Status: "draft", Variants: []sfrVariant{
+				{Values: []string{c7ShortOption}, Code: "C7L-SHORT", Price: money(68), Stock: 6},
+				{Values: []string{c7LongOption}, Code: "C7L-LONG", Price: money(98), Stock: 6}}})
 	for i := range products {
 		p := &products[i]
 		var made struct {
@@ -181,6 +189,9 @@ func TestBrowserStorefront(t *testing.T) {
 		}
 		admin.do("POST", "/products", t04Key("sfr-p-"+p.Key), body, 200, &made)
 		p.ID = made.ID
+		if p.Key == "c7_long_label" {
+			c7LongProductID = made.ID
+		}
 		for _, v := range p.Variants {
 			sku := map[string]any{"product_id": p.ID, "code": v.Code, "price_minor": v.Price, "weight_grams": 300, "length_mm": 100, "width_mm": 100, "height_mm": 50, "option_values": v.Values}
 			if v.Compare > 0 {
@@ -188,6 +199,9 @@ func TestBrowserStorefront(t *testing.T) {
 			}
 			var s v2SKU
 			admin.do("POST", "/skus", t04Key("sfr-sku-"+v.Code), sku, 200, &s)
+			if p.Key == "c7_long_label" && len(v.Values) == 1 && v.Values[0] == c7LongOption {
+				facts.C7LongLabelSKU = s.ID
+			}
 			if v.Stock > 0 {
 				admin.do("POST", "/inventory/adjustments", t04Key("sfr-adj-"+v.Code), map[string]any{"warehouse_id": warehouse.ID, "sku_id": s.ID, "delta": v.Stock, "expected_version": 0, "reason": "storefront gate"}, 200, nil)
 			}
@@ -344,6 +358,39 @@ func TestBrowserStorefront(t *testing.T) {
 	merchantToken := sfiPublishViaDefiners(t, f, f.principalA, sfrOrigin)
 
 	// ---- control listener + the Node gate -------------------------------------------------------------------------------------------
+	setC7LongLabelStatus := func(r *http.Request, status string) error {
+		var extra [1]byte
+		if n, _ := r.Body.Read(extra[:]); r.URL.RawQuery != "" || n > 0 {
+			return fmt.Errorf("c7_long_label control accepts no query or body")
+		}
+		getReq := httptest.NewRequest(http.MethodGet, "/v1/admin/stores/"+f.storeA1+"/products/"+c7LongProductID, nil)
+		getReq.Header.Set("Authorization", "Bearer "+f.tokens["a"])
+		getRec := httptest.NewRecorder()
+		admin.h.ServeHTTP(getRec, getReq)
+		if getRec.Code != http.StatusOK {
+			return fmt.Errorf("c7_long_label get status=%d", getRec.Code)
+		}
+		var current struct {
+			Version int64 `json:"version"`
+		}
+		if err := json.Unmarshal(getRec.Body.Bytes(), &current); err != nil {
+			return fmt.Errorf("c7_long_label decode version: %w", err)
+		}
+		patchBody, err := json.Marshal(map[string]any{"expected_version": current.Version, "status": status})
+		if err != nil {
+			return err
+		}
+		patchReq := httptest.NewRequest(http.MethodPatch, "/v1/admin/stores/"+f.storeA1+"/products/"+c7LongProductID, bytes.NewReader(patchBody))
+		patchReq.Header.Set("Authorization", "Bearer "+f.tokens["a"])
+		patchReq.Header.Set("Content-Type", "application/json")
+		patchReq.Header.Set("Idempotency-Key", fmt.Sprintf("sfr-c7-long-label-%s-v%d", status, current.Version))
+		patchRec := httptest.NewRecorder()
+		admin.h.ServeHTTP(patchRec, patchReq)
+		if patchRec.Code != http.StatusOK {
+			return fmt.Errorf("c7_long_label patch %s status=%d", status, patchRec.Code)
+		}
+		return nil
+	}
 	controlKey := randomToken()
 	control := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Header.Get("X-Gate-Key") != controlKey || r.Method != http.MethodPost {
@@ -356,6 +403,10 @@ func TestBrowserStorefront(t *testing.T) {
 			err = sfiSetPublished(f, merchantToken, false)
 		case "/publish":
 			err = sfiSetPublished(f, merchantToken, true)
+		case "/c7-long-label-enable":
+			err = setC7LongLabelStatus(r, "active")
+		case "/c7-long-label-disable":
+			err = setC7LongLabelStatus(r, "draft")
 		case "/api-down":
 			apiDown.Store(true)
 		case "/api-up":
@@ -435,6 +486,16 @@ func TestBrowserStorefront(t *testing.T) {
 		(SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='operator.domain_bound')`, f.storeA1).Scan(&published, &bound)
 	if published < 2 || bound != 1 {
 		t.Errorf("audit trail: merchant.storefront_published=%d (want >=2: publish, republish) operator.domain_bound=%d (want 1)", published, bound)
+	}
+	var c7Status string
+	if err := f.owner.QueryRow(ctx, `SELECT status FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, f.tenantA, f.storeA1, c7LongProductID).Scan(&c7Status); err != nil || c7Status != "draft" {
+		t.Errorf("c7_long_label final status = %q (err=%v); want draft", c7Status, err)
+	}
+	if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND status='active'`, f.tenantA, f.storeA1); n != facts.ActiveCount {
+		t.Errorf("active products after gate = %d; want %d", n, facts.ActiveCount)
+	}
+	if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND status='draft' AND slug IN ('secret-draft-mug','c7-long-option')`, f.tenantA, f.storeA1); n != 2 || countRows(t, f.owner, `SELECT count(*) FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND status='draft'`, f.tenantA, f.storeA1) != 2 {
+		t.Errorf("draft products after gate must be only secret-draft-mug and c7-long-option")
 	}
 	t.Logf("PASS: real-stack storefront shell; %d active products, %d collections; evidence=%s", facts.ActiveCount, len(facts.Collections), evidence)
 }

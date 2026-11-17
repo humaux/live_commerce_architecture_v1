@@ -1,0 +1,26 @@
+{
+  "status": "TESTONLY_CANDIDATE_DELIVERED_SOURCE_ADMISSION_INCOMPLETE",
+  "evidence_level": "E0 candidate; static whitespace/hash inspection only",
+  "base": "bc6c54a429c211c16a3fdd25dd50e5f78acadbb4",
+  "test_commit": "27cd23d94332c49da77a48ee6355d6dd36b3bd65",
+  "test_tree": "5ea09511b2c41f4dd6475ae49c65a0170022616e",
+  "test_blob": "a9d3d27590ce82d76db185d9bc93ab376d6cf651",
+  "patch_sha256": "214903af26bf647ecce7d2a3d9dbeb5581ce7c971ffd529176ca101df43962ee",
+  "branch": "luogangan7-lgtm/fb-m8-c7-testonly-1116",
+  "role": "ui_worker TESTONLY leaf",
+  "actual_model": "UNKNOWN",
+  "actual_effort": "UNKNOWN",
+  "quota": "UNKNOWN",
+  "static_commands": [
+    {"command": "git diff --cached --check", "exit": 0},
+    {"command": "git diff --check bc6c54a429c211c16a3fdd25dd50e5f78acadbb4 HEAD", "exit": 0},
+    {"command": "shasum -a 256 <eight pinned sources>", "exit": 0},
+    {"command": "git diff --no-index --check /dev/null tests/storefront/buyer-browse-parity.spec.ts", "exit": 1, "meaning": "new-file diff; no whitespace diagnostics emitted"}
+  ],
+  "runtime": {"basic_journey": "NOT_RUN", "native_RED": "NOT_RUN", "native_GREEN": "NOT_RUN", "typecheck": "NOT_RUN", "check_gates": "NOT_RUN", "browser_ownership": "NOT_RUN", "CI": "NOT_RUN", "independent_review": "NOT_RUN"},
+  "blocked": ["current signed formal promotion/version and full source plans not established", "root-owned parent hook required; not authorized for leaf"],
+  "shared_memory": "ROOT_PROXY_REQUIRED: research payload in REPORT.md; own parent-subc7-testonly canvas only under lock",
+  "cleanup": {"processes_started": 0, "fixtures_created": 0, "containers_started": 0, "downloads": 0, "temporary_runtime_artifacts": 0},
+  "production_UI_writes": [],
+  "forbidden_actions_performed": []
+}
