@@ -236,7 +236,6 @@ jobs:
           persist-credentials: false
           fetch-depth: 0 # live_media_stop_legacy_test builds a pinned pre-LMR binary from git history
       - name: Select neutral W1 readback for the ordinary unit shard
-        id: w1_pg
         if: matrix.mode == 'shard:unit' && (github.event_name == 'pull_request' || github.event_name == 'push')
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -259,7 +258,7 @@ jobs:
             esac
           fi
           echo "W1 SQL smoke candidate=$GITHUB_SHA tree=$(git rev-parse 'HEAD^{tree}') base=$BASE_SHA pr_head=$PR_HEAD_SHA"
-          echo "run=true" >> "$GITHUB_OUTPUT"
+          echo "W1_PG_SELECTED=true" >> "$GITHUB_ENV"
       - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
@@ -376,8 +375,6 @@ jobs:
         run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
       - name: Gate
         id: gate
-        env:
-          W1_PG_SELECTED: ${{ steps.w1_pg.outputs.run }}
         run: |
           set -o pipefail
           # Only LC_* names with plain values: an inject-fail run of a new gate must not be able to set arbitrary env.
