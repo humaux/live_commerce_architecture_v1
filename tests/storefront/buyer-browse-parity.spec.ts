@@ -82,7 +82,7 @@ import { createHash } from "node:crypto";
 import type { BrowserContext, Page, Request, Response } from "@playwright/test";
 import { shopCopy } from "../../apps/storefront/lib/shop-copy.ts";
 
-type C7Facts = { products: { key: string; slug: string; title: string; variants: { values: string[]; stock: number }[] }[] };
+type C7Facts = { currency: string; products: { key: string; id: string; slug: string; title: string; variants: { values: string[]; price_minor: number; stock: number }[] }[] };
 type C7Cell = {
   locale: "zh-TW" | "zh-CN" | "en"; width: number; kind: "mobile" | "desktop" | "cas";
   status: "NOT_RUN" | "PASS" | "FAIL"; failure?: string;
@@ -179,6 +179,7 @@ export async function checkC7Matrix({ browser, origin, evidence, facts }: {
           const drawer = page.getByTestId("cart-drawer");
           await expect(drawer).toBeVisible();
           await expect(page).toHaveURL(`${origin}/${cell.locale}/products/${candle.slug}`);
+          await checkCart(sku, 1);
           await shot("drawer");
           await drawer.getByRole("button", { name: copy.closeCart, exact: true }).click();
           await expect(drawer).not.toBeVisible();
@@ -186,16 +187,29 @@ export async function checkC7Matrix({ browser, origin, evidence, facts }: {
         });
       } else if (cell.kind === "mobile") {
         await step("task Back discards draft and restores trigger", async () => {
+          const initialPrice = await inline().getByTestId("variant-price").innerText();
+          const activeImg = await page.getByTestId("product-gallery-active-image").getAttribute("src");
+          assert(activeImg && activeImg.startsWith(`/media/p/${candle.id}/`));
           await inline().locator("label.sf-chip", { has: page.getByRole("radio", { name: "300g", exact: true }) }).click();
           await inline().getByTestId("qty-input").locator("xpath=following-sibling::button").click();
+          const committedPrice = await inline().getByTestId("variant-price").innerText();
+          assert(initialPrice.includes(String(candle.variants[0].price_minor / 100)) && committedPrice.includes(String(candle.variants[1].price_minor / 100)) && initialPrice !== committedPrice);
           const sku = await inline().getAttribute("data-sku"); assert(sku);
           await entry().click();
           await expect(task()).toBeVisible();
           await expect(task().getByRole("heading", { name: copy.c7ChooseOptions, exact: true })).toBeVisible();
+          const summary = task().getByTestId("product-options-summary");
+          await expect(summary.getByRole("heading", { level: 3, name: candle.title, exact: true })).toBeVisible();
+          await expect(summary.locator("img")).toHaveAttribute("src", activeImg);
+          await expect(summary.getByTestId("variant-price")).toHaveText(committedPrice);
+          await expect(task().getByTestId("add-to-cart")).toHaveText(`${copy.addToCart} · ${committedPrice}`);
           // Read-only layout measurement; screenshot bytes remain unmodified.
           assert(await task().evaluate(node => node.scrollWidth <= node.clientWidth), "task has horizontal overflow");
           await task().locator("label.sf-chip", { has: page.getByRole("radio", { name: "180g", exact: true }) }).click();
           await expect(task().getByRole("radio", { name: "180g", exact: true })).toBeChecked();
+          await expect(summary.locator("img")).toHaveAttribute("src", activeImg);
+          await expect(summary.getByTestId("variant-price")).toHaveText(initialPrice);
+          await expect(task().getByTestId("add-to-cart")).toHaveText(`${copy.addToCart} · ${initialPrice}`);
           await task().getByTestId("qty-input").locator("xpath=following-sibling::button").click();
           await expect(task().getByTestId("qty-input")).toHaveValue("3");
           await shot("draft");
@@ -235,10 +249,22 @@ export async function checkC7Matrix({ browser, origin, evidence, facts }: {
           assert.equal(calls.length, 0);
         });
         await step("real soldout options withhold add", async () => {
-          await gotoProduct(page, scarf.slug); await entry().click();
+          await gotoProduct(page, scarf.slug);
+          const scarfPrice = await inline().getByTestId("variant-price").innerText();
+          const scarfImg = await page.getByTestId("product-gallery-active-image").getAttribute("src");
+          assert(scarfImg && scarfImg.startsWith(`/media/p/${scarf.id}/`) && scarfPrice.includes(String(scarf.variants[0].price_minor / 100)));
+          await entry().click();
+          await expect(task().getByTestId("product-options-summary").locator("img")).toHaveAttribute("src", scarfImg);
+          await expect(task().getByTestId("product-options-summary").getByTestId("variant-price")).toHaveText(scarfPrice);
           await expect(task().getByRole("radio", { name: "Black", exact: true })).toBeDisabled();
           await page.keyboard.press("Escape");
-          await gotoProduct(page, diffuser.slug); await entry().click();
+          await gotoProduct(page, diffuser.slug);
+          const diffuserPrice = await inline().getByTestId("variant-price").innerText();
+          const diffuserImg = await page.getByTestId("product-gallery-active-image").getAttribute("src");
+          assert(diffuserImg && diffuserImg.startsWith(`/media/p/${diffuser.id}/`) && diffuserPrice.includes(String(diffuser.variants[0].price_minor / 100)));
+          await entry().click();
+          await expect(task().getByTestId("product-options-summary").locator("img")).toHaveAttribute("src", diffuserImg);
+          await expect(task().getByTestId("product-options-summary").getByTestId("variant-price")).toHaveText(diffuserPrice);
           await expect(task().getByTestId("add-to-cart")).toBeDisabled();
           await shot("soldout"); await page.keyboard.press("Escape");
           assert.equal(calls.length, 0);
@@ -272,13 +298,13 @@ export async function checkC7Matrix({ browser, origin, evidence, facts }: {
           await expect(task().getByTestId("add-to-cart")).toBeDisabled();
           assert.equal(calls.length, 2);
           assert(calls[1].key && calls[1].key !== calls[0].key, "new explicit add gets a distinct request identity");
+          await shot("unknown");
           if (cell.width === 390) {
             // After confirmation UNKNOWN, Back cancels only the editor; its original operation may still settle.
             await task().getByRole("button", { name: copy.c7BackToProduct, exact: true }).click();
             await expect(task()).not.toBeVisible(); await expect(entry()).toBeFocused();
             assert.equal(calls.length, 2, "Back never sends a new command");
           }
-          await shot("unknown");
           const notice = cell.width === 390 ? page.getByTestId("cart-problem") : task().getByTestId("cart-problem");
           const response = await putClick(() => notice.getByRole("button", { name: copy.retry, exact: true }).click());
           assert(calls[2].key === calls[1].key && calls[2].body === calls[1].body && calls[2].method === calls[1].method, "recovery must retain original method/key/body bytes");
