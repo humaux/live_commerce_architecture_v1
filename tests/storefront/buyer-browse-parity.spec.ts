@@ -428,7 +428,7 @@ export async function checkC7Matrix({ browser, origin, evidence, facts, control 
           await expect(summary.getByTestId("variant-price")).toHaveText(shortPrice);
           await expect(task().getByTestId("product-buy")).toHaveAttribute("data-sku", shortSKU);
           const longRadio = task().getByRole("radio", { name: c7LongOptionValue, exact: true });
-          const longChip = task().locator("label.sf-chip", { has: longRadio });
+          const longChip = task().locator("label.sf-chip", { has: page.getByRole("radio", { name: c7LongOptionValue, exact: true }) });
           const longSpan = longChip.locator("> span");
           await expect(longChip).toBeVisible();
           await longChip.click();
