@@ -77,6 +77,17 @@ jobs:
         # No Docker/PG needed. tests/media/r04-input-runner.test.mjs needs a pinned LiveKit binary and is
         # reported NOT_RUN here (never PASS); see docs/delivery/GATES.md "Node unit suites".
         run: bash scripts/dev/test-node.sh
+      - name: Neutral W1 corpus and PostgreSQL readback
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if git diff --quiet "$BASE_SHA"...HEAD -- bench/l01/neutral; then exit 0; fi
+          docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+          source scripts/dev/test-local-runtime.sh
+          docker exec "$test_container" createdb -U postgres lc_neutral_w1_test
+          PGHOST=127.0.0.1 PGPORT="${test_port##*:}" PGUSER=postgres PGPASSWORD="$POSTGRES_PASSWORD" \
+            node bench/l01/neutral/pg/check.mjs smoke
       # PRs into r3/integration: the SAME suite (scripts/dev/test-local.sh, same -race/vet flags) already runs as the required
       # `Gates (GitHub runners) / required` check, split into shard:unit + the shard-plan.json groups. That the groups cover the whole
       # test universe exactly once is proven by check-gates.sh -> shard-plan.mjs --check (above), and every selected matrix shard must pass
