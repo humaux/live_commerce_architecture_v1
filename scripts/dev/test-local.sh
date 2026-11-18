@@ -1608,6 +1608,19 @@ case "$1" in
     lc_run() {
   if [[ "${W1_PG_SELECTED:-}" == true ]]; then
     node --test bench/l01/neutral/http/check.test.mjs
+    pnpm --dir bench/l01/neutral/node --ignore-workspace install --frozen-lockfile --ignore-scripts
+    node --test bench/l01/neutral/node/webhook.test.mjs
+    local w1_mode
+    for w1_mode in base extended; do
+      # The bootstrap cluster is fresh for base. Fixture roles are cluster-wide.
+      if [[ "$w1_mode" == extended ]]; then fresh_pg; fi
+      printf 'W1 Node PostgreSQL mode=%s\n' "$w1_mode"
+      docker exec "$test_container" createdb -U postgres lc_neutral_w1_test
+      LC_W1_NODE_MODE="$w1_mode" LC_W1_PG_CONTAINER="$test_container" \
+        PGHOST=127.0.0.1 PGPORT="${test_port##*:}" PGUSER=postgres PGPASSWORD="$POSTGRES_PASSWORD" \
+        node --test bench/l01/neutral/node/postgres.test.mjs
+    done
+    fresh_pg
     docker exec "$test_container" createdb -U postgres lc_neutral_w1_test
     LC_W1_PG_CONTAINER="$test_container" PGHOST=127.0.0.1 PGUSER=postgres PGPASSWORD="$POSTGRES_PASSWORD" \
       node bench/l01/neutral/pg/check.mjs smoke
