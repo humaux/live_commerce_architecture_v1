@@ -1620,6 +1620,34 @@ case "$1" in
         PGHOST=127.0.0.1 PGPORT="${test_port##*:}" PGUSER=postgres PGPASSWORD="$POSTGRES_PASSWORD" \
         node --test bench/l01/neutral/node/postgres.test.mjs
     done
+    local w1_rust_version=1.97.1 w1_rust_log w1_test w1_requests w1_pairs w1_quarantines
+    if [[ "${GITHUB_ACTIONS:-}" == true ]]; then
+      rustup toolchain install "$w1_rust_version" --profile minimal --no-self-update
+    fi
+    local w1_cargo=(rustup run "$w1_rust_version" cargo test --locked --bin w1-rust --manifest-path bench/l01/neutral/rust/Cargo.toml)
+    w1_rust_log="$(mktemp "${TMPDIR:-/tmp}/w1-rust.XXXXXXXX")"
+    "${w1_cargo[@]}" -- --format pretty --color never | tee "$w1_rust_log"
+    # Cargo exits zero for an empty selection or an ignored test.
+    for w1_test in provisional_admission_cannot_ack_until_commit failed_commit_rejects_every_exact_repeat \
+        rejects_without_admission fresh_quarantine_attempts frozen_wire_inputs_reach_admission_only_when_authenticated; do
+      grep -Fxq "test tests::$w1_test ... ok" "$w1_rust_log" || { echo "missing Rust W1 test: $w1_test" >&2; return 1; }
+    done
+    for w1_mode in base extended; do
+      fresh_pg
+      docker exec "$test_container" createdb -U postgres lc_neutral_w1_test
+      printf 'W1 Rust PostgreSQL mode=%s\n' "$w1_mode"
+      LC_W1_RUST_MODE="$w1_mode" LC_W1_PG_CONTAINER="$test_container" \
+        PGHOST=127.0.0.1 PGPORT="${test_port##*:}" PGUSER=postgres PGPASSWORD="$POSTGRES_PASSWORD" \
+        "${w1_cargo[@]}" -- --ignored --exact postgres_test::fresh_pg18 --format terse --nocapture | tee "$w1_rust_log"
+      grep -Eq '^test result: ok\. 1 passed; 0 failed; 0 ignored;' "$w1_rust_log"
+      case "$w1_mode" in
+        base) w1_requests=100; w1_pairs=60; w1_quarantines=0 ;;
+        extended) w1_requests=107; w1_pairs=61; w1_quarantines=2 ;;
+      esac
+      grep -Fxq "HTTP_RESPONSES_CHECKED requests=$w1_requests pg_readback=NOT_RUN commit_order=NOT_RUN" "$w1_rust_log"
+      grep -Fxq "REAL_PG_READBACK pairs=$w1_pairs quarantine=$w1_quarantines rejected_mutations=4" "$w1_rust_log"
+    done
+    rm -f "$w1_rust_log"
     fresh_pg
     docker exec "$test_container" createdb -U postgres lc_neutral_w1_test
     LC_W1_PG_CONTAINER="$test_container" PGHOST=127.0.0.1 PGUSER=postgres PGPASSWORD="$POSTGRES_PASSWORD" \
