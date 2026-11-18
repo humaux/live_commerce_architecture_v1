@@ -1611,14 +1611,6 @@ case "$1" in
     docker exec "$test_container" createdb -U postgres lc_neutral_w1_test
     LC_W1_PG_CONTAINER="$test_container" PGHOST=127.0.0.1 PGUSER=postgres PGPASSWORD="$POSTGRES_PASSWORD" \
       node bench/l01/neutral/pg/check.mjs smoke
-    # W1 roles are cluster-wide, and each readback expects a fresh fixture.
-    for w1_mode in base extended; do
-      fresh_pg
-      docker exec "$test_container" createdb -U postgres lc_neutral_w1_test
-      LC_W1_GO_MODE="$w1_mode" LC_W1_PG_CONTAINER="$test_container" \
-        PGHOST=127.0.0.1 PGPORT="${test_port##*:}" PGUSER=postgres PGPASSWORD="$POSTGRES_PASSWORD" \
-        GOTOOLCHAIN=go1.27.4 go test -race -count=1 -timeout=70s -run '^TestHTTPPostgres$' -v ./bench/l01/neutral/go
-    done
   fi
   # Serial gates include two independent worker crash-rescue suites and fresh
   # migration clusters. Only this additive package envelope grows; individual

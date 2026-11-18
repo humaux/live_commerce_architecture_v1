@@ -373,6 +373,19 @@ jobs:
           key: playwright-debs-${{ runner.os }}-${{ runner.arch }}-${{ steps.pw.outputs.image }}-${{ steps.pw.outputs.version }}-${{ steps.browsers.outputs.cache }}
       - name: Download pinned test image
         run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+      - name: Go W1 HTTP-to-PostgreSQL conformance
+        if: matrix.mode == 'shard:unit' && env.W1_PG_SELECTED == 'true'
+        run: |
+          set -euo pipefail
+          source scripts/dev/test-local-runtime.sh
+          for w1_mode in base extended; do
+            # The fixture roles are cluster-wide. Give the extended run a fresh cluster.
+            if [[ "$w1_mode" == extended ]]; then fresh_pg; fi
+            docker exec "$test_container" createdb -U postgres lc_neutral_w1_test
+            LC_W1_GO_MODE="$w1_mode" LC_W1_PG_CONTAINER="$test_container" \
+              PGHOST=127.0.0.1 PGPORT="${test_port##*:}" PGUSER=postgres PGPASSWORD="$POSTGRES_PASSWORD" \
+              GOTOOLCHAIN=go1.27.4 go test -race -count=1 -timeout=70s -run '^TestHTTPPostgres$' -v ./bench/l01/neutral/go
+          done
       - name: Gate
         id: gate
         run: |
