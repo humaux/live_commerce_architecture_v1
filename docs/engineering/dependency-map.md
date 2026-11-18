@@ -19,6 +19,14 @@ Purpose: Package neutral builds and verifies the deterministic language-neutral 
 
 - Depends on (internal): —
 - Depends on (third-party): —
+- Used by: `bench/l01/neutral/go`
+
+## `bench/l01/neutral/go`
+
+Purpose: run the disposable Go W1 HTTP-to-PostgreSQL adapter on IPv4 loopback.
+
+- Depends on (internal): `bench/l01/neutral`
+- Depends on (third-party): `github.com/jackc/pgx/v5`, `github.com/jackc/pgx/v5/pgtype`, `github.com/jackc/pgx/v5/pgxpool`
 - Used by: — (entry point or unused)
 
 ## `cmd/admin-fixture`
