@@ -1,7 +1,7 @@
 // Purpose: run the disposable Go W1 HTTP-to-PostgreSQL adapter on IPv4 loopback.
 // Depends on: the frozen neutral fixture, pgx and the l01_w1_ingress login on PostgreSQL 18.
 // Used by: the neutral HTTP conformance client and integrator-owned fixture runs.
-// Invariants: the command connects as fixture ingress only and exposes a single fixture route.
+// Owns the loopback W1 handler and its fixture ingress connection; it never runs product routes.
 package main
 
 import (
