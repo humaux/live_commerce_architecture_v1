@@ -386,6 +386,20 @@ jobs:
               PGHOST=127.0.0.1 PGPORT="${test_port##*:}" PGUSER=postgres PGPASSWORD="$POSTGRES_PASSWORD" \
               GOTOOLCHAIN=go1.27.4 go test -race -count=1 -timeout=70s -run '^TestHTTPPostgres$' -v ./bench/l01/neutral/go
           done
+      - name: Node W1 HTTP-to-PostgreSQL conformance
+        if: matrix.mode == 'shard:unit' && env.W1_PG_SELECTED == 'true'
+        run: |
+          set -euo pipefail
+          pnpm --dir bench/l01/neutral/node --ignore-workspace install --frozen-lockfile --ignore-scripts
+          pnpm --dir bench/l01/neutral/node test
+          source scripts/dev/test-local-runtime.sh
+          for w1_mode in base extended; do
+            if [[ "$w1_mode" == extended ]]; then fresh_pg; fi
+            docker exec "$test_container" createdb -U postgres lc_neutral_w1_test
+            LC_W1_NODE_MODE="$w1_mode" LC_W1_PG_CONTAINER="$test_container" \
+              PGHOST=127.0.0.1 PGPORT="${test_port##*:}" PGUSER=postgres PGPASSWORD="$POSTGRES_PASSWORD" \
+              pnpm --dir bench/l01/neutral/node test:pg
+          done
       - name: Gate
         id: gate
         run: |
