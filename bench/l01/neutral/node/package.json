@@ -1,0 +1,16 @@
+{
+  "name": "l01-w1-neutral-node-fixture",
+  "private": true,
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "test": "node --test webhook.test.mjs",
+    "test:pg": "node --test postgres.test.mjs"
+  },
+  "dependencies": {
+    "jsonc-parser": "3.3.1",
+    "pg": "8.23.1"
+  }
+}
