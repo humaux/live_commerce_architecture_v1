@@ -48,11 +48,13 @@ import (
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"livecommerce/internal/buyerhttp"
 	"livecommerce/internal/checkout"
+	"livecommerce/internal/httpapi"
 	"livecommerce/internal/integrations/accounts"
 	stripe "livecommerce/internal/integrations/psp/stripe"
 	"livecommerce/internal/integrations/psp/stripe/stripetest"
 	"livecommerce/internal/inventory"
 	"livecommerce/internal/payments"
+	"livecommerce/internal/payments/platformstripe"
 	"livecommerce/internal/payments/stripeadmin"
 	"livecommerce/internal/platform"
 )
@@ -180,14 +182,16 @@ func (b *sbLogBuffer) String() string { b.mu.Lock(); defer b.mu.Unlock(); return
 
 // sbCase is the JSON the driver receives in LC_STRIPE_CASE (no secret, URL or key).
 type sbCase struct {
-	Kind     string `json:"kind"` // SP18 | SU07 | SU09 | OBS
-	Mode     string `json:"mode"` // SANDBOX | MOCK
-	Card     string `json:"card,omitempty"`
-	Mobile   bool   `json:"mobile"`
-	Locale   string `json:"locale"`
-	Scenario string `json:"scenario,omitempty"`
-	BudgetMS int    `json:"budgetMs"`         // driver watchdog: fail with a snapshot before the Go deadline kills it
-	Mutate   string `json:"mutate,omitempty"` // red-run mutation (STRIPE_BROWSER_MUTATE=su08), harness-only
+	AdminOrigin string `json:"adminOrigin,omitempty"`
+	Store       string `json:"store,omitempty"`
+	Kind        string `json:"kind"` // SP18 | SU07 | SU09 | OBS
+	Mode        string `json:"mode"` // SANDBOX | MOCK
+	Card        string `json:"card,omitempty"`
+	Mobile      bool   `json:"mobile"`
+	Locale      string `json:"locale"`
+	Scenario    string `json:"scenario,omitempty"`
+	BudgetMS    int    `json:"budgetMs"`         // driver watchdog: fail with a snapshot before the Go deadline kills it
+	Mutate      string `json:"mutate,omitempty"` // red-run mutation (STRIPE_BROWSER_MUTATE=su08), harness-only
 }
 
 type sbAction struct {
@@ -244,6 +248,11 @@ func sbSandboxCredentials(t *testing.T) (account, secret string) {
 // sbNew builds the assembly. SANDBOX: no mock transport anywhere (registrar, worker, API).
 func sbNew(t *testing.T, mode string) *sbEnv {
 	t.Helper()
+	return sbNewShop(t, mode, false)
+}
+
+func sbNewShop(t *testing.T, mode string, platformShop bool) *sbEnv {
+	t.Helper()
 	ctx := context.Background()
 	e := &sbEnv{t: t, mode: mode, profile: "SANDBOX", keys: pwKeys(t), signing: sstKeyring(t, "sb_signing", randomBytes(32)),
 		bffKey: randomToken(), ctlKey: randomToken(), actions: make(chan sbAction), logs: &sbLogBuffer{}}
@@ -253,6 +262,11 @@ func sbNew(t *testing.T, mode string) *sbEnv {
 	e.f = pwIsolatedFixture(t)
 	e.p = psSetupItemsOn(t, e.f, 1)
 	e.scope = stripeadmin.Scope{TenantID: e.p.f.tenantA, StoreID: e.p.f.storeA1, PrincipalID: e.p.f.principalA}
+	if platformShop {
+		// Distinct operator and selling store in this disposable database (AD-PF2).
+		e.scope = stripeadmin.Scope{TenantID: e.f.tenantA, StoreID: e.f.storeA1, PrincipalID: e.f.principalA}
+		mustExec(t, e.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'integration:manage')`, e.scope.TenantID, e.scope.StoreID, e.scope.PrincipalID)
+	}
 	var err error
 	if mode == "SANDBOX" {
 		e.account, e.secret = sbSandboxCredentials(t)
@@ -281,7 +295,11 @@ func sbNew(t *testing.T, mode string) *sbEnv {
 		Profile: e.profile, Currency: "TWD", ReturnURL: sbReturnURL, ExpectedVersion: 1, AmountMinor: 2500}); err != nil {
 		t.Fatalf("qualify Stripe method: %v", err)
 	}
-	e.setMethod(t, true)
+	if platformShop {
+		e.enrollTestShop(t)
+	} else {
+		e.setMethod(t, true)
+	}
 	// Single-method UI (Q3): remove the fixture's PAYUNi method head; owner fixture, disclosed.
 	mustExec(t, e.f.owner, `DELETE FROM payments.method_heads WHERE tenant_id=$1 AND store_id=$2 AND code='payuni_credit'`, e.p.f.tenantA, e.p.f.storeA1)
 	e.topUpStock(t)
@@ -320,6 +338,69 @@ func sbNew(t *testing.T, mode string) *sbEnv {
 	e.startControl()
 	e.baseline = e.stock(t)
 	return e
+}
+
+// Use the operator registrar and the selling merchant's own scoped enrollment command.
+func (e *sbEnv) enrollTestShop(t *testing.T) {
+	ctx, f := context.Background(), e.p.f
+	mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission)
+	 SELECT $1,$2,$3,p FROM unnest(ARRAY['billing:manage','orders:read','fulfillment:write']) p ON CONFLICT DO NOTHING`, f.tenantA, f.storeA1, f.principalA)
+	version, err := e.reg.PlatformDesignate(ctx, e.scope, stripeadmin.PlatformDesignateInput{ConnectionID: e.conn, DisplayName: "Platform Test", DescriptorDisplay: "LCPLATFORM", TermsVersion: pfTerms})
+	if err != nil {
+		t.Fatalf("designate platform: %v", err)
+	}
+	if _, err = e.reg.PlatformOpen(ctx, e.scope, "SANDBOX", true, -1, version); err != nil {
+		t.Fatalf("open test platform: %v", err)
+	}
+	if _, err = e.reg.PlatformAllow(ctx, e.scope, f.tenantA, f.storeA1, "SANDBOX", true, "op@test", "tk-"+t04Tag()); err != nil {
+		t.Fatalf("allow test shop: %v", err)
+	}
+	err = platform.WithScope(ctx, f.runtime, f.tokens["a"], f.storeA1, "billing:manage", func(tx pgx.Tx, scope platform.Scope) error {
+		_, err := platformstripe.Set(ctx, tx, scope, f.tokens["a"], e.profile, pfInput(true, 0, ""))
+		return err
+	})
+	if err != nil {
+		t.Fatalf("enroll test shop: %v", err)
+	}
+}
+
+// Check the store order, captured ledger fact, platform connection and manual shipment in one join.
+// Retrieve only this order's pinned hosted session to cross-check the amount Stripe actually received.
+func (e *sbEnv) checkShippedShopOrder(t *testing.T, order string, before int) {
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	f := e.p.f
+	if countRows(t, f.owner, `SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2`, f.tenantA, f.storeA1) != before+1 {
+		t.Fatal("expected exactly one new shop order")
+	}
+	var session, intent, attempt string
+	err := f.owner.QueryRow(ctx, `SELECT s.session_id,s.payment_intent_id,a.id::text
+	 FROM checkout.orders o JOIN checkout.payment_attempts a ON a.order_id=o.id AND a.store_id=o.store_id AND a.tenant_id=o.tenant_id
+	 JOIN payments.stripe_sessions s ON s.attempt_id=a.id
+	 JOIN payments.facts p ON p.attempt_id=a.id AND p.tenant_id=o.tenant_id AND p.store_id=o.store_id
+	 JOIN integration.merchant_accounts d ON d.id=p.connection_id AND d.platform_connection_id=$4
+	 JOIN fulfillment.manual_shipment_versions h ON h.order_id=o.id AND h.tenant_id=o.tenant_id AND h.store_id=o.store_id
+	 WHERE o.id=$1 AND o.tenant_id=$2 AND o.store_id=$3 AND o.commercial_state='CONFIRMED'
+	 AND o.fulfillment_state='MERCHANT_SHIPPED' AND o.service_code='home' AND o.currency='TWD' AND o.total_minor=8500
+	 AND o.snapshot#>>'{quote,amount,subtotal_minor}'='2500' AND o.snapshot#>>'{quote,amount,shipping_minor}'='6000'
+	 AND p.provider_reference=s.session_id AND p.connection_id=a.connection_id
+	 AND p.kind='CAPTURED' AND p.environment='SANDBOX' AND p.execution_profile='SANDBOX' AND p.currency=o.currency AND p.amount_minor=o.total_minor
+	 AND h.status='SHIPPED' AND h.version=1 AND h.carrier_code='other' AND h.tracking_number=$5`, order, f.tenantA, f.storeA1, e.conn, e2eTracking).Scan(&session, &intent, &attempt)
+	if err != nil {
+		t.Fatalf("same-order capture and shipment: %v", err)
+	}
+	client, err := stripe.New(stripe.Config{SecretKey: e.secret, AccountID: e.account, Environment: "SANDBOX"})
+	if err != nil {
+		t.Fatal("sandbox read client unavailable")
+	}
+	view, _, err := client.RetrieveCheckoutSession(ctx, session)
+	if err != nil || view.Livemode || view.Status != "complete" || view.PaymentStatus != "paid" ||
+		view.ClientReferenceID != attempt || view.MetadataAttempt != attempt || view.MetadataProfile != "SANDBOX" ||
+		view.PaymentIntentID != intent || view.PaymentIntentStatus != "succeeded" || view.PaymentIntentCurrency != "TWD" ||
+		view.PaymentIntentAmountReceived == nil || *view.PaymentIntentAmountReceived != 8500 {
+		t.Fatal("Stripe test PaymentIntent does not match the captured ledger fact")
+	}
+	t.Logf("SANDBOX order=%s new_orders=1 attempts=1 hosted_sessions=1 paid_intents=1 captures=1 platform_collected=true currency=TWD goods_minor=2500 shipping_minor=6000 received_minor=8500 shipment=MERCHANT_SHIPPED", order)
 }
 
 func (e *sbEnv) setMethod(t *testing.T, enabled bool) {
@@ -867,9 +948,20 @@ func TestBrowserStripeCheckout(t *testing.T) {
 			if !sandbox {
 				t.Skip("NOT_RUN: SP18 requires STRIPE_BROWSER=1 and STRIPE_SANDBOX=1 (bash scripts/dev/test-local.sh --stripe-browser)")
 			}
-			e := sbNew(t, "SANDBOX")
+			shop := c.scenario == "A" && !c.mobile
+			e := sbNewShop(t, "SANDBOX", shop)
+			run := sbCase{Kind: "SP18", Mode: "SANDBOX", Card: c.card, Mobile: c.mobile, Locale: c.locale, Scenario: c.scenario}
+			before := 0
+			if shop {
+				before = countRows(t, e.f.owner, `SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2`, e.p.f.tenantA, e.p.f.storeA1)
+				clean := func(values map[string]string) []string {
+					return stripeNodeEnvironment(os.Environ(), sbSecretNames(sbSecretsPath()), values)
+				}
+				admin := brfStartAdminOn(t, t.Context(), e.f, e.p.f.principalA, t.TempDir(), httpapi.Options{SessionStoreList: true, PaymentProfile: e.profile}, clean)
+				run.AdminOrigin, run.Store = admin.origin, e.p.f.storeA1
+			}
 			t.Logf("SANDBOX checkout.stripe.com test mode; no live charge; store currency TWD (fixture), qualification probe at 2500 minor")
-			evidence := e.runNode(t, sbCase{Kind: "SP18", Mode: "SANDBOX", Card: c.card, Mobile: c.mobile, Locale: c.locale, Scenario: c.scenario}, 300*time.Second)
+			evidence := e.runNode(t, run, 300*time.Second)
 			r := e.result(t, evidence)
 			if len(r.Orders) != 1 {
 				t.Fatalf("expected one order, got %d", len(r.Orders))
@@ -886,6 +978,9 @@ func TestBrowserStripeCheckout(t *testing.T) {
 				if after != e.baseline {
 					t.Fatalf("stock not restored exactly: %+v vs %+v", after, e.baseline)
 				}
+			}
+			if shop {
+				e.checkShippedShopOrder(t, r.Orders[0], before)
 			}
 			t.Logf("PASS SANDBOX %s: cases=%d shots=%d evidence=%s", c.name, len(r.Cases), len(r.Shots), evidence)
 		})
