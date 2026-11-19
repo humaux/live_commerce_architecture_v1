@@ -400,7 +400,10 @@ async function checkSharedCheckout(addProduct) {
       await expect(street).toBeFocused();
       if (mobile) {
         const action = page.locator(".checkout-entry-action");
-        await expect.poll(async () => (await street.boundingBox()).y + (await street.boundingBox()).height).toBeLessThanOrEqual((await action.boundingBox()).y);
+        await expect.poll(async () => {
+          const bounds = await street.boundingBox();
+          return bounds.y + bounds.height;
+        }).toBeLessThanOrEqual((await action.boundingBox()).y);
       }
     };
     let cartSKUs;
@@ -497,6 +500,7 @@ async function checkSharedCheckout(addProduct) {
       receipt.capture = await capture("quoted-entry");
       receipt.surface = await checkEntrySurface();
       assert.equal(receipt.surface.footerAmount, money(amount.total_minor));
+      if (mobile) assert(receipt.surface.street.bottom <= receipt.surface.action.top, "quoted street is visible above the fixed action");
       await checkStreet(entry);
       await page.getByTestId("checkout-details-toggle").click();
       const breakdown = page.locator(".quotation dl div");

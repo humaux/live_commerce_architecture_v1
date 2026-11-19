@@ -909,6 +909,14 @@ body .sf-btn--primary:disabled { background: var(--action-disabled); color: #465
   .checkout-entry-layout .address-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .checkout-entry-layout .address-fields > .wide { grid-column: 1 / -1; }
 }
+@media (max-width: 899px) {
+  .checkout-entry-layout .checkout-lines { padding-block: 14px; }
+  .checkout-entry-layout .checkout-lines h2 { margin-bottom: 8px; }
+  .checkout-entry-layout .checkout-lines .sf-line { padding-block: 5px; }
+  .checkout-entry-layout .address-section h2:has(+ .address-total),
+  .checkout-entry-layout .address-section .address-total { display: inline; }
+  .checkout-entry-layout .address-section .address-total { margin-inline-start: 8px; }
+}
 @media (min-width: 900px) {
   .checkout-entry-layout {
     --entry-gutter: clamp(24px, 4.45vw, 64px);
