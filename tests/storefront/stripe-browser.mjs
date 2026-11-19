@@ -34,7 +34,7 @@ import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.
 const root=process.cwd(),evidence=process.env.LC_STRIPE_EVIDENCE,CONTROL=process.env.LC_STRIPE_CONTROL;
 const cfg=JSON.parse(process.env.LC_STRIPE_CASE??"{}");
 assert(evidence&&/^http:\/\/127\.0\.0\.1:\d+$/.test(CONTROL??""),"driver env");
-assert(["SP18","SU07","SU09","OBS"].includes(cfg.kind)&&["SANDBOX","MOCK"].includes(cfg.mode),"case");
+assert(["SP18","SU07","SU09","OBS","SHOP_TARIFF"].includes(cfg.kind)&&["SANDBOX","MOCK"].includes(cfg.mode),"case");
 const SANDBOX=cfg.mode==="SANDBOX";
 const origin="https://buyer.example",product=`${origin}/en/products/${process.env.LC_STRIPE_PRODUCT}`,checkout=`${origin}/en/checkout`;
 const ex=expect.configure({timeout:20000});
@@ -553,6 +553,8 @@ async function configureShopDelivery() {
   await page.getByRole("button",{name:"Continue",exact:true}).click();
   await page.getByLabel("Delivery service",{exact:true}).selectOption("home");
   const policy = page.getByTestId("settings-policy-form");
+  // Zero is also the empty draft's fee. Wait for the selected service's saved, enabled policy before editing.
+  await ex(policy.getByLabel("Enable pricing policy",{exact:true})).toBeChecked();
   await ex(policy.getByLabel("Flat shipping (NT$)",{exact:true})).toHaveValue("0");
   await policy.getByLabel("Flat shipping (NT$)",{exact:true}).fill("60");
   await policy.getByLabel(/^Configuration reference/).fill("Synthetic test shop tariff");
@@ -564,7 +566,7 @@ async function configureShopDelivery() {
   await service.getByLabel("English name",{exact:true}).fill("Test shop delivery");
   const [serviceReceipt] = await Promise.all([put(servicePath),service.getByRole("button",{name:"Save delivery service",exact:true}).click()]);
   assert.equal(serviceReceipt.status(),200,"merchant delivery receipt");
-  passed("Merchant saved home delivery and NT$60 shipping");
+  passed("Merchant saved home delivery and NT$60 shipping (policy PUT 200, service PUT 200)");
   return page;
 }
 
@@ -872,7 +874,7 @@ try{
   execFileSync("openssl",["req","-x509","-newkey","rsa:2048","-nodes","-keyout",path.join(certDir,"key.pem"),"-out",path.join(certDir,"cert.pem"),"-days","1","-subj","/CN=buyer.example"],{stdio:"ignore"});
   nextPort=await startNext();const proxyPort=await startEdge();
   browser=await launch({headless:true,proxy:{server:`http://127.0.0.1:${proxyPort}`}});
-  scan=await ({SP18:sp18,SU07:su07,SU09:su09,OBS:obs}[cfg.kind])();pass=true;
+  scan=await ({SP18:sp18,SU07:su07,SU09:su09,OBS:obs,SHOP_TARIFF:async () => { await configureShopDelivery(); }}[cfg.kind])();pass=true;
 }catch(error){
   failure=redact(error?.stack??error);say(`FAIL ${failure.split("\n").slice(0,12).join("\n")}`);
   await within(failSnapshot(),20000,null); // #145: what the store tab showed when the step failed

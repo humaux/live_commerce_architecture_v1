@@ -924,6 +924,37 @@ func (e *sbEnv) wantOrder(t *testing.T, order string, captured, closed int, comm
 	}
 }
 
+func (e *sbEnv) startMerchantBrowserCase(t *testing.T, run *sbCase) {
+	t.Helper()
+	clean := func(values map[string]string) []string {
+		return stripeNodeEnvironment(os.Environ(), sbSecretNames(sbSecretsPath()), values)
+	}
+	admin := brfStartAdminOn(t, t.Context(), e.f, e.p.f.principalA, t.TempDir(), httpapi.Options{SessionStoreList: true, PaymentProfile: e.profile}, clean)
+	run.AdminOrigin, run.Store = admin.origin, e.p.f.storeA1
+}
+
+func TestBrowserShopTariff(t *testing.T) {
+	e2eRequire(t)
+	e := sbNewShop(t, "MOCK", true)
+	run := sbCase{Kind: "SHOP_TARIFF", Mode: "MOCK", Locale: "en"}
+	e.startMerchantBrowserCase(t, &run)
+	e.runNode(t, run, 150*time.Second)
+	// Read both persisted heads after the merchant's two successful browser saves.
+	service, err := dsGet(e.p.cqHarness, e.p.delivery)
+	if err != nil || service.Version != 2 || service.PolicyVersion != 2 || service.NameEN != "Test shop delivery" || !service.Enabled || !service.Visible {
+		t.Fatalf("current home delivery failed readback (service v%d, policy v%d): %v", service.Version, service.PolicyVersion, err)
+	}
+	n := countRows(t, e.f.owner, `SELECT count(*) FROM pricing.policy_heads h JOIN pricing.policy_versions v
+		USING (tenant_id,store_id,market_id,country,method)
+		WHERE h.tenant_id=$1 AND h.store_id=$2 AND h.market_id=$3 AND h.country='TW' AND h.method='delivery:home'
+		AND v.version=h.current_version AND v.version=$4 AND v.currency='TWD' AND v.shipping_minor=6000 AND v.enabled`,
+		e.p.f.tenantA, e.p.f.storeA1, e.p.market.ID, service.PolicyVersion)
+	if n != 1 {
+		t.Fatalf("matching current home tariffs = %d, want 1", n)
+	}
+	t.Log("MOCK store settings: home service v2, current policy v2, fee 6000 TWD minor")
+}
+
 func TestBrowserStripeCheckout(t *testing.T) {
 	if os.Getenv("LC_STRIPE_BROWSER_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
 		t.Fatal("use scripts/dev/test-local.sh --stripe-browser (or --browser-payment / --browser-webkit for the MOCK SU07/SU09 subtests)")
@@ -954,11 +985,7 @@ func TestBrowserStripeCheckout(t *testing.T) {
 			before := 0
 			if shop {
 				before = countRows(t, e.f.owner, `SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2`, e.p.f.tenantA, e.p.f.storeA1)
-				clean := func(values map[string]string) []string {
-					return stripeNodeEnvironment(os.Environ(), sbSecretNames(sbSecretsPath()), values)
-				}
-				admin := brfStartAdminOn(t, t.Context(), e.f, e.p.f.principalA, t.TempDir(), httpapi.Options{SessionStoreList: true, PaymentProfile: e.profile}, clean)
-				run.AdminOrigin, run.Store = admin.origin, e.p.f.storeA1
+				e.startMerchantBrowserCase(t, &run)
 			}
 			t.Logf("SANDBOX checkout.stripe.com test mode; no live charge; store currency TWD (fixture), qualification probe at 2500 minor")
 			evidence := e.runNode(t, run, 300*time.Second)
