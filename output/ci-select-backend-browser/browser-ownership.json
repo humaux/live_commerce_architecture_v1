@@ -578,7 +578,7 @@
     "tests/foundation/order_attempt_commit_guard_test.go": "c56165e9955819a8c80f26192f699a39f00b3ef10c05aa2492d8253179e94ebf",
     "tests/foundation/order_attempt_composite_test.go": "9cb58e3d1577f30e6402c443243d611a67eade5acc76c0a199377b0c7e2350da",
     "tests/foundation/order_attempt_consumer_diagnostic_test.go": "798ebec148fe90cf399e3985c1a9f123dfb6f3b6820321d48b3396a1d403c781",
-    "tests/foundation/order_attempt_crash_test.go": "4e11ac2260b45587d85126054cf1cd9aa36c3a743313c62be1cbd44579f7e53c",
+    "tests/foundation/order_attempt_crash_test.go": "75d0d5fc52d76bcab8919881d2861d5c5193f05a986318deafd7d284688208f3",
     "tests/foundation/order_attempt_crossclient_matrix_test.go": "a32f25a5e41080f111dfa90178f509b8ee53e39d55d3f31324581cb5581af06a",
     "tests/foundation/order_attempt_deadline_liveness_test.go": "bc11a16c3d91168f48b923d65fa0b78bf760440eacd973ab68e0822ce86ee066",
     "tests/foundation/order_attempt_deadline_race_test.go": "cc84d753fac27dec546b1b7241776f46e28152887c9cbc3328564ed50f4ff155",
