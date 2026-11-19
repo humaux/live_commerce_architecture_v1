@@ -534,48 +534,6 @@ async function completeThreeDS(child){
   },120000,"3DS completion",700);
 }
 // ---- scenario drivers ----
-// Passive, key-free diagnostic. Keep only the synthetic tariff's state and HTTP status.
-async function observeShopTariff(page) {
-  const network = [];
-  function record(event, request, status) {
-    const pathname = new URL(request.url()).pathname;
-    const resource = ["/markets", "/delivery-services", "/delivery-services/home/policy", "/delivery-services/home"].find(s => pathname.endsWith(s));
-    if (resource) network.push({event, resource, method:request.method(), status});
-  }
-  page.on("request", r => record("request", r));
-  page.on("response", r => record("response", r.request(), r.status()));
-  page.on("requestfailed", r => record("failed", r));
-  await page.addInitScript(() => {
-    const stages = [];
-    // G-UI8 [READ/MEASURE]: observe native events and the saved draft; never change form state.
-    const observe = stage => {
-      const form = document.querySelector('[data-testid="settings-policy-form"]');
-      if (!form) return;
-      const key = Object.keys(sessionStorage).find(k => k.startsWith("commerce-settings-draft:"));
-      const draft = key ? JSON.parse(sessionStorage.getItem(key)).draft : null;
-      const save = form.querySelector('button[type="submit"]');
-      const obs = draft?.policyObservation;
-      stages.push({stage, market:!!draft?.marketID, home:draft?.serviceCode === "home",
-        selectedHome:document.querySelector('select[aria-label="Delivery service"]')?.value === "home",
-        baseline:obs?.version ?? null, target:!!obs && obs.target === [draft.marketID,draft.country,draft.serviceCode].join(":"),
-        dirty:obs?.dirty ?? false, enabledPolicy:!!form.querySelector('input[type="checkbox"]:checked'),
-        saveExists:!!save, saveEnabled:!!save && !save.disabled, invalid:form.querySelectorAll(":invalid").length});
-    };
-    for (const event of ["change","input","click","invalid","submit"]) {
-      document.addEventListener(event, e => {
-        const target = e.target;
-        if (target.matches('select[aria-label="Delivery service"]') && event === "change") observe("select-home");
-        else if (target.closest('[data-testid="settings-policy-form"]') &&
-          (event !== "click" || target.matches('button[type="submit"]'))) observe(event);
-      }, true);
-    }
-    window.tariffStages = () => { observe("end"); return stages; };
-  });
-  return async () => {
-    const stages = await page.evaluate(() => window.tariffStages());
-    step("TARIFF_DIAG", JSON.stringify({stages, network}));
-  };
-}
 // Merchant browser has only loopback access. Keep order details and the login callback out of diagnostics.
 async function configureShopDelivery() {
   merchantBrowser = await launch();
@@ -586,33 +544,30 @@ async function configureShopDelivery() {
   });
   const page = await ctx.newPage();
   page.setDefaultTimeout(20000);
-  const report = cfg.kind === "SHOP_TARIFF" ? await observeShopTariff(page) : null;
-  try {
-    await page.goto(cfg.adminOrigin + "/en/");
-    await page.getByRole("button",{name:"Sign in with identity service",exact:true}).click();
-    await ex(page.locator("nav[data-shell-route]")).toBeVisible();
-    await page.goto(cfg.adminOrigin + "/en/settings?store=" + cfg.store);
-    await page.getByRole("button",{name:"Edit settings",exact:true}).click();
-    await page.getByRole("button",{name:"Continue",exact:true}).click();
-    await page.getByRole("button",{name:"Continue",exact:true}).click();
-    await page.getByLabel("Delivery service",{exact:true}).selectOption("home");
-    const policy = page.getByTestId("settings-policy-form");
-    await ex(policy.getByLabel("Flat shipping (NT$)",{exact:true})).toHaveValue("0");
-    await policy.getByLabel("Flat shipping (NT$)",{exact:true}).fill("60");
-    await policy.getByLabel(/^Configuration reference/).fill("Synthetic test shop tariff");
-    const servicePath = "/delivery-services/home";
-    const put = suffix => page.waitForResponse(r => r.request().method() === "PUT" && new URL(r.url()).pathname.endsWith(suffix));
-    const [policyReceipt] = await Promise.all([put(servicePath+"/policy"),policy.getByRole("button",{name:"Save pricing policy",exact:true}).click()]);
-    assert.equal(policyReceipt.status(),200,"merchant tariff receipt");
-    const service = page.getByTestId("settings-service-form");
-    await service.getByLabel("English name",{exact:true}).fill("Test shop delivery");
-    const [serviceReceipt] = await Promise.all([put(servicePath),service.getByRole("button",{name:"Save delivery service",exact:true}).click()]);
-    assert.equal(serviceReceipt.status(),200,"merchant delivery receipt");
-    passed("Merchant saved home delivery and NT$60 shipping");
-    return page;
-  } finally {
-    if (report) await report();
-  }
+  await page.goto(cfg.adminOrigin + "/en/");
+  await page.getByRole("button",{name:"Sign in with identity service",exact:true}).click();
+  await ex(page.locator("nav[data-shell-route]")).toBeVisible();
+  await page.goto(cfg.adminOrigin + "/en/settings?store=" + cfg.store);
+  await page.getByRole("button",{name:"Edit settings",exact:true}).click();
+  await page.getByRole("button",{name:"Continue",exact:true}).click();
+  await page.getByRole("button",{name:"Continue",exact:true}).click();
+  await page.getByLabel("Delivery service",{exact:true}).selectOption("home");
+  const policy = page.getByTestId("settings-policy-form");
+  // Zero is also the empty draft's fee. Wait for the selected service's saved, enabled policy before editing.
+  await ex(policy.getByLabel("Enable pricing policy",{exact:true})).toBeChecked();
+  await ex(policy.getByLabel("Flat shipping (NT$)",{exact:true})).toHaveValue("0");
+  await policy.getByLabel("Flat shipping (NT$)",{exact:true}).fill("60");
+  await policy.getByLabel(/^Configuration reference/).fill("Synthetic test shop tariff");
+  const servicePath = "/delivery-services/home";
+  const put = suffix => page.waitForResponse(r => r.request().method() === "PUT" && new URL(r.url()).pathname.endsWith(suffix));
+  const [policyReceipt] = await Promise.all([put(servicePath+"/policy"),policy.getByRole("button",{name:"Save pricing policy",exact:true}).click()]);
+  assert.equal(policyReceipt.status(),200,"merchant tariff receipt");
+  const service = page.getByTestId("settings-service-form");
+  await service.getByLabel("English name",{exact:true}).fill("Test shop delivery");
+  const [serviceReceipt] = await Promise.all([put(servicePath),service.getByRole("button",{name:"Save delivery service",exact:true}).click()]);
+  assert.equal(serviceReceipt.status(),200,"merchant delivery receipt");
+  passed("Merchant saved home delivery and NT$60 shipping (policy PUT 200, service PUT 200)");
+  return page;
 }
 
 async function shipPaidShopOrder(page,id) {

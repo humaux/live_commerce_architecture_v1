@@ -1001,7 +1001,7 @@ case "$1" in
   mkdir -p output/playwright
     }
     lc_run() {
-  LC_BROWSER_E2E_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.4 go test -race -tags browser -count=1 -timeout=1700s -run "${LC_E2E_RUN:-^(TestBrowserE2EDealLoop(Sandbox)?|TestBrowserLiveTools)$}" -v ./tests/foundation
+  LC_BROWSER_E2E_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.4 go test -race -tags browser -count=1 -timeout=1700s -run "${LC_E2E_RUN:-^(TestBrowserE2EDealLoop(Sandbox)?|TestBrowserLiveTools|TestBrowserShopTariff)$}" -v ./tests/foundation
   printf 'PASS: T12 isolated admin + storefront Next, Go, PG, real worker/consumer/poller/dispatcher; Meta = MOCK (signed webhook, fake Graph), Stripe = MOCK (fake + routed hosted page); SANDBOX variant NOT_RUN unless it says otherwise above; not provider or deployment acceptance. Live tools (R4): Studio library import + live price, signed MOCK Meta claim, pay at pickup at the live price, direct purchase at the normal price (zh-TW + en, desktop + 390 px).\n'
     }
     ;;

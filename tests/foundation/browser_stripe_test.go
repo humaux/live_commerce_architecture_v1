@@ -939,9 +939,20 @@ func TestBrowserShopTariff(t *testing.T) {
 	run := sbCase{Kind: "SHOP_TARIFF", Mode: "MOCK", Locale: "en"}
 	e.startMerchantBrowserCase(t, &run)
 	e.runNode(t, run, 150*time.Second)
-	if n := countRows(t, e.f.owner, `SELECT count(*) FROM pricing.policy_versions WHERE tenant_id=$1 AND store_id=$2 AND market_id=$3 AND country='TW' AND method='delivery:home' AND version=2 AND currency='TWD' AND shipping_minor=6000 AND enabled`, e.p.f.tenantA, e.p.f.storeA1, e.p.market.ID); n != 1 {
-		t.Fatalf("matching saved home tariff versions = %d, want 1", n)
+	// Read both persisted heads after the merchant's two successful browser saves.
+	service, err := dsGet(e.p.cqHarness, e.p.delivery)
+	if err != nil || service.Version != 2 || service.PolicyVersion != 2 || service.NameEN != "Test shop delivery" || !service.Enabled || !service.Visible {
+		t.Fatalf("current home delivery failed readback (service v%d, policy v%d): %v", service.Version, service.PolicyVersion, err)
 	}
+	n := countRows(t, e.f.owner, `SELECT count(*) FROM pricing.policy_heads h JOIN pricing.policy_versions v
+		USING (tenant_id,store_id,market_id,country,method)
+		WHERE h.tenant_id=$1 AND h.store_id=$2 AND h.market_id=$3 AND h.country='TW' AND h.method='delivery:home'
+		AND v.version=h.current_version AND v.version=$4 AND v.currency='TWD' AND v.shipping_minor=6000 AND v.enabled`,
+		e.p.f.tenantA, e.p.f.storeA1, e.p.market.ID, service.PolicyVersion)
+	if n != 1 {
+		t.Fatalf("matching current home tariffs = %d, want 1", n)
+	}
+	t.Log("MOCK store settings: home service v2, current policy v2, fee 6000 TWD minor")
 }
 
 func TestBrowserStripeCheckout(t *testing.T) {
