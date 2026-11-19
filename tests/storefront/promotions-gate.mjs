@@ -16,7 +16,7 @@
 //     /finance shows the confirmed amount; /promotions shows the code's usage 1.
 // The only host mapping is a disposable TLS/CONNECT edge for https://buyer.example.
 import { startNextWithPortRetry, nextAttemptLog } from "../helpers/next-startup.mjs";
-import { confirmCheckoutAddress, openCheckoutDetails } from "./shop-helpers.mjs";
+import { openCheckoutDetails } from "./shop-helpers.mjs";
 import assert from "node:assert/strict";
 import crypto from "node:crypto";
 import http from "node:http";
@@ -190,9 +190,20 @@ async function scenario(index, run) {
   await buyer.waitForURL(`**/${run.locale}/checkout`); // 0093 (storefront-integration): the checkout surface is /{locale}/checkout (apps/storefront/lib/routes.ts), no longer the product-form path
   await buyer.getByRole("button", { name: words.delivery, exact: true }).click();
   await buyer.getByLabel(words.deliveryLabel).selectOption({ label: `${run.locale === "zh-TW" ? fx.delivery_hant : fx.delivery_en}` });
+  const field = name => buyer.locator(`input[name="${name}"]`);
+  const addressB = { recipient_name: "Synthetic Promo Buyer", phone: "+886900000081", region: "Synthetic Region", city: "Synthetic City", postal_code: "99991", line1: "Synthetic Promo Address B", line2: "Unit 2" };
+  const addressA = { ...addressB, line1: "Synthetic Promo Address A" };
+  const buyerWrites = { destination: 0, checkout: 0 };
+  buyer.on("request", request => {
+    const resource = new URL(request.url()).pathname;
+    if (resource === "/api/buyer/destination" && request.method() === "PUT") buyerWrites.destination++;
+    if (resource === "/api/buyer/checkout" && request.method() === "POST") buyerWrites.checkout++;
+  });
+  for (const [name, value] of Object.entries(addressA)) await field(name).fill(value);
   const quoted = buyer.waitForResponse(r => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST");
   await Promise.all([quoted, buyer.getByRole("button", { name: words.quote, exact: true }).click()]);
   assert.equal((await quoted).status(), 200);
+  const initialQuote = await (await quoted).json();
   await openCheckoutDetails(buyer);
   const quotation = buyer.locator(".quotation");
   await expect(quotation).toBeVisible();
@@ -215,13 +226,17 @@ async function scenario(index, run) {
   await shot(buyer, "buyer-code-refused", run);
   pass(`${label} buyer: an unknown code and a below-minimum code show their own messages and change nothing`);
 
-  // the real code, typed in lower case with spaces
+  // Edit the quoted form before applying the real code through the visible details.
+  await expect(field("line1")).toBeVisible();
+  assert.equal(await field("line1").inputValue() === addressA.line1, true, `${label}: original quote kept A`);
+  await field("line1").fill(addressB.line1);
   const applied = promoQuote();
   await buyer.getByTestId("promo-input").fill(`  ${cell.code.toLowerCase()} `);
   await buyer.getByTestId("promo-apply").click();
   const appliedReply = await applied;
   assert.equal(appliedReply.status(), 200, `${label} apply`);
   const body = await appliedReply.json();
+  assert.notEqual(body.id, initialQuote.id);
   assert.equal(body.amount.discount_minor, discount);
   assert.equal(body.amount.total_minor, total);
   assert.equal(body.amount.shipping_minor, shipping, "a code never touches shipping");
@@ -230,6 +245,8 @@ async function scenario(index, run) {
   await expect(buyer.getByTestId("promo-applied")).toContainText(cell.code);
   await expect(buyer.getByTestId("promo-applied")).toContainText(amt(discount));
   await expect(buyer.getByTestId("promo-problem")).toHaveCount(0);
+  await expect(field("line1")).toBeVisible();
+  const retainedOnApply = (await field("line1").inputValue()) === addressB.line1;
   await expect(quotation.locator("dl > div").filter({ hasText: words.discount })).toContainText(amt(discount));
   await expect(quotation.locator(".total")).toContainText(amt(total));
   await expect(buyer.locator(".purchase-footer")).toContainText(amt(total));
@@ -244,6 +261,8 @@ async function scenario(index, run) {
   await openCheckoutDetails(buyer);
   await expect(buyer.getByTestId("promo-applied")).toHaveCount(0);
   await expect(quotation).toContainText(amt(subtotal + shipping));
+  await expect(field("line1")).toBeVisible();
+  const retainedOnRemove = (await field("line1").inputValue()) === addressB.line1;
   const again = promoQuote();
   await buyer.getByTestId("promo-input").fill(cell.code);
   await buyer.getByTestId("promo-apply").click();
@@ -252,15 +271,26 @@ async function scenario(index, run) {
   await expect(quotation.locator(".total")).toContainText(amt(total));
   pass(`${label} buyer: removing the code restores goods + shipping, applying it again restores ${money(total)}`);
 
-  // address, bank_transfer, e-mail, place the order
+  // Continue with the last edit and inspect the request made by the actual click.
   await expect(buyer.getByTestId("address-section")).toBeVisible();
-  for (const [name, value] of Object.entries({ recipient_name: "Synthetic Promo Buyer", phone: "+886900000081", region: "Synthetic Region", city: "Synthetic City", postal_code: "99991", line1: "Synthetic Promo Address 1", line2: "Unit 2" })) {
-    await buyer.locator(`input[name="${name}"]`).fill(value);
-  }
+  const retainedOnReapply = (await field("line1").inputValue()) === addressB.line1;
   await buyer.getByTestId("home-payment-mode").getByRole("radio", { name: words.bank }).check();
   await buyer.locator('input[name="buyer_email"]').fill(`promo-${index}@example.com`);
   await buyer.getByTestId("quote-reconfirm").getByRole("button").click();
-  await confirmCheckoutAddress(buyer);
+  assert.deepEqual(buyerWrites, { destination: 0, checkout: 0 });
+  const destination = buyer.waitForResponse(r => new URL(r.url()).pathname === "/api/buyer/destination" && r.request().method() === "PUT");
+  await Promise.all([destination, buyer.getByTestId("checkout-continue").click()]);
+  const destinationReply = await destination;
+  assert.equal(destinationReply.status(), 200);
+  const submittedStreet = destinationReply.request().postDataJSON().home_address.line1;
+  await expect(buyer.getByTestId("checkout-payment-review")).toBeVisible();
+  assert.deepEqual(buyerWrites, { destination: 1, checkout: 0 });
+  assert.deepEqual({ retainedOnApply, retainedOnRemove, retainedOnReapply,
+    submittedOnlyB: submittedStreet === addressB.line1, submittedStaleA: submittedStreet === addressA.line1 },
+  { retainedOnApply: true, retainedOnRemove: true, retainedOnReapply: true, submittedOnlyB: true, submittedStaleA: false },
+  `${label}: promo replacement quotes must preserve the latest visible address and Continue must submit only that address`);
+  pass(`${label} promo address edits: B retained on apply/remove/reapply, one B destination on Continue, zero checkout writes before order confirmation`);
+  await openCheckoutDetails(buyer);
   await expect(buyer.getByTestId("create-order")).toBeEnabled();
   await buyer.getByTestId("create-order").click();
   await expect(buyer.getByTestId("order-section")).toBeVisible({ timeout: 30000 });
