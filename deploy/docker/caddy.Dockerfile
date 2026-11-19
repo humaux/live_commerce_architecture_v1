@@ -28,8 +28,8 @@ RUN --mount=type=cache,target=/go/pkg/mod --mount=type=cache,target=/root/.cache
     go build -mod=readonly -trimpath -buildvcs=false -o /out/caddy github.com/caddyserver/caddy/v2/cmd/caddy
 
 FROM ${ALPINE_IMAGE}
-# The fresh runtime contains neither the old Caddy binary nor the tools used to download it.
-RUN apk add --no-cache ca-certificates=20261020-r0 mailcap=2.1.54-r0 \
+# Keep getcap for the existing S08 assertion on the unprivileged binary.
+RUN apk add --no-cache ca-certificates=20261020-r0 mailcap=2.1.54-r0 libcap-getcap=2.78-r0 \
        libcrypto3=3.5.9-r1 libssl3=3.5.9-r1 zlib=1.4-r0 \
  && addgroup -S -g 10001 lccaddy && adduser -S -D -H -u 10001 -G lccaddy lccaddy \
  && mkdir -p /data/caddy /config/caddy /run/caddy && chown -R 10001:10001 /data /config /run/caddy
