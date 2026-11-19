@@ -28,12 +28,19 @@ def read_sample():
     observations = json.loads(result_path.read_text()) if result_path and result_path.is_file() else None
     browser = []
     screenshot_manifest = None
+    visibility_failure = None
     if raw_browser and raw_browser.is_file():
         browser = [
             "PASS" if line.lstrip().startswith("✓") else "FAIL"
             for line in raw_browser.read_text().splitlines()
             if "RF11 full refund of the remainder:" in line and line.lstrip().startswith(("✓", "✘", "×"))
         ]
+        lines = raw_browser.read_text().splitlines()
+        for line in lines:
+            verdict = re.fullmatch(r"\s*Received:\s+(hidden|visible|<element\(s\) not found>)\s*", line)
+            if verdict:
+                visibility_failure = verdict[1]
+                break
         screenshots = directory / "screenshots.json"
         if screenshots.is_file():
             screenshot_manifest = {
@@ -67,7 +74,7 @@ def read_sample():
         "sample": args.sample, "profile": args.profile, "arm": args.arm, "exit_code": args.exit_code,
         "browser": observations, "go_actions": go_actions, "leaf_verdict": browser,
         "pg": pg_observations, "screenshot_manifest": screenshot_manifest,
-        "first_process_failure": stage,
+        "first_process_failure": stage, "visibility_failure": visibility_failure,
     }
     save(args.out / f"sample-{args.sample}.json", result)
     print(json.dumps(result, ensure_ascii=False, separators=(",", ":")))

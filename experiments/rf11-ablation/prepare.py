@@ -155,6 +155,9 @@ def instrument_browser(source):
       stage = "verify-shared-refresh";
       manualReload = true;
       await page.reload();
+      // The standalone merchant route renders the order facts in collapsed
+      // native <details> after each navigation. Reopen via the original RF11 click.
+      await revealSavedFacts(page);
       await expect(detail.locator('[data-state="REFUNDED"]').first()).toBeVisible();
       expect(recoveryGets).toBeGreaterThan(0);
     } else {
@@ -195,8 +198,13 @@ def main():
     args = parser.parse_args()
     out = args.output
     out.mkdir(parents=True, exist_ok=True)
-    if subprocess.check_output(["git", "rev-parse", "HEAD^"], text=True).strip() != PIN:
-        raise SystemExit("diagnostic parent differs from the pinned candidate")
+    subprocess.run(["git", "merge-base", "--is-ancestor", PIN, "HEAD"], check=True)
+    changed = subprocess.check_output(["git", "diff", "--name-only", PIN, "HEAD"], text=True).splitlines()
+    if not changed or any(
+        path != ".github/workflows/rf11-ablation-diagnostic.yml" and not path.startswith("experiments/rf11-ablation/")
+        for path in changed
+    ):
+        raise SystemExit("diagnostic commit touches files outside the diagnostic suite")
     if subprocess.check_output(["git", "show", "-s", "--format=%T", PIN], text=True).strip() != TREE:
         raise SystemExit("pinned candidate tree differs")
     pins = {path: sha(pinned(path)) for path in SOURCE_PINS}
