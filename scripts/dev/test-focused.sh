@@ -63,9 +63,15 @@ export LC_ADMIN_GUARD_DSN="postgres://postgres:${POSTGRES_PASSWORD}@${port}/lc_a
 tags=()
 [[ -n "${LC_FOCUSED_TAGS:-}" ]] && tags=(-tags "$LC_FOCUSED_TAGS")
 log="$(mktemp)"
+if [[ -n "${LC_G07Z_BIN_DIR:-}" ]]; then
+  # The protected G07z workflow compiled this race binary before the key was available.
+  cd tests/foundation
+  cmd=("$LC_G07Z_BIN_DIR/run" "$LC_G07Z_BIN_DIR/foundation.test" -test.v -test.timeout="${LC_FOCUSED_TIMEOUT:-900s}" -test.run "$run_regex")
+else
+  cmd=(go test -race -count=1 ${tags[@]+"${tags[@]}"} -timeout="${LC_FOCUSED_TIMEOUT:-900s}" -run "$run_regex" -v "${packages[@]}")
+fi
 set +e
-GOTOOLCHAIN=go1.27.4 go test -race -count=1 ${tags[@]+"${tags[@]}"} -timeout="${LC_FOCUSED_TIMEOUT:-900s}" \
-  -run "$run_regex" -v "${packages[@]}" 2>&1 | tee "$log"
+GOTOOLCHAIN=go1.27.4 "${cmd[@]}" 2>&1 | tee "$log"
 status=${PIPESTATUS[0]}
 set -e
 passed="$(grep -c '^--- PASS' "$log" || true)"

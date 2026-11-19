@@ -337,7 +337,7 @@ fi
 # line (the tests' statement that a SANDBOX/LIVE/migrator prerequisite is absent); any other skip is
 # "other" and fails the row. Prints "pass fail notrun other"; names go to $2 (NOT_RUN) and $3 (other).
 judge_gotest() { # $1 = go test -v log
-  python3 - "$1" "$2" "$3" "${4:-verbose}" "${5:-}" <<'PY'
+  python3 - "$1" "$2" "$3" "${4:-verbose}" "${5:-}" "${@:6}" <<'PY'
 import json, re, subprocess, sys
 try:
     raw = open(sys.argv[1], "rb").read()
@@ -346,6 +346,7 @@ except Exception:
     print(0, 1, 0, 0)  # unreadable log or no converter: never PASS
     sys.exit(0)
 p = f = 0
+required = set(sys.argv[6:])
 msgs, skipped = {}, []
 conditional = open(sys.argv[5]).read() if sys.argv[4] == "json" and sys.argv[5] else ""
 for line in out.decode(errors="replace").splitlines():
@@ -364,6 +365,7 @@ for line in out.decode(errors="replace").splitlines():
         msgs[t] = msgs.get(t, "") + e.get("Output", "")
     elif a == "pass":
         p += 1
+        required.discard(e["Test"])
     elif a == "fail":
         f += 1
     elif a == "skip":
@@ -372,7 +374,7 @@ nr = [t for t in skipped if re.search(r"^\s*\S+\.go:\d+: NOT_RUN:", msgs.get(t, 
 other = [t for t in skipped if t not in nr]
 open(sys.argv[2], "w").write("\n".join(t.split("\t")[-1] for t in nr))
 open(sys.argv[3], "w").write("\n".join(other))
-print(p, f, len(nr), len(other))
+print(p, f + len(required), len(nr), len(other))
 PY
 }
 
@@ -470,14 +472,18 @@ if selected G07z; then
     record G07z SANDBOX NOT_RUN "docker daemon or go missing"
   else
     run_cmd G07z bash -c 'set +x
-      STRIPE_SECRET_KEY="$(. "${LC_SECRETS_FILE:-$HOME/.config/livecommerce/secrets.env}" 2>/dev/null; printf %s "${STRIPE_SECRET_KEY:-}")"
-      export STRIPE_SECRET_KEY STRIPE_SANDBOX=1 STRIPE_ACCOUNT_ID=acct_1UJDb0RusP6Wwj7e
-      go test -count=1 -v -run "^TestStripeSP16Sandbox$" ./internal/integrations/psp/stripe || exit 1
+      if [[ -n "${LC_G07Z_BIN_DIR:-}" ]]; then
+        (cd internal/integrations/psp/stripe && "$LC_G07Z_BIN_DIR/run" "$LC_G07Z_BIN_DIR/stripe.test" -test.v -test.timeout=10m -test.run "^TestStripeSP16Sandbox$") || exit 1
+      else
+        STRIPE_SECRET_KEY="$(. "${LC_SECRETS_FILE:-$HOME/.config/livecommerce/secrets.env}" 2>/dev/null; printf %s "${STRIPE_SECRET_KEY:-}")"
+        export STRIPE_SECRET_KEY STRIPE_SANDBOX=1 STRIPE_ACCOUNT_ID=acct_1UJDb0RusP6Wwj7e
+        go test -count=1 -v -run "^TestStripeSP16Sandbox$" ./internal/integrations/psp/stripe || exit 1
+      fi
       bash scripts/dev/test-focused.sh "^(TestStripeRF10Sandbox|TestStripeSP21Registrar)$"'
     if ((rc != 0)); then
       record G07z SANDBOX FAIL "SP16/RF10/SP21 SANDBOX exit $rc" "$rc" "$LOG"
     else
-      read -r gp gf sn so <<<"$(judge_gotest "$LOG" "$OUT/G07z.skipped" "$OUT/G07z.skipped-other")"
+      read -r gp gf sn so <<<"$(judge_gotest "$LOG" "$OUT/G07z.skipped" "$OUT/G07z.skipped-other" verbose "" TestStripeSP16Sandbox TestStripeRF10Sandbox TestStripeSP21Registrar/sandbox_probe_against_real_stripe)"
       if ((gf > 0 || gp == 0 || so > 0)); then
         record G07z SANDBOX FAIL "pass=$gp fail=$gf other-skips=$so" "$rc" "$LOG"
       else
