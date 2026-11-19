@@ -4,7 +4,6 @@
 // Depends on: buyer BFF/recovery, checkout display components, checkout-copy and codFooter (OC-09b bottom bar).
 // Used by: /{locale}/checkout, including claim and CVS returns.
 // Invariants: server quote matches its option; changed totals need acknowledgment; unknown checkout withholds payable and replays its original intent/key; brand-change contact stays ephemeral.
-
 // Both steps share the buyer cart and its recovery journals. OrderFlow owns destination confirmation and order submission.
 // The CVS map returns to this route with ?cvs_selection= (contracts/taiwan-cvs-logistics-v1.md §5.2).
 import { useEffect, useRef, useState } from "react";
@@ -29,10 +28,9 @@ import { emptyOrderFields, type OrderFields } from "../lib/order-fields";
 import CheckoutDeliveryOptions from "./checkout/CheckoutDeliveryOptions";
 import PromoCode from "./PromoCode";
 import OrderHistory from "./OrderHistory";
-import { CartLines } from "./CartLines";
+import { CartLines, useCartDetails } from "./CartLines";
 import CheckoutEntryHeader, { CheckoutHistoryControl } from "./checkout/CheckoutEntryHeader";
 import { useCart } from "./CartProvider";
-import { useCartDetails } from "./CartLines";
 import { checkoutPath } from "../lib/routes";
 import { fmt, shopCopy } from "../lib/shop-copy";
 import { formatMoney } from "../lib/money";
@@ -92,8 +90,7 @@ export default function CheckoutFlow({
     "failed" | "session" | "conflict" | "pending" | null
   >(null);
   const [reviewID, setReviewID] = useState("");
-  // Carry the latest home address edit across quotes for this cart and delivery.
-  const [draft, setDraft] = useState<OrderFields | null>(null);
+  const [draft, setDraft] = useState<OrderFields | null>(null); // In memory across quotes for the same cart and delivery.
   const [options, setOptions] = useState<OptionRow[]>([]);
   const [optionCursor, setOptionCursor] = useState("");
   // OC-09b: the selected cash-on-delivery option's server surcharge reported by OrderFlow (null = card or another mode).
