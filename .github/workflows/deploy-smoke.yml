@@ -29,8 +29,8 @@ jobs:
       GOTOOLCHAIN: go1.27.4
       GOFLAGS: -mod=readonly
       PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
-      G14_SOURCE_SHA: 724fdc33177f7b10dd2f28dbe26962012c5da34d
-      G14_SOURCE_TREE: 9e240dbde5fc5e2a63a0264db8f1bbf872fff5cc
+      G14_SOURCE_SHA: f8deddbc467f873e2028e1ee572d41286d985caa
+      G14_SOURCE_TREE: 29784c4a72d5501221bb51967f0c78ac1f1933b7
       SYFT_CHECK_FOR_APP_UPDATE: 'false'
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
