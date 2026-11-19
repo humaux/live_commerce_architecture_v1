@@ -404,6 +404,7 @@ async function checkSharedCheckout(addProduct) {
       assert(home, "merchant home delivery must be offered");
       const label = locale === "en" ? home.name_en : locale === "zh-TW" ? home.name_hant : home.name_hans;
       const selector = page.getByLabel(copy.selectDelivery);
+      await expect(selector).toBeFocused();
       await selector.selectOption({ label });
       const value = `${home.market_id}:${home.country}:${home.method}`;
       await expect(selector).toHaveValue(value);

@@ -5,15 +5,8 @@
 // Used by: /{locale}/checkout, including claim and CVS returns.
 // Invariants: server quote matches its option; changed totals need acknowledgment; unknown checkout withholds payable and replays its original intent/key; brand-change contact stays ephemeral.
 
-// Checkout surface at /{locale}/checkout (lib/routes.ts: the CVS map return allowlist): the delivery choice, quotation,
-// address, payment and order screens over the buyer's EXISTING multi-SKU cart. It is the former single-product purchase page
-// minus the product picker: items are added on the product page / drawer / cart page (CartProvider), this page starts at the
-// cart and ends at the placed order. All crash-recovery journals (pending cart/quote/destination/checkout, order locator) and
-// data-testids are unchanged, so the order, payment, CVS and bank-transfer flows below behave exactly as before.
-// (BFF /api/buyer/{cart,checkout-options,quotes,destination,checkout,orders} -> Go /v1/buyer/*). Delivery list (checkout-options): home and the four CVS chains; a chain the store cannot
-// sell yet arrives as {available:false, reason} and is shown disabled "Coming soon"
-// (contracts/taiwan-cvs-logistics-v1.md §5.1). The CVS store picker itself lives in OrderFlow/CvsPickup and
-// returns to this route with ?cvs_selection= (§5.2), which is why the route keeps checkout state across a reload.
+// Both steps share the buyer cart and its recovery journals. OrderFlow owns destination confirmation and order submission.
+// The CVS map returns to this route with ?cvs_selection= (contracts/taiwan-cvs-logistics-v1.md §5.2).
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import {
@@ -104,6 +97,7 @@ export default function CheckoutFlow({
   // OC-09b: the selected cash-on-delivery option's server surcharge reported by OrderFlow (null = card or another mode).
   const [codFee, setCodFee] = useState<number | null>(null);
   const [method, setMethod] = useState("");
+  const [pickingMethod, setPickingMethod] = useState(false);
   const [quote, setQuote] = useState<Quote | null>(null);
   const [quoteChange, setQuoteChange] = useState<number | null>(null);
   const [reviewState, setReviewState] = useState<{ quoteID: string; ready: boolean; timing: string; quoteReady?: boolean; destinationReady?: boolean; submitting?: boolean; needsConfirm?: boolean } | null>(null);
@@ -218,6 +212,9 @@ export default function CheckoutFlow({
     setPending(false);
     setError(null);
     setQuote(null);
+    setDetailsOpen(false);
+    setHelpOpen(false);
+    setPickingMethod(false);
     setOrder(null);
     currentOrder.current = null;
     setDraft(null);
@@ -604,6 +601,7 @@ export default function CheckoutFlow({
                 ) : (
                   <CheckoutDeliveryOptions
                     locale={locale} options={options} method={method} chosen={chosen}
+                    expanded={pickingMethod} onClose={() => setPickingMethod(false)}
                     subtotal={quote ? null : subtotal} currency={cart.currency}
                     disabled={busy || pending || orderLocked || error === "session"}
                     onSelect={(value) => { if (value !== method) changeMethod(value); }}
@@ -773,8 +771,12 @@ export default function CheckoutFlow({
                 <p id="payment-help-content" data-testid="payment-help-content" hidden={!helpOpen || !controls}>{help}</p>
               </div>;
             })()}
-            {entry && !detailsOpen && <button type="button" disabled={busy || pending || error === "session"} onClick={() => {
-              document.getElementById("delivery")?.focus();
+            {entry && !detailsOpen && <button type="button" aria-controls="delivery" disabled={busy || pending || error === "session"} onClick={() => {
+              setPickingMethod(true);
+              requestAnimationFrame(() => {
+                document.getElementById("delivery")?.focus();
+                deliveryRef.current?.scrollIntoView({ block: "start" });
+              });
               if (!options.length) void act(() => deliveryOptions());
             }}>{copy.delivery}</button>}
             {(quote || pendingKind === "checkout") && <button type="submit" form="checkout-order-form" data-testid="checkout-submit" className="primary"
