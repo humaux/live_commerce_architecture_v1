@@ -262,7 +262,8 @@ The media worker is **not deployed**, because it is MOCK-only (`worker_env.go:17
 | node | `24.22.3-trixie-slim@sha256:af02…24a0` | `lc-admin`, `lc-storefront` build | Copy the pinned Node executable into runtime stages |
 | distroless cc | `debian13:nonroot@sha256:cb87…8be2` | `lc-admin`, `lc-storefront` runtime | glibc, C++ runtime, CA certs, tzdata. Package managers stay in build stages |
 | pnpm | 10.33.0 via corepack | Node builds | root `packageManager` |
-| caddy | `2.11.9-alpine@sha256:003a…36f0` | `lc-caddy` | Edge TLS; `setcap -r` for non-root |
+| caddy | `2.11.9-alpine@sha256:003a…36f0` | `lc-caddy` defaults | Rebuild upstream stock modules using the isolated Caddy Go dependency lock |
+| Alpine | `3.24.4@sha256:f59a…71bf` | `lc-caddy` runtime | BusyBox health check, exact fixed security package versions, unprivileged Caddy |
 | pause | `registry.k8s.io/pause:3.10.1@sha256:278f…d24c` | `edge-netns` | Shared netns owner |
 | postgres | `@sha256:4ef4…2280` (18.6) | postgres, provision-logins, pg-ops | Same pin as `scripts/dev/test-local.sh` |
 | shellcheck (optional) | 0.11.0 | `smoke.sh` S01 | Script lint; NOT_RUN when absent |
