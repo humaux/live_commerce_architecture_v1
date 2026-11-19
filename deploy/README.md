@@ -258,10 +258,11 @@ The media worker is **not deployed**, because it is MOCK-only (`worker_env.go:17
 | Docker Compose plugin | ≥ 2.24 (verified v5.1.1) | host | `depends_on.required: false`, profiles |
 | bash, coreutils, openssl, curl, python3 | distro | `deploy/scripts/*` | Key generation, JSON/format checks, secret scan |
 | golang | `1.27.4-trixie@sha256:b54b2639de8c1bfe538ec5ffc45f29b1932235ac5f6d63c059853646677112d9` | build stages | go.mod `go 1.27.4` |
-| distroless static | `debian13:nonroot@sha256:e2e9…55e3` | `lc-go` runtime | CA certs + tzdata, UID 65532, no shell |
-| node | `24.15.0-trixie-slim@sha256:291b…0eb7` | `lc-admin`, `lc-storefront` | Ledger-tested Node (O6: 24.21.0 bump candidate) |
+| distroless static | `debian13:nonroot@sha256:aafe…3931` | `lc-go` runtime | CA certs + tzdata, UID 65532, no shell |
+| node | `24.22.3-trixie-slim@sha256:af02…24a0` | `lc-admin`, `lc-storefront` build | Copy the pinned Node executable into runtime stages |
+| distroless cc | `debian13:nonroot@sha256:cb87…8be2` | `lc-admin`, `lc-storefront` runtime | glibc, C++ runtime, CA certs, tzdata. Package managers stay in build stages |
 | pnpm | 10.33.0 via corepack | Node builds | root `packageManager` |
-| caddy | `2.11.4-alpine@sha256:6aed…cb2b` | `lc-caddy` | Edge TLS; `setcap -r` for non-root |
+| caddy | `2.11.9-alpine@sha256:003a…36f0` | `lc-caddy` | Edge TLS; `setcap -r` for non-root |
 | pause | `registry.k8s.io/pause:3.10.1@sha256:278f…d24c` | `edge-netns` | Shared netns owner |
 | postgres | `@sha256:4ef4…2280` (18.6) | postgres, provision-logins, pg-ops | Same pin as `scripts/dev/test-local.sh` |
 | shellcheck (optional) | 0.11.0 | `smoke.sh` S01 | Script lint; NOT_RUN when absent |

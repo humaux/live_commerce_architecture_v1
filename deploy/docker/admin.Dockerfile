@@ -16,13 +16,14 @@
 #   apps/admin, packages/*, scripts/dev/package-admin.mjs (MANDATORY: standalone output drops
 #   public/ and .next/static; that script copies them back), deploy/tools/lcentry.
 # Status: DESIGN/NOT_RUN in this package; verified by smoke S07, S08, S21.
-# Change rules: Node bump (O6: 24.15.0 -> 24.21.0) must re-run the repo browser gates and
+# Change rules: Node version or runtime image change must re-run the repo browser gates and
 #   smoke full; keep the digest pin; never COPY env/secret files into any stage.
 
 # Same Go pin as go.Dockerfile; only used to compile the static lcentry launcher.
 ARG GO_IMAGE=golang:1.27.4-trixie@sha256:b54b2639de8c1bfe538ec5ffc45f29b1932235ac5f6d63c059853646677112d9
-# Node 24.15.0 = ledger-tested toolchain (docs/implementation/dependencies.md:226); resolved 2026-09-28.
-ARG NODE_IMAGE=node:24.15.0-trixie-slim@sha256:291be77873bc04731968cacf82f0fcef17cee8cf200c6b6951e2bcab41560eb7
+# Node 24 LTS and the Debian 13 runtime pins resolved from their official registries on 2026-11-19.
+ARG NODE_IMAGE=node:24.22.3-trixie-slim@sha256:af02d57b57719b9657a45199a79264a9437940cd55b3c7b3fc99615654f124a0
+ARG NODE_RUNTIME_IMAGE=gcr.io/distroless/cc-debian13:nonroot@sha256:cb87acc574abe719b6e5c547384defa2f7b1f24af9605d3f618cf852495d8be2
 
 FROM ${GO_IMAGE} AS lcentry
 # GOPROXY=off proves lcentry is stdlib-only (no module download needed).
@@ -60,7 +61,9 @@ ARG LC_COMPANY_CONTACT_EMAIL
 # Public non-secret config validates the build; dynamic pages read runtime values.
 RUN LC_PLATFORM_HOST="$LC_PLATFORM_HOST" LC_ADMIN_HOST="$LC_ADMIN_HOST" LC_COMPANY_CONTACT_EMAIL="$LC_COMPANY_CONTACT_EMAIL" COMMERCE_IDENTITY_ENABLED=0 COMMERCE_FIXTURE_ENABLED=0 pnpm run build:admin
 
-FROM ${NODE_IMAGE}
+FROM ${NODE_RUNTIME_IMAGE}
+# Only the Node executable is needed at runtime; package managers stay in build stages.
+COPY --from=base /usr/local/bin/node /usr/local/bin/node
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
 # Standalone tree: /app/apps/admin/server.js + traced /app/node_modules. Root-owned, read-only to UID 1000.
 COPY --from=build /app/apps/admin/.next/standalone/ /app/
