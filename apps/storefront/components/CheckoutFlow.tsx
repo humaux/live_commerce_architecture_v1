@@ -590,7 +590,7 @@ export default function CheckoutFlow({
                 ref={deliveryRef}
                 aria-labelledby="delivery-title"
               >
-                <h2 id="delivery-title">{v2.receiving}</h2>
+                <h2 id="delivery-title">{copy.deliveryTitle}</h2>
                 <div className="checkout-entry-delivery-controls">
                   {!options.length ? <p>{copy.noDelivery}</p> : (
                     <CheckoutDeliveryOptions
