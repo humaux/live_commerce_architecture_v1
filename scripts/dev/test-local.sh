@@ -1678,21 +1678,8 @@ case "$1" in
   # LC_FOUNDATION_RUN the -run regex and LC_FOUNDATION_SKIP the -skip regex; .github/workflows/gates.yml runs 1 unit shard + the
   # tests/foundation groups of scripts/dev/shard-plan.json in parallel (each top-level test in exactly one group, enforced by
   # `node scripts/dev/shard-plan.mjs --check` in check-gates.sh). Unset = the whole suite, unchanged.
-  local go_packages=" ${LC_FOUNDATION_PKGS:-./...} "
-  if [[ "${LC_G07_CANONICAL:-}" == 1 && "$MODE" == shard:unit ]]; then
-    local w1_package=livecommerce/bench/l01/neutral/go
-    [[ "$go_packages" == *" $w1_package "* ]] || return 1
-    # Keep one native package transcript. Extended covers the shared W1 cases plus quarantine;
-    # ordinary CI still runs base and extended independently. Rotate PG before the other packages.
-    docker exec "$test_container" createdb -U postgres lc_neutral_w1_test
-    LC_W1_GO_MODE=extended LC_W1_PG_CONTAINER="$test_container" \
-      PGHOST=127.0.0.1 PGPORT="${test_port##*:}" PGUSER=postgres PGPASSWORD="$POSTGRES_PASSWORD" \
-      GOTOOLCHAIN=go1.27.4 go test -race -count=1 -timeout=70s -json "$w1_package" | tee "$LC_G07_GO_LOG"
-    fresh_pg
-    go_packages=${go_packages/" $w1_package "/ }
-  fi
-  # shellcheck disable=SC2086 # go_packages is a deliberate word-split package list
-  GOTOOLCHAIN=go1.27.4 go test -p 1 -race -count=1 -timeout=4500s "${LC_G07_GO_FORMAT:--v}" ${LC_FOUNDATION_RUN:+-run "$LC_FOUNDATION_RUN"} ${LC_FOUNDATION_SKIP:+-skip "$LC_FOUNDATION_SKIP"} $go_packages | tee -a "${LC_G07_GO_LOG:-/dev/null}"
+  # shellcheck disable=SC2086 # LC_FOUNDATION_PKGS is a deliberate word-split package list
+  GOTOOLCHAIN=go1.27.4 go test -p 1 -race -count=1 -timeout=4500s "${LC_G07_GO_FORMAT:--v}" ${LC_FOUNDATION_RUN:+-run "$LC_FOUNDATION_RUN"} ${LC_FOUNDATION_SKIP:+-skip "$LC_FOUNDATION_SKIP"} ${LC_FOUNDATION_PKGS:-./...} | tee -a "${LC_G07_GO_LOG:-/dev/null}"
   # go vet ./... checks the whole repository, not the shard's tests: a tests/foundation test-subset shard (RUN/SKIP set) leaves it to the
   # unit shard / the whole-suite run, so a full run vets exactly once instead of once per shard.
   if [[ -z "${LC_FOUNDATION_RUN:-}${LC_FOUNDATION_SKIP:-}" ]]; then
@@ -1926,6 +1913,19 @@ lc_prepare
 if [[ "$lc_build" == storefront || "$lc_build" == both ]]; then lc_build_storefront; fi
 if [[ "$lc_build" == admin || "$lc_build" == both ]]; then lc_build_admin; fi
 if [[ "$lc_fixture" == pg ]]; then source scripts/dev/test-local-runtime.sh; fi
+if [[ "$test_mode" == foundation && "${LC_G07_CANONICAL:-}" == 1 && "$MODE" == shard:unit ]]; then
+  w1_package=livecommerce/bench/l01/neutral/go
+  unit_packages=" $LC_FOUNDATION_PKGS "
+  [[ "$unit_packages" == *" $w1_package "* ]] || { echo 'canonical unit partition missing the W1 Go package' >&2; exit 1; }
+  # Extended covers shared W1 cases plus quarantine; ordinary CI runs both modes separately.
+  # Give W1 its own PG18 fixture and keep its native events in the unit transcript exactly once.
+  docker exec "$test_container" createdb -U postgres lc_neutral_w1_test
+  LC_W1_GO_MODE=extended LC_W1_PG_CONTAINER="$test_container" \
+    PGHOST=127.0.0.1 PGPORT="${test_port##*:}" PGUSER=postgres PGPASSWORD="$POSTGRES_PASSWORD" \
+    GOTOOLCHAIN=go1.27.4 go test -race -count=1 -timeout=70s -json "$w1_package" | tee "$LC_G07_GO_LOG"
+  fresh_pg
+  LC_FOUNDATION_PKGS=${unit_packages/" $w1_package "/ }
+fi
 # #147 round 2 (review 184 P1a): everything above is lc_prepare, whose unit/model node suites are not browser evidence.
 # matrix-receipts.mjs only accepts node:test browser evidence printed after this marker, and only browser arms have one;
 # a non-browser mode's dispatch output stays byte-identical (tests/ci/mode-registry.test.mjs).
