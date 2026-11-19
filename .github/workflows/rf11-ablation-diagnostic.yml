@@ -1,0 +1,46 @@
+name: RF11 G15 isolated ablation
+on:
+  push:
+    branches: [codex/g15-rf11-721-ablation-1119]
+    paths: [.github/workflows/rf11-ablation-diagnostic.yml, 'experiments/rf11-ablation/**']
+permissions:
+  contents: read
+jobs:
+  native-ablation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Record diagnostic admission
+        run: mkdir -p output/g15-rf11 && printf 'admitted\n' > output/g15-rf11/stage.txt
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - uses: ./.github/actions/pnpm
+      - name: Prepare public dependencies and isolated PostgreSQL image
+        timeout-minutes: 10
+        run: |
+          go mod download
+          pnpm install --frozen-lockfile --ignore-scripts
+          docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+      - name: Install repository-pinned Chromium
+        timeout-minutes: 15
+        run: bash scripts/dev/ci-playwright-install.sh chromium
+      - name: Execute both RF11 variants, sequentially on this runner
+        run: bash experiments/rf11-ablation/run.sh
+      - name: Upload synthetic scalar evidence and exact experiment source variants
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: rf11-g15-native-a${{ github.run_attempt }}
+          path: output/g15-rf11/
+          if-no-files-found: error
+          retention-days: 7
