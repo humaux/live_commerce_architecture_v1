@@ -47,7 +47,7 @@ const redact=s=>String(s).replace(/https:\/\/checkout\.stripe\.com\/\S*/gi,"[str
 const say=(...a)=>console.log(redact(a.join(" ")));
 const unreached=[],cases=[],shots=[],selectors={},refused=new Set(),orders=[],calls=[],consoleLines=[],histCalls=[];
 const children=new Set(),sockets=new Set(),contexts=[],logs=[];
-let browser,edge,proxy,stripeVisits=0,payuniHits=0,nextPort=0;
+let merchantBrowser,browser,edge,proxy,stripeVisits=0,payuniHits=0,nextPort=0;
 const passed=name=>{cases.push(name);say(`PASS ${name}`);};
 // #145: a coarse class for a failed non-BFF request (no path segments, so no ids or tokens reach the log)
 const pathClass=(r,p)=>r.isNavigationRequest()?"(document)":p.startsWith("/_next/data/")?"/_next/data":p.startsWith("/_next/static/")?"/_next/static":p.startsWith("/_next/")?"/_next/(other)":"(other)";
@@ -333,11 +333,19 @@ async function newOrder(page,{pay=true}={}){
   finally{if(diagnostic)await diagnostic.finish();}
   await reachCheckout(page,origin,"en",process.env.LC_STRIPE_PRODUCT,{quantity:2});
   await page.getByRole("button",{name:"Choose delivery",exact:true}).click();
+  if(cfg.adminOrigin) await page.locator("select#delivery").selectOption({label:"Test shop delivery"});
   const quotation=page.waitForResponse(r=>requestIs(r,"quotes","POST"));
   await Promise.all([quotation,page.getByRole("button",{name:"Get current total",exact:true}).click()]);assert.equal((await quotation).status(),200);
   await ex(page.getByTestId("address-section")).toBeVisible();
   for(const [key,value] of Object.entries(pii))await page.locator(`input[name="${key}"]`).fill(value);
   await confirmCheckoutAddress(page);await ex(page.getByTestId("create-order")).toBeEnabled();
+  if(cfg.adminOrigin) {
+    for (const [field, amount] of [["subtotal",25],["shipping",60],["total",85]]) {
+      const value = page.getByTestId("review-"+field);
+      await ex(value).toBeVisible();
+      await ex(value).toHaveText("NT$"+amount);
+    }
+  }
   await page.getByTestId("create-order").click();await ex(page.getByTestId("order-section")).toBeVisible();
   const id=(await page.getByTestId("order-id").innerText()).trim();assert.match(id,/^[0-9a-f-]{36}$/);orders.push(id);
   await ex(page.getByTestId("order-payment")).toBeVisible();await ex(page.getByTestId("payment-status")).toHaveAttribute("data-state","NOT_STARTED");
@@ -347,7 +355,7 @@ async function newOrder(page,{pay=true}={}){
     const response=await fetch(`/api/buyer/orders/${orderID}/payment`,{headers:{"X-Buyer-Context":session.context},cache:"no-store"});
     return {status:response.status,body:await response.json()};
   },id);
-  assert.equal(payment.status,200);assert.equal(payment.body.currency,"TWD");assert.equal(payment.body.total_minor,2500);
+  assert.equal(payment.status,200);assert.equal(payment.body.currency,"TWD");assert.equal(payment.body.total_minor,cfg.adminOrigin ? 8500 : 2500);
   assert.equal(payment.body.cancel_requested,undefined,"a fresh order has no Stripe attempt");
   if(pay){assert.deepEqual(payment.body.methods.map(x=>[x.code,x.version]).map(x=>x[0]),["stripe_checkout"]);await ex(payBtn(page,"en")).toBeVisible();}
   else assert.equal(payment.body.methods.length,0);
@@ -526,7 +534,66 @@ async function completeThreeDS(child){
   },120000,"3DS completion",700);
 }
 // ---- scenario drivers ----
+// Merchant browser has only loopback access. Keep order details and the login callback out of diagnostics.
+async function configureShopDelivery() {
+  merchantBrowser = await launch();
+  const ctx = await merchantBrowser.newContext();
+  await ctx.route("**/*", route => {
+    const url = new URL(route.request().url());
+    return url.protocol === "http:" && ["localhost","127.0.0.1"].includes(url.hostname) ? route.continue() : route.abort();
+  });
+  const page = await ctx.newPage();
+  page.setDefaultTimeout(20000);
+  await page.goto(cfg.adminOrigin + "/en/");
+  await page.getByRole("button",{name:"Sign in with identity service",exact:true}).click();
+  await ex(page.locator("nav[data-shell-route]")).toBeVisible();
+  await page.goto(cfg.adminOrigin + "/en/settings?store=" + cfg.store);
+  await page.getByRole("button",{name:"Edit settings",exact:true}).click();
+  await page.getByRole("button",{name:"Continue",exact:true}).click();
+  await page.getByRole("button",{name:"Continue",exact:true}).click();
+  await page.getByLabel("Delivery service",{exact:true}).selectOption("home");
+  const policy = page.getByTestId("settings-policy-form");
+  await ex(policy.getByLabel("Flat shipping (NT$)",{exact:true})).toHaveValue("0");
+  await policy.getByLabel("Flat shipping (NT$)",{exact:true}).fill("60");
+  await policy.getByLabel(/^Configuration reference/).fill("Synthetic test shop tariff");
+  const servicePath = "/delivery-services/home";
+  const put = suffix => page.waitForResponse(r => r.request().method() === "PUT" && new URL(r.url()).pathname.endsWith(suffix));
+  const [policyReceipt] = await Promise.all([put(servicePath+"/policy"),policy.getByRole("button",{name:"Save pricing policy",exact:true}).click()]);
+  assert.equal(policyReceipt.status(),200,"merchant tariff receipt");
+  const service = page.getByTestId("settings-service-form");
+  await service.getByLabel("English name",{exact:true}).fill("Test shop delivery");
+  const [serviceReceipt] = await Promise.all([put(servicePath),service.getByRole("button",{name:"Save delivery service",exact:true}).click()]);
+  assert.equal(serviceReceipt.status(),200,"merchant delivery receipt");
+  passed("Merchant saved home delivery and NT$60 shipping");
+  return page;
+}
+
+async function shipPaidShopOrder(page,id) {
+  const list = cfg.adminOrigin + "/en/orders?store=" + cfg.store;
+  await page.goto(list);
+  await page.getByTestId("order-expand-"+id).click();
+  const detail = page.getByTestId("order-detail");
+  await ex(detail).toHaveAttribute("aria-label",new RegExp(id));
+  await page.getByTestId("order-more-details").locator("summary").click();
+  const facts = detail.getByTestId("order-facts");
+  await ex(facts.locator('[data-state="CAPTURED"]').first()).toBeVisible();
+  await ex(facts.locator('[data-state="CONFIRMED"]').first()).toBeVisible();
+  await ex(facts.getByText("NT$85",{exact:true}).first()).toBeVisible();
+  await facts.getByTestId("ship-carrier").selectOption("other");
+  await facts.getByTestId("ship-carrier-name").fill("Synthetic home carrier");
+  await facts.getByTestId("ship-tracking").fill("0012345678");
+  await facts.getByTestId("shipment-submit").click();
+  await facts.getByTestId("shipment-confirm").click();
+  const record = detail.getByTestId("signed-shipment-record");
+  await ex(record).toContainText("0012345678");
+  await page.reload();
+  await ex(detail).toHaveAttribute("aria-label",new RegExp(id));
+  await ex(record).toContainText("0012345678");
+  passed("Merchant opened the buyer's captured NT$85 order, recorded synthetic tracking and verified it after reload");
+}
+
 async function sp18(){
+  const merchant = cfg.adminOrigin ? await configureShopDelivery() : null;
   const c=await context(cfg.mobile),page=await c.newPage();
   await page.goto(product);await scanSelfTest(page,[c]);
   const l=cfg.locale,vp=cfg.mobile?"mobile":"desktop";
@@ -551,6 +618,7 @@ async function sp18(){
       await expectStatusText(page,l,"CAPTURED","CONFIRMED");
       await shot(page.getByTestId("order-payment"),`sp18-${cfg.scenario}-${vp}-${l}-3-captured`,"SANDBOX");
       const f=await control(id);assert.equal(f.order.captured,1);assert.equal(f.order.reservation,"COMMITTED");assert.equal(f.allocated,base.allocated+2);assert.equal(f.reserved,base.reserved-2);
+      if (merchant) await shipPaidShopOrder(merchant,id);
       passed(`SP18 ${cfg.scenario} 4242: CAPTURED + CONFIRMED, reservation COMMITTED, stock allocated`);
     }else if(cfg.card==="3ds"){
       await fillHostedCard(child,CARD.threeDS);await completeThreeDS(child);await returnedNeutral(child);await closeChild(child,`SP18 ${cfg.scenario} hosted return`);await page.bringToFront();
@@ -814,6 +882,7 @@ try{
   await writeFile(path.join(evidence,"result.json"),JSON.stringify({kind:cfg.kind,mode:cfg.mode,case:process.env.LC_STRIPE_CASE?`${cfg.kind}-${cfg.scenario??""}-${cfg.mobile?"mobile":"desktop"}-${cfg.locale}`:"",pass,orders,cases,scan,
     screenshots:shots,unreached_rows:unreached,selectors,refused_hosts:[...refused].sort(),viewport:cfg.mobile?`390x844 ${phoneName}`:"1440x900",locale:cfg.locale,card:cfg.card??null,failure:pass?"":failure.slice(0,600)}),{flag:"w",mode:0o600});
   for(const ctx of contexts)await ctx.close().catch(()=>{});
+  await merchantBrowser?.close().catch(()=>{});
   await browser?.close().catch(()=>{});
   for(const s of sockets)s.destroy();
   for(const server of [proxy,edge])if(server)await new Promise(r=>server.close(r));

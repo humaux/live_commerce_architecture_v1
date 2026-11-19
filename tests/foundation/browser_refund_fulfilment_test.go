@@ -72,6 +72,13 @@ func brfRequire(t *testing.T) {
 // admin Next build against it. principal is the store creator that the mock IdP subject maps to.
 func brfStartAdmin(t *testing.T, ctx context.Context, e *rfxEnv, principal, evidence string, wrappers ...func(http.Handler) http.Handler) *brfStack {
 	t.Helper()
+	stack := brfStartAdminOn(t, ctx, e.f, principal, evidence, httpapi.Options{SessionStoreList: true, RefundJobs: e.jobs}, browserEnvironment, wrappers...)
+	stack.e = e
+	return stack
+}
+
+func brfStartAdminOn(t *testing.T, ctx context.Context, f *testFixture, principal, evidence string, options httpapi.Options, nodeEnv func(map[string]string) []string, wrappers ...func(http.Handler) http.Handler) *brfStack {
+	t.Helper()
 	root, err := filepath.Abs("../..")
 	if err != nil {
 		t.Fatal(err)
@@ -80,12 +87,12 @@ func brfStartAdmin(t *testing.T, ctx context.Context, e *rfxEnv, principal, evid
 	address := relay.server.Listener.Addr().String()
 	origin := "http://" + address
 	idp := newBrowserIDP(t, origin+"/api/auth/callback")
-	mustExec(t, e.f.owner, `INSERT INTO identity.external_identities(issuer,subject,principal_id) VALUES($1,'browser-subject',$2)`, idp.server.URL, principal)
+	mustExec(t, f.owner, `INSERT INTO identity.external_identities(issuer,subject,principal_id) VALUES($1,'browser-subject',$2)`, idp.server.URL, principal)
 	role := "brf_" + strings.ReplaceAll(randomUUID(), "-", "")
 	password := randomToken()
-	mustExec(t, e.f.owner, `CREATE ROLE `+pgx.Identifier{role}.Sanitize()+` LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE IN ROLE commerce_identity PASSWORD '`+password+`'`)
-	t.Cleanup(func() { mustExec(t, e.f.owner, `DROP ROLE `+pgx.Identifier{role}.Sanitize()) })
-	u, err := url.Parse(e.f.databaseURL)
+	mustExec(t, f.owner, `CREATE ROLE `+pgx.Identifier{role}.Sanitize()+` LOGIN NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE IN ROLE commerce_identity PASSWORD '`+password+`'`)
+	t.Cleanup(func() { mustExec(t, f.owner, `DROP ROLE `+pgx.Identifier{role}.Sanitize()) })
+	u, err := url.Parse(f.databaseURL)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +117,7 @@ func brfStartAdmin(t *testing.T, ctx context.Context, e *rfxEnv, principal, evid
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
-	mux.Handle("/", httpapi.NewHandler(e.f.runtime, httpapi.Options{SessionStoreList: true, RefundJobs: e.jobs}))
+	mux.Handle("/", httpapi.NewHandler(f.runtime, options))
 	var handler http.Handler = mux
 	for _, wrap := range wrappers {
 		handler = wrap(handler)
@@ -120,7 +127,7 @@ func brfStartAdmin(t *testing.T, ctx context.Context, e *rfxEnv, principal, evid
 	nextLog := browserLog(t, filepath.Join(evidence, "next.log"))
 	next := exec.CommandContext(ctx, "node", filepath.Join(root, "apps/admin/.next/standalone/apps/admin/server.js"))
 	next.Dir = root
-	next.Env = browserEnvironment(map[string]string{"HOSTNAME": "localhost", "NODE_OPTIONS": "--dns-result-order=ipv4first", "NODE_ENV": "production", "COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1",
+	next.Env = nodeEnv(map[string]string{"HOSTNAME": "localhost", "NODE_OPTIONS": "--dns-result-order=ipv4first", "NODE_ENV": "production", "COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1",
 		"COMMERCE_PUBLIC_ORIGIN": origin, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": bffKey, "COMMERCE_ONBOARDING_ENABLED": "1", "COMMERCE_ONBOARDING_CURRENCIES": "TWD,USD"})
 	next.Stdout, next.Stderr = nextLog, nextLog
 	next.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
@@ -138,7 +145,7 @@ func brfStartAdmin(t *testing.T, ctx context.Context, e *rfxEnv, principal, evid
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-	return &brfStack{e: e, root: root, evidence: evidence, origin: origin, api: api}
+	return &brfStack{root: root, evidence: evidence, origin: origin, api: api}
 }
 
 // brfPlaywright runs the given admin specs with a config generated next to the evidence (inside the repo so that

@@ -620,7 +620,7 @@ case "$1" in
     }
     ;;
   --stripe-browser)
-    lc_build=storefront
+    lc_build=both
     lc_fixture=pg
     lc_browsers=chromium
     lc_prepare() {
