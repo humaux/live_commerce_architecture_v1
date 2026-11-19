@@ -34,7 +34,7 @@ import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.
 const root=process.cwd(),evidence=process.env.LC_STRIPE_EVIDENCE,CONTROL=process.env.LC_STRIPE_CONTROL;
 const cfg=JSON.parse(process.env.LC_STRIPE_CASE??"{}");
 assert(evidence&&/^http:\/\/127\.0\.0\.1:\d+$/.test(CONTROL??""),"driver env");
-assert(["SP18","SU07","SU09","OBS"].includes(cfg.kind)&&["SANDBOX","MOCK"].includes(cfg.mode),"case");
+assert(["SP18","SU07","SU09","OBS","SHOP_TARIFF"].includes(cfg.kind)&&["SANDBOX","MOCK"].includes(cfg.mode),"case");
 const SANDBOX=cfg.mode==="SANDBOX";
 const origin="https://buyer.example",product=`${origin}/en/products/${process.env.LC_STRIPE_PRODUCT}`,checkout=`${origin}/en/checkout`;
 const ex=expect.configure({timeout:20000});
@@ -534,6 +534,48 @@ async function completeThreeDS(child){
   },120000,"3DS completion",700);
 }
 // ---- scenario drivers ----
+// Passive, key-free diagnostic. Keep only the synthetic tariff's state and HTTP status.
+async function observeShopTariff(page) {
+  const network = [];
+  function record(event, request, status) {
+    const pathname = new URL(request.url()).pathname;
+    const resource = ["/markets", "/delivery-services", "/delivery-services/home/policy", "/delivery-services/home"].find(s => pathname.endsWith(s));
+    if (resource) network.push({event, resource, method:request.method(), status});
+  }
+  page.on("request", r => record("request", r));
+  page.on("response", r => record("response", r.request(), r.status()));
+  page.on("requestfailed", r => record("failed", r));
+  await page.addInitScript(() => {
+    const stages = [];
+    // G-UI8 [READ/MEASURE]: observe native events and the saved draft; never change form state.
+    const observe = stage => {
+      const form = document.querySelector('[data-testid="settings-policy-form"]');
+      if (!form) return;
+      const key = Object.keys(sessionStorage).find(k => k.startsWith("commerce-settings-draft:"));
+      const draft = key ? JSON.parse(sessionStorage.getItem(key)).draft : null;
+      const save = form.querySelector('button[type="submit"]');
+      const obs = draft?.policyObservation;
+      stages.push({stage, market:!!draft?.marketID, home:draft?.serviceCode === "home",
+        selectedHome:document.querySelector('select[aria-label="Delivery service"]')?.value === "home",
+        baseline:obs?.version ?? null, target:!!obs && obs.target === [draft.marketID,draft.country,draft.serviceCode].join(":"),
+        dirty:obs?.dirty ?? false, enabledPolicy:!!form.querySelector('input[type="checkbox"]:checked'),
+        saveExists:!!save, saveEnabled:!!save && !save.disabled, invalid:form.querySelectorAll(":invalid").length});
+    };
+    for (const event of ["change","input","click","invalid","submit"]) {
+      document.addEventListener(event, e => {
+        const target = e.target;
+        if (target.matches('select[aria-label="Delivery service"]') && event === "change") observe("select-home");
+        else if (target.closest('[data-testid="settings-policy-form"]') &&
+          (event !== "click" || target.matches('button[type="submit"]'))) observe(event);
+      }, true);
+    }
+    window.tariffStages = () => { observe("end"); return stages; };
+  });
+  return async () => {
+    const stages = await page.evaluate(() => window.tariffStages());
+    step("TARIFF_DIAG", JSON.stringify({stages, network}));
+  };
+}
 // Merchant browser has only loopback access. Keep order details and the login callback out of diagnostics.
 async function configureShopDelivery() {
   merchantBrowser = await launch();
@@ -544,28 +586,33 @@ async function configureShopDelivery() {
   });
   const page = await ctx.newPage();
   page.setDefaultTimeout(20000);
-  await page.goto(cfg.adminOrigin + "/en/");
-  await page.getByRole("button",{name:"Sign in with identity service",exact:true}).click();
-  await ex(page.locator("nav[data-shell-route]")).toBeVisible();
-  await page.goto(cfg.adminOrigin + "/en/settings?store=" + cfg.store);
-  await page.getByRole("button",{name:"Edit settings",exact:true}).click();
-  await page.getByRole("button",{name:"Continue",exact:true}).click();
-  await page.getByRole("button",{name:"Continue",exact:true}).click();
-  await page.getByLabel("Delivery service",{exact:true}).selectOption("home");
-  const policy = page.getByTestId("settings-policy-form");
-  await ex(policy.getByLabel("Flat shipping (NT$)",{exact:true})).toHaveValue("0");
-  await policy.getByLabel("Flat shipping (NT$)",{exact:true}).fill("60");
-  await policy.getByLabel(/^Configuration reference/).fill("Synthetic test shop tariff");
-  const servicePath = "/delivery-services/home";
-  const put = suffix => page.waitForResponse(r => r.request().method() === "PUT" && new URL(r.url()).pathname.endsWith(suffix));
-  const [policyReceipt] = await Promise.all([put(servicePath+"/policy"),policy.getByRole("button",{name:"Save pricing policy",exact:true}).click()]);
-  assert.equal(policyReceipt.status(),200,"merchant tariff receipt");
-  const service = page.getByTestId("settings-service-form");
-  await service.getByLabel("English name",{exact:true}).fill("Test shop delivery");
-  const [serviceReceipt] = await Promise.all([put(servicePath),service.getByRole("button",{name:"Save delivery service",exact:true}).click()]);
-  assert.equal(serviceReceipt.status(),200,"merchant delivery receipt");
-  passed("Merchant saved home delivery and NT$60 shipping");
-  return page;
+  const report = cfg.kind === "SHOP_TARIFF" ? await observeShopTariff(page) : null;
+  try {
+    await page.goto(cfg.adminOrigin + "/en/");
+    await page.getByRole("button",{name:"Sign in with identity service",exact:true}).click();
+    await ex(page.locator("nav[data-shell-route]")).toBeVisible();
+    await page.goto(cfg.adminOrigin + "/en/settings?store=" + cfg.store);
+    await page.getByRole("button",{name:"Edit settings",exact:true}).click();
+    await page.getByRole("button",{name:"Continue",exact:true}).click();
+    await page.getByRole("button",{name:"Continue",exact:true}).click();
+    await page.getByLabel("Delivery service",{exact:true}).selectOption("home");
+    const policy = page.getByTestId("settings-policy-form");
+    await ex(policy.getByLabel("Flat shipping (NT$)",{exact:true})).toHaveValue("0");
+    await policy.getByLabel("Flat shipping (NT$)",{exact:true}).fill("60");
+    await policy.getByLabel(/^Configuration reference/).fill("Synthetic test shop tariff");
+    const servicePath = "/delivery-services/home";
+    const put = suffix => page.waitForResponse(r => r.request().method() === "PUT" && new URL(r.url()).pathname.endsWith(suffix));
+    const [policyReceipt] = await Promise.all([put(servicePath+"/policy"),policy.getByRole("button",{name:"Save pricing policy",exact:true}).click()]);
+    assert.equal(policyReceipt.status(),200,"merchant tariff receipt");
+    const service = page.getByTestId("settings-service-form");
+    await service.getByLabel("English name",{exact:true}).fill("Test shop delivery");
+    const [serviceReceipt] = await Promise.all([put(servicePath),service.getByRole("button",{name:"Save delivery service",exact:true}).click()]);
+    assert.equal(serviceReceipt.status(),200,"merchant delivery receipt");
+    passed("Merchant saved home delivery and NT$60 shipping");
+    return page;
+  } finally {
+    if (report) await report();
+  }
 }
 
 async function shipPaidShopOrder(page,id) {
@@ -872,7 +919,7 @@ try{
   execFileSync("openssl",["req","-x509","-newkey","rsa:2048","-nodes","-keyout",path.join(certDir,"key.pem"),"-out",path.join(certDir,"cert.pem"),"-days","1","-subj","/CN=buyer.example"],{stdio:"ignore"});
   nextPort=await startNext();const proxyPort=await startEdge();
   browser=await launch({headless:true,proxy:{server:`http://127.0.0.1:${proxyPort}`}});
-  scan=await ({SP18:sp18,SU07:su07,SU09:su09,OBS:obs}[cfg.kind])();pass=true;
+  scan=await ({SP18:sp18,SU07:su07,SU09:su09,OBS:obs,SHOP_TARIFF:async () => { await configureShopDelivery(); }}[cfg.kind])();pass=true;
 }catch(error){
   failure=redact(error?.stack??error);say(`FAIL ${failure.split("\n").slice(0,12).join("\n")}`);
   await within(failSnapshot(),20000,null); // #145: what the store tab showed when the step failed
