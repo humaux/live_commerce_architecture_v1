@@ -385,8 +385,8 @@ export default function OrderFlow({
     >
       <div hidden={!!confirmed && !detailsOpen}>
       <h2 id="address-title">{cvsOption ? cvsCopy[locale].title : copy.address}</h2>
-      <p>{quote ? copy.explain : copy.recoverWithoutQuote}</p>
-      <p className="address-total">{copy.country}: {country}</p>
+      {(inReview || recoveringDestination) && <p>{quote ? copy.explain : copy.recoverWithoutQuote}</p>}
+      <p className="address-total">{copy.country}: {countryName(locale, country)}</p>
       {/* Keep the loading line's space: collapsing it can move a Safari pointer target between down/up. */}
       <p
         role={notice ? (notice === "failed" || notice === "invalid" ? "alert" : "status") : undefined}
@@ -549,8 +549,8 @@ export default function OrderFlow({
           {copy.createNeedsConfirm}
         </p>
       )}
-      <div hidden={!inReview || (!!confirmed && !detailsOpen)}>
-      <form id="checkout-order-form" onSubmit={(event) => {
+      <div hidden={!!confirmed && !detailsOpen}>
+      <form hidden={!inReview} id="checkout-order-form" onSubmit={(event) => {
         event.preventDefault();
         if (!canSubmit) return;
         void run(async (isCurrent) => {

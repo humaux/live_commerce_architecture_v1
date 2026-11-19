@@ -205,7 +205,7 @@ export async function checkoutV2CodFeeChange({ newContext, origin, product, reci
         assert.equal(freshQuote.id, quote.id, "GET keeps the immutable quote ID while current COD due changes");
         const notice = page.getByTestId("quote-reconfirm");
         await expect(notice).toContainText(copy.en.changed);
-        if (recovery === "reload") await confirmCheckoutAddress(page);
+        if (recovery !== "refusal") await confirmCheckoutAddress(page);
         await expect(notice).toContainText(`${formatMoney("en", quote.cod_due_minor, quote.currency)} → ${formatMoney("en", freshQuote.cod_due_minor, quote.currency)}`);
         await expect(page.getByTestId("review-total")).toHaveText(formatMoney("en", freshQuote.cod_due_minor, quote.currency));
         await expect(page.locator(".purchase-footer strong")).toHaveText(formatMoney("en", freshQuote.cod_due_minor, quote.currency));

@@ -27,7 +27,7 @@ import { orderCopy } from "../lib/order-copy";
 import { isCvsKind, type CvsDraft, type CvsKind } from "../lib/cvs-contract";
 import { codFooter } from "../lib/cod-copy";
 import { checkoutCopy } from "../lib/checkout-copy";
-import { changedCheckoutQuote, rememberCheckoutQuote } from "../lib/checkout-review";
+import { changedCheckoutQuote, checkoutOption, rememberCheckoutQuote } from "../lib/checkout-review";
 import OrderFlow, { OrderDetails } from "./OrderFlow";
 import CheckoutPendingReview from "./checkout/CheckoutPendingReview";
 import CheckoutQuoteAmounts from "./checkout/CheckoutQuoteAmounts";
@@ -279,7 +279,7 @@ export default function CheckoutFlow({
           restored = previous;
       }
       if (restored) acceptQuote(restored, ctx);
-      if (current.items.length && !unresolved) await deliveryOptions("", ctx, current.currency, restored ? optionKey(restored) : "");
+      if (current.items.length && !unresolved) await deliveryOptions("", ctx, current.currency, restored);
     } catch (reason) {
       if (version === epoch.current) showError(reason);
     } finally {
@@ -389,16 +389,19 @@ export default function CheckoutFlow({
     }
   }
 
-  async function deliveryOptions(nextCursor = "", ctx = context, currency = cart?.currency, selected = "") {
+  async function deliveryOptions(nextCursor = "", ctx = context, currency = cart?.currency, restored: Quote | null = null) {
     const version = epoch.current;
     const page = await purchasePage(
       `checkout-options?limit=100${nextCursor ? `&cursor=${encodeURIComponent(nextCursor)}` : ""}`,
       ctx,
       validOptionRow,
     );
-    if (version !== epoch.current || ctx !== currentContext.current) return;
     const rows = page.items.filter((o) => o.currency === currency);
-    setOptions((old) => (nextCursor ? [...old, ...rows] : rows));
+    const selected = restored ? optionKey(restored) : "";
+    if (restored && !rows.some((row) => optionKey(row) === selected))
+      rows.push(await checkoutOption(ctx, restored));
+    if (version !== epoch.current || ctx !== currentContext.current) return;
+    setOptions((old) => nextCursor ? [...old, ...rows.filter((row) => !old.some((o) => optionKey(o) === optionKey(row)))] : rows);
     setOptionCursor(page.next_cursor);
     if (!nextCursor) {
       const first = rows.find((o) => !isUnavailable(o));
@@ -437,7 +440,7 @@ export default function CheckoutFlow({
       <div className={entry ? "checkout-entry-layout" : undefined}>
       <main data-testid={entry ? "checkout-entry" : inReview ? "checkout-payment-review" : undefined}
         className={`purchase-main checkout-surface${!historyOpen && !order ? " checkout-surface--review" : ""}`}
-        style={{ paddingBottom: footerHeight + 40 }}
+        style={entry ? undefined : { paddingBottom: footerHeight + 40 }}
         aria-busy={loading || busy || paymentBusy}
       >
         {fromClaim && <p role="status" className="order-note" data-testid="claim-checkout-notice">{fromClaim === "claim-recovery" ? claimCopy[locale].recovery : claimCopy[locale].checkoutNotice}</p>}
@@ -603,7 +606,7 @@ export default function CheckoutFlow({
                     locale={locale} options={options} method={method} chosen={chosen}
                     subtotal={quote ? null : subtotal} currency={cart.currency}
                     disabled={busy || pending || orderLocked || error === "session"}
-                    onSelect={changeMethod}
+                    onSelect={(value) => { if (value !== method) changeMethod(value); }}
                   />
                 )}
                 {!quote && <button type="button" disabled={busy || pending || !chosen || error === "session"} onClick={requestQuote}>{copy.quote}</button>}
@@ -747,13 +750,20 @@ export default function CheckoutFlow({
               const timing = quote && reviewState?.quoteID === quote.id ? reviewState.timing : v2.online;
               const help = timing === v2.cod ? v2.codHelp : timing === v2.pickup ? v2.pickupHelp : v2.onlineHelp;
               const controls = !!quote && !busy && pendingKind !== "checkout";
+              const disclosure = controls && <button type="button" className="checkout-details-toggle" data-testid="checkout-details-toggle" aria-expanded={detailsOpen} aria-controls="checkout-details"
+                    onClick={() => setDetailsOpen((open) => !open)}>{v2.details}</button>;
               return <div className="checkout-bar-summary" data-testid={due ? "footer-cod-due" : undefined}>
                 <div className="checkout-bar-amount">
                   <span>{due ? due.label : v2.total}</span>
-                  {controls && <button type="button" className="checkout-details-toggle" data-testid="checkout-details-toggle" aria-expanded={detailsOpen} aria-controls="checkout-details"
-                    onClick={() => setDetailsOpen((open) => !open)}>{v2.details}</button>}
+                  {!entry && disclosure}
                   <strong>{due?.amount ?? (currentOffer && codFee === null ? money(currentOffer.amount.total_minor, currentOffer.currency) : "—")}</strong>
+                  {entry && <button type="submit" form="checkout-address-form" data-testid="checkout-continue" className="primary"
+                    aria-describedby={reviewState?.needsConfirm ? "create-order-hint" : undefined}
+                    disabled={!currentOffer || !reviewState?.destinationReady || busy || loading || !!error}>
+                    {v2.next}
+                  </button>}
                 </div>
+                {entry && disclosure}
                 {due?.note && <small>{due.note}</small>}
                 <div className="checkout-bar-timing">
                   <small>{quote ? timing : copy.shippingLater}</small>
@@ -763,14 +773,10 @@ export default function CheckoutFlow({
                 <p id="payment-help-content" data-testid="payment-help-content" hidden={!helpOpen || !controls}>{help}</p>
               </div>;
             })()}
-            {entry && !quote && <button type="button" disabled={busy || pending || error === "session"} onClick={() => {
+            {entry && !detailsOpen && <button type="button" disabled={busy || pending || error === "session"} onClick={() => {
               document.getElementById("delivery")?.focus();
               if (!options.length) void act(() => deliveryOptions());
             }}>{copy.delivery}</button>}
-            {entry && <button type="submit" form="checkout-address-form" data-testid="checkout-continue" className="primary"
-              aria-describedby="create-order-hint" disabled={!currentOffer || !reviewState?.destinationReady || busy || loading || !!error}>
-              {v2.next}
-            </button>}
             {(quote || pendingKind === "checkout") && <button type="submit" form="checkout-order-form" data-testid="checkout-submit" className="primary"
               hidden={!inReview}
               aria-describedby={quote && reviewState?.quoteID === quote.id && reviewState.needsConfirm ? "create-order-hint" : undefined}

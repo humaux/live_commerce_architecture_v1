@@ -821,7 +821,28 @@ body .sf-btn--primary:disabled { background: var(--action-disabled); color: #465
 .checkout-entry-amounts { display: grid; gap: 6px; margin: 0 0 8px; }
 .checkout-entry-amounts > div { display: flex; justify-content: space-between; gap: 12px; }
 .checkout-entry-amounts dd { margin: 0; font-variant-numeric: tabular-nums; }
-.checkout-entry-layout .checkout-fixed-bar { position: fixed; inset-inline: 0; bottom: 0; }
+/* On phones the full breakdown scrolls with the form. Only the payable and next action stay pinned. */
+.checkout-entry-layout .checkout-fixed-bar { position: static; margin-bottom: calc(96px + env(safe-area-inset-bottom)); }
+.checkout-entry-layout .checkout-surface { min-height: 0; padding-bottom: 0; }
+.checkout-entry-layout .address-fields { margin-top: 8px; }
+.checkout-entry-layout .checkout-bar-amount {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 21;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr);
+  gap: 2px 12px;
+  padding: 8px 16px max(8px, env(safe-area-inset-bottom));
+  background: white;
+  border-top: 1px solid var(--line);
+}
+.checkout-entry-layout .checkout-bar-amount .primary { grid-column: 2; grid-row: 1 / 3; }
+.checkout-entry-layout .checkout-bar-amount strong { grid-column: 1; }
+@media (min-width: 360px) {
+  .checkout-entry-layout .address-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .checkout-entry-layout .address-fields > .wide { grid-column: 1 / -1; }
+}
 @media (min-width: 900px) {
   .checkout-entry-layout {
     max-width: 1248px;
@@ -832,6 +853,7 @@ body .sf-btn--primary:disabled { background: var(--action-disabled); color: #465
     gap: 24px;
     align-items: start;
   }
+  .checkout-entry-layout .checkout-bar-amount { position: static; display: flex; flex-wrap: wrap; padding: 8px 0; border: 0; }
   .checkout-entry-layout .checkout-surface { width: 100%; max-width: none; padding: 0; }
   .checkout-entry-layout .checkout-fixed-bar {
     position: sticky;

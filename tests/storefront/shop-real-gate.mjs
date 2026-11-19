@@ -462,7 +462,10 @@ async function checkSharedCheckout(addProduct) {
       assert(surface.lines.every(({box}) => box && box.top >= 0 && box.bottom <= viewport.height));
       assert(surface.recipient && surface.delivery && surface.quoteBreakdown && surface.next);
       assert.equal(surface.footerAmount, money(amount.total_minor));
-      if (mobile) assert(surface.next.bottom <= viewport.height && surface.next.top > surface.lines.at(-1).box.bottom);
+      if (mobile) {
+        assert(surface.next.bottom <= viewport.height && surface.next.top > surface.lines.at(-1).box.bottom);
+        assert(surface.recipient.bottom <= surface.next.top, "the pinned action must leave the filled recipient visible");
+      }
       else assert(surface.quoteBreakdown.left >= surface.lines[0].box.right && surface.next.top < viewport.height);
       await page.getByTestId("checkout-details-toggle").click();
       const breakdown = page.locator(".quotation dl div");
@@ -482,7 +485,7 @@ async function checkSharedCheckout(addProduct) {
       await expect(review.locator(".checkout-lines [data-sku]").first()).toBeHidden();
       await expect(footer.getByTestId("checkout-submit")).toBeEnabled();
       await expect(footer.locator("strong")).toHaveText(money(amount.total_minor));
-      receipt.review = { frame: mobile ? "1429:23484" : "1429:23435", quote: quote.id, destination: dest.id,
+      receipt.review = { referenceLocale: "zh-TW", referenceFrame: mobile ? "1429:23484" : "1429:23435", quote: quote.id, destination: dest.id,
         capture: await capture("payment-review"), writes: { ...writes } };
       await footer.getByTestId("checkout-details-toggle").click();
       for (const line of cart.items) await expect(review.locator(`[data-sku="${line.sku_id}"]`)).toBeVisible();
@@ -490,6 +493,14 @@ async function checkSharedCheckout(addProduct) {
       await expect(review.getByTestId("review-shipping")).toHaveText(money(amount.shipping_minor));
       await expect(review.getByTestId("review-total")).toHaveText(money(amount.total_minor));
       await footer.getByTestId("checkout-details-toggle").click();
+      const restoredQuote = await observe(`quotes/${quote.id}`, "GET", () => page.reload());
+      assert.deepEqual([restoredQuote.id, restoredQuote.cart_id, restoredQuote.cart_version, restoredQuote.method],
+        [quote.id, cart.id, cart.version, home.method]);
+      await expect(entry).toBeVisible();
+      await expect(entry.locator('input[name="recipient_name"]')).toHaveValue(recipient.recipient_name);
+      await expect(footer.locator("strong")).toHaveText(money(amount.total_minor));
+      await expect(selector).toHaveValue(value);
+      await expect(page.getByTestId("checkout-submit")).toBeHidden();
       assert.deepEqual(writes, { quotes: 1, destination: 1, checkout: 0 });
       receipt.functional = "PASS";
       receipt.visual = "REVIEW_PENDING";

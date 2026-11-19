@@ -1,5 +1,7 @@
-// Home recipient fields shared by cart entry and quote-bound destination confirmation.
-// Depends on order field constraints and locale copy; the caller owns the in-memory draft.
+// Purpose: render the home recipient fields before and after quotation.
+// Depends on: order field constraints and localized order copy.
+// Used by: CheckoutFlow cart entry and OrderFlow destination confirmation.
+// Invariant: contact data stays in the caller's in-memory draft until explicit confirmation.
 import type { Locale } from "@live-commerce/i18n";
 import { orderCopy } from "../../lib/order-copy";
 import { orderInputs as inputs, type OrderFields as Fields } from "../../lib/order-fields";
