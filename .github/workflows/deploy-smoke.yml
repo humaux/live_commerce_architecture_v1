@@ -1,26 +1,39 @@
-# Disposable G14 evidence job. This workflow lives only on the scan branch.
-# The checkout and all build inputs are pinned separately to the tested PR tree.
-name: G14 isolated image evidence
+# Purpose: deploy/scripts/smoke.sh static and full on a Linux runner (R1 ruling G3; details below).
+# Depends on: pinned checkout/setup-go/setup-node, .github/actions/pnpm (cached Corepack pnpm, #107), repo Playwright Chromium,
+#   deploy/scripts/smoke.sh and the compose stack.
+# Used by: gates.yml (workflow_call when deploy/ or scripts/deploy* changed), PRs into other branches, workflow_dispatch.
+name: G14 runtime repair smoke and same-image scan
+
+# R1 ruling G3 (docs/delivery/units/r1-final-rulings.md): deploy/scripts/smoke.sh static (S01 shellcheck
+# is preinstalled on ubuntu-24.04) and smoke.sh full (the whole compose stack as root with Docker) run on
+# a Linux runner instead of a developer machine. Same triggers as foundation.yml; workflow_dispatch lets
+# the integrator get a receipt for a branch before its PR run.
+# PRs into r3/integration do NOT trigger this workflow directly: gates.yml calls it (workflow_call) only when deploy/ or scripts/deploy* changed, so `Gates (GitHub runners) / required`
+# waits for it and a UI-only PR does not pay ~50 min of image builds. PRs into any other branch keep the old pull_request trigger.
 on:
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: deploy-smoke-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  image-evidence:
+  smoke:
     runs-on: ubuntu-24.04
+    # Cold image builds (lc-go, admin, storefront, caddy) dominate; the cases themselves take ~5 min.
     timeout-minutes: 50
     env:
-      G14_SOURCE_SHA: 913b5a54bbc7d0ab854f521bd42945f26e95541b
-      G14_SOURCE_TREE: fe2ca007d953700a369d5899fc5179c65a43aa41
-      LC_BUILD_PRUNE: "0"
-      LC_PLATFORM_HOST: platform.localhost
-      LC_ADMIN_HOST: admin.localhost
-      LC_COMPANY_CONTACT_EMAIL: contact@example.invalid
-      SYFT_CHECK_FOR_APP_UPDATE: "false"
+      GOTOOLCHAIN: go1.27.4
+      GOFLAGS: -mod=readonly
+      PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+      G14_SOURCE_SHA: cafe32b6f609282b50b6d975ab4c58de20ebff7d
+      G14_SOURCE_TREE: 93459ae47e5bb41741817e5d1474a0d68b223077
+      SYFT_CHECK_FOR_APP_UPDATE: 'false'
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           ref: ${{ env.G14_SOURCE_SHA }}
           persist-credentials: false
@@ -51,13 +64,69 @@ jobs:
           }
           install_scanner anchore/syft v1.57.2 syft_1.57.2_linux_amd64.tar.gz ad92bd3ec1b94a3df01d4d0aec199afa9c42b72e86da436ff5f837914d32706b syft
           install_scanner aquasecurity/trivy v0.76.2 trivy_0.76.2_Linux-64bit.tar.gz bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf trivy
-      - name: Build four images in the isolated runner
-        shell: bash
+      - name: Free runner disk for the image builds
+        # preflight P13 (deploy/scripts/preflight.sh) requires >= 20 % free on the docker root and the backup
+        # dir; the stock runner image ships ~30 GB of SDKs this job never uses. Removing them is runner prep,
+        # the P13 threshold is unchanged.
         run: |
-          set -euo pipefail
-          ev="$RUNNER_TEMP/g14-image-evidence"
-          bash deploy/scripts/check-pins.sh | tee "$ev/pin-check.log"
-          bash deploy/scripts/build-images.sh --tag "smoke-${G14_SOURCE_SHA:0:12}" --evidence "$ev" 2>&1 | tee "$ev/build.log"
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          sudo docker image prune -af >/dev/null
+          df -h / /tmp
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+        with:
+          node-version: "24" # package.json engines: >=24 <25
+          package-manager-cache: false # v5 auto-caches from package.json packageManager before pnpm exists; keep v4 behaviour
+      - uses: ./.github/actions/pnpm # pnpm from the cached Corepack home, no per-run registry download (#107)
+      - name: Repo Playwright + Chromium for S34
+        # S34 drives Chromium through the edge; without the repo's @playwright/test it is NOT_RUN.
+        run: |
+          pnpm install --frozen-lockfile
+          sudo mkdir -p "$PLAYWRIGHT_BROWSERS_PATH" && sudo chown "$(id -u)" "$PLAYWRIGHT_BROWSERS_PATH"
+          pnpm exec playwright install --with-deps chromium
+      - name: smoke.sh static (S01-S06)
+        run: |
+          rc=0
+          python3 .github/scripts/smoke-verdict.py --selftest
+          bash deploy/scripts/smoke.sh static || rc=$?
+          ev=$(ls -td deploy/.evidence/*/ | head -n1)
+          python3 .github/scripts/smoke-verdict.py "$ev/result.json" "$rc" static
+      - name: smoke.sh full (S07-S45, as root)
+        # Exit contract of smoke.sh: 0 PASS, 1 FAIL, 3 BLOCKED. BLOCKED is accepted only for S29m (ruling
+        # F11: logical-restore media gate, LiveKit media is not in R1); smoke-verdict.py fails the job on
+        # any FAIL, any other BLOCKED, a case that never ran, or a NOT_RUN. Logs contain only CASE lines;
+        # the temp secrets are generated per run, secret-scanned and deleted by smoke.sh itself.
+        run: |
+          rc=0
+          sudo --preserve-env=GOTOOLCHAIN,GOFLAGS,PLAYWRIGHT_BROWSERS_PATH env "PATH=$PATH" "HOME=$HOME" \
+            bash deploy/scripts/smoke.sh full || rc=$?
+          ev=$(ls -td deploy/.evidence/*/ | head -n1)
+          # preflight prints rule ids and names only, never values: show why a preflight-gated case failed.
+          sudo grep -hE '^P[0-9]+[a-z]? (FAIL|WARN) ' "$ev"/logs/S10.log "$ev"/logs/S37.log 2>/dev/null | sort -u || true
+          # Why a case FAILED: the tail of its own log. smoke.sh secret-scans every evidence log against the per-run generated
+          # secrets before it exits, so these tails carry no secret (2026-10-04: S37 failed with no visible cause).
+          sudo awk -F'\t' '$2 == "FAIL" { print $1 }' "$ev/cases.tsv" 2>/dev/null | while read -r id; do
+            echo "::group::$id.log (last 60 lines)"; sudo tail -n 60 "$ev/logs/$id.log" 2>/dev/null || true; echo "::endgroup::"
+          done || true
+          # S40 (log redaction): which container wrote a canary, with the random canary masked (it is test data, not a secret).
+          sudo grep -h 'lcCanary' "$ev/logs/S40-compose.log" 2>/dev/null | sed -E 's/lcCanary[0-9a-f]+/<CANARY>/g' | cut -c1-600 | head -n 20 || true
+          sudo chmod -R a+rX deploy/.evidence || true # root-owned evidence was unreadable for the upload step
+          python3 .github/scripts/smoke-verdict.py "$ev/result.json" "$rc" full
+      - name: Upload smoke evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: deploy-smoke-evidence
+          path: |
+            deploy/.evidence/*/result.json
+            deploy/.evidence/*/cases.tsv
+            deploy/.evidence/*/commands.tsv
+            deploy/.evidence/*/images.jsonl
+          include-hidden-files: true # .evidence is a hidden dir; upload-artifact >=4.4 skips it by default
+          retention-days: 14
       - name: Collect image SBOM, licenses, and vulnerability scans
         shell: bash
         run: |
@@ -65,6 +134,12 @@ jobs:
           ev="$RUNNER_TEMP/g14-image-evidence"
           tools="$RUNNER_TEMP/g14-tools"
           local_cache="$RUNNER_TEMP/g14-trivy-cache"
+          mapfile -t manifests < <(find deploy/.evidence -type f -name images.jsonl)
+          test "${#manifests[@]}" = 1
+          cp "${manifests[0]}" "$ev/images.jsonl"
+          cp "${manifests[0]%/*}/result.json" "$ev/deploy-smoke-result.json"
+          cp "${manifests[0]%/*}/cases.tsv" "$ev/deploy-smoke-cases.tsv"
+          jq -e --arg rev "$G14_SOURCE_SHA" '.commit == $rev' "$ev/deploy-smoke-result.json"
           jq -es --arg rev "$G14_SOURCE_SHA" 'length == 4 and all(.[]; .revision == $rev)' "$ev/images.jsonl"
           cd "$RUNNER_TEMP"
           "$tools/trivy" image --cache-dir "$local_cache" --timeout 8m --download-db-only > "$ev/trivy-db.log" 2>&1
