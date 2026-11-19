@@ -26,8 +26,8 @@
 
 # golang 1.27.4 (matches go.mod `go 1.27.4`), Debian 13; resolved 2026-11-12 from the official Docker registry (GO-2026-6859 fix release).
 ARG GO_IMAGE=golang:1.27.4-trixie@sha256:b54b2639de8c1bfe538ec5ffc45f29b1932235ac5f6d63c059853646677112d9
-# distroless static nonroot (UID 65532): CA certs for OIDC/Stripe TLS + tzdata, no shell; resolved 2026-09-28.
-ARG RUNTIME_IMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:e2e927ec666bae08560abb3c55d0659eceabb657f56b6782ab500a9fc7f555e3
+# distroless static nonroot (UID 65532): CA certs for OIDC/Stripe TLS + tzdata, no shell; resolved 2026-11-19.
+ARG RUNTIME_IMAGE=gcr.io/distroless/static-debian13:nonroot@sha256:aafe993665bf6200db38a02c11a9351e782a84b6a45e7f33b6695638c88e3931
 
 FROM ${GO_IMAGE} AS build
 # CGO off -> fully static binaries for distroless/static; GOTOOLCHAIN=local forbids silent

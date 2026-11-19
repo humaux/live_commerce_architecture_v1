@@ -23,7 +23,8 @@
 # Change rules: keep the CMD identical to tests/storefront/browser-gate.mjs launch (127.0.0.1).
 
 ARG GO_IMAGE=golang:1.27.4-trixie@sha256:b54b2639de8c1bfe538ec5ffc45f29b1932235ac5f6d63c059853646677112d9
-ARG NODE_IMAGE=node:24.15.0-trixie-slim@sha256:291be77873bc04731968cacf82f0fcef17cee8cf200c6b6951e2bcab41560eb7
+ARG NODE_IMAGE=node:24.22.3-trixie-slim@sha256:af02d57b57719b9657a45199a79264a9437940cd55b3c7b3fc99615654f124a0
+ARG NODE_RUNTIME_IMAGE=gcr.io/distroless/cc-debian13:nonroot@sha256:cb87acc574abe719b6e5c547384defa2f7b1f24af9605d3f618cf852495d8be2
 
 FROM ${GO_IMAGE} AS lcentry
 ENV CGO_ENABLED=0 GOTOOLCHAIN=local GOFLAGS=-trimpath GOPROXY=off
@@ -58,7 +59,9 @@ FROM base AS prod-deps
 # Same manifests as deps; production dependencies only (no typescript/playwright/prettier).
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lockfile --prod --store-dir /pnpm/store
 
-FROM ${NODE_IMAGE}
+FROM ${NODE_RUNTIME_IMAGE}
+# Only the Node executable is needed at runtime; package managers stay in build stages.
+COPY --from=base /usr/local/bin/node /usr/local/bin/node
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 COPY package.json pnpm-workspace.yaml ./

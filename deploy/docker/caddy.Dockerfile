@@ -10,11 +10,11 @@
 #   from compose.env), ACME_EMAIL and optional LC_ACME_CA (from env/caddy.env).
 # Reads secrets: none (ACME account keys/certs live in the caddy-data volume at /data).
 # Used by: deploy/compose.yml caddy; deploy/scripts/smoke.sh S05 (caddy validate/fmt), S25.
-# Depends on: caddy:2.11.4-alpine (has busybox wget for the healthcheck, libcap setcap).
+# Depends on: caddy:2.11.9-alpine (has busybox wget for the healthcheck, libcap setcap).
 # Status: DESIGN (steps VERIFIED_LOCAL in design probe); verified by smoke S07, S08, S25.
 # Change rules: digest bump -> smoke full; any plugin (rate limit/WAF) is a new dependency (O9).
 
-ARG CADDY_IMAGE=caddy:2.11.4-alpine@sha256:6aeddd44c3078b0f9a35206472a11420648a79c184603ef95957d0a20044cb2b
+ARG CADDY_IMAGE=caddy:2.11.9-alpine@sha256:003a97808e781aa9f7e75cc2f43d34d461099031faf5e20faefb9f61126836f0
 FROM ${CADDY_IMAGE}
 # /data = certificates + ACME account, /config = autosave, /run/caddy = admin unix socket (tmpfs).
 RUN setcap -r /usr/bin/caddy \
