@@ -459,7 +459,7 @@ export default function OrderFlow({
             />
           )}
           {cvsOption && <label className="sku-row cod-home-only"><input type="radio" disabled aria-label={cod.homeOnly} />{cod.homeOnly}</label>}
-          {!cvsOption && <CheckoutAddressFields locale={locale} fields={fields} onChange={(next) => {
+          {!cvsOption && <CheckoutAddressFields entry={!inReview && !recoveringDestination} locale={locale} fields={fields} onChange={(next) => {
             setFields(next);
             setConfirmed(null);
             if (notice === "invalid") setNotice(null);

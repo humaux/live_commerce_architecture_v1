@@ -30,10 +30,11 @@ import CheckoutDeliveryOptions from "./checkout/CheckoutDeliveryOptions";
 import PromoCode from "./PromoCode";
 import OrderHistory from "./OrderHistory";
 import { CartLines } from "./CartLines";
+import { useShopName } from "./ShopName";
 import { useCart } from "./CartProvider";
 import { useCartDetails } from "./CartLines";
 import { checkoutPath } from "../lib/routes";
-import { shopCopy } from "../lib/shop-copy";
+import { fmt, shopCopy } from "../lib/shop-copy";
 import { formatMoney } from "../lib/money";
 import Link from "next/link";
 import { claimCopy } from "../lib/claim-copy";
@@ -130,11 +131,14 @@ export default function CheckoutFlow({
     return () => observer.disconnect();
   }, [loading, orderLocked, order, cart, historyOpen]);
   const shell = useCart();
+  const shopName = useShopName();
   const { details } = useCartDetails();
   const cartMatches = !!cart && shell.cart?.id === cart.id && shell.cart.version === cart.version;
   const subtotal = cartMatches && details ? details.subtotal : null;
   const inReview = (!!quote && reviewID === quote.id) || pendingKind === "checkout";
   const entry = !inReview && !order && !historyOpen && !orderLocked && !!cart?.items.length;
+  // Live-claim carts retain their existing return control across reloads.
+  const backToCart = cart?.items.some((item) => item.live_unit_price_minor !== undefined) ? v2.back : v2.backToCart;
   const currentOffer = quote && cartMatches && quote.cart_id === cart?.id && quote.cart_version === cart.version &&
     quote.currency === cart.currency && optionKey(quote) === method && Date.parse(quote.expires_at) > Date.now() &&
     reviewState?.quoteID === quote.id && reviewState.quoteReady && !pending ? quote : null;
@@ -429,33 +433,43 @@ export default function CheckoutFlow({
     });
   }
 
+  const historyControl = (
+    <nav
+      className="purchase-navigation"
+      hidden={!!quote && !detailsOpen && !historyOpen && !order}
+      aria-label={historyCopy[locale].title}
+    >
+      <button
+        data-testid="toggle-order-history"
+        disabled={
+          busy || paymentBusy || loading || pending || error === "session"
+        }
+        onClick={() => setHistoryOpen((value) => !value)}
+      >
+        {historyOpen ? historyCopy[locale].back : historyCopy[locale].title}
+      </button>
+    </nav>
+  );
+
   return (
     <>
       <style>{`body:has(.checkout-fixed-bar) .sf-footer { padding-bottom: calc(${footerHeight + 40}px + env(safe-area-inset-bottom, 0px)); }`}</style>
-      {!historyOpen && !order && <header className="checkout-top"><Link href={`/${locale}/cart`}>{v2.back}</Link></header>}
+      {!entry && !historyOpen && !order && <header className="checkout-top"><Link href={`/${locale}/cart`}>{v2.back}</Link></header>}
       {demonstration && <p className="demonstration">{copy.demonstration}</p>}
       <div className={entry ? "checkout-entry-layout" : undefined}>
+      {entry && <header className="checkout-top checkout-entry-header">
+        <div className="checkout-entry-brand" data-testid="checkout-shop-name">{shopName}</div>
+        <Link className="checkout-entry-back" href={`/${locale}/cart`}><span aria-hidden="true">‹</span> {backToCart}</Link>
+        {historyControl}
+        <h1 id="checkout-title" tabIndex={-1}>{shopCopy[locale].checkoutTitle}</h1>
+      </header>}
       <main data-testid={entry ? "checkout-entry" : inReview ? "checkout-payment-review" : undefined}
         className={`purchase-main checkout-surface${!historyOpen && !order ? " checkout-surface--review" : ""}`}
         style={entry ? undefined : { paddingBottom: footerHeight + 40 }}
         aria-busy={loading || busy || paymentBusy}
       >
         {fromClaim && <p role="status" className="order-note" data-testid="claim-checkout-notice">{fromClaim === "claim-recovery" ? claimCopy[locale].recovery : claimCopy[locale].checkoutNotice}</p>}
-        <nav
-          className="purchase-navigation"
-          hidden={!!quote && !detailsOpen && !historyOpen && !order}
-          aria-label={historyCopy[locale].title}
-        >
-          <button
-            data-testid="toggle-order-history"
-            disabled={
-              busy || paymentBusy || loading || pending || error === "session"
-            }
-            onClick={() => setHistoryOpen((value) => !value)}
-          >
-            {historyOpen ? historyCopy[locale].back : historyCopy[locale].title}
-          </button>
-        </nav>
+        {!entry && historyControl}
         {error && (
           <div role="alert" className="purchase-error">
             <p data-testid={pendingKind === "checkout" ? "checkout-unknown" : undefined}>
@@ -585,29 +599,39 @@ export default function CheckoutFlow({
           </div>
         ) : (
           <>
-            <section className="checkout-lines" aria-labelledby="checkout-title">
-              <h1 id="checkout-title" tabIndex={-1}>{entry ? shopCopy[locale].checkoutTitle : v2.review}</h1>
-              <div hidden={inReview && !detailsOpen}><CartLines locale={locale} readOnly /></div>
+            <section className="checkout-lines" aria-labelledby={entry ? "checkout-item-count" : "checkout-title"}>
+              {entry ? <h2 id="checkout-item-count">{fmt(v2.itemCount, { n: cart.items.reduce((n, item) => n + item.quantity, 0) })}</h2>
+                : <h1 id="checkout-title" tabIndex={-1}>{v2.review}</h1>}
+              <div hidden={inReview && !detailsOpen}><CartLines locale={locale} readOnly compact={entry} /></div>
             </section>
             {entry && (
               <section
                 className="delivery-section"
+                data-selected={!!chosen}
                 ref={deliveryRef}
                 aria-labelledby="delivery-title"
               >
-                <h2 id="delivery-title">{copy.deliveryTitle}</h2>
-                {!options.length ? (
-                  <p>{copy.noDelivery}</p>
-                ) : (
-                  <CheckoutDeliveryOptions
-                    locale={locale} options={options} method={method} chosen={chosen}
-                    expanded={pickingMethod} onClose={() => setPickingMethod(false)}
-                    subtotal={quote ? null : subtotal} currency={cart.currency}
-                    disabled={busy || pending || orderLocked || error === "session"}
-                    onSelect={(value) => { if (value !== method) changeMethod(value); }}
-                  />
-                )}
-                {!quote && <button type="button" disabled={busy || pending || !chosen || error === "session"} onClick={requestQuote}>{copy.quote}</button>}
+                <h2 id="delivery-title">{v2.receiving}</h2>
+                <div className="checkout-entry-delivery-controls">
+                  {!options.length ? <p>{copy.noDelivery}</p> : (
+                    <CheckoutDeliveryOptions
+                      locale={locale} options={options} method={method} chosen={chosen}
+                      expanded={pickingMethod} onClose={() => setPickingMethod(false)}
+                      subtotal={quote ? null : subtotal} currency={cart.currency}
+                      disabled={busy || pending || orderLocked || error === "session"}
+                      onSelect={(value) => { if (value !== method) changeMethod(value); }}
+                    />
+                  )}
+                  {!detailsOpen && <button type="button" aria-controls="delivery" disabled={busy || pending || error === "session"} onClick={() => {
+                    setPickingMethod(true);
+                    requestAnimationFrame(() => {
+                      document.getElementById("delivery")?.focus();
+                      deliveryRef.current?.scrollIntoView({ block: "start" });
+                    });
+                    if (!options.length) void act(() => deliveryOptions());
+                  }}>{copy.delivery}</button>}
+                  {!quote && <button type="button" disabled={busy || pending || !chosen || error === "session"} onClick={requestQuote}>{copy.quote}</button>}
+                </div>
                 {optionCursor && (
                   <button
                     disabled={busy}
@@ -623,7 +647,7 @@ export default function CheckoutFlow({
             {entry && !quote && !pendingKind && chosen?.delivery_kind === "home" && <section className="address-section" aria-label={v2.recipient}>
               <h2>{v2.recipient}</h2>
               <fieldset className="address-fields" disabled={busy || !!error}>
-                <CheckoutAddressFields locale={locale} fields={draft ?? emptyOrderFields} onChange={setDraft} />
+                <CheckoutAddressFields entry locale={locale} fields={draft ?? emptyOrderFields} onChange={setDraft} />
               </fieldset>
             </section>}
             {quote && (
@@ -736,6 +760,7 @@ export default function CheckoutFlow({
       {cart && cart.items.length > 0 && !historyOpen && !order && (!orderLocked || pendingKind === "checkout") && (
         <footer ref={footerRef} className={`purchase-footer checkout-fixed-bar${quote ? " has-quote" : ""}`} style={entry ? undefined : { position: "fixed", insetInline: 0, bottom: 0 }}>
           <div className="footer-inner">
+            {entry && <h2>{v2.amountAndPayment}</h2>}
             {entry && <dl className="checkout-entry-amounts" aria-label={v2.total}>
               <div><dt>{v2.subtotal}</dt><dd data-testid="entry-subtotal">{currentOffer ? money(currentOffer.amount.subtotal_minor, currentOffer.currency) : subtotal === null ? "—" : money(subtotal, cart.currency)}</dd></div>
               <div><dt>{v2.shipping}</dt><dd data-testid="entry-shipping">{currentOffer ? money(currentOffer.amount.shipping_minor, currentOffer.currency) : v2.pendingAmount}</dd></div>
@@ -750,17 +775,13 @@ export default function CheckoutFlow({
               const controls = !!quote && !busy && pendingKind !== "checkout";
               const disclosure = controls && <button type="button" className="checkout-details-toggle" data-testid="checkout-details-toggle" aria-expanded={detailsOpen} aria-controls="checkout-details"
                     onClick={() => setDetailsOpen((open) => !open)}>{v2.details}</button>;
+              const payable = <strong>{due?.amount ?? (currentOffer && codFee === null ? money(currentOffer.amount.total_minor, currentOffer.currency) : "—")}</strong>;
               return <div className="checkout-bar-summary" data-testid={due ? "footer-cod-due" : undefined}>
-                <div className="checkout-bar-amount">
+                {!entry && <div className="checkout-bar-amount">
                   <span>{due ? due.label : v2.total}</span>
-                  {!entry && disclosure}
-                  <strong>{due?.amount ?? (currentOffer && codFee === null ? money(currentOffer.amount.total_minor, currentOffer.currency) : "—")}</strong>
-                  {entry && <button type="submit" form="checkout-address-form" data-testid="checkout-continue" className="primary"
-                    aria-describedby={reviewState?.needsConfirm ? "create-order-hint" : undefined}
-                    disabled={!currentOffer || !reviewState?.destinationReady || busy || loading || !!error}>
-                    {v2.next}
-                  </button>}
-                </div>
+                  {disclosure}
+                  {payable}
+                </div>}
                 {entry && disclosure}
                 {due?.note && <small>{due.note}</small>}
                 <div className="checkout-bar-timing">
@@ -769,16 +790,19 @@ export default function CheckoutFlow({
                     aria-expanded={helpOpen} aria-controls="payment-help-content" onClick={() => setHelpOpen((open) => !open)}>{v2.helpMark}</button>}
                 </div>
                 <p id="payment-help-content" data-testid="payment-help-content" hidden={!helpOpen || !controls}>{help}</p>
+                {entry && <div className="checkout-entry-action">
+                  <div className="checkout-bar-amount">
+                    <span>{due ? due.label : v2.total}</span>
+                    {payable}
+                  </div>
+                  <button type="submit" form="checkout-address-form" data-testid="checkout-continue" className="primary"
+                    aria-describedby={reviewState?.needsConfirm ? "create-order-hint" : undefined}
+                    disabled={!currentOffer || !reviewState?.destinationReady || busy || loading || !!error}>
+                    {v2.next}
+                  </button>
+                </div>}
               </div>;
             })()}
-            {entry && !detailsOpen && <button type="button" aria-controls="delivery" disabled={busy || pending || error === "session"} onClick={() => {
-              setPickingMethod(true);
-              requestAnimationFrame(() => {
-                document.getElementById("delivery")?.focus();
-                deliveryRef.current?.scrollIntoView({ block: "start" });
-              });
-              if (!options.length) void act(() => deliveryOptions());
-            }}>{copy.delivery}</button>}
             {(quote || pendingKind === "checkout") && <button type="submit" form="checkout-order-form" data-testid="checkout-submit" className="primary"
               hidden={!inReview}
               aria-describedby={quote && reviewState?.quoteID === quote.id && reviewState.needsConfirm ? "create-order-hint" : undefined}

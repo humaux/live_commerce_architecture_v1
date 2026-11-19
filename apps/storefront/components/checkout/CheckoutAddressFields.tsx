@@ -6,11 +6,15 @@ import type { Locale } from "@live-commerce/i18n";
 import { orderCopy } from "../../lib/order-copy";
 import { orderInputs as inputs, type OrderFields as Fields } from "../../lib/order-fields";
 
-export default function CheckoutAddressFields({ locale, fields, onChange }: {
-  locale: Locale; fields: Fields; onChange: (fields: Fields) => void;
+// Keep the street field just after contact in the compact entry's reading and tab order.
+const entryInputs = [inputs[0], inputs[1], inputs[5], inputs[2], inputs[3], inputs[4], inputs[6]];
+
+export default function CheckoutAddressFields({ locale, fields, onChange, entry = false }: {
+  locale: Locale;
+  entry?: boolean; fields: Fields; onChange: (fields: Fields) => void;
 }) {
   const copy = orderCopy[locale];
-  return <>{inputs.map(([name, autoComplete, maxLength, required]) => (
+  return <>{(entry ? entryInputs : inputs).map(([name, autoComplete, maxLength, required]) => (
     <label
       key={name}
       className={

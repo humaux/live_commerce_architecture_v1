@@ -12,6 +12,7 @@
 import { startNextWithPortRetry, nextAttemptLog } from "../helpers/next-startup.mjs";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { checkoutCopy } from "../../packages/i18n/src/checkout.ts";
 import { purchaseCopy } from "../../apps/storefront/lib/purchase-copy.ts";
 import { formatMoney } from "../../apps/storefront/lib/money.ts";
 import http from "node:http";
@@ -369,6 +370,40 @@ async function checkSharedCheckout(addProduct) {
       assert.deepEqual({ width, height }, viewport);
       return { file, width, height, sha256: createHash("sha256").update(png).digest("hex"), route: new URL(page.url()).pathname };
     };
+    const checkEntrySurface = async () => {
+      // Geometry is measured after capture, separate from the real clicks below.
+      const surface = await page.evaluate(() => {
+        const rect = el => el?.getClientRects().length ? el.getBoundingClientRect().toJSON() : null;
+        const box = selector => rect(document.querySelector(selector));
+        return { lines: [...document.querySelectorAll(".checkout-lines [data-sku]")].map(el => ({ sku: el.dataset.sku, box: rect(el) })),
+          goods: box(".checkout-lines"), summary: box(".checkout-fixed-bar"), action: box(".checkout-entry-action"),
+          recipient: box('input[name="recipient_name"]'), street: box('input[name="line1"]'), next: box('[data-testid="checkout-continue"]'),
+          footerAmount: document.querySelector(".checkout-bar-amount strong")?.textContent };
+      });
+      assert.deepEqual(surface.lines.map(line => line.sku).sort(), cartSKUs);
+      assert(surface.lines.every(({box}) => box && box.top >= 0 && box.bottom <= viewport.height));
+      assert(surface.recipient && surface.street && surface.summary && surface.next);
+      if (mobile) {
+        assert(surface.next.bottom <= viewport.height && surface.action.top > surface.lines.at(-1).box.bottom);
+        assert(surface.recipient.bottom <= surface.action.top, "the pinned action must leave the recipient visible");
+      } else {
+        assert.equal(surface.summary.top, surface.goods.top, "amount and items cards must start on the same row");
+        assert(surface.summary.left >= surface.goods.right && surface.next.top < viewport.height);
+        assert.equal(surface.summary.width - surface.next.width, 50, "continue must span the padded amount card");
+      }
+      return surface;
+    };
+    const checkStreet = async entry => {
+      const street = entry.locator('input[name="line1"]');
+      if (mobile) await page.mouse.wheel(0, 360);
+      await street.click();
+      await expect(street).toBeFocused();
+      if (mobile) {
+        const action = page.locator(".checkout-entry-action");
+        await expect.poll(async () => (await street.boundingBox()).y + (await street.boundingBox()).height).toBeLessThanOrEqual((await action.boundingBox()).y);
+      }
+    };
+    let cartSKUs;
     const observe = async (resource, method, action) => {
       const [response] = await Promise.all([page.waitForResponse(r => new URL(r.url()).pathname === `/api/buyer/${resource}` &&
         r.request().method() === method), action()]);
@@ -380,6 +415,7 @@ async function checkSharedCheckout(addProduct) {
       const cart = await observe("cart", "PUT", () => addProduct(page, "dripper", 1, locale));
       receipt.cart = { id: cart.id, version: cart.version, items: pairs(cart.items) };
       assert.equal(cart.items.length, 2);
+      cartSKUs = cart.items.map(line => line.sku_id).sort();
       assert.equal(new Set(cart.items.map(line => line.sku_id)).size, 2);
       await page.goto(`${origin}/${locale}/cart`);
       await expect(page.getByTestId("cart-page").getByTestId("cart-line")).toHaveCount(2);
@@ -398,6 +434,11 @@ async function checkSharedCheckout(addProduct) {
       const footer = page.locator(".purchase-footer");
       const next = footer.getByTestId("checkout-continue");
       await expect(entry).toBeVisible();
+      const entryCopy = checkoutCopy[locale];
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(shopCopy[locale].checkoutTitle);
+      await expect(entry.getByRole("heading", { name: fmt(entryCopy.itemCount, { n: 2 }) })).toBeVisible();
+      if (mobile) await expect(page.getByTestId("checkout-shop-name")).toBeVisible();
+      await expect(page.getByTestId("checkout-shop-name")).toHaveText(facts.store_name);
       const button = name => page.getByRole("button", { name, exact: true });
       await button(copy.delivery).click();
       const home = options.items.find(row => row.available !== false && row.delivery_kind === "home" && row.mode === "MANUAL");
@@ -405,6 +446,8 @@ async function checkSharedCheckout(addProduct) {
       const label = locale === "en" ? home.name_en : locale === "zh-TW" ? home.name_hant : home.name_hans;
       const selector = page.getByLabel(copy.selectDelivery);
       await expect(selector).toBeFocused();
+      const selectable = await selector.locator("option:not([disabled])").evaluateAll(rows => rows.map(row => row.value));
+      assert.deepEqual(selectable, options.items.filter(row => row.available !== false).map(row => `${row.market_id}:${row.country}:${row.method}`));
       await selector.selectOption({ label });
       const value = `${home.market_id}:${home.country}:${home.method}`;
       await expect(selector).toHaveValue(value);
@@ -423,6 +466,8 @@ async function checkSharedCheckout(addProduct) {
       await expect(page.getByTestId("checkout-submit")).toBeHidden();
       assert.deepEqual(writes, { quotes: 0, destination: 0, checkout: 0 });
       receipt.prequote = await capture("prequote");
+      receipt.prequoteSurface = await checkEntrySurface();
+      await checkStreet(entry);
       const recipient = { recipient_name: "Synthetic Recipient", phone: "+886900000091", city: "Synthetic City", line1: "Synthetic Street" };
       for (const [key, value] of Object.entries(recipient)) await entry.locator(`input[name="${key}"]`).fill(value);
       receipt.stage = "cart entry with server quote";
@@ -450,24 +495,9 @@ async function checkSharedCheckout(addProduct) {
       await expect(next).toBeEnabled();
       for (const [key, value] of Object.entries(recipient)) await expect(entry.locator(`input[name="${key}"]`)).toHaveValue(value);
       receipt.capture = await capture("quoted-entry");
-      // Read the geometry of the captured viewport. Final visual acceptance belongs to the independent reviewer.
-      receipt.surface = await page.evaluate(() => {
-        const rect = el => el?.getClientRects().length ? el.getBoundingClientRect().toJSON() : null;
-        const box = selector => rect(document.querySelector(selector));
-        return { lines: [...document.querySelectorAll(".checkout-lines [data-sku]")].map(el => ({ sku: el.dataset.sku, box: rect(el) })),
-          delivery: box("#delivery"), recipient: box('input[name="recipient_name"]'), next: box('[data-testid="checkout-continue"]'),
-          quoteBreakdown: box(".checkout-entry-amounts"), footerAmount: document.querySelector(".checkout-bar-amount strong")?.textContent };
-      });
-      const surface = receipt.surface;
-      assert.deepEqual(surface.lines.map(line => line.sku).sort(), cart.items.map(line => line.sku_id).sort());
-      assert(surface.lines.every(({box}) => box && box.top >= 0 && box.bottom <= viewport.height));
-      assert(surface.recipient && surface.delivery && surface.quoteBreakdown && surface.next);
-      assert.equal(surface.footerAmount, money(amount.total_minor));
-      if (mobile) {
-        assert(surface.next.bottom <= viewport.height && surface.next.top > surface.lines.at(-1).box.bottom);
-        assert(surface.recipient.bottom <= surface.next.top, "the pinned action must leave the filled recipient visible");
-      }
-      else assert(surface.quoteBreakdown.left >= surface.lines[0].box.right && surface.next.top < viewport.height);
+      receipt.surface = await checkEntrySurface();
+      assert.equal(receipt.surface.footerAmount, money(amount.total_minor));
+      await checkStreet(entry);
       await page.getByTestId("checkout-details-toggle").click();
       const breakdown = page.locator(".quotation dl div");
       await expect(breakdown.filter({ has: page.getByText(copy.shipping, { exact: true }) }).locator("dd")).toHaveText(money(amount.shipping_minor));
@@ -503,6 +533,9 @@ async function checkSharedCheckout(addProduct) {
       await expect(selector).toHaveValue(value);
       await expect(page.getByTestId("checkout-submit")).toBeHidden();
       assert.deepEqual(writes, { quotes: 1, destination: 1, checkout: 0 });
+      await page.getByRole("link", { name: entryCopy.backToCart, exact: true }).click();
+      await expect(page).toHaveURL(`${origin}/${locale}/cart`);
+      await expect(page.getByTestId("cart-page").getByTestId("cart-line")).toHaveCount(2);
       receipt.functional = "PASS";
       receipt.visual = "REVIEW_PENDING";
     } catch (error) {
