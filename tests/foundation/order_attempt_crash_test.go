@@ -2,20 +2,30 @@
 // Depends on: real signed ingress, merchant payment settings, C1 claim custody, concrete Executor and native writers.
 // Used by: parent-owned OA1 CI; isolated fixture triggers never become product hooks.
 // Invariants: a positively witnessed precommit connection kill preserves PENDING and
-// zero C2 effects; one explicit retry commits the complete set and replay is immutable.
+// zero C2 effects; postcommit process loss preserves the receipt and complete write set.
 package foundation_test
 
 import (
+	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"net"
+	"net/http"
+	"os"
+	"os/exec"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/internal/orderattempt"
+	"livecommerce/internal/platform"
 )
 
 type oaCrashScenario struct {
@@ -23,6 +33,7 @@ type oaCrashScenario struct {
 	a                                                 orderattempt.AdmissionReceipt
 	executor                                          *orderattempt.Executor
 	pool                                              *pgxpool.Pool
+	payloadKey                                        []byte
 	application, bundle, offer, conversation, binding string
 }
 
@@ -75,7 +86,7 @@ func oaCrashNativeDeliveryScenario(t *testing.T, cvs bool) oaCrashScenario {
 	}
 	t.Cleanup(pool.Close)
 	return oaCrashScenario{e: e, a: a, executor: oaNotificationExecutorWithPayloadKey(t, pool, m.key),
-		pool: pool, application: application, bundle: bundle, offer: offer.ID, conversation: conversation, binding: binding}
+		pool: pool, payloadKey: m.key, application: application, bundle: bundle, offer: offer.ID, conversation: conversation, binding: binding}
 }
 
 // C1 reservations/grants/subject indexes are custody, not C2 effects. Compare
@@ -159,6 +170,9 @@ func oaCrashCommitted(t *testing.T, s oaCrashScenario, out orderattempt.Executio
 	 AND b.conversation_id=n.conversation_id AND b.template_id='order-pay-link/v1' AND b.template_version=1
 	 AND octet_length(b.nonce)=12 AND octet_length(b.ciphertext)>16 AND octet_length(z.enc)=32 AND octet_length(z.sealed)>16
 	 AND expiry.kind='checkout_expiry_v1' AND expiry.args->>'order_id'=o.id::text
+	 AND (SELECT count(*)=1 FROM river_expiry.river_job WHERE kind='checkout_expiry_v1' AND args->>'order_id'=o.id::text)
+	 AND (SELECT count(*)=1 FROM checkout.orders WHERE create_attempt_id=$1)
+	 AND (SELECT count(*)=1 FROM inventory.reservations WHERE create_attempt_id=$1)
 	 AND (SELECT count(*)=1 FROM storefront.carts WHERE create_attempt_id=$1)
 	 AND (SELECT count(*)=1 FROM storefront.quotes WHERE create_attempt_id=$1)
 	 AND (SELECT count(*)=1 FROM storefront.destination_snapshots WHERE create_attempt_id=$1)
@@ -322,7 +336,182 @@ func oaCrashKillAtBarrier(t *testing.T, s oaCrashScenario, b oaCrashBarrier) {
 	t.Logf("REAL_PG crash witness: stage=%s blocking_pid=%d terminated_pid=%d", b.name, holderPID, pid)
 }
 
+// OA-1 has no public HTTP adapter. Both processes use the concrete runtime
+// executor; this loopback transport only frames its response and the crash point.
+type oaHTTPFixture struct {
+	DSN, Token, Store, Attempt string
+	Generation                 int64
+	PayloadKey                 []byte
+	Pause, Early               bool
+}
+
+func oaServeCrashChild(t *testing.T) {
+	var f oaHTTPFixture
+	if err := json.NewDecoder(os.Stdin).Decode(&f); err != nil {
+		t.Fatal("invalid private child configuration")
+	}
+	pool, err := platform.OpenPool(context.Background(), f.DSN)
+	if err != nil {
+		t.Fatal("child runtime pool authority")
+	}
+	defer pool.Close()
+	executor := oaNotificationExecutorWithPayloadKey(t, pool, f.PayloadKey)
+	socket := os.NewFile(3, "fixture listener")
+	listener, err := net.FileListener(socket)
+	socket.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer listener.Close()
+	witness := os.NewFile(4, "before response")
+	defer witness.Close()
+	server := http.Server{ReadHeaderTimeout: 5 * time.Second, Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "POST" || r.URL.Path != fmt.Sprintf("/%s/%d", f.Attempt, f.Generation) || r.Header.Get("Authorization") != "Bearer "+f.Token {
+			http.Error(w, "wrong fixture intent", http.StatusForbidden)
+			return
+		}
+		pause := func() {
+			// Only the parent can release this request, by closing the client
+			// or killing this process. No response has been written.
+			if _, err := witness.Write([]byte{1}); err != nil {
+				t.Error("signal response barrier")
+				return
+			}
+			<-r.Context().Done()
+		}
+		if f.Pause && f.Early {
+			pause()
+		}
+		out, err := executor.Execute(r.Context(), f.Token, f.Store, f.Attempt, f.Generation)
+		if err != nil {
+			t.Errorf("child executor: %v", err)
+			http.Error(w, "execution failed", 500)
+			return
+		}
+		if f.Pause && !f.Early {
+			pause()
+		}
+		if err := json.NewEncoder(w).Encode(out); err != nil {
+			t.Error("write recovery response")
+		}
+	})}
+	t.Fatal(server.Serve(listener))
+}
+
+// Hand off an already bound loopback listener. Private DSN/key material travels
+// via stdin. Only this exec.Cmd's child is signalled and waited on.
+func oaCrashHTTPRequest(t *testing.T, s oaCrashScenario, pause bool) (net.Conn, *os.File, func()) {
+	t.Helper()
+	listener, err := net.ListenTCP("tcp4", &net.TCPAddr{IP: net.IPv4(127, 0, 0, 1)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer listener.Close()
+	socket, err := listener.File()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer socket.Close()
+	reader, writer, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { reader.Close() })
+	defer writer.Close()
+	deadline := time.Now().Add(30 * time.Second)
+	if err := reader.SetReadDeadline(deadline); err != nil {
+		t.Fatal(err)
+	}
+	config, err := json.Marshal(oaHTTPFixture{
+		DSN: s.pool.Config().ConnString(), Token: s.e.token(), Store: s.e.store(),
+		Attempt: s.a.AttemptID, Generation: s.a.Generation, PayloadKey: s.payloadKey,
+		Pause: pause, Early: os.Getenv("LC_OA_CRASH_CONTROL") == "early-barrier",
+	})
+	if err != nil {
+		t.Fatal("child fixture encoding")
+	}
+
+	ctx, cancel := context.WithDeadline(context.Background(), deadline)
+	t.Cleanup(cancel)
+	cmd := exec.CommandContext(ctx, os.Args[0], "-test.run=^TestOrderAttemptExecutorCrashBarrierMatrix$")
+	cmd.Env = []string{"LC_OA_HTTP_CHILD=1"}
+	cmd.ExtraFiles = []*os.File{socket, writer}
+	cmd.Stdin = bytes.NewReader(config)
+	cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+	kill := func() {
+		if cmd.ProcessState != nil {
+			return
+		}
+		err := cmd.Process.Kill()
+		waitErr := cmd.Wait()
+		var exit *exec.ExitError
+		if err != nil || !errors.As(waitErr, &exit) || exit.Sys().(syscall.WaitStatus).Signal() != syscall.SIGKILL || ctx.Err() != nil {
+			t.Errorf("expected owned child SIGKILL and reap: kill=%v wait=%v deadline=%v", err, waitErr, ctx.Err())
+		}
+	}
+	t.Cleanup(kill)
+	var dial net.Dialer
+	conn, err := dial.DialContext(ctx, "tcp4", listener.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { conn.Close() })
+	if err := conn.SetDeadline(deadline); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := fmt.Fprintf(conn, "POST /%s/%d HTTP/1.1\r\nHost: localhost\r\nAuthorization: Bearer %s\r\nContent-Length: 0\r\nConnection: close\r\n\r\n", s.a.AttemptID, s.a.Generation, s.e.token()); err != nil {
+		t.Fatal("write fixture request")
+	}
+	return conn, reader, kill
+}
+
+func oaCrashAfterCommitBeforeHTTP(t *testing.T) {
+	s := oaCrashNativeScenario(t)
+	first, barrier, kill := oaCrashHTTPRequest(t, s, true)
+	var one [1]byte
+	if _, err := io.ReadFull(barrier, one[:]); err != nil || one[0] != 1 {
+		t.Fatalf("missing before-response barrier: %v", err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	var original orderattempt.ExecutionReceipt
+	err := s.e.p.f.owner.QueryRow(ctx, `SELECT a.state, a.receipt FROM ops.order_attempts a
+        JOIN checkout.orders o ON o.id=a.order_id AND o.create_attempt_id=a.attempt_id
+        WHERE a.attempt_id=$1 AND a.intent_generation=$2 AND a.state='COMMITTED' AND a.receipt IS NOT NULL`, s.a.AttemptID, s.a.Generation).Scan(&original.State, &original.Receipt)
+	if err != nil {
+		t.Fatalf("independent pre-response reader requires original committed order and receipt: %v", err)
+	}
+	durable, custody := oaCrashCommitted(t, s, original), oaCrashCustody(t, s)
+	kill()
+	if n, err := first.Read(one[:]); n != 0 || !(errors.Is(err, io.EOF) || errors.Is(err, syscall.ECONNRESET)) {
+		t.Fatalf("expected zero HTTP bytes at child death: n=%d err=%v", n, err)
+	}
+	recovered, _, stop := oaCrashHTTPRequest(t, s, false)
+	response, err := http.ReadResponse(bufio.NewReader(recovered), nil)
+	if err != nil {
+		t.Fatal("fresh process HTTP recovery", err)
+	}
+	defer response.Body.Close()
+	var replay orderattempt.ExecutionReceipt
+	if response.StatusCode != http.StatusOK || json.NewDecoder(response.Body).Decode(&replay) != nil {
+		t.Fatalf("invalid fresh process receipt: status=%d", response.StatusCode)
+	}
+	stop()
+	oaExecutorSameReceipt(t, original, replay)
+	if !bytes.Equal(durable, oaCrashCommitted(t, s, replay)) || !bytes.Equal(custody, oaCrashCustody(t, s)) {
+		t.Fatal("fresh process recovery changed original durable effects or custody")
+	}
+	t.Log("REAL_PG + test HTTP transport: committed order and receipt witnessed; owned child killed and reaped; zero response bytes; exact-intent recovery preserved receipt, custody and native effects")
+}
+
 func TestOrderAttemptExecutorCrashBarrierMatrix(t *testing.T) {
+	if os.Getenv("LC_OA_HTTP_CHILD") == "1" {
+		oaServeCrashChild(t)
+		return
+	}
 	// A clean control runs before fault injection, including a discarded-response
 	// replay. This reuses the existing lost-response oracle; it does not claim a
 	// transport commit-ack injection or a kill after commit acknowledgement.
@@ -347,6 +536,7 @@ func TestOrderAttemptExecutorCrashBarrierMatrix(t *testing.T) {
 	}) {
 		t.Fatal("full native control failed; crash cases cannot supply acceptance evidence")
 	}
+	t.Run("post-commit-before-http", oaCrashAfterCommitBeforeHTTP)
 	quote := `EXISTS(SELECT 1 FROM storefront.quotes q JOIN storefront.carts c ON c.id=q.cart_id WHERE q.create_attempt_id=ATTEMPT AND c.create_attempt_id=ATTEMPT)
 	 AND EXISTS(SELECT 1 FROM storefront.cart_lines WHERE create_attempt_id=ATTEMPT)`
 	begin := quote + ` AND EXISTS(SELECT 1 FROM checkout.orders o JOIN inventory.reservations r ON r.id=o.id
