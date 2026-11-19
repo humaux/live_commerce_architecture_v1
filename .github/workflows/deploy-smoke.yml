@@ -29,8 +29,8 @@ jobs:
       GOTOOLCHAIN: go1.27.4
       GOFLAGS: -mod=readonly
       PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
-      G14_SOURCE_SHA: f8deddbc467f873e2028e1ee572d41286d985caa
-      G14_SOURCE_TREE: 29784c4a72d5501221bb51967f0c78ac1f1933b7
+      G14_SOURCE_SHA: c8cdc5d991bda751d6aa21283add3f1450f8ea58
+      G14_SOURCE_TREE: f23cbb20cb74575622b7759f9955a1a7d1b5fd4d
       SYFT_CHECK_FOR_APP_UPDATE: 'false'
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -141,6 +141,17 @@ jobs:
           cp "${manifests[0]%/*}/cases.tsv" "$ev/deploy-smoke-cases.tsv"
           jq -e --arg rev "$G14_SOURCE_SHA" '.commit == $rev' "$ev/deploy-smoke-result.json"
           jq -es --arg rev "$G14_SOURCE_SHA" 'length == 4 and all(.[]; .revision == $rev)' "$ev/images.jsonl"
+          smoke_tag="smoke-${G14_SOURCE_SHA:0:12}"
+          SMOKE_TAG="$smoke_tag" bash deploy/scripts/smoke.sh static > "$ev/actual-caddy-static.log" 2>&1
+          actual_static=$(ls -td deploy/.evidence/*/ | head -n1)
+          grep -F "(image lc-caddy:$smoke_tag)" "$actual_static/cases.tsv"
+          cp "$actual_static/cases.tsv" "$ev/actual-caddy-static-cases.tsv"
+          cp "$actual_static/logs/S05.adapt.json" "$ev/actual-caddy-adapt.json"
+          jq -e '
+            .apps.tls.automation.on_demand.permission.endpoint == "http://127.0.0.1:8080/internal/tls-ask"
+            and any(.apps.tls.automation.policies[]; .on_demand == true)
+            and any(.. | strings; . == "https://acme-v02.api.letsencrypt.org/directory")
+          ' "$ev/actual-caddy-adapt.json" > "$ev/actual-caddy-tls-policy.json"
           cd "$RUNNER_TEMP"
           "$tools/trivy" image --cache-dir "$local_cache" --timeout 8m --download-db-only > "$ev/trivy-db.log" 2>&1
           if [[ -f "$local_cache/db/metadata.json" ]]; then
