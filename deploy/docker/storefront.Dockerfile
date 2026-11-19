@@ -12,7 +12,7 @@
 # Reads secrets: commerce_buyer_bff_key (must equal the API's), commerce_buyer_cookie_key
 #   (must differ from the BFF key) via *_FILE, expanded by lcentry.
 # Used by: deploy/compose.yml service "storefront" (edge netns; Caddy proxies :3200).
-# Depends on: pnpm workspace manifests, apps/storefront, packages/i18n (workspace link),
+# Depends on: pnpm workspace manifests, apps/storefront, admin returns copy/types, packages/i18n (workspace link),
 #   deploy/tools/lcentry.
 # Status: DESIGN/NOT_RUN; verified by smoke S07, S08, S20.
 #   V1: `next start` must load next.config.ts without the root `typescript` devDependency.
@@ -50,6 +50,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store pnpm install --frozen-lo
 FROM deps AS build
 COPY packages ./packages
 COPY apps/storefront ./apps/storefront
+COPY apps/admin/lib/returns-copy.ts apps/admin/lib/returns-model.ts ./apps/admin/lib/
 # Tested build; drop the build cache so it is not shipped.
 RUN COMMERCE_BUYER_WEB_ENABLED=0 pnpm run build:storefront && rm -rf apps/storefront/.next/cache
 
