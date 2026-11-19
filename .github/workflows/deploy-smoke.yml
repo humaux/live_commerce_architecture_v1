@@ -29,8 +29,8 @@ jobs:
       GOTOOLCHAIN: go1.27.4
       GOFLAGS: -mod=readonly
       PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
-      G14_SOURCE_SHA: cafe32b6f609282b50b6d975ab4c58de20ebff7d
-      G14_SOURCE_TREE: 93459ae47e5bb41741817e5d1474a0d68b223077
+      G14_SOURCE_SHA: 724fdc33177f7b10dd2f28dbe26962012c5da34d
+      G14_SOURCE_TREE: 9e240dbde5fc5e2a63a0264db8f1bbf872fff5cc
       SYFT_CHECK_FOR_APP_UPDATE: 'false'
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -152,6 +152,14 @@ jobs:
             id=$(docker image inspect --format '{{.Id}}' "$tag")
             jq -es --arg tag "$tag" --arg id "$id" 'any(.[]; .image == $tag and .id == $id)' "$ev/images.jsonl"
             docker image inspect "$id" --format '{"Id":"{{.Id}}","RepoTags":{{json .RepoTags}},"RepoDigests":{{json .RepoDigests}},"Os":"{{.Os}}","Architecture":"{{.Architecture}}","RootFS":{{json .RootFS}},"Revision":{{json (index .Config.Labels "org.opencontainers.image.revision")}}}' > "$ev/$unit.inspect.json"
+            if [[ "$unit" == caddy ]]; then
+              caddy_container=$(docker create --network none "$id")
+              trap 'docker rm "$caddy_container" >/dev/null' EXIT
+              docker cp "$caddy_container:/usr/bin/caddy" "$RUNNER_TEMP/caddy-buildinfo"
+              go version -m "$RUNNER_TEMP/caddy-buildinfo" > "$ev/caddy.go-version-m.txt"
+              docker rm "$caddy_container" >/dev/null
+              trap - EXIT
+            fi
             code=0
             timeout 8m "$tools/syft" scan "docker:$tag" -o "syft-json=$ev/$unit.syft.json" -o "spdx-json=$ev/$unit.spdx.json" > "$ev/$unit.syft.log" 2>&1 || code=$?
             echo "$code" > "$ev/$unit.syft.exit"
