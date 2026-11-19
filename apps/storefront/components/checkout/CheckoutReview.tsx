@@ -12,9 +12,10 @@ import { cvsCopy } from "../../lib/cvs-copy";
 import { isCvsKind } from "../../lib/cvs-contract";
 import { formatMoney } from "../../lib/money";
 
-export default function CheckoutReview({ locale, quote, destination, fee, timing, method, children, readOnly = false, detailsOpen = false }: {
-  locale: Locale; quote: Quote; destination: Destination | null; fee: number | null; timing: string; method: string; children?: ReactNode; readOnly?: boolean; detailsOpen?: boolean;
+export default function CheckoutReview({ locale, quote, destination, fee, timing, method, children, readOnly = false, detailsOpen = false, paymentChoicesOnly = false }: {
+  locale: Locale; quote: Quote; destination: Destination | null; fee: number | null; timing: string; method: string; children?: ReactNode; readOnly?: boolean; detailsOpen?: boolean; paymentChoicesOnly?: boolean;
 }) {
+  if (paymentChoicesOnly) return <>{children}</>;
   const c = checkoutCopy[locale];
   // A re-read quote is the current offer, not the unresolved order's monetary snapshot.
   const total = readOnly ? undefined : fee === null ? quote.amount.total_minor : quote.cod_due_minor;

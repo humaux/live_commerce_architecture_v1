@@ -27,13 +27,13 @@ import { bankTransferCopy } from "../lib/bank-transfer-copy";
 import { codCopy } from "../lib/cod-copy";
 import { checkoutCopy } from "../lib/checkout-copy";
 import CheckoutReview from "./checkout/CheckoutReview";
+import CheckoutAddressFields from "./checkout/CheckoutAddressFields";
 import CheckoutPaymentChoices from "./checkout/CheckoutPaymentChoices";
 import { checkoutOption } from "../lib/checkout-review";
 import { countryName } from "../lib/country-name";
 import {
   emptyOrderFields as empty,
   orderFieldsOf as fieldsOf,
-  orderInputs as inputs,
   type OrderFields as Fields,
 } from "../lib/order-fields";
 import {
@@ -100,6 +100,7 @@ export default function OrderFlow({
   onQuoteRefresh,
   onReviewState,
   detailsOpen = false,
+  inReview, onContinue, entryDraft,
   cvsResume,
   onCvsBrand,
   cvsKinds,
@@ -123,7 +124,8 @@ export default function OrderFlow({
   onFeeChanged?: () => void;
   onQuoteRefresh?: (quote: Quote) => void;
   detailsOpen?: boolean;
-  onReviewState?: (state: { quoteID: string; ready: boolean; timing: string; quoteReady?: boolean; submitting?: boolean; needsConfirm?: boolean }) => void;
+  inReview: boolean; onContinue: (quoteID: string) => void; entryDraft: Fields | null;
+  onReviewState?: (state: { quoteID: string; ready: boolean; timing: string; quoteReady?: boolean; destinationReady?: boolean; submitting?: boolean; needsConfirm?: boolean }) => void;
   cvsResume?: CvsDraft;
   onCvsBrand?: (kind: CvsKind, draft: CvsDraft) => void;
   cvsKinds?: CvsKind[];
@@ -132,7 +134,7 @@ export default function OrderFlow({
   // A destination journal intentionally stores no PII or quotation. A fresh
   // tab must still offer explicit address recovery when it has no quote ID.
   const country = quote?.country ?? recoveryCountry ?? "";
-  const [fields, setFields] = useState<Fields>(() => ({ ...empty, ...(cvsResume ? { recipient_name: cvsResume.recipient_name, phone: cvsResume.phone } : {}) }));
+  const [fields, setFields] = useState<Fields>(() => ({ ...(entryDraft ?? empty), ...(cvsResume ? { recipient_name: cvsResume.recipient_name, phone: cvsResume.phone } : {}) }));
   const [head, setHead] = useState<Destination | null>(null);
   const [option, setOption] = useState<Option | null>(null);
   const [confirmed, setConfirmed] = useState<Destination | null>(null);
@@ -166,14 +168,28 @@ export default function OrderFlow({
   const codFee = paymentMode === "cash_on_delivery" && option && paymentChoices.includes("cash_on_delivery") ? option.cod_surcharge_minor ?? 0 : null;
   const checkout = checkoutCopy[locale];
   const timing = paymentMode === "cash_on_delivery" ? checkout.cod : paymentMode === "pay_at_pickup" ? checkout.pickup : checkout.online;
-  const canSubmit = !busy && !blocked && !expired && !!confirmed && !!option && paymentChoices.includes(paymentMode) && !reconfirmRequired && (codFee === null || quote?.cod_due_minor !== undefined);
-  const quoteReady = !!option && paymentChoices.includes(paymentMode) && (codFee === null || quote?.cod_due_minor !== undefined);
+  const { recipient_name, phone, ...home_address } = fields;
+  const homeBody: DestinationWrite = {
+    expected_version: head?.version ?? 0,
+    cart_version: cart.version,
+    kind: "home",
+    country,
+    recipient_name,
+    phone,
+    home_address,
+  };
+  const destinationReady = cvsOption ? !!recipient_name.trim() && !!phone.trim() : validDestinationWrite(homeBody);
+  const canSubmit = inReview && !busy && !blocked && !expired && !!confirmed && !!option && paymentChoices.includes(paymentMode) && !reconfirmRequired && (codFee === null || quote?.cod_due_minor !== undefined);
+  const quoteReady = headLoaded && !blocked && !expired && !!option && paymentChoices.includes(paymentMode) && (codFee === null || quote?.cod_due_minor !== undefined);
+  useEffect(() => {
+    if (!inReview && confirmed && quote && quoteReady && Date.parse(quote.expires_at) > Date.now()) onContinue(quote.id);
+  }, [inReview, confirmed, quote, quoteReady, onContinue]);
   // The fixed and form actions share the visible reason while an address still needs confirmation.
   const needsConfirm = !confirmed && !blocked && !expired;
   useEffect(() => {
-    if (quote) onReviewState?.({ quoteID: quote.id, ready: canSubmit, timing, quoteReady, submitting, needsConfirm });
+    if (quote) onReviewState?.({ quoteID: quote.id, ready: canSubmit, timing, quoteReady, destinationReady, submitting, needsConfirm });
     return () => { if (quote) onReviewState?.({ quoteID: quote.id, ready: false, timing }); };
-  }, [quote?.id, canSubmit, timing, quoteReady, submitting, needsConfirm, onReviewState]);
+  }, [quote?.id, canSubmit, timing, quoteReady, destinationReady, submitting, needsConfirm, onReviewState]);
   useEffect(() => {
     onCodFee?.(codFee);
     return () => onCodFee?.(null);
@@ -207,7 +223,7 @@ export default function OrderFlow({
         setHead(current);
         setHeadLoaded(true);
         // A quote-bound CVS draft wins over older home fields; the CAS head still loads above.
-        if (!cvsResume && current?.kind === "home" && current.country === country) {
+        if (!entryDraft && !cvsResume && current?.kind === "home" && current.country === country) {
           setFields(fieldsOf(current));
           setNotice((notice) => notice === "failed" ? notice : "recovered");
         } else setNotice((notice) => notice === "failed" ? notice : null);
@@ -301,16 +317,8 @@ export default function OrderFlow({
       setExpired(true);
       if (!recoveringDestination) return;
     }
-    const { recipient_name, phone, ...home_address } = fields;
-    let body: DestinationWrite = {
-      expected_version: head?.version ?? 0,
-      cart_version: cart.version,
-      kind: "home",
-      country,
-      recipient_name,
-      phone,
-      home_address,
-    };
+    if (!recoveringDestination && (!headLoaded || !quoteReady || blocked)) return;
+    let body = homeBody;
     if (cvsOption) {
       // §16.1: the store first (map selection verified / buyer-entered record), then the ordinary destination
       // write with kind=cvs_* + pickup_id. A null means the picker already showed what is missing.
@@ -348,9 +356,7 @@ export default function OrderFlow({
       const saved = await writeDestination(context, body, replace);
       if (!current()) return;
       setHead(saved);
-      setConfirmed(
-        !quote || Date.parse(quote.expires_at) <= Date.now() ? null : saved,
-      );
+      if (quote && Date.parse(quote.expires_at) > Date.now()) setConfirmed(saved);
       setNotice(null);
       attempt.current = null;
     } catch (reason) {
@@ -398,7 +404,7 @@ export default function OrderFlow({
           {copy.reload}
         </button>
       )}
-      <form
+      <form id="checkout-address-form"
         onSubmit={(e) => {
           e.preventDefault();
           void run(confirm);
@@ -453,29 +459,11 @@ export default function OrderFlow({
             />
           )}
           {cvsOption && <label className="sku-row cod-home-only"><input type="radio" disabled aria-label={cod.homeOnly} />{cod.homeOnly}</label>}
-          {!cvsOption && inputs.map(([name, autoComplete, maxLength, required]) => (
-            <label
-              key={name}
-              className={
-                name === "line1" || name === "line2" ? "wide" : undefined
-              }
-            >
-              <span>{copy[name]}</span>
-              <input
-                name={name}
-                type={name === "phone" ? "tel" : "text"}
-                autoComplete={autoComplete}
-                maxLength={maxLength}
-                required={required}
-                value={fields[name]}
-                onChange={(event) => {
-                  setFields({ ...fields, [name]: event.target.value });
-                  setConfirmed(null);
-                  if (notice === "invalid") setNotice(null);
-                }}
-              />
-            </label>
-          ))}
+          {!cvsOption && <CheckoutAddressFields locale={locale} fields={fields} onChange={(next) => {
+            setFields(next);
+            setConfirmed(null);
+            if (notice === "invalid") setNotice(null);
+          }} />}
           <button
             type="submit"
             data-testid="confirm-address"
@@ -543,7 +531,7 @@ export default function OrderFlow({
       )}
       {codError && <p role="alert" data-testid="cod-checkout-error">{codError}</p>}
       </div>
-      {quote && <CheckoutReview locale={locale} quote={quote} destination={confirmed} fee={codFee} timing={timing} detailsOpen={detailsOpen}
+      {quote && <CheckoutReview readOnly={!quoteReady} paymentChoicesOnly={!inReview} locale={locale} quote={quote} destination={confirmed} fee={codFee} timing={timing} detailsOpen={detailsOpen}
         method={paymentMode === "bank_transfer" ? bank.payBank : paymentMode === "cash_on_delivery" ? cod.orderTitle : paymentMode === "pay_at_pickup" ? cvsCopy[locale].createPickup : bank.payCard}>
           {!cvsOption && option && <CheckoutPaymentChoices locale={locale} quote={quote} option={option} modes={paymentChoices}
             selected={paymentMode} detailsOpen={detailsOpen} disabled={busy || blocked || expired || !headLoaded} money={money} onChange={(mode) => {
@@ -555,13 +543,13 @@ export default function OrderFlow({
               setCodError(null);
             }} />}
       </CheckoutReview>}
-      <div hidden={!!confirmed && !detailsOpen}>
       {/* Why the button below is disabled, in words (never colour alone): the address must be confirmed first. */}
       {needsConfirm && (
         <p id="create-order-hint" className="order-note" data-testid="create-order-hint">
           {copy.createNeedsConfirm}
         </p>
       )}
+      <div hidden={!inReview || (!!confirmed && !detailsOpen)}>
       <form id="checkout-order-form" onSubmit={(event) => {
         event.preventDefault();
         if (!canSubmit) return;

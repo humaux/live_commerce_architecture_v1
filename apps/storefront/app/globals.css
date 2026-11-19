@@ -804,3 +804,41 @@ body .sf-btn--primary:disabled { background: var(--action-disabled); color: #465
   .checkout-surface--review { padding-inline: 16px; padding-top: 18px; }
   .checkout-fixed-bar .checkout-bar-amount { gap: 8px; }
 }
+
+/* Cart entry keeps the shared cart and delivery form together; only the payment review commits the order. */
+.checkout-entry-layout .checkout-lines,
+.checkout-entry-layout .delivery-section,
+.checkout-entry-layout .address-section {
+  margin-block: 12px;
+  padding: 16px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.checkout-entry-layout .sf-line { grid-template-columns: 48px minmax(0, 1fr); padding: 8px 0; }
+.checkout-entry-layout .sf-line__media { width: 48px; height: 56px; }
+.checkout-entry-layout .delivery-section button { margin-top: 8px; }
+.checkout-entry-amounts { display: grid; gap: 6px; margin: 0 0 8px; }
+.checkout-entry-amounts > div { display: flex; justify-content: space-between; gap: 12px; }
+.checkout-entry-amounts dd { margin: 0; font-variant-numeric: tabular-nums; }
+.checkout-entry-layout .checkout-fixed-bar { position: fixed; inset-inline: 0; bottom: 0; }
+@media (min-width: 900px) {
+  .checkout-entry-layout {
+    max-width: 1248px;
+    margin: 0 auto;
+    padding: 24px;
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    gap: 24px;
+    align-items: start;
+  }
+  .checkout-entry-layout .checkout-surface { width: 100%; max-width: none; padding: 0; }
+  .checkout-entry-layout .checkout-fixed-bar {
+    position: sticky;
+    inset: 24px auto auto;
+    width: 100%;
+    padding: 24px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+}
