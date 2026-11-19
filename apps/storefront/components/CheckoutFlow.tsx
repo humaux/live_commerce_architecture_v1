@@ -30,7 +30,7 @@ import CheckoutDeliveryOptions from "./checkout/CheckoutDeliveryOptions";
 import PromoCode from "./PromoCode";
 import OrderHistory from "./OrderHistory";
 import { CartLines } from "./CartLines";
-import { useShopName } from "./ShopName";
+import CheckoutEntryHeader, { CheckoutHistoryControl } from "./checkout/CheckoutEntryHeader";
 import { useCart } from "./CartProvider";
 import { useCartDetails } from "./CartLines";
 import { checkoutPath } from "../lib/routes";
@@ -131,14 +131,11 @@ export default function CheckoutFlow({
     return () => observer.disconnect();
   }, [loading, orderLocked, order, cart, historyOpen]);
   const shell = useCart();
-  const shopName = useShopName();
   const { details } = useCartDetails();
   const cartMatches = !!cart && shell.cart?.id === cart.id && shell.cart.version === cart.version;
   const subtotal = cartMatches && details ? details.subtotal : null;
   const inReview = (!!quote && reviewID === quote.id) || pendingKind === "checkout";
   const entry = !inReview && !order && !historyOpen && !orderLocked && !!cart?.items.length;
-  // Live-claim carts retain their existing return control across reloads.
-  const backToCart = cart?.items.some((item) => item.live_unit_price_minor !== undefined) ? v2.back : v2.backToCart;
   const currentOffer = quote && cartMatches && quote.cart_id === cart?.id && quote.cart_version === cart.version &&
     quote.currency === cart.currency && optionKey(quote) === method && Date.parse(quote.expires_at) > Date.now() &&
     reviewState?.quoteID === quote.id && reviewState.quoteReady && !pending ? quote : null;
@@ -433,23 +430,10 @@ export default function CheckoutFlow({
     });
   }
 
-  const historyControl = (
-    <nav
-      className="purchase-navigation"
-      hidden={!!quote && !detailsOpen && !historyOpen && !order}
-      aria-label={historyCopy[locale].title}
-    >
-      <button
-        data-testid="toggle-order-history"
-        disabled={
-          busy || paymentBusy || loading || pending || error === "session"
-        }
-        onClick={() => setHistoryOpen((value) => !value)}
-      >
-        {historyOpen ? historyCopy[locale].back : historyCopy[locale].title}
-      </button>
-    </nav>
-  );
+  const historyControl = <CheckoutHistoryControl locale={locale} historyOpen={historyOpen}
+    hidden={!!quote && !detailsOpen && !historyOpen && !order}
+    disabled={busy || paymentBusy || loading || pending || error === "session"}
+    onToggle={() => setHistoryOpen((value) => !value)} />;
 
   return (
     <>
@@ -457,12 +441,7 @@ export default function CheckoutFlow({
       {!entry && !historyOpen && !order && <header className="checkout-top"><Link href={`/${locale}/cart`}>{v2.back}</Link></header>}
       {demonstration && <p className="demonstration">{copy.demonstration}</p>}
       <div className={entry ? "checkout-entry-layout" : undefined}>
-      {entry && <header className="checkout-top checkout-entry-header">
-        <div className="checkout-entry-brand" data-testid="checkout-shop-name">{shopName}</div>
-        <Link className="checkout-entry-back" href={`/${locale}/cart`}><span aria-hidden="true">‹</span> {backToCart}</Link>
-        {historyControl}
-        <h1 id="checkout-title" tabIndex={-1}>{shopCopy[locale].checkoutTitle}</h1>
-      </header>}
+      {entry && <CheckoutEntryHeader locale={locale}>{historyControl}</CheckoutEntryHeader>}
       <main data-testid={entry ? "checkout-entry" : inReview ? "checkout-payment-review" : undefined}
         className={`purchase-main checkout-surface${!historyOpen && !order ? " checkout-surface--review" : ""}`}
         style={entry ? undefined : { paddingBottom: footerHeight + 40 }}

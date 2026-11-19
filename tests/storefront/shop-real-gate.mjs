@@ -447,7 +447,7 @@ async function checkSharedCheckout(addProduct) {
       const selector = page.getByLabel(copy.selectDelivery);
       await expect(selector).toBeFocused();
       const selectable = await selector.locator("option:not([disabled])").evaluateAll(rows => rows.map(row => row.value));
-      assert.deepEqual(selectable, options.items.filter(row => row.available !== false).map(row => `${row.market_id}:${row.country}:${row.method}`));
+      assert.deepEqual(selectable, options.items.filter(row => row.currency === cart.currency && row.available !== false).map(row => `${row.market_id}:${row.country}:${row.method}`));
       await selector.selectOption({ label });
       const value = `${home.market_id}:${home.country}:${home.method}`;
       await expect(selector).toHaveValue(value);
@@ -533,7 +533,7 @@ async function checkSharedCheckout(addProduct) {
       await expect(selector).toHaveValue(value);
       await expect(page.getByTestId("checkout-submit")).toBeHidden();
       assert.deepEqual(writes, { quotes: 1, destination: 1, checkout: 0 });
-      await page.getByRole("link", { name: entryCopy.backToCart, exact: true }).click();
+      await page.getByRole("link", { name: shopCopy[locale].checkoutBack, exact: true }).click();
       await expect(page).toHaveURL(`${origin}/${locale}/cart`);
       await expect(page.getByTestId("cart-page").getByTestId("cart-line")).toHaveCount(2);
       receipt.functional = "PASS";
