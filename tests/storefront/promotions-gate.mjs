@@ -289,11 +289,17 @@ async function scenario(index, run) {
     submittedOnlyB: submittedStreet === addressB.line1, submittedStaleA: submittedStreet === addressA.line1 },
   { retainedOnApply: true, retainedOnRemove: true, retainedOnReapply: true, submittedOnlyB: true, submittedStaleA: false },
   `${label}: promo replacement quotes must preserve the latest visible address and Continue must submit only that address`);
+  // Read storage only to detect any draft data written by the app.
+  const storedAddress = await buyer.evaluate(streets =>
+    [localStorage, sessionStorage].some(storage => Object.values(storage).some(value =>
+      streets.some(street => value.includes(street)))), [addressA.line1, addressB.line1]);
+  assert.equal(storedAddress, false, `${label}: address drafts must stay out of browser storage`);
   pass(`${label} promo address edits: B retained on apply/remove/reapply, one B destination on Continue, zero checkout writes before order confirmation`);
   await openCheckoutDetails(buyer);
   await expect(buyer.getByTestId("create-order")).toBeEnabled();
   await buyer.getByTestId("create-order").click();
   await expect(buyer.getByTestId("order-section")).toBeVisible({ timeout: 30000 });
+  assert.deepEqual(buyerWrites, { destination: 1, checkout: 1 });
   const orderId = (await buyer.getByTestId("order-id").innerText()).trim();
   assert.match(orderId, /^[a-f0-9-]{36}$/);
   await expect(buyer.getByTestId("order-breakdown")).toContainText(amt(discount));

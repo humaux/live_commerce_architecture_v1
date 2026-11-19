@@ -100,7 +100,7 @@ export default function OrderFlow({
   onQuoteRefresh,
   onReviewState,
   detailsOpen = false,
-  inReview, onContinue, entryDraft,
+  inReview, onContinue, entryDraft, onEntryDraftChange,
   cvsResume,
   onCvsBrand,
   cvsKinds,
@@ -125,6 +125,7 @@ export default function OrderFlow({
   onQuoteRefresh?: (quote: Quote) => void;
   detailsOpen?: boolean;
   inReview: boolean; onContinue: (quoteID: string) => void; entryDraft: Fields | null;
+  onEntryDraftChange?: (fields: Fields) => void;
   onReviewState?: (state: { quoteID: string; ready: boolean; timing: string; quoteReady?: boolean; destinationReady?: boolean; submitting?: boolean; needsConfirm?: boolean }) => void;
   cvsResume?: CvsDraft;
   onCvsBrand?: (kind: CvsKind, draft: CvsDraft) => void;
@@ -461,6 +462,7 @@ export default function OrderFlow({
           {cvsOption && <label className="sku-row cod-home-only"><input type="radio" disabled aria-label={cod.homeOnly} />{cod.homeOnly}</label>}
           {!cvsOption && <CheckoutAddressFields entry={!inReview && !recoveringDestination} locale={locale} fields={fields} onChange={(next) => {
             setFields(next);
+            onEntryDraftChange?.(next);
             setConfirmed(null);
             if (notice === "invalid") setNotice(null);
           }} />}

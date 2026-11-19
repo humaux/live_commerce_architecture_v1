@@ -92,6 +92,7 @@ export default function CheckoutFlow({
     "failed" | "session" | "conflict" | "pending" | null
   >(null);
   const [reviewID, setReviewID] = useState("");
+  // Carry the latest home address edit across quotes for this cart and delivery.
   const [draft, setDraft] = useState<OrderFields | null>(null);
   const [options, setOptions] = useState<OptionRow[]>([]);
   const [optionCursor, setOptionCursor] = useState("");
@@ -149,6 +150,8 @@ export default function CheckoutFlow({
   // Keeping the previous total through delivery selection AND reload prevents a changed quote silently becoming accepted.
   function acceptQuote(value: Quote, ctx = currentContext.current) {
     const old = changedCheckoutQuote(value, ctx);
+    if (ctx !== context || !cart || value.cart_id !== cart.id || value.cart_version !== cart.version ||
+        value.currency !== cart.currency || optionKey(value) !== method) setDraft(null);
     setDetailsOpen(false);
     setHelpOpen(false);
     setQuoteChange(old);
@@ -173,6 +176,7 @@ export default function CheckoutFlow({
       setError("session");
       setCart(null);
       setQuote(null);
+      setDraft(null);
       setOrder(null);
       currentOrder.current = null;
       setHistoryOpen(false);
@@ -694,6 +698,7 @@ export default function CheckoutFlow({
                   onReviewState={setReviewState}
                   inReview={inReview}
                   entryDraft={draft}
+                  onEntryDraftChange={quote && !inReview && !pending && cartMatches ? setDraft : undefined}
                   onContinue={(id) => {
                     if (reviewID === id) return;
                     setReviewID(id);
