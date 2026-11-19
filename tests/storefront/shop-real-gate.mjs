@@ -11,6 +11,10 @@
 // LC_BROWSER_ENGINE=chromium|webkit (tests/storefront/browser-engine.mjs).
 import { startNextWithPortRetry, nextAttemptLog } from "../helpers/next-startup.mjs";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
+import { checkoutCopy } from "../../packages/i18n/src/checkout.ts";
+import { purchaseCopy } from "../../apps/storefront/lib/purchase-copy.ts";
+import { formatMoney } from "../../apps/storefront/lib/money.ts";
 import http from "node:http";
 import https from "node:https";
 import net from "node:net";
@@ -244,9 +248,9 @@ try {
   const { thresholdMinor: T, feeMinor: F } = { thresholdMinor: facts.free_shipping.threshold_minor, feeMinor: facts.free_shipping.fee_minor };
   const dripperPrice = P("dripper").variants[0].price_minor, candlePrice = P("candle").variants[0].price_minor;
   assert(candlePrice + dripperPrice < T && 2 * candlePrice + dripperPrice >= T, "fixture prices must straddle the threshold");
-  const addProduct = async (page, key, quantity = 1) => {
-    await page.goto(`${origin}/en/products/${P(key).slug}`);
-    for (let i = 1; i < quantity; i++) await page.getByRole("button", { name: COPY.increase }).first().click();
+  const addProduct = async (page, key, quantity = 1, locale = "en") => {
+    await page.goto(`${origin}/${locale}/products/${P(key).slug}`);
+    for (let i = 1; i < quantity; i++) await page.getByRole("button", { name: shopCopy[locale].increase }).first().click();
     await page.getByTestId("add-to-cart").click();
     await page.getByTestId("cart-checkout").waitFor();
   };
@@ -289,6 +293,8 @@ try {
   await pc2.close();
   pass("SFR05 cart subtotal and free-delivery hint from the real policy threshold (below: remaining amount; at/above: qualified), the quote charges the fee below it and 0 above it, options rows carry the threshold");
 
+  const checkoutFailures = await checkSharedCheckout(addProduct);
+
   // ---- SFR06 preview draft ------------------------------------------------------------------------------------------------------------------------
   const prev = await raw(`/en?preview=${facts.preview_token}`);
   assert(prev.status === 200 && /no-store/.test(prev.headers["cache-control"] ?? "") && /noindex/.test(prev.headers["x-robots-tag"] ?? ""), "preview headers");
@@ -324,6 +330,7 @@ try {
   await checkBuyerParityStates({ browser, origin, evidence });
   await checkContactNative({ browser, origin, evidence });
 
+  assert.equal(checkoutFailures.length, 0, checkoutFailures.join("\n"));
   console.log(`engine=${engine} cases=${cases} REAL-STACK (SANDBOX)`);
 } finally {
   for (const c of children) c.kill("SIGTERM");
@@ -332,6 +339,223 @@ try {
   edge?.close(); proxy?.close();
   for (const l of logs) l.end();
   await rm(certDir, { recursive: true, force: true });
+}
+
+// Follow the cart through its quoted entry and the distinct payment review, observing only native buyer requests.
+async function checkSharedCheckout(addProduct) {
+  const dir = path.join(evidence, "sfr05-checkout"), failures = [];
+  await mkdir(dir, { recursive: true });
+  const keys = ["candle", "dripper"];
+  const expectedCodes = keys.map(key => P(key).variants[0].code).sort();
+  const subtotal = keys.reduce((sum, key) => sum + P(key).variants[0].price_minor, 0);
+  const pairs = items => items.map(({ sku_id, quantity }) => [sku_id, quantity]).sort(([a], [b]) => a.localeCompare(b));
+  for (const locale of ["zh-TW", "zh-CN", "en"]) for (const mobile of [false, true]) {
+    const viewport = mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 };
+    const cell = `${locale}-${viewport.width}`, copy = purchaseCopy[locale];
+    const receipt = { locale, viewport, engine, targetFrame: mobile ? "782:4087" : "782:3904",
+      functional: "NOT_RUN", visual: "NOT_RUN", stage: "cart setup" };
+    const context = await browser.newContext(ctxOpts({ locale, viewport, isMobile: mobile, hasTouch: mobile,
+      deviceScaleFactor: 1, ignoreHTTPSErrors: true }));
+    const page = await context.newPage();
+    const writes = { quotes: 0, destination: 0, checkout: 0 };
+    page.on("request", request => {
+      const resource = new URL(request.url()).pathname.split("/").pop();
+      if (Object.hasOwn(writes, resource) && ["POST", "PUT"].includes(request.method())) writes[resource]++;
+    });
+    const capture = async stage => {
+      await page.locator(".checkout-top").scrollIntoViewIfNeeded();
+      const file = `${cell}-${stage}.png`;
+      const png = await page.screenshot({ path: path.join(dir, file), scale: "css" });
+      const width = png.readUInt32BE(16), height = png.readUInt32BE(20);
+      assert.deepEqual({ width, height }, viewport);
+      return { file, width, height, sha256: createHash("sha256").update(png).digest("hex"), route: new URL(page.url()).pathname };
+    };
+    const checkEntrySurface = async () => {
+      // Geometry is measured after capture, separate from the real clicks below.
+      const surface = await page.evaluate(() => {
+        const rect = el => el?.getClientRects().length ? el.getBoundingClientRect().toJSON() : null;
+        const box = selector => rect(document.querySelector(selector));
+        return { lines: [...document.querySelectorAll(".checkout-lines [data-sku]")].map(el => ({ sku: el.dataset.sku, box: rect(el) })),
+          goods: box(".checkout-lines"), summary: box(".checkout-fixed-bar"), action: box(".checkout-entry-action"),
+          recipient: box('input[name="recipient_name"]'), street: box('input[name="line1"]'), next: box('[data-testid="checkout-continue"]'),
+          footerAmount: document.querySelector(".checkout-bar-amount strong")?.textContent };
+      });
+      assert.deepEqual(surface.lines.map(line => line.sku).sort(), cartSKUs);
+      assert(surface.lines.every(({box}) => box && box.top >= 0 && box.bottom <= viewport.height));
+      assert(surface.recipient && surface.street && surface.summary && surface.next);
+      if (mobile) {
+        assert(surface.next.bottom <= viewport.height && surface.action.top > surface.lines.at(-1).box.bottom);
+        assert(surface.recipient.bottom <= surface.action.top, "the pinned action must leave the recipient visible");
+      } else {
+        assert.equal(surface.summary.top, surface.goods.top, "amount and items cards must start on the same row");
+        assert(surface.summary.left >= surface.goods.right && surface.next.top < viewport.height);
+        assert.equal(surface.summary.width - surface.next.width, 50, "continue must span the padded amount card");
+      }
+      return surface;
+    };
+    const checkStreet = async entry => {
+      const street = entry.locator('input[name="line1"]');
+      if (mobile) await page.mouse.wheel(0, 360);
+      await street.click();
+      await expect(street).toBeFocused();
+      if (mobile) {
+        const action = page.locator(".checkout-entry-action");
+        await expect.poll(async () => {
+          const bounds = await street.boundingBox();
+          return bounds.y + bounds.height;
+        }).toBeLessThanOrEqual((await action.boundingBox()).y);
+      }
+    };
+    let cartSKUs;
+    const observe = async (resource, method, action) => {
+      const [response] = await Promise.all([page.waitForResponse(r => new URL(r.url()).pathname === `/api/buyer/${resource}` &&
+        r.request().method() === method), action()]);
+      assert(response.ok(), `${method} ${resource} returned ${response.status()}`);
+      return response.json();
+    };
+    try {
+      await addProduct(page, "candle", 1, locale);
+      const cart = await observe("cart", "PUT", () => addProduct(page, "dripper", 1, locale));
+      receipt.cart = { id: cart.id, version: cart.version, items: pairs(cart.items) };
+      assert.equal(cart.items.length, 2);
+      cartSKUs = cart.items.map(line => line.sku_id).sort();
+      assert.equal(new Set(cart.items.map(line => line.sku_id)).size, 2);
+      await page.goto(`${origin}/${locale}/cart`);
+      await expect(page.getByTestId("cart-page").getByTestId("cart-line")).toHaveCount(2);
+      const refreshed = await observe("cart", "GET", () => page.reload());
+      receipt.refreshedCart = { id: refreshed.id, version: refreshed.version, items: pairs(refreshed.items) };
+      assert.deepEqual(receipt.refreshedCart, receipt.cart);
+      for (const line of refreshed.items) {
+        assert.equal(line.quantity, 1);
+        await expect(page.locator(`[data-testid="cart-line"][data-sku="${line.sku_id}"]`).getByTestId("cart-line-qty")).toHaveText("1");
+      }
+      const money = minor => formatMoney(locale, minor, cart.currency);
+      await expect(page.getByTestId("cart-subtotal")).toHaveText(money(subtotal));
+      const options = await observe("checkout-options", "GET", () => page.getByTestId("cart-checkout").click());
+      await expect(page).toHaveURL(`${origin}/${locale}/checkout`);
+      const entry = page.getByTestId("checkout-entry");
+      const footer = page.locator(".purchase-footer");
+      const next = footer.getByTestId("checkout-continue");
+      await expect(entry).toBeVisible();
+      const entryCopy = checkoutCopy[locale];
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(shopCopy[locale].checkoutTitle);
+      await expect(entry.getByRole("heading", { name: fmt(entryCopy.itemCount, { n: 2 }) })).toBeVisible();
+      if (mobile) await expect(page.getByTestId("checkout-shop-name")).toBeVisible();
+      await expect(page.getByTestId("checkout-shop-name")).toHaveText(facts.store_name);
+      const button = name => page.getByRole("button", { name, exact: true });
+      await button(copy.delivery).click();
+      const home = options.items.find(row => row.available !== false && row.delivery_kind === "home" && row.mode === "MANUAL");
+      assert(home, "merchant home delivery must be offered");
+      const label = locale === "en" ? home.name_en : locale === "zh-TW" ? home.name_hant : home.name_hans;
+      const selector = page.getByLabel(copy.selectDelivery);
+      await expect(selector).toBeFocused();
+      const selectable = await selector.locator("option:not([disabled])").evaluateAll(rows => rows.map(row => row.value));
+      assert.deepEqual(selectable, options.items.filter(row => row.currency === cart.currency && row.available !== false).map(row => `${row.market_id}:${row.country}:${row.method}`));
+      await selector.selectOption({ label });
+      const value = `${home.market_id}:${home.country}:${home.method}`;
+      await expect(selector).toHaveValue(value);
+      receipt.delivery = { label, method: home.method, market: home.market_id, country: home.country };
+      for (const { sku_id } of cart.items) {
+        const line = page.locator(`.checkout-lines [data-sku="${sku_id}"]`);
+        await expect(line).toBeVisible();
+        await expect(line.locator(".sf-line__unit")).toContainText("× 1");
+      }
+      await expect(button(copy.quote)).toBeEnabled();
+      receipt.stage = "cart entry before quote";
+      await expect(next).toBeDisabled();
+      await expect(footer.locator("strong")).toHaveText("—");
+      await expect(footer.getByTestId("entry-subtotal")).toHaveText(money(subtotal));
+      await expect(entry.locator('input[name="recipient_name"]')).toBeVisible();
+      await expect(page.getByTestId("checkout-submit")).toBeHidden();
+      assert.deepEqual(writes, { quotes: 0, destination: 0, checkout: 0 });
+      receipt.prequote = await capture("prequote");
+      receipt.prequoteSurface = await checkEntrySurface();
+      await checkStreet(entry);
+      const recipient = { recipient_name: "Synthetic Recipient", phone: "+886900000091", city: "Synthetic City", line1: "Synthetic Street" };
+      for (const [key, value] of Object.entries(recipient)) await entry.locator(`input[name="${key}"]`).fill(value);
+      receipt.stage = "cart entry with server quote";
+      const quote = await observe("quotes", "POST", () => button(copy.quote).click());
+      receipt.quote = { id: quote.id, cart: quote.cart_id, version: quote.cart_version, method: quote.method,
+        currency: quote.currency, amount: quote.amount, lines: quote.lines };
+      assert.equal(quote.cart_id, cart.id); assert.equal(quote.cart_version, cart.version);
+      assert.equal(quote.currency, cart.currency);
+      assert.deepEqual([quote.market_id, quote.country, quote.method], [home.market_id, home.country, home.method]);
+      assert.deepEqual(pairs(quote.lines), pairs(cart.items));
+      assert.deepEqual(quote.lines.map(line => line.code).sort(), expectedCodes);
+      for (const key of keys) {
+        const variant = P(key).variants[0];
+        assert.equal(quote.lines.find(line => line.code === variant.code).unit_price_minor, variant.price_minor);
+      }
+      const amount = quote.amount;
+      assert.equal(amount.subtotal_minor, subtotal);
+      assert.equal(amount.shipping_minor, facts.free_shipping.fee_minor);
+      assert.equal(amount.total_minor, subtotal + amount.shipping_minor + amount.tax_minor - amount.discount_minor);
+      await expect(entry).toBeVisible();
+      await expect(selector).toHaveValue(value);
+      await expect(footer.getByTestId("entry-subtotal")).toHaveText(money(amount.subtotal_minor));
+      await expect(footer.getByTestId("entry-shipping")).toHaveText(money(amount.shipping_minor));
+      await expect(footer.locator("strong")).toHaveText(money(amount.total_minor));
+      await expect(next).toBeEnabled();
+      for (const [key, value] of Object.entries(recipient)) await expect(entry.locator(`input[name="${key}"]`)).toHaveValue(value);
+      receipt.capture = await capture("quoted-entry");
+      receipt.surface = await checkEntrySurface();
+      assert.equal(receipt.surface.footerAmount, money(amount.total_minor));
+      if (mobile) assert(receipt.surface.street.bottom <= receipt.surface.action.top, "quoted street is visible above the fixed action");
+      await checkStreet(entry);
+      await page.getByTestId("checkout-details-toggle").click();
+      const breakdown = page.locator(".quotation dl div");
+      await expect(breakdown.filter({ has: page.getByText(copy.shipping, { exact: true }) }).locator("dd")).toHaveText(money(amount.shipping_minor));
+      await expect(breakdown.locator("dd").last()).toHaveText(money(amount.total_minor));
+      await page.getByTestId("checkout-details-toggle").click();
+      receipt.stage = "confirmed destination and payment review";
+      const dest = await observe("destination", "PUT", () => next.click());
+      assert.equal(dest.cart_id, cart.id); assert.equal(dest.cart_version, cart.version);
+      assert.equal(dest.kind, "home"); assert.equal(dest.country, home.country);
+      const review = page.getByTestId("checkout-payment-review");
+      await expect(review).toBeVisible();
+      await expect(entry).toHaveCount(0);
+      await expect(review.getByTestId("checkout-review")).toContainText(recipient.recipient_name);
+      await expect(review.getByTestId("checkout-review")).toContainText(recipient.line1);
+      await expect(footer.getByTestId("checkout-details-toggle")).toHaveAttribute("aria-expanded", "false");
+      await expect(review.locator(".checkout-lines [data-sku]").first()).toBeHidden();
+      await expect(footer.getByTestId("checkout-submit")).toBeEnabled();
+      await expect(footer.locator("strong")).toHaveText(money(amount.total_minor));
+      receipt.review = { referenceLocale: "zh-TW", referenceFrame: mobile ? "1429:23484" : "1429:23435", quote: quote.id, destination: dest.id,
+        capture: await capture("payment-review"), writes: { ...writes } };
+      await footer.getByTestId("checkout-details-toggle").click();
+      for (const line of cart.items) await expect(review.locator(`[data-sku="${line.sku_id}"]`)).toBeVisible();
+      await expect(review.getByTestId("review-subtotal")).toHaveText(money(amount.subtotal_minor));
+      await expect(review.getByTestId("review-shipping")).toHaveText(money(amount.shipping_minor));
+      await expect(review.getByTestId("review-total")).toHaveText(money(amount.total_minor));
+      await footer.getByTestId("checkout-details-toggle").click();
+      const restoredQuote = await observe(`quotes/${quote.id}`, "GET", () => page.reload());
+      assert.deepEqual([restoredQuote.id, restoredQuote.cart_id, restoredQuote.cart_version, restoredQuote.method],
+        [quote.id, cart.id, cart.version, home.method]);
+      await expect(entry).toBeVisible();
+      await expect(entry.locator('input[name="recipient_name"]')).toHaveValue(recipient.recipient_name);
+      await expect(footer.locator("strong")).toHaveText(money(amount.total_minor));
+      await expect(selector).toHaveValue(value);
+      await expect(page.getByTestId("checkout-submit")).toBeHidden();
+      assert.deepEqual(writes, { quotes: 1, destination: 1, checkout: 0 });
+      await page.getByRole("link", { name: shopCopy[locale].checkoutBack, exact: true }).click();
+      await expect(page).toHaveURL(`${origin}/${locale}/cart`);
+      await expect(page.getByTestId("cart-page").getByTestId("cart-line")).toHaveCount(2);
+      receipt.functional = "PASS";
+      receipt.visual = "REVIEW_PENDING";
+    } catch (error) {
+      receipt.functional = "FAIL";
+      receipt.error = error.message;
+      receipt.failureRoute = new URL(page.url()).pathname;
+      failures.push(`${cell} ${receipt.stage}: ${error.message}`);
+      receipt.failureScreenshot = `${cell}-failure.png`;
+      await page.screenshot({ path: path.join(dir, receipt.failureScreenshot) }).catch(e => { receipt.screenshotError = e.message; });
+    } finally {
+      await writeFile(path.join(dir, `${cell}.json`), JSON.stringify(receipt, null, 2));
+      console.log(`SFR05 ${cell} functional=${receipt.functional} visual=${receipt.visual} receipt=${cell}.json`);
+      await context.close();
+    }
+  }
+  return failures;
 }
 
 // PARITY-STATES: invoked above by the registered storefront gate; synthetic BFF reads only.

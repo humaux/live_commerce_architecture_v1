@@ -96,10 +96,11 @@ export function CartNotice({ locale }: { locale: Locale }) {
   );
 }
 
-function Line({ locale, line, currency, readOnly }: { locale: Locale; line: LineView; currency: string; readOnly: boolean }) {
+function Line({ locale, line, currency, readOnly, compact }: { locale: Locale; line: LineView; currency: string; readOnly: boolean; compact: boolean }) {
   const copy = shopCopy[locale];
   const { setQuantity, busy } = useCart();
   const name = line.gone ? copy.lineUnavailable : line.title;
+  const title = compact && line.variantTitle ? `${name} · ${line.variantTitle}` : name;
   const href = line.slug ? productPath(locale, line.slug) : null;
   const image = line.productID && line.imageID ? productImage(line.productID, line.imageID) : null;
   // The unit price is shown only when it says something the line total does not: at quantity 1 the two are the same number.
@@ -121,10 +122,10 @@ function Line({ locale, line, currency, readOnly }: { locale: Locale; line: Line
         <div className="sf-line__head">
           {href ? (
             <Link className="sf-line__title" href={href}>
-              {name}
+              {title}
             </Link>
           ) : (
-            <span className={`sf-line__title${line.gone ? " sf-line__title--gone" : ""}`}>{name}</span>
+            <span className={`sf-line__title${line.gone ? " sf-line__title--gone" : ""}`}>{title}</span>
           )}
           {!line.gone && (
             <span className="sf-line__total" data-testid="cart-line-total">
@@ -132,9 +133,10 @@ function Line({ locale, line, currency, readOnly }: { locale: Locale; line: Line
             </span>
           )}
         </div>
-        {line.variantTitle && <p className="sf-line__variant">{line.variantTitle}</p>}
+        {!compact && line.variantTitle && <p className="sf-line__variant">{line.variantTitle}</p>}
         {!line.gone && (unitText || onSale || line.liveUnitMinor !== null || line.stock === "low" || line.stock === "out") && (
           <p className="sf-line__unit">
+            {compact && unitText && <span>{copy.quantity}</span>}
             {unitText}
             {onSale && <s>{formatMoney(locale, line.compareAtMinor ?? 0, currency)}</s>}
             {line.liveUnitMinor !== null && <em className="sf-line__live">{copy.livePrice}</em>}
@@ -168,7 +170,7 @@ function Line({ locale, line, currency, readOnly }: { locale: Locale; line: Line
   );
 }
 
-export function CartLines({ locale, readOnly = false }: { locale: Locale; readOnly?: boolean }) {
+export function CartLines({ locale, readOnly = false, compact = false }: { locale: Locale; readOnly?: boolean; compact?: boolean }) {
   const copy = shopCopy[locale];
   const { cart } = useCart();
   const { details, failed, loading } = useCartDetails();
@@ -182,7 +184,7 @@ export function CartLines({ locale, readOnly = false }: { locale: Locale; readOn
   return (
     <ul className={`sf-lines${loading ? " is-loading" : ""}`} aria-busy={loading}>
       {details.lines.map((line) => (
-        <Line key={line.sku_id} locale={locale} line={line} currency={details.currency} readOnly={readOnly} />
+        <Line key={line.sku_id} locale={locale} line={line} currency={details.currency} readOnly={readOnly} compact={compact} />
       ))}
     </ul>
   );

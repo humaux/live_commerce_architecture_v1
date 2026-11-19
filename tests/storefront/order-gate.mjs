@@ -810,7 +810,9 @@ try {
   await confirmCheckoutAddress(slow);await expect.poll(()=>stored(slow)).toBeNull();
   slowOptions.release.resolve();await expect(slow.getByTestId("create-order")).toBeEnabled();
   await expect(slow.locator('input[name="line1"]')).toHaveValue("Synthetic Confirmed New Address");
-  await slow.getByTestId("create-order").click();const order8=await created(slow,q8);
+  // The released option read completes the move to the collapsed payment review.
+  await expect(slow.getByTestId("checkout-payment-review")).toBeVisible();
+  await slow.getByTestId("checkout-submit").click();const order8=await created(slow,q8);
   assert.equal((await api(slow,"GET",`orders/${order8}`)).body.snapshot.destination.home_address.line1,"Synthetic Confirmed New Address");
   await expect(slow.getByTestId("order-section")).toContainText("Synthetic Confirmed New Address");
   pass("BO03 delayed real options cannot replace edited confirmed address or order snapshot");

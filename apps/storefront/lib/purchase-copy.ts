@@ -1,3 +1,7 @@
+// Purpose: localize the buyer purchase flow and its quote and recovery states.
+// Depends on: the shared storefront locale set.
+// Used by: product, cart, checkout and browser acceptance surfaces.
+// Invariants: translations describe the flow, never authorizing a quote or payment.
 import type { Locale } from "@live-commerce/i18n";
 
 const en = {
@@ -73,7 +77,7 @@ export const purchaseCopy: Record<Locale, Copy> = {
     renew: "重新连接",
     conflict: "购物车或配送设置已变更。请重新加载最新信息，再确认选择。",
     savedCart: "购物车内其他商品将保留，并一同计入报价。",
-    deliveryTitle: "配送与报价",
+    deliveryTitle: "收货方式",
     selectDelivery: "配送方式",
     quote: "获取当前总额",
     noDelivery: "此购物车暂无可用的配送方式。",
@@ -114,7 +118,7 @@ export const purchaseCopy: Record<Locale, Copy> = {
     renew: "重新連線",
     conflict: "購物車或配送設定已變更。請重新載入最新資訊，再確認選擇。",
     savedCart: "購物車內其他商品將保留，並一同計入報價。",
-    deliveryTitle: "配送與報價",
+    deliveryTitle: "收貨方式",
     selectDelivery: "配送方式",
     quote: "取得目前總額",
     noDelivery: "此購物車暫無可用的配送方式。",

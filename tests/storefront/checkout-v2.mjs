@@ -205,6 +205,7 @@ export async function checkoutV2CodFeeChange({ newContext, origin, product, reci
         assert.equal(freshQuote.id, quote.id, "GET keeps the immutable quote ID while current COD due changes");
         const notice = page.getByTestId("quote-reconfirm");
         await expect(notice).toContainText(copy.en.changed);
+        if (recovery !== "refusal") await confirmCheckoutAddress(page);
         await expect(notice).toContainText(`${formatMoney("en", quote.cod_due_minor, quote.currency)} → ${formatMoney("en", freshQuote.cod_due_minor, quote.currency)}`);
         await expect(page.getByTestId("review-total")).toHaveText(formatMoney("en", freshQuote.cod_due_minor, quote.currency));
         await expect(page.locator(".purchase-footer strong")).toHaveText(formatMoney("en", freshQuote.cod_due_minor, quote.currency));
@@ -452,7 +453,8 @@ async function checkoutParitySuite({ newContext, origin, product, recipient, evi
       const quote = await response.json();
       await expect(page.getByTestId("address-section")).toBeVisible();
       await check("disabled token", "disabled submit is solid light grey without a dashed border", async () => {
-        const button = page.getByTestId("checkout-submit");
+        await expect(page.getByTestId("checkout-submit")).toBeHidden();
+        const button = page.getByTestId("checkout-continue");
         await expect(button).toBeDisabled();
         await expect(button).toHaveAccessibleDescription(/\S{6,}/);
         // READ/MEASURE only: computed paint never mutates DOM or application state.

@@ -12,7 +12,7 @@ import { fmt, shopCopy } from "../../lib/shop-copy";
 import { freeShippingProgress } from "../../lib/shop-contract";
 import { formatMoney } from "../../lib/money";
 
-export default function CheckoutDeliveryOptions({ locale, options, method, chosen, subtotal, currency, disabled, onSelect }: {
+export default function CheckoutDeliveryOptions({ locale, options, method, chosen, subtotal, currency, disabled, expanded, onClose, onSelect }: {
   locale: Locale;
   options: OptionRow[];
   method: string;
@@ -20,6 +20,8 @@ export default function CheckoutDeliveryOptions({ locale, options, method, chose
   subtotal: number | null;
   currency: string;
   disabled: boolean;
+  expanded: boolean;
+  onClose: () => void;
   onSelect: (value: string) => void;
 }) {
   const copy = purchaseCopy[locale];
@@ -29,7 +31,9 @@ export default function CheckoutDeliveryOptions({ locale, options, method, chose
     <label className="delivery-label" htmlFor="delivery">
       {copy.selectDelivery}
     </label>
-    <select id="delivery" value={method} disabled={disabled} onChange={(e) => onSelect(e.target.value)}>
+    <select id="delivery" value={method} disabled={disabled} size={expanded ? Math.min(options.length, 6) : undefined}
+      onBlur={onClose} onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+      onChange={(e) => { onSelect(e.target.value); onClose(); }}>
       {options.map((o) => (
         <option key={optionKey(o)} value={optionKey(o)} disabled={isUnavailable(o)}>
           {locale === "zh-CN" ? o.name_hans : locale === "zh-TW" ? o.name_hant : o.name_en}
