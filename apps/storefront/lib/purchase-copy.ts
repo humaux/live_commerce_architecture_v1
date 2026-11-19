@@ -1,3 +1,7 @@
+// Purpose: localize the buyer purchase flow and its quote and recovery states.
+// Depends on: the shared storefront locale set.
+// Used by: product, cart, checkout and browser acceptance surfaces.
+// Invariants: translations describe the flow, never authorizing a quote or payment.
 import type { Locale } from "@live-commerce/i18n";
 
 const en = {
