@@ -107,6 +107,9 @@ for key, value in [("run_attempt", 1), ("head_sha", "b" * 40), ("conclusion", "f
     bad[0][key] = value
     reject(lambda: v["attempt_binding"](run, bad, v["KINDS"], ctx))
 bad = copy.deepcopy(jobs)
+bad[1]["conclusion"] = "failure"
+reject(lambda: v["attempt_binding"](run, bad, v["KINDS"], ctx))
+bad = copy.deepcopy(jobs)
 bad[-1]["steps"][-1]["conclusion"] = "skipped"
 reject(lambda: v["attempt_binding"](run, bad, v["KINDS"], ctx))
 log = "".join(f"{name}: pass={count+1} fail=0 skip=0 leaf_pass={count} leaf_fail=0 leaf_skip=0 exit=0 verdict=0 duration=1s\n"
@@ -118,4 +121,44 @@ reject(lambda: v["browser_projection"](log.replace("exit=0 verdict=0", "exit=1 v
 `;
   const result = spawnSync("python3", ["-c", script], { encoding: "utf8", timeout: 10000 });
   assert.equal(result.status, 0, result.stderr);
+});
+
+test("strict G06s verdict requires exact SP16 and this attempt's verified G07z", () => {
+  const dir = mkdtempSync(join(tmpdir(), "strict-g06-verdict-"));
+  const fn = name => gate.match(new RegExp("^" + name + String.raw`\(\) \{[\s\S]*?^\}`, "m"))[0];
+  const actual = [
+    'set -uo pipefail; OUT="$1"; bound_strict="$2"; stripe_bound_ok="$3"; strict=1',
+    'n_pass=0; n_fail=0; n_notrun=0; n_accepted=0; rows=""; only=""; subset=""; sha=model; dirty=0; all_modes=89',
+    fn("accepted_notrun"), fn("record"),
+    'record "$4" UNIT NOT_RUN "residual" - "$OUT/G06s.skipped"',
+    gate.slice(gate.indexOf("n_open=$((n_notrun - n_accepted))")),
+  ].join("\n");
+  const sp16 = "livecommerce/internal/integrations/psp/stripe.TestStripeSP16Sandbox";
+  const lookalike = "example/unrelated/stripe.TestStripeSP16Sandbox";
+  try {
+    for (const [bound, verified, row, items, expected] of [
+      ["1", "1", "G06s", [sp16], 0],
+      ["1", "1", "G06s", [sp16, lookalike], 3],
+      ["1", "1", "G06s", [lookalike], 3],
+      ["1", "0", "G06s", [sp16], 3],
+      ["0", "0", "G06s", ["stripe.TestStripeSP16Sandbox"], 0],
+      ["1", "1", "G07z+", ["TestStripeSP16Sandbox/expires_at_29min_rejected"], 0],
+    ]) {
+      writeFileSync(join(dir, "results.tsv"), "");
+      writeFileSync(join(dir, "G06s.skipped"), items.join("\n"));
+      const r = spawnSync("bash", ["-c", actual, "_", dir, bound, verified, row], { encoding: "utf8" });
+      assert.equal(r.status, expected, r.stdout + r.stderr);
+      assert.equal(readFileSync(join(dir, "results.tsv"), "utf8").includes("UNACCEPTED:"), expected === 3);
+    }
+    const out = join(dir, "no-children");
+    const missing = spawnSync("bash", ["scripts/dev/release-gate.sh", "--strict"], {
+      env: { PATH: process.env.PATH, HOME: dir, LC_RELEASE_GATE_FULL_STRICT: "1", LC_RELEASE_GATE_OUT: out },
+      encoding: "utf8", timeout: 10000,
+    });
+    assert.equal(missing.status, 1, missing.stdout + missing.stderr);
+    assert.match(missing.stderr, /strict child intake failed/);
+    assert.equal(readFileSync(join(out, "results.tsv"), "utf8"), "");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

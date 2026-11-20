@@ -80,6 +80,7 @@ OUT="${LC_RELEASE_GATE_OUT:-$MAIN/output/release-gate/$(date -u +%Y%m%dT%H%M%SZ)
 
 have() { command -v "$1" >/dev/null 2>&1; }
 bound_strict=${LC_RELEASE_GATE_FULL_STRICT:-0}
+stripe_bound_ok=0
 if [[ "$bound_strict" == 1 ]]; then
   if [[ "$strict" != 1 || -n "$only$shard_evidence" || -z "${LC_RELEASE_GATE_OUT:-}" ]]; then
     echo "bound strict intake requires a full --strict invocation and a new evidence path" >&2
@@ -129,9 +130,9 @@ n_pass=0 n_fail=0 n_notrun=0 n_accepted=0
 # Items: the lines of a *.skipped list (go test names), the "not run: S01,S34" ids of a smoke row, or
 # else the note itself. First match wins; keep specific entries above broad ones.
 accepted_notrun() { # $1 id, $2 note, $3 log/list file -> prints the reason(s), or nothing
-  python3 - "$1" "$2" "$3" <<'PY'
+  python3 - "$1" "$2" "$3" "${bound_strict:-0}" "${stripe_bound_ok:-0}" <<'PY'
 import fnmatch, re, sys
-rid, note, path = sys.argv[1:4]
+rid, note, path, bound, stripe_verified = sys.argv[1:]
 catalogue = [  # (row id glob, item glob, reason)
     ("*", "*TestStripeSP16Sandbox/expires_at_29min*", "G4 SP16 29-min expiry probe is developer-only"),
     ("*", "*TestStripeRF10Sandbox/rotated_key*", "G4 rotated-key replay needs a second Stripe test key"),
@@ -165,6 +166,10 @@ if not items:
 reasons = []
 for item in items:
     hit = next((r for g, pat, r in catalogue if fnmatch.fnmatchcase(rid, g) and fnmatch.fnmatchcase(item, pat)), None)
+    # Only the exact SP16 test can use the signed API handoff. Keep the legacy catalogue for the standalone entry.
+    if bound == "1" and rid == "G06s" and hit == "runs in G07z with the Stripe test key":
+        if stripe_verified != "1" or item != "livecommerce/internal/integrations/psp/stripe.TestStripeSP16Sandbox":
+            sys.exit(0)
     if hit is None:
         sys.exit(0)  # one unaccepted item keeps the whole row open
     if hit not in reasons:
@@ -214,6 +219,7 @@ if [[ "$bound_strict" == 1 ]]; then
     echo "strict child intake failed (see $LOG)" >&2
     exit 1
   fi
+  stripe_bound_ok=1
 fi
 
 # ---- G01 architecture packet --------------------------------------------------------------------
