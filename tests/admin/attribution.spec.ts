@@ -5,7 +5,7 @@
 // No response interception or completed-order synthesis. The runner supplies authoritative fixture totals.
 // Actual buyer ad URL -> checkout (AT5) is added by the root's storefront/checkout acceptance path.
 import { parityWords, parityViewports, parityClick, parityShot } from "./parity-live-sessions";
-import { expect, test, type Page } from "@playwright/test";
+import { errors, expect, test, type Page } from "@playwright/test";
 import { readFile, writeFile, mkdir, appendFile } from "node:fs/promises";
 import { createHash } from "node:crypto";
 import path from "node:path";
@@ -676,6 +676,43 @@ async function reportShot(
   await writeFile(manifestPath, JSON.stringify(manifest, null, 2));
 }
 
+async function applyReportWindow(page: Page, locale: Locale) {
+  const reportOrigin = new URL(origin).origin;
+  const reportPath = `/api/stores/${encodeURIComponent(store)}/ads/attribution`;
+  const isWindow = (url: URL) =>
+    url.origin === reportOrigin &&
+    url.searchParams.get("from") === fixture.from &&
+    url.searchParams.get("to") === fixture.to;
+  // Observe dispatch before clicking, then read only that request's response.
+  const [request] = await Promise.all([
+    page.waitForRequest((request) => {
+      const url = new URL(request.url());
+      return request.method() === "GET" && url.pathname === reportPath && isWindow(url);
+    }, { timeout: 30_000 }).catch(async (error: unknown) => {
+      if (!(error instanceof errors.TimeoutError)) throw error;
+      const url = new URL(page.url());
+      const unavailable =
+        isWindow(url) &&
+        url.pathname === `/${locale}/ads/attribution` &&
+        url.searchParams.get("store") === store &&
+        (await page.getByTestId("attribution-error")
+          .getByText(attributionCopy[locale].unavailable, { exact: true }).isVisible());
+      throw new Error(
+        `Apply did not dispatch the target report GET within 30s (target page unavailable: ${unavailable})`,
+        { cause: error },
+      );
+    }),
+    page.getByTestId("attribution-apply").click(),
+  ]);
+  const response = await test.step("Receive the target report response", () =>
+    request.response(),
+  );
+  if (!response)
+    throw new Error("Apply report GET was dispatched without an HTTP response");
+  expect(response.status(), "Apply report GET HTTP status").toBe(200);
+  return test.step("Decode the target report JSON body", () => response.json());
+}
+
 for (const locale of ["en", "zh-TW", "zh-CN"] as const)
   for (const width of [390, 1586] as const) {
     test(`AT7/AT9 actual report clicks ${locale} ${width}`, async ({
@@ -709,14 +746,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
         });
         await page.getByTestId("attribution-from").fill(fixture.from);
         await page.getByTestId("attribution-to").fill(fixture.to);
-        const reportRead = page.waitForResponse(
-          (r) =>
-            r.request().method() === "GET" &&
-            new URL(r.url()).pathname ===
-              `/api/stores/${store}/ads/attribution`,
-        );
-        await page.getByTestId("attribution-apply").click();
-        const reportData = await (await reportRead).json();
+        const reportData = await applyReportWindow(page, locale);
         const linkedIDs: string[] = reportData.sessions.find(
           (s: { session_id: string }) => s.session_id === fixture.session_id,
         ).draft_ids;
@@ -1008,16 +1038,7 @@ for (const locale of ["en", "zh-TW", "zh-CN"] as const)
         });
         await page.getByTestId("attribution-from").fill(fixture.from);
         // Same-date reads remount the native disclosure; inspect only the new report.
-        const restoredReportRead = page.waitForResponse(
-          (r) =>
-            r.request().method() === "GET" &&
-            new URL(r.url()).pathname ===
-              `/api/stores/${store}/ads/attribution`,
-        );
-        await page.getByTestId("attribution-apply").click();
-        const restoredReportResponse = await restoredReportRead;
-        expect(restoredReportResponse.status()).toBe(200);
-        await restoredReportResponse.json();
+        await applyReportWindow(page, locale);
         await expect(page.getByTestId("attribution-loading")).toBeHidden();
         await expect(page.getByTestId("attribution-apply")).toBeEnabled();
         await expect(page.getByTestId("attribution-window")).toBeVisible();
