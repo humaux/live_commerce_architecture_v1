@@ -20,7 +20,8 @@
 #   TEST key present, then G90 deploy smoke static, G91 deploy smoke full and G99 (no gate rewrote a
 #   tracked .impeccable file, ruling F7; full runs only).
 # Usage: bash scripts/dev/release-gate.sh [--strict] [--list] [--only ID[,ID...]] [--shard-evidence DIR]
-# --shard-evidence requires --strict --only G07; verified JSON reuses the existing classifier/catalogue.
+# --shard-evidence requires --strict --only G07. LC_RELEASE_GATE_FULL_STRICT=1 selects the protected
+# CI full-table path, consuming only the three signed child executions of its own workflow attempt.
 #   --strict  exit 3 when there is no FAIL but at least one UNACCEPTED NOT_RUN (use for release acceptance);
 #             NOT_RUN rows listed in the accepted catalogue below (R1 rulings F11/F12/G3/G4) do not count
 #   --list    print the step ids and exit
@@ -78,6 +79,18 @@ MAIN=$(cd "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)/
 OUT="${LC_RELEASE_GATE_OUT:-$MAIN/output/release-gate/$(date -u +%Y%m%dT%H%M%SZ)-$sha}"
 
 have() { command -v "$1" >/dev/null 2>&1; }
+bound_strict=${LC_RELEASE_GATE_FULL_STRICT:-0}
+if [[ "$bound_strict" == 1 ]]; then
+  if [[ "$strict" != 1 || -n "$only$shard_evidence" || -z "${LC_RELEASE_GATE_OUT:-}" ]]; then
+    echo "bound strict intake requires a full --strict invocation and a new evidence path" >&2
+    exit 2
+  fi
+  if [[ -n "${LC_SECRETS_FILE:-}${STRIPE_SECRET_KEY:-}${STRIPE_TEST_KEY:-}${STRIPE_SECRET_KEY_ROTATED:-}${LC_G07Z_BIN_DIR:-}" ||
+        -e "$HOME/.config/livecommerce/secrets.env" || -L "$HOME/.config/livecommerce/secrets.env" ]]; then
+    echo "bound strict runner requires a Stripe-credential-free job" >&2
+    exit 2
+  fi
+fi
 # SANDBOX opt-in is read once and then removed from the environment: only the SANDBOX rows (G07z and
 # --stripe-browser) get it back, so no other suite turns into a half-configured SANDBOX run.
 stripe_opt_in=0
@@ -192,6 +205,16 @@ browser_ok() {
   have node && have pnpm && [[ -d node_modules/@playwright ]] &&
     node --input-type=module -e "import fs from 'node:fs'; import('@playwright/test').then(m=>process.exit(fs.existsSync(m.chromium.executablePath())?0:1)).catch(()=>process.exit(1))" >/dev/null 2>&1
 }
+
+# Admit all three native children before starting unprivileged local suites.
+if [[ "$bound_strict" == 1 ]]; then
+  run_cmd strict-intake python3 scripts/dev/strict-release-evidence.py intake "$OUT/native"
+  unset GH_TOKEN GITHUB_TOKEN
+  if ((rc != 0)); then
+    echo "strict child intake failed (see $LOG)" >&2
+    exit 1
+  fi
+fi
 
 # ---- G01 architecture packet --------------------------------------------------------------------
 if selected G01; then
@@ -380,8 +403,12 @@ PY
 
 # ---- G07 whole foundation package: real PostgreSQL, race detector, vet ----------------------------
 if selected G07; then
-  if [[ -n "$shard_evidence" ]]; then
-    run_cmd G07 node scripts/dev/matrix-receipts.mjs canonical-verify "$shard_evidence" "$OUT"
+  if [[ -n "$shard_evidence" || "$bound_strict" == 1 ]]; then
+    if [[ "$bound_strict" == 1 ]]; then
+      run_cmd G07 cp "$OUT/native/G07.jsonl" "$OUT/native/G07.conditional" "$OUT/"
+    else
+      run_cmd G07 node scripts/dev/matrix-receipts.mjs canonical-verify "$shard_evidence" "$OUT"
+    fi
     if ((rc != 0)); then
       record G07 REAL_PG FAIL "canonical shard intake failed" "$rc" "$LOG"
     else
@@ -416,32 +443,16 @@ if selected G07; then
 fi
 
 # ---- G06s: unit-run skips (real-PG tests of non-foundation packages lack the PG env in G06) ---------------
-# A G06 skip ("pkg.Test") is covered only when the SAME test PASSed in this run's G07 (go test -p 1 -v ./...
-# prints each package's results before its "ok <import path>" line). Uncovered skips stay NOT_RUN and go
-# through the accepted catalogue; covered ones are listed as the G06r PASS row (they ran, against real PG).
-if selected G06 && selected G07 && [[ -s "$OUT/G06.skipped" ]]; then
-  python3 - "$OUT/G06.skipped" "$OUT/G07.log" "$OUT/G06s.covered" "$OUT/G06s.skipped" <<'PY'
-import re, sys
-skipped = [l.strip() for l in open(sys.argv[1]) if l.strip()]
-passed, pending = set(), []
-try:
-    for line in open(sys.argv[2], errors="replace"):
-        m = re.match(r"\s*--- PASS: (\S+) \(", line)
-        if m:
-            pending.append(m.group(1))
-            continue
-        m = re.match(r"(ok|FAIL)\s+(\S+)", line)
-        if m:
-            if m.group(1) == "ok":
-                passed.update(m.group(2).rsplit("/", 1)[-1] + "." + t for t in pending)
-            pending = []
-except OSError:
-    pass
-open(sys.argv[3], "w").write("\n".join(t for t in skipped if t in passed))
-open(sys.argv[4], "w").write("\n".join(t for t in skipped if t not in passed))
-PY
-elif [[ -s "$OUT/G06.skipped" ]]; then
-  cp "$OUT/G06.skipped" "$OUT/G06s.skipped" && : >"$OUT/G06s.covered"
+# Match package and test from G06's original JSON, after the corresponding G07 row is adjudicated.
+if selected G06 && [[ -s "$OUT/G06.skipped" ]]; then
+  coverage=none
+  if awk -F '\t' '$1 == "G07" && $3 == "PASS" { found++ } END { exit found != 1 }' "$OUT/results.tsv"; then
+    coverage=verbose
+    [[ "$bound_strict" == 1 ]] && coverage=native
+  fi
+  if ! python3 scripts/dev/strict-g06-coverage.py "$OUT" "$coverage"; then
+    record G06s UNIT FAIL "cannot correlate native G06/G07 events" 1 "$OUT/G06.jsonl"
+  fi
 fi
 if [[ -s "$OUT/G06s.covered" ]]; then
   record G06r UNIT PASS "$(grep -c . "$OUT/G06s.covered") G06-skipped test(s) PASSED in G07 (real PG): $(tr '\n' ' ' <"$OUT/G06s.covered" | cut -c1-140)" - "$OUT/G06s.covered"
@@ -466,7 +477,12 @@ stripe_sandbox_ready() {
 # ---- G07z Stripe SANDBOX API tiers with the owner's test key (SP16 unit, RF10 + SP21 real PG) ---------
 # The key is read in a subshell from the secrets file and exported to these go test processes only.
 if selected G07z; then
-  if ! stripe_sandbox_ready; then
+  if [[ "$bound_strict" == 1 ]]; then
+    record G07z SANDBOX PASS "SP16, RF10 and SP21 passed in this attempt's protected API job" 0 "$OUT/native/api/receipt.json"
+    if [[ -s "$OUT/native/G07z.skipped" ]]; then
+      record G07z+ SANDBOX NOT_RUN "skipped in the protected API job" - "$OUT/native/G07z.skipped"
+    fi
+  elif ! stripe_sandbox_ready; then
     record G07z SANDBOX NOT_RUN "needs STRIPE_BROWSER=1, STRIPE_SANDBOX=1 and an sk_test_/rk_test_ key in secrets.env"
   elif ! docker_ok || ! have go; then
     record G07z SANDBOX NOT_RUN "docker daemon or go missing"
@@ -503,6 +519,11 @@ for m in $browser_modes; do
   [[ "$m" == --stripe-browser ]] && tier=SANDBOX
   if [[ -f "$gates_doc" ]] && ! grep -qF -- "$m" "$gates_doc"; then
     record "$id" "$tier" FAIL "mode $m is not listed in $gates_doc" 1 -
+    continue
+  fi
+  if [[ "$m" == --stripe-browser && "$bound_strict" == 1 ]]; then
+    record "$id" SANDBOX PASS "SP18 SANDBOX, SU07/SU09 MOCK and node-env passed in this attempt's protected browser job" 0 "$OUT/native/browser/receipt.json"
+    record "${id}+" SANDBOX NOT_RUN "SP17 webhook NOT_RUN" - "$OUT/native/browser/receipt.json"
     continue
   fi
   if [[ "$m" == --stripe-browser ]] && ! stripe_sandbox_ready; then
@@ -650,6 +671,15 @@ fi
 if selected G91; then
   if [[ "${LC_RELEASE_GATE_SMOKE_FULL:-0}" != 1 ]]; then
     record G91 DEPLOY NOT_RUN "run on the Linux deploy host as root: LC_RELEASE_GATE_SMOKE_FULL=1 or bash deploy/scripts/smoke.sh full"
+  elif [[ "$bound_strict" == 1 ]]; then
+    run_cmd G91 sudo --preserve-env=GOTOOLCHAIN,GOFLAGS,PLAYWRIGHT_BROWSERS_PATH env "PATH=$PATH" "HOME=$HOME" bash deploy/scripts/smoke.sh full
+    v=$(smoke_verdict "$LOG")
+    evidence=$(sed -n 's/^.*evidence: \(.*\/result.json\)$/\1/p' "$LOG" | tail -n1)
+    if [[ -z "$evidence" ]] || ! python3 .github/scripts/smoke-verdict.py "$evidence" "$rc" full >>"$LOG" 2>&1; then
+      record G91 DEPLOY FAIL "native smoke verdict rejected: ${v#*|}" 1 "$LOG"
+    else
+      record G91 DEPLOY "${v%%|*}" "smoke full: ${v#*|}" "$rc" "$LOG"
+    fi
   elif [[ "$(uname -s)" != Linux || "$(id -u)" != 0 ]] || ! docker_ok; then
     record G91 DEPLOY NOT_RUN "smoke full needs Linux, root and a docker daemon"
   else

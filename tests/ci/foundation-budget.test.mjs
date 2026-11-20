@@ -230,19 +230,28 @@ test("existing strict judge keeps ordinary/subtest SKIP red, unknown NOT_RUN str
 });
 
 // This source contract guards the root's narrow permission amendment, never grants credentials.
-test("canonical official reads are scoped to receipts; no workflow/global write or token fallback", () => {
+test("canonical and full-release transport and signing permissions stay job-scoped", () => {
   const workflow = readFileSync(new URL("../../.github/workflows/gates.yml", import.meta.url), "utf8");
   const top = workflow.split("jobs:\n")[0];
   assert.match(top, /^permissions:\n  contents: read\n/m);
   assert.doesNotMatch(top, /^  actions:/m);
-  const jobs = [...workflow.matchAll(/^  ([a-z_]+):\n([\s\S]*?)(?=^  [a-z_]+:\n|$(?![\s\S]))/gm)];
+  const jobs = [...workflow.matchAll(/^  ([a-z_][a-z0-9_]*):\n([\s\S]*?)(?=^  [a-z_][a-z0-9_]*:\n|$(?![\s\S]))/gm)];
   const receipts = jobs.find((j) => j[1] === "receipts")?.[2] ?? "";
   assert.match(receipts, /^    permissions:\n      contents: read\n      actions: read\n/m);
-  for (const [, name, body] of jobs) if (name !== "receipts") assert.doesNotMatch(body, /^      actions:/m);
-  assert.doesNotMatch(workflow, /permissions:\s*(?:write-all|read-all)|id-token:\s*write/);
+  for (const [, name, body] of jobs) {
+    if (!["receipts", "full_strict"].includes(name)) assert.doesNotMatch(body, /^      actions:/m);
+    if (["g07_seal", "stripe_api", "stripe_browser"].includes(name)) {
+      assert.match(body, /^      id-token: write$/m);
+      assert.match(body, /^      attestations: write$/m);
+      assert.match(body, /github.event_name == 'workflow_dispatch' && github.ref == 'refs\/heads\/r3\/integration' && inputs.full_strict/);
+    } else {
+      assert.doesNotMatch(body, /id-token:\s*write|attestations:\s*write/);
+    }
+  }
+  assert.doesNotMatch(workflow, /permissions:\s*(?:write-all|read-all)/);
   assert.match(receipts, /GITHUB_TOKEN: \$\{\{ github.token \}\}/);
   assert.equal((workflow.match(/GITHUB_TOKEN:/g) ?? []).length, 1);
-  assert.match(receipts, /path: \$\{\{ inputs.canonical_g07 == 'true' && 'output\/g07-ordinary-receipts' \|\| 'receipts' \}\}/);
+  assert.match(receipts, /path: \$\{\{ \(inputs.canonical_g07 == 'true' \|\| inputs.full_strict\) && 'output\/g07-ordinary-receipts' \|\| 'receipts' \}\}/);
   assert.match(receipts, /verify output\/g07-ordinary-receipts/);
 });
 
