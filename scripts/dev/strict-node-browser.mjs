@@ -1,5 +1,7 @@
 #!/usr/bin/env node
-// Consumes the two Node-only browser mode receipts for release-gate.sh. Never runs a test.
+// Purpose: verify native Picklist and Platform Site browser receipts for the strict release table.
+// Depends on: Node.js standard library, the matrix-receipts.mjs spec parser and the Platform Site coverage contract.
+// Used by: scripts/dev/release-gate.sh for the two Node-only browser rows.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";

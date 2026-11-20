@@ -185,8 +185,9 @@
     "tests/admin/picklist-model.test.ts": "db1a477e9676810d4c9e9491fb7560730d30f8bbaac276ebbd9cd85d284557de",
     "tests/admin/picklist.spec.ts": "a9de0d32b1a295723a2cd97c50b97f84daf7be4027b308b80a39051e4d8418cb",
     "tests/admin/platform-brand-browser.mjs": "02446c837651ebf1dffaf349555b5cd7be06c6ad27e0e3fed95a02ddbd7a3fcb",
+    "tests/admin/platform-browser-coverage.mjs": "d67302b6821334e92cbcec4466a64d81f02f743848692663255b884ce673f218",
     "tests/admin/platform-messaging-copy.fixture.mjs": "65b22f7eee960ffd6c608c75bc61b019a11e6879655286b64109e2e0a568cc54",
-    "tests/admin/platform-runner.mjs": "e02e605c0a3bfbab1ae47d8b155a371c9efc5b011c1feb36fc323a96e3ade7e3",
+    "tests/admin/platform-runner.mjs": "e5a81bce557ef7a82edb52de78013019a676f8c5975ab79e2b37b02d9747c191",
     "tests/admin/platform-site.test.ts": "b62a03636786d85f95acd879d1d178d4ad159f4178bc4ec504ebc4ec10619418",
     "tests/admin/product-document.test.ts": "ccf9c067cd98ecd0fe1b71802b377ccb9f9ba2244e25a421c82a38569574a67f",
     "tests/admin/product-editor-layout.acceptance.ts": "2e91382e776fc9973f0dd919a67e4c3600c3dc9eb602aa2c0b4c45898c20dca4",
@@ -920,6 +921,7 @@
         "tests/admin/platform-site.test.ts"
       ],
       "inputs": [
+        "tests/admin/platform-browser-coverage.mjs",
         "tests/admin/platform-messaging-copy.fixture.mjs",
         "tests/admin/platform-runner.mjs",
         "tests/admin/platform-site.test.ts",
@@ -941,6 +943,8 @@
         "registry:--browser-platform-site -> tests/admin/platform-site.test.ts",
         "registry:--browser-platform-site:build apps/admin",
         "scripts/dev/test-local.sh:--browser-platform-site:lc_build=none",
+        "tests/admin/platform-browser-coverage.mjs:import apps/admin/lib/company.ts",
+        "tests/admin/platform-browser-coverage.mjs:server/import apps/admin",
         "tests/admin/platform-runner.mjs:server/import apps/admin",
         "tests/admin/platform-site.test.ts:import apps/admin/lib/company.ts",
         "tests/admin/platform-site.test.ts:import apps/admin/lib/meta-connect-copy.ts",
@@ -1078,6 +1082,7 @@
         "tests/ui/sweep-shard-lib.mjs"
       ],
       "inputs": [
+        "tests/admin/platform-browser-coverage.mjs",
         "tests/admin/platform-messaging-copy.fixture.mjs",
         "tests/admin/platform-runner.mjs",
         "tests/admin/shell-fixture.mjs",
@@ -1116,6 +1121,8 @@
         "registry:--browser-click-sweep -> tests/ui/sweep-aggregate.mjs",
         "registry:--browser-click-sweep -> tests/ui/sweep-shard-lib.mjs",
         "scripts/dev/test-local.sh:--browser-click-sweep:lc_build=both",
+        "tests/admin/platform-browser-coverage.mjs:import apps/admin/lib/company.ts",
+        "tests/admin/platform-browser-coverage.mjs:server/import apps/admin",
         "tests/admin/platform-runner.mjs:server/import apps/admin",
         "tests/foundation/browser_click_sweep_test.go -> tests/ui/click-sweep-lib.test.mjs",
         "tests/foundation/browser_click_sweep_test.go -> tests/ui/click-sweep.mjs",
