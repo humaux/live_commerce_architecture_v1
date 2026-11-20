@@ -288,6 +288,12 @@ test("MODEL_ONLY strict parent admits planned ancestor skips only with four succ
   assert.equal(admits({ input: false }), false, "strict not requested");
 });
 
+test("strict parent checkout fetches history for the G06n baseline tests", () => {
+  const workflow = readFileSync(new URL("../../.github/workflows/gates.yml", import.meta.url), "utf8");
+  const parent = workflow.split(/^  full_strict:\n/m)[1]?.split(/^  \S/m)[0] ?? "";
+  assert.match(parent, /^      - uses: actions\/checkout@[^\n]+\n        with:\n(?:          [^\n]*\n)*          fetch-depth: 0$/m);
+});
+
 test("only protected Stripe callers pass the required environment secret by name", () => {
   const gates = readFileSync(new URL("../../.github/workflows/gates.yml", import.meta.url), "utf8")
     .replace(/^[ \t]*(?:#[^\n]*)?\n/gm, "");

@@ -115,6 +115,7 @@ echo "--- PASS: TestBundleStub (0.00s)"
   writeFileSync(path.join(dir, "gate.sh"), gateScript());
   const env = {
     ...process.env, PATH: `${bin}:${process.env.PATH}`, MODE: mode, BUNDLE: String(bundle), EXTRA_ENV: "",
+    LC_G07_CANONICAL: "", // The synthetic PR uses ordinary solo and bundle paths.
     MEMBERS_JSON: JSON.stringify(members.map((m) => ({ mode: m, art: artifactName(m) }))),
     GITHUB_RUN_ID: "77", GITHUB_RUN_ATTEMPT: "1", GITHUB_SHA: "abc123", GITHUB_EVENT_NAME: "pull_request",
     STUB_FAIL: fail.join(" "), STUB_LOUD_FAIL: loudFail.join(" "), STUB_STDIN: stdinEater.join(" "), STUB_TRACE: path.join(dir, "trace.txt"),
