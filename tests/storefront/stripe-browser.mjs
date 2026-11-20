@@ -576,11 +576,12 @@ async function shipPaidShopOrder(page,id) {
   await page.getByTestId("order-expand-"+id).click();
   const detail = page.getByTestId("order-detail");
   await ex(detail).toHaveAttribute("aria-label",new RegExp(id));
-  await page.getByTestId("order-more-details").locator("summary").click();
+  await detail.getByTestId("order-more-details").locator(":scope > summary").click();
   const facts = detail.getByTestId("order-facts");
-  await ex(facts.locator('[data-state="CAPTURED"]').first()).toBeVisible();
-  await ex(facts.locator('[data-state="CONFIRMED"]').first()).toBeVisible();
-  await ex(facts.getByText("NT$85",{exact:true}).first()).toBeVisible();
+  const statuses = facts.locator(".orders-statuses");
+  await ex(statuses.locator('[data-state="CAPTURED"]')).toBeVisible();
+  await ex(statuses.locator('[data-state="CONFIRMED"]')).toBeVisible();
+  await ex(facts.locator(".orders-grand").getByText("NT$85",{exact:true})).toBeVisible();
   await facts.getByTestId("ship-carrier").selectOption("other");
   await facts.getByTestId("ship-carrier-name").fill("Synthetic home carrier");
   await facts.getByTestId("ship-tracking").fill("0012345678");
