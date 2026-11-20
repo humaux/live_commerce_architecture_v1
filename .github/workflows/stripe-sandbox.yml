@@ -17,6 +17,9 @@ on:
       strict_receipt:
         type: boolean
         required: true
+    secrets:
+      STRIPE_SECRET_KEY:
+        required: true
   schedule:
     # Nightly on the default branch (r3/integration), off-peak UTC and away from the gates.yml nightly (21:43).
     - cron: '17 19 * * *'
