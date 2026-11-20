@@ -925,6 +925,7 @@ jobs:
       - name: Prebuild shared browser binaries and bundles
         run: bash scripts/dev/test-local.sh --prebuild "$RUNNER_TEMP/strict-prebuilt"
       - name: Single strict release invocation
+        id: strict
         env:
           GH_TOKEN: ${{ github.token }}
           LC_RELEASE_GATE_OUT: ${{ runner.temp }}/strict-release
@@ -932,7 +933,7 @@ jobs:
           LC_RELEASE_GATE_SMOKE_FULL: "1"
           LC_PREBUILT_DIR: ${{ runner.temp }}/strict-prebuilt
         run: |
-          mkdir -p "$LC_RELEASE_GATE_OUT"
+          mkdir -m 0700 "$LC_RELEASE_GATE_OUT"
           rc=0
           xvfb-run -a bash scripts/dev/release-gate.sh --strict || rc=$?
           printf '%s\n' "$rc" > "$LC_RELEASE_GATE_OUT/exit"
@@ -954,16 +955,18 @@ jobs:
           path: output/playwright/
           if-no-files-found: ignore
           retention-days: 14
+      - name: Stage deploy smoke case evidence
+        id: smoke_evidence
+        if: always() && steps.strict.outcome != 'skipped'
+        run: |
+          stage=$(mktemp -d "$RUNNER_TEMP/strict-smoke.XXXXXXXX")
+          printf 'path=%s\n' "$stage" >> "$GITHUB_OUTPUT"
+          python3 .github/scripts/stage-strict-smoke.py "$GITHUB_WORKSPACE" "$RUNNER_TEMP/strict-release" "$stage" "$GITHUB_SHA"
       - name: Upload deploy smoke case evidence
-        if: always()
+        if: always() && steps.smoke_evidence.outputs.path != ''
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: strict-smoke-a${{ github.run_attempt }}
-          path: |
-            deploy/.evidence/*/result.json
-            deploy/.evidence/*/cases.tsv
-            deploy/.evidence/*/commands.tsv
-            deploy/.evidence/*/images.jsonl
-          include-hidden-files: true
-          if-no-files-found: ignore
+          path: ${{ steps.smoke_evidence.outputs.path }}/
+          if-no-files-found: error
           retention-days: 14
