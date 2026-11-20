@@ -23,6 +23,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/riverqueue/river"
 	"github.com/riverqueue/river/riverdriver/riverpgxv5"
 	"livecommerce/internal/inbox"
@@ -415,6 +416,11 @@ type oaNotificationPreparer interface {
 
 func oaNotificationSignedConversation(t *testing.T, e *lbuEnv) (miTest, string, string, string) {
 	t.Helper()
+	return oaNotificationSignedConversationProbe(t, e, nil)
+}
+
+func oaNotificationSignedConversationProbe(t *testing.T, e *lbuEnv, probe *oaRiverProbe) (miTest, string, string, string) {
+	t.Helper()
 	m := miSetupOn(t, e.p.f)
 	asset, psid := miAsset(), miAsset()
 	binding := miBinding(t, m, asset, "facebook", e.tenant(), e.store(), e.p.f.principalA)
@@ -424,8 +430,15 @@ func oaNotificationSignedConversation(t *testing.T, e *lbuEnv) (miTest, string, 
 	t.Cleanup(func() {
 		mustExec(t, m.f.owner, `DELETE FROM integration.meta_connections WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store())
 	})
-	workerPool := miPool(t, m.f, "commerce_meta_worker")
-	consumerPool := mcConsumer(t, m)
+	var workerPool, consumerPool *pgxpool.Pool
+	if probe == nil {
+		workerPool = miPool(t, m.f, "commerce_meta_worker")
+		consumerPool = mcConsumer(t, m)
+	} else {
+		workerPool = probe.pool(t, m.f, "commerce_meta_worker")
+		consumerPool = probe.pool(t, m.f, "commerce_meta_consumer")
+		defer close(probe.release)
+	}
 	client, err := meta.NewConsumerClient(context.Background(), workerPool, consumerPool, mcKeys(t, m), 1)
 	if err != nil {
 		t.Fatalf("native same-store consumer constructor: %v", err)
@@ -445,8 +458,24 @@ func oaNotificationSignedConversation(t *testing.T, e *lbuEnv) (miTest, string, 
 			t.Errorf("native consumer bounded stop: %v", err)
 		}
 	})
+	if probe != nil && probe.sharedBarrier {
+		timer := time.NewTimer(4 * time.Second)
+		defer timer.Stop()
+		select {
+		case <-probe.entered:
+		case <-timer.C:
+			t.Fatal("OA1 probe setup: predecessor never entered the sole worker")
+		}
+	}
 	raw := []byte(fmt.Sprintf(`{"object":"page","entry":[{"id":%q,"messaging":[{"sender":{"id":%q},"recipient":{"id":%q},"timestamp":%d,"message":{"mid":%q,"text":"synthetic OA inbound"}}]}]}`, asset, psid, asset, time.Now().UnixMilli(), "m."+randomUUID()))
 	event := mcPost(t, m, asset, raw)
+	if probe != nil {
+		probe.observe(t, e, event, client.ID(), "after-post")
+		defer func() {
+			probe.observe(t, e, event, client.ID(), "after-await")
+			probe.report(t)
+		}()
+	}
 	mcAwait(t, m, event)
 	var conversation string
 	err = m.f.owner.QueryRow(context.Background(), `SELECT id::text FROM social.conversations WHERE tenant_id=$1 AND store_id=$2 AND app_id=$3 AND object='page' AND asset_id=$4 AND peer_key=$5`, e.tenant(), e.store(), miApp, asset, meta.SocialPeerKey(miApp, "page", asset, psid)).Scan(&conversation)

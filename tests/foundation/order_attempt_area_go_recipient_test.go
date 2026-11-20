@@ -14,6 +14,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"os"
 	"testing"
 	"time"
 )
@@ -23,17 +24,36 @@ func TestOrderAttemptAreaGoAuthenticatedRecipientRefusalCommitsVoid(t *testing.T
 }
 
 func TestOrderAttemptAreaGoAuthenticatedMessageInvariantRetainsPending(t *testing.T) {
-	oaAreaGoAuthenticatedRecipient(t, true)
+	if os.Getenv("LC_OA1_RIVER_DIAGNOSTIC") != "1" {
+		oaAreaGoAuthenticatedRecipient(t, true)
+		return
+	}
+	if !t.Run("natural_g06", func(t *testing.T) {
+		oaAreaGoRecipientOn(t, true, lbuNew(t), newOARiverProbe(mcEvent{}, false))
+	}) {
+		return
+	}
+	t.Run("synthetic_shared", func(t *testing.T) {
+		oaRiverContrast(t, false)
+	})
+	t.Run("synthetic_isolated", func(t *testing.T) {
+		oaRiverContrast(t, true)
+	})
+	t.Run("neighbor_recipient_refusal", TestOrderAttemptAreaGoAuthenticatedRecipientRefusalCommitsVoid)
 }
 
 func oaAreaGoAuthenticatedRecipient(t *testing.T, invalidMessage bool) {
 	t.Helper()
 	// River fetches across the database queue, while the payload key belongs to this fixture.
-	e := lbuNew(t, tcvOpts{base: pwIsolatedFixture(t)})
+	oaAreaGoRecipientOn(t, invalidMessage, lbuNew(t, tcvOpts{base: pwIsolatedFixture(t)}), nil)
+}
+
+func oaAreaGoRecipientOn(t *testing.T, invalidMessage bool, e *lbuEnv, probe *oaRiverProbe) {
+	t.Helper()
 	session, offer := e.session("A1", ltgLive, 5)
 	bundle := e.h.accepted(t, session, "", "recipient-"+t04Tag(), "A1+2").BundleID
 	e.h.closeWindow(t, session)
-	m, conversation, binding, _ := oaNotificationSignedConversation(t, e)
+	m, conversation, binding, _ := oaNotificationSignedConversationProbe(t, e, probe)
 	e.linkPeer(bundle, conversation)
 	selection := oaClaimSelection(e, []string{bundle}, []string{offer.ID}, conversation)
 	selection["send_payment_link"] = true
