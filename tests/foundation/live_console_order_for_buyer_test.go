@@ -87,9 +87,9 @@ type lbuEnv struct {
 
 // lbuNew is the ltgNew environment (store, market, delivery, claims harness) with the manual-order options (bank transfer 72 h), the
 // for-buyer service on a recording planner and a merchant handler that mounts A15/A16.
-func lbuNew(t *testing.T) *lbuEnv {
+func lbuNew(t *testing.T, opts ...tcvOpts) *lbuEnv {
 	t.Helper()
-	e := ltgNew(t)
+	e := ltgNew(t, opts...)
 	e.grantCreator("orders:read", "integration:manage", "integration:read", "payments:refund", "fulfillment:write", "inbox:reply", "inbox:read", "customers:read")
 	e.topUp()
 	e.cofEnsureSettings(0, true, true, 72)

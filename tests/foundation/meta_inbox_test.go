@@ -65,7 +65,11 @@ func miPool(t *testing.T, f *testFixture, role string) *pgxpool.Pool {
 
 func miSetup(t *testing.T) miTest {
 	t.Helper()
-	f := fixture(t)
+	return miSetupOn(t, fixture(t))
+}
+
+func miSetupOn(t *testing.T, f *testFixture) miTest {
+	t.Helper()
 	ctx := context.Background()
 	ingress := miPool(t, f, "commerce_meta_ingress")
 	registrar := miPool(t, f, "commerce_meta_registrar")
