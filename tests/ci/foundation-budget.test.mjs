@@ -255,6 +255,22 @@ test("canonical and full-release transport and signing permissions stay job-scop
   assert.match(receipts, /verify output\/g07-ordinary-receipts/);
 });
 
+test("only protected Stripe callers pass the required environment secret by name", () => {
+  const gates = readFileSync(new URL("../../.github/workflows/gates.yml", import.meta.url), "utf8")
+    .replace(/^[ \t]*(?:#[^\n]*)?\n/gm, "");
+  const sandbox = readFileSync(new URL("../../.github/workflows/stripe-sandbox.yml", import.meta.url), "utf8");
+  const jobs = [...gates.matchAll(/^  ([a-z_][a-z0-9_]*):\n([\s\S]*?)(?=^  [a-z_][a-z0-9_]*:\n|$(?![\s\S]))/gm)];
+  for (const name of ["stripe_api", "stripe_browser"]) {
+    const body = jobs.find((job) => job[1] === name)?.[2] ?? "";
+    assert.match(body, /^    uses: \.\/\.github\/workflows\/stripe-sandbox\.yml$/m, name);
+    assert.match(body, /^    secrets:\n      STRIPE_SECRET_KEY: \$\{\{ secrets\.STRIPE_SECRET_KEY \}\}\n(?= {4}\S|(?![\s\S]))/m, name);
+  }
+  assert.equal((gates.match(/^ *secrets:/gm) ?? []).length, 2);
+  assert.equal((gates.match(/\bSTRIPE_SECRET_KEY\b/g) ?? []).length, 4);
+  const workflowCall = sandbox.match(/^  workflow_call:\n([\s\S]*?)(?=^  \S)/m)?.[1] ?? "";
+  assert.match(workflowCall, /^    secrets:\n      STRIPE_SECRET_KEY:\n        required: true$/m);
+});
+
 
 test("actual archive checker rejects digest/CRC/traversal/symlink/duplicate mutations", () => {
   const driver = String.raw`

@@ -13,7 +13,7 @@
 # Depends on: scripts/dev/ci-plan.mjs (matrix), scripts/dev/shard-plan.mjs + shard-plan.json (foundation groups), scripts/dev/test-local.sh (modes),
 #   scripts/dev/ci-playwright-browsers.mjs (registry engine requirements), ci-playwright-install.sh (installs only the system deps the runner image lacks, from cached .debs when possible; bounded apt otherwise),
 #   scripts/dev/test-focused.sh (regex runs), tests/ui/sweep-aggregate.mjs (whole-run verdict), scripts/dev/matrix-receipts.mjs (per-job run receipts + verifier, #128), the pinned postgres image,
-#   Playwright Chromium/WebKit for --browser-* modes (cached per Playwright version), .github/actions/pnpm (cached Corepack pnpm, #107), setup-go module/compiler cache for shard:gNN only. No secrets: every gate uses MOCK/SANDBOX fixtures only.
+#   Playwright Chromium/WebKit for --browser-* modes (cached per Playwright version), .github/actions/pnpm (cached Corepack pnpm, #107), setup-go module/compiler cache for shard:gNN only. Ordinary gates use credential-free fixtures.
 # Used by: the integrator (`gh workflow run gates.yml --ref <branch> -f modes='[...]'`, or `-f full_browser_universe=true` for the nightly set on demand);
 #   pushes to r3/integration run the sharded foundation suite automatically; every PR into r3/integration runs the set scripts/dev/pr-modes.mjs computes from its
 #   changed paths; the nightly schedule re-verifies trunk browser health with the FULL browser universe (CI-SELECT: push runs select no browser job).
@@ -22,7 +22,7 @@
 #   (scripts/dev/pr-modes.mjs, CI-SELECT), plus deploy-smoke when deploy/ or scripts/deploy* changed.
 #   STABLE REQUIRED CHECK NAME for a branch ruleset: `Gates (GitHub runners) / required` (job `required`: fails when plan, any gate leg, the sweep/visual aggregate, the
 #   `receipts` verifier (every planned mode: one same-run, same-sha PASS receipt with test_count > 0) or an expected deploy-smoke failed, was cancelled or was skipped). Do NOT require the individual `gate (<mode>)` names: they change with the planned set. `extra_env` is never applied on pull_request;
-#   calibration / fault-injection runs stay an extra workflow_dispatch. No pull_request_target, no secrets.
+#   calibration / fault-injection runs stay an extra workflow_dispatch. Stripe credentials are scoped to the protected sandbox workflow.
 name: Gates (GitHub runners)
 
 on:
@@ -861,7 +861,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  # Same-run DAG: each native Stripe execution gets a distinct hosted protected job.
+  # Same-run DAG: each protected call must name the secret so the callee can bind its environment value.
   stripe_api:
     name: Stripe API
     needs: plan
@@ -874,6 +874,8 @@ jobs:
     with:
       mode: api
       strict_receipt: true
+    secrets:
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
 
   stripe_browser:
     name: Stripe browser
@@ -887,6 +889,8 @@ jobs:
     with:
       mode: browser
       strict_receipt: true
+    secrets:
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
 
   full_strict:
     name: Strict release table
