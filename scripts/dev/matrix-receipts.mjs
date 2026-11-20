@@ -77,6 +77,18 @@ function afterBrowserRun(text) {
   return at < 0 ? "" : lines.slice(at + 1).join("\n");
 }
 
+/** Strict rows need a complete, clean spec reporter invocation after the browser-run marker. */
+export function strictBrowserNodeSpec(text) {
+  const invocations = nodeInvocations(afterBrowserRun(text).split(/\r?\n/));
+  if (invocations.length !== 1) return null;
+  const body = invocations[0].text;
+  const summaries = [...body.matchAll(NODE_SUMMARY)];
+  if (summaries.length !== 1 || summaries[0][1] !== "ℹ") return null;
+  const { tests, pass, fail, cancelled, skipped, todo } = summaries[0].groups;
+  if (Number(pass) < 1 || pass !== tests || [fail, cancelled, skipped, todo].some((n) => n !== "0")) return null;
+  return { count: Number(pass), lines: body.split("\n") };
+}
+
 /** Tests that ran according to the runners' own output in one log text, and whether any top-level one failed (#147 CI-6/CI-9). */
 export function scanTests(text) {
   let n = 0, failed = false, go = 0, node = 0, nodeRun = 0;

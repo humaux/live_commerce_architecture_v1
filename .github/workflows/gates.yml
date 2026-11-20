@@ -56,6 +56,10 @@ on:
         description: "Strict complete G07 shard attempt; default modes and no overrides only"
         default: 'false'
         required: false
+      full_strict:
+        description: "Full 69-row strict release attempt (r3/integration only, no overrides)"
+        type: boolean
+        default: false
       extra_env:
         description: >-
           Optional space-separated LC_*=value pairs exported for every mode (fault-injection calibration of a new gate,
@@ -64,7 +68,7 @@ on:
         required: false
 
 env:
-  LC_G07_CANONICAL: ${{ github.event_name == 'workflow_dispatch' && inputs.canonical_g07 == 'true' && '1' || '' }}
+  LC_G07_CANONICAL: ${{ github.event_name == 'workflow_dispatch' && (inputs.canonical_g07 == 'true' || inputs.full_strict) && '1' || '' }}
 
 permissions:
   contents: read
@@ -90,12 +94,14 @@ jobs:
       prebuild: ${{ steps.plan.outputs.prebuild }}
     steps:
       - id: g07_anchor
-        if: inputs.canonical_g07 == 'true'
+        if: (inputs.canonical_g07 == 'true' || inputs.full_strict)
         env:
           INPUT_MODES: ${{ inputs.modes }}
           INPUT_FULL: ${{ inputs.full_browser_universe }}
           INPUT_EXTRA: ${{ inputs.extra_env }}
+          FULL_STRICT: ${{ inputs.full_strict }}
         run: |
+          if [[ "$FULL_STRICT" == true ]]; then [[ "$GITHUB_REF" == refs/heads/r3/integration ]] || exit 2; fi
           [[ "$GITHUB_EVENT_NAME" == workflow_dispatch && "$INPUT_MODES" == '["foundation-shards"]' && "$INPUT_FULL" == false && -z "$INPUT_EXTRA" ]] || exit 2
           anchor=$(date +%s); deadline=$((anchor + 9000))
           printf 'anchor=%s\ndeadline=%s\n' "$anchor" "$deadline" >> "$GITHUB_OUTPUT"
@@ -117,7 +123,7 @@ jobs:
         run: printf '.github/workflows/gates.yml\n' | node scripts/dev/pr-modes.mjs --stdin >/dev/null
       # CI-DRIFT (owner 2026-10-10): contract drift blocks `required` through this plan job. Go routes x contracts x BFF allowlist;
       # new drift, a touched legacy route, a stale or grown baseline -> exit 1; untouched legacy -> warning. Base = the PR base SHA.
-      - if: github.event_name == 'pull_request' || inputs.canonical_g07 == 'true'
+      - if: github.event_name == 'pull_request' || (inputs.canonical_g07 == 'true' || inputs.full_strict)
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
         with:
           go-version-file: go.mod
@@ -142,10 +148,10 @@ jobs:
           if [[ "${LC_G07_CANONICAL:-}" == 1 ]]; then export MODES='["foundation-shards","--browser-product-editor"]' BUNDLE=false; fi
           node scripts/dev/ci-plan.mjs
       - name: Canonical compiled inventory
-        if: inputs.canonical_g07 == 'true'
+        if: (inputs.canonical_g07 == 'true' || inputs.full_strict)
         run: node scripts/dev/matrix-receipts.mjs canonical-plan output/g07-plan
       - name: Canonical plan artifact
-        if: inputs.canonical_g07 == 'true'
+        if: (inputs.canonical_g07 == 'true' || inputs.full_strict)
         timeout-minutes: 2
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
@@ -229,7 +235,7 @@ jobs:
       EXTRA_ENV: ${{ github.event_name == 'workflow_dispatch' && inputs.extra_env || '' }} # never on pull_request
     steps:
       - name: Canonical remaining setup budget
-        if: inputs.canonical_g07 == 'true'
+        if: (inputs.canonical_g07 == 'true' || inputs.full_strict)
         run: test "$((LC_G07_DEADLINE - $(date +%s)))" -gt 300
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
@@ -482,7 +488,7 @@ jobs:
           done 3< <(jq -r '.[] | "\(.mode) \(.art)"' <<<"$MEMBERS_JSON")
           exit "$rc"
       - name: Canonical evidence ${{ matrix.mode }}
-        if: always() && inputs.canonical_g07 == 'true'
+        if: always() && (inputs.canonical_g07 == 'true' || inputs.full_strict)
         timeout-minutes: 2
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
@@ -728,6 +734,9 @@ jobs:
     permissions:
       contents: read
       actions: read
+    outputs:
+      native_id: ${{ steps.native_artifact.outputs.artifact-id }}
+      native_digest: ${{ steps.native_artifact.outputs.artifact-digest }}
     needs: [plan, gate]
     if: ${{ always() && needs.plan.result == 'success' }}
     runs-on: ubuntu-24.04
@@ -744,7 +753,7 @@ jobs:
         continue-on-error: true # no receipt at all is reported by the verifier per planned mode, not as a download error
         with:
           pattern: receipt-gate-*
-          path: ${{ inputs.canonical_g07 == 'true' && 'output/g07-ordinary-receipts' || 'receipts' }}
+          path: ${{ (inputs.canonical_g07 == 'true' || inputs.full_strict) && 'output/g07-ordinary-receipts' || 'receipts' }}
       - name: Every planned mode has one fresh PASS receipt with tests
         env:
           PLANNED: ${{ needs.plan.outputs.matrix }}
@@ -752,7 +761,7 @@ jobs:
           if [[ "${LC_G07_CANONICAL:-}" == 1 ]]; then node scripts/dev/matrix-receipts.mjs verify output/g07-ordinary-receipts
           else node scripts/dev/matrix-receipts.mjs verify receipts; fi
       - name: Strict canonical G07 intake
-        if: inputs.canonical_g07 == 'true'
+        if: (inputs.canonical_g07 == 'true' || inputs.full_strict)
         env:
           LC_G07_ANCHOR: ${{ needs.plan.outputs.g07_anchor }}
           LC_G07_DEADLINE: ${{ needs.plan.outputs.g07_deadline }}
@@ -760,7 +769,8 @@ jobs:
           LC_RELEASE_GATE_OUT: output/g07-verdict
         run: bash scripts/dev/release-gate.sh --strict --only G07 --shard-evidence output/g07-intake
       - name: Canonical verdict and raw intake
-        if: always() && inputs.canonical_g07 == 'true'
+        id: native_artifact
+        if: always() && (inputs.canonical_g07 == 'true' || inputs.full_strict)
         timeout-minutes: 1
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
@@ -771,7 +781,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Canonical finalization deadline
-        if: always() && inputs.canonical_g07 == 'true'
+        if: always() && (inputs.canonical_g07 == 'true' || inputs.full_strict)
         env:
           LC_G07_DEADLINE: ${{ needs.plan.outputs.g07_deadline }}
         run: test "$(date +%s)" -lt "$LC_G07_DEADLINE"
@@ -813,3 +823,150 @@ jobs:
           if [[ "$AGG_EXPECTED" == true ]]; then [[ "$AGG" == success ]] || rc=1; else [[ "$AGG" == skipped ]] || rc=1; fi
           if [[ "$DEPLOY_EXPECTED" == true ]]; then [[ "$DEPLOY" == success ]] || rc=1; else [[ "$DEPLOY" == skipped ]] || rc=1; fi
           exit "$rc"
+
+
+  g07_seal:
+    name: Seal canonical G07
+    needs: receipts
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/r3/integration' && inputs.full_strict
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - name: Bind canonical G07 native evidence
+        env:
+          ARTIFACT_ID: ${{ needs.receipts.outputs.native_id }}
+          ARTIFACT_DIGEST: ${{ needs.receipts.outputs.native_digest }}
+        run: python3 scripts/dev/strict-release-evidence.py seal g07 "$RUNNER_TEMP/strict-child" "$ARTIFACT_ID" "sha256:${ARTIFACT_DIGEST#sha256:}" -
+      - name: Sign strict child receipt
+        id: attestation
+        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
+        with:
+          subject-path: ${{ runner.temp }}/strict-child/receipt.json
+      - name: Include signature bundle
+        env:
+          BUNDLE: ${{ steps.attestation.outputs.bundle-path }}
+        run: cp "$BUNDLE" "$RUNNER_TEMP/strict-child/attestation.json"
+      - name: Upload strict child receipt
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: strict-g07-a${{ github.run_attempt }}
+          path: ${{ runner.temp }}/strict-child/
+          if-no-files-found: error
+          retention-days: 14
+
+  # Same-run DAG: each native Stripe execution gets a distinct hosted protected job.
+  stripe_api:
+    name: Stripe API
+    needs: plan
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/r3/integration' && inputs.full_strict
+    uses: ./.github/workflows/stripe-sandbox.yml
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    with:
+      mode: api
+      strict_receipt: true
+
+  stripe_browser:
+    name: Stripe browser
+    needs: [plan, stripe_api]
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/r3/integration' && inputs.full_strict
+    uses: ./.github/workflows/stripe-sandbox.yml
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    with:
+      mode: browser
+      strict_receipt: true
+
+  full_strict:
+    name: Strict release table
+    needs: [required, g07_seal, stripe_api, stripe_browser]
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/r3/integration' && inputs.full_strict
+    runs-on: ubuntu-24.04
+    timeout-minutes: 330
+    permissions:
+      actions: read
+      attestations: read
+      contents: read
+    env:
+      GOTOOLCHAIN: go1.27.4
+      GOFLAGS: -mod=readonly
+      PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: ./.github/actions/pnpm
+      - name: Install full-table prerequisites
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+          sudo mkdir -p "$PLAYWRIGHT_BROWSERS_PATH"
+          sudo chown "$(id -u):$(id -g)" "$PLAYWRIGHT_BROWSERS_PATH"
+          bash scripts/dev/ci-playwright-install.sh chromium webkit
+          docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+      - name: Prebuild shared browser binaries and bundles
+        run: bash scripts/dev/test-local.sh --prebuild "$RUNNER_TEMP/strict-prebuilt"
+      - name: Single strict release invocation
+        id: strict
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LC_RELEASE_GATE_OUT: ${{ runner.temp }}/strict-release
+          LC_RELEASE_GATE_FULL_STRICT: "1"
+          LC_RELEASE_GATE_SMOKE_FULL: "1"
+          LC_PREBUILT_DIR: ${{ runner.temp }}/strict-prebuilt
+        run: |
+          mkdir -m 0700 "$LC_RELEASE_GATE_OUT"
+          rc=0
+          xvfb-run -a bash scripts/dev/release-gate.sh --strict || rc=$?
+          printf '%s\n' "$rc" > "$LC_RELEASE_GATE_OUT/exit"
+          git rev-parse HEAD 'HEAD^{tree}' > "$LC_RELEASE_GATE_OUT/checkout.txt"
+          exit "$rc"
+      - name: Upload strict table and native evidence pointers
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: strict-release-a${{ github.run_attempt }}
+          path: ${{ runner.temp }}/strict-release/
+          if-no-files-found: error
+          retention-days: 30
+      - name: Upload native browser evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: strict-browser-local-a${{ github.run_attempt }}
+          path: output/playwright/
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Stage deploy smoke case evidence
+        id: smoke_evidence
+        if: always() && steps.strict.outcome != 'skipped'
+        run: |
+          stage=$(mktemp -d "$RUNNER_TEMP/strict-smoke.XXXXXXXX")
+          printf 'path=%s\n' "$stage" >> "$GITHUB_OUTPUT"
+          python3 .github/scripts/stage-strict-smoke.py "$GITHUB_WORKSPACE" "$RUNNER_TEMP/strict-release" "$stage" "$GITHUB_SHA"
+      - name: Upload deploy smoke case evidence
+        if: always() && steps.smoke_evidence.outputs.path != ''
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: strict-smoke-a${{ github.run_attempt }}
+          path: ${{ steps.smoke_evidence.outputs.path }}/
+          if-no-files-found: error
+          retention-days: 14

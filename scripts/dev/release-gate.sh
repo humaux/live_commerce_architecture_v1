@@ -20,7 +20,8 @@
 #   TEST key present, then G90 deploy smoke static, G91 deploy smoke full and G99 (no gate rewrote a
 #   tracked .impeccable file, ruling F7; full runs only).
 # Usage: bash scripts/dev/release-gate.sh [--strict] [--list] [--only ID[,ID...]] [--shard-evidence DIR]
-# --shard-evidence requires --strict --only G07; verified JSON reuses the existing classifier/catalogue.
+# --shard-evidence requires --strict --only G07. LC_RELEASE_GATE_FULL_STRICT=1 selects the protected
+# CI full-table path, consuming only the three signed child executions of its own workflow attempt.
 #   --strict  exit 3 when there is no FAIL but at least one UNACCEPTED NOT_RUN (use for release acceptance);
 #             NOT_RUN rows listed in the accepted catalogue below (R1 rulings F11/F12/G3/G4) do not count
 #   --list    print the step ids and exit
@@ -78,6 +79,19 @@ MAIN=$(cd "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)/
 OUT="${LC_RELEASE_GATE_OUT:-$MAIN/output/release-gate/$(date -u +%Y%m%dT%H%M%SZ)-$sha}"
 
 have() { command -v "$1" >/dev/null 2>&1; }
+bound_strict=${LC_RELEASE_GATE_FULL_STRICT:-0}
+stripe_bound_ok=0
+if [[ "$bound_strict" == 1 ]]; then
+  if [[ "$strict" != 1 || -n "$only$shard_evidence" || -z "${LC_RELEASE_GATE_OUT:-}" ]]; then
+    echo "bound strict intake requires a full --strict invocation and a new evidence path" >&2
+    exit 2
+  fi
+  if [[ -n "${LC_SECRETS_FILE:-}${STRIPE_SECRET_KEY:-}${STRIPE_TEST_KEY:-}${STRIPE_SECRET_KEY_ROTATED:-}${LC_G07Z_BIN_DIR:-}" ||
+        -e "$HOME/.config/livecommerce/secrets.env" || -L "$HOME/.config/livecommerce/secrets.env" ]]; then
+    echo "bound strict runner requires a Stripe-credential-free job" >&2
+    exit 2
+  fi
+fi
 # SANDBOX opt-in is read once and then removed from the environment: only the SANDBOX rows (G07z and
 # --stripe-browser) get it back, so no other suite turns into a half-configured SANDBOX run.
 stripe_opt_in=0
@@ -116,9 +130,9 @@ n_pass=0 n_fail=0 n_notrun=0 n_accepted=0
 # Items: the lines of a *.skipped list (go test names), the "not run: S01,S34" ids of a smoke row, or
 # else the note itself. First match wins; keep specific entries above broad ones.
 accepted_notrun() { # $1 id, $2 note, $3 log/list file -> prints the reason(s), or nothing
-  python3 - "$1" "$2" "$3" <<'PY'
+  python3 - "$1" "$2" "$3" "${bound_strict:-0}" "${stripe_bound_ok:-0}" <<'PY'
 import fnmatch, re, sys
-rid, note, path = sys.argv[1:4]
+rid, note, path, bound, stripe_verified = sys.argv[1:]
 catalogue = [  # (row id glob, item glob, reason)
     ("*", "*TestStripeSP16Sandbox/expires_at_29min*", "G4 SP16 29-min expiry probe is developer-only"),
     ("*", "*TestStripeRF10Sandbox/rotated_key*", "G4 rotated-key replay needs a second Stripe test key"),
@@ -152,6 +166,10 @@ if not items:
 reasons = []
 for item in items:
     hit = next((r for g, pat, r in catalogue if fnmatch.fnmatchcase(rid, g) and fnmatch.fnmatchcase(item, pat)), None)
+    # Only the exact SP16 test can use the signed API handoff. Keep the legacy catalogue for the standalone entry.
+    if bound == "1" and rid == "G06s" and hit == "runs in G07z with the Stripe test key":
+        if stripe_verified != "1" or item != "livecommerce/internal/integrations/psp/stripe.TestStripeSP16Sandbox":
+            sys.exit(0)
     if hit is None:
         sys.exit(0)  # one unaccepted item keeps the whole row open
     if hit not in reasons:
@@ -192,6 +210,17 @@ browser_ok() {
   have node && have pnpm && [[ -d node_modules/@playwright ]] &&
     node --input-type=module -e "import fs from 'node:fs'; import('@playwright/test').then(m=>process.exit(fs.existsSync(m.chromium.executablePath())?0:1)).catch(()=>process.exit(1))" >/dev/null 2>&1
 }
+
+# Admit all three native children before starting unprivileged local suites.
+if [[ "$bound_strict" == 1 ]]; then
+  run_cmd strict-intake python3 scripts/dev/strict-release-evidence.py intake "$OUT/native"
+  unset GH_TOKEN GITHUB_TOKEN
+  if ((rc != 0)); then
+    echo "strict child intake failed (see $LOG)" >&2
+    exit 1
+  fi
+  stripe_bound_ok=1
+fi
 
 # ---- G01 architecture packet --------------------------------------------------------------------
 if selected G01; then
@@ -380,8 +409,12 @@ PY
 
 # ---- G07 whole foundation package: real PostgreSQL, race detector, vet ----------------------------
 if selected G07; then
-  if [[ -n "$shard_evidence" ]]; then
-    run_cmd G07 node scripts/dev/matrix-receipts.mjs canonical-verify "$shard_evidence" "$OUT"
+  if [[ -n "$shard_evidence" || "$bound_strict" == 1 ]]; then
+    if [[ "$bound_strict" == 1 ]]; then
+      run_cmd G07 cp "$OUT/native/G07.jsonl" "$OUT/native/G07.conditional" "$OUT/"
+    else
+      run_cmd G07 node scripts/dev/matrix-receipts.mjs canonical-verify "$shard_evidence" "$OUT"
+    fi
     if ((rc != 0)); then
       record G07 REAL_PG FAIL "canonical shard intake failed" "$rc" "$LOG"
     else
@@ -416,32 +449,16 @@ if selected G07; then
 fi
 
 # ---- G06s: unit-run skips (real-PG tests of non-foundation packages lack the PG env in G06) ---------------
-# A G06 skip ("pkg.Test") is covered only when the SAME test PASSed in this run's G07 (go test -p 1 -v ./...
-# prints each package's results before its "ok <import path>" line). Uncovered skips stay NOT_RUN and go
-# through the accepted catalogue; covered ones are listed as the G06r PASS row (they ran, against real PG).
-if selected G06 && selected G07 && [[ -s "$OUT/G06.skipped" ]]; then
-  python3 - "$OUT/G06.skipped" "$OUT/G07.log" "$OUT/G06s.covered" "$OUT/G06s.skipped" <<'PY'
-import re, sys
-skipped = [l.strip() for l in open(sys.argv[1]) if l.strip()]
-passed, pending = set(), []
-try:
-    for line in open(sys.argv[2], errors="replace"):
-        m = re.match(r"\s*--- PASS: (\S+) \(", line)
-        if m:
-            pending.append(m.group(1))
-            continue
-        m = re.match(r"(ok|FAIL)\s+(\S+)", line)
-        if m:
-            if m.group(1) == "ok":
-                passed.update(m.group(2).rsplit("/", 1)[-1] + "." + t for t in pending)
-            pending = []
-except OSError:
-    pass
-open(sys.argv[3], "w").write("\n".join(t for t in skipped if t in passed))
-open(sys.argv[4], "w").write("\n".join(t for t in skipped if t not in passed))
-PY
-elif [[ -s "$OUT/G06.skipped" ]]; then
-  cp "$OUT/G06.skipped" "$OUT/G06s.skipped" && : >"$OUT/G06s.covered"
+# Match package and test from G06's original JSON, after the corresponding G07 row is adjudicated.
+if selected G06 && [[ -s "$OUT/G06.skipped" ]]; then
+  coverage=none
+  if awk -F '\t' '$1 == "G07" && $3 == "PASS" { found++ } END { exit found != 1 }' "$OUT/results.tsv"; then
+    coverage=verbose
+    [[ "$bound_strict" == 1 ]] && coverage=native
+  fi
+  if ! python3 scripts/dev/strict-g06-coverage.py "$OUT" "$coverage"; then
+    record G06s UNIT FAIL "cannot correlate native G06/G07 events" 1 "$OUT/G06.jsonl"
+  fi
 fi
 if [[ -s "$OUT/G06s.covered" ]]; then
   record G06r UNIT PASS "$(grep -c . "$OUT/G06s.covered") G06-skipped test(s) PASSED in G07 (real PG): $(tr '\n' ' ' <"$OUT/G06s.covered" | cut -c1-140)" - "$OUT/G06s.covered"
@@ -466,7 +483,12 @@ stripe_sandbox_ready() {
 # ---- G07z Stripe SANDBOX API tiers with the owner's test key (SP16 unit, RF10 + SP21 real PG) ---------
 # The key is read in a subshell from the secrets file and exported to these go test processes only.
 if selected G07z; then
-  if ! stripe_sandbox_ready; then
+  if [[ "$bound_strict" == 1 ]]; then
+    record G07z SANDBOX PASS "SP16, RF10 and SP21 passed in this attempt's protected API job" 0 "$OUT/native/api/receipt.json"
+    if [[ -s "$OUT/native/G07z.skipped" ]]; then
+      record G07z+ SANDBOX NOT_RUN "skipped in the protected API job" - "$OUT/native/G07z.skipped"
+    fi
+  elif ! stripe_sandbox_ready; then
     record G07z SANDBOX NOT_RUN "needs STRIPE_BROWSER=1, STRIPE_SANDBOX=1 and an sk_test_/rk_test_ key in secrets.env"
   elif ! docker_ok || ! have go; then
     record G07z SANDBOX NOT_RUN "docker daemon or go missing"
@@ -505,6 +527,11 @@ for m in $browser_modes; do
     record "$id" "$tier" FAIL "mode $m is not listed in $gates_doc" 1 -
     continue
   fi
+  if [[ "$m" == --stripe-browser && "$bound_strict" == 1 ]]; then
+    record "$id" SANDBOX PASS "SP18 SANDBOX, SU07/SU09 MOCK and node-env passed in this attempt's protected browser job" 0 "$OUT/native/browser/receipt.json"
+    record "${id}+" SANDBOX NOT_RUN "SP17 webhook NOT_RUN" - "$OUT/native/browser/receipt.json"
+    continue
+  fi
   if [[ "$m" == --stripe-browser ]] && ! stripe_sandbox_ready; then
     record "$id" SANDBOX NOT_RUN "needs STRIPE_BROWSER=1, STRIPE_SANDBOX=1 and an sk_test_/rk_test_ key in secrets.env"
     continue
@@ -520,6 +547,12 @@ for m in $browser_modes; do
   fi
   if [[ "$m" == --stripe-browser ]]; then
     run_cmd "$id" env STRIPE_BROWSER=1 STRIPE_SANDBOX=1 bash scripts/dev/test-local.sh "$m"
+  elif [[ "$m" == --browser-platform-site ]]; then
+    if ! platform_evidence=$(mkdir -p "$ROOT/output/playwright" && mktemp -d "$ROOT/output/playwright/run.XXXXXXXX"); then
+      record "$id" "$tier" FAIL "cannot allocate fresh platform-site evidence" 1 -
+      continue
+    fi
+    run_cmd "$id" env LC_BROWSER_EVIDENCE_ROOT="$platform_evidence" bash scripts/dev/test-local.sh "$m"
   else
     run_cmd "$id" bash scripts/dev/test-local.sh "$m"
   fi
@@ -544,12 +577,20 @@ for m in $browser_modes; do
     else
       record "$id" "$tier" FAIL "browser-webkit exit 0 but only $wk/7 clean step lines: never PASS" "$rc" "$LOG"
     fi
-  elif [[ "$m" == --browser-platform-site ]]; then
-    np=$(awk '/^ℹ pass [0-9]+$/ {n=$3} END {print n+0}' "$LOG")
-    if ((np >= 1)) && grep -qE '^ℹ fail 0$' "$LOG" && grep -q '^PASS PS1/PS2/PS4: 30 page cases, 15 SSR cases, 16 tag cases,' "$LOG"; then
-      record "$id" "$tier" PASS "platform node + 30 real-click pages + SSR/tag matrix (local MOCK transport)" "$rc" "$LOG"
+  elif [[ "$m" == --browser-picklist || "$m" == --browser-platform-site ]]; then
+    if note=$(node scripts/dev/strict-node-browser.mjs "$m" "$LOG" "${platform_evidence:-}" 2>>"$LOG"); then
+      record "$id" "$tier" PASS "$note" "$rc" "$LOG"
     else
-      record "$id" "$tier" FAIL "platform-site missing Node/SSR/browser/tag evidence" "$rc" "$LOG"
+      record "$id" "$tier" FAIL "missing, incomplete or failed native $m evidence" 1 "$LOG"
+    fi
+  elif [[ "$m" == --browser-meta-health-ui ]]; then
+    read -r gp gf sn so <<<"$(judge_gotest "$LOG" "$OUT/$id.skipped" "$OUT/$id.skipped-other" verbose "" TestBrowserMetaHealthUI TestMetaHealthUIWireRequiresCapability)"
+    if ((gp >= 2 && gf == 0 && sn == 0 && so == 0)) &&
+       [[ "$(grep -cE '^ok[[:space:]]+livecommerce/tests/foundation[[:space:]]' "$LOG")" == 1 ]] &&
+       ! grep -qE '^FAIL([[:space:]]|$)' "$LOG"; then
+      record "$id" "$tier" PASS "$gp named Go browser/capability tests and package passed" "$rc" "$LOG"
+    else
+      record "$id" "$tier" FAIL "missing or failed Meta Health UI Go tests/package, or unexpected skip" 1 "$LOG"
     fi
   elif [[ "$m" == --browser-admin-shell ]]; then
     # Node + Playwright only, no go test events (the W0 shell gate needs neither PG nor Docker). test-local.sh runs node --test with the spec
@@ -606,26 +647,64 @@ for m in $browser_modes; do
 done
 
 # ---- smoke result reader: FAIL if any FAIL, NOT_RUN if any NOT_RUN/BLOCKED, else PASS ----------------
-smoke_verdict() { # $1 = smoke log; prints "STATUS|note"
-  python3 - "$1" <<'PY'
-import json, re, sys
-text = open(sys.argv[1], errors="replace").read()
-m = re.findall(r"evidence: (\S+/result\.json)", text)
-if not m:
-    print("FAIL|no evidence file reported (smoke did not finish)")
+smoke_verdict() { # $1 = smoke log; $2 = native exit for bound G91; prints "STATUS|note"
+  python3 - "$1" "${2:-}" "$ROOT" <<'PY'
+import json, re, subprocess, sys
+from pathlib import Path
+
+log, rc, root = sys.argv[1:]
+
+def reject(note):
+    print(f"FAIL|{note}")
     sys.exit(0)
+
+text = Path(log).read_text(errors="replace")
+matches = re.findall(r"evidence: (\S+/result\.json)(?:  overall=(\w+)(?=\r?$))?", text, re.M)
+if not matches:
+    reject("no evidence file reported (smoke did not finish)")
+where, terminal = matches[-1]
 try:
-    r = json.load(open(m[-1]))
-except Exception:
-    print("FAIL|evidence file unreadable")
-    sys.exit(0)
-res = r.get("results", [])
+    if rc:
+        evidence_root = Path(root).resolve() / "deploy/.evidence"
+        native_path = rf"{re.escape(str(evidence_root))}/\d{{8}}T\d{{6}}Z-[0-9a-f]{{4}}/result\.json"
+        if len(matches) != 1 or not re.fullmatch(native_path, where):
+            reject("missing, duplicate or unexpected native smoke receipt")
+        if terminal != {"0": "PASS", "1": "FAIL", "3": "BLOCKED"}.get(rc):
+            reject("native smoke terminal disagrees with process exit")
+        # Read just the native result. Keep the root-owned directory and all other files private.
+        read_receipt = """
+import sys
+from pathlib import Path
+path = Path(sys.argv[1])
+if path.resolve(strict=True) != path or not path.is_file():
+    sys.exit(1)
+sys.stdout.buffer.write(path.read_bytes())
+"""
+        raw = subprocess.check_output(["sudo", "-n", "python3", "-I", "-c", read_receipt, where],
+                                      stderr=subprocess.DEVNULL, timeout=15)
+        r = json.loads(raw)
+        if r.get("overall") != terminal or not isinstance(r.get("expected_cases"), list) or not r["expected_cases"]:
+            reject("invalid native smoke receipt")
+        cases = r["results"]
+        if any(case["status"] not in ("PASS", "FAIL", "BLOCKED", "NOT_RUN") for case in cases):
+            reject("invalid native smoke case status")
+        with open(log, "ab") as out:
+            checked = subprocess.run([sys.executable, ".github/scripts/smoke-verdict.py", "/dev/stdin", rc, "full"],
+                                     input=raw, stdout=out, stderr=subprocess.STDOUT, timeout=15)
+        if checked.returncode != 0:
+            reject("native smoke verdict rejected (see log)")
+        if any(case["status"] == "BLOCKED" for case in cases) != (rc == "3"):
+            reject("native smoke BLOCKED cases disagree with process exit")
+    else:
+        r = json.loads(Path(where).read_bytes())
+    res = r.get("results", [])
+except (OSError, ValueError, TypeError, KeyError, AttributeError, subprocess.SubprocessError):
+    reject("evidence file unreadable or invalid")
 bad = [c["id"] for c in res if c["status"] == "FAIL"]
 nr = [c["id"] for c in res if c["status"] in ("NOT_RUN", "BLOCKED")]
 n_pass = sum(1 for c in res if c["status"] == "PASS")
 exp = set(r.get("expected_cases", []))
 missing = sorted(exp - {c["id"] for c in res})
-where = m[-1]
 if bad or missing:
     print("FAIL|FAIL=%s missing=%s (%s)" % (",".join(bad) or "-", ",".join(missing) or "-", where))
 elif nr:
@@ -650,6 +729,13 @@ fi
 if selected G91; then
   if [[ "${LC_RELEASE_GATE_SMOKE_FULL:-0}" != 1 ]]; then
     record G91 DEPLOY NOT_RUN "run on the Linux deploy host as root: LC_RELEASE_GATE_SMOKE_FULL=1 or bash deploy/scripts/smoke.sh full"
+  elif [[ "$bound_strict" == 1 ]]; then
+    run_cmd G91 sudo --preserve-env=GOTOOLCHAIN,GOFLAGS,PLAYWRIGHT_BROWSERS_PATH env "PATH=$PATH" "HOME=$HOME" bash deploy/scripts/smoke.sh full
+    if ! v=$(smoke_verdict "$LOG" "$rc") || [[ "$v" == FAIL\|* ]]; then
+      record G91 DEPLOY FAIL "${v#*|}" 1 "$LOG"
+    else
+      record G91 DEPLOY "${v%%|*}" "smoke full: ${v#*|}" "$rc" "$LOG"
+    fi
   elif [[ "$(uname -s)" != Linux || "$(id -u)" != 0 ]] || ! docker_ok; then
     record G91 DEPLOY NOT_RUN "smoke full needs Linux, root and a docker daemon"
   else

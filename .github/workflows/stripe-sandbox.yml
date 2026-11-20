@@ -9,6 +9,14 @@
 name: Stripe SANDBOX
 
 on:
+  workflow_call:
+    inputs:
+      mode:
+        type: string
+        required: true
+      strict_receipt:
+        type: boolean
+        required: true
   schedule:
     # Nightly on the default branch (r3/integration), off-peak UTC and away from the gates.yml nightly (21:43).
     - cron: '17 19 * * *'
@@ -36,7 +44,13 @@ jobs:
     if: >-
       github.ref == 'refs/heads/r3/integration' &&
       (github.event_name == 'schedule' ||
-       (github.event_name == 'workflow_dispatch' && (inputs.mode == 'browser' || inputs.mode == 'api')))
+       (github.event_name == 'workflow_dispatch' && (inputs.mode == 'browser' || inputs.mode == 'api') &&
+        ((!inputs.strict_receipt && github.workflow_ref == format('{0}/.github/workflows/stripe-sandbox.yml@refs/heads/r3/integration', github.repository)) ||
+         (inputs.strict_receipt && github.workflow_ref == format('{0}/.github/workflows/gates.yml@refs/heads/r3/integration', github.repository)))))
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     environment: stripe-sandbox
@@ -109,6 +123,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.mode == 'api'
         env:
           STRIPE_TEST_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRICT_RECEIPT: ${{ inputs.strict_receipt }}
         run: |
           umask 077
           [[ "$STRIPE_TEST_KEY" =~ ^(sk|rk)_test_[[:alnum:]]+$ ]] || { echo "Stripe test key required" >&2; exit 2; }
@@ -127,6 +142,10 @@ jobs:
           awk -F '\t' -v sha="$GITHUB_SHA" '$1=="G07z" && $2=="SANDBOX" && $3=="PASS" && $5=="0" {
             print $1, $2, $3, "SP16 RF10 SP21/sandbox_probe_against_real_stripe", sha; found++
           } END { exit found != 1 }' "$LC_RELEASE_GATE_OUT/results.tsv" > output/g07z/result.txt
+          rm -f "$LC_SECRETS_FILE"
+          if [[ "$STRICT_RECEIPT" == true ]]; then
+            python3 scripts/dev/strict-release-evidence.py project-api "$LC_RELEASE_GATE_OUT" output/g07z/probes.json
+          fi
       - name: SANDBOX gate
         if: github.event_name == 'schedule' || inputs.mode == 'browser'
         id: gate
@@ -164,9 +183,45 @@ jobs:
           if [[ $rc == 0 ]]; then echo "evidence contains a Stripe key-shaped string; not uploading" >&2; exit 1; fi
           if [[ $rc != 1 ]]; then echo "secret scan error (grep exit $rc); not uploading" >&2; exit 1; fi
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        id: native_artifact
         if: always() && steps.scan.outcome == 'success'
         with:
-          name: stripe-sandbox-evidence-${{ github.sha }}-${{ github.run_attempt }}
-          path: ${{ inputs.mode == 'api' && 'output/g07z/result.txt' || 'output/playwright/' }}
+          name: ${{ inputs.strict_receipt && format('strict-{0}-a{1}-native', inputs.mode, github.run_attempt) || format('stripe-sandbox-evidence-{0}-{1}', github.sha, github.run_attempt) }}
+          path: ${{ inputs.mode == 'api' && 'output/g07z/' || 'output/playwright/' }}
           retention-days: 30
-          if-no-files-found: warn
+          if-no-files-found: error
+      - name: Bind Stripe native evidence
+        if: inputs.strict_receipt
+        env:
+          STRICT_MODE: ${{ inputs.mode }}
+          ARTIFACT_ID: ${{ steps.native_artifact.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.native_artifact.outputs.artifact-digest }}
+        run: |
+          if [[ "$STRICT_MODE" == api ]]; then
+            source=output/g07z/probes.json
+          else
+            logs=(output/playwright/*/ci-gates/stripe-browser.log)
+            [[ "${#logs[@]}" == 1 && -f "${logs[0]}" ]]
+            source="${logs[0]}"
+          fi
+          python3 scripts/dev/strict-release-evidence.py seal "$STRICT_MODE" "$RUNNER_TEMP/strict-child" "$ARTIFACT_ID" "sha256:${ARTIFACT_DIGEST#sha256:}" "$source"
+      - name: Sign strict child receipt
+        if: inputs.strict_receipt
+        id: attestation
+        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
+        with:
+          subject-path: ${{ runner.temp }}/strict-child/receipt.json
+      - name: Include signature bundle
+        if: inputs.strict_receipt
+        env:
+          BUNDLE: ${{ steps.attestation.outputs.bundle-path }}
+          RECEIPT: ${{ runner.temp }}/strict-child
+        run: cp "$BUNDLE" "$RECEIPT/attestation.json"
+      - name: Upload strict child receipt
+        if: inputs.strict_receipt
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: strict-${{ inputs.mode }}-a${{ github.run_attempt }}
+          path: ${{ runner.temp }}/strict-child/
+          if-no-files-found: error
+          retention-days: 30
