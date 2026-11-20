@@ -255,6 +255,39 @@ test("canonical and full-release transport and signing permissions stay job-scop
   assert.match(receipts, /verify output\/g07-ordinary-receipts/);
 });
 
+test("MODEL_ONLY strict parent admits planned ancestor skips only with four successful direct needs", () => {
+  const workflow = readFileSync(new URL("../../.github/workflows/gates.yml", import.meta.url), "utf8");
+  const parent = workflow.match(/^  full_strict:\n([\s\S]*?)(?=^  \S|(?![\s\S]))/m)?.[1] ?? "";
+  const direct = ["required", "g07_seal", "stripe_api", "stripe_browser"];
+  assert.deepEqual(parent.match(/^    needs: \[([^\n]+)\]$/m)?.[1].split(", "), direct);
+  const condition = parent.match(/^    if: (?:>-\n      )?([^\n]*(?:\n      [^\n]*)*)/m);
+  assert.ok(condition, "strict parent job condition");
+  const terms = condition[1].trim().replace(/^\$\{\{\s*|\s*\}\}$/g, "").split(/\s*&&\s*/);
+  const allSucceeded = Object.fromEntries(direct.map((job) => [job, "success"]));
+  // Model the documented default status check with a planned skipped ancestor.
+  const admits = ({ cancelled = false, event = "workflow_dispatch", ref = "refs/heads/r3/integration", input = true, needs = allSucceeded } = {}) => {
+    const checks = {
+      "!cancelled()": !cancelled,
+      "github.event_name == 'workflow_dispatch'": event === "workflow_dispatch",
+      "github.ref == 'refs/heads/r3/integration'": ref === "refs/heads/r3/integration",
+      "inputs.full_strict": input === true,
+      ...Object.fromEntries(direct.map((job) => [`needs.${job}.result == 'success'`, needs[job] === "success"])),
+    };
+    for (const term of terms) assert.ok(Object.hasOwn(checks, term), term);
+    return terms.includes("!cancelled()") && terms.every((term) => checks[term]);
+  };
+  assert.equal(admits(), true, "four green direct needs with a planned skipped ancestor");
+  for (const job of direct) {
+    for (const result of ["failure", "skipped", "cancelled"]) {
+      assert.equal(admits({ needs: { ...allSucceeded, [job]: result } }), false, `${job} ${result}`);
+    }
+  }
+  assert.equal(admits({ cancelled: true }), false, "workflow cancelled");
+  assert.equal(admits({ event: "pull_request" }), false, "wrong event");
+  assert.equal(admits({ ref: "refs/heads/other" }), false, "wrong branch");
+  assert.equal(admits({ input: false }), false, "strict not requested");
+});
+
 test("only protected Stripe callers pass the required environment secret by name", () => {
   const gates = readFileSync(new URL("../../.github/workflows/gates.yml", import.meta.url), "utf8")
     .replace(/^[ \t]*(?:#[^\n]*)?\n/gm, "");
