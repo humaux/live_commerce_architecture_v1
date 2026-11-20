@@ -895,7 +895,11 @@ jobs:
   full_strict:
     name: Strict release table
     needs: [required, g07_seal, stripe_api, stripe_browser]
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/r3/integration' && inputs.full_strict
+    # required already validates planned ancestor skips; admit only successful direct needs.
+    if: >-
+      ${{ !cancelled() && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/r3/integration' && inputs.full_strict
+      && needs.required.result == 'success' && needs.g07_seal.result == 'success'
+      && needs.stripe_api.result == 'success' && needs.stripe_browser.result == 'success' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 330
     permissions:
