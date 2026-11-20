@@ -2,7 +2,7 @@
 # Depends on: pinned checkout/setup-go/setup-node, .github/actions/pnpm (cached Corepack pnpm, #107), repo Playwright Chromium,
 #   deploy/scripts/smoke.sh and the compose stack.
 # Used by: gates.yml (workflow_call when deploy/ or scripts/deploy* changed), PRs into other branches, workflow_dispatch.
-name: Deploy smoke
+name: Smallstep upstream isolated smoke and same-image scan
 
 # R1 ruling G3 (docs/delivery/units/r1-final-rulings.md): deploy/scripts/smoke.sh static (S01 shellcheck
 # is preinstalled on ubuntu-24.04) and smoke.sh full (the whole compose stack as root with Docker) run on
@@ -11,12 +11,7 @@ name: Deploy smoke
 # PRs into r3/integration do NOT trigger this workflow directly: gates.yml calls it (workflow_call) only when deploy/ or scripts/deploy* changed, so `Gates (GitHub runners) / required`
 # waits for it and a UI-only PR does not pay ~50 min of image builds. PRs into any other branch keep the old pull_request trigger.
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches-ignore: [r3/integration]
   workflow_dispatch:
-  workflow_call:
 
 permissions:
   contents: read
@@ -34,10 +29,41 @@ jobs:
       GOTOOLCHAIN: go1.27.4
       GOFLAGS: -mod=readonly
       PLAYWRIGHT_BROWSERS_PATH: /opt/ms-playwright
+      G14_SOURCE_SHA: d4f5117161ee6f068b0c4ba2d3493e6dce1a2f6f
+      G14_SOURCE_TREE: 80485d5005499d2f4e313a38199b7c16aa3c4ca6
+      SYFT_CHECK_FOR_APP_UPDATE: 'false'
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
+          ref: ${{ env.G14_SOURCE_SHA }}
           persist-credentials: false
+      - name: Verify source and official scanner releases
+        shell: bash
+        run: |
+          set -euo pipefail
+          ev="$RUNNER_TEMP/g14-image-evidence"
+          tools="$RUNNER_TEMP/g14-tools"
+          mkdir -p "$ev" "$tools"
+          test "$(git rev-parse HEAD)" = "$G14_SOURCE_SHA"
+          test "$(git rev-parse 'HEAD^{tree}')" = "$G14_SOURCE_TREE"
+          test -z "$(git status --porcelain)"
+          {
+            printf 'checkout_sha=%s\ncheckout_tree=%s\nworkflow_sha=%s\nrun_id=%s\nrun_attempt=%s\n' \
+              "$G14_SOURCE_SHA" "$G14_SOURCE_TREE" "$GITHUB_WORKFLOW_SHA" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT"
+            uname -srm
+            docker version --format '{{json .Server}}'
+          } > "$ev/build-identity.txt"
+
+          install_scanner() {
+            local repo=$1 version=$2 asset=$3 hash=$4 binary=$5
+            curl --fail --silent --show-error --location --retry 2 --max-time 150 \
+              "https://github.com/$repo/releases/download/$version/$asset" -o "$tools/$asset"
+            printf '%s  %s\n' "$hash" "$tools/$asset" | sha256sum -c | tee -a "$ev/scanner-downloads.log"
+            tar -xf "$tools/$asset" -C "$tools" "$binary"
+            "$tools/$binary" --version >> "$ev/scanner-versions.log"
+          }
+          install_scanner anchore/syft v1.57.2 syft_1.57.2_linux_amd64.tar.gz ad92bd3ec1b94a3df01d4d0aec199afa9c42b72e86da436ff5f837914d32706b syft
+          install_scanner aquasecurity/trivy v0.76.2 trivy_0.76.2_Linux-64bit.tar.gz bc0fc726e017b8927a62b2d3531d7a84ee01769daf5c99ed866dced54089fdbf trivy
       - name: Free runner disk for the image builds
         # preflight P13 (deploy/scripts/preflight.sh) requires >= 20 % free on the docker root and the backup
         # dir; the stock runner image ships ~30 GB of SDKs this job never uses. Removing them is runner prep,
@@ -50,6 +76,29 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
+      - name: Resolve the upstream migration in the isolated checkout
+        working-directory: deploy/docker/caddy-build
+        run: |
+          set -euo pipefail
+          ev="$RUNNER_TEMP/g14-image-evidence"
+          upstream=cddde30af36e238f156bb557bfd1f11a05ffe6f9
+          go get "github.com/smallstep/certificates@$upstream"
+          # The module has no source files. Drop the retired explicit indirect pin
+          # then resolve the original CLI package and all of its actual imports.
+          go mod edit -droprequire=github.com/go-jose/go-jose/v3
+          go get github.com/caddyserver/caddy/v2/cmd/caddy@v2.11.9
+          go mod download
+          go mod verify
+          go list -m -json github.com/smallstep/certificates > "$ev/smallstep.json"
+          ver=$(jq -er .Version "$ev/smallstep.json")
+          go mod download -json "github.com/smallstep/certificates@$upstream" > "$ev/upstream.json"
+          jq -e --arg sha "$upstream" --arg ver "$ver" '.Origin.Hash == $sha and .Version == $ver' "$ev/upstream.json"
+          git diff > "$ev/lock.patch"
+          git -c user.name=lab -c user.email=lab@localhost commit -m "Isolated Smallstep candidate" -- go.mod go.sum
+          git rev-parse HEAD > "$ev/candidate-sha.txt"
+          git rev-parse 'HEAD^{tree}' > "$ev/candidate-tree.txt"
+          echo "G14_SOURCE_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          echo "G14_SOURCE_TREE=$(git rev-parse 'HEAD^{tree}')" >> "$GITHUB_ENV"
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
         with:
           node-version: "24" # package.json engines: >=24 <25
@@ -100,4 +149,83 @@ jobs:
             deploy/.evidence/*/commands.tsv
             deploy/.evidence/*/images.jsonl
           include-hidden-files: true # .evidence is a hidden dir; upload-artifact >=4.4 skips it by default
+          retention-days: 14
+      - name: Collect image SBOM, licenses, and vulnerability scans
+        shell: bash
+        run: |
+          set -euo pipefail
+          ev="$RUNNER_TEMP/g14-image-evidence"
+          tools="$RUNNER_TEMP/g14-tools"
+          local_cache="$RUNNER_TEMP/g14-trivy-cache"
+          mapfile -t manifests < <(find deploy/.evidence -type f -name images.jsonl)
+          test "${#manifests[@]}" = 1
+          cp "${manifests[0]}" "$ev/images.jsonl"
+          cp "${manifests[0]%/*}/result.json" "$ev/deploy-smoke-result.json"
+          cp "${manifests[0]%/*}/cases.tsv" "$ev/deploy-smoke-cases.tsv"
+          jq -e --arg rev "$G14_SOURCE_SHA" '.commit == $rev' "$ev/deploy-smoke-result.json"
+          jq -es --arg rev "$G14_SOURCE_SHA" 'length == 4 and all(.[]; .revision == $rev)' "$ev/images.jsonl"
+          smoke_tag="smoke-${G14_SOURCE_SHA:0:12}"
+          SMOKE_TAG="$smoke_tag" bash deploy/scripts/smoke.sh static > "$ev/actual-caddy-static.log" 2>&1
+          actual_static=$(ls -td deploy/.evidence/*/ | head -n1)
+          grep -F "(image lc-caddy:$smoke_tag)" "$actual_static/cases.tsv"
+          cp "$actual_static/cases.tsv" "$ev/actual-caddy-static-cases.tsv"
+          cp "$actual_static/logs/S05.adapt.json" "$ev/actual-caddy-adapt.json"
+          jq -e '
+            .apps.tls.automation.on_demand.permission.endpoint == "http://127.0.0.1:8080/internal/tls-ask"
+            and any(.apps.tls.automation.policies[]; .on_demand == true)
+            and any(.. | strings; . == "https://acme-v02.api.letsencrypt.org/directory")
+          ' "$ev/actual-caddy-adapt.json" > "$ev/actual-caddy-tls-policy.json"
+          cd "$RUNNER_TEMP"
+          "$tools/trivy" image --cache-dir "$local_cache" --timeout 8m --download-db-only > "$ev/trivy-db.log" 2>&1
+          if [[ -f "$local_cache/db/metadata.json" ]]; then
+            cp "$local_cache/db/metadata.json" "$ev/trivy-db-metadata.json"
+          fi
+          status=0
+          for unit in go admin storefront caddy; do
+            tag="lc-$unit:smoke-${G14_SOURCE_SHA:0:12}"
+            id=$(docker image inspect --format '{{.Id}}' "$tag")
+            jq -es --arg tag "$tag" --arg id "$id" 'any(.[]; .image == $tag and .id == $id)' "$ev/images.jsonl"
+            docker image inspect "$id" --format '{"Id":"{{.Id}}","RepoTags":{{json .RepoTags}},"RepoDigests":{{json .RepoDigests}},"Os":"{{.Os}}","Architecture":"{{.Architecture}}","RootFS":{{json .RootFS}},"Revision":{{json (index .Config.Labels "org.opencontainers.image.revision")}}}' > "$ev/$unit.inspect.json"
+            if [[ "$unit" == caddy || "$unit" == go ]]; then
+              bin=/usr/bin/caddy
+              if [[ "$unit" == go ]]; then bin=/app/bin/api; fi
+              container=$(docker create --network none "$id")
+              trap 'docker rm "$container" >/dev/null' EXIT
+              docker cp "$container:$bin" "$RUNNER_TEMP/$unit-buildinfo"
+              go version -m "$RUNNER_TEMP/$unit-buildinfo" > "$ev/$unit.go-version-m.txt"
+              grep -F $'\tdep\tgithub.com/go-jose/go-jose/v4\tv4.1.9\t' "$ev/$unit.go-version-m.txt"
+              if [[ "$unit" == caddy ]]; then
+                if grep -F 'github.com/go-jose/go-jose/v3' "$ev/$unit.go-version-m.txt"; then exit 1; fi
+                grep -F "$(jq -r .Version "$ev/smallstep.json")" "$ev/$unit.go-version-m.txt" | grep -F 'github.com/smallstep/certificates'
+              fi
+              docker rm "$container" >/dev/null
+              trap - EXIT
+            fi
+            code=0
+            timeout 8m "$tools/syft" scan "docker:$tag" -o "syft-json=$ev/$unit.syft.json" -o "spdx-json=$ev/$unit.spdx.json" > "$ev/$unit.syft.log" 2>&1 || code=$?
+            echo "$code" > "$ev/$unit.syft.exit"
+            if ((code != 0)); then status=1; fi
+            code=0
+            timeout 10m "$tools/trivy" image --image-src docker --cache-dir "$local_cache" --skip-db-update \
+              --timeout 9m --scanners vuln,license --license-full --format json \
+              --output "$ev/$unit.trivy.json" "$tag" > "$ev/$unit.trivy.log" 2>&1 || code=$?
+            echo "$code" > "$ev/$unit.trivy.exit"
+            if ((code != 0)); then status=1; fi
+            test "$(docker image inspect --format '{{.Id}}' "$tag")" = "$id"
+          done
+          exit "$status"
+      - name: Checksum original evidence
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/g14-image-evidence"
+          find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS
+      - name: Upload original image evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: g14-native-image-evidence
+          path: ${{ runner.temp }}/g14-image-evidence/
+          if-no-files-found: error
           retention-days: 14
