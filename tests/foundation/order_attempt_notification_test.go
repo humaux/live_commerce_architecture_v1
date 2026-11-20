@@ -415,11 +415,7 @@ type oaNotificationPreparer interface {
 
 func oaNotificationSignedConversation(t *testing.T, e *lbuEnv) (miTest, string, string, string) {
 	t.Helper()
-	m := miSetup(t)
-	// psSetupItemsOn owns a separate synthetic store in the same physical test DB.
-	// The shared ingress/registrar pools have no caller-supplied store authority;
-	// this fixture pointer only directs the existing helpers to that store's owner SQL.
-	m.f = e.p.f
+	m := miSetupOn(t, e.p.f)
 	asset, psid := miAsset(), miAsset()
 	binding := miBinding(t, m, asset, "facebook", e.tenant(), e.store(), e.p.f.principalA)
 	miRoute(t, m, asset, e.tenant(), e.store(), binding)

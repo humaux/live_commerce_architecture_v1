@@ -28,7 +28,8 @@ func TestOrderAttemptAreaGoAuthenticatedMessageInvariantRetainsPending(t *testin
 
 func oaAreaGoAuthenticatedRecipient(t *testing.T, invalidMessage bool) {
 	t.Helper()
-	e := lbuNew(t)
+	// River fetches across the database queue, while the payload key belongs to this fixture.
+	e := lbuNew(t, tcvOpts{base: pwIsolatedFixture(t)})
 	session, offer := e.session("A1", ltgLive, 5)
 	bundle := e.h.accepted(t, session, "", "recipient-"+t04Tag(), "A1+2").BundleID
 	e.h.closeWindow(t, session)

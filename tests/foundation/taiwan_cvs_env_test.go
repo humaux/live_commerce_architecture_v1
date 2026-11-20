@@ -85,11 +85,12 @@ type tcvEnv struct {
 
 // tcvOpts tunes the environment.
 type tcvOpts struct {
-	ecpayDisabled bool    // CVS_ECPAY_ENABLED=0 (kill switch)
-	payEnv        string  // payment environment; default SANDBOX
-	stripe        bool    // build on the rfx Stripe environment (paid card orders through the real capture path)
-	origin        string  // the storefront origin published for this store (default: a random https origin)
-	share         *tcvEnv // reuse another env's fake, keyring and ECPay client (two stores served by one process)
+	base          *testFixture // use this database for the plain (non-Stripe) fixture
+	ecpayDisabled bool         // CVS_ECPAY_ENABLED=0 (kill switch)
+	payEnv        string       // payment environment; default SANDBOX
+	stripe        bool         // build on the rfx Stripe environment (paid card orders through the real capture path)
+	origin        string       // the storefront origin published for this store (default: a random https origin)
+	share         *tcvEnv      // reuse another env's fake, keyring and ECPay client (two stores served by one process)
 }
 
 func tcvKeyring(t *testing.T) (*ecpay.Keyring, string) {
@@ -124,6 +125,8 @@ func tcvNew(t *testing.T, opts ...tcvOpts) *tcvEnv {
 		rEnv = rfxNew(t)
 		rOrder = rEnv.storeFor(t)
 		p = rOrder.s.p
+	} else if o.base != nil {
+		p = psSetupItemsOn(t, o.base, 1)
 	} else {
 		p = psSetup(t)
 	}
