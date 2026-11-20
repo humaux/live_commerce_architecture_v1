@@ -13,14 +13,13 @@ import path from "node:path";
 import { fixture } from "./shell-fixture.mjs";
 import { childExited, nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 import { assertPlatformMessagingCopy } from "./platform-messaging-copy.fixture.mjs";
+import { platformLocales as locales, platformPages as pages, platformViewports, platformMessagingPages } from "./platform-browser-coverage.mjs";
 
 const output = process.env.LC_PLATFORM_EVIDENCE || browserEvidenceDirectory("platform-site");
 await mkdir(output, { recursive: true });
 const host = "platform.example.invalid",
   adminHost = "admin.example.invalid",
   origin = `https://${host}`;
-const locales = ["zh-TW", "zh-CN", "en"],
-  pages = ["home", "about", "privacy", "terms", "data-deletion", "contact"];
 const facts = [
   "Hong Kong Da Wan Trading Limited",
   "香港大碗貿易有限公司",
@@ -140,7 +139,7 @@ async function matrix(s) {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   for (const locale of locales)
-    for (const width of [390, 1586]) {
+    for (const width of platformViewports) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 992 });
       for (const name of pages) {
         const pathname = routePath(locale, name),
@@ -173,7 +172,7 @@ async function matrix(s) {
               (await page.locator("main").innerText()).includes(fact),
               `${name}/${locale} main missing ${fact}`,
             );
-        if (name === "privacy" || name === "terms") {
+        if (platformMessagingPages.includes(name)) {
           assertPlatformMessagingCopy(
             (await page.locator(".ps-legal-section").allTextContents()).join(
               " ",
@@ -296,7 +295,7 @@ async function matrix(s) {
             .click();
           await page.waitForURL(origin + routePath(locale, dest));
           assert.equal(await page.locator("main h1").count(), 1);
-          if (dest === "privacy" || dest === "terms")
+          if (platformMessagingPages.includes(dest))
             assertPlatformMessagingCopy(
               (await page.locator(".ps-legal-section").allTextContents()).join(
                 " ",
@@ -503,7 +502,7 @@ try {
     `${output}/ps-browser-result.json`,
     JSON.stringify(
       {
-        pass: locales.length * 2 * pages.length,
+        pass: locales.length * platformViewports.length * pages.length,
         fail: 0,
         clicks,
         messagingCopyCases,
@@ -516,7 +515,7 @@ try {
     ),
   );
   console.log(
-    `PASS PS1/PS2/PS4: ${locales.length * 2 * pages.length} page cases, ${locales.length * pages.length} SSR cases, ${locales.length * pages.length + 1} tag cases, ${clicks} real clicks, ${messagingCopyCases} messaging-copy cases and ${ledger.filter((r) => r.action === "reload").length} reloads`,
+    `PASS PS1/PS2/PS4: ${locales.length * platformViewports.length * pages.length} page cases, ${locales.length * pages.length} SSR cases, ${locales.length * pages.length + 1} tag cases, ${clicks} real clicks, ${messagingCopyCases} messaging-copy cases and ${ledger.filter((r) => r.action === "reload").length} reloads`,
   );
 } finally {
   await browser?.close();

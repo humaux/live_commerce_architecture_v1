@@ -4,7 +4,7 @@
 import test from "node:test";
 import { createHash } from "node:crypto";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, writeFileSync, rmSync, openSync, closeSync } from "node:fs";
+import { mkdirSync, realpathSync, mkdtempSync, readFileSync, writeFileSync, rmSync, openSync, closeSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync, execFileSync } from "node:child_process";
@@ -286,4 +286,135 @@ with tempfile.TemporaryDirectory() as root:
 `;
   const run = spawnSync("python3", ["-c", G07_ARCHIVE_PY + driver], { encoding: "utf8", timeout: 10000 });
   assert.equal(run.status, 0, run.stderr + run.stdout);
+});
+
+test("strict G91 accepts native smoke terminal lines and rejects missing or invalid evidence", () => {
+  const script = readFileSync(new URL("../../scripts/dev/release-gate.sh", import.meta.url), "utf8");
+  const fn = name => script.match(new RegExp("^" + name + String.raw`\(\) \{[\s\S]*?^\}`, "m"))[0];
+  const g91 = script.slice(script.indexOf("# ---- G91"), script.indexOf("# ---- G99"));
+  const harness = [
+    'set -uo pipefail; OUT="$1"; ROOT="$1"; smoke_rc="$2"; bound_strict=1; LC_RELEASE_GATE_SMOKE_FULL=1',
+    'n_pass=0; n_fail=0; n_notrun=0; n_accepted=0; rows=""; strict=1; subset=""; sha=model; dirty=0; all_modes=0',
+    'selected() { return 0; }; run_cmd() { LOG="$OUT/G91.log"; rc=$smoke_rc; }',
+    fn("accepted_notrun"), fn("record"), fn("smoke_verdict"), g91,
+    script.slice(script.indexOf("n_open=$((n_notrun - n_accepted))")),
+  ].join("\n");
+  const dir = realpathSync(mkdtempSync(path.join(tmpdir(), "strict-g91-")));
+  try {
+    const evidence = path.join(dir, "deploy/.evidence/20261119T123946Z-0243/result.json");
+    mkdirSync(path.dirname(evidence), { recursive: true });
+    // Synthetic sudo for this process test. A separate Linux UID check covers filesystem permissions.
+    writeFileSync(path.join(dir, "sudo"), '#!/usr/bin/env bash\n[[ "$1" == -n ]] || exit 1\nshift\nexec "$@"\n', { mode: 0o755 });
+    const report = (status, overall) => JSON.stringify({
+      environment: { mode: "full" }, expected_cases: ["S01", "S29m"],
+      results: [{ id: "S01", status: "PASS" }, { id: "S29m", status }], overall,
+    });
+    const native = (file, overall) => `2026-11-19T12:47:29Z smoke.sh INFO: evidence: ${file}  overall=${overall}\n`;
+    for (const [name, smokeCode, raw, log, want, gate] of [
+      ["PASS", 0, report("PASS", "PASS"), native(evidence, "PASS"), 0, "PASS"],
+      ["F11", 3, report("BLOCKED", "BLOCKED"), native(evidence, "BLOCKED"), 0, "NOT_RUN"],
+      ["ordinary failure", 1, report("FAIL", "FAIL"), native(evidence, "FAIL"), 1, "FAIL"],
+      ["unknown status", 0, report("UNKNOWN", "PASS"), native(evidence, "PASS"), 1, "FAIL"],
+      ["F11 with PASS exit", 0, report("BLOCKED", "PASS"), native(evidence, "PASS"), 1, "FAIL"],
+      ["unapproved block", 3, report("BLOCKED", "BLOCKED").replaceAll("S29m", "S29"), native(evidence, "BLOCKED"), 1, "FAIL"],
+      ["unexpected skip", 0, report("NOT_RUN", "PASS"), native(evidence, "PASS"), 1, "FAIL"],
+      ["missing case", 0, report("PASS", "PASS").replace('"id":"S29m"', '"id":"wrong"'), native(evidence, "PASS"), 1, "FAIL"],
+      ["invalid JSON", 0, "{", native(evidence, "PASS"), 1, "FAIL"],
+      ["wrong terminal", 0, report("PASS", "PASS"), native(evidence, "BLOCKED"), 1, "FAIL"],
+      ["missing terminal", 0, report("PASS", "PASS"), "", 1, "FAIL"],
+      ["missing receipt", 0, report("PASS", "PASS"), native(evidence.replace("-0243", "-0244"), "PASS"), 1, "FAIL"],
+      ["out-of-scope path", 0, report("PASS", "PASS"), native(evidence.replace("/deploy/.evidence", ""), "PASS"), 1, "FAIL"],
+    ]) {
+      writeFileSync(evidence, raw);
+      writeFileSync(path.join(dir, "G91.log"), log + `# exit: ${smokeCode}\n`);
+      writeFileSync(path.join(dir, "results.tsv"), "");
+      const r = spawnSync("bash", ["-c", harness, "_", dir, String(smokeCode)], {
+        env: { ...process.env, PATH: dir + path.delimiter + process.env.PATH }, encoding: "utf8", timeout: 10000,
+      });
+      assert.equal(r.status, want, name + ": " + r.stdout + r.stderr);
+      assert.equal(readFileSync(path.join(dir, "results.tsv"), "utf8").split("\t")[2], gate, name);
+      if (gate !== "FAIL") assert.equal(readFileSync(path.join(dir, "results.tsv"), "utf8").split("\t")[4], String(smokeCode), name);
+    }
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test("strict browser rows require native terminal proof for Picklist, Platform Site and Meta Health UI", async () => {
+  const { platformLocales, platformPages, platformViewports, platformMessagingPages } =
+    await import("../admin/platform-browser-coverage.mjs");
+  const script = readFileSync(new URL("../../scripts/dev/release-gate.sh", import.meta.url), "utf8");
+  const fn = name => script.match(new RegExp("^" + name + String.raw`\(\) \{[\s\S]*?^\}`, "m"))[0];
+  const browser = script.slice(script.indexOf("# ---- browser modes"), script.indexOf("# ---- smoke result reader"));
+  const harness = [
+    'set -uo pipefail; OUT="$1"; ROOT="$1"; browser_modes="$2"; fixture_exit="$3"; bound_strict=1',
+    'n_pass=0; n_fail=0; n_notrun=0; n_accepted=0; rows=""; strict=1; subset=""; sha=model; dirty=0; all_modes=0',
+    'selected() { return 0; }; docker_ok() { return 0; }; browser_ok() { return 0; }; have() { return 0; }',
+    'mktemp() { printf "%s\\n" "$OUT/evidence"; }; run_cmd() { LOG="$OUT/browser.log"; rc=$fixture_exit; }',
+    fn("accepted_notrun"), fn("record"), fn("judge_gotest"), browser,
+    script.slice(script.indexOf("n_open=$((n_notrun - n_accepted))")),
+  ].join("\n");
+  const dir = mkdtempSync(path.join(tmpdir(), "strict-browser-"));
+  const scoped = path.join(dir, "evidence", "platform-site");
+  mkdirSync(scoped, { recursive: true });
+  const run = (mode, log, nativeExit = 0, wantPass = false) => {
+    writeFileSync(path.join(dir, "browser.log"), log);
+    writeFileSync(path.join(dir, "results.tsv"), "");
+    const decision = spawnSync("bash", ["-c", harness, "_", dir, "--browser-" + mode, String(nativeExit)],
+      { encoding: "utf8", timeout: 10000 });
+    assert.equal(decision.status, wantPass ? 0 : 1, decision.stdout + decision.stderr);
+    assert.equal(readFileSync(path.join(dir, "results.tsv"), "utf8").split("\t")[2], wantPass ? "PASS" : "FAIL");
+  };
+  const nodeSpec = (lines = [], count = 1) => [
+    "## matrix-receipts browser-run begin", "## matrix-receipts node-test begin",
+    ...lines, `ℹ tests ${count}`, "ℹ suites 0", `ℹ pass ${count}`, "ℹ fail 0",
+    "ℹ cancelled 0", "ℹ skipped 0", "ℹ todo 0", "ℹ duration_ms 1",
+    "## matrix-receipts node-test end", "",
+  ].join("\n");
+  const picklist = nodeSpec(["## matrix-receipts browser-spec",
+    "✔ W3-U1b real clicks: selection, print, CSV, confirmation, unknown and scope (1ms)"]);
+  const meta = [
+    "=== RUN   TestBrowserMetaHealthUI", "--- PASS: TestBrowserMetaHealthUI (0.01s)",
+    "=== RUN   TestMetaHealthUIWireRequiresCapability", "--- PASS: TestMetaHealthUIWireRequiresCapability (0.01s)",
+    "PASS", "ok  \tlivecommerce/tests/foundation\t0.02s", "",
+  ].join("\n");
+  try {
+    run("picklist", picklist, 0, true);
+    for (const bad of ["", nodeSpec([], 0), picklist.replace("ℹ skipped 0", "ℹ skipped 1"),
+        picklist.replace("ℹ fail 0", "ℹ fail 1"), picklist.replace("W3-U1b", "some other test"),
+        picklist.replace("## matrix-receipts node-test end", "")]) run("picklist", bad);
+    run("picklist", picklist, 2);
+
+    run("meta-health-ui", meta, 0, true);
+    for (const bad of ["", meta.replace(/^(?:=== RUN|--- PASS).*RequiresCapability.*\n/gm, ""),
+        meta.replace("--- PASS: TestBrowserMetaHealthUI", "--- SKIP: TestBrowserMetaHealthUI"),
+        meta.replace("--- PASS: TestBrowserMetaHealthUI", "--- FAIL: TestBrowserMetaHealthUI"),
+        meta.replace("ok  \t", "FAIL\t")]) run("meta-health-ui", bad);
+    run("meta-health-ui", meta, 1);
+
+    const cases = platformLocales.flatMap(locale => platformViewports.flatMap(width =>
+      platformPages.map(page => ({ locale, width, page, result: "PASS" }))));
+    const rows = cases.flatMap(row => ["render", "reload", "skip to main",
+      ...(platformMessagingPages.includes(row.page) ? ["messaging-copy"] : [])].map(action => ({ ...row, action })));
+    const ssr = platformLocales.length * platformPages.length;
+    const stats = { pass: cases.length, fail: 0, clicks: cases.length,
+      messagingCopyCases: platformLocales.length * platformViewports.length * platformMessagingPages.length,
+      reloads: cases.length, ssrCases: ssr, tagCases: ssr + 1 };
+    const summary = `PASS PS1/PS2/PS4: ${stats.pass} page cases, ${stats.ssrCases} SSR cases, ${stats.tagCases} tag cases, ${stats.clicks} real clicks, ${stats.messagingCopyCases} messaging-copy cases and ${stats.reloads} reloads\n`;
+    const platform = nodeSpec(["✔ platform routes and copy (1ms)"]) + summary;
+    const ledger = path.join(scoped, "click-ledger.json");
+    const result = path.join(scoped, "ps-browser-result.json");
+    writeFileSync(result, JSON.stringify(stats));
+    run("platform-site", platform); // Missing ledger.
+    writeFileSync(ledger, JSON.stringify({ rows }));
+    run("platform-site", platform, 0, true);
+    run("platform-site", platform, 1);
+    run("platform-site", platform.replace("ℹ pass 1", "ℹ pass 0"));
+    run("platform-site", platform.replace("ℹ skipped 0", "ℹ skipped 1"));
+    run("platform-site", platform.replace("ℹ fail 0", "ℹ fail 1"));
+    run("platform-site", platform.replace("real clicks", "bad report"));
+    writeFileSync(result, JSON.stringify({ ...stats, tagCases: stats.tagCases - 1 }));
+    run("platform-site", platform);
+    writeFileSync(result, JSON.stringify(stats));
+    writeFileSync(ledger, JSON.stringify({ rows: rows.filter(r => !(r.page === "about" && r.action === "reload")) }));
+    run("platform-site", platform);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
 });

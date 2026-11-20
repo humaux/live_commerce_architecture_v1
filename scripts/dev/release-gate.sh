@@ -547,6 +547,12 @@ for m in $browser_modes; do
   fi
   if [[ "$m" == --stripe-browser ]]; then
     run_cmd "$id" env STRIPE_BROWSER=1 STRIPE_SANDBOX=1 bash scripts/dev/test-local.sh "$m"
+  elif [[ "$m" == --browser-platform-site ]]; then
+    if ! platform_evidence=$(mkdir -p "$ROOT/output/playwright" && mktemp -d "$ROOT/output/playwright/run.XXXXXXXX"); then
+      record "$id" "$tier" FAIL "cannot allocate fresh platform-site evidence" 1 -
+      continue
+    fi
+    run_cmd "$id" env LC_BROWSER_EVIDENCE_ROOT="$platform_evidence" bash scripts/dev/test-local.sh "$m"
   else
     run_cmd "$id" bash scripts/dev/test-local.sh "$m"
   fi
@@ -571,12 +577,20 @@ for m in $browser_modes; do
     else
       record "$id" "$tier" FAIL "browser-webkit exit 0 but only $wk/7 clean step lines: never PASS" "$rc" "$LOG"
     fi
-  elif [[ "$m" == --browser-platform-site ]]; then
-    np=$(awk '/^ℹ pass [0-9]+$/ {n=$3} END {print n+0}' "$LOG")
-    if ((np >= 1)) && grep -qE '^ℹ fail 0$' "$LOG" && grep -q '^PASS PS1/PS2/PS4: 30 page cases, 15 SSR cases, 16 tag cases,' "$LOG"; then
-      record "$id" "$tier" PASS "platform node + 30 real-click pages + SSR/tag matrix (local MOCK transport)" "$rc" "$LOG"
+  elif [[ "$m" == --browser-picklist || "$m" == --browser-platform-site ]]; then
+    if note=$(node scripts/dev/strict-node-browser.mjs "$m" "$LOG" "${platform_evidence:-}" 2>>"$LOG"); then
+      record "$id" "$tier" PASS "$note" "$rc" "$LOG"
     else
-      record "$id" "$tier" FAIL "platform-site missing Node/SSR/browser/tag evidence" "$rc" "$LOG"
+      record "$id" "$tier" FAIL "missing, incomplete or failed native $m evidence" 1 "$LOG"
+    fi
+  elif [[ "$m" == --browser-meta-health-ui ]]; then
+    read -r gp gf sn so <<<"$(judge_gotest "$LOG" "$OUT/$id.skipped" "$OUT/$id.skipped-other" verbose "" TestBrowserMetaHealthUI TestMetaHealthUIWireRequiresCapability)"
+    if ((gp >= 2 && gf == 0 && sn == 0 && so == 0)) &&
+       [[ "$(grep -cE '^ok[[:space:]]+livecommerce/tests/foundation[[:space:]]' "$LOG")" == 1 ]] &&
+       ! grep -qE '^FAIL([[:space:]]|$)' "$LOG"; then
+      record "$id" "$tier" PASS "$gp named Go browser/capability tests and package passed" "$rc" "$LOG"
+    else
+      record "$id" "$tier" FAIL "missing or failed Meta Health UI Go tests/package, or unexpected skip" 1 "$LOG"
     fi
   elif [[ "$m" == --browser-admin-shell ]]; then
     # Node + Playwright only, no go test events (the W0 shell gate needs neither PG nor Docker). test-local.sh runs node --test with the spec
@@ -633,26 +647,64 @@ for m in $browser_modes; do
 done
 
 # ---- smoke result reader: FAIL if any FAIL, NOT_RUN if any NOT_RUN/BLOCKED, else PASS ----------------
-smoke_verdict() { # $1 = smoke log; prints "STATUS|note"
-  python3 - "$1" <<'PY'
-import json, re, sys
-text = open(sys.argv[1], errors="replace").read()
-m = re.findall(r"evidence: (\S+/result\.json)", text)
-if not m:
-    print("FAIL|no evidence file reported (smoke did not finish)")
+smoke_verdict() { # $1 = smoke log; $2 = native exit for bound G91; prints "STATUS|note"
+  python3 - "$1" "${2:-}" "$ROOT" <<'PY'
+import json, re, subprocess, sys
+from pathlib import Path
+
+log, rc, root = sys.argv[1:]
+
+def reject(note):
+    print(f"FAIL|{note}")
     sys.exit(0)
+
+text = Path(log).read_text(errors="replace")
+matches = re.findall(r"evidence: (\S+/result\.json)(?:  overall=(\w+)(?=\r?$))?", text, re.M)
+if not matches:
+    reject("no evidence file reported (smoke did not finish)")
+where, terminal = matches[-1]
 try:
-    r = json.load(open(m[-1]))
-except Exception:
-    print("FAIL|evidence file unreadable")
-    sys.exit(0)
-res = r.get("results", [])
+    if rc:
+        evidence_root = Path(root).resolve() / "deploy/.evidence"
+        native_path = rf"{re.escape(str(evidence_root))}/\d{{8}}T\d{{6}}Z-[0-9a-f]{{4}}/result\.json"
+        if len(matches) != 1 or not re.fullmatch(native_path, where):
+            reject("missing, duplicate or unexpected native smoke receipt")
+        if terminal != {"0": "PASS", "1": "FAIL", "3": "BLOCKED"}.get(rc):
+            reject("native smoke terminal disagrees with process exit")
+        # Read just the native result. Keep the root-owned directory and all other files private.
+        read_receipt = """
+import sys
+from pathlib import Path
+path = Path(sys.argv[1])
+if path.resolve(strict=True) != path or not path.is_file():
+    sys.exit(1)
+sys.stdout.buffer.write(path.read_bytes())
+"""
+        raw = subprocess.check_output(["sudo", "-n", "python3", "-I", "-c", read_receipt, where],
+                                      stderr=subprocess.DEVNULL, timeout=15)
+        r = json.loads(raw)
+        if r.get("overall") != terminal or not isinstance(r.get("expected_cases"), list) or not r["expected_cases"]:
+            reject("invalid native smoke receipt")
+        cases = r["results"]
+        if any(case["status"] not in ("PASS", "FAIL", "BLOCKED", "NOT_RUN") for case in cases):
+            reject("invalid native smoke case status")
+        with open(log, "ab") as out:
+            checked = subprocess.run([sys.executable, ".github/scripts/smoke-verdict.py", "/dev/stdin", rc, "full"],
+                                     input=raw, stdout=out, stderr=subprocess.STDOUT, timeout=15)
+        if checked.returncode != 0:
+            reject("native smoke verdict rejected (see log)")
+        if any(case["status"] == "BLOCKED" for case in cases) != (rc == "3"):
+            reject("native smoke BLOCKED cases disagree with process exit")
+    else:
+        r = json.loads(Path(where).read_bytes())
+    res = r.get("results", [])
+except (OSError, ValueError, TypeError, KeyError, AttributeError, subprocess.SubprocessError):
+    reject("evidence file unreadable or invalid")
 bad = [c["id"] for c in res if c["status"] == "FAIL"]
 nr = [c["id"] for c in res if c["status"] in ("NOT_RUN", "BLOCKED")]
 n_pass = sum(1 for c in res if c["status"] == "PASS")
 exp = set(r.get("expected_cases", []))
 missing = sorted(exp - {c["id"] for c in res})
-where = m[-1]
 if bad or missing:
     print("FAIL|FAIL=%s missing=%s (%s)" % (",".join(bad) or "-", ",".join(missing) or "-", where))
 elif nr:
@@ -679,10 +731,8 @@ if selected G91; then
     record G91 DEPLOY NOT_RUN "run on the Linux deploy host as root: LC_RELEASE_GATE_SMOKE_FULL=1 or bash deploy/scripts/smoke.sh full"
   elif [[ "$bound_strict" == 1 ]]; then
     run_cmd G91 sudo --preserve-env=GOTOOLCHAIN,GOFLAGS,PLAYWRIGHT_BROWSERS_PATH env "PATH=$PATH" "HOME=$HOME" bash deploy/scripts/smoke.sh full
-    v=$(smoke_verdict "$LOG")
-    evidence=$(sed -n 's/^.*evidence: \(.*\/result.json\)$/\1/p' "$LOG" | tail -n1)
-    if [[ -z "$evidence" ]] || ! python3 .github/scripts/smoke-verdict.py "$evidence" "$rc" full >>"$LOG" 2>&1; then
-      record G91 DEPLOY FAIL "native smoke verdict rejected: ${v#*|}" 1 "$LOG"
+    if ! v=$(smoke_verdict "$LOG" "$rc") || [[ "$v" == FAIL\|* ]]; then
+      record G91 DEPLOY FAIL "${v#*|}" 1 "$LOG"
     else
       record G91 DEPLOY "${v%%|*}" "smoke full: ${v#*|}" "$rc" "$LOG"
     fi
