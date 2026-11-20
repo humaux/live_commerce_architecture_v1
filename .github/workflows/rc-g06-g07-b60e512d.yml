@@ -1,0 +1,50 @@
+name: RC strict same-run G06 and G07 b60e512d
+on:
+  push:
+    branches: [diag/rc-g06-g07-b60e512d]
+permissions:
+  contents: read
+jobs:
+  strict:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    env:
+      GOTOOLCHAIN: go1.27.4
+      GOFLAGS: -mod=readonly
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          ref: 6a42bc3e7fff53c6fbf202c290df19f12184f4ba
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: ./.github/actions/pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: docker pull postgres@sha256:4ef4dbc939d61acea57712655ddb4b4ab27419c913f94cca0cd57cb3ea3c2280
+      - name: Pinned strict gate
+        run: |
+          export LC_RELEASE_GATE_OUT="$RUNNER_TEMP/strict"
+          mkdir "$LC_RELEASE_GATE_OUT"
+          git rev-parse HEAD | tee "$LC_RELEASE_GATE_OUT/checkout.txt"
+          test "$(git rev-parse HEAD)" = 6a42bc3e7fff53c6fbf202c290df19f12184f4ba
+          test -z "$(git status --porcelain)"
+          set +e
+          bash scripts/dev/release-gate.sh --strict --only G06,G07
+          rc=$?
+          set -e
+          echo "$rc" | tee "$LC_RELEASE_GATE_OUT/exit.txt"
+          git status --porcelain > "$LC_RELEASE_GATE_OUT/post-status.txt"
+          exit "$rc"
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        if: always()
+        with:
+          name: strict-g06-g07
+          path: ${{ runner.temp }}/strict/
+          if-no-files-found: error
