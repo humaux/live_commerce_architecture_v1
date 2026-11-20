@@ -103,7 +103,9 @@ test("CI-SPEED review P2: the real `required` script accepts exactly the right r
   const keys = Object.keys(combos[0]);
   // "|" separates fields so an empty result ("") survives `read`.
   const fn = `req() { ( ${script}\n) >/dev/null; }\nwhile IFS='|' read -r ${keys.join(" ")}; do export ${keys.join(" ")}; req; echo $?; done`;
-  const out = execFileSync("bash", ["-c", fn], { input: combos.map((c) => keys.map((k) => c[k]).join("|")).join("\n") + "\n", encoding: "utf8", maxBuffer: 64 << 20 }).trim().split("\n").map(Number);
+  // These combinations model ordinary CI and have no canonical dispatch deadline.
+  const out = execFileSync("bash", ["-c", fn], { env: { ...process.env, LC_G07_CANONICAL: "" },
+    input: combos.map((c) => keys.map((k) => c[k]).join("|")).join("\n") + "\n", encoding: "utf8", maxBuffer: 64 << 20 }).trim().split("\n").map(Number);
   assert.equal(out.length, combos.length);
   const oracle = (c) => c.PLAN === "success" && c.GATE === "success" && c.RECEIPTS === "success" && c.BUILD === (c.BUILD_EXPECTED === "true" ? "success" : "skipped")
     && c.AGG === (c.AGG_EXPECTED === "true" ? "success" : "skipped") && c.DEPLOY === (c.DEPLOY_EXPECTED === "true" ? "success" : "skipped");
