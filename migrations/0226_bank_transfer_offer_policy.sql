@@ -1,6 +1,6 @@
 -- Purpose: enforce OC-Q1 for new buyer and merchant order options.
--- Depends on 0088's scoped offer reader and 0202's existing writer-role policy read.
--- Used by checkout.ListOptions for both buyer checkout and merchant manual orders.
+-- Depends on: 0088's scoped offer reader and 0202's existing writer-role policy read.
+-- Used by: checkout.ListOptions for both buyer checkout and merchant manual orders.
 -- Keep the existing signature, privileges and history paths. Only explicit policy open admits an offer.
 
 CREATE OR REPLACE FUNCTION checkout.read_transfer_offer(p_hash bytea,p_store uuid)
