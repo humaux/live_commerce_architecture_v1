@@ -140,8 +140,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0224 (BILL-271 billing recent-auth preflight) adds one to base 0223: 147 -> 148.
 	// 0225 (LP-1 member export and erasure recent-auth guards) adds one to base 0224: 148 -> 149.
 	// post_river/0029 (M4 live browser input recovery) adds one to current 0225 base: 149 -> 150.
-	if len(r2) != 150 {
-		t.Fatalf("R2 migration set = %d files %v, want 150", len(r2), r2)
+	// 0226 (OC-Q1 bank-transfer offer policy) adds one: 150 -> 151.
+	if len(r2) != 151 {
+		t.Fatalf("R2 migration set = %d files %v, want 151", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
