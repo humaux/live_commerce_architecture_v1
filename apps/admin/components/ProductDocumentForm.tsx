@@ -72,7 +72,6 @@ export function ProductDocumentForm({
     photos, setPhotos, locale, fail: write.setMessage, onProcessingChange: setMediaBusy,
   });
   const initial = useRef(JSON.stringify(draft)),
-    urlPhotos = useRef<DraftPhoto[]>([]),
     rowArchive = useRef<DraftRow[]>([]);
   // Media state never freezes the other fields or the section nav: an unreadable image list or an upload only
   // locks the media block itself (and, while a request is in flight, the save buttons). Staged creation keeps
@@ -131,17 +130,6 @@ export function ProductDocumentForm({
   }, [store.id, productID]);
   const mainMissing = needsMainImage(
     (write.savedDetail ?? detail)?.status ?? 'draft', mediaKnown ? photos : null,
-  );
-  useEffect(() => {
-    urlPhotos.current = photos;
-  }, [photos]);
-  useEffect(
-    () => () => {
-      urlPhotos.current.forEach((p) => {
-        if (p.file) URL.revokeObjectURL(p.url);
-      });
-    },
-    [],
   );
   useEffect(() => {
     const abort = new AbortController();

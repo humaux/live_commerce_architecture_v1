@@ -48,10 +48,19 @@ export function useStageProductPhotos({
 }) {
   const c = productMediaCopy[locale];
   const alive = useRef(true),
-    working = useRef(false);
+    working = useRef(false),
+    urlPhotos = useRef(photos);
+  useEffect(() => {
+    urlPhotos.current = photos;
+  }, [photos]);
   useEffect(() => {
     alive.current = true;
-    return () => { alive.current = false; };
+    return () => {
+      alive.current = false;
+      for (const photo of urlPhotos.current) {
+        if (photo.file) URL.revokeObjectURL(photo.url);
+      }
+    };
   }, []);
   return async (files: FileList | null, role: MediaRole, optionName?: string, value?: string) => {
     if (!files || working.current) return;
