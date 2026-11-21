@@ -147,6 +147,8 @@ test.describe("PARITY-ORDER-OPS signed frames (BROWSER MOCK)", () => {
         // Synthetic buyer values; all product/delivery choices still use the real controls.
         await page.getByRole("textbox", { name: c.name, exact: true }).fill("Parity Buyer");
         await page.getByRole("textbox", { name: c.phone, exact: true }).fill("12345678");
+        const pickupGroup = { en: "Convenience-store pickup", "zh-TW": "超商取貨", "zh-CN": "便利店取货" }[locale];
+        await expect(page.getByTestId("mo-option").locator(`optgroup[label="${pickupGroup}"] option`)).toHaveAttribute("value", `${market}|TW|cvs_711`);
         await page.getByRole("combobox", { name: c.delivery, exact: true }).selectOption(`${market}|TW|cvs_711`);
         await page.getByRole("button", { name: c.choose, exact: true }).click();
         await page.getByRole("textbox", { name: c.query, exact: true }).fill("121275");
