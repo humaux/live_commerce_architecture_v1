@@ -7,7 +7,7 @@ export { shippingCopy } from './shipping.ts';
 export { stateRecoveryCopy, adminSignedStateCopy, buyerSignedStateCopy } from './state-recovery.ts';
 export { cvsPickerCopy } from './cvs-picker.ts';
 export { orderOpsCopy } from './order-ops.ts';
-export { entryParityCopy } from './entry-parity.ts';
+export { entryParityCopy, deliveryOptionGroups } from './entry-parity.ts';
 export { editorCopy } from './editor.ts';
 export { liveSessionsCopy } from './live-sessions.ts';
 export { domainsParityCopy, type DomainsParityCopy } from './domains-parity.ts';
@@ -18,12 +18,13 @@ export { growthCopy } from './growth.ts';
 // Signed ux-settings polish/simplify copy. Values and currency are supplied by the server.
 export const settingsV2Copy = {
   'zh-TW': {
-    title: '店鋪設定', edit: '編輯設定', view: '檢視設定', complete: '店舖資料 · 已填寫', incomplete: '店舖資料 · 未填寫',
+    pickupLimit: '可選限制 · 取貨付款上限', pickupAmount: '取貨時依訂單最終應付金額代收。', pickupLimitHelp: '此上限僅限制每筆訂單可使用取貨付款的金額。', shippingFee: '固定運費', selectService: '選擇配送方式', noService: '尚未設定台灣配送方式。', invalidFee: '請輸入有效運費。', backOverview: '返回總覽',
+    profileTitle: '店舖資料', deliveryTitle: '配送方式', title: '店鋪設定', edit: '編輯設定', view: '檢視設定', complete: '店舖資料 · 已填寫', incomplete: '店舖資料 · 未填寫',
     delivery: '配送方式 · 已開啟 {n} 種', payment: '收款 · Stripe（平台代收）', start: '開始三步設定',
     step1: '1 / 3 · 店名', step2: '2 / 3 · 配送', step3: '3 / 3 · 第一個商品', name: '店名', email: '信箱', phone: '電話（選填）',
     selectAll: '全選', home: '宅配', seven: '7-ELEVEN', family: '全家', hilife: '萊爾富', ok: 'OK', on: '開放', off: '關閉',
     shipping: '自行出貨；寄出後登記承運商與單號。', shippingReview: '自行出貨；登記承運商與單號，不自動建單或購買面單。',
-    paymentReview: 'Stripe 收款待確認；付款時間依買家方式，不含貨到付款。',
+    paymentReview: 'Stripe 收款資格待確認。',
     checkout: '配送以下單確認為準。', publicURL: '商店網址', unavailable: '未填寫',
     prerequisite: '請在編輯設定確認市場與配送費用。', review: '核對設定', save: '儲存設定',
     back: '返回總覽，保留草稿', backEdit: '返回修改', nextDelivery: '下一步：配送', nextProduct: '下一步：商品',
@@ -35,12 +36,13 @@ export const settingsV2Copy = {
     pending: '上次儲存尚待確認；請核對並儲存原草稿，或重新讀取最新狀態。',
   },
   'zh-CN': {
-    title: '店铺设置', edit: '编辑设置', view: '查看设置', complete: '店铺资料 · 已填写', incomplete: '店铺资料 · 未填写',
+    pickupLimit: '可选限制 · 取货付款上限', pickupAmount: '取货时按订单最终应付金额代收。', pickupLimitHelp: '此上限仅限制每笔订单可使用取货付款的金额。', shippingFee: '固定运费', selectService: '选择配送方式', noService: '尚未设置台湾配送方式。', invalidFee: '请输入有效运费。', backOverview: '返回概览',
+    profileTitle: '店铺资料', deliveryTitle: '配送方式', title: '店铺设置', edit: '编辑设置', view: '查看设置', complete: '店铺资料 · 已填写', incomplete: '店铺资料 · 未填写',
     delivery: '配送方式 · 已启用 {n} 种', payment: '收款 · Stripe（平台代收）', start: '开始三步设置',
     step1: '1 / 3 · 店名', step2: '2 / 3 · 配送', step3: '3 / 3 · 首件商品', name: '店名', email: '邮箱', phone: '电话（选填）',
     selectAll: '全选', home: '送货上门', seven: '7-ELEVEN', family: '全家', hilife: '莱尔富', ok: 'OK', on: '已开启', off: '已关闭',
     shipping: '自行发货；寄出后登记承运商和运单号。', shippingReview: '自行发货；登记承运商和运单号，系统不自动建单或购买面单。',
-    paymentReview: 'Stripe 收款资格待确认；付款时间取决于买家选择的方式，不含货到付款。',
+    paymentReview: 'Stripe 收款资格待确认。',
     checkout: '能否配送以下单时确认为准。', publicURL: '店铺网址', unavailable: '未填写',
     prerequisite: '请在编辑设置中核对市场和配送费用。', review: '核对设置', save: '保存设置',
     back: '返回概览，保留草稿', backEdit: '返回修改', nextDelivery: '下一步：配送', nextProduct: '下一步：商品',
@@ -52,13 +54,14 @@ export const settingsV2Copy = {
     pending: '上次保存仍待确认；请核对并保存原草稿，或重新加载最新状态。',
   },
   en: {
-    title: 'Store settings', edit: 'Edit settings', view: 'View settings', complete: 'Store details · Complete', incomplete: 'Store details · Incomplete',
+    pickupLimit: 'Optional limit · Pay at pickup', pickupAmount: 'At pickup, the buyer pays the final order total.', pickupLimitHelp: 'This limit sets the largest order total eligible for pay at pickup.', shippingFee: 'Shipping fee', selectService: 'Select a delivery service', noService: 'No Taiwan delivery services are configured.', invalidFee: 'Enter a valid shipping fee.', backOverview: 'Back to overview',
+    profileTitle: 'Store details', deliveryTitle: 'Delivery methods', title: 'Store settings', edit: 'Edit settings', view: 'View settings', complete: 'Store details · Complete', incomplete: 'Store details · Incomplete',
     delivery: 'Delivery methods · {n} enabled', payment: 'Payments · Stripe (collected by platform)', start: 'Start quick setup',
     step1: '1 / 3 · Store name', step2: '2 / 3 · Delivery', step3: '3 / 3 · First product', name: 'Store name', email: 'Email', phone: 'Phone (optional)',
     selectAll: 'Select all', home: 'Home delivery', seven: '7-ELEVEN', family: 'FamilyMart', hilife: 'Hi-Life', ok: 'OK', on: 'on', off: 'off',
     shipping: 'Arrange shipping; record the carrier and tracking number after dispatch.',
     shippingReview: 'Arrange shipping and record the carrier and tracking number. No automatic shipment creation or label purchase.',
-    paymentReview: 'Stripe payment eligibility pending; payment timing depends on the buyer’s method. No cash on delivery.',
+    paymentReview: 'Stripe payment eligibility pending.',
     checkout: 'Delivery availability is confirmed at checkout.', publicURL: 'Store URL', unavailable: 'Not provided',
     prerequisite: 'Check the market and delivery pricing in Edit settings.', review: 'Review settings', save: 'Save settings',
     back: 'Back to overview, keep draft', backEdit: 'Back to edit', nextDelivery: 'Next: delivery', nextProduct: 'Next: product',

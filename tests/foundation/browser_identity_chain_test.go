@@ -133,8 +133,14 @@ func runBrowserIdentityChain(t *testing.T, wizard bool) {
 			}
 		}
 		// Verify the browser's actual fee edit reaches both order paths in the same signed store.
-		if wizard && r.Method == http.MethodPut && recorded.Code == http.StatusOK && strings.HasSuffix(r.URL.Path, "/delivery-services/quickstart_cvs_711") {
-			t.Run("browser_fee_on_buyer_and_manual_orders", func(t *testing.T) {
+		sevenFee := strings.HasSuffix(r.URL.Path, "/delivery-services/quickstart_cvs_711")
+		familyFee := strings.HasSuffix(r.URL.Path, "/delivery-services/quickstart_cvs_familymart/flat-fee")
+		if wizard && r.Method == http.MethodPut && recorded.Code == http.StatusOK && (sevenFee || familyFee) {
+			kind, shop, fee := "cvs_711", "131386", int64(6000)
+			if familyFee {
+				kind, shop, fee = "cvs_familymart", "011344", 4500
+			}
+			t.Run("browser_fee_on_buyer_and_manual_orders/"+kind, func(t *testing.T) {
 				var store identity.Store
 				session := identity.Session{Token: strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")}
 				err := f.owner.QueryRow(r.Context(), `SELECT i.tenant_id,i.store_id,i.warehouse_id,i.principal_id
@@ -145,7 +151,7 @@ func runBrowserIdentityChain(t *testing.T, wizard bool) {
 				}
 				e := manualCVSStore(t, store, session)
 				a := mtAdmin{t: t, h: httpapi.NewHandler(f.runtime, httpapi.Options{CVS: e.cvs, ManualOrders: mtManualOrders(t, e)}), store: store.StoreID, token: session.Token}
-				a.checkPickupOrder(e, "cvs_711", "131386", 6000)
+				a.checkPickupOrder(e, kind, shop, fee)
 			})
 		}
 		for name, values := range recorded.Header() {
@@ -264,8 +270,8 @@ func runBrowserIdentityChain(t *testing.T, wizard bool) {
 		 (SELECT count(*) FROM ops.command_results c WHERE c.tenant_id=s.tenant_id AND c.operation='pricing.market.create')
 		 FROM identity.initial_stores s JOIN identity.external_identities e ON e.principal_id=s.principal_id
 		 WHERE e.issuer=$1 AND e.subject='browser-subject'`, idp.server.URL).Scan(&markets, &policies, &services, &commands)
-		// Four default revisions, one repriced 7-ELEVEN, and home with three service revisions.
-		if err != nil || markets != 1 || policies != 6 || services != 8 || commands != 0 {
+		// Four default policies/services, two pickup fee edits, and home with two policies and four service versions.
+		if err != nil || markets != 1 || policies != 8 || services != 10 || commands != 0 {
 			t.Fatalf("wizard fresh setup persistence: markets=%d policies=%d services=%d market_commands=%d err=%v", markets, policies, services, commands, err)
 		}
 		// Stale-draft + lost-reply proof moved with the spec (settings-real.spec.ts) from the removed PAYUNi method form to the

@@ -56,20 +56,25 @@ async function fixtures(page: Page) {
   const json = (body: unknown) => ({ status: 200, contentType: "application/json", headers: { "cache-control": "private, no-store" }, body: JSON.stringify(body) });
   const products = [
     { id: tote, sku: toteSku, name: "焦糖托特包", title: "焦糖", code: "A12", price: 128000 },
+    { id: id("103"), sku: id("203"), name: "Out of stock", title: "Standard", code: "C12", price: 10000 },
     { id: small, sku: smallSku, name: "日常斜背小包", title: "標準款", code: "B12", price: 98000 },
   ];
-  await page.route(`**/api/stores/${store}/catalog-products?*`, (route) => route.fulfill(json({
-    items: products.map((p) => ({ id: p.id, slug: p.code.toLowerCase(), name: p.name, status: "active", version: 1,
-      cover_image_id: null, price_min_minor: p.price, price_max_minor: p.price, currency: "TWD", sku_count: 1,
-      available: 10, keyword: p.code, inventory_tracked: true, updated_at: instant })),
-    next_cursor: "", total: 2, status_counts: { draft: 0, active: 2, archived: 0 },
-  })));
+  await page.route(`**/api/stores/${store}/catalog-products?*`, (route) => {
+    const query = new URL(route.request().url()).searchParams.get("q") ?? "";
+    const matches = products.filter((p) => p.name.includes(query) || p.code.includes(query));
+    return route.fulfill(json({
+      items: matches.map((p) => ({ id: p.id, slug: p.code.toLowerCase(), name: p.name, status: "active", version: 1,
+        cover_image_id: null, price_min_minor: p.price, price_max_minor: p.price, currency: "TWD", sku_count: 1,
+        available: p.code === "C12" ? 0 : 10, keyword: p.code, inventory_tracked: true, updated_at: instant })),
+      next_cursor: "", total: matches.length, status_counts: { draft: 0, active: products.length, archived: 0 },
+    }));
+  });
   for (const p of products) await page.route(`**/api/stores/${store}/products/${p.id}`, (route) => route.fulfill(json({
     id: p.id, slug: p.code.toLowerCase(), name: p.name, description: "", status: "active", version: 1,
     seo_title: "", seo_description: "", options: [], collection_ids: [], warehouse_id: null,
     skus: [{ id: p.sku, code: p.code, title: p.title, price_minor: p.price, compare_at_minor: null,
-      option_values: [], version: 1, currency: "TWD", available: 10, inventory_tracked: true,
-      max_per_order: null, keyword: p.code, on_hand: 10, committed: 0, weight_grams: 100,
+      option_values: [], version: 1, currency: "TWD", available: p.code === "C12" ? 0 : 10, inventory_tracked: true,
+      max_per_order: null, keyword: p.code, on_hand: p.code === "C12" ? 0 : 10, committed: 0, weight_grams: 100,
       length_mm: 10, width_mm: 10, height_mm: 10, origin_country: "TW", customs_name: "", hs_candidate: "" }],
   })));
   await page.route(`**/api/stores/${store}/tools/orders/manual/options`, (route) => route.fulfill(json({ options: [{
@@ -106,8 +111,19 @@ test.describe("PARITY-ORDER-OPS signed frames (BROWSER MOCK)", () => {
       await login(page); await fixtures(page);
       const posts: string[] = [];
       page.on("request", (r) => { if (r.method() === "POST" && r.url().includes("/tools/orders/manual")) posts.push(r.url()); });
-      await page.goto(`${origin}/${locale}/orders/new?store=${store}`);
-      // First failure on the pre-Figma implementation must be this signed, visible heading assertion.
+      await page.goto(`${origin}/${locale}/?store=${store}`);
+      const rail = page.locator("[data-shell-rail]");
+      const create = rail.getByRole("button", { name: c.manual, exact: true });
+      await action(page, c.manual, "click and reload", "same store and active create entry", async () => {
+        if (mobile) await page.locator('button[aria-controls="workspace-navigation"]').click();
+        await create.click();
+        await expect(page).toHaveURL(`${origin}/${locale}/orders/new?store=${store}`);
+        await page.reload();
+        if (mobile) await page.locator('button[aria-controls="workspace-navigation"]').click();
+        await expect(create).toHaveAttribute("aria-current", "page");
+        await expect(rail.getByTestId("nav-orders")).not.toHaveAttribute("aria-current", "page");
+        if (mobile) await page.keyboard.press("Escape");
+      });
       await expect(page.getByRole("heading", { name: c.items, exact: true })).toBeVisible();
       await expect(page.getByRole("heading", { name: c.recipient, exact: true })).toBeVisible();
       for (const heading of c.legacyManual) await expect(page.getByRole("heading", { name: heading, exact: true })).toHaveCount(0);
@@ -118,7 +134,19 @@ test.describe("PARITY-ORDER-OPS signed frames (BROWSER MOCK)", () => {
       await openPicker();
       const select = (name: string) => page.getByRole("button", { name: new RegExp(`${c.select}.*${name}`) });
       await action(page, "焦糖托特包", "click + apply", "one tote in draft", async () => {
-        await select("焦糖|托特包").click();
+        await expect(select("Out of stock")).toBeDisabled();
+        await select("托特包").press("Space");
+        const dialog = page.getByRole("dialog");
+        const selected = dialog.getByRole("button", { pressed: true, name: /托特包/ });
+        await expect(selected).toContainText("× 1");
+        await dialog.getByRole("spinbutton").fill("99");
+        await expect(selected).toContainText("× 10");
+        await dialog.getByRole("spinbutton").fill("1");
+        await dialog.getByRole("textbox").fill("小包");
+        await dialog.getByRole("textbox").press("Enter");
+        await expect(select("小包")).toBeVisible();
+        await expect(selected).toHaveCount(0);
+        await expect(dialog.getByRole("status")).toContainText("1");
         await page.getByRole("button", { name: c.apply, exact: true }).click();
         await expect(page.getByRole("spinbutton", { name: new RegExp(c.quantity) }).first()).toHaveValue("1");
       });
@@ -129,10 +157,21 @@ test.describe("PARITY-ORDER-OPS signed frames (BROWSER MOCK)", () => {
       });
       if (locale === "zh-TW") await screenshot(page, mobile ? "21:967" : "21:582");
       await openPicker();
+      await expect(page.getByRole("dialog").getByRole("button", { pressed: true, name: /托特包/ })).toContainText("× 2");
       if (locale === "zh-TW") await screenshot(page, mobile ? "750:3595" : "750:3453");
       await action(page, c.cancel, "click", "picker closes and quantity stays two", async () => {
+        const selected = page.getByRole("dialog").getByRole("button", { pressed: true, name: /托特包/ });
+        await expect(selected).toContainText("× 2");
+        await selected.click();
         await page.getByRole("button", { name: c.cancel, exact: true }).click();
         await expect(page.getByRole("spinbutton", { name: new RegExp(c.quantity) }).first()).toHaveValue("2");
+      });
+      await openPicker();
+      await action(page, c.cancel, "Escape", "keyboard cancellation restores the original draft and focus", async () => {
+        await page.getByRole("dialog").getByRole("spinbutton").fill("4");
+        await page.keyboard.press("Escape");
+        await expect(page.getByTestId("mo-open-picker")).toBeFocused();
+        await expect(page.getByTestId("mo-lines").getByRole("spinbutton")).toHaveValue("2");
       });
       await openPicker();
       await action(page, "日常斜背小包", "click + apply", "two distinct SKU lines", async () => {
@@ -147,6 +186,8 @@ test.describe("PARITY-ORDER-OPS signed frames (BROWSER MOCK)", () => {
         // Synthetic buyer values; all product/delivery choices still use the real controls.
         await page.getByRole("textbox", { name: c.name, exact: true }).fill("Parity Buyer");
         await page.getByRole("textbox", { name: c.phone, exact: true }).fill("12345678");
+        const pickupGroup = { en: "Convenience-store pickup", "zh-TW": "超商取貨", "zh-CN": "便利店取货" }[locale];
+        await expect(page.getByTestId("mo-option").locator(`optgroup[label="${pickupGroup}"] option`)).toHaveAttribute("value", `${market}|TW|cvs_711`);
         await page.getByRole("combobox", { name: c.delivery, exact: true }).selectOption(`${market}|TW|cvs_711`);
         await page.getByRole("button", { name: c.choose, exact: true }).click();
         await page.getByRole("textbox", { name: c.query, exact: true }).fill("121275");
@@ -166,6 +207,15 @@ test.describe("PARITY-ORDER-OPS signed frames (BROWSER MOCK)", () => {
         await page.getByRole("button", { name: back, exact: true }).click();
         await expect(page.getByRole("spinbutton", { name: new RegExp(c.quantity) })).toHaveCount(2);
         await expect(page.getByRole("textbox", { name: c.name, exact: true })).toHaveValue("Test Buyer");
+      });
+      await openPicker();
+      await action(page, c.apply, "deselect and apply", "removing both lines clears the draft", async () => {
+        const dialog = page.getByRole("dialog");
+        await dialog.getByRole("button", { pressed: true, name: /托特包/ }).click();
+        await dialog.getByRole("button", { pressed: true, name: /小包/ }).click();
+        await dialog.getByRole("button", { name: c.apply }).click();
+        await expect(page.getByTestId("mo-lines")).toHaveCount(0);
+        await expect(page.getByTestId("mo-open-picker")).toBeFocused();
       });
       // None of the draft/picker controls may place an order or reserve stock.
       expect(posts).toEqual([]);

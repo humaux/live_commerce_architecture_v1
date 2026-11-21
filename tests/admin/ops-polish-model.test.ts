@@ -36,7 +36,7 @@ test("OP4 actual browser assertion keeps the exact four-route live inventory", (
     if (ts.isConditionalExpression(node) && ts.isIdentifier(node.condition) && node.condition.text === "liveSelected") return expand(liveSelected ? node.whenTrue : node.whenFalse, liveSelected);
     assert.fail(`OP4 inventory must remain explicit: ${node.getText(source)}`);
   };
-  const collapsed = ["nav-group-overview", "nav-group-live", "nav-orders", "nav-group-catalog", "nav-group-marketing", "nav-group-storefront", "nav-group-finance", "nav-group-settings"];
+  const collapsed = ["nav-group-overview", "nav-group-live", "nav-orders", "nav-group-orderNew", "nav-group-catalog", "nav-group-marketing", "nav-group-storefront", "nav-group-finance", "nav-group-settings"];
   const liveRoutes = ["studio", "live-console", "claims", "live-settings"];
   assert.equal(arrays.length, 1, "OP4 must keep one exact full-navigation assertion");
   assert.deepEqual(expand(arrays[0], false), collapsed);

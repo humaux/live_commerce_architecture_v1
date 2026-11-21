@@ -131,6 +131,8 @@ async function toQuote(page, store, locale, kind, quantity = 1) {
   // a pay-at-pickup total must be a whole TWD amount (F20: GoodsAmount/CollectionAmount are integers); the fixture SKU costs TWD 12.50
   await reachCheckout(page, store.origin, locale, store.product, { quantity });
   await page.getByRole("button", { name: copy[locale].delivery, exact: true }).click();
+  const group = { en: "Convenience-store pickup", "zh-TW": "超商取貨", "zh-CN": "便利店取货" }[locale];
+  await expect(page.locator(`#delivery optgroup[label="${group}"] option`).filter({ hasText: copy[locale].chains[kind] })).toHaveCount(1);
   await page.locator("#delivery").selectOption({ label: `${copy[locale].chains[kind]}` });
   // READ ONLY: retain the actual selection before the signed quote screen unmounts the delivery selector.
   const deliveryKey = await page.locator("#delivery").inputValue();

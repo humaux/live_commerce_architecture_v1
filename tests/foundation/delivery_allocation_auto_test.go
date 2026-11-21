@@ -4,20 +4,25 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"reflect"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 
+	"livecommerce/internal/buyer"
 	"livecommerce/internal/buyerhttp"
 	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/platform"
 	"livecommerce/internal/pricing"
+	"livecommerce/internal/storefront"
 )
 
 // delivery-allocation P0 (backend): a merchant only enables a delivery service without configuring
@@ -95,6 +100,75 @@ func TestDeliveryAllocationAutoMerchantHTTPShowsBuyerOption(t *testing.T) {
 	if !found {
 		t.Fatalf("enabled service %q missing from buyer options", in.Code)
 	}
+	t.Run("atomic flat fee and buyer quote", func(t *testing.T) {
+		handler := httpapi.NewHandler(h.f.runtime)
+		path := settingsPath(h.f.storeA1, in.MarketID, "delivery-services", in.Code) + "/flat-fee"
+		key := t04Key("flat-fee")
+		body := map[string]any{"shipping_minor": 80, "expected_policy_version": 1, "expected_service_version": 1}
+		put := func(k string) *httptest.ResponseRecorder {
+			return wizardWrite(t, handler, "PUT", path, h.f.tokens["a"], k, body)
+		}
+		cart := h.oneCart(t)
+		checkBuyer := func(version, fee int64) storefront.Quote {
+			t.Helper()
+			rows := boptRead(t, h, "market_id="+h.market.ID+"&country=TW").Items
+			if len(rows) != 1 || rows[0].DeliveryCode != in.Code || rows[0].ServiceVersion != version {
+				t.Fatalf("buyer options: %+v", rows)
+			}
+			q, err := cqBuyer(h.a.runtime, h.cap, func(ctx context.Context, tx pgx.Tx, s buyer.Scope) (storefront.Quote, error) {
+				return storefront.CreateQuote(ctx, tx, s, t04Key("atomic-fee-quote"), storefront.QuoteInput{CartVersion: cart.Version, MarketID: in.MarketID, Country: "TW", Method: "delivery:" + in.Code})
+			})
+			if err != nil || q.Policy.Version != version || q.Amount.ShippingMinor != fee {
+				t.Fatalf("buyer quote policy=%+v fee=%d err=%v", q.Policy, q.Amount.ShippingMinor, err)
+			}
+			return q
+		}
+		original := checkBuyer(1, 50)
+		rollback := errors.New("fixture requests rollback after both staged writes")
+		_, err := t04Scoped(context.Background(), h.f, h.f.tokens["a"], h.f.storeA1, "integration:manage", func(tx pgx.Tx, s platform.Scope) (fulfillment.FlatFee, error) {
+			amount := int64(80)
+			staged, err := fulfillment.SetFlatFee(context.Background(), tx, s, h.f.tokens["a"], key, in.MarketID, "TW", in.Code, fulfillment.FlatFeeInput{ShippingMinor: &amount, ExpectedPolicyVersion: 1, ExpectedServiceVersion: 1})
+			if err != nil {
+				return staged, err
+			}
+			rows := boptRead(t, h, "market_id="+h.market.ID+"&country=TW").Items
+			old, err := h.get(h.cap, original.ID)
+			if err != nil || len(rows) != 1 || rows[0].ServiceVersion != 1 || rows[0].DeliveryCode != in.Code || old.Amount.ShippingMinor != 50 || old.Policy.Version != 1 {
+				return staged, fmt.Errorf("buyer lost committed option or quote during update: options=%+v quote=%+v err=%v", rows, old.Policy, err)
+			}
+			return staged, rollback
+		})
+		if !errors.Is(err, rollback) {
+			t.Fatalf("staged rollback: %v", err)
+		}
+		checkBuyer(1, 50)
+		for _, field := range []string{"expected_service_version", "expected_policy_version"} {
+			body[field] = 2
+			assertAdminError(t, put(t04Key("fee-stale")), 409, "conflict")
+			body[field] = 1
+			checkBuyer(1, 50)
+		}
+		first := settingsRead[map[string]any](t, put(key))
+		if first["shipping_minor"] != float64(80) || first["service_version"] != float64(2) || first["policy_version"] != float64(2) {
+			t.Fatalf("bad receipt: %+v", first)
+		}
+		checkBuyer(2, 80)
+		replay := settingsRead[map[string]any](t, put(key))
+		if !reflect.DeepEqual(replay, first) {
+			t.Fatalf("changed replay: %+v", replay)
+		}
+		body["shipping_minor"] = 99
+		assertAdminError(t, put(key), 409, "conflict")
+		body["shipping_minor"] = 80
+		for _, permission := range []string{"integration:manage", "pricing:write"} {
+			func() {
+				mustExec(t, h.f.owner, `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission=$4`, h.f.tenantA, h.f.storeA1, h.f.principalA, permission)
+				defer mustExec(t, h.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4)`, h.f.tenantA, h.f.storeA1, h.f.principalA, permission)
+				assertAdminError(t, put(key), 403, "forbidden")
+			}()
+		}
+		checkBuyer(2, 80)
+	})
 }
 
 func TestDeliveryAllocationAutoConcurrentEnableSingleHead(t *testing.T) {

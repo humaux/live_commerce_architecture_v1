@@ -480,6 +480,28 @@ test("REAL_PG A wizard has no PAYUNi, edits default pickup fees and preserves sa
   await expect(page.getByText(/Your session changed\./)).toBeVisible();
   expect(changedSessionWrites).toBe(0);
   await context.addCookies([originalCSRF]);
+  const openFee = async (code: string) => {
+    await page.getByRole("button", { name: "Shipping fee", exact: true }).click();
+    const service = page.getByRole("combobox", { name: "Delivery methods", exact: true });
+    const option = service.locator("option").filter({ hasText: `(${code})` });
+    await expect(option).toHaveCount(1);
+    await service.selectOption({ label: (await option.textContent())! });
+    return page.getByRole("textbox", { name: "Shipping fee (TWD)", exact: true });
+  };
+  for (const [code, from, to] of [["home", "60", "80"], ["quickstart_cvs_familymart", "0", "45"]]) {
+    await page.reload();
+    const fee = await openFee(code);
+    await expect(fee).toHaveValue(from);
+    await fee.fill(to);
+    const saved = page.waitForResponse(r => r.request().method() === "PUT" && new URL(r.url()).pathname.endsWith(`/delivery-services/${code}/flat-fee`));
+    await fee.press("Enter");
+    const response = await saved;
+    expect(response.status()).toBe(200);
+    expect(await response.json()).toMatchObject({ code, shipping_minor: Number(to) * 100 });
+    await expect(page.getByRole("status").filter({ hasText: "Settings saved" })).toBeVisible();
+    await page.reload();
+    await expect(await openFee(code)).toHaveValue(to);
+  }
   // End the real session the way the merchant does, after proving old-tab writes stayed zero: Account menu -> Sign out (a real click path; the
   // BFF answer is read from the response the click triggers).
   await page.locator("header[data-shell-topbar] summary", { hasText: /^Account$/ }).click();

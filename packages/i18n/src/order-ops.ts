@@ -7,7 +7,7 @@ export const orderOpsCopy = {
   'zh-TW': {
     manual: '建立訂單', items: '1 · 商品', recipient: '2 · 收件人與配送', add: '加入商品', picker: '加入商品至本單',
     apply: '套用至本單', cancel: '取消', select: '選取', name: '收件人', phone: '聯絡電話', review: '檢查訂單',
-    retained: '取消不會變更原訂單。', selected: '本單保留', advanced: '進階', backEdit: '返回修改',
+    retained: '取消不會變更原訂單。', selected: '已選取', deselect: '取消選取', untracked: '不追蹤庫存', overLimit: '所選數量超過目前可加入的數量，請調整或取消選取。', advanced: '進階', backEdit: '返回修改',
     quote: '金額以下單時的正式報價為準；目前尚未建立訂單或收款。',
     returns: '退款與售後', requests: '售後申請', view: '查看售後申請', completed: '已完成的售後紀錄',
     aftersales: '退款、退貨收件與庫存處置分開記錄。請到原訂單處理退款。',
@@ -21,7 +21,7 @@ export const orderOpsCopy = {
   'zh-CN': {
     manual: '创建订单', items: '1 · 商品', recipient: '2 · 收件人与配送', add: '添加商品', picker: '添加商品到本单',
     apply: '应用到本单', cancel: '取消', select: '选择', name: '收件人', phone: '联系电话', review: '检查订单',
-    retained: '取消不会更改原订单。', selected: '本单保留', advanced: '高级选项', backEdit: '返回修改',
+    retained: '取消不会更改原订单。', selected: '已选择', deselect: '取消选择', untracked: '不跟踪库存', overLimit: '所选数量超过当前可添加的数量，请调整或取消选择。', advanced: '高级选项', backEdit: '返回修改',
     quote: '金额以下单时的正式报价为准；目前尚未创建订单或收款。',
     returns: '退款与售后', requests: '售后申请', view: '查看售后申请', completed: '已完成的售后记录',
     aftersales: '退款、退货签收与库存处理分别记录。请到原订单处理退款。',
@@ -35,7 +35,7 @@ export const orderOpsCopy = {
   en: {
     manual: 'Create order', items: '1 · Items', recipient: '2 · Recipient and delivery', add: 'Add products', picker: 'Add products to this order',
     apply: 'Apply to this order', cancel: 'Cancel', select: 'Select', name: 'Recipient', phone: 'Phone', review: 'Review order',
-    retained: 'Cancel keeps the original order unchanged.', selected: 'Kept in this order', advanced: 'Advanced', backEdit: 'Back to editing',
+    retained: 'Cancel keeps the original order unchanged.', selected: 'Selected', deselect: 'Deselect', untracked: 'Stock not tracked', overLimit: 'Reduce the quantity or deselect items that exceed the current limit.', advanced: 'Advanced', backEdit: 'Back to editing',
     quote: 'The final quote is confirmed when you place the order. No order or payment has been created yet.',
     returns: 'Refunds and after-sales', requests: 'After-sales requests', view: 'View after-sales requests', completed: 'Completed after-sales record',
     aftersales: 'Refunds, returned goods and stock decisions are recorded separately. Process refunds from the original order.',

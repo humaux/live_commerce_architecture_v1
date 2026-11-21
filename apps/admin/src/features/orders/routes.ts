@@ -1,7 +1,7 @@
 // Purpose: Declare order task routes and their permissions, navigation placement and browser coverage.
 // Depends on: ../../route-types.ts and the localized shell label keys.
 // Used by: apps/admin/src/routes.ts and route-registry/browser-ownership gates.
-// Invariants: Detail and action routes never add a sidebar item or grant a permission; orders remains a singleton rail entry.
+// Invariants: List and create are separate rail entries with their own permissions.
 // W0 route metadata only; data/authorization remain in the existing BFF and Go.
 import type { RouteEntry } from "../../route-types.ts";
 export const ordersRoutes = [
@@ -19,12 +19,12 @@ export const ordersRoutes = [
   {
     id: "order-new",
     path: "/orders/new",
-    group: "orders",
+    group: "orderNew",
     labelKey: "orderNew",
     icon: "orders",
     permission: "inventory:reserve", // what Go guards a manual order with (migration 0094); there is no orders:write
     template: "form",
-    nav: false,
+    nav: true,
     spec: "tests/admin/shell-browser.mjs",
   },
   {
