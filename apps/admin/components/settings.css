@@ -15,14 +15,15 @@
 .settings-v2 h1:focus { outline: none; }
 .settings-v2 p { margin: 0 0 16px; line-height: 1.6; }
 .settings-v2-rows { background: var(--ds-surface-muted); padding: 24px; }
-.settings-v2-rows button {
+.settings-v2-rows :is(button, a) {
+  text-decoration: none;
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
   width: 100%; min-height: 56px; padding: 16px 0; text-align: start;
   border: 0; border-radius: 0;
   background: transparent; color: var(--ds-ink); font-size: 16px;
 }
 .settings-v2-rows button:last-child { border-bottom: 0; }
-.settings-v2 button:focus-visible, .settings-v2 input:focus-visible { outline: 2px solid var(--ds-focus); outline-offset: 3px; }
+.settings-v2 a:focus-visible, .settings-v2 button:focus-visible, .settings-v2 input:focus-visible { outline: 2px solid var(--ds-focus); outline-offset: 3px; }
 .settings-v2 button:hover:not(:disabled) { background: var(--ds-surface-muted); }
 .settings-v2 fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .settings-v2 label:not(.settings-v2-switch) { display: flex; flex-direction: column; gap: 8px; margin: 0 0 20px; font-size: 14px; }

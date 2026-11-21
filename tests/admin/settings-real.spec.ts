@@ -459,6 +459,24 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await expect(page.getByText(/Your session changed\./)).toBeVisible();
   expect(changedSessionWrites).toBe(0);
   await context.addCookies([originalCSRF]);
+  await page.reload();
+  const openFee = async () => {
+    await page.getByRole("button", { name: "Shipping fee", exact: true }).click();
+    const service = page.getByRole("combobox", { name: "Delivery methods", exact: true });
+    const home = service.locator("option").filter({ hasText: "(home)" });
+    await expect(home).toHaveCount(1);
+    await service.selectOption({ label: (await home.textContent())! });
+    return page.getByRole("textbox", { name: "Shipping fee (TWD)", exact: true });
+  };
+  const fee = await openFee();
+  await expect(fee).toHaveValue("60");
+  await fee.fill("80");
+  const committedFee = page.waitForResponse(r => r.request().method() === "PUT" && new URL(r.url()).pathname.endsWith("/delivery-services/home/flat-fee"));
+  await fee.press("Enter");
+  expect((await committedFee).status()).toBe(200);
+  await expect(page.getByRole("status").filter({ hasText: "Settings saved" })).toBeVisible();
+  await page.reload();
+  await expect(await openFee()).toHaveValue("80");
   // End the real session the way the merchant does, after proving old-tab writes stayed zero: Account menu -> Sign out (a real click path; the
   // BFF answer is read from the response the click triggers).
   await page.locator("header[data-shell-topbar] summary", { hasText: /^Account$/ }).click();

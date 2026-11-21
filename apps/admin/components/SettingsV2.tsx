@@ -1,25 +1,52 @@
 // Purpose: Owner-signed three-row settings, direct edit/review and optional three-step quick setup.
-// Depends on: react, @live-commerce/i18n, ./WorkspaceFrame, @/lib/settings-v2, @/lib/settings-client, @/lib/catalog-v2-model, @/lib/settings-model and SettingsWizard's settings.css.
+// Depends on: react, @live-commerce/i18n, ./WorkspaceFrame, ./SettingsAmountEditor, @/lib/settings-v2, @/lib/settings-client, @/lib/catalog-v2-model, @/lib/settings-model and SettingsWizard's settings.css.
 // Used by: SettingsWizard; localized authenticated settings route.
 // Invariants: server baselines, one keyed command at a time, durable initial-stock intent; only owner AD-04 delivery defaults.
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { settingsV2Copy, type Locale } from "@live-commerce/i18n";
+import { SettingsAmountEditor, type AmountItem } from "./SettingsAmountEditor";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { readSettings, sessionBoundary } from "@/lib/settings-client";
 import { parseProduct, toMinor } from "@/lib/catalog-v2-model";
 import type { Market, Policy, Service, SettingsInitial } from "@/lib/settings-model";
-import { deliveryKinds, draftOf, execute, parseProfile, readSnapshot, reconciled, SaveFailure, serviceInput,
+import { deliveryKinds, draftOf, execute, parseProfile, readDelivery, readSnapshot, reconciled, SaveFailure, serviceInput,
   type Journal, type Profile, type Quickstart, type SimpleDraft, type Snapshot } from "@/lib/settings-v2";
 
-type Screen = "overview" | "editor" | "review" | "saved" | "uncertain" | "failed" | "step1" | "step2" | "step3";
+type Screen = AmountItem | "overview" | "editor" | "review" | "saved" | "uncertain" | "failed" | "step1" | "step2" | "step3";
+const chevron = <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="m9 5 7 7-7 7" stroke="currentColor" strokeWidth="1.5" /></svg>;
 const empty: SimpleDraft = { name: "", contact_email: "", contact_phone: "", enabled: {}, productName: "", price: "", stock: "" };
+
+type DeliveryEdits = Partial<Record<typeof deliveryKinds[number], { market: string | null; code: string; version: number; enabled: boolean }>>;
+type Shipping = Pick<Snapshot, "market" | "delivery">;
+function deliveryEdits(data: Shipping, draft: SimpleDraft): DeliveryEdits {
+  const edits: DeliveryEdits = {};
+  for (const { kind, service, createCode } of data.delivery) {
+    const enabled = draft.enabled[kind], code = service?.code ?? createCode;
+    if (code && typeof enabled === "boolean" && enabled !== (service?.enabled ?? false)) {
+      edits[kind] = { market: data.market?.id ?? null, code, version: service?.version ?? 0, enabled };
+    }
+  }
+  return edits;
+}
+function restoreDelivery(data: Shipping, edits: DeliveryEdits | undefined, creatingMarket: boolean) {
+  return Object.fromEntries(data.delivery.map(({ kind, service, createCode }) => {
+    const edit = edits?.[kind];
+    const sameMarket = edit?.market === (data.market?.id ?? null) || (creatingMarket && edit?.market === null && data.market?.code === "tw");
+    return [kind, edit && sameMarket && edit.code === (service?.code ?? createCode) && edit.version === (service?.version ?? 0)
+      ? edit.enabled : service?.enabled ?? false];
+  }));
+}
+function cachedDraft(data: Snapshot, draft: SimpleDraft) {
+  return JSON.stringify({ version: data.profile.version, draft, deliveryEdits: deliveryEdits(data, draft) });
+}
 
 /** A compact merchant surface over the incumbent authenticated commands. */
 export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; initial: SettingsInitial; onAdvanced: () => void }) {
   const c = settingsV2Copy[locale], store = initial.store;
   const [data, setData] = useState<Snapshot | null>(null), [draft, setDraft] = useState<SimpleDraft>(empty);
-  const [screen, setScreen] = useState<Screen>("overview"), [fromQuickstart, setFromQuickstart] = useState(false);
+  const [screen, setScreen] = useState<Screen>("overview"), [section, setSection] = useState<"profile" | "delivery" | "quickstart">("profile");
+  const fromQuickstart = section === "quickstart";
   const [busy, setBusy] = useState(false), [loading, setLoading] = useState(true), [partial, setPartial] = useState(false);
   const [notice, setNotice] = useState("");
   const scope = useRef(""), key = useRef(""), pending = useRef<Journal | null>(null);
@@ -36,8 +63,9 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
     pending.current = value;
   }
   function change(patch: Partial<SimpleDraft>) {
+    if (!data) return;
     const next = { ...draft, ...patch };
-    try { sessionStorage.setItem(key.current, JSON.stringify({ version: data?.profile.version, draft: next })); setDraft(next); }
+    try { sessionStorage.setItem(key.current, cachedDraft(data, next)); setDraft(next); }
     catch { setScreen("failed"); setNotice(c.retained); }
   }
   async function load(discardDraft = false) {
@@ -72,13 +100,20 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
       let next = draftOf(fresh);
       const cached = sessionStorage.getItem(key.current);
       if ((!discardDraft || skuCommand || initialStock || deliveryCommand) && cached) {
-        const saved = JSON.parse(cached) as { version: number; draft: SimpleDraft };
+        const saved = JSON.parse(cached) as { version: number; draft: SimpleDraft; deliveryEdits?: DeliveryEdits };
         const d = saved.draft;
-        if (saved.version === fresh.profile.version && d &&
+        if (d &&
             [d.name, d.contact_email, d.contact_phone, d.productName, d.price, d.stock].every(s => typeof s === "string" && s.length <= 254) &&
             d.enabled && Object.entries(d.enabled).every(([k, v]) => deliveryKinds.includes(k as typeof deliveryKinds[number]) && typeof v === "boolean")) {
-          next = skuCommand || initialStock ? { ...next, productName: d.productName, price: d.price, stock: d.stock }
-            : discardDraft && deliveryCommand ? { ...next, enabled: d.enabled } : d;
+          if (skuCommand || initialStock) {
+            if (saved.version !== fresh.profile.version) throw new Error("sku_draft_shape");
+            next = { ...next, productName: d.productName, price: d.price, stock: d.stock };
+          } else {
+            // Legacy drafts lack service versions. Restore only a still-uncreated choice owned by a pending creation.
+            const edits = saved.deliveryEdits ?? (deliveryCommand ? deliveryEdits({ ...fresh, delivery: fresh.delivery.filter(row => !row.service) }, d) : {});
+            const enabled = restoreDelivery(fresh, edits, command?.resource === "markets");
+            next = { ...(!discardDraft && saved.version === fresh.profile.version ? d : next), enabled };
+          }
         } else if (skuCommand || initialStock) throw new Error("sku_draft_shape");
       }
       if (skuCommand) {
@@ -114,7 +149,7 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
         next = { ...next, stock: String(original.delta) };
       }
       setData(fresh); setDraft(next); setScreen("overview");
-      sessionStorage.setItem(key.current, JSON.stringify({ version: fresh.profile.version, draft: next }));
+      sessionStorage.setItem(key.current, cachedDraft(fresh, next));
     } catch { if (active.current && at === generation.current) setScreen("uncertain"); }
     finally { if (active.current && at === generation.current) setLoading(false); }
   }
@@ -138,59 +173,70 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
         if (!lock) throw new SaveFailure(false, false);
         // Resolve the original delivery command before considering any later
         // edits. Reads and reloads never retry a command or allocate a new key.
-        if (pending.current?.resource === "markets" || pending.current?.resource.startsWith("markets/")) {
+        const resource = pending.current?.resource;
+        const pendingDelivery = resource === "markets" || resource?.startsWith("markets/");
+        if (resource && !fromQuickstart && !(section === "profile" ? resource === "profile" : pendingDelivery)) throw new SaveFailure(true, false);
+        let desired = draft.enabled;
+        if (pending.current && pendingDelivery) {
+          const edits = deliveryEdits(data, draft);
           const original = pending.current;
           await send(original.resource, original.method, JSON.parse(original.body));
-          const fresh = await readSnapshot(store.id, currency);
+          const fresh = await readDelivery(store.id, currency);
+          desired = restoreDelivery(fresh, edits, original.resource === "markets");
           data.market = fresh.market; data.createMarket = fresh.createMarket; data.delivery = fresh.delivery;
         }
-        let profile = { name: draft.name, contact_email: draft.contact_email, contact_phone: draft.contact_phone, expected_version: data.profile.version };
-        if (pending.current?.resource === "profile") {
-          const original = JSON.parse(pending.current.body) as typeof profile;
-          if (original.name !== draft.name || original.contact_email !== draft.contact_email || original.contact_phone !== draft.contact_phone) throw new SaveFailure(true, false);
-          profile = original; // durable replay, including its original version after another operator's save
-        }
-        if (pending.current?.resource === "profile" || draft.name !== data.profile.name || draft.contact_email !== data.profile.contact_email || draft.contact_phone !== data.profile.contact_phone) {
-          const saved = parseProfile(await send<Profile>("profile", "PUT", profile));
-          if (saved.name !== profile.name || saved.contact_email !== profile.contact_email || saved.contact_phone !== profile.contact_phone || saved.version !== profile.expected_version + 1) throw new SaveFailure(true, changed);
-          data.profile = saved;
-          sessionStorage.setItem(key.current, JSON.stringify({ version: saved.version, draft }));
-        }
-        if (data.createMarket && data.delivery.some(d => draft.enabled[d.kind] && d.createCode)) {
-          data.market = await send<Market>("markets", "POST", { code: "tw", name: "台灣", currency });
-          data.createMarket = false;
-        }
-        for (const [index, d] of data.delivery.entries()) {
-          if (!d.service && draft.enabled[d.kind]) {
-            if (!d.createCode || !data.market) throw new SaveFailure(false, changed);
-            const path = `markets/${data.market.id}/countries/TW/delivery-services/${d.createCode}`;
-            const policy = d.policy ?? await send<Policy>(`${path}/policy`, "PUT", {
-              market_id: data.market.id, country: "TW", method: `delivery:${d.createCode}`, currency,
-              shipping_mode: "country_flat", shipping_minor: 0, tax_mode: "inclusive", tax_basis: "goods",
-              tax_rate_bps: 0, quote_ttl_seconds: 300, enabled: true, expected_version: 0,
-              configuration_ref: "快速上手預設（owner 2026-10-30）",
-            });
-            d.policy = policy;
-            const labelKey = { home: "home", cvs_711: "seven", cvs_familymart: "family", cvs_hilife: "hilife", cvs_okmart: "ok" } as const;
-            const label = labelKey[d.kind];
-            d.service = await send<Service>(path, "PUT", {
-              market_id: data.market.id, country: "TW", code: d.createCode, expected_version: 0, policy_version: policy.version,
-              name_hans: settingsV2Copy["zh-CN"][label], name_hant: settingsV2Copy["zh-TW"][label], name_en: settingsV2Copy.en[label],
-              delivery_kind: d.kind, mode: "MANUAL", enabled: true, visible: true, sort_order: index,
-            });
+        if (section !== "delivery") {
+          let profile = { name: draft.name, contact_email: draft.contact_email, contact_phone: draft.contact_phone, expected_version: data.profile.version };
+          if (pending.current?.resource === "profile") {
+            const original = JSON.parse(pending.current.body) as typeof profile;
+            if (original.name !== draft.name || original.contact_email !== draft.contact_email || original.contact_phone !== draft.contact_phone) throw new SaveFailure(true, false);
+            profile = original; // durable replay, including its original version after another operator's save
           }
-          if (!d.service || d.service.enabled === draft.enabled[d.kind]) continue;
-          const service = d.service, enabled = !!draft.enabled[d.kind];
-          const saved = await send<typeof service>(`markets/${service.market_id}/countries/TW/delivery-services/${service.code}`, "PUT", serviceInput(service, enabled));
-          if (saved.code !== service.code || saved.enabled !== enabled || saved.version !== service.version + 1) throw new SaveFailure(true, changed);
-          d.service = saved;
+          if (pending.current?.resource === "profile" || draft.name !== data.profile.name || draft.contact_email !== data.profile.contact_email || draft.contact_phone !== data.profile.contact_phone) {
+            const saved = parseProfile(await send<Profile>("profile", "PUT", profile));
+            if (saved.name !== profile.name || saved.contact_email !== profile.contact_email || saved.contact_phone !== profile.contact_phone || saved.version !== profile.expected_version + 1) throw new SaveFailure(true, changed);
+            data.profile = saved;
+            sessionStorage.setItem(key.current, cachedDraft(data, draft));
+          }
+        }
+        if (section !== "profile") {
+          if (data.createMarket && data.delivery.some(d => desired[d.kind] && d.createCode)) {
+            data.market = await send<Market>("markets", "POST", { code: "tw", name: "台灣", currency });
+            data.createMarket = false;
+            sessionStorage.setItem(key.current, cachedDraft(data, { ...draft, enabled: desired }));
+          }
+          for (const [index, d] of data.delivery.entries()) {
+            if (!d.service && desired[d.kind]) {
+              if (!d.createCode || !data.market) throw new SaveFailure(false, changed);
+              const path = `markets/${data.market.id}/countries/TW/delivery-services/${d.createCode}`;
+              const policy = d.policy ?? await send<Policy>(`${path}/policy`, "PUT", {
+                market_id: data.market.id, country: "TW", method: `delivery:${d.createCode}`, currency,
+                shipping_mode: "country_flat", shipping_minor: 0, tax_mode: "inclusive", tax_basis: "goods",
+                tax_rate_bps: 0, quote_ttl_seconds: 300, enabled: true, expected_version: 0,
+                configuration_ref: "快速上手預設（owner 2026-10-30）",
+              });
+              d.policy = policy;
+              const labelKey = { home: "home", cvs_711: "seven", cvs_familymart: "family", cvs_hilife: "hilife", cvs_okmart: "ok" } as const;
+              const label = labelKey[d.kind];
+              d.service = await send<Service>(path, "PUT", {
+                market_id: data.market.id, country: "TW", code: d.createCode, expected_version: 0, policy_version: policy.version,
+                name_hans: settingsV2Copy["zh-CN"][label], name_hant: settingsV2Copy["zh-TW"][label], name_en: settingsV2Copy.en[label],
+                delivery_kind: d.kind, mode: "MANUAL", enabled: true, visible: true, sort_order: index,
+              });
+            }
+            if (!d.service || d.service.enabled === desired[d.kind]) continue;
+            const service = d.service, enabled = !!desired[d.kind];
+            const saved = await send<typeof service>(`markets/${service.market_id}/countries/TW/delivery-services/${service.code}`, "PUT", serviceInput(service, enabled));
+            if (saved.code !== service.code || saved.enabled !== enabled || saved.version !== service.version + 1) throw new SaveFailure(true, changed);
+            d.service = saved;
+          }
         }
         if (draft.productName && fromQuickstart) {
           if (!canCatalog || data.warehouses.length !== 1) throw new SaveFailure(false, changed);
           const price = toMinor(draft.price, currency), stock = Number(draft.stock);
           if (price === null || !Number.isSafeInteger(stock) || stock < 0) throw new SaveFailure(false, changed);
           const retainInitialStock = (productID: string) => {
-            sessionStorage.setItem(key.current, JSON.stringify({ version: data.profile.version, draft }));
+            sessionStorage.setItem(key.current, cachedDraft(data, draft));
             sessionStorage.setItem(`${key.current}:initial-stock`, JSON.stringify({ product_id: productID, code: `setup-${productID}`,
               price_minor: price, currency, warehouse_id: data.warehouses[0].id, quantity: stock }));
           };
@@ -220,19 +266,29 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
           sessionStorage.removeItem(`${key.current}:initial-stock`);
         }
         if (pending.current) throw new SaveFailure(true, changed);
+        if (!fromQuickstart) {
+          if (!active.current || scope.current !== await sessionBoundary()) throw new SaveFailure(false, changed, true);
+          // Keep the other section's draft paired with its original baseline.
+          const remaining = { ...draft, enabled: desired };
+          setDraft(remaining);
+          if (sessionStorage.getItem(`${key.current}:initial-stock`) || JSON.stringify(remaining) !== JSON.stringify(draftOf(data))) {
+            sessionStorage.setItem(key.current, cachedDraft(data, remaining));
+          } else sessionStorage.removeItem(key.current);
+          setData({ ...data }); setScreen("saved");
+          return;
+        }
         const fresh = await readSnapshot(store.id, currency,
           sessionStorage.getItem(`${key.current}:initial-stock`) ? data.product?.id ?? null : null);
         // A partial quick start is not called complete. The server derives these steps.
-        if (fromQuickstart && !fresh.marker.completed && Object.values(fresh.marker.steps).every(Boolean)) {
+        if (!fresh.marker.completed && Object.values(fresh.marker.steps).every(Boolean)) {
           fresh.marker = await send<Quickstart>("quickstart", "POST", {});
         }
         if (!active.current || scope.current !== await sessionBoundary()) throw new SaveFailure(false, changed, true);
         let next = draftOf(fresh);
         if (sessionStorage.getItem(`${key.current}:initial-stock`)) {
-          // Ordinary settings saves do not submit initial stock. Keep its
-          // quantity-bearing draft paired with the intent at the fresh version.
+          // Keep an outstanding stock intent paired with its quantity-bearing draft.
           next = { ...next, productName: draft.productName, price: draft.price, stock: draft.stock };
-          sessionStorage.setItem(key.current, JSON.stringify({ version: fresh.profile.version, draft: next }));
+          sessionStorage.setItem(key.current, cachedDraft(fresh, next));
         } else sessionStorage.removeItem(key.current);
         setData(fresh); setDraft(next); setScreen("saved");
       });
@@ -254,7 +310,7 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
   }
   function review(event: FormEvent) { event.preventDefault(); setScreen("review"); }
   const button = (label: string, action: () => void, primary = false) => <button type="button" className={primary ? "settings-v2-primary" : "settings-v2-secondary"} disabled={busy || loading} onClick={action}>{label}</button>;
-  const title = screen === "editor" ? c.edit : screen === "review" ? c.review : screen === "saved" ? c.saved : screen === "failed" ? c.failed : screen === "uncertain" ? c.uncertain : screen === "step1" ? c.step1 : screen === "step2" ? c.step2 : screen === "step3" ? c.step3 : c.title;
+  const title = screen === "pickupLimit" || screen === "shippingFee" ? c[screen] : screen === "editor" ? (section === "profile" ? c.profileTitle : c.deliveryTitle) : screen === "review" ? c.review : screen === "saved" ? c.saved : screen === "failed" ? c.failed : screen === "uncertain" ? c.uncertain : screen === "step1" ? c.step1 : screen === "step2" ? c.step2 : screen === "step3" ? c.step3 : c.title;
   const profileFields = <>
     <label>{c.name}<input required maxLength={120} value={draft.name} onChange={e => change({ name: e.target.value })} /></label>
     <label>{c.email}<input required type="email" maxLength={254} value={draft.contact_email} onChange={e => change({ contact_email: e.target.value })} /></label>
@@ -272,30 +328,34 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
     </label>)}
     {data?.delivery.some(d => !d.service && !d.createCode) && <p id="settings-v2-prerequisite" className="settings-v2-hint">{c.prerequisite}</p>}
   </>;
+  const amountRows = canManage && (["shippingFee", "pickupLimit"] as const).map(item => <button key={item} type="button" onClick={() => setScreen(item)}>{c[item]}{chevron}</button>);
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? ""} active="settings" locked={busy}>
     <div className="settings-v2 settings-page" data-testid="settings-wizard" aria-busy={busy || loading}>
       <h1 ref={heading} tabIndex={-1}>{title}</h1>
-      {loading ? <p role="status">{c.loading}</p> : <>
+      {(screen === "pickupLimit" || screen === "shippingFee") && store ? <SettingsAmountEditor key={screen} store={store.id} locale={locale} item={screen} onBack={() => { setScreen("overview"); void load(); }} onBusy={setBusy} /> : loading ? <p role="status">{c.loading}</p> : <>
         {screen === "overview" && data && <section data-testid="settings-v2-overview">
           {canManage && <div className="settings-v2-actions settings-v2-overview-actions">
-            <span data-testid="settings-v2-quickstart-prompt">{button(c.start, () => { setFromQuickstart(true); setScreen("step1"); }, true)}</span>
+            <span data-testid="settings-v2-quickstart-prompt">{button(c.start, () => { setSection("quickstart"); setScreen("step1"); }, true)}</span>
             {button(c.edit, onAdvanced)}
           </div>}
           {!canManage && button(c.view, onAdvanced)}
-          <div className="settings-v2-rows">{[
-            data.profile.name && data.profile.contact_email ? c.complete : c.incomplete,
-            c.delivery.replace("{n}", String(data.delivery.filter(d => d.service?.enabled).length)), c.payment,
-          ].map(label => <button type="button" key={label} disabled={!canManage} onClick={() => { setFromQuickstart(false); setScreen("editor"); }}>
-            <span>{label}</span><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="m9 5 7 7-7 7" stroke="currentColor" strokeWidth="1.5" /></svg>
-          </button>)}</div>
+          <div className="settings-v2-rows">{([
+            ["profile", data.profile.name && data.profile.contact_email ? c.complete : c.incomplete],
+            ["delivery", c.delivery.replace("{n}", String(data.delivery.filter(d => d.service?.enabled).length))],
+          ] as const).map(([item, label]) => <button type="button" key={item} disabled={!canManage} onClick={() => { setSection(item); setScreen("editor"); }}>
+            <span>{label}</span>{chevron}
+          </button>)}
+            {amountRows}
+            {store && <a href={`/${locale}/settings/payments/card?store=${store.id}`}>{c.payment}{chevron}</a>}
+          </div>
         </section>}
         {/* Remount between steps so a clicked navigation button cannot become the next step's submit button before its native default action. */}
         {(screen === "editor" || screen.startsWith("step")) && <form key={screen} data-testid={screen === "editor" ? "settings-v2-editor" : "settings-v2-quickstart"} onSubmit={review}>
           <fieldset disabled={busy || !canManage}>
             {screen.startsWith("step") && <p>{button(c.skip, () => void skip())}</p>}
-            {(screen === "editor" || screen === "step2") && <p className="settings-v2-shipping">{c.shipping}</p>}
-            {(screen === "editor" || screen === "step1") && profileFields}
-            {(screen === "editor" || screen === "step2") && deliveryFields}
+            {((screen === "editor" && section === "delivery") || screen === "step2") && <p className="settings-v2-shipping">{c.shipping}</p>}
+            {((screen === "editor" && section === "profile") || screen === "step1") && profileFields}
+            {((screen === "editor" && section === "delivery") || screen === "step2") && deliveryFields}
             {screen === "step3" && <>
               <p>{c.draft}</p>
               <label>{c.product}<input required maxLength={120} disabled={!canCatalog || !!data?.product} value={draft.productName} onChange={e => change({ productName: e.target.value })} /></label>
@@ -311,17 +371,18 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
           </fieldset>
         </form>}
         {screen === "review" && <section data-testid="settings-v2-review">
-          <div className="settings-v2-facts">
+          {section !== "delivery" && <div className="settings-v2-facts">
             <p>{`${c.name}: ${draft.name}`}</p><p>{`${c.email}: ${draft.contact_email}`}</p><p>{`${c.phone}: ${draft.contact_phone || c.unavailable}`}</p>
             {data?.publicURL && <p>{`${c.publicURL}: ${data.publicURL}`}</p>}
-          </div>
-          {deliveryKinds.map(kind => <p key={kind}>{`${names[kind]}: ${draft.enabled[kind] ? c.on : c.off}`}</p>)}
-          {draft.productName && <div className="settings-v2-product"><p>{`${c.productDraft}: ${draft.productName}`}</p><p>{`${priceLabel}: ${draft.price}`}</p><p>{`${c.stock}: ${draft.stock}`}</p><p>{c.draft}</p></div>}
-          <p>{c.paymentReview}</p><p>{c.shippingReview}</p><p>{c.checkout}</p>
+          </div>}
+          {section !== "profile" && deliveryKinds.map(kind => <p key={kind}>{`${names[kind]}: ${draft.enabled[kind] ? c.on : c.off}`}</p>)}
+          {fromQuickstart && draft.productName && <div className="settings-v2-product"><p>{`${c.productDraft}: ${draft.productName}`}</p><p>{`${priceLabel}: ${draft.price}`}</p><p>{`${c.stock}: ${draft.stock}`}</p><p>{c.draft}</p></div>}
+          {fromQuickstart && <p>{c.paymentReview}{currency === "TWD" && ` ${c.pickupAmount}`}</p>}{section !== "profile" && <><p>{c.shippingReview}</p><p>{c.checkout}</p></>}
           <div className="settings-v2-actions">{button(c.backEdit, () => setScreen(fromQuickstart ? "step3" : "editor"))}{button(c.save, () => void save(), true)}</div>
         </section>}
-        {screen === "saved" && <section><p>{c.eligibility}</p>{button(c.back, () => { setFromQuickstart(false); setScreen("overview"); }, true)}</section>}
+        {screen === "saved" && <section>{fromQuickstart && <p>{c.eligibility}</p>}{button(c.back, () => setScreen("overview"), true)}</section>}
         {(screen === "uncertain" || screen === "failed") && <section role="alert">
+          {!data && canManage && <div className="settings-v2-rows">{amountRows}</div>}
           <p>{notice || (screen === "uncertain" ? c.reloadHelp : partial ? c.partial : c.retained)}</p>
           {screen === "uncertain" ? button(c.reload, () => void load(true), true) : <>{button(c.backEdit, () => setScreen(fromQuickstart ? "step3" : "editor"), true)}{partial && button(c.reload, () => void load(true))}</>}
         </section>}
