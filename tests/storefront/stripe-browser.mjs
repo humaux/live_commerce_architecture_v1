@@ -485,9 +485,17 @@ async function fillHostedCard(child,number){
   await (await pick(child,"card_expiry",["#cardExpiry","input[name=cardExpiry]","input[autocomplete=cc-exp]"],15000)).fill("12/34");
   await (await pick(child,"card_cvc",["#cardCvc","input[name=cardCvc]","input[autocomplete=cc-csc]"],15000)).fill("123");
   const name=await pick(child,"billing_name",["#billingName","input[name=billingName]","input[autocomplete=cc-name]"],5000,true);if(name)await name.fill("Synthetic Gate Buyer");
-  const zip=await pick(child,"postal_code",["#billingPostalCode","input[name=billingPostalCode]","input[autocomplete=postal-code]"],2500,true);if(zip)await zip.fill("10001");
-  const save=await pick(child,"save_info_checkbox",["#enableStripePass","input[name=enableStripePass]"],1500,true);
-  if(save&&await save.isChecked().catch(()=>false))await save.uncheck().catch(()=>{}); // never save the synthetic buyer
+  const zip=await pick(child,"postal_code",["#billingPostalCode","input[name=billingPostalCode]","input[autocomplete~=postal-code]",
+    'input[placeholder="ZIP code" i]','input[placeholder*="郵遞區號"]','input[placeholder*="邮政编码"]','input[placeholder*="邮编"]'],2500,true);
+  if(zip){
+    await zip.fill("10001");
+    await ex(zip).toHaveValue("10001");
+  }
+  const save=await pick(child,"save_info_checkbox",["role=checkbox[name=/save my information|儲存|保存|储存/i]","#enableStripePass","input[name=enableStripePass]"],1500,true);
+  if(save){
+    if(await save.isChecked())await save.press("Space");
+    await ex(save).not.toBeChecked();
+  }
   const submit=await pick(child,"submit",['[data-testid="hosted-payment-submit-button"]',"button.SubmitButton","button[type=submit]"],15000);
   step("hosted page: submit");await submit.click({timeout:20000,noWaitAfter:true});step("hosted page: submitted");
 }
