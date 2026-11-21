@@ -8,9 +8,9 @@ import { writeFile } from "node:fs/promises";
 import { selectProductForCopy } from "./catalog-document-driver";
 
 const copy = {
-  "zh-TW": { profile: "店舖資料 · 未填寫", delivery: "配送方式 · 已開啟 4 種", payment: "收款 · Stripe（平台代收）", edit: "編輯設定" },
-  "zh-CN": { profile: "店铺资料 · 未填写", delivery: "配送方式 · 已启用 4 种", payment: "收款 · Stripe（平台代收）", edit: "编辑设置" },
-  en: { profile: "Store details · Incomplete", delivery: "Delivery methods · 4 enabled", payment: "Payments · Stripe (collected by platform)", edit: "Edit settings" },
+  "zh-TW": { profile: "店舖資料 · 未填寫", delivery: (enabled: number) => `配送方式 · 已開啟 ${enabled} 種`, payment: "收款 · Stripe（平台代收）", edit: "編輯設定" },
+  "zh-CN": { profile: "店铺资料 · 未填写", delivery: (enabled: number) => `配送方式 · 已启用 ${enabled} 种`, payment: "收款 · Stripe（平台代收）", edit: "编辑设置" },
+  en: { profile: "Store details · Incomplete", delivery: (enabled: number) => `Delivery methods · ${enabled} enabled`, payment: "Payments · Stripe (collected by platform)", edit: "Edit settings" },
 };
 
 // This is a helper, deliberately called by the existing test rather than registering
@@ -27,7 +27,7 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
     const overview = page.getByTestId("settings-v2-overview");
     await expect(overview, `${locale}: signed three-row overview`).toBeVisible();
     await expect(overview.getByRole("button", { name: c.profile, exact: true })).toBeVisible();
-    await expect(overview.getByRole("button", { name: c.delivery, exact: true })).toBeVisible();
+    await expect(overview.getByRole("button", { name: c.delivery(4), exact: true })).toBeVisible();
     await expect(overview.getByRole("button", { name: c.payment, exact: true })).toBeVisible();
     if (locale !== "en") {
       // READ/MEASURE: analogous to density-probe's visible text-node/character
@@ -53,7 +53,7 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const overview = page.getByTestId("settings-v2-overview");
   // Each signed navigation row must actually open the editor, including Payments.
-  for (const name of [copy.en.profile, copy.en.delivery, copy.en.payment]) {
+  for (const name of [copy.en.profile, copy.en.delivery(4), copy.en.payment]) {
     await overview.getByRole("button", { name, exact: true }).click();
     await expect(page.getByTestId("settings-v2-editor")).toBeVisible();
     await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
@@ -909,7 +909,7 @@ async function paritySettingsAcceptance(page: Page, store: string, testInfo: Tes
       await expect(buttons.nth(1)).toHaveText(edit);
       await expect(buttons.nth(1)).toHaveClass(/settings-v2-secondary/);
       await expect(buttons.nth(2)).toHaveText(copy[locale as keyof typeof copy].profile.replace("未填寫", "已填寫").replace("未填写", "已填写").replace("Incomplete", "Complete"));
-      await expect(buttons.nth(3)).toHaveText(copy[locale as keyof typeof copy].delivery);
+      await expect(buttons.nth(3)).toHaveText(copy[locale as keyof typeof copy].delivery(0));
       await expect(buttons.nth(4)).toHaveText(copy[locale as keyof typeof copy].payment);
       if (locale === "zh-TW") {
         await expect(page.getByTestId("settings-wizard")).not.toContainText(/设置|编辑|发货|启用|选填|储存/);
