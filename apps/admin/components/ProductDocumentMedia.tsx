@@ -65,7 +65,7 @@ export function useStageProductPhotos({
           photos.some(
             (p) =>
               p.role === "sku" &&
-            p.optionName === optionName &&
+              p.optionName === optionName &&
               p.optionValue === value,
           ))) ||
       photos.filter((p) => (p.role ?? "main") === role).length + candidates.length > mediaCaps[role]

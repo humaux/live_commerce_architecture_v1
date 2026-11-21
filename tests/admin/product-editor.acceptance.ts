@@ -14,6 +14,13 @@ import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
 import { assertProductEditorReservedLayout, assertProductListAsyncTabGrowth, type ProductEditorHardeningRecord } from "./product-editor-layout.acceptance";
 import { assertProductListLayout } from "./product-list-layout.acceptance";
 import { nativePage } from "./fixtures/native-device";
+
+const png = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB" +
+    "CAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64",
+);
+
 /** Registers real-click product acceptance cases; the calling runner owns test fixtures and cleanup. */
 export function registerProductEditorAcceptance() {
   test("new product keeps the draft and files across a native tab switch", async ({}, info) => {
@@ -45,7 +52,6 @@ export function registerProductEditorAcceptance() {
       await page.getByTestId("matrix-code-0").fill(`TAB-${process.env.LC_BROWSER_TAG}`);
       await page.getByTestId("new-price-0").fill("39");
       await page.getByTestId("matrix-quantity-0").fill("7");
-      const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
       for (const [input, file] of [["photo-input", "main.png"], ["photo-input-detail", "detail.png"]]) {
         const chooser = page.waitForEvent("filechooser");
         await page.getByTestId(input).click();
@@ -415,11 +421,6 @@ export function registerProductEditorAcceptance() {
       await page
         .getByTestId("product-keyword")
         .fill(`P${Date.now().toString().slice(-10)}`);
-      const png = Buffer.from(
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB" +
-          "CAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
-        "base64",
-      );
       await page.getByTestId("photo-input").setInputFiles(
         [1, 2, 3].map((i) => ({
           name: `fixture-${i}.png`,
