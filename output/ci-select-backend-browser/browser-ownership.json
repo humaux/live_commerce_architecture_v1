@@ -192,7 +192,7 @@
     "tests/admin/product-document.test.ts": "ccf9c067cd98ecd0fe1b71802b377ccb9f9ba2244e25a421c82a38569574a67f",
     "tests/admin/product-editor-layout.acceptance.ts": "2e91382e776fc9973f0dd919a67e4c3600c3dc9eb602aa2c0b4c45898c20dca4",
     "tests/admin/product-editor-matrix-ledger.ts": "4b0e0f211b17b926bde79997d77da578a1077db14d3fbdf4431f652ffe68bb08",
-    "tests/admin/product-editor.acceptance.ts": "302c71fb38891be8fb83afeb56640dcd5cfece2ce1fbcba5995c070cebb83355",
+    "tests/admin/product-editor.acceptance.ts": "188be8c161a0d46478647d70e0b7e86a7282142d5b572c0eb8b8561ac56959f2",
     "tests/admin/product-feedback.acceptance.ts": "8308b62cf46606b7ef432e4b47dd3390b98ff5e635b46b539fbc88e7e9360d56",
     "tests/admin/product-list-layout.acceptance.ts": "1e61e4737d297fb95c094df3d422ef0572a5ed022964816782aee377a52302f9",
     "tests/admin/product-media-bff.test.mjs": "ebafac55f0ed030e6f0a34a77c9000a2a28ff2fee43231ed3562e72672bef5fc",

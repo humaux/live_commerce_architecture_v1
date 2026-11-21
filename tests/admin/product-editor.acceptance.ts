@@ -134,7 +134,10 @@ export function registerProductEditorAcceptance() {
       await name.fill("Draft from the previous session");
       await conceal();
       // Fixture only: rotate the browser's change fence while preserving the signed MOCK IdP session and store.
-      await page.context().addCookies([{ name: "__Host-commerce_csrf", value: "A".repeat(43), url: origin, secure: true, sameSite: "Lax" }]);
+      await page.context().addCookies([{
+        name: "__Host-commerce_csrf", value: "A".repeat(43),
+        url: origin.replace(/^http:/, "https:"), secure: true, sameSite: "Lax",
+      }]);
       await page.bringToFront();
       await expect(name).toHaveValue("");
       expect(writes).toHaveLength(writeCount);
