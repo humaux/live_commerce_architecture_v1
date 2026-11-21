@@ -38,9 +38,9 @@ export function parseProfile(value: unknown): Profile {
 /** Bounded discovery: incomplete/ambiguous collections cannot enable a switch. */
 export async function readSnapshot(store: string, currency: string, recoveryProductId: string | null = null): Promise<Snapshot> {
   if (recoveryProductId !== null && !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(recoveryProductId)) throw new Error("recovery_product_shape");
-  const [profileRaw, marker, shipping, productsRaw, warehousesRaw, storefront] = await Promise.all([
+  const [profileRaw, marker, markets, productsRaw, warehousesRaw, storefront] = await Promise.all([
     readSettings<unknown>(store, "profile"), readSettings<Quickstart>(store, "quickstart"),
-    readDelivery(store, currency),
+    readSettings<Page<Market>>(store, "markets").catch(() => null),
     readSettings<unknown>(store, "catalog-products?status=draft&limit=1").catch(() => null),
     readSettings<unknown>(store, "warehouses?limit=100").catch(() => null),
     readSettings<unknown>(store, "storefront").then(parseStorefront).catch(() => null),
@@ -57,13 +57,14 @@ export async function readSnapshot(store: string, currency: string, recoveryProd
   const productId = recoveryProductId ?? products?.items[0]?.id;
   const product = productId ? parseProduct(await readSettings(store, `products/${productId}`)) : null;
   if (recoveryProductId !== null && product?.id !== recoveryProductId) throw new Error("recovery_product_mismatch");
+  const shipping = await readDelivery(store, currency, markets);
   const domains = storefront?.published ? storefront.domains.filter(d => d.serving && Date.parse(d.valid_until) > Date.now()) : [];
   return { profile: parseProfile(profileRaw), marker, product, warehouses, ...shipping,
     publicURL: domains.length === 1 ? domains[0].origin : null };
 }
 
-export async function readDelivery(store: string, currency: string) {
-  const markets = await readSettings<Page<Market>>(store, "markets").catch(() => null);
+export async function readDelivery(store: string, currency: string, observed?: Page<Market> | null) {
+  const markets = observed === undefined ? await readSettings<Page<Market>>(store, "markets").catch(() => null) : observed;
   // No arbitrary first-market choice: multiple markets require the existing advanced editor.
   const candidates = markets?.items.filter(m => m.active && m.currency === currency) ?? [];
   const market = markets && !markets.next_cursor && candidates.length === 1 ? candidates[0] : null;
@@ -152,10 +153,16 @@ export async function execute<T>(store: string, boundary: string, resource: stri
   return result.value;
 }
 
-function validReceipt(resource: string, sent: Record<string, unknown>, value: unknown) {
+export function validReceipt(resource: string, sent: Record<string, unknown>, value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const saved = value as Record<string, unknown>;
   const uuid = (v: unknown) => typeof v === "string" && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(v);
+  if (resource === "logistics/cvs-settings") {
+    const chains = saved.enabled_chains;
+    return saved.version === Number(sent.expected_version) + 1 && Array.isArray(chains) && Array.isArray(sent.enabled_chains) &&
+      chains.length === sent.enabled_chains.length && sent.enabled_chains.every(chain => chains.includes(chain)) &&
+      ["pay_at_pickup_enabled", "pay_at_pickup_max_twd", "pay_at_pickup_max_open"].every(k => saved[k] === sent[k]);
+  }
   if (resource === "quickstart") {
     const steps = saved.steps as Record<string, unknown> | undefined;
     return saved.completed === true && typeof saved.completed_at === "string" && Number.isFinite(Date.parse(saved.completed_at)) &&

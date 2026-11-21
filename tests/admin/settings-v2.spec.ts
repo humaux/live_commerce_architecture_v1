@@ -5,6 +5,7 @@
 // no provider calls, fixture tenant authority, forced clicks, DOM writes or direct API mutations.
 import { expect, type Page, type TestInfo } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
+import { settingsAmountAcceptance } from "./settings-amount.acceptance";
 import { selectProductForCopy } from "./catalog-document-driver";
 
 const copy = {
@@ -16,6 +17,7 @@ const copy = {
 // This is a helper, deliberately called by the existing test rather than registering
 // another test: the Go fixture independently requires exactly one session/store.
 export async function settingsV2Acceptance(page: Page, store: string, testInfo: TestInfo) {
+  await settingsAmountAcceptance(page, store);
   await noMarketAcceptance(page, store, testInfo);
   await duplicateMarketAcceptance(page, store, "denied");
   await duplicateMarketAcceptance(page, store, "lost");
@@ -919,7 +921,7 @@ async function paritySettingsAcceptance(page: Page, store: string, testInfo: Tes
       await expect(overview.getByRole("button", { name: start, exact: true }), "setup remains available after completion").toBeVisible();
       await expect(page.getByRole("button", { name: legacy, exact: true })).toHaveCount(0);
       const buttons = overview.getByRole("button");
-      await expect(buttons).toHaveCount(4);
+      await expect(buttons).toHaveCount(6);
       await expect(buttons.nth(0)).toHaveText(start);
       await expect(buttons.nth(0)).toHaveClass(/settings-v2-primary/);
       await expect(buttons.nth(1)).toHaveText(edit);

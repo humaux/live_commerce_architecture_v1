@@ -1,10 +1,11 @@
 // Purpose: Owner-signed three-row settings, direct edit/review and optional three-step quick setup.
-// Depends on: react, @live-commerce/i18n, ./WorkspaceFrame, @/lib/settings-v2, @/lib/settings-client, @/lib/catalog-v2-model, @/lib/settings-model and SettingsWizard's settings.css.
+// Depends on: react, @live-commerce/i18n, ./WorkspaceFrame, ./SettingsAmountEditor, @/lib/settings-v2, @/lib/settings-client, @/lib/catalog-v2-model, @/lib/settings-model and SettingsWizard's settings.css.
 // Used by: SettingsWizard; localized authenticated settings route.
 // Invariants: server baselines, one keyed command at a time, durable initial-stock intent; only owner AD-04 delivery defaults.
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { settingsV2Copy, type Locale } from "@live-commerce/i18n";
+import { SettingsAmountEditor, type AmountItem } from "./SettingsAmountEditor";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { readSettings, sessionBoundary } from "@/lib/settings-client";
 import { parseProduct, toMinor } from "@/lib/catalog-v2-model";
@@ -12,7 +13,7 @@ import type { Market, Policy, Service, SettingsInitial } from "@/lib/settings-mo
 import { deliveryKinds, draftOf, execute, parseProfile, readDelivery, readSnapshot, reconciled, SaveFailure, serviceInput,
   type Journal, type Profile, type Quickstart, type SimpleDraft, type Snapshot } from "@/lib/settings-v2";
 
-type Screen = "overview" | "editor" | "review" | "saved" | "uncertain" | "failed" | "step1" | "step2" | "step3";
+type Screen = AmountItem | "overview" | "editor" | "review" | "saved" | "uncertain" | "failed" | "step1" | "step2" | "step3";
 const chevron = <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="m9 5 7 7-7 7" stroke="currentColor" strokeWidth="1.5" /></svg>;
 const empty: SimpleDraft = { name: "", contact_email: "", contact_phone: "", enabled: {}, productName: "", price: "", stock: "" };
 
@@ -271,7 +272,7 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
   }
   function review(event: FormEvent) { event.preventDefault(); setScreen("review"); }
   const button = (label: string, action: () => void, primary = false) => <button type="button" className={primary ? "settings-v2-primary" : "settings-v2-secondary"} disabled={busy || loading} onClick={action}>{label}</button>;
-  const title = screen === "editor" ? (section === "profile" ? c.profileTitle : c.deliveryTitle) : screen === "review" ? c.review : screen === "saved" ? c.saved : screen === "failed" ? c.failed : screen === "uncertain" ? c.uncertain : screen === "step1" ? c.step1 : screen === "step2" ? c.step2 : screen === "step3" ? c.step3 : c.title;
+  const title = screen === "pickupLimit" || screen === "shippingFee" ? c[screen] : screen === "editor" ? (section === "profile" ? c.profileTitle : c.deliveryTitle) : screen === "review" ? c.review : screen === "saved" ? c.saved : screen === "failed" ? c.failed : screen === "uncertain" ? c.uncertain : screen === "step1" ? c.step1 : screen === "step2" ? c.step2 : screen === "step3" ? c.step3 : c.title;
   const profileFields = <>
     <label>{c.name}<input required maxLength={120} value={draft.name} onChange={e => change({ name: e.target.value })} /></label>
     <label>{c.email}<input required type="email" maxLength={254} value={draft.contact_email} onChange={e => change({ contact_email: e.target.value })} /></label>
@@ -289,10 +290,11 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
     </label>)}
     {data?.delivery.some(d => !d.service && !d.createCode) && <p id="settings-v2-prerequisite" className="settings-v2-hint">{c.prerequisite}</p>}
   </>;
+  const amountRows = canManage && (["pickupLimit", "shippingFee"] as const).map(item => <button key={item} type="button" onClick={() => setScreen(item)}>{c[item]}{chevron}</button>);
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? ""} active="settings" locked={busy}>
     <div className="settings-v2 settings-page" data-testid="settings-wizard" aria-busy={busy || loading}>
       <h1 ref={heading} tabIndex={-1}>{title}</h1>
-      {loading ? <p role="status">{c.loading}</p> : <>
+      {(screen === "pickupLimit" || screen === "shippingFee") && store ? <SettingsAmountEditor key={screen} store={store.id} locale={locale} item={screen} onBack={() => { setScreen("overview"); void load(); }} onBusy={setBusy} /> : loading ? <p role="status">{c.loading}</p> : <>
         {screen === "overview" && data && <section data-testid="settings-v2-overview">
           {canManage && <div className="settings-v2-actions settings-v2-overview-actions">
             <span data-testid="settings-v2-quickstart-prompt">{button(c.start, () => { setSection("quickstart"); setScreen("step1"); }, true)}</span>
@@ -305,6 +307,7 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
           ] as const).map(([item, label]) => <button type="button" key={item} disabled={!canManage} onClick={() => { setSection(item); setScreen("editor"); }}>
             <span>{label}</span>{chevron}
           </button>)}
+            {amountRows}
             {store && <a href={`/${locale}/settings/payments/card?store=${store.id}`}>{c.payment}{chevron}</a>}
           </div>
         </section>}
@@ -341,6 +344,7 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
         </section>}
         {screen === "saved" && <section>{fromQuickstart && <p>{c.eligibility}</p>}{button(c.back, () => setScreen("overview"), true)}</section>}
         {(screen === "uncertain" || screen === "failed") && <section role="alert">
+          {!data && canManage && <div className="settings-v2-rows">{amountRows}</div>}
           <p>{notice || (screen === "uncertain" ? c.reloadHelp : partial ? c.partial : c.retained)}</p>
           {screen === "uncertain" ? button(c.reload, () => void load(true), true) : <>{button(c.backEdit, () => setScreen(fromQuickstart ? "step3" : "editor"), true)}{partial && button(c.reload, () => void load(true))}</>}
         </section>}
