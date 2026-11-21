@@ -656,6 +656,14 @@ func onboardManualCVS(t *testing.T) *tcvEnv {
 	if err != nil {
 		t.Fatal(err)
 	}
+	return manualCVSStore(t, store, session)
+}
+
+func manualCVSStore(t *testing.T, store identity.Store, session identity.Session) *tcvEnv {
+	t.Helper()
+	ctx := context.Background()
+	f := *fixture(t)
+	var err error
 	f.tenantA, f.storeA1, f.principalA = store.TenantID, store.StoreID, session.PrincipalID
 	f.tokens = map[string]string{"a": session.Token}
 	h := bcHarness{cqHarness: cqHarness{f: &f, a: openBuyerTestPools(t, &f)}}
@@ -685,6 +693,66 @@ func onboardManualCVS(t *testing.T) *tcvEnv {
 	return e
 }
 
+// Both the onboarding gate and the real browser fee edit exercise the same two order paths.
+func (a mtAdmin) checkPickupOrder(e *tcvEnv, kind, shop string, fee int64) {
+	t := a.t
+	t.Helper()
+	b := e.newBuyer()
+	code := "quickstart_" + kind
+	o := tceOptions(t, b)[kind]
+	modes, ok := o["payment_modes"].([]any)
+	if !ok || len(modes) != 1 || modes[0] != "pay_at_pickup" || o["delivery_code"] != code || o["pickup_selection"] != "buyer_entered" {
+		t.Fatalf("buyer option %s: %v", kind, o)
+	}
+	store := b.enteredStore(code, shop, "", "")
+	if store.status != 201 {
+		t.Fatalf("pickup %s: %d %s", kind, store.status, store.body)
+	}
+	dest, err := b.destination(kind, tcvStr(tcvJSON(t, store.body), "pickup_id"), "王小明", "0912345678")
+	if err != nil {
+		t.Fatal(err)
+	}
+	q, err := b.quote(code)
+	if err != nil || q.Amount.ShippingMinor != fee {
+		t.Fatalf("buyer shipping %s: %d %v", kind, q.Amount.ShippingMinor, err)
+	}
+	r, err := b.begin(dest, q, int64(o["service_version"].(float64)), "pay_at_pickup")
+	if err != nil || r.OrderID == "" {
+		t.Fatalf("buyer begin %s: %v", kind, err)
+	}
+	for _, option := range a.options() {
+		if option.DeliveryCode != code {
+			continue
+		}
+		if option.PickupMaxMinor != 2000000 {
+			t.Fatalf("default collection guard: %d", option.PickupMaxMinor)
+		}
+		key := t04Key("default-cvs-place")
+		location := tcvJSON(t, store.body)
+		body := mtBody(e.p.stock.skus[0].ID, 2, option.OptionKey, "pay_at_pickup", map[string]any{"cvs": map[string]any{"store_code": shop, "store_name": location["name"], "store_address": location["address"]}})
+		status, receipt := a.place(key, body)
+		if status != 201 || receipt["total_minor"] != float64(q.Amount.TotalMinor) {
+			t.Fatalf("merchant place %s: %d %v", kind, status, receipt)
+		}
+		replayed, again := a.place(key, body)
+		if replayed != 200 || again["order_id"] != receipt["order_id"] {
+			t.Fatalf("manual replay: %d %v", replayed, again)
+		}
+		if n := e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2 AND id IN ($3,$4)
+		 AND payment_mode='pay_at_pickup' AND collection_state='PENDING' AND total_minor=$5`, e.tenant(), e.store(), r.OrderID, receipt["order_id"], q.Amount.TotalMinor); n != 2 {
+			t.Fatalf("orders pending collection at quoted amount: %d", n)
+		}
+		if kind == "cvs_711" && fee == 0 {
+			status, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+tcvStr(receipt, "order_id")+"/shipment", t04Key("default-cvs-ship"), mfxShip(0, "seven_eleven_cvs", "0012345678"))
+			if status != 200 {
+				t.Fatalf("manual shipment: %d %s", status, raw)
+			}
+		}
+		return
+	}
+	t.Fatalf("merchant option missing: %s", kind)
+}
+
 func TestDefaultManualCVSOnboardAndOrders(t *testing.T) {
 	e := onboardManualCVS(t)
 	seed := func() {
@@ -695,65 +763,8 @@ func TestDefaultManualCVSOnboardAndOrders(t *testing.T) {
 	if n := len(a.options()); n != 4 {
 		t.Fatalf("fresh merchant payable pickup options = %d; want 4", n)
 	}
-	check := func(kind, shop string, fee int64) {
-		t.Helper()
-		b := e.newBuyer()
-		code := "quickstart_" + kind
-		o := tceOptions(t, b)[kind]
-		modes, ok := o["payment_modes"].([]any)
-		if !ok || len(modes) != 1 || modes[0] != "pay_at_pickup" || o["delivery_code"] != code || o["pickup_selection"] != "buyer_entered" {
-			t.Fatalf("buyer option %s: %v", kind, o)
-		}
-		store := b.enteredStore(code, shop, "", "")
-		if store.status != 201 {
-			t.Fatalf("pickup %s: %d %s", kind, store.status, store.body)
-		}
-		dest, err := b.destination(kind, tcvStr(tcvJSON(t, store.body), "pickup_id"), "王小明", "0912345678")
-		if err != nil {
-			t.Fatal(err)
-		}
-		q, err := b.quote(code)
-		if err != nil || q.Amount.ShippingMinor != fee {
-			t.Fatalf("buyer shipping %s: %d %v", kind, q.Amount.ShippingMinor, err)
-		}
-		r, err := b.begin(dest, q, int64(o["service_version"].(float64)), "pay_at_pickup")
-		if err != nil || r.OrderID == "" {
-			t.Fatalf("buyer begin %s: %v", kind, err)
-		}
-		for _, option := range a.options() {
-			if option.DeliveryCode != code {
-				continue
-			}
-			if option.PickupMaxMinor != 2000000 {
-				t.Fatalf("default collection guard: %d", option.PickupMaxMinor)
-			}
-			key := t04Key("default-cvs-place")
-			location := tcvJSON(t, store.body)
-			body := mtBody(e.p.stock.skus[0].ID, 2, option.OptionKey, "pay_at_pickup", map[string]any{"cvs": map[string]any{"store_code": shop, "store_name": location["name"], "store_address": location["address"]}})
-			status, receipt := a.place(key, body)
-			if status != 201 || receipt["total_minor"] != float64(q.Amount.TotalMinor) {
-				t.Fatalf("merchant place %s: %d %v", kind, status, receipt)
-			}
-			replayed, again := a.place(key, body)
-			if replayed != 200 || again["order_id"] != receipt["order_id"] {
-				t.Fatalf("manual replay: %d %v", replayed, again)
-			}
-			if n := e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2 AND id IN ($3,$4)
-			 AND payment_mode='pay_at_pickup' AND collection_state='PENDING' AND total_minor=$5`, e.tenant(), e.store(), r.OrderID, receipt["order_id"], q.Amount.TotalMinor); n != 2 {
-				t.Fatalf("orders pending collection at quoted amount: %d", n)
-			}
-			if kind == "cvs_711" && fee == 0 {
-				status, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+tcvStr(receipt, "order_id")+"/shipment", t04Key("default-cvs-ship"), mfxShip(0, "seven_eleven_cvs", "0012345678"))
-				if status != 200 {
-					t.Fatalf("manual shipment: %d %s", status, raw)
-				}
-			}
-			return
-		}
-		t.Fatalf("merchant option missing: %s", kind)
-	}
 	for _, x := range []struct{ kind, shop string }{{"cvs_711", "131386"}, {"cvs_familymart", "011344"}, {"cvs_hilife", "F959"}, {"cvs_okmart", "000005"}} {
-		check(x.kind, x.shop, 0)
+		a.checkPickupOrder(e, x.kind, x.shop, 0)
 	}
 	// A rejected basket never creates an order; the maximum is a safety limit, not the collectible amount.
 	before := e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store())
@@ -790,7 +801,7 @@ func TestDefaultManualCVSOnboardAndOrders(t *testing.T) {
 	in := fulfillment.ServiceInput{MarketID: e.p.market.ID, Country: "TW", Code: code, NameHans: "7-ELEVEN", NameHant: "7-ELEVEN", NameEN: "7-ELEVEN", DeliveryKind: "cvs_711", Mode: "MANUAL", Enabled: true, Visible: true, SortOrder: 1, ExpectedVersion: 1, PolicyVersion: 2}
 	write(path, in)
 	seed()
-	check("cvs_711", "131386", fee)
+	a.checkPickupOrder(e, "cvs_711", "131386", fee)
 	in.ExpectedVersion, in.Enabled = 2, false
 	write(path, in)
 	seed()

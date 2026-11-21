@@ -26,7 +26,7 @@ async function noPayuni(page: Page) {
   expect(/payuni/i.test(await page.getByTestId("settings-wizard").innerText())).toBe(false);
 }
 
-test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserves safe uncertainty", async ({
+test("REAL_PG A wizard has no PAYUNi, edits default pickup fees and preserves safe uncertainty", async ({
   page,
   context,
 }, testInfo) => {
@@ -151,34 +151,45 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   const initialPolicyForm = page.getByTestId("settings-policy-form");
   await expect(initialPolicyForm).toBeVisible();
-  await page.getByLabel("Stable service code", { exact: true }).fill("home");
-  await initialPolicyForm
-    .getByLabel(/^Configuration reference \/ reason/)
-    .fill("Fixture initial delivery setup");
-  await initialPolicyForm.getByLabel("Enable pricing policy", { exact: true }).check();
+  const services = page.getByLabel("Delivery service", { exact: true });
+  const shipping = initialPolicyForm.getByLabel("Flat shipping (NT$)", { exact: true });
+  await services.selectOption("");
+  for (const brand of ["familymart", "hilife", "okmart", "711"]) {
+    const code = `quickstart_cvs_${brand}`;
+    const read = page.waitForResponse(r => r.request().method() === "GET" &&
+      new URL(r.url()).pathname.endsWith(`/delivery-services/${code}/policy`));
+    await services.selectOption(code);
+    expect(await (await read).json()).toMatchObject({ version: 1, enabled: true, shipping_minor: 0 });
+    await expect(initialPolicyForm.getByRole("button", { name: "Save pricing policy", exact: true })).toBeEnabled();
+    await expect(shipping).toHaveValue("0");
+    await expect(initialPolicyForm.getByLabel("Enable pricing policy", { exact: true })).toBeChecked();
+  }
+  await shipping.fill("60");
+  await initialPolicyForm.getByLabel(/^Configuration reference \/ reason/).fill("Merchant pickup fee");
   // Lose only the response after the real command commits. No mocked success.
-  const marketRequests: Array<{ key: string; body: string }> = [];
-  let loseMarketResponse = true;
-  let marketCommitted!: () => void;
-  const committedMarket = new Promise<void>((resolve) => {
-    marketCommitted = resolve;
+  const feeRequests: Array<{ key: string; body: string }> = [];
+  let loseFeeResponse = true;
+  let feeCommitted!: () => void;
+  const committedFee = new Promise<void>((resolve) => {
+    feeCommitted = resolve;
   });
   let releaseLostResponse!: () => void;
   const lostResponse = new Promise<void>((resolve) => {
     releaseLostResponse = resolve;
   });
-  const marketPath = `/api/stores/${receipt.store_id}/markets`;
-  await page.route(`**${marketPath}`, async (route) => {
-    if (route.request().method() !== "POST") return route.continue();
-    marketRequests.push({
+  const feePath = `**/api/stores/${receipt.store_id}/markets/*/countries/TW/delivery-services/quickstart_cvs_711/policy`;
+  await page.route(feePath, async (route) => {
+    if (route.request().method() !== "PUT") return route.continue();
+    feeRequests.push({
       key: route.request().headers()["idempotency-key"],
       body: route.request().postData() ?? "",
     });
-    if (loseMarketResponse) {
-      loseMarketResponse = false;
+    if (loseFeeResponse) {
+      loseFeeResponse = false;
       const response = await route.fetch();
       expect(response.status()).toBe(200);
-      marketCommitted();
+      expect(await response.json()).toMatchObject({ version: 2, shipping_minor: 6000 });
+      feeCommitted();
       // Refresh before the UI receives any result: exercise the crash window,
       // not only the catch handler that marks a completed network error unknown.
       await lostResponse;
@@ -188,7 +199,7 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await initialPolicyForm
     .getByRole("button", { name: "Save pricing policy", exact: true })
     .click();
-  await committedMarket;
+  await committedFee;
   await page.reload();
   await page.getByRole("button", { name: "Edit settings", exact: true }).click();
   releaseLostResponse();
@@ -198,9 +209,9 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page
     .getByRole("button", { name: "Retry pending command", exact: true })
     .click();
-  await expect.poll(() => marketRequests.length).toBe(2);
-  expect(marketRequests[0].key === marketRequests[1].key).toBe(true);
-  expect(marketRequests[0].body === marketRequests[1].body).toBe(true);
+  await expect.poll(() => feeRequests.length).toBe(2);
+  expect(feeRequests[0].key === feeRequests[1].key).toBe(true);
+  expect(feeRequests[0].body === feeRequests[1].body).toBe(true);
   await expect
     .poll(() =>
       page.evaluate(() =>
@@ -211,7 +222,18 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
     )
     .toBe(false);
   await expect(pendingControls).toBeHidden();
-  await expect(page.getByLabel("Stable service code", { exact: true })).toBeVisible();
+  await page.unroute(feePath);
+  await expect(services).toHaveValue("quickstart_cvs_711");
+  const bound = page.waitForResponse(r => r.request().method() === "PUT" &&
+    new URL(r.url()).pathname.endsWith("/delivery-services/quickstart_cvs_711"));
+  await page.getByTestId("settings-service-form").getByRole("button", { name: "Save delivery service", exact: true }).click();
+  expect(await (await bound).json()).toMatchObject({ version: 2, policy_version: 2, enabled: true, visible: true });
+  await expect(page.getByTestId("settings-status")).toBeVisible();
+  await page.reload();
+  await page.getByRole("button", { name: "Edit settings", exact: true }).click();
+  await page.getByRole("button", { name: /^\d+\s*Delivery$/ }).click();
+  await expect(services).toHaveValue("quickstart_cvs_711");
+  await expect(shipping).toHaveValue("60");
   await noPayuni(page);
 
   // Locale routes preserve nonsecret setup and the store's TWD currency.
@@ -261,10 +283,9 @@ test("REAL_PG A wizard has no PAYUNi, creates unseeded configuration and preserv
   await page.route(serviceURL, (route) => route.request().method() === "GET"
     ? serviceRead.deliver(route) : route.continue());
   const savePolicy = policyForm.getByRole("button", { name: "Save pricing policy", exact: true });
-  // PARITY-NO-MARKET: "home" was already entered at the start of the zero-market save, so typing it again changes no state and starts no read, and a reload
-  // restores the draft with its already-hydrated (non-pending) baseline. Move to another code and back: the return to "home" starts the held read under test.
-  await page.getByLabel("Stable service code", { exact: true }).fill("home2");
+  // The home-delivery service is still new. Both reads must finish before its version can be saved.
   await page.getByLabel("Stable service code", { exact: true }).fill("home");
+  await page.getByLabel("Delivery kind", { exact: true }).selectOption("home");
   await expect.poll(policyRead.arrived).toBe(true);
   await expect.soft(savePolicy, "a pending version read is not a saveable baseline").toBeDisabled();
   policyRead.release();

@@ -8,9 +8,9 @@ import { writeFile } from "node:fs/promises";
 import { selectProductForCopy } from "./catalog-document-driver";
 
 const copy = {
-  "zh-TW": { profile: "店舖資料 · 未填寫", delivery: "配送方式 · 已開啟 0 種", payment: "收款 · Stripe（平台代收）", edit: "編輯設定" },
-  "zh-CN": { profile: "店铺资料 · 未填写", delivery: "配送方式 · 已启用 0 种", payment: "收款 · Stripe（平台代收）", edit: "编辑设置" },
-  en: { profile: "Store details · Incomplete", delivery: "Delivery methods · 0 enabled", payment: "Payments · Stripe (collected by platform)", edit: "Edit settings" },
+  "zh-TW": { profile: "店舖資料 · 未填寫", delivery: "配送方式 · 已開啟 4 種", payment: "收款 · Stripe（平台代收）", edit: "編輯設定" },
+  "zh-CN": { profile: "店铺资料 · 未填写", delivery: "配送方式 · 已启用 4 种", payment: "收款 · Stripe（平台代收）", edit: "编辑设置" },
+  en: { profile: "Store details · Incomplete", delivery: "Delivery methods · 4 enabled", payment: "Payments · Stripe (collected by platform)", edit: "Edit settings" },
 };
 
 // This is a helper, deliberately called by the existing test rather than registering
@@ -63,10 +63,9 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
   await page.getByLabel("Email", { exact: true }).fill("settings@example.test");
   await page.getByLabel("Phone (optional)", { exact: true }).fill("000-000-0000");
   for (const label of ["Home delivery", "7-ELEVEN", "FamilyMart", "Hi-Life", "OK"]) {
-    // AD-04 supersedes the no-seeding rule on this surface. Merely
-    // opening the editor leaves these enabled choices unchecked; no write occurs.
-    await expect(page.getByRole("checkbox", { name: label, exact: true })).toBeEnabled();
-    await expect(page.getByRole("checkbox", { name: label, exact: true })).not.toBeChecked();
+    const choice = page.getByRole("checkbox", { name: label, exact: true });
+    await expect(choice).toBeEnabled();
+    await expect(choice).toBeChecked({ checked: label !== "Home delivery" });
   }
   await page.getByRole("button", { name: "Review settings", exact: true }).click();
   const review = page.getByTestId("settings-v2-review");

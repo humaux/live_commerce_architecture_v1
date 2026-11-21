@@ -51,7 +51,7 @@ func TestBrowserSettingsWizardRealChain(t *testing.T) {
 	runBrowserIdentityChain(t, true)
 }
 
-// The same signed IdP/BFF/PG harness is shared, but the wizard has no market seed.
+// The same signed IdP/BFF/PG harness is shared, and the wizard uses only real onboarding defaults.
 func runBrowserIdentityChain(t *testing.T, wizard bool) {
 	t.Helper()
 	if os.Getenv("LC_BROWSER_IDENTITY_ACCEPTANCE") != "1" || os.Getenv("LC_TEST_DATABASE_ALLOWED") != "1" {
@@ -114,8 +114,7 @@ func runBrowserIdentityChain(t *testing.T, wizard bool) {
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		recorded := httptest.NewRecorder()
 		mux.ServeHTTP(recorded, r)
-		// Historical transport suite keeps its isolated fixture. The new settings
-		// suite MUST create markets through the actual UI and HTTP command instead.
+		// Only the transport suite adds a separate market for its access checks.
 		if !wizard && r.Method == "POST" && r.URL.Path == "/v1/identity/initial-store" && recorded.Code == http.StatusOK {
 			var created identity.Store
 			if err := json.Unmarshal(recorded.Body.Bytes(), &created); err != nil {
@@ -132,6 +131,22 @@ func runBrowserIdentityChain(t *testing.T, wizard bool) {
 				w.WriteHeader(500)
 				return
 			}
+		}
+		// Verify the browser's actual fee edit reaches both order paths in the same signed store.
+		if wizard && r.Method == http.MethodPut && recorded.Code == http.StatusOK && strings.HasSuffix(r.URL.Path, "/delivery-services/quickstart_cvs_711") {
+			t.Run("browser_fee_on_buyer_and_manual_orders", func(t *testing.T) {
+				var store identity.Store
+				session := identity.Session{Token: strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")}
+				err := f.owner.QueryRow(r.Context(), `SELECT i.tenant_id,i.store_id,i.warehouse_id,i.principal_id
+				 FROM identity.initial_stores i JOIN identity.external_identities e ON e.principal_id=i.principal_id
+				 WHERE e.issuer=$1 AND e.subject='browser-subject'`, idp.server.URL).Scan(&store.TenantID, &store.StoreID, &store.WarehouseID, &session.PrincipalID)
+				if err != nil {
+					t.Fatal(err)
+				}
+				e := manualCVSStore(t, store, session)
+				a := mtAdmin{t: t, h: httpapi.NewHandler(f.runtime, httpapi.Options{CVS: e.cvs, ManualOrders: mtManualOrders(t, e)}), store: store.StoreID, token: session.Token}
+				a.checkPickupOrder(e, "cvs_711", "131386", 6000)
+			})
 		}
 		for name, values := range recorded.Header() {
 			w.Header()[name] = values
@@ -249,8 +264,8 @@ func runBrowserIdentityChain(t *testing.T, wizard bool) {
 		 (SELECT count(*) FROM ops.command_results c WHERE c.tenant_id=s.tenant_id AND c.operation='pricing.market.create')
 		 FROM identity.initial_stores s JOIN identity.external_identities e ON e.principal_id=s.principal_id
 		 WHERE e.issuer=$1 AND e.subject='browser-subject'`, idp.server.URL).Scan(&markets, &policies, &services, &commands)
-		// services: the wizard's initial "home" version, the concurrent editor's version and one deduplicated lost-reply replay.
-		if err != nil || markets != 1 || policies != 1 || services != 3 || commands != 1 {
+		// Four default revisions, one repriced 7-ELEVEN, and home with three service revisions.
+		if err != nil || markets != 1 || policies != 6 || services != 8 || commands != 0 {
 			t.Fatalf("wizard fresh setup persistence: markets=%d policies=%d services=%d market_commands=%d err=%v", markets, policies, services, commands, err)
 		}
 		// Stale-draft + lost-reply proof moved with the spec (settings-real.spec.ts) from the removed PAYUNi method form to the
