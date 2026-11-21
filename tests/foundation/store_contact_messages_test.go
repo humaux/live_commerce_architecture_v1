@@ -51,12 +51,12 @@ func contactInput() map[string]any {
 	return map[string]any{"name": "測試買家", "email": "buyer@example.test", "order_number": "LC-10482", "message": "Synthetic contact message <b>literal text</b>", "website": ""}
 }
 
-func contactEnv(t *testing.T) *tcvEnv {
+func contactEnv(t *testing.T, opts ...tcvOpts) *tcvEnv {
 	t.Helper()
 	// Synthetic copies of the existing payload-keyring environment, never live credentials.
 	t.Setenv("COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID", "contact-test")
 	t.Setenv("COMMERCE_META_PAYLOAD_KEYS_JSON", fmt.Sprintf(`{"keys":[{"id":"contact-test","key_base64":%q}]}`, base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{19}, 32))))
-	e := tcvNew(t)
+	e := tcvNew(t, opts...)
 	e.grantCreator("inbox:read", "inbox:reply")
 	mustExec(t, e.p.f.owner, `UPDATE control.stores SET contact_email=$3 WHERE tenant_id=$1 AND id=$2`, e.tenant(), e.store(), contactRecipient(e))
 	return e
@@ -379,8 +379,7 @@ func (m *contactMailer) to(e *tcvEnv) []mail.Message {
 
 func contactDrain(t *testing.T, w *notify.Worker) {
 	t.Helper()
-	// The shared CI database may contain other tests' pending notifications. Drain with MOCK only;
-	// assertions below select this fixture's unique recipient, without deleting anyone else's rows.
+	// The worker claims across stores, so its tests own their database and use a mock mailer.
 	for range 40 {
 		n, err := w.Once(context.Background())
 		if err != nil {
@@ -394,7 +393,7 @@ func contactDrain(t *testing.T, w *notify.Worker) {
 }
 
 func TestStoreContactNotificationOutboxAndNoSensitiveLogs(t *testing.T) {
-	e := contactEnv(t)
+	e := contactEnv(t, tcvOpts{base: pwIsolatedFixture(t)})
 	var logs bytes.Buffer
 	old := slog.Default()
 	slog.SetDefault(slog.New(slog.NewJSONHandler(&logs, nil)))
@@ -439,7 +438,7 @@ func TestStoreContactNotificationOutboxAndNoSensitiveLogs(t *testing.T) {
 }
 
 func TestStoreContactUnknownMailIsNotRetried(t *testing.T) {
-	e := contactEnv(t)
+	e := contactEnv(t, tcvOpts{base: pwIsolatedFixture(t)})
 	contactReceived(t, contactSubmit(t, e, t04Key("contact-mail-unknown"), bgIP(), contactInput()))
 	m := &contactMailer{unknown: true}
 	w, err := notify.NewWorker(e.p.expiry, m, 1000)
@@ -456,8 +455,8 @@ func TestStoreContactUnknownMailIsNotRetried(t *testing.T) {
 // #375 review P1: 30 contact notices in one hour (one IP at the admitted 5 per 600 s) must not use the store's
 // transactional buyer-mail hour (storeHourly 30); contact notices have their own per-store cap of 10 per rolling hour.
 func TestStoreContactNoticesNeverDeferTransactionalMail(t *testing.T) {
-	e := contactEnv(t)
-	// The placement setup of bcmSetup, without its global outbox deletes (the CI database is shared).
+	e := contactEnv(t, tcvOpts{base: pwIsolatedFixture(t)})
+	// Create the transactional order in the same store as the contact notices.
 	e.grantCreator("orders:read", "payments:refund", "fulfillment:write")
 	e.service("cvs_711", "MANUAL", 0)
 	e.cofEnsureSettings(0, true, false, 72)

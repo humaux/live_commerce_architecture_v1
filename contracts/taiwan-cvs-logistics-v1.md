@@ -1045,7 +1045,9 @@ CREATE TABLE fulfillment.cvs_store_settings (                   -- FORCE RLS, PU
 );
 ```
 
-No row = defaults (all four chains, still subject to §5.1 gates; pay-at-pickup off). A chain is offered
+Owner amendment (2026-11-21, migration 0227): onboarding and backfill insert a version-1 pickup setting only when an active Taiwan market has a selectable manual CVS service and the TWD store has no prior setting. The current service must be enabled, visible, unbound, priced by its current enabled policy and allocated to 1–16 active warehouses with a complete current allocation. If all manual services fail these checks, existing API services retain their payment modes and the setting stays absent. All four chains support collection of the frozen final order total. The internal admission limits are NT$20,000 and 20 open orders. A saved setting, including an explicit opt-out, lower cap or selected chain subset, takes precedence. See [Taiwan manual pickup defaults](delivery-service-v1.md#taiwan-manual-pickup-defaults-owner-decision-2026-11-21).
+
+For stores outside that initialization scope, an absent row continues to mean all four chains subject to §5.1 gates and pay-at-pickup off. A chain is offered
 only when it is in `enabled_chains` **and** has an enabled+visible service. Writer: `fulfillment.
 set_cvs_store_settings(hash bytea, store uuid, key text, request_hash bytea, expected_version bigint,
 enabled_chains text[], pay_at_pickup_enabled boolean, pay_at_pickup_max_twd integer, pay_at_pickup_max_open

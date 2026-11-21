@@ -271,7 +271,23 @@ try {
     const response = await fetch("/api/buyer/checkout-options?limit=100", { headers: { "X-Buyer-Context": session.context }, cache: "no-store" });
     return (await response.json()).items;
   });
-  assert(optionRows.length >= 1 && optionRows.every((o) => o.free_shipping_threshold_minor === T), `options must carry the policy threshold ${T}: ${JSON.stringify(optionRows.map((o) => o.free_shipping_threshold_minor))}`);
+  const thresholds = optionRows.map(o => [o.delivery_kind, o.free_shipping_threshold_minor]).sort(([a], [b]) => a.localeCompare(b));
+  assert.deepEqual(thresholds, [["cvs_711", null], ["cvs_familymart", null], ["cvs_hilife", null], ["cvs_okmart", null], ["home", T]],
+    "each service carries its own threshold; the four free pickup policies have no minimum");
+  const selector = p.getByLabel("Delivery method");
+  for (const row of optionRows.filter(o => o.delivery_kind !== "home")) {
+    await selector.selectOption(`${row.market_id}:${row.country}:${row.method}`);
+    const [response] = await Promise.all([
+      p.waitForResponse(r => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST"),
+      p.getByRole("button", { name: "Get current total", exact: true }).click(),
+    ]);
+    assert(response.ok(), `${row.delivery_kind} quote returned ${response.status()}`);
+    const quote = await response.json();
+    assert.deepEqual([quote.method, quote.amount.shipping_minor, quote.amount.subtotal_minor], [row.method, 0, below]);
+    await expect(p.getByTestId("entry-shipping")).toHaveText(shop$(0));
+  }
+  const homeDelivery = optionRows.find(o => o.delivery_kind === "home");
+  await selector.selectOption(`${homeDelivery.market_id}:${homeDelivery.country}:${homeDelivery.method}`);
   await p.getByRole("button", { name: "Get current total", exact: true }).click();
   await p.getByTestId("checkout-details-toggle").click();
   await expect(p.locator(".quotation")).toBeVisible();
@@ -284,8 +300,15 @@ try {
   await q.getByTestId("cart-checkout").click();
   await q.waitForURL(`**/en/checkout`);
   await q.getByRole("button", { name: "Choose delivery", exact: true }).click();
+  await q.getByLabel("Delivery method").selectOption({ label: homeDelivery.name_en });
   await expect(q.getByTestId("checkout-free-shipping")).toContainText(COPY.freeShipReached);
-  await q.getByRole("button", { name: "Get current total", exact: true }).click();
+  const [aboveResponse] = await Promise.all([
+    q.waitForResponse(r => new URL(r.url()).pathname === "/api/buyer/quotes" && r.request().method() === "POST"),
+    q.getByRole("button", { name: "Get current total", exact: true }).click(),
+  ]);
+  const aboveQuote = await aboveResponse.json();
+  assert.equal(aboveResponse.status(), 200, `home quote: ${aboveQuote.code ?? aboveResponse.status()}`);
+  assert.deepEqual([aboveQuote.method, aboveQuote.amount.shipping_minor], [homeDelivery.method, 0]);
   await q.getByTestId("checkout-details-toggle").click();
   await expect(q.locator(".quotation")).toBeVisible();
   await expect(q.locator(".quotation dl div").filter({ hasText: "Delivery" }).locator("dd")).toHaveText(shop$(0)); // at or above the threshold shipping is free

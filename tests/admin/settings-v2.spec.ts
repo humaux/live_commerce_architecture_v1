@@ -9,9 +9,9 @@ import { settingsAmountAcceptance } from "./settings-amount.acceptance";
 import { selectProductForCopy } from "./catalog-document-driver";
 
 const copy = {
-  "zh-TW": { profile: "店舖資料 · 未填寫", delivery: "配送方式 · 已開啟 0 種", payment: "收款 · Stripe（平台代收）", edit: "編輯設定" },
-  "zh-CN": { profile: "店铺资料 · 未填写", delivery: "配送方式 · 已启用 0 种", payment: "收款 · Stripe（平台代收）", edit: "编辑设置" },
-  en: { profile: "Store details · Incomplete", delivery: "Delivery methods · 0 enabled", payment: "Payments · Stripe (collected by platform)", edit: "Edit settings" },
+  "zh-TW": { profile: "店舖資料 · 未填寫", delivery: (enabled: number) => `配送方式 · 已開啟 ${enabled} 種`, payment: "收款 · Stripe（平台代收）", edit: "編輯設定" },
+  "zh-CN": { profile: "店铺资料 · 未填写", delivery: (enabled: number) => `配送方式 · 已启用 ${enabled} 种`, payment: "收款 · Stripe（平台代收）", edit: "编辑设置" },
+  en: { profile: "Store details · Incomplete", delivery: (enabled: number) => `Delivery methods · ${enabled} enabled`, payment: "Payments · Stripe (collected by platform)", edit: "Edit settings" },
 };
 
 // This is a helper, deliberately called by the existing test rather than registering
@@ -29,7 +29,7 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
     const overview = page.getByTestId("settings-v2-overview");
     await expect(overview, `${locale}: signed three-row overview`).toBeVisible();
     await expect(overview.getByRole("button", { name: c.profile, exact: true })).toBeVisible();
-    await expect(overview.getByRole("button", { name: c.delivery, exact: true })).toBeVisible();
+    await expect(overview.getByRole("button", { name: c.delivery(4), exact: true })).toBeVisible();
     await expect(overview.getByRole("link", { name: c.payment, exact: true })).toBeVisible();
     if (locale !== "en") {
       // READ/MEASURE: analogous to density-probe's visible text-node/character
@@ -57,12 +57,11 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
   await overview.getByRole("link", { name: copy.en.payment, exact: true }).click();
   await expect(page.getByTestId("card-payments-page")).toBeVisible();
   await page.goBack();
-  await overview.getByRole("button", { name: copy.en.delivery, exact: true }).click();
+  await overview.getByRole("button", { name: copy.en.delivery(4), exact: true }).click();
   for (const label of ["Home delivery", "7-ELEVEN", "FamilyMart", "Hi-Life", "OK"]) {
-    // AD-04 supersedes the no-seeding rule on this surface. Merely
-    // opening the editor leaves these enabled choices unchecked; no write occurs.
-    await expect(page.getByRole("checkbox", { name: label, exact: true })).toBeEnabled();
-    await expect(page.getByRole("checkbox", { name: label, exact: true })).not.toBeChecked();
+    const choice = page.getByRole("checkbox", { name: label, exact: true });
+    await expect(choice).toBeEnabled();
+    await expect(choice).toBeChecked({ checked: label !== "Home delivery" });
   }
   await page.getByRole("button", { name: "Review settings", exact: true }).click();
   const review = page.getByTestId("settings-v2-review");
@@ -131,7 +130,7 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
     if (request.method() !== "GET" && request.url().includes(`/api/stores/${store}/`)) outOfScope.push(request.url());
   };
   page.on("request", recordWrite);
-  await overview.getByRole("button", { name: copy.en.delivery, exact: true }).click();
+  await overview.getByRole("button", { name: copy.en.delivery(4), exact: true }).click();
   await page.getByLabel("Home delivery", { exact: true }).check();
   await page.getByRole("button", { name: "Review settings", exact: true }).click();
   await page.getByRole("button", { name: "Save settings", exact: true }).click();
@@ -772,7 +771,7 @@ async function noMarketAcceptance(source: Page, store: string, testInfo: TestInf
               }
             };
             await shots("1429-32319", "1429-32392");
-            await page.getByRole("button", { name: copy[c.locale].delivery, exact: true }).click();
+            await page.getByRole("button", { name: copy[c.locale].delivery(0), exact: true }).click();
             await expect(page.getByTestId("settings-v2-editor")).toBeVisible();
             await expect(page.getByRole("checkbox", { name: "宅配", exact: true })).toBeVisible();
             await shots("1429-32465", "1429-32623");
@@ -930,7 +929,7 @@ async function paritySettingsAcceptance(page: Page, store: string, testInfo: Tes
       await expect(buttons.nth(1)).toHaveText(edit);
       await expect(buttons.nth(1)).toHaveClass(/settings-v2-secondary/);
       await expect(buttons.nth(2)).toHaveText(copy[locale as keyof typeof copy].profile.replace("未填寫", "已填寫").replace("未填写", "已填写").replace("Incomplete", "Complete"));
-      await expect(buttons.nth(3)).toHaveText(copy[locale as keyof typeof copy].delivery);
+      await expect(buttons.nth(3)).toHaveText(copy[locale as keyof typeof copy].delivery(0));
       await expect(overview.getByRole("link", { name: copy[locale as keyof typeof copy].payment })).toHaveAttribute("href", `/${locale}/settings/payments/card?store=${store}`);
       if (locale === "zh-TW") {
         await expect(page.getByTestId("settings-wizard")).not.toContainText(/设置|编辑|发货|启用|选填|储存/);

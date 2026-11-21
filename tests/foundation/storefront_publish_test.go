@@ -54,11 +54,15 @@ type spFix struct {
 func spSetup(t *testing.T) *spFix {
 	t.Helper()
 	f := newT06GoFixture(t)
+	// The foreign scope also owns its stores and warehouses; the shared TWD store belongs to other suites.
+	foreign := newT06GoFixture(t)
 	b := f.base
-	s := &spFix{t: t, f: f, tenantB: b.tenantB, storeB: b.storeB, principalB: randomUUID(), storeNoOwner: randomUUID()}
+	s := &spFix{t: t, f: f, tenantB: foreign.tenant, storeB: foreign.store, principalB: foreign.principal, storeNoOwner: randomUUID()}
+	var warehouses []string
 	wh := func(tenant, store string) string {
 		id := randomUUID()
 		mustExec(t, b.owner, `INSERT INTO inventory.warehouses(tenant_id,store_id,id,name) VALUES($1,$2,$3,'sp-wh')`, tenant, store, id)
+		warehouses = append(warehouses, id)
 		return id
 	}
 	initial := func(principal, tenant, store string) {
@@ -66,8 +70,6 @@ func spSetup(t *testing.T) *spFix {
 			VALUES($1,$2,decode(repeat('ab',32),'hex'),$3,$4,$5)`, principal, "sp-"+randomUUID()[:16], tenant, store, wh(tenant, store))
 	}
 	mustExec(t, b.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'sp-no-owner','USD')`, f.tenant, s.storeNoOwner)
-	mustExec(t, b.owner, `INSERT INTO identity.principals(id) VALUES($1)`, s.principalB)
-	mustExec(t, b.owner, `INSERT INTO identity.memberships(tenant_id,principal_id) VALUES($1,$2)`, s.tenantB, s.principalB)
 	initial(f.principal, f.tenant, f.store)
 	initial(f.otherPrincipal, f.tenant, f.otherStore)
 	initial(s.principalB, s.tenantB, s.storeB)
@@ -78,17 +80,11 @@ func spSetup(t *testing.T) *spFix {
 			`DELETE FROM control.storefront_publications WHERE tenant_id=ANY($1::uuid[])`,
 			`DELETE FROM ops.audit_events WHERE tenant_id=ANY($1::uuid[])`,
 			`DELETE FROM identity.initial_stores WHERE tenant_id=ANY($1::uuid[])`,
-			`DELETE FROM inventory.warehouses WHERE tenant_id=ANY($1::uuid[]) AND name='sp-wh'`,
-			`DELETE FROM control.stores WHERE id=` + "'" + s.storeNoOwner + "'",
 		} {
-			if strings.Contains(q, "$1") {
-				_, _ = b.owner.Exec(context.Background(), q, ts)
-			} else {
-				_, _ = b.owner.Exec(context.Background(), q)
-			}
+			mustExec(t, b.owner, q, ts)
 		}
-		_, _ = b.owner.Exec(context.Background(), `DELETE FROM identity.memberships WHERE principal_id=$1`, s.principalB)
-		_, _ = b.owner.Exec(context.Background(), `DELETE FROM identity.principals WHERE id=$1`, s.principalB)
+		mustExec(t, b.owner, `DELETE FROM inventory.warehouses WHERE id=ANY($1::uuid[])`, warehouses)
+		mustExec(t, b.owner, `DELETE FROM control.stores WHERE tenant_id=$1 AND id=$2`, f.tenant, s.storeNoOwner)
 	})
 	s.regURL = miRole(t, b, "commerce_storefront_registrar")
 	reg, err := pgxpool.New(context.Background(), s.regURL)
