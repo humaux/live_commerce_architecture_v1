@@ -7,6 +7,7 @@ package foundation_test
 //                                        as the runtime login fails with 42501 (the fixture's legacy flip is owner-only, not a back door)
 //                                        also pins no DELETE/TRUNCATE on either bank table and no UPDATE of the transfer snapshot
 //   TestBtcFailClosedWithoutPolicyRow    a zero-row policy table (DELETE) still refuses new transfers and saves
+//   TestBtcNewOrderOptions               the buyer and merchant retain pickup payment and omit transfer unless explicitly open
 //   TestBtcSaveReplayAfterClose           same key/body returns its pre-closure receipt; same key/different body conflicts; a new key is refused
 //   TestBtcRefusesNewWrites              closed: a new bank_transfer order through the app, a direct INSERT of a transfer row, and every
 //                                        way of saving or editing the merchant bank details (definer, real route, direct DML) are refused
@@ -22,6 +23,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"errors"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -57,6 +59,58 @@ func TestBtcPolicyClosedAfterMigrate(t *testing.T) {
 	}
 	if n := countRows(t, f.owner, `SELECT count(*) FROM checkout.bank_transfer_policy`); n != 1 {
 		t.Errorf("policy rows %d, want exactly 1", n)
+	}
+}
+
+func TestBtcNewOrderOptions(t *testing.T) {
+	e, admin, cvsCode := mtOrderEnv(t)
+	b := e.newBuyer()
+	t.Cleanup(func() {
+		mustExec(t, e.p.f.owner, `INSERT INTO checkout.bank_transfer_policy(closed) VALUES(false)
+			ON CONFLICT (singleton) DO UPDATE SET closed=false`)
+	})
+	for _, tc := range []struct {
+		name string
+		open bool
+	}{
+		{"open", true},
+		{"closed", false},
+		{"missing policy", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			switch tc.name {
+			case "closed":
+				btcSetPolicy(t, e.p.f, true)
+			case "missing policy":
+				mustExec(t, e.p.f.owner, `DELETE FROM checkout.bank_transfer_policy`)
+			}
+
+			buyerCVS := tceOptions(t, b)["cvs_711"]
+			modes := tcbModes(buyerCVS)
+			if !slices.Contains(modes, "pay_at_pickup") || slices.Contains(modes, "bank_transfer") != tc.open {
+				t.Errorf("buyer 7-ELEVEN modes %v, want pickup and transfer=%t", modes, tc.open)
+			}
+			hours, present := buyerCVS["transfer_window_hours"]
+			if present != tc.open || tc.open && hours != float64(72) {
+				t.Errorf("buyer transfer window %v (present=%t), want 72 only when open", hours, present)
+			}
+
+			route := admin
+			route.t = t
+			for _, option := range route.options() {
+				if slices.Contains(option.PaymentModes, "bank_transfer") && !tc.open {
+					t.Errorf("merchant %s offers transfer while closed", option.DeliveryKind)
+				}
+				if option.DeliveryCode == cvsCode {
+					modes = option.PaymentModes
+					if !slices.Contains(modes, "pay_at_pickup") || slices.Contains(modes, "bank_transfer") != tc.open {
+						t.Errorf("merchant 7-ELEVEN modes %v, want pickup and transfer=%t", modes, tc.open)
+					}
+					return
+				}
+			}
+			t.Error("merchant 7-ELEVEN option is missing")
+		})
 	}
 }
 
