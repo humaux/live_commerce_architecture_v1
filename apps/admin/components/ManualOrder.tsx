@@ -13,7 +13,7 @@
 // soon as the form changes. The session fence is lib/merchant-tools-client.
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
-import { orderOpsCopy, localeNames, type Locale } from "@live-commerce/i18n";
+import { deliveryOptionGroups, orderOpsCopy, localeNames, type Locale } from "@live-commerce/i18n";
 import { displayTime } from "@live-commerce/format";
 import { Badge, Field, FormRow } from "@live-commerce/ui";
 import { ManualOrderMemberFields, type OrderMemberSelection } from "./members/ManualOrderMemberFields";
@@ -297,7 +297,9 @@ export function ManualOrder({
               <FormRow><Field id="mo-option" label={c.delivery} width="long">
                 <select id="mo-option" data-testid="mo-option" value={optionKey} disabled={options.status !== "ready"} onChange={(e) => selectOption(e.target.value)}>
                   <option value="">{c.choose}</option>
-                  {available.map((o) => <option key={o.option_key} value={o.option_key}>{optionName(o)}</option>)}
+                  {deliveryOptionGroups(locale, available).map(group => <optgroup key={group.label} label={group.label}>
+                    {group.items.map(o => <option key={o.option_key} value={o.option_key}>{optionName(o)}</option>)}
+                  </optgroup>)}
                 </select>
               </Field></FormRow>
               {mapOnly && <p className="mt-warn" role="status" style={{ marginTop: 12 }}>{c.mapOnly}</p>}

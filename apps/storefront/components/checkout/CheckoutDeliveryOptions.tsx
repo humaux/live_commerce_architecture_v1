@@ -4,7 +4,7 @@
 // Depends on: validated Option DTOs, localized storefront copy and shared money/shipping formatters.
 // Used by: CheckoutFlow's delivery section; the parent owns selection and quote invalidation.
 // Invariants: unavailable rows stay disabled; shipping progress is a hint, never authority for server quote amounts.
-import type { Locale } from "@live-commerce/i18n";
+import { deliveryOptionGroups, type Locale } from "@live-commerce/i18n";
 import { isUnavailable, optionKey, type Option, type OptionRow } from "../../lib/purchase";
 import { purchaseCopy } from "../../lib/purchase-copy";
 import { cvsCopy } from "../../lib/cvs-copy";
@@ -25,6 +25,7 @@ export default function CheckoutDeliveryOptions({ locale, options, method, chose
   onSelect: (value: string) => void;
 }) {
   const copy = purchaseCopy[locale];
+  const groups = deliveryOptionGroups(locale, options);
   const progress = chosen && subtotal !== null
     ? freeShippingProgress(subtotal, chosen.free_shipping_threshold_minor ?? null) : null;
   return <>
@@ -34,12 +35,12 @@ export default function CheckoutDeliveryOptions({ locale, options, method, chose
     <select id="delivery" value={method} disabled={disabled} size={expanded ? Math.min(options.length, 6) : undefined}
       onBlur={onClose} onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
       onChange={(e) => { onSelect(e.target.value); onClose(); }}>
-      {options.map((o) => (
-        <option key={optionKey(o)} value={optionKey(o)} disabled={isUnavailable(o)}>
+      {groups.map(group => <optgroup key={group.label} label={group.label}>
+        {group.items.map(o => <option key={optionKey(o)} value={optionKey(o)} disabled={isUnavailable(o)}>
           {locale === "zh-CN" ? o.name_hans : locale === "zh-TW" ? o.name_hant : o.name_en}
           {isUnavailable(o) ? ` · ${cvsCopy[locale].comingSoon}` : ""}
-        </option>
-      ))}
+        </option>)}
+      </optgroup>)}
     </select>
     {chosen && chosen.delivery_kind !== "home" && (
       <p data-testid="cvs-next-step">{copy.cvs}</p>

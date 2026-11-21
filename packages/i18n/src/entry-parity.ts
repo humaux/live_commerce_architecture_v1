@@ -1,6 +1,6 @@
 // Purpose: Signed auth and dashboard presentation copy in the three supported seller languages.
 // Depends on: Figma iJ9lDdFIXgTlKkt5Tvrc0X U:auth/U:dashboard, owner 2026-10-30 parity card.
-// Used by: admin Entry, PasswordAuth, Dashboard and dashboard task views.
+// Used by: admin Entry, PasswordAuth, Dashboard, manual orders and storefront checkout.
 // Invariants: identical locale keys; no invented identities, totals, delivery policies or provider observations.
 import type { Locale } from './index.ts';
 const en = {
@@ -146,3 +146,12 @@ const cn: Copy = {
   },
 };
 export const entryParityCopy: Record<Locale, Copy> = { 'zh-TW': tw, 'zh-CN': cn, en };
+
+/** Group the offered services for display, preserving their server order within each category. */
+export function deliveryOptionGroups<T extends { delivery_kind: string }>(locale: Locale, options: readonly T[]) {
+  const labels = entryParityCopy[locale].dashboard;
+  return [
+    { label: labels.homeDelivery, items: options.filter(option => option.delivery_kind === 'home') },
+    { label: labels.cvs, items: options.filter(option => option.delivery_kind !== 'home') },
+  ].filter(group => group.items.length > 0);
+}
