@@ -1,7 +1,7 @@
 -- Purpose: provision actual, editable Taiwan manual pickup services at onboarding and upgrade.
 -- Depends on: initial_stores, pricing revisions, service and allocation revisions (0007/0010/0011/0117).
 -- Used by: identity.create_initial_store, checkout options, merchant settings and both order paths.
--- The initializer never changes a head, configures a payment method or binds a carrier.
+-- Only a missing store pickup setting may opt into manual collection. Existing settings and provider accounts stay intact.
 CREATE FUNCTION fulfillment.seed_manual_cvs(p_tenant uuid,p_store uuid,p_actor uuid) RETURNS void
 LANGUAGE plpgsql SET search_path=pg_catalog AS $$
 DECLARE wh uuid; market record; brand record; service_code text; pv bigint; tax record;
@@ -57,6 +57,14 @@ BEGIN
    INSERT INTO fulfillment.allocation_warehouses VALUES(p_tenant,p_store,market.id,'TW',service_code,1,1,wh);
    INSERT INTO fulfillment.allocation_heads VALUES(p_tenant,p_store,market.id,'TW',service_code,1);
   END LOOP;
+  -- The amount due is the order's frozen total. These are admission ceilings, in TWD and open orders.
+  IF EXISTS (SELECT 1 FROM fulfillment.service_heads h JOIN fulfillment.service_versions v ON
+   (v.tenant_id,v.store_id,v.market_id,v.country,v.code,v.version)=(h.tenant_id,h.store_id,h.market_id,h.country,h.code,h.current_version)
+   WHERE (h.tenant_id,h.store_id,h.market_id,h.country)=(p_tenant,p_store,market.id,'TW')
+    AND v.mode='MANUAL' AND v.delivery_kind IN ('cvs_711','cvs_familymart','cvs_hilife','cvs_okmart') AND v.enabled AND v.visible) THEN
+   INSERT INTO fulfillment.cvs_store_settings(tenant_id,store_id,pay_at_pickup_enabled,pay_at_pickup_max_twd,pay_at_pickup_max_open,version,updated_at)
+    VALUES(p_tenant,p_store,true,20000,20,1,clock_timestamp()) ON CONFLICT DO NOTHING;
+  END IF;
  END LOOP;
 END $$;
 REVOKE ALL ON FUNCTION fulfillment.seed_manual_cvs(uuid,uuid,uuid) FROM PUBLIC;
@@ -71,6 +79,12 @@ CREATE POLICY cvs_initializer_read ON control.stores FOR SELECT TO commerce_manu
  USING (tenant_id=current_setting('app.tenant_id',true)::uuid AND id=current_setting('app.store_id',true)::uuid);
 CREATE POLICY cvs_initializer_read ON inventory.warehouses FOR SELECT TO commerce_manual_cvs_initializer
  USING (tenant_id=current_setting('app.tenant_id',true)::uuid AND store_id=current_setting('app.store_id',true)::uuid);
+GRANT INSERT(tenant_id,store_id,pay_at_pickup_enabled,pay_at_pickup_max_twd,pay_at_pickup_max_open,version,updated_at)
+ ON fulfillment.cvs_store_settings TO commerce_manual_cvs_initializer;
+CREATE POLICY cvs_initializer_default ON fulfillment.cvs_store_settings FOR INSERT TO commerce_manual_cvs_initializer
+ WITH CHECK(tenant_id=current_setting('app.tenant_id',true)::uuid AND store_id=current_setting('app.store_id',true)::uuid
+  AND pay_at_pickup_enabled AND pay_at_pickup_max_twd=20000 AND pay_at_pickup_max_open=20 AND version=1
+  AND enabled_chains=ARRAY['cvs_711','cvs_familymart','cvs_hilife','cvs_okmart']);
 DO $$
 DECLARE rel regclass; scope text := 'tenant_id=current_setting(''app.tenant_id'',true)::uuid AND store_id=current_setting(''app.store_id'',true)::uuid';
  actor text;
@@ -112,6 +126,6 @@ LEFT JOIN LATERAL (SELECT principal_id FROM identity.store_staff WHERE (tenant_i
  AND role='owner' ORDER BY created_at,principal_id LIMIT 1) o ON true
 WHERE s.currency='TWD' AND coalesce(i.principal_id,m.principal_id,o.principal_id) IS NOT NULL;
 
-COMMENT ON ROLE commerce_manual_cvs_initializer IS 'internal/fulfillment: NOLOGIN scoped initializer for pricing, manual service and allocation inserts. No UPDATE, provider, payment or inventory write.';
+COMMENT ON ROLE commerce_manual_cvs_initializer IS 'internal/fulfillment: NOLOGIN scoped initializer for pricing, manual service, collection defaults and allocation inserts. No UPDATE, provider, payment or inventory write.';
 COMMENT ON FUNCTION fulfillment.initial_store_manual_cvs() IS 'internal/identity onboarding trigger: trusted initial_store creator scope only, no login EXECUTE.';
 COMMENT ON FUNCTION fulfillment.seed_manual_cvs(uuid,uuid,uuid) IS 'internal/fulfillment initialization: invoker rights, migration owner or onboarding trigger only. Preserves existing heads.';

@@ -85,6 +85,7 @@ type tcvEnv struct {
 
 // tcvOpts tunes the environment.
 type tcvOpts struct {
+	onboarded     *bcHarness   // real new store with its default services, no payment-provider fixture
 	base          *testFixture // use this database for the plain (non-Stripe) fixture
 	ecpayDisabled bool         // CVS_ECPAY_ENABLED=0 (kill switch)
 	payEnv        string       // payment environment; default SANDBOX
@@ -125,6 +126,8 @@ func tcvNew(t *testing.T, opts ...tcvOpts) *tcvEnv {
 		rEnv = rfxNew(t)
 		rOrder = rEnv.storeFor(t)
 		p = rOrder.s.p
+	} else if o.onboarded != nil {
+		p = psHarness{bcHarness: *o.onboarded}
 	} else if o.base != nil {
 		p = psSetupItemsOn(t, o.base, 1)
 	} else {

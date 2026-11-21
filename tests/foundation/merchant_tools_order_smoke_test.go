@@ -27,6 +27,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"livecommerce/internal/buyer"
+	"livecommerce/internal/catalog"
 	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/inventory"
@@ -34,6 +35,7 @@ import (
 	"livecommerce/internal/merchanttools"
 	"livecommerce/internal/pagination"
 	"livecommerce/internal/platform"
+	"livecommerce/internal/pricing"
 	"livecommerce/internal/reporting"
 )
 
@@ -643,28 +645,63 @@ func TestMerchantToolsDashboardScale(t *testing.T) {
 	}
 }
 
-// Upgrade a populated TW market, then use both order pipelines and the normal settings endpoints.
-func TestDefaultManualCVSUpgradeAndOrders(t *testing.T) {
-	e := tcvNew(t)
-	e.grantCreator("orders:read", "fulfillment:write")
+// The only merchant setup here is creating a product and stocking the warehouse returned by onboarding.
+func onboardManualCVS(t *testing.T) *tcvEnv {
+	t.Helper()
+	ctx := context.Background()
+	f := *fixture(t)
+	ident, _, _ := identityFixtureOn(t, &f)
+	session := identityLogin(t, ident)
+	store, err := ident.CreateInitialStore(ctx, session.Token, "fresh-default-cvs", firstStoreRequest())
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.tenantA, f.storeA1, f.principalA = store.TenantID, store.StoreID, session.PrincipalID
+	f.tokens = map[string]string{"a": session.Token}
+	h := bcHarness{cqHarness: cqHarness{f: &f, a: openBuyerTestPools(t, &f)}}
+	h.stock.warehouse.ID = store.WarehouseID
+	h.stock.product, err = t04Scoped(ctx, &f, session.Token, store.StoreID, "catalog:write", func(tx pgx.Tx, s platform.Scope) (catalog.Product, error) {
+		return catalog.CreateProduct(ctx, tx, s, t04Key("cvs-product"), catalog.ProductInput{Name: "Fixture product", Status: catalog.StatusActive})
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = f.owner.QueryRow(ctx, `SELECT id::text FROM pricing.markets WHERE tenant_id=$1 AND store_id=$2 AND code='tw'`, store.TenantID, store.StoreID).Scan(&h.market.ID); err != nil {
+		t.Fatal(err)
+	}
+	h.pool, err = platform.OpenCheckoutPool(ctx, bcRole(t, &f, "commerce_checkout_runtime"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(h.pool.Close)
+	h.service = bcService(t, h.pool).WithoutCardPayment()
+	h.cqHarness.service, err = buyer.New(h.a.issuer, time.Hour)
+	if err != nil {
+		t.Fatal(err)
+	}
+	h.delivery.Code = "quickstart_cvs_familymart" // the shared cart fixture prepares a quote before the buyer chooses a brand
+	e := tcvNew(t, tcvOpts{onboarded: &h})
+	e.p.stock.skus = []catalog.SKU{{ID: e.sku(1250, 100)}}
+	return e
+}
+
+func TestDefaultManualCVSOnboardAndOrders(t *testing.T) {
+	e := onboardManualCVS(t)
 	seed := func() {
 		mustExec(t, e.p.f.owner, `SELECT fulfillment.seed_manual_cvs($1,$2,$3)`, e.tenant(), e.store(), e.p.f.principalA)
 	}
-	seed()
 	manual := mtManualOrders(t, e)
 	a := mtAdmin{t: t, h: httpapi.NewHandler(e.p.f.runtime, httpapi.Options{CVS: e.cvs, ManualOrders: manual}), store: e.store(), token: e.token()}
-	for _, o := range a.options() {
-		if strings.HasPrefix(o.DeliveryKind, "cvs_") {
-			t.Fatalf("manual payment unexpectedly enabled: %+v", o)
-		}
+	if n := len(a.options()); n != 4 {
+		t.Fatalf("fresh merchant payable pickup options = %d; want 4", n)
 	}
-	e.cvsSettings(tcvAllChains, true, "20000", 20)
 	check := func(kind, shop string, fee int64) {
 		t.Helper()
 		b := e.newBuyer()
 		code := "quickstart_" + kind
 		o := tceOptions(t, b)[kind]
-		if o["delivery_code"] != code || o["pickup_selection"] != "buyer_entered" {
+		modes, ok := o["payment_modes"].([]any)
+		if !ok || len(modes) != 1 || modes[0] != "pay_at_pickup" || o["delivery_code"] != code || o["pickup_selection"] != "buyer_entered" {
 			t.Fatalf("buyer option %s: %v", kind, o)
 		}
 		store := b.enteredStore(code, shop, "", "")
@@ -687,12 +724,23 @@ func TestDefaultManualCVSUpgradeAndOrders(t *testing.T) {
 			if option.DeliveryCode != code {
 				continue
 			}
+			if option.PickupMaxMinor != 2000000 {
+				t.Fatalf("default collection guard: %d", option.PickupMaxMinor)
+			}
 			key := t04Key("default-cvs-place")
 			location := tcvJSON(t, store.body)
 			body := mtBody(e.p.stock.skus[0].ID, 2, option.OptionKey, "pay_at_pickup", map[string]any{"cvs": map[string]any{"store_code": shop, "store_name": location["name"], "store_address": location["address"]}})
 			status, receipt := a.place(key, body)
 			if status != 201 || receipt["total_minor"] != float64(q.Amount.TotalMinor) {
 				t.Fatalf("merchant place %s: %d %v", kind, status, receipt)
+			}
+			replayed, again := a.place(key, body)
+			if replayed != 200 || again["order_id"] != receipt["order_id"] {
+				t.Fatalf("manual replay: %d %v", replayed, again)
+			}
+			if n := e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2 AND id IN ($3,$4)
+			 AND payment_mode='pay_at_pickup' AND collection_state='PENDING' AND total_minor=$5`, e.tenant(), e.store(), r.OrderID, receipt["order_id"], q.Amount.TotalMinor); n != 2 {
+				t.Fatalf("orders pending collection at quoted amount: %d", n)
 			}
 			if kind == "cvs_711" && fee == 0 {
 				status, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+tcvStr(receipt, "order_id")+"/shipment", t04Key("default-cvs-ship"), mfxShip(0, "seven_eleven_cvs", "0012345678"))
@@ -707,10 +755,26 @@ func TestDefaultManualCVSUpgradeAndOrders(t *testing.T) {
 	for _, x := range []struct{ kind, shop string }{{"cvs_711", "131386"}, {"cvs_familymart", "011344"}, {"cvs_hilife", "F959"}, {"cvs_okmart", "000005"}} {
 		check(x.kind, x.shop, 0)
 	}
+	// A rejected basket never creates an order; the maximum is a safety limit, not the collectible amount.
+	before := e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store())
+	big := e.sku(2000100, 1)
+	for _, opt := range a.options() {
+		if opt.DeliveryKind != "cvs_711" {
+			continue
+		}
+		status, out := a.place(t04Key("over-default-cap"), mtBody(big, 1, opt.OptionKey, "pay_at_pickup", mtCVS))
+		if status != 422 || out["code"] != "pay_at_pickup_amount_exceeds" {
+			t.Fatalf("over default guard: %d %v", status, out)
+		}
+	}
+	if after := e.count(`SELECT count(*) FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store()); after != before {
+		t.Fatalf("refused basket created order")
+	}
 	code := "quickstart_cvs_711"
 	path := "/v1/admin/stores/" + e.store() + "/markets/" + e.p.market.ID + "/countries/TW/delivery-services/" + code
 	fee := int64(6000)
-	p := e.p.policy
+	zero := int64(0)
+	p := pricing.PolicyInput{MarketID: e.p.market.ID, Country: "TW", Currency: "TWD", ShippingMode: "country_flat", TaxMode: "inclusive", TaxBasis: "goods", TaxRateBPS: &zero, QuoteTTLSeconds: 300, Enabled: true, ConfigurationRef: "merchant fee edit"}
 	p.ExpectedVersion, p.Method, p.ShippingMinor = 1, "delivery:"+code, &fee
 	write := func(path string, v any) {
 		raw, err := json.Marshal(v)
@@ -737,6 +801,38 @@ func TestDefaultManualCVSUpgradeAndOrders(t *testing.T) {
 		if o.DeliveryKind == "cvs_711" {
 			t.Fatalf("merchant reopened service: %+v", o)
 		}
+	}
+	for _, table := range []string{"checkout.payment_attempts", "integration.merchant_accounts", "fulfillment.cvs_shipments"} {
+		if n := e.count("SELECT count(*) FROM "+table+" WHERE tenant_id=$1 AND store_id=$2", e.tenant(), e.store()); n != 0 {
+			t.Fatalf("unexpected %s rows: %d", table, n)
+		}
+	}
+}
+
+func TestDefaultManualCVSExistingCollectionSettings(t *testing.T) {
+	e := tcvNew(t)
+	e.grantCreator("orders:read")
+	seed := func() {
+		mustExec(t, e.p.f.owner, `SELECT fulfillment.seed_manual_cvs($1,$2,$3)`, e.tenant(), e.store(), e.p.f.principalA)
+	}
+	options := func() []merchanttools.ManualOption {
+		out, err := mtManualOrders(t, e).Options(context.Background(), e.token(), e.store())
+		if err != nil {
+			t.Fatal(err)
+		}
+		return out
+	}
+	// The store was already operating before 0227 with a deliberately low cap and one chain.
+	e.cvsSettings(`["cvs_711"]`, true, "19", 2)
+	seed()
+	found := options()
+	if len(found) != 1 || found[0].DeliveryKind != "cvs_711" || found[0].PickupMaxMinor != 1900 {
+		t.Fatalf("overrode saved low cap or chains: %+v", found)
+	}
+	e.cvsSettings(tcvAllChains, false, "null", 2)
+	seed()
+	if found = options(); len(found) != 0 {
+		t.Fatalf("overrode explicit opt-out: %+v", found)
 	}
 }
 
