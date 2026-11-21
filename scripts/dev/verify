@@ -3,35 +3,37 @@
 // Depends on: Git, Node 24 and existing smoke suites.
 // Used by: developers following the README verification commands.
 import { execFileSync } from "node:child_process";
-import { createWriteStream, mkdirSync, mkdtempSync, realpathSync, rmdirSync } from "node:fs";
-import { resolve, sep } from "node:path";
+import { createWriteStream, lstatSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmdirSync } from "node:fs";
+import { matchesGlob, resolve, sep } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { run } from "node:test";
 import { tap } from "node:test/reporters";
 import { fileURLToPath } from "node:url";
+import { modeEntries } from "./pr-modes.mjs";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const admin = "tests/admin/";
 const shop = "apps/storefront/tests/";
 const modules = {
   storefront: {
-    paths: /^(apps\/storefront\/|tests\/storefront\/|packages\/(format|i18n)\/|internal\/(buyer\w*|checkout|pricing|storefront)\/)/,
+    paths: /^(apps\/storefront\/(app|components|lib|src)\/|packages\/(format|i18n)\/src\/).+\.(?:[cm]?[jt]sx?|css)$/,
     files: [shop + "shop.test.mjs", shop + "purchase.test.mjs", shop + "lookup.test.mjs", shop + "claim.test.mjs", shop + "buyer-return-ui.test.mjs"],
   },
   admin: {
-    paths: /^(apps\/admin\/|tests\/admin\/|packages\/(format|i18n|ui)\/|internal\/(catalog|inventory|merchantorders|customers|loyalty|live|billing|identity\w*|fulfillment|payments|promotions|storefrontadmin|httpapi|inbox|returns|ads|design|reporting)\/)/,
+    paths: /^(apps\/admin\/(app|components|lib|src)\/|packages\/(format|i18n|ui)\/src\/).+\.(?:[cm]?[jt]sx?|css)$/,
     files: ["shell-registry", "catalog-v2-model", "orders-v2", "customers-model", "live-settings-model",
       "operations-model", "returns-model", "card-payments-model", "design-model", "inbox-copy", "ads-model"]
       .map((name) => admin + name + ".test.ts"),
   },
   infra: {
-    paths: /^(scripts\/dev\/|tests\/ci\/|\.github\/workflows\/|docs\/FEATURE_MAP\.md$|README\.md$)/,
+    paths: /^scripts\/dev\/(?:verify|[\w-]+\.(?:mjs|sh))$/,
     files: ["tests/ci/mode-registry.test.mjs", "tests/ci/pr-modes.test.mjs", "tests/ci/shard-plan.test.mjs"],
   },
 };
 const usage = `Usage: scripts/dev/verify --module ${Object.keys(modules).join("|")} | --changed [base-ref]
 --changed compares staged/unstaged/untracked paths with HEAD, or with the merge base of HEAD and base-ref.
 DB-free Node smoke checks only. Browser, Go/PG and full CI gates run separately.
+Changed registered Node unit tests run directly. Other paths may select a module smoke or report NOT_RUN.
 LC_VERIFY_DIR sets the parent directory for full TAP logs.`;
 
 function git(...args) {
@@ -48,14 +50,30 @@ function changedPaths(base) {
   ].filter(Boolean))];
 }
 
-async function verify(files, log) {
+function localUnitRecipes() {
+  const read = (file) => readFileSync(resolve(root, file), "utf8");
+  const sources = [read("scripts/dev/test-node.sh"),
+    ...modeEntries(read("scripts/dev/test-local.sh")).map((entry) => entry.prepare)];
+  // Read literal Node unit commands as data. No shell execution, browser specs,
+  // or provider/PG-dependent test directories.
+  return sources.flatMap((source) => [...source.replace(/\\\r?\n/g, " ").matchAll(/^[ \t]*node --test ([^\r\n#]+)/gm)]
+    .flatMap(([, args]) => {
+      const tokens = args.trim().split(/\s+/);
+      const transform = tokens.includes("--experimental-transform-types");
+      return tokens.filter((token) =>
+        /^(?:(?:apps|packages)\/[\w-]+\/tests\/|tests\/(?:admin|ci|deploy|design|storefront|ui)\/)[\w./*-]+\.test\.(?:mjs|js|ts)$/.test(token))
+        .map((pattern) => ({ pattern, transform }));
+    }));
+}
+
+async function verify(files, log, transform) {
   const passed = new Set();
   let passedTests = 0;
   let summary;
   let shown = 0;
   const tests = run({
     files: files.map((file) => resolve(root, file)),
-    execArgv: ["--experimental-strip-types"],
+    execArgv: [transform ? "--experimental-transform-types" : "--experimental-strip-types"],
     timeout: 60_000,
   });
   await pipeline(tests, async function* (events) {
@@ -69,7 +87,7 @@ async function verify(files, log) {
       if (type === "test:fail" && !data.todo && shown < 8) {
         const error = data.details?.error;
         const message = (error?.cause?.message ?? error?.message ?? "").split("\n").find(Boolean) ?? "";
-        console.error(`FAIL ${data.file ? `${data.file}:${data.line} ` : ""}${data.name} ${message.slice(0, 240)}`);
+        console.error(`  ${data.file ? `${data.file}:${data.line} ` : ""}${data.name} ${message.slice(0, 240)}`);
         shown++;
       }
       yield event;
@@ -77,9 +95,10 @@ async function verify(files, log) {
   }, tap, createWriteStream(log, { flags: "wx" }));
   const empty = files.filter((file) => !passed.has(resolve(root, file)));
   if (summary?.success && empty.length) console.error(`NOT_RUN no passing named tests in ${empty.join(", ")}`);
-  const counts = summary?.counts;
-  if (counts) console.log(`verify: named pass=${passedTests} fail=${counts.failed} skip=${counts.skipped} todo=${counts.todo} cancelled=${counts.cancelled}`);
-  return !summary?.success ? 1 : empty.length ? 3 : 0;
+  const code = !summary?.success ? 1 : empty.length ? 3 : 0;
+  const { failed = 0, skipped = 0, todo = 0, cancelled = 0 } = summary?.counts ?? {};
+  console.log(`verify: ${{ 0: "PASS", 1: "FAIL", 3: "NOT_RUN" }[code]} | selected Node checks | named pass=${passedTests} fail=${failed} skip=${skipped} todo=${todo} cancelled=${cancelled} | full log ${log}`);
+  return code;
 }
 
 async function main(args) {
@@ -87,21 +106,36 @@ async function main(args) {
   if (process.versions.node.split(".")[0] !== "24") throw new Error("Node 24 is required");
   process.chdir(root);
   const [mode, value] = args;
-  let selected;
+  const selected = new Set();
+  const direct = new Set();
+  let transform = false;
   if (mode === "--module" && args.length === 2 && Object.hasOwn(modules, value)) {
-    selected = [value];
+    selected.add(value);
   } else if (mode === "--changed" && args.length <= 2 && (args.length === 1 || (value && !value.startsWith("-")))) {
     const files = changedPaths(value);
-    selected = Object.keys(modules).filter((name) => files.some((file) => modules[name].paths.test(file)));
-    const outside = files.filter((file) => !selected.some((name) => modules[name].paths.test(file)));
+    const recipes = localUnitRecipes();
+    const outside = [];
+    for (const file of files) {
+      const recipe = recipes.find(({ pattern }) => matchesGlob(file, pattern));
+      if (recipe && lstatSync(file, { throwIfNoEntry: false })?.isFile()) {
+        direct.add(file);
+        transform ||= recipe.transform;
+        continue;
+      }
+      const owners = /\.(?:spec|test)\.[^.]+$/.test(file)
+        ? [] : Object.keys(modules).filter((name) => modules[name].paths.test(file));
+      if (owners.length) owners.forEach((name) => selected.add(name));
+      else outside.push(file);
+    }
     console.log(`verify: ${files.length} changed path(s), ${outside.length} outside local smoke scope`);
-    for (const file of outside.slice(0, 6)) console.log(`  NOT_RUN ${JSON.stringify(file)}`);
+    for (const file of outside) console.log(`  NOT_RUN ${JSON.stringify(file)}`);
   } else {
-    console.error(usage);
+    console.error(`verify: FAIL | invalid arguments\n${usage}`);
     return 2;
   }
-  if (!selected.length) {
-    console.error("verify: NOT_RUN no matching local smoke module");
+  const files = [...new Set([...direct, ...[...selected].flatMap((name) => modules[name].files)])];
+  if (!files.length) {
+    console.error("verify: NOT_RUN no matching local Node checks | full log none");
     return 3;
   }
   const parent = resolve(process.env.LC_VERIFY_DIR ?? ".local/verify");
@@ -127,10 +161,10 @@ async function main(args) {
   Object.assign(process.env, { TMPDIR: tmp, TMP: tmp, TEMP: tmp, NODE_DISABLE_COMPILE_CACHE: "1" });
   delete process.env.NODE_OPTIONS;
   const log = resolve(dir, "tests.tap");
-  const files = selected.flatMap((name) => modules[name].files);
-  console.log(`verify: ${selected.join(", ")} | ${files.length} suite(s) | full log ${log}`);
+  console.log(`verify: ${[...selected].join(", ") || "direct selection"} | ${files.length} suite(s)`);
+  for (const file of direct) console.log(`  Node unit ${JSON.stringify(file)}`);
   try {
-    return await verify(files, log);
+    return await verify(files, log, transform);
   } finally {
     // Existing suites clean their own fixtures. Preserve any leftovers beside the log.
     try { rmdirSync(tmp); } catch (error) { if (error.code !== "ENOTEMPTY") throw error; }
@@ -140,6 +174,6 @@ async function main(args) {
 try {
   process.exitCode = await main(process.argv.slice(2));
 } catch (error) {
-  console.error(`verify: ${error.message.split("\n")[0]}`);
+  console.error(`verify: FAIL | ${error.message.split("\n")[0]}`);
   process.exitCode = 2;
 }
