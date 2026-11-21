@@ -1,4 +1,6 @@
-// Browser specs run through Playwright's transpiler outside both application tsconfigs.
+// Purpose: catch invalid fixture fields and Playwright arguments in browser specs outside the app tsconfigs.
+// Depends on: the workspace TypeScript compiler API and Playwright declarations.
+// Used by: the browser-spec-types PR job and tests/ci/ci-plan.test.mjs.
 import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
