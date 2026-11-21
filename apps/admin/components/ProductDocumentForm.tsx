@@ -25,7 +25,7 @@ import { useProductDocument } from "@/lib/use-product-document";
 import type { ProductNavigationState } from "@/lib/use-product-leave-guard";
 import { productEditorCopy } from "@/lib/product-editor-copy";
 import { catalogCopy } from "@/lib/catalog-v2-copy";
-import { ProductDocumentMedia, type DraftPhoto } from "./ProductDocumentMedia";
+import { ProductDocumentMedia, useStageProductPhotos, type DraftPhoto } from "./ProductDocumentMedia";
 import { ProductMediaManager } from "./ProductMediaManager";
 import { effectiveMediaAxis, mainPhotoCount, needsMainImage } from "@/lib/product-media-model";
 import { productMediaCopy } from "@/lib/product-media-copy";
@@ -39,6 +39,7 @@ export function ProductDocumentForm({
   mode,
   detail,
   boundary,
+  visible = true,
   onNavigationChange,
 }: {
   locale: Locale;
@@ -46,6 +47,7 @@ export function ProductDocumentForm({
   mode: "create" | "edit";
   detail: ProductDetail | null;
   boundary: string;
+  visible?: boolean;
   onNavigationChange: (state: ProductNavigationState) => void;
 }) {
   const c = productEditorCopy[locale],
@@ -66,6 +68,9 @@ export function ProductDocumentForm({
     [mediaBusy, setMediaBusy] = useState(false),
     [mediaKnown, setMediaKnown] = useState(false);
   const [readinessOpen, setReadinessOpen] = useState(false);
+  const stagePhotos = useStageProductPhotos({
+    photos, setPhotos, locale, fail: write.setMessage, onProcessingChange: setMediaBusy,
+  });
   const initial = useRef(JSON.stringify(draft)),
     urlPhotos = useRef<DraftPhoto[]>([]),
     rowArchive = useRef<DraftRow[]>([]);
@@ -73,6 +78,7 @@ export function ProductDocumentForm({
   // locks the media block itself (and, while a request is in flight, the save buttons). Staged creation keeps
   // its photo-processing lock because its photos are part of the draft being saved.
   const disabled =
+    !visible ||
     (!detail && mediaBusy) ||
     !referencesReady ||
     !write.fenceReady ||
@@ -104,6 +110,7 @@ export function ProductDocumentForm({
       setSection,
       JSON.stringify([write.message, write.done?.id, write.recoveryBlocked]),
       write.busy,
+      visible,
     );
   useEffect(() => {
     if (write.savedDetail) {
@@ -276,6 +283,7 @@ export function ProductDocumentForm({
       className={section === id ? "active" : undefined} key={id} aria-controls={id}
       onClick={() => focus(id)}>{c[id]}</button>
   ));
+  if (!visible) return null;
   return (
     <form
       ref={editor}
@@ -355,11 +363,12 @@ export function ProductDocumentForm({
             photos={photos}
             setPhotos={setPhotos}
             disabled={disabled}
+            busy={mediaBusy}
             locale={locale}
             axes={draft.axes}
             imageAxis={imageAxis}
             setImageAxis={setImageAxis}
-            onProcessingChange={setMediaBusy}
+            stagePhotos={stagePhotos}
             fail={write.setMessage}
           />
         )}
