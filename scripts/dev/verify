@@ -1,0 +1,145 @@
+#!/usr/bin/env node
+// Purpose: run small DB-free checks for selected modules or changed paths.
+// Depends on: Git, Node 24 and existing smoke suites.
+// Used by: developers following the README verification commands.
+import { execFileSync } from "node:child_process";
+import { createWriteStream, mkdirSync, mkdtempSync, realpathSync, rmdirSync } from "node:fs";
+import { resolve, sep } from "node:path";
+import { pipeline } from "node:stream/promises";
+import { run } from "node:test";
+import { tap } from "node:test/reporters";
+import { fileURLToPath } from "node:url";
+
+const root = fileURLToPath(new URL("../../", import.meta.url));
+const admin = "tests/admin/";
+const shop = "apps/storefront/tests/";
+const modules = {
+  storefront: {
+    paths: /^(apps\/storefront\/|tests\/storefront\/|packages\/(format|i18n)\/|internal\/(buyer\w*|checkout|pricing|storefront)\/)/,
+    files: [shop + "shop.test.mjs", shop + "purchase.test.mjs", shop + "lookup.test.mjs", shop + "claim.test.mjs", shop + "buyer-return-ui.test.mjs"],
+  },
+  admin: {
+    paths: /^(apps\/admin\/|tests\/admin\/|packages\/(format|i18n|ui)\/|internal\/(catalog|inventory|merchantorders|customers|loyalty|live|billing|identity\w*|fulfillment|payments|promotions|storefrontadmin|httpapi|inbox|returns|ads|design|reporting)\/)/,
+    files: ["shell-registry", "catalog-v2-model", "orders-v2", "customers-model", "live-settings-model",
+      "operations-model", "returns-model", "card-payments-model", "design-model", "inbox-copy", "ads-model"]
+      .map((name) => admin + name + ".test.ts"),
+  },
+  infra: {
+    paths: /^(scripts\/dev\/|tests\/ci\/|\.github\/workflows\/|docs\/FEATURE_MAP\.md$|README\.md$)/,
+    files: ["tests/ci/mode-registry.test.mjs", "tests/ci/pr-modes.test.mjs", "tests/ci/shard-plan.test.mjs"],
+  },
+};
+const usage = `Usage: scripts/dev/verify --module ${Object.keys(modules).join("|")} | --changed [base-ref]
+--changed compares staged/unstaged/untracked paths with HEAD, or with the merge base of HEAD and base-ref.
+DB-free Node smoke checks only. Browser, Go/PG and full CI gates run separately.
+LC_VERIFY_DIR sets the parent directory for full TAP logs.`;
+
+function git(...args) {
+  return execFileSync("git", args, { encoding: "utf8", maxBuffer: 16 * 1024 * 1024, stdio: ["ignore", "pipe", "pipe"] });
+}
+
+function changedPaths(base) {
+  const revision = base ? git("rev-parse", "--verify", "--end-of-options", `${base}^{commit}`).trim() : "HEAD";
+  const against = base ? git("merge-base", "HEAD", revision).trim() : revision;
+  return [...new Set([
+    ...git("diff", "--cached", "--no-renames", "--name-only", "-z", against, "--").split("\0"),
+    ...git("diff", "--no-renames", "--name-only", "-z", "--").split("\0"),
+    ...git("ls-files", "--others", "--exclude-standard", "-z").split("\0"),
+  ].filter(Boolean))];
+}
+
+async function verify(files, log) {
+  const passed = new Set();
+  let passedTests = 0;
+  let summary;
+  let shown = 0;
+  const tests = run({
+    files: files.map((file) => resolve(root, file)),
+    execArgv: ["--experimental-strip-types"],
+    timeout: 60_000,
+  });
+  await pipeline(tests, async function* (events) {
+    for await (const event of events) {
+      const { type, data } = event;
+      if (type === "test:pass" && !data.skip && !data.todo && data.name !== data.file) {
+        passed.add(data.file);
+        passedTests++;
+      }
+      if (type === "test:summary" && !data.file) summary = data;
+      if (type === "test:fail" && !data.todo && shown < 8) {
+        const error = data.details?.error;
+        const message = (error?.cause?.message ?? error?.message ?? "").split("\n").find(Boolean) ?? "";
+        console.error(`FAIL ${data.file ? `${data.file}:${data.line} ` : ""}${data.name} ${message.slice(0, 240)}`);
+        shown++;
+      }
+      yield event;
+    }
+  }, tap, createWriteStream(log, { flags: "wx" }));
+  const empty = files.filter((file) => !passed.has(resolve(root, file)));
+  if (summary?.success && empty.length) console.error(`NOT_RUN no passing named tests in ${empty.join(", ")}`);
+  const counts = summary?.counts;
+  if (counts) console.log(`verify: named pass=${passedTests} fail=${counts.failed} skip=${counts.skipped} todo=${counts.todo} cancelled=${counts.cancelled}`);
+  return !summary?.success ? 1 : empty.length ? 3 : 0;
+}
+
+async function main(args) {
+  if (args.length === 1 && args[0] === "--help") { console.log(usage); return 0; }
+  if (process.versions.node.split(".")[0] !== "24") throw new Error("Node 24 is required");
+  process.chdir(root);
+  const [mode, value] = args;
+  let selected;
+  if (mode === "--module" && args.length === 2 && Object.hasOwn(modules, value)) {
+    selected = [value];
+  } else if (mode === "--changed" && args.length <= 2 && (args.length === 1 || (value && !value.startsWith("-")))) {
+    const files = changedPaths(value);
+    selected = Object.keys(modules).filter((name) => files.some((file) => modules[name].paths.test(file)));
+    const outside = files.filter((file) => !selected.some((name) => modules[name].paths.test(file)));
+    console.log(`verify: ${files.length} changed path(s), ${outside.length} outside local smoke scope`);
+    for (const file of outside.slice(0, 6)) console.log(`  NOT_RUN ${JSON.stringify(file)}`);
+  } else {
+    console.error(usage);
+    return 2;
+  }
+  if (!selected.length) {
+    console.error("verify: NOT_RUN no matching local smoke module");
+    return 3;
+  }
+  const parent = resolve(process.env.LC_VERIFY_DIR ?? ".local/verify");
+  // On the shared dev Mac, resolve the nearest existing ancestor before creating
+  // directories so an evidence-root symlink cannot divert writes to the system disk.
+  if (root.startsWith("/Volumes/data/")) {
+    let ancestor = parent;
+    while (true) {
+      try { ancestor = realpathSync(ancestor); break; }
+      catch (error) {
+        if (error.code !== "ENOENT") throw error;
+        ancestor = resolve(ancestor, "..");
+      }
+    }
+    const volume = realpathSync("/Volumes/data");
+    if (ancestor !== volume && !ancestor.startsWith(volume + sep)) throw new Error("LC_VERIFY_DIR must be on /Volumes/data");
+  }
+  mkdirSync(parent, { recursive: true, mode: 0o700 });
+  const dir = mkdtempSync(resolve(realpathSync(parent), "verify-"));
+  const tmp = resolve(dir, "tmp");
+  mkdirSync(tmp);
+  // Use the run-owned directory even when the invoking shell sets a system TMPDIR.
+  Object.assign(process.env, { TMPDIR: tmp, TMP: tmp, TEMP: tmp, NODE_DISABLE_COMPILE_CACHE: "1" });
+  delete process.env.NODE_OPTIONS;
+  const log = resolve(dir, "tests.tap");
+  const files = selected.flatMap((name) => modules[name].files);
+  console.log(`verify: ${selected.join(", ")} | ${files.length} suite(s) | full log ${log}`);
+  try {
+    return await verify(files, log);
+  } finally {
+    // Existing suites clean their own fixtures. Preserve any leftovers beside the log.
+    try { rmdirSync(tmp); } catch (error) { if (error.code !== "ENOTEMPTY") throw error; }
+  }
+}
+
+try {
+  process.exitCode = await main(process.argv.slice(2));
+} catch (error) {
+  console.error(`verify: ${error.message.split("\n")[0]}`);
+  process.exitCode = 2;
+}
