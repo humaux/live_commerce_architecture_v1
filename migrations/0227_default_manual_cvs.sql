@@ -63,10 +63,28 @@ BEGIN
    INSERT INTO fulfillment.allocation_heads VALUES(p_tenant,p_store,market.id,'TW',service_code,1);
   END LOOP;
   -- The amount due is the order's frozen total. These are admission ceilings, in TWD and open orders.
-  IF EXISTS (SELECT 1 FROM fulfillment.service_heads h JOIN fulfillment.service_versions v ON
-   (v.tenant_id,v.store_id,v.market_id,v.country,v.code,v.version)=(h.tenant_id,h.store_id,h.market_id,h.country,h.code,h.current_version)
+  -- As in checkout.ListOptions, a service must reference the current enabled policy and
+  -- every warehouse in its current allocation must be active. Allocation.service_version is historical.
+  IF EXISTS (
+   SELECT 1 FROM fulfillment.service_heads h
+   JOIN fulfillment.service_versions v USING (tenant_id,store_id,market_id,country,code)
+   JOIN pricing.policy_heads ph ON (ph.tenant_id,ph.store_id,ph.market_id,ph.country,ph.method,ph.current_version)=
+    (v.tenant_id,v.store_id,v.market_id,v.country,v.policy_method,v.policy_version)
+   JOIN pricing.policy_versions pv ON (pv.tenant_id,pv.store_id,pv.market_id,pv.country,pv.method,pv.version)=
+    (ph.tenant_id,ph.store_id,ph.market_id,ph.country,ph.method,ph.current_version)
+   JOIN fulfillment.allocation_heads ah ON (ah.tenant_id,ah.store_id,ah.market_id,ah.country,ah.code)=
+    (h.tenant_id,h.store_id,h.market_id,h.country,h.code)
+   JOIN fulfillment.allocation_versions av ON (av.tenant_id,av.store_id,av.market_id,av.country,av.code,av.version)=
+    (ah.tenant_id,ah.store_id,ah.market_id,ah.country,ah.code,ah.current_version)
    WHERE (h.tenant_id,h.store_id,h.market_id,h.country)=(p_tenant,p_store,market.id,'TW')
-    AND v.mode='MANUAL' AND v.delivery_kind IN ('cvs_711','cvs_familymart','cvs_hilife','cvs_okmart') AND v.enabled AND v.visible) THEN
+    AND v.version=h.current_version AND v.mode='MANUAL' AND v.binding_id IS NULL AND v.binding_version IS NULL
+    AND v.delivery_kind IN ('cvs_711','cvs_familymart','cvs_hilife','cvs_okmart') AND v.enabled AND v.visible
+    AND pv.enabled AND av.warehouse_count BETWEEN 1 AND 16 AND EXISTS (
+     SELECT 1 FROM fulfillment.allocation_warehouses aw JOIN inventory.warehouses w
+      ON (w.tenant_id,w.store_id,w.id)=(aw.tenant_id,aw.store_id,aw.warehouse_id)
+     WHERE (aw.tenant_id,aw.store_id,aw.market_id,aw.country,aw.code,aw.version)=
+      (av.tenant_id,av.store_id,av.market_id,av.country,av.code,av.version)
+     HAVING count(*)=av.warehouse_count AND bool_and(w.active))) THEN
    INSERT INTO fulfillment.cvs_store_settings(tenant_id,store_id,pay_at_pickup_enabled,pay_at_pickup_max_twd,pay_at_pickup_max_open,version,updated_at)
     VALUES(p_tenant,p_store,true,20000,20,1,clock_timestamp()) ON CONFLICT DO NOTHING;
   END IF;

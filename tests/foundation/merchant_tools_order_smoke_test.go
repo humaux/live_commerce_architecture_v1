@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -848,6 +849,48 @@ func TestDefaultManualCVSExistingCollectionSettings(t *testing.T) {
 	}
 }
 
+// An existing API service shares the store-wide collection setting with manual services.
+func TestDefaultManualCVSUnusableServicesPreserveAPIPaymentModes(t *testing.T) {
+	e := tcvNew(t)
+	e.connect("C2C")
+	api, _, _ := e.service("cvs_711", "API", 1500)
+	stale, _, _ := e.service("cvs_familymart", "MANUAL", 0)
+	dsPolicy(t, e.p.cqHarness, e.svcs[stale], 1, 3000, true)
+
+	// Legacy fixtures: one brand has no allocation head, another includes a retired warehouse.
+	missing, _, _ := e.service("cvs_hilife", "MANUAL", 0)
+	mustExec(t, e.p.f.owner, `DELETE FROM fulfillment.allocation_heads WHERE (tenant_id,store_id,market_id,country,code)=($1,$2,$3,'TW',$4)`, e.tenant(), e.store(), e.p.market.ID, missing)
+	inactive, version, alloc := e.service("cvs_okmart", "MANUAL", 0)
+	retired := randomUUID()
+	mustExec(t, e.p.f.owner, `INSERT INTO inventory.warehouses(tenant_id,store_id,id,name) VALUES($1,$2,$3,'retired fixture')`, e.tenant(), e.store(), retired)
+	_, err := daSet(e.p.cqHarness, t04Key("legacy-allocation"), fulfillment.AllocationInput{MarketID: e.p.market.ID, Country: "TW", Code: inactive,
+		ExpectedVersion: alloc, ExpectedServiceVersion: version, WarehouseIDs: []string{e.p.stock.warehouse.ID, retired}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustExec(t, e.p.f.owner, `UPDATE inventory.warehouses SET active=false WHERE (tenant_id,store_id,id)=($1,$2,$3)`, e.tenant(), e.store(), retired)
+
+	b := e.newBuyer()
+	settings := func() int {
+		return e.count(`SELECT count(*) FROM fulfillment.cvs_store_settings WHERE tenant_id=$1 AND store_id=$2`, e.tenant(), e.store())
+	}
+	before := tceOptions(t, b)
+	row := before["cvs_711"]
+	if settings() != 0 || row["delivery_code"] != api || row["mode"] != "API" || row["pickup_selection"] != "ecpay_map" || row["available"] == false ||
+		!reflect.DeepEqual(row["payment_modes"], []any{"card"}) || before["cvs_familymart"] != nil || before["cvs_hilife"] != nil || before["cvs_okmart"] != nil {
+		t.Fatalf("legacy precondition: settings=%d options=%v", settings(), before)
+	}
+	q, err := b.quote(api)
+	if err != nil || q.Amount.ShippingMinor != 1500 {
+		t.Fatalf("existing API quote: %+v %v", q.Amount, err)
+	}
+	mustExec(t, e.p.f.owner, `SELECT fulfillment.seed_manual_cvs($1,$2,$3)`, e.tenant(), e.store(), e.p.f.principalA)
+	after := tceOptions(t, b)
+	if settings() != 0 || !reflect.DeepEqual(before, after) {
+		t.Fatalf("unavailable manual services changed existing offers: settings=%d API payment_modes before=%v after=%v", settings(), row["payment_modes"], after["cvs_711"]["payment_modes"])
+	}
+}
+
 func TestDefaultManualCVSAmbiguousMarketTax(t *testing.T) {
 	// The harness market already has a current untaxed home policy. A brand's
 	// saved policy is authoritative even when the market has no common tax.
@@ -894,7 +937,7 @@ func TestDefaultManualCVSLegacyBrandPricing(t *testing.T) {
 	mustExec(t, e.p.f.owner, `SELECT fulfillment.seed_manual_cvs($1,$2,$3)`, e.tenant(), e.store(), e.p.f.principalA)
 	b := e.newBuyer()
 	rows := tceOptions(t, b)
-	if rows["cvs_711"]["delivery_code"] != "quickstart_cvs_711" || rows["cvs_familymart"] != nil {
+	if rows["cvs_711"]["delivery_code"] != "quickstart_cvs_711" || !reflect.DeepEqual(rows["cvs_711"]["payment_modes"], []any{"card", "pay_at_pickup"}) || rows["cvs_familymart"] != nil {
 		t.Fatalf("legacy enabled/disabled pickup pricing not respected: %v", rows)
 	}
 	q, err := b.quote("quickstart_cvs_711")

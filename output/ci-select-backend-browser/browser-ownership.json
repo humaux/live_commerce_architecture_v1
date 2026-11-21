@@ -517,7 +517,7 @@
     "tests/foundation/merchant_settings_http_test.go": "e14aecff492b7c963e7565f29c41db837f1315298517226f04869f63e0efa794",
     "tests/foundation/merchant_tools_csv_smoke_test.go": "64f5beba0bc7fc8810d568182e7e989ae651524ec2c6f9621bd6b0966bdfd114",
     "tests/foundation/merchant_tools_link_smoke_test.go": "c696f12e7ac08689166ebd2d56a4b635e8879141659e0a0ddedfe21fb4607170",
-    "tests/foundation/merchant_tools_order_smoke_test.go": "f9e294c13e9df570a41cb457089a5ecd4bd54f24496a2bf10d3937682d534e36",
+    "tests/foundation/merchant_tools_order_smoke_test.go": "db2a721732bc468d90296a3d07fa37d311e35fa6eeb667b827ac447e61b90cf7",
     "tests/foundation/meta_ads_a10_test.go": "122530e290ad753a5cd3d42d511319d25b454d1cab83799c9a67df5a9c84011d",
     "tests/foundation/meta_ads_allowance_test.go": "f1d2b6c374793f723b220a4648ad98fe7b6575d2d9c2e41ab0fe80fcf0b6be63",
     "tests/foundation/meta_ads_capi_test.go": "a5d3b4197bf1208b207b1c0b8035d3b26e1c602f19ae3bc1d55974e77f6bb817",
