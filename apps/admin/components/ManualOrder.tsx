@@ -22,6 +22,7 @@ import { orderPointsCopy, validOrderPoints } from "./members/order-points-copy";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
+import { catalogCopy } from "@/lib/catalog-v2-copy";
 import { readProduct, readProducts } from "@/lib/catalog-v2-client";
 import type { ProductDetail, Variant } from "@/lib/catalog-v2-model";
 import { sessionBoundary } from "@/lib/settings-client";
@@ -403,8 +404,8 @@ function ItemPicker({ locale, store, lines, setLines }: { locale: Locale; store:
       <Field id="mo-search" label={c.search}><input id="mo-search" data-testid="mo-search" value={q} maxLength={120} onChange={(e) => setQ(e.target.value)}
         onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void search(q); } }} /></Field>
       <button type="button" data-testid="mo-search-button" disabled={searching} onClick={() => void search(q)}>{c.searchButton}</button>
-      {searching && <p role="status">{c.loading}</p>}
-      {failure && <p role="alert">{c.unavailable}</p>}
+      {searching && <p role="status">{catalogCopy[locale].list.loading}</p>}
+      {failure && <p role="alert">{catalogCopy[locale].list.unavailable}</p>}
       {!searching && !failure && results.length === 0 && <p>{c.noResults}</p>}
       <ul className="mt-results">{results.map((product) => <li key={product.id}><strong>{product.name}</strong><ul className="mt-variants">
         {product.skus.filter((variant) => variant.price_minor >= 0).map((variant) => {

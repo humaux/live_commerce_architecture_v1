@@ -63,10 +63,10 @@ async function fixtures(page: Page) {
     const query = new URL(route.request().url()).searchParams.get("q") ?? "";
     const matches = products.filter((p) => p.name.includes(query) || p.code.includes(query));
     return route.fulfill(json({
-    items: matches.map((p) => ({ id: p.id, slug: p.code.toLowerCase(), name: p.name, status: "active", version: 1,
-      cover_image_id: null, price_min_minor: p.price, price_max_minor: p.price, currency: "TWD", sku_count: 1,
-      available: p.code === "C12" ? 0 : 10, keyword: p.code, inventory_tracked: true, updated_at: instant })),
-    next_cursor: "", total: matches.length, status_counts: { draft: 0, active: products.length, archived: 0 },
+      items: matches.map((p) => ({ id: p.id, slug: p.code.toLowerCase(), name: p.name, status: "active", version: 1,
+        cover_image_id: null, price_min_minor: p.price, price_max_minor: p.price, currency: "TWD", sku_count: 1,
+        available: p.code === "C12" ? 0 : 10, keyword: p.code, inventory_tracked: true, updated_at: instant })),
+      next_cursor: "", total: matches.length, status_counts: { draft: 0, active: products.length, archived: 0 },
     }));
   });
   for (const p of products) await page.route(`**/api/stores/${store}/products/${p.id}`, (route) => route.fulfill(json({
@@ -157,6 +157,7 @@ test.describe("PARITY-ORDER-OPS signed frames (BROWSER MOCK)", () => {
       });
       if (locale === "zh-TW") await screenshot(page, mobile ? "21:967" : "21:582");
       await openPicker();
+      await expect(page.getByRole("dialog").getByRole("button", { pressed: true, name: /托特包/ })).toContainText("× 2");
       if (locale === "zh-TW") await screenshot(page, mobile ? "750:3595" : "750:3453");
       await action(page, c.cancel, "click", "picker closes and quantity stays two", async () => {
         const selected = page.getByRole("dialog").getByRole("button", { pressed: true, name: /托特包/ });
