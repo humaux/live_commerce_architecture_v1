@@ -160,7 +160,7 @@ test("REAL_PG A wizard has no PAYUNi, edits default pickup fees and preserves sa
       new URL(r.url()).pathname.endsWith(`/delivery-services/${code}/policy`));
     await services.selectOption(code);
     expect(await (await read).json()).toMatchObject({ version: 1, enabled: true, shipping_minor: 0 });
-    await expect(initialPolicyForm.getByRole("button", { name: "Save pricing policy", exact: true })).toBeEnabled();
+    await expect(page.getByTestId("settings-service-form").getByRole("button", { name: "Save delivery service", exact: true })).toBeEnabled();
     await expect(shipping).toHaveValue("0");
     await expect(initialPolicyForm.getByLabel("Enable pricing policy", { exact: true })).toBeChecked();
   }
