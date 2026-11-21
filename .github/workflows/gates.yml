@@ -79,6 +79,22 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  browser-spec-types:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - uses: ./.github/actions/pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - run: node scripts/dev/check-browser-spec-types.mjs
+
   plan:
     runs-on: ubuntu-24.04
     timeout-minutes: 10 # + contract drift (go run, ~1-2 min)
@@ -796,7 +812,7 @@ jobs:
   # expected (a sweep / visual-lint was planned), and deploy-smoke succeeded when it was expected. Skipped / cancelled / failed anywhere else is red, never silently green.
   required:
     name: required
-    needs: [plan, build, gate, aggregate, deploy, receipts]
+    needs: [plan, build, gate, aggregate, deploy, receipts, browser-spec-types]
     if: ${{ always() }}
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -823,7 +839,11 @@ jobs:
           if [[ "$AGG_EXPECTED" == true ]]; then [[ "$AGG" == success ]] || rc=1; else [[ "$AGG" == skipped ]] || rc=1; fi
           if [[ "$DEPLOY_EXPECTED" == true ]]; then [[ "$DEPLOY" == success ]] || rc=1; else [[ "$DEPLOY" == skipped ]] || rc=1; fi
           exit "$rc"
-
+      - name: Require browser spec types on every PR
+        if: github.event_name == 'pull_request'
+        env:
+          SPEC_TYPES: ${{ needs.browser-spec-types.result }}
+        run: test "$SPEC_TYPES" = success
 
   g07_seal:
     name: Seal canonical G07

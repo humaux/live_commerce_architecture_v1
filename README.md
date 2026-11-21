@@ -5,6 +5,10 @@
 已开始开发，当前已有 **Go/PostgreSQL 基础、商品库存台账、商家 C 分步向导、买家 B 商品直购／订单／付款页面及独立付款／到期 worker 的局部本地验收，不是完整 SaaS 或生产上线版本**。付款供应商仍为签名模拟；真实身份提供商、收款准入、部署及其余业务模块仍需完成。
 
 - 当前实现：[foundation 合同](contracts/foundation-v1.md)、[基础 OpenAPI](contracts/foundation-openapi.json)、[实施说明](docs/implementation/2026-09-20-kickoff.md)。
+- [核心功能地图](docs/FEATURE_MAP.md)列出买家和商家路由、源码入口与浏览器验收判据。
+- 定向本地检查（Node 24）：`scripts/dev/verify --module storefront`，也可选 `admin` 或 `infra`。
+- 按变更检查：`scripts/dev/verify --changed origin/r3/integration` 直接选择改动的已注册轻量 Node 单测。省略基线时只检查工作区变更。
+- 摘要列出 PASS、FAIL 或 NOT_RUN 和完整 TAP 路径。Go、PG 和浏览器检查走 [正式门禁](docs/delivery/GATES.md)。
 - 本地一键验收：`bash scripts/dev/test-local.sh`。需要 Docker、Go 启动器和已下载的固定 PG18.6 镜像（镜像 digest 见脚本）；会创建本任务临时数据库，退出自动移除，不读取现有 `DATABASE_URL`。
 - 仅编译/单测：`GOTOOLCHAIN=go1.27.4 go test -p 1 -race ./...`。未配置隔离数据库时，集成测试明确 SKIP，不能视为数据库通过。
 - 服务入口：`GOTOOLCHAIN=go1.27.4 go run ./cmd/api`。需要已迁移数据库和 **commerce_runtime 成员、非 owner 的独立登录**，通过环境变量 `DATABASE_URL` 传入。默认仅监听 `127.0.0.1:8080`；程序不会自动迁移、生成用户或放宽授权。
