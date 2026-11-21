@@ -264,6 +264,14 @@ const CATALOG_ASSERTION_REWRITES = {
 // performs both real clicks; selectLedgerRow searches the requested code and returns its selected
 // inventory-current-available value. Only these complete calls migrate; exact role/name and zero stay required.
 const SIGNED_ASSERTION_REWRITES = {
+  // 0227 gives the four pickup services their own free tariff; the original home threshold still applies.
+  "tests/storefront/shop-real-gate.mjs": {
+    'assert(optionRows.length >= 1 && optionRows.every((o) => o.free_shipping_threshold_minor === T), `options must carry the policy threshold ${T}: ${JSON.stringify(optionRows.map((o) => o.free_shipping_threshold_minor))}`)': `
+      assert.deepEqual(thresholds, [["cvs_711", null], ["cvs_familymart", null], ["cvs_hilife", null], ["cvs_okmart", null], ["home", T]],
+        "each service carries its own threshold; the four free pickup policies have no minimum");
+      assert.deepEqual([quote.method, quote.amount.shipping_minor, quote.amount.subtotal_minor], [row.method, 0, below]);
+      await expect(p.getByTestId("entry-shipping")).toHaveText(shop$(0));`,
+  },
   "tests/storefront/catalog-media-gate.mjs": CATALOG_ASSERTION_REWRITES,
   "tests/storefront/merchant-buyer-gate.mjs": {
     'expect(merchant.getByRole("link", { name: "Add product", exact: true })).toBeVisible()': 'expect(merchant.getByRole("link", { name: "Back to products", exact: true })).toBeVisible()',
@@ -396,6 +404,21 @@ test("signed inventory parity rejects missing facts, changed price oracles and w
     const mutated = current.replace(from, to);
     assert.notEqual(mutated, current, `${label}: mutation target missing`);
     assert.throws(() => assertGateParity(file, before, mutated), /original gate assertions changed|signed inventory SKU selection\/readback changed/, label);
+  }
+});
+
+test("signed pickup parity rejects a missing brand, an inherited home threshold and an incorrect quote", async () => {
+  const file = "tests/storefront/shop-real-gate.mjs";
+  const before = execFileSync("git", ["show", `${GATE_BASELINE}:${file}`], { encoding: "utf8" });
+  const current = await readFile(file, "utf8");
+  for (const [target, replacement] of [
+    ['["cvs_okmart", null], ', ""],
+    ['["cvs_hilife", null]', '["cvs_hilife", T]'],
+    ['[row.method, 0, below]', '[row.method, 6000, below]'],
+  ]) {
+    const mutated = current.replace(target, replacement);
+    assert.notEqual(mutated, current, `pickup mutation target missing: ${target}`);
+    assert.throws(() => assertGateParity(file, before, mutated), /original gate assertions changed/);
   }
 });
 
