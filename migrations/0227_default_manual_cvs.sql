@@ -4,7 +4,7 @@
 -- Only a missing store pickup setting may opt into manual collection. Existing settings and provider accounts stay intact.
 CREATE FUNCTION fulfillment.seed_manual_cvs(p_tenant uuid,p_store uuid,p_actor uuid) RETURNS void
 LANGUAGE plpgsql SET search_path=pg_catalog AS $$
-DECLARE wh uuid; market record; brand record; service_code text; pv bigint; tax record;
+DECLARE wh uuid; market record; brand record; service_code text; pv bigint; tax record; legacy record;
 BEGIN
  IF NOT EXISTS (SELECT 1 FROM control.stores WHERE tenant_id=p_tenant AND id=p_store AND currency='TWD') THEN RETURN; END IF;
  SELECT id INTO wh FROM inventory.warehouses WHERE tenant_id=p_tenant AND store_id=p_store AND active
@@ -37,12 +37,17 @@ BEGIN
    SELECT current_version INTO pv FROM pricing.policy_heads WHERE
     (tenant_id,store_id,market_id,country,method)=(p_tenant,p_store,market.id,'TW','delivery:'||service_code);
    IF pv IS NULL THEN
-    IF tax.variants>1 THEN CONTINUE; END IF;
+    -- Before service revisions, the two original CVS brands had typed pricing keys.
+    SELECT v.* INTO legacy FROM pricing.policy_heads h JOIN pricing.policy_versions v ON
+     (v.tenant_id,v.store_id,v.market_id,v.country,v.method,v.version)=(h.tenant_id,h.store_id,h.market_id,h.country,h.method,h.current_version)
+     WHERE (h.tenant_id,h.store_id,h.market_id,h.country,h.method)=(p_tenant,p_store,market.id,'TW',brand.kind);
+    IF legacy.enabled=false OR (legacy.method IS NULL AND tax.variants>1) THEN CONTINUE; END IF;
     pv := 1;
     INSERT INTO pricing.policy_versions(tenant_id,store_id,market_id,country,method,version,currency,shipping_mode,shipping_minor,
-     tax_mode,tax_basis,tax_rate_bps,quote_ttl_seconds,enabled,configuration_ref,principal_id)
-    VALUES(p_tenant,p_store,market.id,'TW','delivery:'||service_code,pv,'TWD','country_flat',0,tax.mode,tax.basis,tax.rate,
-     300,true,'default manual CVS',p_actor);
+     tax_mode,tax_basis,tax_rate_bps,quote_ttl_seconds,enabled,configuration_ref,principal_id,free_shipping_threshold_minor)
+    VALUES(p_tenant,p_store,market.id,'TW','delivery:'||service_code,pv,'TWD','country_flat',coalesce(legacy.shipping_minor,0),
+     coalesce(legacy.tax_mode,tax.mode),coalesce(legacy.tax_basis,tax.basis),coalesce(legacy.tax_rate_bps,tax.rate),
+     coalesce(legacy.quote_ttl_seconds,300),true,'default manual CVS',p_actor,legacy.free_shipping_threshold_minor);
     INSERT INTO pricing.policy_heads VALUES(p_tenant,p_store,market.id,'TW','delivery:'||service_code,pv);
    END IF;
    INSERT INTO fulfillment.service_versions(tenant_id,store_id,market_id,country,code,version,policy_version,currency,

@@ -877,3 +877,29 @@ func TestDefaultManualCVSAmbiguousMarketTax(t *testing.T) {
 		t.Fatalf("dedicated policy changed: policy=%+v amount=%+v err=%v", q.Policy, q.Amount, err)
 	}
 }
+
+func TestDefaultManualCVSLegacyBrandPricing(t *testing.T) {
+	e := tcvNew(t)
+	p := e.p.policy
+	fee, threshold, rate := int64(6500), int64(50000), int64(500)
+	p.Method, p.ShippingMinor, p.FreeShippingThresholdMinor = "cvs_711", &fee, &threshold
+	p.TaxMode, p.TaxBasis, p.TaxRateBPS, p.QuoteTTLSeconds = "exclusive", "goods_and_shipping", &rate, 480
+	if _, err := e.p.setPolicy(p); err != nil {
+		t.Fatal(err)
+	}
+	p.Method, p.Enabled = "cvs_familymart", false
+	if _, err := e.p.setPolicy(p); err != nil {
+		t.Fatal(err)
+	}
+	mustExec(t, e.p.f.owner, `SELECT fulfillment.seed_manual_cvs($1,$2,$3)`, e.tenant(), e.store(), e.p.f.principalA)
+	b := e.newBuyer()
+	rows := tceOptions(t, b)
+	if rows["cvs_711"]["delivery_code"] != "quickstart_cvs_711" || rows["cvs_familymart"] != nil {
+		t.Fatalf("legacy enabled/disabled pickup pricing not respected: %v", rows)
+	}
+	q, err := b.quote("quickstart_cvs_711")
+	if err != nil || q.Amount.ShippingMinor != fee || q.Amount.ShippingTaxMinor != 325 || q.Policy.QuoteTTLSeconds != 480 ||
+		q.Policy.FreeShippingThresholdMinor == nil || *q.Policy.FreeShippingThresholdMinor != threshold {
+		t.Fatalf("legacy pickup fee, tax, threshold or quote lifetime changed: %+v %v", q, err)
+	}
+}
