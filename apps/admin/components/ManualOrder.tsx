@@ -11,7 +11,7 @@
 // There is NO price field anywhere in this form or in the request: the server quotes from the catalog (I05), so the displayed unit prices are
 // information only. The submit key is kept for a retry of the SAME body (an uncertain answer replays, never double-reserves) and replaced as
 // soon as the form changes. The session fence is lib/merchant-tools-client.
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import { orderOpsCopy, localeNames, type Locale } from "@live-commerce/i18n";
 import { displayTime } from "@live-commerce/format";
@@ -22,11 +22,12 @@ import { orderPointsCopy, validOrderPoints } from "./members/order-points-copy";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
+import { catalogCopy } from "@/lib/catalog-v2-copy";
 import { readProduct, readProducts } from "@/lib/catalog-v2-client";
-import type { ProductDetail } from "@/lib/catalog-v2-model";
+import type { ProductDetail, Variant } from "@/lib/catalog-v2-model";
 import { sessionBoundary } from "@/lib/settings-client";
 import { placeManualOrder, readManualOptions, regenerateManualLink } from "@/lib/merchant-tools-client";
-import { draftProblem, manualBody, recipientGaps, type ManualDraft, type ManualOption, type ManualPaymentMode, type ManualResult } from "@/lib/merchant-tools-model";
+import { draftProblem, manualBody, pickupRecipientErrors, recipientGaps, type ManualDraft, type ManualOption, type ManualPaymentMode, type ManualResult } from "@/lib/merchant-tools-model";
 import { toolsCopy } from "@/lib/merchant-tools-copy";
 import { codCopy } from "@/lib/cod-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -39,7 +40,7 @@ import "./orders.css";
 import "./customers.css";
 import "./merchant-tools.css";
 
-type Line = { sku_id: string; quantity: number; label: string; code: string; price: string };
+type Line = { sku_id: string; quantity: number; limit: number; label: string; code: string; price: string };
 const blankHome = { region: "", city: "", postal_code: "", line1: "", line2: "" };
 const blankCVS = { store_code: "", store_name: "", store_address: "" };
 
@@ -110,6 +111,7 @@ export function ManualOrder({
   const mapOnly = !!option && option.delivery_kind !== "home" && option.pickup_selection !== "buyer_entered";
   const draft: ManualDraft = { lines, name, phone, email, option, mode, home, cvs, locale: buyerLocale };
   const problem = draftProblem(draft);
+  const pickupErrors = mode === "pay_at_pickup" ? pickupRecipientErrors(name, phone) : null;
   const gaps = recipientGaps(draft); // non-empty only when the recipient is the sole thing missing
   const showMissing = missing && gaps.length > 0;
 
@@ -157,7 +159,15 @@ export function ManualOrder({
       return;
     }
     setUncertain(outcome.uncertain);
-    setFailure(c.errors[outcome.code] ?? c.errors.default);
+    const amount = outcome.pickupAmount;
+    if (amount) {
+      const twd = (minor: number) => money(locale, "TWD", minor);
+      const action = amount.total_minor > amount.max_minor ? c.pickupReduce :
+        amount.total_minor < 100 || amount.total_minor % 100 !== 0 ? c.pickupWhole : c.pickupChanged;
+      setFailure([c.pickupQuote(twd(amount.subtotal_minor), twd(amount.shipping_minor), twd(amount.total_minor)), c.pickupCap(twd(amount.max_minor)), action].join(" "));
+    } else {
+      setFailure(outcome.uncertain ? c.retrySame : c.errors[outcome.code] ?? c.errors.default);
+    }
     if (!outcome.uncertain) attempt.current = null; // a definite refusal: the next send is a new attempt
   }
   function reset() {
@@ -261,18 +271,26 @@ export function ManualOrder({
                 <div><dt>{c.paymentTitle}</dt><dd>{mode === "bank_transfer" ? c.bank : mode === "cash_on_delivery" ? c.cod : c.pickup}</dd></div>
               </dl>
               {options.status==="ready" && canPoints && memberSelection.member && memberSelection.points!=="" && <section data-testid="manual-member-award-review"><h3>{memberCopy.title}</h3><p>{memberSelection.member.display_name}</p><p>{memberCopy.points}: +{memberSelection.points}</p></section>}
-              <p>{signed.quote}</p>
+              {mode === "pay_at_pickup" && option?.pickup_max_minor && <p>{c.pickupCap(money(locale, "TWD", option.pickup_max_minor))}</p>}
               {mode === "cash_on_delivery" && option?.cod_max_minor !== undefined && option.cod_carrier && <p>{c.codNote(
                 money(locale, option.currency, option.cod_surcharge_minor ?? 0), money(locale, option.currency, option.cod_max_minor),
                 option.cod_carrier === "black_cat" ? codCopy[locale].carrierBlackCat : codCopy[locale].carrierHsinchu)}</p>}
-              <button type="button" onClick={() => setReviewing(false)}>{signed.backEdit}</button>
+              <button type="button" disabled={busy || uncertain} onClick={() => { setFailure(""); setReviewing(false); }}>{signed.backEdit}</button>
             </section> : <>
             <ItemPicker locale={locale} store={store} lines={lines} setLines={setLines} />
             <section className="mt-card">
               <h2>{signed.recipient}</h2>
               <FormRow>
-                <Field id="mo-name" label={signed.name}><input id="mo-name" data-testid="mo-name" value={name} maxLength={120} autoComplete="off" onChange={(e) => setName(e.target.value)} /></Field>
-                <Field id="mo-phone" label={signed.phone} width="short"><input id="mo-phone" data-testid="mo-phone" value={phone} inputMode="tel" maxLength={32} autoComplete="off" onChange={(e) => setPhone(e.target.value)} /></Field>
+                <Field id="mo-name" label={signed.name} hint={pickupErrors?.name && c.problems.pickupName}>
+                  <input id="mo-name" data-testid="mo-name" value={name} maxLength={120} autoComplete="off"
+                    aria-invalid={pickupErrors?.name} aria-describedby={pickupErrors?.name ? "mo-name-hint" : undefined}
+                    onChange={(e) => setName(e.target.value)} />
+                </Field>
+                <Field id="mo-phone" label={signed.phone} width="short" hint={pickupErrors?.phone && c.problems.pickupPhone}>
+                  <input id="mo-phone" data-testid="mo-phone" value={phone} inputMode="tel" maxLength={32} autoComplete="off"
+                    aria-invalid={pickupErrors?.phone} aria-describedby={pickupErrors?.phone ? "mo-phone-hint" : undefined}
+                    onChange={(e) => setPhone(e.target.value)} />
+                </Field>
                 <details><summary>{signed.advanced}</summary><Field id="mo-email" label={c.email}><input id="mo-email" data-testid="mo-email" value={email} type="email" maxLength={254} autoComplete="off" onChange={(e) => setEmail(e.target.value)} /></Field></details>
               </FormRow>
 
@@ -332,8 +350,8 @@ export function ManualOrder({
             <div hidden={reviewing}>
               <ManualOrderMemberFields key={memberScope} locale={locale} store={store} scope={memberScope} boundary={boundary} enabled={options.status==="ready"} disabled={busy||uncertain||reviewing} value={memberSelection} onChange={setMemberSelection} onName={setName} onBusy={setMemberBusy}/>
             </div>
-            {failure && <p className="mt-warn" role="alert" data-testid="manual-order-error">{failure}{uncertain ? ` ${c.retrySame}` : ""}</p>}
-            {problem && <p className="mt-note" data-testid="manual-order-hint">{c.problems[problem]}</p>}
+            {failure && <p className="mt-warn" role="alert" data-testid="manual-order-error">{failure}</p>}
+            {problem && problem !== "pickupName" && problem !== "pickupPhone" && <p className="mt-note" data-testid="manual-order-hint">{c.problems[problem]}</p>}
             <div className="mt-actions">
               {/* Both steps submit through the guarded handler: changing a clicked button's type can place before review. */}
               <button type="submit" className="primary" data-testid={reviewing ? "manual-order-submit" : undefined} disabled={(!!problem && gaps.length === 0) || mapOnly || busy || memberBusy || (!uncertain && memberProblem) || !boundary}>
@@ -357,54 +375,74 @@ function ItemPicker({ locale, store, lines, setLines }: { locale: Locale; store:
   const [pending, setPending] = useState<Line[]>([]);
   const [searching, setSearching] = useState(false);
   const [failure, setFailure] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const controller = useRef<AbortController | null>(null);
   useEffect(() => () => controller.current?.abort(), []);
   useEffect(() => { if (opened) dialog.current?.showModal(); else dialog.current?.close(); }, [opened]);
-  async function search() {
+  const quantityLimit = (sku: Variant) => Math.min(1000, sku.max_per_order ?? 1000, sku.inventory_tracked ? Math.max(0, sku.available) : 1000);
+  async function search(query: string) {
     controller.current?.abort();
     const active = new AbortController(); controller.current = active;
     setSearching(true); setFailure(false); setResults([]);
     try {
-      const page = await readProducts(store.id, q.trim(), "active", "", active.signal);
+      const page = await readProducts(store.id, query.trim(), "active", "", active.signal);
       const details = await Promise.all(page.items.map((product) => readProduct(store.id, product.id, active.signal)));
-      if (!active.signal.aborted) setResults(details);
+      if (!active.signal.aborted) {
+        setResults(details);
+        const limits = new Map(details.flatMap((product) => product.skus.map((sku) => [sku.id, quantityLimit(sku)] as const)));
+        setPending((items) => items.map((item) => ({ ...item, limit: limits.get(item.sku_id) ?? item.limit })));
+      }
     } catch { if (!active.signal.aborted) setFailure(true); }
     if (!active.signal.aborted) setSearching(false);
   }
   const close = () => { controller.current?.abort(); setOpened(false); setPending([]); };
-  const ordered = useMemo(() => lines, [lines]);
+  const overLimit = pending.some((item) => item.quantity > item.limit);
+  const quantityInput = (line: Line, items: Line[], update: (next: Line[]) => void) =>
+    <input type="number" style={{ width: "5rem", maxWidth: "100%" }} min={1} max={line.limit} step={1} aria-label={`${c.quantity} · ${line.label}`} value={line.quantity}
+      disabled={line.limit < 1}
+      onKeyDown={(event) => { if (event.key === "Enter") event.preventDefault(); }}
+      onChange={(event) => {
+        const quantity = Math.max(1, Math.min(line.limit, Math.trunc(Number(event.target.value) || 1)));
+        update(items.map((item) => item.sku_id === line.sku_id ? { ...item, quantity } : item));
+      }} />;
   return <section className="mt-card" data-testid="mo-items">
     <h2>{signed.items}</h2>
-    {ordered.length === 0 ? <p className="mt-note">{c.noLines}</p> : <ul className="mt-lines" data-testid="mo-lines">
-      {ordered.map((line) => <li key={line.sku_id}>
+    {lines.length === 0 ? <p className="mt-note">{c.noLines}</p> : <ul className="mt-lines" data-testid="mo-lines">
+      {lines.map((line) => <li key={line.sku_id}>
         <span>{line.label}<small>{line.code} · {line.price}</small></span>
-        <input type="number" min={1} max={1000} step={1} aria-label={c.quantity} value={line.quantity}
-          onChange={(e) => setLines(lines.map((item) => item.sku_id === line.sku_id ? { ...item, quantity: Math.max(1, Math.min(1000, Math.trunc(Number(e.target.value) || 1))) } : item))} />
+        {quantityInput(line, lines, setLines)}
         <button type="button" onClick={() => setLines(lines.filter((item) => item.sku_id !== line.sku_id))}>{c.remove}</button>
       </li>)}
     </ul>}
-    <button type="button" className="ops-wide" data-testid="mo-open-picker" onClick={() => { setPending([]); setOpened(true); void search(); }}>{signed.add}</button>
-    <dialog className="ops-picker" ref={dialog} aria-labelledby="mo-picker-title" onCancel={close}>
+    <button ref={trigger} type="button" className="ops-wide" data-testid="mo-open-picker" onClick={() => { setPending(lines); setQ(""); setOpened(true); void search(""); }}>{signed.add}</button>
+    <dialog className="ops-picker" ref={dialog} aria-labelledby="mo-picker-title" onClose={() => trigger.current?.focus()} onCancel={close}>
       <h2 id="mo-picker-title">{signed.picker}</h2><p>{signed.retained}</p>
       <Field id="mo-search" label={c.search}><input id="mo-search" data-testid="mo-search" value={q} maxLength={120} onChange={(e) => setQ(e.target.value)}
-        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void search(); } }} /></Field>
-      <button type="button" data-testid="mo-search-button" disabled={searching} onClick={() => void search()}>{c.searchButton}</button>
-      {searching && <p role="status">{c.loading}</p>}
-      {failure && <p role="alert">{c.unavailable}</p>}
+        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void search(q); } }} /></Field>
+      <button type="button" data-testid="mo-search-button" disabled={searching} onClick={() => void search(q)}>{c.searchButton}</button>
+      {searching && <p role="status">{catalogCopy[locale].list.loading}</p>}
+      {failure && <p role="alert">{catalogCopy[locale].list.unavailable}</p>}
       {!searching && !failure && results.length === 0 && <p>{c.noResults}</p>}
       <ul className="mt-results">{results.map((product) => <li key={product.id}><strong>{product.name}</strong><ul className="mt-variants">
         {product.skus.filter((variant) => variant.price_minor >= 0).map((variant) => {
-          const chosen = lines.some((line) => line.sku_id === variant.id), staged = pending.some((line) => line.sku_id === variant.id);
-          return <li key={variant.id}><span>{variant.title}<small>{variant.code} · {money(locale, variant.currency, variant.price_minor)} · {c.available} {variant.available}</small></span>
-            <button type="button" disabled={chosen} aria-pressed={staged} onClick={() => setPending(staged ? pending.filter((line) => line.sku_id !== variant.id) : [...pending, {
-              sku_id: variant.id, quantity: 1, label: `${product.name} · ${variant.title}`, code: variant.code, price: money(locale, variant.currency, variant.price_minor),
-            }])}>{chosen ? signed.selected : `${signed.select} ${product.name} · ${variant.title}`}</button>
+          const selected = pending.find((line) => line.sku_id === variant.id);
+          const label = `${product.name} · ${variant.title}`, price = money(locale, variant.currency, variant.price_minor);
+          const limit = quantityLimit(variant);
+          return <li key={variant.id} style={{ flexWrap: "wrap", overflowWrap: "anywhere" }}><span>{variant.title}<small>{variant.code} · {price} · {variant.inventory_tracked ? `${c.available} ${variant.available}` : signed.untracked}</small></span>
+            {selected && quantityInput(selected, pending, setPending)}
+            <button type="button" disabled={!selected && limit === 0} aria-pressed={!!selected}
+              aria-label={`${selected ? signed.deselect : signed.select} ${label}`}
+              onClick={() => setPending(selected ? pending.filter((line) => line.sku_id !== variant.id) : [...pending, {
+                sku_id: variant.id, quantity: 1, limit, label, code: variant.code, price,
+              }])}>{selected ? `✓ ${signed.selected} × ${selected.quantity} · ${signed.deselect}` : `${signed.select} ${label}`}</button>
           </li>;
         })}
       </ul></li>)}</ul>
+      <p role="status">{signed.selected} · {c.quantity} {pending.reduce((sum, line) => sum + line.quantity, 0)}</p>
+      {overLimit && <p role="alert">{signed.overLimit}</p>}
       <div className="ops-actions"><button type="button" onClick={close}>{signed.cancel}</button>
-        <button type="button" className="primary" data-testid="mo-apply-picker" disabled={pending.length === 0} onClick={() => { setLines([...lines, ...pending.filter((item) => !lines.some((line) => line.sku_id === item.sku_id))]); close(); }}>{signed.apply}</button></div>
+        <button type="button" className="primary" data-testid="mo-apply-picker" disabled={searching || overLimit || (!lines.length && !pending.length)} onClick={() => { setLines(pending); close(); }}>{signed.apply}</button></div>
     </dialog>
   </section>;
 }

@@ -105,6 +105,7 @@ test("ManualOrder bank-transfer expiry uses Taipei at the year boundary", () => 
   const { ManualOrder } = compile("apps/admin/components/ManualOrder.tsx", {
     react: hooks,
     "@/lib/customers-client": { useGuardedRead: () => ({ status: "ready", data: [] }) },
+    "@/lib/catalog-v2-copy": compile("apps/admin/lib/catalog-v2-copy.ts", {}),
     "@/lib/merchant-tools-model": { draftProblem: () => null, recipientGaps: () => [] },
     "@/lib/merchant-tools-copy": { toolsCopy: { "zh-TW": { manual: { created: "created", expires: "expires" } } } },
     "@/lib/client": { money: () => "NT$100" },

@@ -75,6 +75,8 @@ type Option struct {
 	// units. The options request has no basket, so the server cannot omit COD from a row whose total + surcharge would exceed the
 	// cap here; exposing the cap lets the storefront make that call before the buyer reaches Begin.
 	CodMaxMinor int64 `json:"cod_max_minor,omitempty"`
+	// PickupMaxMinor is the scoped offer used by manual order feedback; the buyer DTO is unchanged.
+	PickupMaxMinor int64 `json:"-"`
 }
 
 // transferOffer is checkout.read_transfer_offer: the store's bank-transfer switch, whether CVS destinations may use it, and the window.
@@ -389,6 +391,9 @@ func (s *Service) decorateCVS(ctx context.Context, tx pgx.Tx, tokenHash []byte, 
 			continue
 		}
 		option.PickupSelection = offer.selection
+		if offer.pap && offer.papMax != nil {
+			option.PickupMaxMinor = int64(*offer.papMax) * 100
+		}
 		bank := transfer.enabled && transfer.allowCVS
 		option.PaymentModes = paymentModes(!s.noCard, offer.pap && offer.papMax != nil, bank, false) // cash on delivery is home-only
 		if len(option.PaymentModes) == 0 {

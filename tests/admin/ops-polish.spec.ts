@@ -233,7 +233,7 @@ async function assertRegistryNavigation(page: Page, locale: string, liveSelected
   )).toEqual([
     "nav-group-overview", "nav-group-live",
     ...(liveSelected ? ["nav-studio", "nav-live-console", "nav-claims", "nav-live-settings"] : []),
-    "nav-orders", "nav-group-catalog",
+    "nav-orders", "nav-group-orderNew", "nav-group-catalog",
     "nav-group-marketing", "nav-group-storefront", "nav-group-finance", "nav-group-settings",
   ]);
   if (liveSelected) {
@@ -244,14 +244,14 @@ async function assertRegistryNavigation(page: Page, locale: string, liveSelected
     await expect(nav.getByTestId("nav-studio")).toHaveAttribute("aria-current", "page");
     await live.click();
     await expect(live).toHaveAttribute("aria-expanded", "false");
-    await expect(nav.locator('button[data-testid^="nav-"]')).toHaveCount(8);
+    await expect(nav.locator('button[data-testid^="nav-"]')).toHaveCount(9);
     for (const id of ["studio", "live-console", "claims", "live-settings"]) await expect(nav.getByTestId(`nav-${id}`)).toHaveCount(0);
     await live.click();
     for (const id of ["studio", "live-console", "claims", "live-settings"]) await expect(nav.getByTestId(`nav-${id}`)).toBeVisible();
   }
   await nav.getByTestId("nav-group-catalog").click();
   for (const id of ["products", "collections", "inventory"]) await expect(nav.getByTestId(`nav-${id}`)).toBeVisible();
-  await expect(nav.locator('button[data-testid^="nav-"]')).toHaveCount(11);
+  await expect(nav.locator('button[data-testid^="nav-"]')).toHaveCount(12);
   for (const id of ["nav-group-messages", "nav-group-customers", "nav-siteChat", "nav-meta", "nav-support", "nav-billing", "nav-team"]) await expect(nav.getByTestId(id)).toHaveCount(0);
   const labels = (await nav.getByRole("button").allInnerTexts()).map((s) => s.trim());
   for (const dead of removedNav[locale]) expect(labels, `nav still lists "${dead}"`).not.toContain(dead);

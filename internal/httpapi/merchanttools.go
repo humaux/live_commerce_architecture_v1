@@ -125,7 +125,7 @@ func registerMerchantToolsRoutes(mux *http.ServeMux, pool *pgxpool.Pool, manual 
 		result, replayed, err := manual.Place(ctx, bearerToken(r), r.PathValue("store_id"), r.Header.Get("Idempotency-Key"), in)
 		if err != nil {
 			status, code := toolsClassify(err)
-			respondError(w, status, code)
+			respondErrorDetails(w, err, status, code)
 			return
 		}
 		status := http.StatusCreated
