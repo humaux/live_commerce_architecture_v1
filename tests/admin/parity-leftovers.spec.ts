@@ -68,7 +68,7 @@ if (process.env.LC_BROWSER_PARITY_DENIED !== "1") test.describe("PARITY-LEFTOVER
       });
       await action(page, "選取 Synthetic item · Standard", "click", "variant staged for this draft", async () => {
         await variant.click();
-        await expect(variant).toHaveAttribute("aria-pressed", "true");
+        await expect(page.getByRole("button", { name: "取消選取 Synthetic item · Standard", pressed: true })).toBeVisible();
       });
       await action(page, "套用至本單", "click", "draft keeps one line", async () => {
         await page.getByTestId("mo-apply-picker").click();

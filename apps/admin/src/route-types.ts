@@ -3,6 +3,7 @@ export type GroupID =
   | "overview"
   | "live"
   | "orders"
+  | "orderNew"
   | "catalog"
   | "messages"
   | "customers"

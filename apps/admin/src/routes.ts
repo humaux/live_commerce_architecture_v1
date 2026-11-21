@@ -31,6 +31,7 @@ export const groups: readonly { id: GroupID; icon: string }[] = [
   { id: "overview", icon: "dashboard" },
   { id: "live", icon: "live" },
   { id: "orders", icon: "orders" },
+  { id: "orderNew", icon: "plus" },
   { id: "catalog", icon: "product" },
   { id: "messages", icon: "chat" },
   { id: "customers", icon: "support" },
