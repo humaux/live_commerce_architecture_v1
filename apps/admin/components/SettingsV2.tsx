@@ -17,6 +17,30 @@ type Screen = AmountItem | "overview" | "editor" | "review" | "saved" | "uncerta
 const chevron = <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="m9 5 7 7-7 7" stroke="currentColor" strokeWidth="1.5" /></svg>;
 const empty: SimpleDraft = { name: "", contact_email: "", contact_phone: "", enabled: {}, productName: "", price: "", stock: "" };
 
+type DeliveryEdits = Partial<Record<typeof deliveryKinds[number], { market: string | null; code: string; version: number; enabled: boolean }>>;
+type Shipping = Pick<Snapshot, "market" | "delivery">;
+function deliveryEdits(data: Shipping, draft: SimpleDraft): DeliveryEdits {
+  const edits: DeliveryEdits = {};
+  for (const { kind, service, createCode } of data.delivery) {
+    const enabled = draft.enabled[kind], code = service?.code ?? createCode;
+    if (code && typeof enabled === "boolean" && enabled !== (service?.enabled ?? false)) {
+      edits[kind] = { market: data.market?.id ?? null, code, version: service?.version ?? 0, enabled };
+    }
+  }
+  return edits;
+}
+function restoreDelivery(data: Shipping, edits: DeliveryEdits | undefined, creatingMarket: boolean) {
+  return Object.fromEntries(data.delivery.map(({ kind, service, createCode }) => {
+    const edit = edits?.[kind];
+    const sameMarket = edit?.market === (data.market?.id ?? null) || (creatingMarket && edit?.market === null && data.market?.code === "tw");
+    return [kind, edit && sameMarket && edit.code === (service?.code ?? createCode) && edit.version === (service?.version ?? 0)
+      ? edit.enabled : service?.enabled ?? false];
+  }));
+}
+function cachedDraft(data: Snapshot, draft: SimpleDraft) {
+  return JSON.stringify({ version: data.profile.version, draft, deliveryEdits: deliveryEdits(data, draft) });
+}
+
 /** A compact merchant surface over the incumbent authenticated commands. */
 export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; initial: SettingsInitial; onAdvanced: () => void }) {
   const c = settingsV2Copy[locale], store = initial.store;
@@ -39,8 +63,9 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
     pending.current = value;
   }
   function change(patch: Partial<SimpleDraft>) {
+    if (!data) return;
     const next = { ...draft, ...patch };
-    try { sessionStorage.setItem(key.current, JSON.stringify({ version: data?.profile.version, draft: next })); setDraft(next); }
+    try { sessionStorage.setItem(key.current, cachedDraft(data, next)); setDraft(next); }
     catch { setScreen("failed"); setNotice(c.retained); }
   }
   async function load(discardDraft = false) {
@@ -75,13 +100,20 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
       let next = draftOf(fresh);
       const cached = sessionStorage.getItem(key.current);
       if ((!discardDraft || skuCommand || initialStock || deliveryCommand) && cached) {
-        const saved = JSON.parse(cached) as { version: number; draft: SimpleDraft };
+        const saved = JSON.parse(cached) as { version: number; draft: SimpleDraft; deliveryEdits?: DeliveryEdits };
         const d = saved.draft;
-        if (saved.version === fresh.profile.version && d &&
+        if (d &&
             [d.name, d.contact_email, d.contact_phone, d.productName, d.price, d.stock].every(s => typeof s === "string" && s.length <= 254) &&
             d.enabled && Object.entries(d.enabled).every(([k, v]) => deliveryKinds.includes(k as typeof deliveryKinds[number]) && typeof v === "boolean")) {
-          next = skuCommand || initialStock ? { ...next, productName: d.productName, price: d.price, stock: d.stock }
-            : discardDraft && deliveryCommand ? { ...next, enabled: d.enabled } : d;
+          if (skuCommand || initialStock) {
+            if (saved.version !== fresh.profile.version) throw new Error("sku_draft_shape");
+            next = { ...next, productName: d.productName, price: d.price, stock: d.stock };
+          } else {
+            // Legacy drafts lack service versions. Restore only a still-uncreated choice owned by a pending creation.
+            const edits = saved.deliveryEdits ?? (deliveryCommand ? deliveryEdits({ ...fresh, delivery: fresh.delivery.filter(row => !row.service) }, d) : {});
+            const enabled = restoreDelivery(fresh, edits, command?.resource === "markets");
+            next = { ...(!discardDraft && saved.version === fresh.profile.version ? d : next), enabled };
+          }
         } else if (skuCommand || initialStock) throw new Error("sku_draft_shape");
       }
       if (skuCommand) {
@@ -117,7 +149,7 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
         next = { ...next, stock: String(original.delta) };
       }
       setData(fresh); setDraft(next); setScreen("overview");
-      sessionStorage.setItem(key.current, JSON.stringify({ version: fresh.profile.version, draft: next }));
+      sessionStorage.setItem(key.current, cachedDraft(fresh, next));
     } catch { if (active.current && at === generation.current) setScreen("uncertain"); }
     finally { if (active.current && at === generation.current) setLoading(false); }
   }
@@ -144,10 +176,13 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
         const resource = pending.current?.resource;
         const pendingDelivery = resource === "markets" || resource?.startsWith("markets/");
         if (resource && !fromQuickstart && !(section === "profile" ? resource === "profile" : pendingDelivery)) throw new SaveFailure(true, false);
+        let desired = draft.enabled;
         if (pending.current && pendingDelivery) {
+          const edits = deliveryEdits(data, draft);
           const original = pending.current;
           await send(original.resource, original.method, JSON.parse(original.body));
           const fresh = await readDelivery(store.id, currency);
+          desired = restoreDelivery(fresh, edits, original.resource === "markets");
           data.market = fresh.market; data.createMarket = fresh.createMarket; data.delivery = fresh.delivery;
         }
         if (section !== "delivery") {
@@ -161,16 +196,17 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
             const saved = parseProfile(await send<Profile>("profile", "PUT", profile));
             if (saved.name !== profile.name || saved.contact_email !== profile.contact_email || saved.contact_phone !== profile.contact_phone || saved.version !== profile.expected_version + 1) throw new SaveFailure(true, changed);
             data.profile = saved;
-            sessionStorage.setItem(key.current, JSON.stringify({ version: saved.version, draft }));
+            sessionStorage.setItem(key.current, cachedDraft(data, draft));
           }
         }
         if (section !== "profile") {
-          if (data.createMarket && data.delivery.some(d => draft.enabled[d.kind] && d.createCode)) {
+          if (data.createMarket && data.delivery.some(d => desired[d.kind] && d.createCode)) {
             data.market = await send<Market>("markets", "POST", { code: "tw", name: "台灣", currency });
             data.createMarket = false;
+            sessionStorage.setItem(key.current, cachedDraft(data, { ...draft, enabled: desired }));
           }
           for (const [index, d] of data.delivery.entries()) {
-            if (!d.service && draft.enabled[d.kind]) {
+            if (!d.service && desired[d.kind]) {
               if (!d.createCode || !data.market) throw new SaveFailure(false, changed);
               const path = `markets/${data.market.id}/countries/TW/delivery-services/${d.createCode}`;
               const policy = d.policy ?? await send<Policy>(`${path}/policy`, "PUT", {
@@ -188,8 +224,8 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
                 delivery_kind: d.kind, mode: "MANUAL", enabled: true, visible: true, sort_order: index,
               });
             }
-            if (!d.service || d.service.enabled === draft.enabled[d.kind]) continue;
-            const service = d.service, enabled = !!draft.enabled[d.kind];
+            if (!d.service || d.service.enabled === desired[d.kind]) continue;
+            const service = d.service, enabled = !!desired[d.kind];
             const saved = await send<typeof service>(`markets/${service.market_id}/countries/TW/delivery-services/${service.code}`, "PUT", serviceInput(service, enabled));
             if (saved.code !== service.code || saved.enabled !== enabled || saved.version !== service.version + 1) throw new SaveFailure(true, changed);
             d.service = saved;
@@ -200,7 +236,7 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
           const price = toMinor(draft.price, currency), stock = Number(draft.stock);
           if (price === null || !Number.isSafeInteger(stock) || stock < 0) throw new SaveFailure(false, changed);
           const retainInitialStock = (productID: string) => {
-            sessionStorage.setItem(key.current, JSON.stringify({ version: data.profile.version, draft }));
+            sessionStorage.setItem(key.current, cachedDraft(data, draft));
             sessionStorage.setItem(`${key.current}:initial-stock`, JSON.stringify({ product_id: productID, code: `setup-${productID}`,
               price_minor: price, currency, warehouse_id: data.warehouses[0].id, quantity: stock }));
           };
@@ -233,8 +269,10 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
         if (!fromQuickstart) {
           if (!active.current || scope.current !== await sessionBoundary()) throw new SaveFailure(false, changed, true);
           // Keep the other section's draft paired with its original baseline.
-          if (sessionStorage.getItem(`${key.current}:initial-stock`) || JSON.stringify(draft) !== JSON.stringify(draftOf(data))) {
-            sessionStorage.setItem(key.current, JSON.stringify({ version: data.profile.version, draft }));
+          const remaining = { ...draft, enabled: desired };
+          setDraft(remaining);
+          if (sessionStorage.getItem(`${key.current}:initial-stock`) || JSON.stringify(remaining) !== JSON.stringify(draftOf(data))) {
+            sessionStorage.setItem(key.current, cachedDraft(data, remaining));
           } else sessionStorage.removeItem(key.current);
           setData({ ...data }); setScreen("saved");
           return;
@@ -250,7 +288,7 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
         if (sessionStorage.getItem(`${key.current}:initial-stock`)) {
           // Keep an outstanding stock intent paired with its quantity-bearing draft.
           next = { ...next, productName: draft.productName, price: draft.price, stock: draft.stock };
-          sessionStorage.setItem(key.current, JSON.stringify({ version: fresh.profile.version, draft: next }));
+          sessionStorage.setItem(key.current, cachedDraft(fresh, next));
         } else sessionStorage.removeItem(key.current);
         setData(fresh); setDraft(next); setScreen("saved");
       });

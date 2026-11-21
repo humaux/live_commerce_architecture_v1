@@ -1017,7 +1017,7 @@ async function deliverySwitches(page: Page, store: string, path: string) {
   }));
   const writes: string[] = [];
   const pattern = `**/api/stores/${store}/markets**`;
-  await page.route(pattern, async route => {
+  const deliveryRoute = async (route: import("@playwright/test").Route) => {
     const request = route.request(), url = new URL(request.url());
     const suffix = url.pathname.split(`/api/stores/${store}/`)[1];
     const reply = (body: unknown) => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
@@ -1031,13 +1031,14 @@ async function deliverySwitches(page: Page, store: string, path: string) {
     const input = request.postDataJSON();
     for (const key of ["market_id", "country", "code", "policy_version", "name_hans", "name_hant", "name_en", "delivery_kind", "mode", "visible", "sort_order"] as const) expect(input[key], `${service.code}: preserve ${key}`).toEqual(service[key]);
     expect(input.expected_version).toBe(service.version);
-    expect(input.enabled).toBe(true);
+    expect(typeof input.enabled).toBe("boolean");
     expect(request.headers()["idempotency-key"]).toBeTruthy();
     writes.push(service.code);
-    service.enabled = true;
+    service.enabled = input.enabled;
     service.version++;
     return reply(service);
-  });
+  };
+  await page.route(pattern, deliveryRoute);
   try {
     await page.goto(path);
     await page.getByTestId("settings-v2-overview").getByRole("button", { name: /^Store details ·/ }).click();
@@ -1070,6 +1071,41 @@ async function deliverySwitches(page: Page, store: string, path: string) {
     await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
     await page.getByRole("button", { name: /^Delivery methods ·/ }).click();
     for (const [, , label] of methods) await expect(page.getByRole("checkbox", { name: label, exact: true })).toBeChecked();
+    // Two tabs share server revisions, each with its own unsent draft and real controls.
+    const otherPage = await page.context().newPage();
+    const profilePattern = `**/api/stores/${store}/profile`;
+    let updatedProfile: Record<string, unknown> | undefined;
+    await page.route(profilePattern, async route => {
+      if (route.request().method() === "PUT") {
+        const { expected_version, ...fields } = route.request().postDataJSON();
+        updatedProfile = { ...fields, version: expected_version + 1 };
+      }
+      return updatedProfile ? route.fulfill({ json: updatedProfile }) : route.continue();
+    });
+    try {
+      await otherPage.route(pattern, deliveryRoute);
+      await page.getByRole("checkbox", { name: "Home delivery", exact: true }).uncheck();
+      await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
+      await otherPage.goto(path);
+      await otherPage.getByRole("button", { name: /^Delivery methods ·/ }).click();
+      await otherPage.getByRole("checkbox", { name: "FamilyMart", exact: true }).uncheck();
+      await otherPage.getByRole("button", { name: "Review settings", exact: true }).click();
+      await otherPage.getByRole("button", { name: "Save settings", exact: true }).click();
+      await expect(otherPage.getByRole("heading", { name: "Settings saved", exact: true })).toBeVisible();
+      await page.getByRole("button", { name: /^Store details ·/ }).click();
+      await page.getByLabel("Email", { exact: true }).fill("two-tab@example.test");
+      await page.getByRole("button", { name: "Review settings", exact: true }).click();
+      await page.getByRole("button", { name: "Save settings", exact: true }).click();
+      await expect(page.getByRole("heading", { name: "Settings saved", exact: true })).toBeVisible();
+      await page.reload();
+      await page.getByRole("button", { name: /^Delivery methods ·/ }).click();
+      await expect(page.getByRole("checkbox", { name: "Home delivery", exact: true })).not.toBeChecked();
+      await expect(page.getByRole("checkbox", { name: "FamilyMart", exact: true }), "retain the other admin's committed toggle").not.toBeChecked();
+      await page.getByRole("button", { name: "Review settings", exact: true }).click();
+      await page.getByRole("button", { name: "Save settings", exact: true }).click();
+      await expect(page.getByRole("heading", { name: "Settings saved", exact: true })).toBeVisible();
+      expect(writes.slice(methods.length)).toEqual(["manual_family", "manual_home"]);
+    } finally { await otherPage.close(); await page.unroute(profilePattern); }
   } finally {
     await page.unroute(pattern);
   }

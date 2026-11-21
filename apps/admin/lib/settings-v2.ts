@@ -157,6 +157,11 @@ export function validReceipt(resource: string, sent: Record<string, unknown>, va
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const saved = value as Record<string, unknown>;
   const uuid = (v: unknown) => typeof v === "string" && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(v);
+  if (resource.endsWith("/flat-fee")) {
+    return resource === `markets/${saved.market_id}/countries/${saved.country}/delivery-services/${saved.code}/flat-fee` &&
+      saved.shipping_minor === sent.shipping_minor && saved.service_version === Number(sent.expected_service_version) + 1 &&
+      saved.policy_version === Number(sent.expected_policy_version) + 1;
+  }
   if (resource === "logistics/cvs-settings") {
     const chains = saved.enabled_chains;
     return saved.version === Number(sent.expected_version) + 1 && Array.isArray(chains) && Array.isArray(sent.enabled_chains) &&

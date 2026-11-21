@@ -249,8 +249,8 @@ func runBrowserIdentityChain(t *testing.T, wizard bool) {
 		 (SELECT count(*) FROM ops.command_results c WHERE c.tenant_id=s.tenant_id AND c.operation='pricing.market.create')
 		 FROM identity.initial_stores s JOIN identity.external_identities e ON e.principal_id=s.principal_id
 		 WHERE e.issuer=$1 AND e.subject='browser-subject'`, idp.server.URL).Scan(&markets, &policies, &services, &commands)
-		// services: the wizard's initial "home" version, the concurrent editor's version and one deduplicated lost-reply replay.
-		if err != nil || markets != 1 || policies != 1 || services != 3 || commands != 1 {
+		// The final settings fee edit adds exactly one policy and its bound service revision.
+		if err != nil || markets != 1 || policies != 2 || services != 4 || commands != 1 {
 			t.Fatalf("wizard fresh setup persistence: markets=%d policies=%d services=%d market_commands=%d err=%v", markets, policies, services, commands, err)
 		}
 		// Stale-draft + lost-reply proof moved with the spec (settings-real.spec.ts) from the removed PAYUNi method form to the

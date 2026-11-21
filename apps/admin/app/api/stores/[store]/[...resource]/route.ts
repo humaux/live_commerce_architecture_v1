@@ -52,6 +52,7 @@ const inspect = `markets/${uuid}/countries/[A-Z]{2}/payment-methods/[a-z][a-z0-9
 const deliveryCollection = `markets/${uuid}/countries/[A-Z]{2}/delivery-services`;
 const paymentCollection = `markets/${uuid}/countries/TW/payment-methods`;
 const policy = `${deliveryCollection}/[a-z][a-z0-9_-]{0,39}/policy`;
+const flatFee = `${deliveryCollection}/[a-z][a-z0-9_-]{0,39}/flat-fee`;
 const purchaseEntry = `products/${uuid}/purchase-entry`;
 // catalog-media CM3: product photos -> Go internal/httpapi/images.go. Exactly these five resources, nothing generic.
 const imagesRoot = `products/${uuid}/images`;
@@ -96,12 +97,12 @@ const routes: Record<string, RegExp> = {
   ),
   PATCH: new RegExp(`^(products/${uuid}|${collectionItem}|skus/${uuid}|${studioDetail}|${claimsRoutes.PATCH})$`),
   // Studio PUT is only the comment-source bind (claims-request.ts); settings PUTs are the rest.
-  PUT: new RegExp(`^(products/${uuid}/document|${setting}|${policy}|${designPutPaths}|${collectionItem}/products|${claimsRoutes.PUT}|${adsRoutes.PUT}|payments/card)$`),
+  PUT: new RegExp(`^(products/${uuid}/document|${setting}|${policy}|${flatFee}|${designPutPaths}|${collectionItem}/products|${claimsRoutes.PUT}|${adsRoutes.PUT}|payments/card)$`),
 };
 const exactStore = new RegExp(`^${uuid}$`);
 const inspectRoute = new RegExp(`^${inspect}$`);
 const discoveryRoute = new RegExp(
-  `^(markets|${deliveryCollection}|${paymentCollection}|${policy})$`,
+  `^(markets|${deliveryCollection}|${paymentCollection}|${policy}|${flatFee})$`,
 );
 const pagedSettingsRoute = new RegExp(`^(markets|${deliveryCollection})$`);
 const purchaseEntryRoute = new RegExp(`^${purchaseEntry}$`);

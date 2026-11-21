@@ -1,6 +1,6 @@
 // Purpose: Edit one CVS pickup cap or one Taiwanese delivery service's flat fee.
 // Depends on: existing versioned settings APIs, logistics model, money format and settings-v2 command receipts.
-// Used by: SettingsV2. An explicit save owns its original amounts, versions and keys through reload and partial delivery.
+// Used by: SettingsV2. An explicit save owns its original amounts, versions and keys through reload and explicit replay.
 "use client";
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
@@ -11,11 +11,11 @@ import { logisticsCopy } from "@/lib/logistics-copy";
 import type { Page } from "@/lib/model";
 import { readSettings, sessionBoundary } from "@/lib/settings-client";
 import type { Market, Policy, Service } from "@/lib/settings-model";
-import { execute, validReceipt, SaveFailure, serviceInput, type Journal } from "@/lib/settings-v2";
+import { execute, SaveFailure, type Journal } from "@/lib/settings-v2";
 
 export type AmountItem = "pickupLimit" | "shippingFee";
 type Fee = { service: Service; policy: Policy };
-type Intent = { amount: string; commands: Journal[]; index: number; bindingRejected?: boolean };
+type Intent = { amount: string; command: Journal };
 const pickup = "logistics/cvs-settings";
 
 async function list<T>(store: string, resource: string) {
@@ -75,9 +75,9 @@ export function SettingsAmountEditor({ store, locale, item, onBack, onBusy }: {
       const cached = localStorage.getItem(`commerce-settings-amount:${store}:${boundary}:${path}`);
       const plan: Intent | null = cached ? JSON.parse(cached) : null;
       if (plan) {
-        const paths = item === "pickupLimit" ? [pickup] : [path + "/policy", path];
-        if (plan.commands.length !== paths.length || !Number.isInteger(plan.index) || !paths[plan.index] ||
-            typeof plan.amount !== "string" || !plan.commands.every((cmd, i) => cmd.resource === paths[i] && cmd.method === "PUT" && typeof cmd.body === "string" && /^[0-9a-f-]{36}$/.test(cmd.key))) throw new Error("intent");
+        const cmd = plan.command;
+        if (typeof plan.amount !== "string" || !cmd || cmd.resource !== (item === "pickupLimit" ? pickup : path + "/flat-fee") ||
+            cmd.method !== "PUT" || typeof cmd.body !== "string" || !/^[0-9a-f-]{36}$/.test(cmd.key)) throw new Error("intent");
       }
       if (item === "pickupLimit") {
         const value = parseCvsSettings(await readSettings(store, path));
@@ -96,7 +96,7 @@ export function SettingsAmountEditor({ store, locale, item, onBack, onBusy }: {
             policy.enabled !== true || !Number.isSafeInteger(service.version) || service.version < 1 || typeof service.enabled !== "boolean" ||
             typeof service.visible !== "boolean" || !Number.isSafeInteger(service.sort_order) ||
             ![service.name_hans, service.name_hant, service.name_en].every(n => typeof n === "string" && n.trim()) ||
-            (!plan && policy.version !== service.policy_version)) throw new Error("fee_baseline");
+            policy.version !== service.policy_version) throw new Error("fee_baseline");
         if (boundary !== await sessionBoundary()) throw new Error("session");
         if (!active) return;
         setFee({ service, policy }); setAmount(plan?.amount ?? fromMinor(policy.shipping_minor, policy.currency));
@@ -117,53 +117,33 @@ export function SettingsAmountEditor({ store, locale, item, onBack, onBusy }: {
       await navigator.locks.request(`settings-v2:${store}:${scope}`, { ifAvailable: true }, async lock => {
         if (!lock || scope !== await sessionBoundary() || sessionStorage.getItem(`commerce-settings-v2:${store}:${scope}:command`) || localStorage.getItem(key) !== (intent && JSON.stringify(intent))) throw new Error("stale");
         if (!plan) {
-          let commands: Journal[];
+          let cmd: Journal;
           if (cvs) {
             const body = cvsSettingsBody({ expectedVersion: cvs.version, chains: cvs.enabled_chains, payAtPickup: cvs.pay_at_pickup_enabled, maxTWD: amount, maxOpen: String(cvs.pay_at_pickup_max_open) });
             if (!body) { setProblem(logisticsCopy[locale].cvsInvalid); return; }
-            commands = [command(pickup, { ...body, enabled_chains: cvs.enabled_chains })];
+            cmd = command(pickup, { ...body, enabled_chains: cvs.enabled_chains });
           } else if (fee) {
-            const { service, policy } = fee, minor = toMinor(amount, policy.currency);
+            const minor = toMinor(amount, fee.policy.currency);
             if (minor === null) { setProblem(c.invalidFee); return; }
-            const { version, free_shipping_threshold_minor } = policy;
-            commands = [command(path + "/policy", { market_id: policy.market_id, country: policy.country, method: policy.method, currency: policy.currency,
-              shipping_mode: policy.shipping_mode, tax_basis: policy.tax_basis, tax_mode: policy.tax_mode, tax_rate_bps: policy.tax_rate_bps,
-              quote_ttl_seconds: policy.quote_ttl_seconds, enabled: policy.enabled, ...(free_shipping_threshold_minor == null ? {} : { free_shipping_threshold_minor }),
-              shipping_minor: minor, expected_version: version, configuration_ref: c.shippingFee }),
-              command(path, { ...serviceInput(service, service.enabled), policy_version: version + 1 })];
+            cmd = command(path + "/flat-fee", { shipping_minor: minor, expected_policy_version: fee.policy.version, expected_service_version: fee.service.version });
           } else return;
-          plan = { amount, commands, index: 0 };
+          plan = { amount, command: cmd };
         }
-        if (plan.bindingRejected && fee) {
-          // The service rejected the old CAS. On explicit confirmation, preserve the freshly read service's other fields.
-          const intended = JSON.parse(plan.commands[0].body);
-          if (!validReceipt(path + "/policy", intended, fee.policy)) throw new Error("policy_changed");
-          plan = { ...plan, bindingRejected: false, commands: [plan.commands[0],
-            command(path, { ...serviceInput(fee.service, fee.service.enabled), policy_version: fee.policy.version })] };
-        }
-        // Persist the complete two-command intent *before* the policy PUT. A lost response or a tab close cannot lose the required service binding.
         localStorage.setItem(key, JSON.stringify(plan)); setIntent(plan);
+        const cmd = plan.command;
         try {
-          while (plan.index < plan.commands.length) {
-            if (!mounted.current || scope !== await sessionBoundary()) throw new Error("session");
-            const cmd = plan.commands[plan.index];
-            await execute(store, scope, cmd.resource, "PUT", JSON.parse(cmd.body), cmd, () => {});
-            if (plan.index + 1 === plan.commands.length) break;
-            plan = { ...plan, index: plan.index + 1 };
-            localStorage.setItem(key, JSON.stringify(plan)); if (mounted.current) setIntent(plan);
-          }
+          await execute(store, scope, cmd.resource, "PUT", JSON.parse(cmd.body), cmd, () => {});
         } catch (error) {
           if (!(error instanceof SaveFailure) || error.uncertain || error.session) throw error;
-          if (plan.index === 0) localStorage.removeItem(key);
-          else localStorage.setItem(key, JSON.stringify({ ...plan, bindingRejected: true }));
-          if (mounted.current) { setNotice(plan.index ? c.partial : c.failed); setReload(n => n + 1); }
+          localStorage.removeItem(key);
+          if (mounted.current) { setNotice(c.failed); setReload(n => n + 1); }
           return;
         }
         localStorage.removeItem(key);
         if (mounted.current && scope === await sessionBoundary()) { setIntent(null); setNotice(c.saved); setReload(n => n + 1); }
       });
     } catch {
-      if (mounted.current) setProblem(plan?.index ? c.partial : plan ? c.pending : c.reloadHelp);
+      if (mounted.current) setProblem(plan ? c.pending : c.reloadHelp);
     } finally { writing.current = false; if (mounted.current) { setBusy(false); onBusy(false); } }
   }
 
@@ -180,7 +160,7 @@ export function SettingsAmountEditor({ store, locale, item, onBack, onBusy }: {
         <input required inputMode={cvs || fee?.policy.currency === "TWD" ? "numeric" : "decimal"} value={amount}
           disabled={busy || !!intent} onChange={e => { setAmount(e.target.value); setNotice(""); }} /></label>
       <button className="settings-v2-primary" disabled={busy || (!intent && unchanged)}>
-        {intent && !intent.bindingRejected ? logisticsCopy[locale].retrySame : c.save}</button>
+        {intent ? logisticsCopy[locale].retrySame : c.save}</button>
     </form>}
     {problem && <p role="alert">{problem} <button type="button" disabled={busy} onClick={() => setReload(n => n + 1)}>{c.reload}</button></p>}
     {notice && <p role="status">{notice}</p>}

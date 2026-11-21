@@ -86,8 +86,19 @@ func GetDeliveryPolicy(ctx context.Context, tx pgx.Tx, scope platform.Scope, tok
 	if !exists {
 		return Policy{}, command.ErrNotFound
 	}
+	out, err := readPolicy(ctx, tx, scope, marketID, country, method)
+	if err != nil {
+		return Policy{}, err
+	}
+	if err := platform.RequirePermission(ctx, tx, scope, token, "pricing:read"); err != nil {
+		return Policy{}, err
+	}
+	return out, nil
+}
+
+func readPolicy(ctx context.Context, tx pgx.Tx, scope platform.Scope, marketID, country, method string) (Policy, error) {
 	var out Policy
-	err = tx.QueryRow(ctx, `SELECT v.market_id::text,v.country,v.method,v.currency,v.shipping_mode,v.tax_mode,v.tax_basis,
+	err := tx.QueryRow(ctx, `SELECT v.market_id::text,v.country,v.method,v.currency,v.shipping_mode,v.tax_mode,v.tax_basis,
 		v.version,v.shipping_minor,v.tax_rate_bps,v.quote_ttl_seconds,v.enabled,v.free_shipping_threshold_minor
 		FROM pricing.policy_heads h JOIN pricing.policy_versions v
 		ON (v.tenant_id,v.store_id,v.market_id,v.country,v.method,v.version)=
@@ -99,8 +110,23 @@ func GetDeliveryPolicy(ctx context.Context, tx pgx.Tx, scope platform.Scope, tok
 	if err != nil {
 		return Policy{}, mapError(err)
 	}
-	if err := platform.RequirePermission(ctx, tx, scope, token, "pricing:read"); err != nil {
+	return out, nil
+}
+
+// SetFlatFee revises only the amount of an existing delivery policy in the caller's transaction.
+func SetFlatFee(ctx context.Context, tx pgx.Tx, scope platform.Scope, key, marketID, country, code string, expected, amount int64) (Policy, error) {
+	method, err := DeliveryMethod(code)
+	if err != nil {
 		return Policy{}, err
 	}
-	return out, nil
+	p, err := readPolicy(ctx, tx, scope, marketID, country, method)
+	if err != nil {
+		return Policy{}, err
+	}
+	if p.Version != expected || !p.Enabled || p.ShippingMode != "country_flat" {
+		return Policy{}, command.ErrConflict
+	}
+	return SetPolicy(ctx, tx, scope, key, PolicyInput{MarketID: marketID, Country: country, Method: method, Currency: p.Currency,
+		ExpectedVersion: expected, ShippingMode: p.ShippingMode, ShippingMinor: &amount, FreeShippingThresholdMinor: p.FreeShippingThresholdMinor,
+		TaxMode: p.TaxMode, TaxBasis: p.TaxBasis, TaxRateBPS: &p.TaxRateBPS, QuoteTTLSeconds: p.QuoteTTLSeconds, Enabled: p.Enabled, ConfigurationRef: "merchant flat fee"})
 }
