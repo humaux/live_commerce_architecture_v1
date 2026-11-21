@@ -141,6 +141,7 @@ type ManualOption struct {
 	CodSurchargeMinor int64  `json:"cod_surcharge_minor,omitempty"`
 	CodCarrier        string `json:"cod_carrier,omitempty"`
 	CodMaxMinor       int64  `json:"cod_max_minor,omitempty"`
+	PickupMaxMinor    int64  `json:"pickup_max_minor,omitempty"`
 }
 
 // manualReceipt is what the command receipt keeps. It never holds the capability: the link is re-derived from the Idempotency-Key.
@@ -348,7 +349,7 @@ func (m *ManualOrders) options(ctx context.Context, capability, storeID string) 
 			out = append(out, ManualOption{OptionKey: o.MarketID + "|" + o.Country + "|" + o.DeliveryCode, MarketID: o.MarketID, Country: o.Country,
 				DeliveryCode: o.DeliveryCode, DeliveryKind: o.DeliveryKind, Mode: o.Mode, NameHans: o.NameHans, NameHant: o.NameHant, NameEN: o.NameEN,
 				Currency: o.Currency, ServiceVersion: o.ServiceVersion, AllocationVersion: o.AllocationVersion, PaymentModes: modes, PickupSelection: selection,
-				CodSurchargeMinor: o.CodSurchargeMinor, CodCarrier: o.CodCarrier, CodMaxMinor: o.CodMaxMinor})
+				CodSurchargeMinor: o.CodSurchargeMinor, CodCarrier: o.CodCarrier, CodMaxMinor: o.CodMaxMinor, PickupMaxMinor: o.PickupMaxMinor})
 		}
 		if got.NextCursor == "" {
 			return out, nil
@@ -634,6 +635,10 @@ func (m *ManualOrders) pipeline(ctx context.Context, token, capability, storeID,
 		CartVersion: cart.Version, ServiceVersion: option.ServiceVersion, AllocationVersion: option.AllocationVersion, PaymentMode: in.PaymentMode,
 		BuyerEmail: in.Customer.Email})
 	if err != nil {
+		var refused *fulfillment.CVSError
+		if errors.As(err, &refused) && refused.Code == "pay_at_pickup_amount_exceeds" && quote.Currency == "TWD" && option.PickupMaxMinor > 0 {
+			return zero, &pickupAmountRefusal{ErrorCode: &Error{Status: refused.Status, Code: refused.Code}, amount: quote.Amount, max: option.PickupMaxMinor}
+		}
 		return zero, err
 	}
 	return manualReceipt{OrderID: placed.OrderID, CommercialState: placed.CommercialState, PaymentMode: placed.PaymentMode,
@@ -641,13 +646,26 @@ func (m *ManualOrders) pipeline(ctx context.Context, token, capability, storeID,
 }
 
 // classifyPipeline turns any pipeline failure into a coded refusal; nothing from a driver or a buyer-side error text escapes.
+// pickupAmountRefusal carries only the server quote and the cap read for this attempt.
+type pickupAmountRefusal struct {
+	ErrorCode *Error
+	amount    pricing.Calculation
+	max       int64
+}
+
+func (e *pickupAmountRefusal) Error() string { return e.ErrorCode.Error() }
+func (e *pickupAmountRefusal) Unwrap() error { return e.ErrorCode }
+func (e *pickupAmountRefusal) ErrorDetails() map[string]any {
+	return map[string]any{"subtotal_minor": e.amount.SubtotalMinor, "shipping_minor": e.amount.ShippingMinor, "total_minor": e.amount.TotalMinor, "max_minor": e.max}
+}
+
 func classifyPipeline(ctx context.Context, err error) error {
 	var coded *Error
 	var cvs *fulfillment.CVSError
 	var discount *pricing.DiscountError
 	switch {
 	case errors.As(err, &coded):
-		return coded
+		return err
 	case errors.As(err, &discount):
 		return &Error{Status: 422, Code: discount.Code}
 	case errors.As(err, &cvs):

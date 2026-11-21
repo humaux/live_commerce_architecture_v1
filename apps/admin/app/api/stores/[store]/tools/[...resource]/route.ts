@@ -17,10 +17,11 @@ import {
   requireCSRF,
   requireOrigin,
   safeError,
+  safeJSON,
   sessionToken,
 } from "@/lib/auth";
 import { fixtureSession } from "@/lib/backend";
-import { MAX_CSV_BYTES, parseImportResult, toolsRoute, validManualBody, validRegenerateBody, type ToolsRoute } from "@/lib/merchant-tools-model";
+import { MAX_CSV_BYTES, parseImportResult, parsePickupRefusal, toolsRoute, validManualBody, validRegenerateBody, type ToolsRoute } from "@/lib/merchant-tools-model";
 import { trackingRoute, validTrackingQuery, parseTrackingPreview, parseTrackingCommit, type TrackingRoute } from "@/lib/tracking-import-model";
 
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
@@ -199,6 +200,15 @@ async function route(request: Request, context: Context) {
       }
     }
     return safeError(new Response(text, { status: response.status, headers: response.headers }));
+  }
+  if (kind === "manual-place" && response.status === 422) {
+    const value = await safeJSON<{ code?: unknown; details?: unknown }>(response.clone());
+    if (value?.code === "pay_at_pickup_amount_exceeds") {
+      const denied = localError(422, value.code);
+      const details = parsePickupRefusal(value.details);
+      if (!details) return denied;
+      return Response.json({ ...await denied.json(), details }, { status: 422, headers: denied.headers });
+    }
   }
   if (!response.ok) return safeError(response);
   return new Response(response.body, {

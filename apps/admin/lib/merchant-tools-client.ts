@@ -5,9 +5,9 @@
 // file (import: idempotent by file hash), so a repeat can only replay.
 import { csrfCookie, safeError, sessionBoundary } from "./settings-client";
 import { get } from "./customers-client";
-import { parseDashboard, parseImportResult, parseManualOptions, parseManualResult, parseRegenerateResult, type Dashboard, type ImportResult, type ManualOption, type ManualResult, type RegenerateResult } from "./merchant-tools-model";
+import { parsePickupRefusal, parseDashboard, parseImportResult, parseManualOptions, parseManualResult, parseRegenerateResult, type Dashboard, type ImportResult, type ManualOption, type ManualResult, type RegenerateResult } from "./merchant-tools-model";
 
-export type Outcome<T> = { ok: true; value: T; status: number } | { ok: false; code: string; uncertain: boolean; status: number };
+export type Outcome<T> = { ok: true; value: T; status: number } | { ok: false; code: string; uncertain: boolean; status: number; pickupAmount?: NonNullable<ReturnType<typeof parsePickupRefusal>> };
 const base = (store: string) => `/api/stores/${store}/tools`;
 
 export const readDashboard = (store: string, signal: AbortSignal): Promise<Dashboard> => get(`${base(store)}/dashboard`, parseDashboard, signal);
@@ -34,7 +34,12 @@ async function write<T>(url: string, init: { headers: Record<string, string>; bo
       signal: AbortSignal.timeout(timeoutMs),
     });
     const value: unknown = await response.json().catch(() => null);
-    if (!accept(response.status)) return { ok: false, code: safeError(value).code, uncertain: response.status >= 500, status: response.status };
+    if (!accept(response.status)) {
+      const code = safeError(value).code;
+      const details = code === "pay_at_pickup_amount_exceeds" && response.status === 422
+        ? parsePickupRefusal((value as { details?: unknown } | null)?.details) : null;
+      return { ok: false, code, uncertain: response.status >= 500, status: response.status, ...(details ? { pickupAmount: details } : {}) };
+    }
     try {
       return { ok: true, value: parse(value), status: response.status };
     } catch {
