@@ -1,6 +1,7 @@
 // Purpose: Page scoped markets, read delivery policies and revise the flat fee of an existing policy.
 // Depends on: pricing market and policy tables, scoped PG transactions, platform grants and SetPolicy CAS.
 // Used by: HTTP settings discovery and fulfillment.SetFlatFee.
+
 package pricing
 
 import (
