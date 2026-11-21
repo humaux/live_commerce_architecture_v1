@@ -7,7 +7,7 @@ export { shippingCopy } from './shipping.ts';
 export { stateRecoveryCopy, adminSignedStateCopy, buyerSignedStateCopy } from './state-recovery.ts';
 export { cvsPickerCopy } from './cvs-picker.ts';
 export { orderOpsCopy } from './order-ops.ts';
-export { entryParityCopy } from './entry-parity.ts';
+export { entryParityCopy, deliveryOptionGroups } from './entry-parity.ts';
 export { editorCopy } from './editor.ts';
 export { liveSessionsCopy } from './live-sessions.ts';
 export { domainsParityCopy, type DomainsParityCopy } from './domains-parity.ts';
