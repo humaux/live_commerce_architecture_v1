@@ -1,8 +1,8 @@
 // Unit tests of the gates.yml matrix planner (scripts/dev/ci-plan.mjs): sweep / visual-lint / foundation-shards fan out completely, plain modes pass through, an explicit single
 // shard re-run does NOT ask for the whole-run aggregate, and artifact names are unique; CI-SPEED: build-once consumers and the `required` script. Run by scripts/dev/test-node.sh.
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -84,7 +84,7 @@ test("CI-SPEED: gates.yml builds once, restores only same-run prebuilt output, a
   assert.match(gate, /contains\(fromJSON\(needs\.plan\.outputs\.prebuilt_modes\), matrix\.mode\)/);
   assert.match(gate, /env\.EXTRA_ENV == ''/, "fault-injection dispatches build their own");
   assert.match(gate, /node scripts\/dev\/prebuilt\.mjs unpack "\$RUNNER_TEMP\/prebuilt" gocache\n\s+echo "LC_PREBUILT_DIR=\$RUNNER_TEMP\/prebuilt" >> "\$GITHUB_ENV"/);
-  assert.match(required, /needs: \[plan, build, gate, aggregate, deploy, receipts\]/);
+  assert.match(required, /needs: \[plan, build, gate, aggregate, deploy, receipts, browser-spec-types\]/);
   assert.match(required, /if \[\[ "\$BUILD_EXPECTED" == true \]\]; then \[\[ "\$BUILD" == success \]\] \|\| rc=1; else \[\[ "\$BUILD" == skipped \]\] \|\| rc=1; fi/);
 });
 
@@ -111,4 +111,41 @@ test("CI-SPEED review P2: the real `required` script accepts exactly the right r
     && c.AGG === (c.AGG_EXPECTED === "true" ? "success" : "skipped") && c.DEPLOY === (c.DEPLOY_EXPECTED === "true" ? "success" : "skipped");
   combos.forEach((c, i) => assert.equal(out[i] === 0, oracle(c), JSON.stringify(c)));
   assert.ok(out.some((x) => x === 0), "the green path is reachable");
+});
+
+test("browser spec type checks report the mismatched field and Playwright argument", async (t) => {
+  const { checkSpecTypes } = await import("../../scripts/dev/check-browser-spec-types.mjs");
+  const dir = mkdtempSync(path.resolve("tests", ".browser-spec-types-"));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const file = path.join(dir, "example.spec.ts");
+  writeFileSync(file, [
+    'import type { Page } from "@playwright/test";',
+    'declare const page: Page, facts: { public_requests: number };',
+    'facts.public_requests;',
+    'facts.public_unknown;',
+    'page.getByText("ready");',
+    'page.getByText(Number("17"));',
+    'new Date().setFullYear("not a number");', // Outside the Playwright call rule.
+  ].join("\n"));
+  const errors = checkSpecTypes([file]);
+  assert.equal(errors.length, 2, errors.join("\n"));
+  assert.match(errors[0], /:4:\d+ TS2339 .*public_unknown[\s\S]*Fix:/);
+  assert.match(errors[1], /:6:\d+ TS2345 [\s\S]*Fix:/);
+});
+
+test("every integration PR requires a successful browser spec type job", () => {
+  const trigger = wf.split("\non:")[1].split("\nenv:")[0];
+  assert.match(trigger, /pull_request:\n\s+branches: \[r3\/integration\]/);
+  assert.doesNotMatch(trigger, /^\s+paths(?:-ignore)?:/m);
+  assert.match(job("browser-spec-types"), /^    if: github.event_name == 'pull_request'$/m);
+  assert.match(job("browser-spec-types"), /- run: node scripts\/dev\/check-browser-spec-types\.mjs\s*$/);
+  const required = job("required");
+  assert.match(required, /if: \$\{\{ always\(\) \}\}/);
+  assert.match(required, /needs: \[[^\]]*\bbrowser-spec-types\b[^\]]*\]/);
+  const predicate = /- name: Require browser spec types on every PR\n\s+if: github.event_name == 'pull_request'\n\s+env:\n\s+SPEC_TYPES: \$\{\{ needs\.browser-spec-types\.result \}\}\n\s+run: (.+)/.exec(required);
+  assert.ok(predicate);
+  for (const result of ["success", "failure", "cancelled", "skipped", ""]) {
+    const status = spawnSync("bash", ["-ec", predicate[1]], { env: { SPEC_TYPES: result } }).status;
+    assert.equal(status, result === "success" ? 0 : 1, result);
+  }
 });
