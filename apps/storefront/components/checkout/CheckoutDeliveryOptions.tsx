@@ -32,7 +32,7 @@ export default function CheckoutDeliveryOptions({ locale, options, method, chose
     <label className="delivery-label" htmlFor="delivery">
       {copy.selectDelivery}
     </label>
-    <select id="delivery" value={method} disabled={disabled} size={expanded ? Math.min(options.length + groups.length, 8) : undefined}
+    <select id="delivery" value={method} disabled={disabled} size={expanded ? Math.min(options.length, 6) : undefined}
       onBlur={onClose} onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
       onChange={(e) => { onSelect(e.target.value); onClose(); }}>
       {groups.map(group => <optgroup key={group.label} label={group.label}>
