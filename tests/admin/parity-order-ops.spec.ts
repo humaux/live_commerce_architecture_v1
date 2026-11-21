@@ -75,7 +75,7 @@ async function fixtures(page: Page) {
   await page.route(`**/api/stores/${store}/tools/orders/manual/options`, (route) => route.fulfill(json({ options: [{
     option_key: `${market}|TW|cvs_711`, market_id: market, country: "TW", delivery_code: "cvs_711", delivery_kind: "cvs_711",
     mode: "MOCK", name_hans: "门店自提", name_hant: "門市取貨", name_en: "Pickup store", currency: "TWD",
-    service_version: 1, allocation_version: 1, payment_modes: ["pay_at_pickup"], pickup_selection: "buyer_entered",
+    service_version: 1, allocation_version: 1, payment_modes: ["pay_at_pickup"], pickup_selection: "buyer_entered", pickup_max_minor: 50000,
   }] })));
   const line = { warehouse_id: id("300"), sku_id: toteSku, qty_registered: 1 };
   const rmas = [
@@ -146,20 +146,26 @@ test.describe("PARITY-ORDER-OPS signed frames (BROWSER MOCK)", () => {
       await action(page, c.review, "fill + select + review", "all recipient, product and pickup facts remain in review; no order is placed", async () => {
         // Synthetic buyer values; all product/delivery choices still use the real controls.
         await page.getByRole("textbox", { name: c.name, exact: true }).fill("Parity Buyer");
-        await page.getByRole("textbox", { name: c.phone, exact: true }).fill("0912345678");
+        await page.getByRole("textbox", { name: c.phone, exact: true }).fill("12345678");
         await page.getByRole("combobox", { name: c.delivery, exact: true }).selectOption(`${market}|TW|cvs_711`);
         await page.getByRole("button", { name: c.choose, exact: true }).click();
         await page.getByRole("textbox", { name: c.query, exact: true }).fill("121275");
         await page.getByRole("button", { name: /121275/ }).click();
         await page.getByRole("button", { name: c.returnOrder, exact: true }).click();
+        // The previous synthetic recipient fails the same pickup-name rule as a long member display name.
+        await expect(page.getByRole("button", { name: c.review, exact: true })).toBeDisabled();
+        await expect(page.getByTestId("mo-name")).toHaveAttribute("aria-invalid", "true");
+        await expect(page.getByTestId("mo-phone")).toHaveAttribute("aria-invalid", "true");
+        await page.getByTestId("mo-name").fill("Test Buyer");
+        await page.getByTestId("mo-phone").fill("0912345678");
         await page.getByRole("button", { name: c.review, exact: true }).click();
         const review = page.getByRole("region", { name: c.review, exact: true });
-        for (const fact of ["Parity Buyer", "0912345678", "焦糖托特包", "日常斜背小包", "121275", "臺北市大安區敦化南路二段331巷14號"])
+        for (const fact of ["Test Buyer", "0912345678", "NT$500", "焦糖托特包", "日常斜背小包", "121275", "臺北市大安區敦化南路二段331巷14號"])
           await expect(review).toContainText(fact);
         const back = { "zh-TW": "返回修改", "zh-CN": "返回修改", en: "Back to editing" }[locale];
         await page.getByRole("button", { name: back, exact: true }).click();
         await expect(page.getByRole("spinbutton", { name: new RegExp(c.quantity) })).toHaveCount(2);
-        await expect(page.getByRole("textbox", { name: c.name, exact: true })).toHaveValue("Parity Buyer");
+        await expect(page.getByRole("textbox", { name: c.name, exact: true })).toHaveValue("Test Buyer");
       });
       // None of the draft/picker controls may place an order or reserve stock.
       expect(posts).toEqual([]);

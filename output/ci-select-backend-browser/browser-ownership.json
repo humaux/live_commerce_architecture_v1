@@ -172,7 +172,7 @@
     "tests/admin/parity-leftovers.spec.ts": "063db8408830126af6dc5f15a91f50d22251518554ff4ae95da15fc52d17b179",
     "tests/admin/parity-live-sessions.ts": "0e6b0e68ae44c283af2db4efef29fbfc573a16cba0c1972f39daee7e049cb0f0",
     "tests/admin/parity-money-support.ts": "b6fbedd1dfb167be5821ef89e025a10ed09401113c7864a8779b10581fd7dad7",
-    "tests/admin/parity-order-ops.spec.ts": "c2798ff760eb3fc5af1828da20359a3656efab5eec131fdb441352ff36836548",
+    "tests/admin/parity-order-ops.spec.ts": "a6483632e3804cfdf2c66e57f2454e04c2ebaf921747a9737ea14e0bad925aea",
     "tests/admin/parity-shell-browser.mjs": "960a2507059e15951a4c0f6570bc3b27c74e305176d43bfbf876795b53c800e9",
     "tests/admin/parity-team-frames.json": "b3a82bb1c7cacd45a35567c0ab4715a958d0438ceb771b9e23d10b969d5fd993",
     "tests/admin/parity-team.mjs": "610dcecebacbf593ac5a7c6a54a413efbd56e4f545802c28abe8d849c6e98f73",
