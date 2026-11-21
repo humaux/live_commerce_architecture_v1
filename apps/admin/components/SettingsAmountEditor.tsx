@@ -175,6 +175,7 @@ export function SettingsAmountEditor({ store, locale, item, onBack, onBusy }: {
       </select></label>}
     {loading ? <p role="status">{c.loading}</p> : item === "shippingFee" && !choices.length && !problem && <p>{c.noService}</p>}
     {!loading && (cvs || fee) && <form onSubmit={save}>
+      {cvs && <p>{c.pickupAmount}{locale === "en" && " "}{c.pickupLimitHelp}</p>}
       <label>{cvs ? logisticsCopy[locale].cvsMaxTWD : `${c.shippingFee} (${fee?.policy.currency})`}
         <input required inputMode={cvs || fee?.policy.currency === "TWD" ? "numeric" : "decimal"} value={amount}
           disabled={busy || !!intent} onChange={e => { setAmount(e.target.value); setNotice(""); }} /></label>

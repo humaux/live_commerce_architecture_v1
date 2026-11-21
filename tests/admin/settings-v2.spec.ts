@@ -163,12 +163,15 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
   // All three signed quick-start steps, back controls and explicit dismissal.
   await page.getByRole("button", { name: "Start quick setup", exact: true }).click();
   await expect(page.getByText("1 / 3 · Store name", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("settings-v2-quickstart").getByLabel(/pay.at.pickup limit/i)).toHaveCount(0);
   await page.getByRole("button", { name: "Next: delivery", exact: true }).click();
   await expect(page.getByText("2 / 3 · Delivery", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("settings-v2-quickstart").getByLabel(/pay.at.pickup limit/i)).toHaveCount(0);
   await page.getByRole("button", { name: "Back: store name", exact: true }).click();
   await page.getByRole("button", { name: "Next: delivery", exact: true }).click();
   await page.getByRole("button", { name: "Next: product", exact: true }).click();
   await expect(page.getByText("3 / 3 · First product", { exact: true })).toBeVisible();
+  await expect(page.getByTestId("settings-v2-quickstart").getByLabel(/pay.at.pickup limit/i)).toHaveCount(0);
   await page.getByLabel("Product name", { exact: true }).fill("Acceptance draft bag");
   await page.getByLabel("Price (TWD)", { exact: true }).fill("1280");
   await page.getByLabel("Stock (units)", { exact: true }).fill("10");
@@ -561,7 +564,7 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
   await page.getByRole("button", { name: "Next: delivery", exact: true }).click();
   await page.getByRole("button", { name: "Next: product", exact: true }).click();
   await page.getByRole("button", { name: "Review settings", exact: true }).click();
-  for (const fact of ["Acceptance draft bag", "1280", "10", "TWD", "Stripe", "No cash on delivery"]) await expect(review).toContainText(fact);
+  for (const fact of ["Acceptance draft bag", "1280", "10", "TWD", "Stripe", "At pickup, the buyer pays the final order total."]) await expect(review).toContainText(fact);
   await page.getByRole("button", { name: "Back to edit", exact: true }).click();
   // Skip is an explicit dismissal; it must persist in the existing server marker.
   // MOCK only the lost response AFTER the real authenticated PG command commits.

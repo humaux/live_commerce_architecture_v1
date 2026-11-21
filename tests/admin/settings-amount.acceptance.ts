@@ -12,11 +12,13 @@ export async function settingsAmountAcceptance(source: Page, store: string) {
     shipping_minor: 100000, free_shipping_threshold_minor: 150000, tax_mode: "inclusive", tax_basis: "goods", tax_rate_bps: 0, quote_ttl_seconds: 900, enabled: true };
   const service = { market_id: market.id, country: "TW", code: "pickup", delivery_kind: "cvs_711", mode: "MANUAL", version: 2, policy_version: 3, policy_method: policy.method,
     currency: "TWD", name_en: "Pickup", name_hans: "取货", name_hant: "取貨", enabled: true, visible: true, sort_order: 2 };
+  let pickupReads = 0;
   const writes: { path: string; key: string; bytes: string }[] = [];
   const prefix = `/api/stores/${store}/`;
   await page.route(`**${prefix}**`, async route => {
     const req = route.request(), resource = new URL(req.url()).pathname.slice(prefix.length);
     if (req.method() === "GET") {
+      if (resource === "logistics/cvs-settings") pickupReads++;
       const known: Record<string, unknown> = {
         markets: { items: [market], next_cursor: "" }, [path.slice(0, path.lastIndexOf("/"))]: { items: [service], next_cursor: "" },
         [path]: service, [path + "/policy"]: policy, "logistics/cvs-settings": cvs,
@@ -53,16 +55,6 @@ export async function settingsAmountAcceptance(source: Page, store: string) {
   try {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/zh-TW/settings");
-    const cap = page.getByRole("button", { name: "取貨付款上限", exact: true });
-    await cap.press("Enter");
-    const limit = page.getByRole("textbox", { name: /單筆取貨付款上限/ });
-    await expect(limit).toHaveValue("3000");
-    await limit.fill("5000");
-    await limit.press("Enter");
-    await expect(page.getByRole("status").filter({ hasText: "設定已儲存" })).toBeVisible();
-    await page.reload(); await cap.click();
-    await expect(limit).toHaveValue("5000");
-    await page.getByRole("button", { name: "返回總覽", exact: true }).click();
     const shipping = page.getByRole("button", { name: "固定運費", exact: true });
     await shipping.click();
     const fee = page.getByRole("textbox", { name: "固定運費 (TWD)", exact: true });
@@ -71,13 +63,27 @@ export async function settingsAmountAcceptance(source: Page, store: string) {
     await expect(page.getByTestId("settings-wizard").getByRole("alert")).toContainText("部分設定已儲存");
     await page.reload(); await shipping.click();
     await expect(fee).toHaveValue("80");
-    expect(writes.map(w => w.path)).toEqual(["logistics/cvs-settings", path + "/policy", path]);
+    expect(writes.map(w => w.path)).toEqual([path + "/policy", path]);
     await page.getByRole("button", { name: /相同|同一/ }).click();
     await expect(page.getByRole("status").filter({ hasText: "設定已儲存" })).toBeVisible();
     await page.reload(); await shipping.click();
     await expect(fee).toHaveValue("80");
-    expect(writes.map(w => w.path)).toEqual(["logistics/cvs-settings", path + "/policy", path, path]);
+    expect(writes.map(w => w.path)).toEqual([path + "/policy", path, path]);
     expect(writes.every(w => !!w.key)).toBe(true);
+    expect(pickupReads, "editing shipping never requests pickup settings").toBe(0);
     expect(service.policy_version).toBe(policy.version);
+    await page.getByRole("button", { name: "返回總覽", exact: true }).click();
+    const cap = page.getByRole("button", { name: "可選限制 · 取貨付款上限", exact: true });
+    await cap.press("Enter");
+    const limit = page.getByRole("textbox", { name: /單筆取貨付款上限/ });
+    await expect(page.getByText("取貨時依訂單最終應付金額代收。此上限僅限制每筆訂單可使用取貨付款的金額。", { exact: true })).toBeVisible();
+    await expect(limit).toHaveValue("3000");
+    await limit.fill("5000");
+    await limit.press("Enter");
+    await expect(page.getByRole("status").filter({ hasText: "設定已儲存" })).toBeVisible();
+    await page.reload(); await cap.click();
+    await expect(limit).toHaveValue("5000");
+    await page.getByRole("button", { name: "返回總覽", exact: true }).click();
+    expect(writes.map(w => w.path)).toEqual([path + "/policy", path, path, "logistics/cvs-settings"]);
   } finally { await page.close(); }
 }

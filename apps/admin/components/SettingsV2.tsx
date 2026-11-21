@@ -290,7 +290,7 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
     </label>)}
     {data?.delivery.some(d => !d.service && !d.createCode) && <p id="settings-v2-prerequisite" className="settings-v2-hint">{c.prerequisite}</p>}
   </>;
-  const amountRows = canManage && (["pickupLimit", "shippingFee"] as const).map(item => <button key={item} type="button" onClick={() => setScreen(item)}>{c[item]}{chevron}</button>);
+  const amountRows = canManage && (["shippingFee", "pickupLimit"] as const).map(item => <button key={item} type="button" onClick={() => setScreen(item)}>{c[item]}{chevron}</button>);
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? ""} active="settings" locked={busy}>
     <div className="settings-v2 settings-page" data-testid="settings-wizard" aria-busy={busy || loading}>
       <h1 ref={heading} tabIndex={-1}>{title}</h1>
@@ -339,7 +339,7 @@ export function SettingsV2({ locale, initial, onAdvanced }: { locale: Locale; in
           </div>}
           {section !== "profile" && deliveryKinds.map(kind => <p key={kind}>{`${names[kind]}: ${draft.enabled[kind] ? c.on : c.off}`}</p>)}
           {fromQuickstart && draft.productName && <div className="settings-v2-product"><p>{`${c.productDraft}: ${draft.productName}`}</p><p>{`${priceLabel}: ${draft.price}`}</p><p>{`${c.stock}: ${draft.stock}`}</p><p>{c.draft}</p></div>}
-          {fromQuickstart && <p>{c.paymentReview}</p>}{section !== "profile" && <><p>{c.shippingReview}</p><p>{c.checkout}</p></>}
+          {fromQuickstart && <p>{c.paymentReview}{currency === "TWD" && ` ${c.pickupAmount}`}</p>}{section !== "profile" && <><p>{c.shippingReview}</p><p>{c.checkout}</p></>}
           <div className="settings-v2-actions">{button(c.backEdit, () => setScreen(fromQuickstart ? "step3" : "editor"))}{button(c.save, () => void save(), true)}</div>
         </section>}
         {screen === "saved" && <section>{fromQuickstart && <p>{c.eligibility}</p>}{button(c.back, () => setScreen("overview"), true)}</section>}
