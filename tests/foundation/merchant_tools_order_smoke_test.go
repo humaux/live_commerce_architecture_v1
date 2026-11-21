@@ -27,6 +27,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"livecommerce/internal/buyer"
+	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/inventory"
 	"livecommerce/internal/merchantorders"
@@ -639,5 +640,102 @@ func TestMerchantToolsDashboardScale(t *testing.T) {
 	t.Logf("MTO03 dashboard on %d orders (store total): worst of 5 = %s", e.count(`SELECT count(*) FROM checkout.orders WHERE store_id=$1`, e.store()), worst)
 	if worst > 300*time.Millisecond {
 		t.Errorf("dashboard worst %s exceeds the 300 ms budget", worst)
+	}
+}
+
+// Upgrade a populated TW market, then use both order pipelines and the normal settings endpoints.
+func TestDefaultManualCVSUpgradeAndOrders(t *testing.T) {
+	e := tcvNew(t)
+	e.grantCreator("orders:read", "fulfillment:write")
+	seed := func() {
+		mustExec(t, e.p.f.owner, `SELECT fulfillment.seed_manual_cvs($1,$2,$3)`, e.tenant(), e.store(), e.p.f.principalA)
+	}
+	seed()
+	manual := mtManualOrders(t, e)
+	a := mtAdmin{t: t, h: httpapi.NewHandler(e.p.f.runtime, httpapi.Options{CVS: e.cvs, ManualOrders: manual}), store: e.store(), token: e.token()}
+	for _, o := range a.options() {
+		if strings.HasPrefix(o.DeliveryKind, "cvs_") {
+			t.Fatalf("manual payment unexpectedly enabled: %+v", o)
+		}
+	}
+	e.cvsSettings(tcvAllChains, true, "20000", 20)
+	check := func(kind, shop string, fee int64) {
+		t.Helper()
+		b := e.newBuyer()
+		code := "quickstart_" + kind
+		o := tceOptions(t, b)[kind]
+		if o["delivery_code"] != code || o["pickup_selection"] != "buyer_entered" {
+			t.Fatalf("buyer option %s: %v", kind, o)
+		}
+		store := b.enteredStore(code, shop, "", "")
+		if store.status != 201 {
+			t.Fatalf("pickup %s: %d %s", kind, store.status, store.body)
+		}
+		dest, err := b.destination(kind, tcvStr(tcvJSON(t, store.body), "pickup_id"), "王小明", "0912345678")
+		if err != nil {
+			t.Fatal(err)
+		}
+		q, err := b.quote(code)
+		if err != nil || q.Amount.ShippingMinor != fee {
+			t.Fatalf("buyer shipping %s: %d %v", kind, q.Amount.ShippingMinor, err)
+		}
+		r, err := b.begin(dest, q, int64(o["service_version"].(float64)), "pay_at_pickup")
+		if err != nil || r.OrderID == "" {
+			t.Fatalf("buyer begin %s: %v", kind, err)
+		}
+		for _, option := range a.options() {
+			if option.DeliveryCode != code {
+				continue
+			}
+			key := t04Key("default-cvs-place")
+			location := tcvJSON(t, store.body)
+			body := mtBody(e.p.stock.skus[0].ID, 2, option.OptionKey, "pay_at_pickup", map[string]any{"cvs": map[string]any{"store_code": shop, "store_name": location["name"], "store_address": location["address"]}})
+			status, receipt := a.place(key, body)
+			if status != 201 || receipt["total_minor"] != float64(q.Amount.TotalMinor) {
+				t.Fatalf("merchant place %s: %d %v", kind, status, receipt)
+			}
+			if kind == "cvs_711" && fee == 0 {
+				status, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+tcvStr(receipt, "order_id")+"/shipment", t04Key("default-cvs-ship"), mfxShip(0, "seven_eleven_cvs", "0012345678"))
+				if status != 200 {
+					t.Fatalf("manual shipment: %d %s", status, raw)
+				}
+			}
+			return
+		}
+		t.Fatalf("merchant option missing: %s", kind)
+	}
+	for _, x := range []struct{ kind, shop string }{{"cvs_711", "131386"}, {"cvs_familymart", "011344"}, {"cvs_hilife", "F959"}, {"cvs_okmart", "000005"}} {
+		check(x.kind, x.shop, 0)
+	}
+	code := "quickstart_cvs_711"
+	path := "/v1/admin/stores/" + e.store() + "/markets/" + e.p.market.ID + "/countries/TW/delivery-services/" + code
+	fee := int64(6000)
+	p := e.p.policy
+	p.ExpectedVersion, p.Method, p.ShippingMinor = 1, "delivery:"+code, &fee
+	write := func(path string, v any) {
+		raw, err := json.Marshal(v)
+		if err != nil {
+			t.Fatal(err)
+		}
+		status, _, reply := e.mcall(e.token(), "PUT", path, t04Key("default-cvs-edit"), string(raw))
+		if status != 200 {
+			t.Fatalf("settings %s: %d %s", path, status, reply)
+		}
+	}
+	write(path+"/policy", p)
+	in := fulfillment.ServiceInput{MarketID: e.p.market.ID, Country: "TW", Code: code, NameHans: "7-ELEVEN", NameHant: "7-ELEVEN", NameEN: "7-ELEVEN", DeliveryKind: "cvs_711", Mode: "MANUAL", Enabled: true, Visible: true, SortOrder: 1, ExpectedVersion: 1, PolicyVersion: 2}
+	write(path, in)
+	seed()
+	check("cvs_711", "131386", fee)
+	in.ExpectedVersion, in.Enabled = 2, false
+	write(path, in)
+	seed()
+	if it := tceOptions(t, e.newBuyer())["cvs_711"]; it != nil {
+		t.Fatalf("reopened disabled service: %+v", it)
+	}
+	for _, o := range a.options() {
+		if o.DeliveryKind == "cvs_711" {
+			t.Fatalf("merchant reopened service: %+v", o)
+		}
 	}
 }

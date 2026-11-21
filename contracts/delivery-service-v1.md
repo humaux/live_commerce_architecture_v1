@@ -54,6 +54,12 @@ policy/binding references (never any other old version) and does not require cur
 binding readiness or an active market; an operator must always be able to stop new use. Other changes
 must use the current enabled policy. The historical FK must still exist.
 
+## Taiwan manual pickup defaults (owner decision, 2026-11-21)
+
+TWD onboarding provisions the Taiwan market and four MANUAL services for 7-ELEVEN, FamilyMart, Hi-Life and OK mart. Migration 0227 also initializes existing Taiwan markets. It uses the quickstart service codes, current service/policy heads and the first active store warehouse ordered by creation time and ID. Each default has an editable shipping policy with zero shipping minor units. A saved brand service, including one under a custom code or in API mode, takes precedence. A saved quickstart policy supplies its own price, tax and enabled state. New policies inherit the common Taiwan tax treatment. A fresh market uses quickstart’s inclusive goods basis at zero basis points. Conflicting tax treatments require an explicit brand policy.
+
+Buyer checkout and merchant orders use these same persisted revisions for options, quotes and inventory reservation. The store’s chain settings, payment eligibility, platform switches and carrier qualification continue to apply. Onboarding and upgrade do not enable collection or request electronic labels. Subsequent merchant edits use the existing versioned policy and service settings endpoints.
+
 ## Persistence and transitions
 
 Forward migration `0010_delivery_services.sql`; new `fulfillment.service_versions`

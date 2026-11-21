@@ -86,3 +86,54 @@ func TestNewInitialStoreOwnerGetsAccountSettingsAndExecution(t *testing.T) {
 		t.Fatalf("replay restored revoked grants: %v", grants)
 	}
 }
+
+func TestNewTWDStoreHasFourManualCVSServices(t *testing.T) {
+	s, _, _ := identityFixture(t)
+	f := fixture(t)
+	ctx := context.Background()
+	session := identityLogin(t, s)
+	req := firstStoreRequest()
+	req.Currency = "TWD"
+	store, err := s.CreateInitialStore(ctx, session.Token, "onboard-default-cvs", req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var kinds []string
+	err = f.owner.QueryRow(ctx, `SELECT ARRAY(SELECT sv.delivery_kind FROM fulfillment.service_heads h
+		JOIN fulfillment.service_versions sv ON (sv.tenant_id,sv.store_id,sv.market_id,sv.country,sv.code,sv.version)=
+			(h.tenant_id,h.store_id,h.market_id,h.country,h.code,h.current_version)
+		JOIN pricing.policy_versions p ON (p.tenant_id,p.store_id,p.market_id,p.country,p.method,p.version)=
+			(sv.tenant_id,sv.store_id,sv.market_id,sv.country,sv.policy_method,sv.policy_version)
+		JOIN fulfillment.allocation_heads ah ON (ah.tenant_id,ah.store_id,ah.market_id,ah.country,ah.code)=(h.tenant_id,h.store_id,h.market_id,h.country,h.code)
+		WHERE h.tenant_id=$1 AND h.store_id=$2 AND sv.mode='MANUAL' AND sv.enabled AND sv.visible
+			AND sv.binding_id IS NULL AND p.enabled AND p.shipping_minor=0 AND h.country='TW' ORDER BY sv.delivery_kind)`, store.TenantID, store.StoreID).Scan(&kinds)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(kinds, []string{"cvs_711", "cvs_familymart", "cvs_hilife", "cvs_okmart"}) {
+		t.Fatalf("fresh TWD store selectable manual brands = %v", kinds)
+	}
+}
+
+func TestManualCVSInitializerScope(t *testing.T) {
+	s, _, _ := identityFixture(t)
+	f := fixture(t)
+	ctx := context.Background()
+	session := identityLogin(t, s)
+	req := firstStoreRequest()
+	req.Currency = "USD"
+	store, err := s.CreateInitialStore(ctx, session.Token, "onboard-usd-cvs", req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n := countRows(t, f.owner, `SELECT count(*) FROM pricing.markets WHERE tenant_id=$1 AND store_id=$2`, store.TenantID, store.StoreID); n != 0 {
+		t.Fatalf("USD markets created: %d", n)
+	}
+	for _, role := range []string{"commerce_identity", "commerce_runtime", "commerce_buyer_runtime", "commerce_checkout_runtime"} {
+		var reachable bool
+		if err := f.owner.QueryRow(ctx, `SELECT has_function_privilege($1,'fulfillment.seed_manual_cvs(uuid,uuid,uuid)','EXECUTE') OR
+			has_function_privilege($1,'fulfillment.initial_store_manual_cvs()','EXECUTE') OR pg_has_role($1,'commerce_manual_cvs_initializer','MEMBER')`, role).Scan(&reachable); err != nil || reachable {
+			t.Fatalf("initializer reachable by %s: %t %v", role, reachable, err)
+		}
+	}
+}
