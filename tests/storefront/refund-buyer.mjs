@@ -96,6 +96,19 @@ async function shot(page, name, locale, viewport) {
   await writeFile(manifest, JSON.stringify(list, null, 2));
 }
 async function openOrder(page, locale) {
+    // Diagnostic branch only. Observe the existing same-origin history read without making any requests.
+    page.on("response", async (response) => {
+      if (response.request().method() !== "GET" || new URL(response.url()).pathname !== "/api/buyer/orders") return;
+      const data = await response.json().catch(() => null);
+      const rows = Array.isArray(data?.items) ? data.items : null;
+      console.log("HISTORY_READ", JSON.stringify({ status: response.status(), count: rows?.length ?? null,
+        code: ["retry_later", "context_changed", "requires_reset", "unauthorized", "forbidden", "not_found", "invalid_request"].includes(data?.code) ? data.code : null,
+        json: !!data, cursorType: typeof data?.next_cursor, noStore: response.headers()["cache-control"]?.includes("no-store") === true }));
+    });
+    page.on("requestfailed", (request) => {
+      if (request.method() === "GET" && new URL(request.url()).pathname === "/api/buyer/orders")
+        console.log("HISTORY_TRANSPORT", String(request.failure()?.errorText ?? "").match(/ERR_[A-Z_]+/)?.[0] ?? "unclassified");
+    });
   await page.goto(`${origin}/${locale}/checkout`); // the order history lives on the checkout page (storefront shell)
   await page.getByTestId("toggle-order-history").click();
   await page.locator(`button[data-order-id="${orderID}"]`).click();
