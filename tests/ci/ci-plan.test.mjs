@@ -113,24 +113,43 @@ test("CI-SPEED review P2: the real `required` script accepts exactly the right r
   assert.ok(out.some((x) => x === 0), "the green path is reachable");
 });
 
-test("browser spec type checks report the mismatched field and Playwright argument", async (t) => {
+test("browser spec type checks report missing fixture and DOM members", async (t) => {
   const { checkSpecTypes } = await import("../../scripts/dev/check-browser-spec-types.mjs");
   const dir = mkdtempSync(path.resolve("tests", ".browser-spec-types-"));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   const file = path.join(dir, "example.spec.ts");
   writeFileSync(file, [
-    'import type { Page } from "@playwright/test";',
-    'declare const page: Page, facts: { public_requests: number };',
+    'declare const facts: { public_requests: number }, node: Node;',
     'facts.public_requests;',
     'facts.public_unknown;',
-    'page.getByText("ready");',
-    'page.getByText(Number("17"));',
-    'new Date().setFullYear("not a number");', // Outside the Playwright call rule.
+    'node.remove();',
+    'node.parentNode?.removeChild(node);',
   ].join("\n"));
   const errors = checkSpecTypes([file]);
   assert.equal(errors.length, 2, errors.join("\n"));
-  assert.match(errors[0], /:4:\d+ TS2339 .*public_unknown[\s\S]*Fix:/);
-  assert.match(errors[1], /:6:\d+ TS2345 [\s\S]*Fix:/);
+  assert.match(errors[0], /:3:\d+ TS2339 .*public_unknown[\s\S]*Fix:/);
+  assert.match(errors[1], /:4:\d+ TS2339 .*remove[\s\S]*Fix:/);
+});
+
+test("browser spec type job checks which response supplies a navigation receipt", async () => {
+  const ts = (await import("typescript-api")).default;
+  const { navigationResponses } = await import("../../scripts/dev/check-navigation-response.mjs");
+  function scan(text) {
+    return navigationResponses(ts.createSourceFile("driver.mjs", text, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS));
+  }
+  const pageMatch = 'r => { return r.request().resourceType() === "document" && r.frame() === p.mainFrame(); }';
+  const document = `const [receipt] = await Promise.all([p.waitForResponse(${pageMatch}), p.waitForURL(target), click()]);`;
+  assert.match(scan(document).join(), /different path.*Fix:/);
+  assert.deepEqual(scan(document.replace("p.mainFrame();", "p.mainFrame() && r.url() === target;")), []);
+  assert.deepEqual(scan(document.replace("p.waitForURL", "child.waitForURL")), []);
+  const json = `async function run() {
+    const receipt = p.waitForResponse(r => r.request().method() === "GET" && new URL(r.url()).pathname.endsWith("/members/12"));
+    await p.getByTestId("list").getByRole("link", {name: "details"}).click();
+    const body = await (await receipt).json();
+  }`;
+  assert.match(scan(json).join(), /full API pathname/);
+  assert.deepEqual(scan(json.replace('.pathname.endsWith("/members/12")', '.pathname === "/api/stores/s/members/12"')), []);
+  assert.deepEqual(scan(json.replace('getByRole("link"', 'getByRole("button"')), []);
 });
 
 test("every integration PR requires a successful browser spec type job", () => {
