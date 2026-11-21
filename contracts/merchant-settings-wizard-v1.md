@@ -28,9 +28,9 @@ identity-only for these new routes, with existing Origin/CSRF and store authorit
 |GET `/markets/{market}/countries/TW/payment-methods`|no query; `{items: payments.Method[], next_cursor:""}`; at most the existing five codes|`integration:read`|
 |GET `/markets/{market}/countries/{country}/delivery-services/{code}/policy`|no query; current `pricing.Policy`, including disabled configuration|`pricing:read`|
 |PUT same `/policy`|`pricing.PolicyInput`; current `pricing.Policy`|`pricing:write`|
-|PUT `/markets/{market}/countries/{country}/delivery-services/{code}/flat-fee`|Only `shipping_minor`, `expected_policy_version` and `expected_service_version`. Returns market ID, country, code, amount and both new versions.|Both `integration:manage` and `pricing:write`|
+|`PUT /v1/admin/stores/{store_id}/markets/{market}/countries/{country}/delivery-services/{code}/flat-fee`|Only `shipping_minor`, `expected_policy_version` and `expected_service_version`. Returns market ID, country, code, amount and both new versions.|Both `integration:manage` and `pricing:write`|
 
-The fee command revises the current flat policy and rebinds its existing service in one transaction. Either stale version rolls back both revisions. A replay of the original scoped key and body returns the committed receipt after authorization. Taxes, thresholds, service fields and warehouse allocation are preserved.
+The fee command revises the current flat policy and rebinds its existing service in one transaction. Either stale version rolls back both revisions. A replay of the original scoped key and body returns the committed receipt after authorization. The command returns HTTP 200 on commit or exact replay, 409 for a stale version or a changed command under the same key, 422 for invalid input and 403 for missing grants. Taxes, thresholds, service fields and warehouse allocation are preserved.
 
 Policy method must equal `delivery:` + path code, market and country must match.
 Policy GET must not use `LockCurrent`, which hides disabled policies; read the
