@@ -216,7 +216,7 @@
     "tests/admin/safe-json-cancel.test.ts": "ab24bd8a7156d66a0f738ec12cc24c6a742c947fd8bbe08f534a07f42c60e8ee",
     "tests/admin/settings-reactdom-ownership.test.mjs": "525e1977e56d2592e19597f3bc0bbd6df1b94a312c1ab55631d46b87a0faa831",
     "tests/admin/settings-real.spec.ts": "d05b768551dd1fd42850cbeb33adb4a6663473e47ea623ced3a5c51095904116",
-    "tests/admin/settings-v2.spec.ts": "958bc787e7616ce602669f97b1dc0c6bc5d7ee87aceade63adb0710ebf22c510",
+    "tests/admin/settings-v2.spec.ts": "43d9d901b9b2ae4290a74c0f0d6857bd408af802bc1b4760782a147134e43b33",
     "tests/admin/settlements.spec.ts": "2719c75f5191edf4bd3016792d17ca865499914d150bb030098116f7a012a1b3",
     "tests/admin/shell-architecture.test.mjs": "f324d97d97de3c8883a35523519c1f9b7ecc6a6a90c936e8e93114b3f2ce592b",
     "tests/admin/shell-browser.mjs": "083007a34c22be57698e97030c41a2b8deb8743ca7567f0c32c33e1a1d8e875f",

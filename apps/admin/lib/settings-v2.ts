@@ -38,9 +38,9 @@ export function parseProfile(value: unknown): Profile {
 /** Bounded discovery: incomplete/ambiguous collections cannot enable a switch. */
 export async function readSnapshot(store: string, currency: string, recoveryProductId: string | null = null): Promise<Snapshot> {
   if (recoveryProductId !== null && !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(recoveryProductId)) throw new Error("recovery_product_shape");
-  const [profileRaw, marker, markets, productsRaw, warehousesRaw, storefront] = await Promise.all([
+  const [profileRaw, marker, shipping, productsRaw, warehousesRaw, storefront] = await Promise.all([
     readSettings<unknown>(store, "profile"), readSettings<Quickstart>(store, "quickstart"),
-    readSettings<Page<Market>>(store, "markets").catch(() => null),
+    readDelivery(store, currency),
     readSettings<unknown>(store, "catalog-products?status=draft&limit=1").catch(() => null),
     readSettings<unknown>(store, "warehouses?limit=100").catch(() => null),
     readSettings<unknown>(store, "storefront").then(parseStorefront).catch(() => null),
@@ -57,6 +57,13 @@ export async function readSnapshot(store: string, currency: string, recoveryProd
   const productId = recoveryProductId ?? products?.items[0]?.id;
   const product = productId ? parseProduct(await readSettings(store, `products/${productId}`)) : null;
   if (recoveryProductId !== null && product?.id !== recoveryProductId) throw new Error("recovery_product_mismatch");
+  const domains = storefront?.published ? storefront.domains.filter(d => d.serving && Date.parse(d.valid_until) > Date.now()) : [];
+  return { profile: parseProfile(profileRaw), marker, product, warehouses, ...shipping,
+    publicURL: domains.length === 1 ? domains[0].origin : null };
+}
+
+export async function readDelivery(store: string, currency: string) {
+  const markets = await readSettings<Page<Market>>(store, "markets").catch(() => null);
   // No arbitrary first-market choice: multiple markets require the existing advanced editor.
   const candidates = markets?.items.filter(m => m.active && m.currency === currency) ?? [];
   const market = markets && !markets.next_cursor && candidates.length === 1 ? candidates[0] : null;
@@ -105,9 +112,7 @@ export async function readSnapshot(store: string, currency: string, recoveryProd
       return { kind, service, createCode: null, policy };
     } catch { return unavailable; }
   }));
-  const domains = storefront?.published ? storefront.domains.filter(d => d.serving && Date.parse(d.valid_until) > Date.now()) : [];
-  return { profile: parseProfile(profileRaw), marker, delivery, product, warehouses, market, createMarket,
-    publicURL: domains.length === 1 ? domains[0].origin : null };
+  return { market, createMarket, delivery };
 }
 
 export function draftOf(data: Snapshot): SimpleDraft {

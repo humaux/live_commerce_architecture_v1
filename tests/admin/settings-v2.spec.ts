@@ -28,7 +28,7 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
     await expect(overview, `${locale}: signed three-row overview`).toBeVisible();
     await expect(overview.getByRole("button", { name: c.profile, exact: true })).toBeVisible();
     await expect(overview.getByRole("button", { name: c.delivery, exact: true })).toBeVisible();
-    await expect(overview.getByRole("button", { name: c.payment, exact: true })).toBeVisible();
+    await expect(overview.getByRole("link", { name: c.payment, exact: true })).toBeVisible();
     if (locale !== "en") {
       // READ/MEASURE: analogous to density-probe's visible text-node/character
       // count, scoped to the product state, excluding global navigation chrome.
@@ -52,16 +52,10 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
   // READ/MEASURE only: test product overflow; never changes DOM or performs a write.
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   const overview = page.getByTestId("settings-v2-overview");
-  // Each signed navigation row must actually open the editor, including Payments.
-  for (const name of [copy.en.profile, copy.en.delivery, copy.en.payment]) {
-    await overview.getByRole("button", { name, exact: true }).click();
-    await expect(page.getByTestId("settings-v2-editor")).toBeVisible();
-    await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
-  }
-  await overview.getByRole("button", { name: /^Store details ·/ }).click();
-  await page.getByLabel("Store name", { exact: true }).fill("Settings acceptance store");
-  await page.getByLabel("Email", { exact: true }).fill("settings@example.test");
-  await page.getByLabel("Phone (optional)", { exact: true }).fill("000-000-0000");
+  await overview.getByRole("link", { name: copy.en.payment, exact: true }).click();
+  await expect(page.getByTestId("card-payments-page")).toBeVisible();
+  await page.goBack();
+  await overview.getByRole("button", { name: copy.en.delivery, exact: true }).click();
   for (const label of ["Home delivery", "7-ELEVEN", "FamilyMart", "Hi-Life", "OK"]) {
     // AD-04 supersedes the no-seeding rule on this surface. Merely
     // opening the editor leaves these enabled choices unchecked; no write occurs.
@@ -70,10 +64,16 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
   }
   await page.getByRole("button", { name: "Review settings", exact: true }).click();
   const review = page.getByTestId("settings-v2-review");
-  for (const fact of ["Settings acceptance store", "settings@example.test", "000-000-0000", "Stripe", "No cash on delivery", "carrier", "tracking", "label"]) {
-    await expect(review).toContainText(fact);
-  }
-  for (const label of ["Home delivery", "7-ELEVEN", "FamilyMart", "Hi-Life", "OK"]) await expect(review).toContainText(label);
+  for (const label of ["Home delivery", "7-ELEVEN", "FamilyMart", "Hi-Life", "OK", "carrier", "tracking", "label"]) await expect(review).toContainText(label);
+  await page.getByRole("button", { name: "Back to edit", exact: true }).click();
+  await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
+  await overview.getByRole("button", { name: /^Store details ·/ }).click();
+  await page.getByLabel("Store name", { exact: true }).fill("Settings acceptance store");
+  await page.getByLabel("Email", { exact: true }).fill("settings@example.test");
+  await page.getByLabel("Phone (optional)", { exact: true }).fill("000-000-0000");
+  await expect(page.getByRole("checkbox")).toHaveCount(0);
+  await page.getByRole("button", { name: "Review settings", exact: true }).click();
+  for (const fact of ["Settings acceptance store", "settings@example.test", "000-000-0000"]) await expect(review).toContainText(fact);
   await page.getByRole("button", { name: "Back to edit", exact: true }).click();
   await expect(page.getByLabel("Email", { exact: true })).toHaveValue("settings@example.test");
   await page.getByRole("button", { name: "Review settings", exact: true }).click();
@@ -123,6 +123,21 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
   await page.getByRole("button", { name: "Reload", exact: true }).click();
   await expect(overview).toBeVisible();
   expect(writes).toBe(2);
+  // A delivery save cannot replay the pending profile command or start a delivery write.
+  const outOfScope: string[] = [];
+  const recordWrite = (request: import("@playwright/test").Request) => {
+    if (request.method() !== "GET" && request.url().includes(`/api/stores/${store}/`)) outOfScope.push(request.url());
+  };
+  page.on("request", recordWrite);
+  await overview.getByRole("button", { name: copy.en.delivery, exact: true }).click();
+  await page.getByLabel("Home delivery", { exact: true }).check();
+  await page.getByRole("button", { name: "Review settings", exact: true }).click();
+  await page.getByRole("button", { name: "Save settings", exact: true }).click();
+  await expect(page.getByRole("heading", { name: "Latest status unavailable", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Reload", exact: true }).click();
+  await expect(overview).toBeVisible();
+  page.off("request", recordWrite);
+  expect(outOfScope).toEqual([]);
   await overview.getByRole("button", { name: /^Store details ·/ }).click();
   await expect(page.getByLabel("Phone (optional)", { exact: true })).toHaveValue("000-000-0000");
   // Reload above is read-only even when an aborted request has no receipt. An
@@ -434,7 +449,7 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
     await overview.getByRole("button", { name: /^Store details ·/ }).click();
     if (editProfile) await page.getByLabel("Phone (optional)", { exact: true }).fill("000-000-3333");
     await page.getByRole("button", { name: "Review settings", exact: true }).click();
-    await expect(review).toContainText("Stock (units): 10");
+    await expect(review).not.toContainText("Stock (units)");
     await page.getByRole("button", { name: "Save settings", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Settings saved", exact: true })).toBeVisible();
     await page.reload();
@@ -540,12 +555,12 @@ export async function settingsV2Acceptance(page: Page, store: string, testInfo: 
   await page.unroute(inventoryURL);
   await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
   await page.reload();
-  await overview.getByRole("button", { name: /^Store details ·/ }).click();
+  await overview.getByRole("button", { name: "Start quick setup", exact: true }).click();
+  await page.getByRole("button", { name: "Next: delivery", exact: true }).click();
+  await page.getByRole("button", { name: "Next: product", exact: true }).click();
   await page.getByRole("button", { name: "Review settings", exact: true }).click();
-  for (const fact of ["Acceptance draft bag", "1280", "10", "TWD"]) await expect(review).toContainText(fact);
+  for (const fact of ["Acceptance draft bag", "1280", "10", "TWD", "Stripe", "No cash on delivery"]) await expect(review).toContainText(fact);
   await page.getByRole("button", { name: "Back to edit", exact: true }).click();
-  await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
-  await page.getByRole("button", { name: "Start quick setup", exact: true }).click();
   // Skip is an explicit dismissal; it must persist in the existing server marker.
   // MOCK only the lost response AFTER the real authenticated PG command commits.
   const quickstartURL = `**/api/stores/${store}/quickstart`;
@@ -752,7 +767,7 @@ async function noMarketAcceptance(source: Page, store: string, testInfo: TestInf
               }
             };
             await shots("1429-32319", "1429-32392");
-            await page.getByRole("button", { name: copy[c.locale].profile, exact: true }).click();
+            await page.getByRole("button", { name: copy[c.locale].delivery, exact: true }).click();
             await expect(page.getByTestId("settings-v2-editor")).toBeVisible();
             await expect(page.getByRole("checkbox", { name: "宅配", exact: true })).toBeVisible();
             await shots("1429-32465", "1429-32623");
@@ -904,14 +919,14 @@ async function paritySettingsAcceptance(page: Page, store: string, testInfo: Tes
       await expect(overview.getByRole("button", { name: start, exact: true }), "setup remains available after completion").toBeVisible();
       await expect(page.getByRole("button", { name: legacy, exact: true })).toHaveCount(0);
       const buttons = overview.getByRole("button");
-      await expect(buttons).toHaveCount(5);
+      await expect(buttons).toHaveCount(4);
       await expect(buttons.nth(0)).toHaveText(start);
       await expect(buttons.nth(0)).toHaveClass(/settings-v2-primary/);
       await expect(buttons.nth(1)).toHaveText(edit);
       await expect(buttons.nth(1)).toHaveClass(/settings-v2-secondary/);
       await expect(buttons.nth(2)).toHaveText(copy[locale as keyof typeof copy].profile.replace("未填寫", "已填寫").replace("未填写", "已填写").replace("Incomplete", "Complete"));
       await expect(buttons.nth(3)).toHaveText(copy[locale as keyof typeof copy].delivery);
-      await expect(buttons.nth(4)).toHaveText(copy[locale as keyof typeof copy].payment);
+      await expect(overview.getByRole("link", { name: copy[locale as keyof typeof copy].payment })).toHaveAttribute("href", `/${locale}/settings/payments/card?store=${store}`);
       if (locale === "zh-TW") {
         await expect(page.getByTestId("settings-wizard")).not.toContainText(/设置|编辑|发货|启用|选填|储存/);
         await shot("1429-32319", "1429-32392");
@@ -1021,6 +1036,15 @@ async function deliverySwitches(page: Page, store: string, path: string) {
   try {
     await page.goto(path);
     await page.getByTestId("settings-v2-overview").getByRole("button", { name: /^Store details ·/ }).click();
+    await page.getByLabel("Email", { exact: true }).fill("");
+    await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
+    await page.getByRole("button", { name: /^Delivery methods ·/ }).press("Enter");
+    await expect(page.getByLabel("Email", { exact: true })).toHaveCount(0);
+    const otherWrites: string[] = [];
+    page.on("request", observeWrite);
+    function observeWrite(request: import("@playwright/test").Request) {
+      if (request.method() !== "GET" && request.url().includes(`/api/stores/${store}/`) && !request.url().includes("/delivery-services/")) otherWrites.push(request.url());
+    }
     for (const [, , label] of methods) {
       const control = page.getByRole("checkbox", { name: label, exact: true });
       await expect(control).toBeEnabled();
@@ -1031,10 +1055,15 @@ async function deliverySwitches(page: Page, store: string, path: string) {
     for (const [, , label] of methods) await expect(page.getByTestId("settings-v2-review")).toContainText(`${label}: on`);
     await page.getByRole("button", { name: "Save settings", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Settings saved", exact: true })).toBeVisible();
+    page.off("request", observeWrite);
+    expect(otherWrites).toEqual([]);
     expect(writes.sort()).toEqual(services.map(s => s.code).sort());
     await page.reload();
     await expect(page.getByRole("button", { name: "Delivery methods · 5 enabled", exact: true })).toBeVisible();
     await page.getByRole("button", { name: /^Store details ·/ }).click();
+    await expect(page.getByLabel("Email", { exact: true })).toHaveValue("");
+    await page.getByRole("button", { name: "Back to overview, keep draft", exact: true }).click();
+    await page.getByRole("button", { name: /^Delivery methods ·/ }).click();
     for (const [, , label] of methods) await expect(page.getByRole("checkbox", { name: label, exact: true })).toBeChecked();
   } finally {
     await page.unroute(pattern);
