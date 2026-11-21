@@ -4,7 +4,6 @@
 "use client";
 import {
   useRef,
-  useState,
   useEffect,
   useId,
   type Dispatch,
@@ -33,59 +32,52 @@ export type DraftPhoto = {
   width?: number | null;
   height?: number | null;
 };
-/** Stage immutable normalized files; the parent later saves exact File/key/role with its creation recovery flow. */
-export function ProductDocumentMedia({
+/** Stage files for the draft lifetime, including while the editor DOM is concealed. */
+export function useStageProductPhotos({
   photos,
   setPhotos,
-  disabled,
   locale,
-  axes,
-  imageAxis,
-  setImageAxis,
   fail,
   onProcessingChange,
 }: {
   photos: DraftPhoto[];
   setPhotos: Dispatch<SetStateAction<DraftPhoto[]>>;
-  disabled: boolean;
   locale: Locale;
-  axes: OptionAxis[];
-  imageAxis: string | null;
-  setImageAxis: (axis: string | null) => void;
   fail: (message: string) => void;
   onProcessingChange: (busy: boolean) => void;
 }) {
-  const c = productMediaCopy[locale],
-    axis = effectiveMediaAxis(axes, imageAxis),
-    id = useId();
-  const [busy, setBusy] = useState(false),
-    alive = useRef(true),
-    working = useRef(false);
+  const c = productMediaCopy[locale];
+  const alive = useRef(true),
+    working = useRef(false),
+    urlPhotos = useRef(photos);
+  useEffect(() => {
+    urlPhotos.current = photos;
+  }, [photos]);
   useEffect(() => {
     alive.current = true;
     return () => {
       alive.current = false;
-      onProcessingChange(false);
+      for (const photo of urlPhotos.current) {
+        if (photo.file) URL.revokeObjectURL(photo.url);
+      }
     };
-  }, [onProcessingChange]);
-  const group = (role: MediaRole) =>
-    photos.filter((p) => (p.role ?? "main") === role);
-  async function add(files: FileList | null, role: MediaRole, value?: string) {
-    if (!files || disabled || working.current) return;
+  }, []);
+  return async (files: FileList | null, role: MediaRole, optionName?: string, value?: string) => {
+    if (!files || working.current) return;
     const candidates = Array.from(files);
     if (!candidates.length) return;
     if (
       (role === "sku" &&
-        (!axis ||
+        (!optionName ||
           !value ||
           candidates.length !== 1 ||
           photos.some(
             (p) =>
               p.role === "sku" &&
-              p.optionName === axis.name &&
+              p.optionName === optionName &&
               p.optionValue === value,
           ))) ||
-      group(role).length + candidates.length > mediaCaps[role]
+      photos.filter((p) => (p.role ?? "main") === role).length + candidates.length > mediaCaps[role]
     ) {
       fail(
         role === "main"
@@ -97,7 +89,6 @@ export function ProductDocumentMedia({
       return;
     }
     working.current = true;
-    setBusy(true);
     onProcessingChange(true);
     fail("");
     try {
@@ -110,7 +101,7 @@ export function ProductDocumentMedia({
           url: "",
           file: ready.file,
           role,
-          optionName: role === "sku" ? axis!.name : undefined,
+          optionName: role === "sku" ? optionName : undefined,
           optionValue: value,
           width: ready.width,
           height: ready.height,
@@ -124,12 +115,40 @@ export function ProductDocumentMedia({
         fail(error instanceof PhotoProblem ? c[error.reason] : c.failed);
     } finally {
       working.current = false;
-      if (alive.current) {
-        setBusy(false);
-        onProcessingChange(false);
-      }
+      if (alive.current) onProcessingChange(false);
     }
-  }
+  };
+}
+
+/** New-product photo controls; files and their roles belong to the form draft. */
+export function ProductDocumentMedia({
+  photos,
+  setPhotos,
+  disabled,
+  busy,
+  locale,
+  axes,
+  imageAxis,
+  setImageAxis,
+  fail,
+  stagePhotos,
+}: {
+  photos: DraftPhoto[];
+  setPhotos: Dispatch<SetStateAction<DraftPhoto[]>>;
+  disabled: boolean;
+  busy: boolean;
+  locale: Locale;
+  axes: OptionAxis[];
+  imageAxis: string | null;
+  setImageAxis: (axis: string | null) => void;
+  fail: (message: string) => void;
+  stagePhotos: ReturnType<typeof useStageProductPhotos>;
+}) {
+  const c = productMediaCopy[locale],
+    axis = effectiveMediaAxis(axes, imageAxis),
+    id = useId();
+  const group = (role: MediaRole) =>
+    photos.filter((p) => (p.role ?? "main") === role);
   const remove = (key: string) =>
     setPhotos((now) => {
       const photo = now.find((p) => p.key === key);
@@ -175,7 +194,7 @@ export function ProductDocumentMedia({
         multiple={role !== "sku"}
         disabled={locked || group(role).length >= mediaCaps[role]}
         onChange={(e) => {
-          void add(e.target.files, role, value);
+          if (!locked) void stagePhotos(e.target.files, role, axis?.name, value);
           e.target.value = "";
         }}
       />

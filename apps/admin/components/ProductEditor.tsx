@@ -8,7 +8,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { catalogTaskCopy, type Locale } from "@live-commerce/i18n";
 import type { Store } from "@/lib/model";
-import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
+import { get, ReadError, useGuardedRead, type ReadCode } from "@/lib/customers-client";
 import { readProduct } from "@/lib/catalog-v2-client";
 import { catalogCopy } from "@/lib/catalog-v2-copy";
 import { productEditorCopy } from "@/lib/product-editor-copy";
@@ -64,15 +64,37 @@ export function ProductEditor({
   useEffect(() => {
     if (!navigation.locked) setLeaveBlocked(false);
   }, [navigation.locked]);
+  const scope = `${renderKey}|${locale}|${store?.id ?? ""}|${productID}`;
   const read = useGuardedRead(
-    `${renderKey}|${locale}|${store?.id ?? ""}|${productID}`,
+    scope,
     store
       ? creating
-        ? async () => null
+        ? (signal) => get("/api/stores", (value) => {
+          // The authenticated stores endpoint validates the store DTO and supplies effective permissions.
+          const items = (value as { items?: Store[] } | null)?.items;
+          if (!Array.isArray(items)) throw new ReadError("unavailable");
+          const permissions = items.find((item) => item?.id === store.id)?.permissions;
+          if (!["catalog:read", "catalog:write", "inventory:read"].every(
+            (permission) => permissions?.includes(permission),
+          )) throw new ReadError("forbidden");
+          return null;
+        }, signal)
         : (signal) => readProduct(store.id, productID, signal)
       : null,
     initialError,
   );
+  const [creation, setCreation] = useState<{ scope: string; boundary: string } | null>(null);
+  const ready = read.status === "ready";
+  const suspended = read.status === "loading" || read.status === "hidden";
+  // Keep only this creation's in-memory state across tab concealment. A fresh read must
+  // succeed under the same session fence to reveal it; any other outcome discards it.
+  const creationBoundary = !creating ? "" : ready ? read.boundary
+    : suspended && creation?.scope === scope ? creation.boundary : "";
+  if (creationBoundary && ready && (creation?.scope !== scope || creation.boundary !== creationBoundary)) {
+    setCreation({ scope, boundary: creationBoundary });
+  } else if (!creationBoundary && creation) {
+    setCreation(null);
+  }
   const failure =
     read.status === "signed-out"
       ? c.list.signedOut
@@ -119,7 +141,7 @@ export function ProductEditor({
             {productEditorCopy[locale].leaveBlocked}
           </p>
         )}
-        {(read.status === "loading" || read.status === "hidden") && (
+        {suspended && (
           <p role="status">{c.edit.loading}</p>
         )}
         {failure && (
@@ -130,15 +152,25 @@ export function ProductEditor({
             </button>
           </div>
         )}
-        {read.status === "ready" && store && preferenceReady && (
-          !creating && !advanced && read.data ? <CatalogSimplifiedEditor
+        {store && preferenceReady && creationBoundary && <ProductDocumentForm
+          key={`${scope}:${creationBoundary}`}
+          locale={locale}
+          store={store}
+          mode="create"
+          detail={null}
+          boundary={creationBoundary}
+          visible={ready}
+          onNavigationChange={setNavigation}
+        />}
+        {!creating && ready && store && preferenceReady && (
+          !advanced && read.data ? <CatalogSimplifiedEditor
             key={`${store.id}:${productID}:${read.boundary}:simple`}
             locale={locale} store={store} detail={read.data} boundary={read.boundary} onNavigationChange={setNavigation}
           /> : <ProductDocumentForm
             key={`${store.id}:${productID}:${read.boundary}`}
             locale={locale}
             store={store}
-            mode={creating ? "create" : "edit"}
+            mode="edit"
             detail={read.data ?? null}
             boundary={read.boundary}
             onNavigationChange={setNavigation}

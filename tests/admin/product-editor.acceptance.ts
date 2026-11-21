@@ -13,8 +13,141 @@ import { createProductEditorMatrixLedger, productEditorMatrixWidth } from "./pro
 import { productEditorCopy } from "../../apps/admin/lib/product-editor-copy";
 import { assertProductEditorReservedLayout, assertProductListAsyncTabGrowth, type ProductEditorHardeningRecord } from "./product-editor-layout.acceptance";
 import { assertProductListLayout } from "./product-list-layout.acceptance";
+import { nativePage } from "./fixtures/native-device";
+
+const png = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB" +
+    "CAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64",
+);
+
 /** Registers real-click product acceptance cases; the calling runner owns test fixtures and cleanup. */
 export function registerProductEditorAcceptance() {
+  test("new product keeps the draft and files across a native tab switch", async ({}, info) => {
+    const origin = process.env.LC_BROWSER_PUBLIC_ORIGIN!;
+    const store = process.env.LC_BROWSER_STORE!;
+    const { page, close } = await nativePage(process.env.LC_BROWSER_EVIDENCE!, "product-draft-");
+    const ledger: unknown[] = [];
+    let release = () => {};
+    try {
+      await page.goto(origin + "/en/");
+      await page.getByRole("button", { name: "Sign in with identity service" }).click();
+      await expect(page.getByTestId("nav-orders")).toBeAttached();
+      await page.goto(`${origin}/en/products?store=${store}`);
+      await page.getByTestId("product-new").click();
+      const form = page.getByTestId("product-create-form");
+      const name = page.getByTestId("product-name");
+      const title = `Tab draft ${process.env.LC_BROWSER_TAG}`;
+      const writes: string[] = [];
+      page.on("request", (request) => {
+        if (request.url().includes("/api/stores/") && request.method() !== "GET")
+          writes.push(new URL(request.url()).pathname);
+      });
+      await name.fill(title);
+      await page.getByTestId("product-description").fill("Unsaved description");
+      await page.getByTestId("axis-add").click();
+      await page.getByTestId("axis-name-0").fill("Color");
+      await page.getByTestId("axis-values-0").fill("Blue");
+      await page.getByTestId("axis-values-0").press("Enter");
+      await page.getByTestId("matrix-code-0").fill(`TAB-${process.env.LC_BROWSER_TAG}`);
+      await page.getByTestId("new-price-0").fill("39");
+      await page.getByTestId("matrix-quantity-0").fill("7");
+      for (const [input, file] of [["photo-input", "main.png"], ["photo-input-detail", "detail.png"]]) {
+        const chooser = page.waitForEvent("filechooser");
+        await page.getByTestId(input).click();
+        await (await chooser).setFiles({ name: file, mimeType: "image/png", buffer: png });
+      }
+      const main = page.getByTestId("photo-row");
+      const detail = page.getByTestId("photo-row-detail");
+      await expect(main).toHaveCount(1);
+      await expect(detail).toHaveCount(1);
+      ledger.push({ page: "create", action: "click, fill, file chooser", actual: "all draft inputs and both photo roles populated" });
+
+      // READ/MEASURE only: native Chromium drives visibility and timeOrigin proves no reload.
+      const documentStart = await page.evaluate(() => performance.timeOrigin);
+      const cover = await page.context().newPage();
+      const conceal = async () => {
+        await cover.bringToFront();
+        await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("hidden");
+        await expect(form).toHaveCount(0);
+      };
+      await conceal();
+      await page.bringToFront();
+      await expect.poll(() => page.evaluate(() => document.visibilityState)).toBe("visible");
+      expect(await page.evaluate(() => performance.timeOrigin)).toBe(documentStart);
+      await expect(name, "same-document tab return retains the unsaved product name").toHaveValue(title);
+      await expect(page.getByTestId("product-description")).toHaveValue("Unsaved description");
+      await expect(page.getByTestId("axis-name-0")).toHaveValue("Color");
+      await expect(page.getByTestId("matrix-row-0")).toContainText("Blue");
+      await expect(page.getByTestId("matrix-code-0")).toHaveValue(`TAB-${process.env.LC_BROWSER_TAG}`);
+      await expect(page.getByTestId("new-price-0")).toHaveValue("39");
+      await expect(page.getByTestId("matrix-quantity-0")).toHaveValue("7");
+      await expect(main.locator("img")).toHaveAttribute("src", /^blob:/);
+      await expect(detail.locator("img")).toHaveAttribute("src", /^blob:/);
+      expect(writes).toEqual([]);
+      ledger.push({ page: "create", action: "native tab hide and return", actual: "form detached while hidden, then fields and two staged previews restored without writes" });
+
+      await page.getByTestId("product-create").click();
+      const result = page.getByTestId("product-save-result");
+      await expect(result).toBeVisible({ timeout: 45_000 });
+      expect(writes.filter((entry) => entry.endsWith("/products/document"))).toHaveLength(1);
+      expect(writes.filter((entry) => entry.endsWith("/images"))).toHaveLength(2);
+      await result.getByRole("link", { name: productEditorCopy.en.save, exact: true }).click();
+      await openAdvancedProductEditor(page);
+      await page.reload();
+      await expect(name).toHaveValue(title);
+      await expect(page.getByTestId("new-price-0")).toHaveValue("39");
+      await expect(page.getByTestId("matrix-quantity-0")).toHaveValue("7");
+      await expect(main).toHaveCount(1);
+      await expect(detail).toHaveCount(1);
+      ledger.push({ page: "create/edit", action: "save, open editor, reload", actual: "one document, two files uploaded and both roles persisted with price and stock" });
+
+      const writeCount = writes.length;
+      await page.goto(`${origin}/en/products/new?store=${store}`);
+      await name.fill("Draft losing catalog permission");
+      await conceal();
+      let denied = false;
+      const held = new Promise<void>((resolve) => { release = resolve; });
+      // MOCK permission revocation: return the authorized store with catalog:write removed.
+      await page.route((url) => url.pathname === "/api/stores", async (route) => {
+        const response = await route.fetch();
+        const body = await response.json();
+        denied = true;
+        await held;
+        for (const item of body.items) if (item.id === store)
+          item.permissions = item.permissions.filter((permission: string) => permission !== "catalog:write");
+        await route.fulfill({ response, json: body });
+      });
+      await page.bringToFront();
+      await expect.poll(() => denied).toBe(true);
+      await expect(form).toHaveCount(0);
+      release();
+      const forbidden = page.getByTestId("product-editor").getByRole("alert");
+      await expect(forbidden).toContainText("This account does not have permission to view products.");
+      await expect(form).toHaveCount(0);
+      await page.unrouteAll({ behavior: "wait" });
+      await forbidden.getByRole("button", { name: "Try again" }).click();
+      await expect(name).toHaveValue("");
+      await expect(main).toHaveCount(0);
+      ledger.push({ page: "create", action: "tab return during revalidation, permission removal, click retry", actual: "form stayed detached through denial and reopened empty only after authorization" });
+
+      await name.fill("Draft from the previous session");
+      await conceal();
+      // Fixture only: rotate the browser's change fence while preserving the signed MOCK IdP session and store.
+      await page.context().addCookies([{
+        name: "__Host-commerce_csrf", value: "A".repeat(43),
+        url: origin.replace(/^http:/, "https:"), secure: true, sameSite: "Lax",
+      }]);
+      await page.bringToFront();
+      await expect(name).toHaveValue("");
+      expect(writes).toHaveLength(writeCount);
+      ledger.push({ page: "create", action: "native tab return with rotated session fence", actual: "fresh empty form and no writes from either discarded draft" });
+    } finally {
+      release();
+      try { await info.attach("product-draft-click-ledger", { body: JSON.stringify(ledger, null, 2), contentType: "application/json" }); }
+      finally { await close(); }
+    }
+  });
   test("PE12-17 document workflow, matrix, list actions and click ledger", async ({
     page,
   }) => {
@@ -291,11 +424,6 @@ export function registerProductEditorAcceptance() {
       await page
         .getByTestId("product-keyword")
         .fill(`P${Date.now().toString().slice(-10)}`);
-      const png = Buffer.from(
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB" +
-          "CAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
-        "base64",
-      );
       await page.getByTestId("photo-input").setInputFiles(
         [1, 2, 3].map((i) => ({
           name: `fixture-${i}.png`,

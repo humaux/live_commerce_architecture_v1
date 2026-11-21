@@ -18,6 +18,7 @@ export function useProductEditorLayout(
   onSection: (id: string) => void,
   feedbackKey: string,
   feedbackBusy: boolean,
+  visible: boolean,
 ) {
   const editor = useRef<HTMLFormElement>(null),
     fields = useRef<HTMLDivElement>(null),
@@ -84,7 +85,7 @@ export function useProductEditorLayout(
       window.visualViewport?.removeEventListener("resize", schedule);
       window.visualViewport?.removeEventListener("scroll", schedule);
     };
-  }, []);
+  }, [visible]);
   useLayoutEffect(() => {
     const root = fields.current;
     const target = feedback.current;
@@ -98,7 +99,7 @@ export function useProductEditorLayout(
         root.getBoundingClientRect().top,
     });
     target.focus({ preventScroll: true });
-  }, [feedbackKey, feedbackAttempt, feedbackBusy]);
+  }, [feedbackKey, feedbackAttempt, feedbackBusy, visible]);
   useEffect(() => {
     const root = fields.current;
     if (!root) return;
@@ -150,7 +151,7 @@ export function useProductEditorLayout(
       cancelAnimationFrame(frame);
       root.removeEventListener("scroll", schedule);
     };
-  }, [sectionKey, onSection]);
+  }, [sectionKey, onSection, visible]);
   const focus = useCallback(
     (id: string) => {
       const root = fields.current;
