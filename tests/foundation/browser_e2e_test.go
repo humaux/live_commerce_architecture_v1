@@ -74,6 +74,7 @@ import (
 	"livecommerce/internal/integrations/metareply"
 	"livecommerce/internal/inventory"
 	"livecommerce/internal/oidclogin"
+	"livecommerce/internal/pagination"
 	"livecommerce/internal/payments"
 	"livecommerce/internal/payments/stripeadmin"
 	"livecommerce/internal/platform"
@@ -554,10 +555,18 @@ func (x *e2eRun) provision(t *testing.T) map[string]any {
 	if h.service, err = buyer.New(h.a.issuer, time.Hour); err != nil {
 		t.Fatal(err)
 	}
-	if x.market, err = pricingScoped(ctx, f0, x.token, x.store, "pricing:write", func(tx pgx.Tx, s platform.Scope) (pricing.Market, error) {
-		return pricing.CreateMarket(ctx, tx, s, t04Key("e2e-market"), pricing.MarketInput{Code: "tw", Name: "Synthetic TW", Currency: "TWD"})
-	}); err != nil {
-		t.Fatal(err)
+	markets, err := pricingScoped(ctx, f0, x.token, x.store, "pricing:read", func(tx pgx.Tx, s platform.Scope) (pagination.Page[pricing.Market], error) {
+		return pricing.ListMarketsPage(ctx, tx, s, x.token, pagination.Request{Limit: 2})
+	})
+	if err != nil || len(markets.Items) != 1 || markets.Items[0].Code != "tw" || markets.Items[0].Currency != "TWD" || !markets.Items[0].Active {
+		t.Fatalf("expected the active onboarding Taiwan market: %+v, err=%v", markets.Items, err)
+	}
+	x.market = markets.Items[0]
+	secondary, err := pricingScoped(ctx, f0, x.token, x.store, "pricing:write", func(tx pgx.Tx, s platform.Scope) (pricing.Market, error) {
+		return pricing.CreateMarket(ctx, tx, s, t04Key("e2e-market"), pricing.MarketInput{Code: "e2e_secondary", Name: "Synthetic secondary market", Currency: "TWD"})
+	})
+	if err != nil || secondary.ID == "" || secondary.ID == x.market.ID {
+		t.Fatalf("create a distinct merchant market: %+v, err=%v", secondary, err)
 	}
 	h.market = x.market
 	zero := int64(0)

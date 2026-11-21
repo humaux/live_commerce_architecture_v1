@@ -54,6 +54,12 @@ policy/binding references (never any other old version) and does not require cur
 binding readiness or an active market; an operator must always be able to stop new use. Other changes
 must use the current enabled policy. The historical FK must still exist.
 
+## Taiwan manual pickup defaults (owner decision, 2026-11-21)
+
+TWD onboarding provisions the Taiwan market and four MANUAL services for 7-ELEVEN, FamilyMart, Hi-Life and OK mart. Migration 0227 also initializes existing Taiwan markets. It uses the quickstart service codes, current service/policy heads and the first active store warehouse ordered by creation time and ID. Each default has an editable shipping policy with zero shipping minor units. A saved brand service, including one under a custom code or in API mode, takes precedence. A saved quickstart policy supplies its own price, tax and enabled state. When converting an original brand pricing key (`cvs_711` or `cvs_familymart`), its current tariff, free-shipping threshold, tax treatment and quote lifetime supply the initial service policy. A disabled original brand policy leaves that brand unavailable. Otherwise new policies inherit the common Taiwan tax treatment. A fresh market uses quickstart’s inclusive goods basis at zero basis points. Conflicting tax treatments require an explicit brand policy.
+
+Buyer checkout and merchant orders use these same persisted revisions for options, quotes and inventory reservation. The store’s chain settings, payment eligibility, platform switches and carrier qualification continue to apply. When a TWD store has no saved pickup settings, onboarding or upgrade creates the four-chain pay-at-pickup setting only if its active Taiwan market has a selectable manual CVS service. The current service must be enabled and visible, have no carrier binding, reference the current enabled price policy and have a complete current allocation of 1–16 active store warehouses. If all manual services fail these checks, the setting stays absent and existing API services retain their payment modes. The server records the final order total as pending collection. The built-in limits of NT$20,000 and 20 open orders require no merchant setup. Any existing pickup settings row, including an explicit opt-out or lower cap, takes precedence. Electronic label creation remains a separate merchant action. Subsequent merchant edits use the existing versioned policy and service settings endpoints.
+
 ## Persistence and transitions
 
 Forward migration `0010_delivery_services.sql`; new `fulfillment.service_versions`
