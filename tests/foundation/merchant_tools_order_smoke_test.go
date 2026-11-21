@@ -739,3 +739,33 @@ func TestDefaultManualCVSUpgradeAndOrders(t *testing.T) {
 		}
 	}
 }
+
+func TestDefaultManualCVSAmbiguousMarketTax(t *testing.T) {
+	// The harness market already has a current untaxed home policy. A brand's
+	// saved policy is authoritative even when the market has no common tax.
+	e := tcvNew(t)
+	p := e.p.policy
+	fee, rate := int64(6500), int64(500)
+	p.Method, p.ShippingMinor = "delivery:quickstart_cvs_familymart", &fee
+	p.TaxMode, p.TaxBasis, p.TaxRateBPS = "exclusive", "goods_and_shipping", &rate
+	saved, err := e.p.setPolicy(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	mustExec(t, e.p.f.owner, `SELECT fulfillment.seed_manual_cvs($1,$2,$3)`, e.tenant(), e.store(), e.p.f.principalA)
+	if n := e.count(`SELECT count(*) FROM pricing.policy_heads
+		WHERE tenant_id=$1 AND store_id=$2 AND market_id=$3 AND country='TW'
+		AND method IN ('delivery:quickstart_cvs_711','delivery:quickstart_cvs_hilife','delivery:quickstart_cvs_okmart')`, e.tenant(), e.store(), e.p.market.ID); n != 0 {
+		t.Fatalf("ambiguous market created %d unconfigured brand policies", n)
+	}
+	b := e.newBuyer()
+	rows := tceOptions(t, b)
+	if rows["cvs_familymart"]["delivery_code"] != "quickstart_cvs_familymart" || rows["cvs_711"] != nil || rows["cvs_hilife"] != nil || rows["cvs_okmart"] != nil {
+		t.Fatalf("ambiguous market buyer options: %v", rows)
+	}
+	q, err := b.quote("quickstart_cvs_familymart")
+	if err != nil || q.Policy.Version != saved.Version || q.Policy.TaxMode != p.TaxMode || q.Policy.TaxBasis != p.TaxBasis ||
+		q.Policy.TaxRateBPS != rate || q.Amount.ShippingMinor != fee || q.Amount.ShippingTaxMinor != 325 {
+		t.Fatalf("dedicated policy changed: policy=%+v amount=%+v err=%v", q.Policy, q.Amount, err)
+	}
+}
