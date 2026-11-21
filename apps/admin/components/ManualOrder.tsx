@@ -26,7 +26,7 @@ import { readProduct, readProducts } from "@/lib/catalog-v2-client";
 import type { ProductDetail } from "@/lib/catalog-v2-model";
 import { sessionBoundary } from "@/lib/settings-client";
 import { placeManualOrder, readManualOptions, regenerateManualLink } from "@/lib/merchant-tools-client";
-import { draftProblem, manualBody, recipientGaps, type ManualDraft, type ManualOption, type ManualPaymentMode, type ManualResult } from "@/lib/merchant-tools-model";
+import { draftProblem, manualBody, pickupRecipientErrors, recipientGaps, type ManualDraft, type ManualOption, type ManualPaymentMode, type ManualResult } from "@/lib/merchant-tools-model";
 import { toolsCopy } from "@/lib/merchant-tools-copy";
 import { codCopy } from "@/lib/cod-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -110,6 +110,7 @@ export function ManualOrder({
   const mapOnly = !!option && option.delivery_kind !== "home" && option.pickup_selection !== "buyer_entered";
   const draft: ManualDraft = { lines, name, phone, email, option, mode, home, cvs, locale: buyerLocale };
   const problem = draftProblem(draft);
+  const pickupErrors = mode === "pay_at_pickup" ? pickupRecipientErrors(name, phone) : null;
   const gaps = recipientGaps(draft); // non-empty only when the recipient is the sole thing missing
   const showMissing = missing && gaps.length > 0;
 
@@ -157,7 +158,15 @@ export function ManualOrder({
       return;
     }
     setUncertain(outcome.uncertain);
-    setFailure(c.errors[outcome.code] ?? c.errors.default);
+    const amount = outcome.pickupAmount;
+    if (amount) {
+      const twd = (minor: number) => money(locale, "TWD", minor);
+      const action = amount.total_minor > amount.max_minor ? c.pickupReduce :
+        amount.total_minor < 100 || amount.total_minor % 100 !== 0 ? c.pickupWhole : c.pickupChanged;
+      setFailure([c.pickupQuote(twd(amount.subtotal_minor), twd(amount.shipping_minor), twd(amount.total_minor)), c.pickupCap(twd(amount.max_minor)), action].join(" "));
+    } else {
+      setFailure(outcome.uncertain ? c.retrySame : c.errors[outcome.code] ?? c.errors.default);
+    }
     if (!outcome.uncertain) attempt.current = null; // a definite refusal: the next send is a new attempt
   }
   function reset() {
@@ -261,18 +270,26 @@ export function ManualOrder({
                 <div><dt>{c.paymentTitle}</dt><dd>{mode === "bank_transfer" ? c.bank : mode === "cash_on_delivery" ? c.cod : c.pickup}</dd></div>
               </dl>
               {options.status==="ready" && canPoints && memberSelection.member && memberSelection.points!=="" && <section data-testid="manual-member-award-review"><h3>{memberCopy.title}</h3><p>{memberSelection.member.display_name}</p><p>{memberCopy.points}: +{memberSelection.points}</p></section>}
-              <p>{signed.quote}</p>
+              {mode === "pay_at_pickup" && option?.pickup_max_minor && <p>{c.pickupCap(money(locale, "TWD", option.pickup_max_minor))}</p>}
               {mode === "cash_on_delivery" && option?.cod_max_minor !== undefined && option.cod_carrier && <p>{c.codNote(
                 money(locale, option.currency, option.cod_surcharge_minor ?? 0), money(locale, option.currency, option.cod_max_minor),
                 option.cod_carrier === "black_cat" ? codCopy[locale].carrierBlackCat : codCopy[locale].carrierHsinchu)}</p>}
-              <button type="button" onClick={() => setReviewing(false)}>{signed.backEdit}</button>
+              <button type="button" disabled={busy || uncertain} onClick={() => { setFailure(""); setReviewing(false); }}>{signed.backEdit}</button>
             </section> : <>
             <ItemPicker locale={locale} store={store} lines={lines} setLines={setLines} />
             <section className="mt-card">
               <h2>{signed.recipient}</h2>
               <FormRow>
-                <Field id="mo-name" label={signed.name}><input id="mo-name" data-testid="mo-name" value={name} maxLength={120} autoComplete="off" onChange={(e) => setName(e.target.value)} /></Field>
-                <Field id="mo-phone" label={signed.phone} width="short"><input id="mo-phone" data-testid="mo-phone" value={phone} inputMode="tel" maxLength={32} autoComplete="off" onChange={(e) => setPhone(e.target.value)} /></Field>
+                <Field id="mo-name" label={signed.name} hint={pickupErrors?.name && c.problems.pickupName}>
+                  <input id="mo-name" data-testid="mo-name" value={name} maxLength={120} autoComplete="off"
+                    aria-invalid={pickupErrors?.name} aria-describedby={pickupErrors?.name ? "mo-name-hint" : undefined}
+                    onChange={(e) => setName(e.target.value)} />
+                </Field>
+                <Field id="mo-phone" label={signed.phone} width="short" hint={pickupErrors?.phone && c.problems.pickupPhone}>
+                  <input id="mo-phone" data-testid="mo-phone" value={phone} inputMode="tel" maxLength={32} autoComplete="off"
+                    aria-invalid={pickupErrors?.phone} aria-describedby={pickupErrors?.phone ? "mo-phone-hint" : undefined}
+                    onChange={(e) => setPhone(e.target.value)} />
+                </Field>
                 <details><summary>{signed.advanced}</summary><Field id="mo-email" label={c.email}><input id="mo-email" data-testid="mo-email" value={email} type="email" maxLength={254} autoComplete="off" onChange={(e) => setEmail(e.target.value)} /></Field></details>
               </FormRow>
 
@@ -332,8 +349,8 @@ export function ManualOrder({
             <div hidden={reviewing}>
               <ManualOrderMemberFields key={memberScope} locale={locale} store={store} scope={memberScope} boundary={boundary} enabled={options.status==="ready"} disabled={busy||uncertain||reviewing} value={memberSelection} onChange={setMemberSelection} onName={setName} onBusy={setMemberBusy}/>
             </div>
-            {failure && <p className="mt-warn" role="alert" data-testid="manual-order-error">{failure}{uncertain ? ` ${c.retrySame}` : ""}</p>}
-            {problem && <p className="mt-note" data-testid="manual-order-hint">{c.problems[problem]}</p>}
+            {failure && <p className="mt-warn" role="alert" data-testid="manual-order-error">{failure}</p>}
+            {problem && problem !== "pickupName" && problem !== "pickupPhone" && <p className="mt-note" data-testid="manual-order-hint">{c.problems[problem]}</p>}
             <div className="mt-actions">
               {/* Both steps submit through the guarded handler: changing a clicked button's type can place before review. */}
               <button type="submit" className="primary" data-testid={reviewing ? "manual-order-submit" : undefined} disabled={(!!problem && gaps.length === 0) || mapOnly || busy || memberBusy || (!uncertain && memberProblem) || !boundary}>

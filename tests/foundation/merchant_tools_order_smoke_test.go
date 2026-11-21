@@ -155,7 +155,7 @@ func TestMerchantToolsManualOrder(t *testing.T) {
 			}
 			if o.DeliveryKind == "cvs_711" && o.DeliveryCode == cvsCode {
 				cvsKey = o.OptionKey
-				if o.PickupSelection == nil || *o.PickupSelection != "buyer_entered" || len(o.PaymentModes) != 2 {
+				if o.PickupSelection == nil || *o.PickupSelection != "buyer_entered" || len(o.PaymentModes) != 2 || o.PickupMaxMinor != 2_000_000 {
 					t.Fatalf("cvs option: %+v", o)
 				}
 			}
@@ -236,6 +236,17 @@ func TestMerchantToolsManualOrder(t *testing.T) {
 		}
 		if code, out = a.place(key1, mtBody(sku, 3, homeKey, "bank_transfer", mtHome)); code != 409 || out["code"] != "idempotency_conflict" {
 			t.Fatalf("other body: %d %v", code, out)
+		}
+	})
+
+	t.Run("refused fractional pickup quote explains total and cap without reserving stock", func(t *testing.T) {
+		before := reservedBefore()
+		code, out := a.place(t04Key("mto-pap-fraction"), mtBody(sku, 1, cvsKey, "pay_at_pickup", mtCVS))
+		details, ok := out["details"].(map[string]any)
+		if code != 422 || out["code"] != "pay_at_pickup_amount_exceeds" || !ok || len(details) != 4 ||
+			details["subtotal_minor"] != float64(1250) || details["shipping_minor"] != float64(0) ||
+			details["total_minor"] != float64(1250) || details["max_minor"] != float64(2_000_000) || reservedBefore() != before {
+			t.Fatalf("refused pickup quote: status %d, code %v, details %v", code, out["code"], details)
 		}
 	})
 

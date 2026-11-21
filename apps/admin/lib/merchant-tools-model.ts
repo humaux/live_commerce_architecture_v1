@@ -98,6 +98,7 @@ export type ManualOption = {
   name_hans: string; name_hant: string; name_en: string; currency: string; service_version: number; allocation_version: number;
   payment_modes: ManualPaymentMode[]; pickup_selection: "ecpay_map" | "buyer_entered" | null;
   // home-cod R5 (internal/checkout/options.go): only on a home row that lists cash_on_delivery. Whole TWD in minor units; the surcharge is omitted at 0.
+  pickup_max_minor?: number; // Absent on older options and when pay at pickup is disabled.
   cod_surcharge_minor?: number; cod_carrier?: "black_cat" | "hsinchu"; cod_max_minor?: number;
 };
 const optionKeys = ["option_key", "market_id", "country", "delivery_code", "delivery_kind", "mode", "name_hans", "name_hant", "name_en",
@@ -112,7 +113,7 @@ export function parseManualOptions(value: unknown): ManualOption[] {
     if (!item || typeof item !== "object" || Array.isArray(item)) throw fail();
     const raw = item as Record<string, unknown>;
     // The cod_* keys are optional on the wire; everything else is the exact frozen key set.
-    const o = object(Object.fromEntries(Object.entries(raw).filter(([k]) => !codOptionKeys.includes(k))), optionKeys);
+    const o = object(Object.fromEntries(Object.entries(raw).filter(([k]) => !codOptionKeys.includes(k) && k !== "pickup_max_minor")), optionKeys);
     if (typeof o.option_key !== "string" || !optionKeyPattern.test(o.option_key) || typeof o.market_id !== "string" || !canonicalUUID.test(o.market_id) ||
       !/^[A-Z]{2}$/.test(String(o.country)) || !/^[a-z][a-z0-9_-]{0,39}$/.test(String(o.delivery_code)) ||
       !(o.delivery_kind === "home" || /^cvs_[a-z0-9]+$/.test(String(o.delivery_kind))) || typeof o.mode !== "string" ||
@@ -121,6 +122,8 @@ export function parseManualOptions(value: unknown): ManualOption[] {
       !o.payment_modes.every((m) => (manualPaymentModes as readonly string[]).includes(String(m))) ||
       !(o.pickup_selection === null || o.pickup_selection === "ecpay_map" || o.pickup_selection === "buyer_entered") ||
       o.option_key !== `${o.market_id}|${o.country}|${o.delivery_code}`) throw fail();
+    if ("pickup_max_minor" in raw && (o.currency !== "TWD" || o.delivery_kind === "home" || !o.payment_modes.includes("pay_at_pickup") ||
+      !wholeTWD(raw.pickup_max_minor, 100, 2_000_000))) throw fail();
     // Cash on delivery: home delivery only, and the offer (carrier, cap in whole NT$ up to 20,000, fee in whole NT$ up to 1,000) travels with the mode.
     if (o.payment_modes.includes("cash_on_delivery")) {
       if (o.delivery_kind !== "home" || !wholeTWD(raw.cod_max_minor, 100, 2_000_000) || !(raw.cod_carrier === "black_cat" || raw.cod_carrier === "hsinchu") ||
@@ -128,6 +131,15 @@ export function parseManualOptions(value: unknown): ManualOption[] {
     } else if (codOptionKeys.some((k) => k in raw)) throw fail();
     return raw as unknown as ManualOption;
   });
+}
+
+/** Only the scoped quote amounts and pickup cap may cross the manual-order BFF. */
+export function parsePickupRefusal(value: unknown): { subtotal_minor: number; shipping_minor: number; total_minor: number; max_minor: number } | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const d = value as Record<string, unknown>;
+  if (Object.keys(d).sort().join(",") !== "max_minor,shipping_minor,subtotal_minor,total_minor" ||
+      !money(d.subtotal_minor) || !money(d.shipping_minor) || !money(d.total_minor) || !wholeTWD(d.max_minor, 100, 2_000_000)) return null;
+  return { subtotal_minor: d.subtotal_minor, shipping_minor: d.shipping_minor, total_minor: d.total_minor, max_minor: Number(d.max_minor) };
 }
 
 export type ManualDiscount = { name: string; amount_minor: number };
@@ -186,8 +198,17 @@ export type ManualDraft = {
   cvs: { store_code: string; store_name: string; store_address: string };
   locale: "zh-CN" | "zh-TW" | "en";
 };
-export type DraftProblem = "lines" | "name" | "phone" | "email" | "delivery" | "mode" | "address" | "store";
+export type DraftProblem = "lines" | "name" | "phone" | "email" | "delivery" | "mode" | "address" | "store" | "pickupName" | "pickupPhone";
 const phoneOK = (s: string) => /^[0-9+() -]{6,32}$/.test(s) && s.replace(/\D/g, "").length >= 6 && s.replace(/\D/g, "").length <= 20;
+
+/** Mirrors fulfillment.ecpay_recipient_ok (0073). Blank fields keep the normal required-field feedback. */
+export function pickupRecipientErrors(name: string, phone: string) {
+  const recipient = name.trim();
+  const width = recipient.length + (recipient.match(/[㐀-䶿一-鿿豈-﫿Ａ-Ｚａ-ｚ]/g)?.length ?? 0);
+  const nameValid = width >= 4 && width <= 10 && /^[A-Za-z㐀-䶿一-鿿豈-﫿Ａ-Ｚａ-ｚ]+(?: [A-Za-z㐀-䶿一-鿿豈-﫿Ａ-Ｚａ-ｚ]+)*$/.test(recipient);
+  const mobile = phone.trim().replace(/[ ()-]/g, "");
+  return { name: recipient !== "" && !nameValid, phone: phone.trim() !== "" && !/^(?:09|\+8869)[0-9]{8}$/.test(mobile) };
+}
 
 /** First problem of a draft (null = sendable). The server re-validates everything; this keeps an obviously wrong form from being sent.
  *  `skipRecipient` leaves out the two recipient checks (phone, CVS store) so recipientGaps can tell a recipient-only gap apart. */
@@ -199,6 +220,11 @@ export function draftProblem(d: ManualDraft, skipRecipient = false): DraftProble
   if (d.email.trim() !== "" && !(d.email.trim().length <= 254 && /^[^\s@]+@[^\s@]+$/.test(d.email.trim()))) return "email";
   if (!d.option) return "delivery";
   if (d.mode === "" || !d.option.payment_modes.includes(d.mode)) return "mode";
+  if (d.mode === "pay_at_pickup") {
+    const errors = pickupRecipientErrors(d.name, d.phone);
+    if (errors.name) return "pickupName";
+    if (errors.phone) return "pickupPhone";
+  }
   if (d.mode === "cash_on_delivery" && d.option.delivery_kind !== "home") return "mode"; // COD is home delivery only
   if (d.option.delivery_kind === "home") {
     if (d.home.city.trim() === "" || d.home.line1.trim() === "") return "address";

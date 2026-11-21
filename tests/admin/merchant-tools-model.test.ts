@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   csvFileProblem, draftProblem, manualBody, recipientGaps, parseDashboard, parseImportResult, parseManualOptions, parseManualResult, parseRegenerateResult, rowErrorCodes, toolsRoute,
-  validManualBody, validRegenerateBody, MAX_CSV_BYTES, type ManualDraft, type ManualOption,
+  validManualBody, validRegenerateBody, MAX_CSV_BYTES, parsePickupRefusal, type ManualDraft, type ManualOption,
 } from "../../apps/admin/lib/merchant-tools-model.ts";
 import { toolsCopy } from "../../apps/admin/lib/merchant-tools-copy.ts";
 import { parseSummary } from "../../apps/admin/lib/catalog-v2-model.ts";
@@ -359,6 +359,27 @@ test("regenerate body/result: exactly {order_id, locale} and a fresh https link 
   assert.throws(() => parseRegenerateResult({ order_id: id, buyer_link: `https://shop.example.test/zh-TW/order-link#o=${id}&t=short`, source: "merchant_manual" }));
 });
 
+test("pickup feedback accepts only the quoted total and the configured whole-TWD cap", () => {
+  const pickup = option({ delivery_kind: "cvs_711", payment_modes: ["pay_at_pickup"], pickup_selection: "buyer_entered" });
+  assert.equal(parseManualOptions({ options: [{ ...pickup, pickup_max_minor: 50000 }] })[0].pickup_max_minor, 50000);
+  assert.equal(parseManualOptions({ options: [pickup] })[0].pickup_max_minor, undefined);
+  for (const invalid of [{ ...pickup, pickup_max_minor: 49999 }, { ...option(), pickup_max_minor: 50000 }])
+    assert.throws(() => parseManualOptions({ options: [invalid] }));
+  const details = { subtotal_minor: 2500, shipping_minor: 100000, total_minor: 102500, max_minor: 100000 };
+  assert.deepEqual(parsePickupRefusal(details), details);
+  for (const bad of [null, {}, { ...details, max_minor: 125 }, { ...details, total_minor: -1 }, { ...details, private: "ignored" }])
+    assert.equal(parsePickupRefusal(bad), null);
+});
+
+test("pickup validates the recipient before review without constraining home delivery", () => {
+  const pickup = draft({ mode: "pay_at_pickup", option: option({ delivery_kind: "cvs_711", payment_modes: ["pay_at_pickup"] }),
+    cvs: { store_code: "123456", store_name: "S", store_address: "Taipei City" } });
+  assert.equal(draftProblem({ ...pickup, name: "會員 123" }), "pickupName");
+  assert.equal(draftProblem({ ...pickup, phone: "0000000000" }), "pickupPhone");
+  assert.equal(draftProblem({ ...pickup, name: "測試", phone: "+886912345678" }), null);
+  assert.equal(draftProblem(draft({ phone: "0000000000" })), null);
+});
+
 test("copy parity: every locale has every key, import rules and error codes", () => {
   const shape = (value: unknown, path = ""): string[] =>
     value && typeof value === "object" && !Array.isArray(value)
@@ -369,7 +390,7 @@ test("copy parity: every locale has every key, import rules and error codes", ()
   for (const locale of ["zh-CN", "zh-TW", "en"] as const) {
     for (const code of rowErrorCodes) assert.ok(toolsCopy[locale].importer.codes[code], `${locale} import code ${code}`);
     for (const code of ["invalid_request", "conflict", "insufficient_inventory", "idempotency_conflict", "bank_transfer_unavailable", "pay_at_pickup_unavailable", "pay_at_pickup_amount_exceeds", "cvs_entry_unavailable",
-      "cash_on_delivery_unavailable", "cash_on_delivery_amount_exceeds", "cash_on_delivery_limit", "default"])
+      "cash_on_delivery_unavailable", "cash_on_delivery_amount_exceeds", "cash_on_delivery_limit", "cvs_recipient_rejected", "pay_at_pickup_limit", "default"])
       assert.ok(toolsCopy[locale].manual.errors[code], `${locale} manual error ${code}`);
     for (const kind of ["home", "cvs_711", "cvs_familymart", "cvs_hilife", "cvs_okmart"]) assert.ok(toolsCopy[locale].manual.kinds[kind], `${locale} kind ${kind}`);
   }
