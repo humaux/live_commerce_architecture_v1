@@ -30,6 +30,7 @@ import (
 	"livecommerce/internal/catalog"
 	"livecommerce/internal/fulfillment"
 	"livecommerce/internal/httpapi"
+	"livecommerce/internal/identity"
 	"livecommerce/internal/inventory"
 	"livecommerce/internal/merchantorders"
 	"livecommerce/internal/merchanttools"
