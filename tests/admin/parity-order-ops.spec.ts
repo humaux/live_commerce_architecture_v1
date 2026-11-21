@@ -56,20 +56,25 @@ async function fixtures(page: Page) {
   const json = (body: unknown) => ({ status: 200, contentType: "application/json", headers: { "cache-control": "private, no-store" }, body: JSON.stringify(body) });
   const products = [
     { id: tote, sku: toteSku, name: "焦糖托特包", title: "焦糖", code: "A12", price: 128000 },
+    { id: id("103"), sku: id("203"), name: "Out of stock", title: "Standard", code: "C12", price: 10000 },
     { id: small, sku: smallSku, name: "日常斜背小包", title: "標準款", code: "B12", price: 98000 },
   ];
-  await page.route(`**/api/stores/${store}/catalog-products?*`, (route) => route.fulfill(json({
-    items: products.filter((p) => p.name.includes(new URL(route.request().url()).searchParams.get("q") ?? "")).map((p) => ({ id: p.id, slug: p.code.toLowerCase(), name: p.name, status: "active", version: 1,
+  await page.route(`**/api/stores/${store}/catalog-products?*`, (route) => {
+    const query = new URL(route.request().url()).searchParams.get("q") ?? "";
+    const matches = products.filter((p) => p.name.includes(query) || p.code.includes(query));
+    return route.fulfill(json({
+    items: matches.map((p) => ({ id: p.id, slug: p.code.toLowerCase(), name: p.name, status: "active", version: 1,
       cover_image_id: null, price_min_minor: p.price, price_max_minor: p.price, currency: "TWD", sku_count: 1,
-      available: 10, keyword: p.code, inventory_tracked: true, updated_at: instant })),
-    next_cursor: "", total: 2, status_counts: { draft: 0, active: 2, archived: 0 },
-  })));
+      available: p.code === "C12" ? 0 : 10, keyword: p.code, inventory_tracked: true, updated_at: instant })),
+    next_cursor: "", total: matches.length, status_counts: { draft: 0, active: products.length, archived: 0 },
+    }));
+  });
   for (const p of products) await page.route(`**/api/stores/${store}/products/${p.id}`, (route) => route.fulfill(json({
     id: p.id, slug: p.code.toLowerCase(), name: p.name, description: "", status: "active", version: 1,
     seo_title: "", seo_description: "", options: [], collection_ids: [], warehouse_id: null,
     skus: [{ id: p.sku, code: p.code, title: p.title, price_minor: p.price, compare_at_minor: null,
-      option_values: [], version: 1, currency: "TWD", available: 10, inventory_tracked: true,
-      max_per_order: null, keyword: p.code, on_hand: 10, committed: 0, weight_grams: 100,
+      option_values: [], version: 1, currency: "TWD", available: p.code === "C12" ? 0 : 10, inventory_tracked: true,
+      max_per_order: null, keyword: p.code, on_hand: p.code === "C12" ? 0 : 10, committed: 0, weight_grams: 100,
       length_mm: 10, width_mm: 10, height_mm: 10, origin_country: "TW", customs_name: "", hs_candidate: "" }],
   })));
   await page.route(`**/api/stores/${store}/tools/orders/manual/options`, (route) => route.fulfill(json({ options: [{
@@ -129,6 +134,7 @@ test.describe("PARITY-ORDER-OPS signed frames (BROWSER MOCK)", () => {
       await openPicker();
       const select = (name: string) => page.getByRole("button", { name: new RegExp(`${c.select}.*${name}`) });
       await action(page, "焦糖托特包", "click + apply", "one tote in draft", async () => {
+        await expect(select("Out of stock")).toBeDisabled();
         await select("托特包").press("Space");
         const dialog = page.getByRole("dialog");
         const selected = dialog.getByRole("button", { pressed: true, name: /托特包/ });
@@ -158,6 +164,13 @@ test.describe("PARITY-ORDER-OPS signed frames (BROWSER MOCK)", () => {
         await selected.click();
         await page.getByRole("button", { name: c.cancel, exact: true }).click();
         await expect(page.getByRole("spinbutton", { name: new RegExp(c.quantity) }).first()).toHaveValue("2");
+      });
+      await openPicker();
+      await action(page, c.cancel, "Escape", "keyboard cancellation restores the original draft and focus", async () => {
+        await page.getByRole("dialog").getByRole("spinbutton").fill("4");
+        await page.keyboard.press("Escape");
+        await expect(page.getByTestId("mo-open-picker")).toBeFocused();
+        await expect(page.getByTestId("mo-lines").getByRole("spinbutton")).toHaveValue("2");
       });
       await openPicker();
       await action(page, "日常斜背小包", "click + apply", "two distinct SKU lines", async () => {
