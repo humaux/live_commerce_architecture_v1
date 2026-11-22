@@ -8,7 +8,7 @@
 | 定位买家或商家的实际业务入口 | [核心功能地图](docs/FEATURE_MAP.md)、[商家应用](apps/admin/)、[买家应用](apps/storefront/) |
 | 修改领域逻辑、接口或数据库 | [架构基线](架构.md)第 0、1、2 节、[ADR](docs/adr/)、[领域契约](contracts/)与 [P0 不变量](contracts/invariants.json) |
 | 查工程分工、租户边界、外部动作授权与交付证据 | [项目交付流程](docs/delivery/PROCESS.md)；架构第 26、27 节保留初版工作区与任务 DAG 的设计背景 |
-| 修改或验收 UI | [核心功能地图](docs/FEATURE_MAP.md)、[项目交付流程](docs/delivery/PROCESS.md)中的真实点击要求及[浏览器门禁](docs/delivery/GATES.md) |
+| 修改或验收 UI | [核心功能地图](docs/FEATURE_MAP.md)、[UI 工程规范 §10.6b 的真实点击与点击台账](docs/engineering/ui-architecture.md)及[浏览器门禁](docs/delivery/GATES.md) |
 | 选择受影响的验证、记录未验证范围 | [定向验证 CLI](scripts/dev/verify)、[门禁与运行模式](docs/delivery/GATES.md)、[CI 工作流](.github/workflows/gates.yml) |
 
 跨域细则按任务在 Humaux 取原文：长线任务、编排、额度与缓存、开发流程、视觉、文件与磁盘、权威。
