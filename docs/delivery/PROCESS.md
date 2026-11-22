@@ -1,187 +1,54 @@
-# Delivery process (Release 1 onward)
+# 交付流程
 
-Status: binding for every agent that writes code in this repo, from 2026-09-28.
-Owner goal: ship a stable, deployable live-commerce SaaS as fast as possible, with automated
-tests for every feature, real-browser tests for every page, and code that stays diagnosable.
-Read this file first; then read only the contract sections your brief names (`AGENTS.md` rule:
-load by section, never the whole `架构.md`).
+本文件是仓库的现行执行指南。范围与授权以本轮负责人指令和派发卡为准，业务不变量见 [P0 契约](../../contracts/invariants.json)，门禁以 [GATES](GATES.md)、仓库检查器和 CI 工作流为准。先从 [AGENTS](../../AGENTS.md) 定位架构章节，再按当前任务读契约。遇到指令与有效门禁冲突时，保留门禁并报负责人裁决。查不到的状态记 `UNKNOWN`。
 
 ## 1. Release plan
 
-Release 1 (R1) = the smallest loop a merchant can actually sell with. Nothing below is cut from
-the product; R2/R3 are sequencing, not scope reduction.
+现行任务依赖查 [任务 DAG](../../contracts/tasks.json)，实现和验收状态分别核对固定 SHA、CI 回执和任务证据。旧交付报告和 `units/` 卡片可用于追溯已冻结契约、裁决与验收判据。其中的厂商岗位、会话路由、迁移号段、执行状态和操作授权只适用于当时的任务。
 
-| Order | Unit | Contract | Evidence target |
-| --- | --- | --- | --- |
-| R1-1 | Stripe stage B1: `0061` + post-River SQL, fake Stripe server, payments/checkout/webhook inbox, HTTP/process/registrar (SP06–SP15, SP19–SP21) | `contracts/stripe-psp-v1.md` (FROZEN) | MOCK + REAL_PG, SP16 SANDBOX |
-| R1-2 | Stripe stage B2: buyer payment UI, BFF, browser card 4242/decline/3DS (SP18) | same + UI amendment | BROWSER (SANDBOX) |
-| R1-3 | Refund lifecycle on Stripe (merchant-initiated, REQUESTED→SUBMITTING→SUCCEEDED/FAILED/UNKNOWN, 架构 §12.3) | new amendment `stripe-refund-v1` | MOCK + SANDBOX + BROWSER |
-| R1-4 | Manual fulfilment: merchant records carrier + tracking (架构 §13.4 manual path, audited), buyer sees it | new `manual-fulfilment-v1` | REAL_PG + BROWSER |
-| R1-5 | T10c Meta comment intake: signed Meta comment webhook → claims ingest → first private reply with cart link | amendment `meta-claims-intake-v1` | MOCK (signed) + LIVE read-only probes |
-| R1-6 | T12 end-to-end: comment → claim → cart → pay (4242) → order → ship → refund, admin + storefront | `tasks.json` T12 | BROWSER |
-| R1-7 | Maintainability: package docs for every package, generated dependency map, CI staleness check | this file §5 | CI |
-| R1-8 | T20/T21-lite security + fault review of R1 surface; deploy blockers (I8, runbook drift); `smoke.sh full` | `deploy/`, runbooks | smoke + review verdicts |
-
-R2: T13 carriers / Taiwan CVS labels, T14 customer graph + consent, T17 billing, T18 ops UIs.
-R3: T15 ads, T16 CAPI/catalog/audiences, T19 benchmarks, T22 pilot + rollback drill.
-
-Owner-only items (engineering cannot close them): OIDC IdP choice (deploy B2), Stripe live
-activation, Meta App Review / Access Tier, carrier contracts, production host + ADR O1.
+历史索引：R1 是 Stripe 测试支付、退款、手工履约、Meta 评论认领与成交闭环的首批交付。R1-8 指发布检查和部署 smoke，入口是 [release-gate.sh](../../scripts/dev/release-gate.sh)。R2 规划物流、客户同意、账单和运营界面。R3 的 T15/T16 指广告和归因，T19/T22 指基准与试点。完整候选的要求见 [架构 §28](../../架构.md#section-28) 和任务 DAG。Meta App Review、商家与平台资质以及生产环境批准由负责人确认。
 
 ## 2. Per-unit software-engineering flow
 
-Every unit goes through these stages in order. A stage that fails twice on the same blocker
-escalates to the integrator instead of looping (`AGENTS.md`).
+1. **定范围。** 每卡绑定宪章条目、固定 base SHA、分支和 worktree、允许写入路径及依赖。卡片指明契约章节、可判定的验收条件、验证入口、授权与轮次上限。界面入口先查 [Feature Map](../FEATURE_MAP.md)。按改动面定位调用者和入口，优先复用已有实现。
+2. **冻结接口。** 涉及 API、事件、共享 schema 或 SQL 签名时，先按获准范围写契约，经过独立评审并由 integrator 裁决、冻结。上下游即使文件路径互斥，也须等共同接口冻结。收紧契约规则时查构造该载荷的客户端，并在合入前告知在途调用方。
+3. **实现。** 按已冻结契约做最小变更。新服务、路由和 worker 要接入实际进程，并用测试覆盖装配。HTTP 路由变更用无数据库的整路由器构建测试发现冲突。BFF 测试走真实 handler、`Request` 和共享认证、Cookie、CSRF、错误响应 helper。测试可以替换上游网络边界。
+4. **验证。** 修 bug 先留真实失败证据。新门禁保留「注错→红→修→绿」。本地优先使用 [verify](../../scripts/dev/verify) 跑适用的 DB-free smoke，需要真实 PostgreSQL 时走 `bash scripts/dev/test-focused.sh '<regex>'`。全量 foundation、浏览器模式、点击扫测、视觉 lint 和重型矩阵在 CI 跑。脚本与套件入口见 [GATES](GATES.md)。UI 验收按下文执行。
+5. **独立审查。** 主控核查 diff、白名单与原始证据，并独立复跑关键检查。CI 通过后，由异家族非作者独审，高风险的资金、权限、契约和上线变更做深审。P0/P1 阻断合并，范围外 P2 记入 `review/p2`。同一阻塞最多两次定向修复，卡片有更严上限时按卡片执行。保留失败测试、阈值和夹具的判别力。
+6. **集成。** 通过 PR 进入 `r3/integration`，所需模式由 [pr-modes.mjs](../../scripts/dev/pr-modes.mjs) 和 [gates.yml](../../.github/workflows/gates.yml) 决定。文档 PR 也执行仓库为它选择的 CI 门禁。仅在 `Gates (GitHub runners) / required` 绿且 PR 当前 head SHA 的 `review/independent` 成功后 squash 合并。校准与故障注入走独立的 `workflow_dispatch`。触及 `migrations/`、GRANT、POLICY、SECURITY DEFINER 或 checkout/storefront 运行路径时，用 `bash scripts/dev/release-gate.sh --strict --only G07` 在 CI 完成单元验收，并在合并后对集成 SHA 重跑完整 G07。定向用例仅用于定位。权限变更同时查受影响表和角色的 ACL/schema 清单及旧版升级夹具。
+7. **留证并清理。** 按 [§4](#4-evidence-labels-agentsmd) 交付证据并按当前 Humaux 规则更新任务记录。外接数据盘承载 worktree、缓存和测试产物。收尾只停止本任务进程、回收自己的夹具、容器和端口，保留失败原件与 KEEP 文件。确认交回提交和证据后再清理本任务 worktree。
 
-1. **Brief** (integrator): `docs/delivery/units/<unit>.md` — goal, contract sections, write paths,
-   gates, test commands, non-goals. Agents read the brief, not the chat.
-2. **Contract** (integrator, only if the brief says so): amendment drafted, one adversarial
-   review, then FROZEN. No implementation of a downstream piece before its upstream interface is
-   frozen.
-3. **Implement** (author agent, own git worktree under `.worktrees/<unit>` on branch `unit/<unit>`,
-   only the brief's write paths). Unit tests for pure logic. `go vet`, `gofmt`, typecheck clean.
-4. **Independent tests** (test author ≠ implementer): gate tests written from the contract, not
-   from the implementation. Real PG via `bash scripts/dev/test-focused.sh '<regex>'`.
-   Browser pages via Playwright. A test that cannot fail is not a test: each gate records one
-   red run (mutation or pre-fix) before its green run.
-   - **BFF and client tests use the real seams** (second occurrence, 2026-10-07; this is now a rule). Tests drive
-     the real route handler with a real `Request`, and the real shared helpers: `auth.ts` `localError`, cookies, CSRF.
-     Only the network edge (the upstream `fetch`) may be faked. A hand-written stand-in for a shared helper is a
-     review P1. Two bugs were hidden this way:
-     - W3-U4: a DELETE was always refused because Next 16 gives every non-GET request a body stream.
-     - W5-U1: every coded error was treated as `retry_later`, because the mocked `localError` returned
-       `private, no-store` and the real one returns `no-store`.
-5. **Review** (reviewer ≠ author): correctness + security on the unit diff, adversarial
-   ("try to break it"). P0/P1 block merge.
-6. **Integrate** (integrator): merge into the release branch, run the affected focused suites,
-   push, let CI run the full suite. Record evidence (§4). Update `contracts/tasks.json`.
-   - **Integration is by PR only** into `r3/integration`. The required gates are fixed by the repo (`scripts/dev/pr-modes.mjs`, table in GATES.md "Pull-request gates"); the merging agent does not pick
-     modes. Calibration and fault-injection runs stay an extra `workflow_dispatch`. Squash-merge only after the check `Gates (GitHub runners) / required` is green AND the commit status
-     `review/independent` (posted on the PR head SHA by the reviewer or integrator) is success.
-   - **Full G07 is mandatory** (`release-gate.sh --strict --only G07`) for any unit that touches `migrations/`,
-     a GRANT/POLICY/definer, or the checkout/storefront runtime path — in the unit's own acceptance AND right after
-     the integrator's merge, not only at the final gate. Focused regexes miss other domains' frozen ACL inventories
-     (`*_schema_test`, consumption-ledger ACL) and the historical-fixture shims (`lriShims`) that legacy upgrade
-     gates need when current Go reads a new column (R5 wave 2: 11 G07 failures nobody had run).
-   - A reviewer of a grant change greps every ACL/schema inventory test for the touched tables and roles.
-   - When the integrator tightens a contract rule (even validation only), grep the clients that build that payload
-     and notify every in-flight unit that calls it before merging.
-7. **Record**: Humaux memory (`fix`/`decision`/`rejected`), canvas step update.
+### UI 验收
 
-## 3. Agents, models and token economy
+按任务卡范围和 [GATES](GATES.md) 覆盖每个页面的每个可操作控件。用真实浏览器的 `click`、`fill`、`selectOption` 或键盘操作，断言用户可见结果，涉及持久化则刷新并读回。交付点击台账，逐项记录页面、控件、操作、期望、实际和判定。控件不可用或操作无效按缺陷记录。截图、直接 API、改 DOM、`dispatchEvent` 和 `force: true` 不能代替这条验收路径。允许按 gate 读值、量测和准备夹具。布局验收按批准的设计稿、令牌和真实桌面及移动端截图执行，保留相应视口、语言和浏览器证据。
 
-| Role | Model tier | Why |
-| --- | --- | --- |
-| integrator (main loop) | top tier | contract rulings, merges, final verdicts |
-| contract/security reviewer | top tier | money, tenancy and secrets paths |
-| implementer, test author, UI author | mid tier (Sonnet) | well-specified code against a frozen contract |
-| mechanical: run suites, summarize logs, grep inventories | small tier (Haiku) | no judgment needed |
+## 3. Agents and worktree isolation
 
-Token rules for every agent:
-- Start every task by reading this file, then the brief. The identical prefix is what makes
-  prompt caching hit across agents; do not paraphrase it into your own notes.
-- Read code by symbol (`grep -n`, `sed -n 'a,bp'`), not whole files. Never read `架构.md` or a
-  contract end to end when the brief names sections.
-- Return a short structured result (what changed, commands, exit codes, evidence paths,
-  NOT_RUN list). Put long output in files under `output/` (gitignored), never in the reply.
-- Don't re-run a green suite without a code change in between. Don't re-verify what the brief
-  marks as already verified; cite the evidence file instead.
-- One PG test run at a time machine-wide: `scripts/dev/test-focused.sh` serializes itself.
+- 使用 [架构 §26.2](../../架构.md#262-角色和写入边界) 的角色。探索用只读 `platform_explorer`，安全审查用只读 `security_reviewer`。实现按 `commerce_worker`、`integration_worker`、`ui_worker` 的写入边界划分，`test_worker` 独立验收。共享迁移编号、OpenAPI、JSON schema、`go.mod`、`go.sum` 和 pnpm 锁文件由 integrator 最终整合。角色名和 worktree 不授予运行时权限。
+- 初始预算为同时最多 4 个子任务、最多 2 个写入任务。主控先查 DAG，可用实测校准预算。写入任务独立 worktree/branch 和互斥写入路径，禁止递归派发。测试按任务隔离数据库、schema、端口和夹具标识。同一台开发机的 PG 测试共用 [test-lock.sh](../../scripts/dev/test-lock.sh) 的串行锁，等待占用释放。
+- 用当前 Orca 与 Humaux 编排细则按风险和实际可用能力选车道。历史角色分配和模型候选不提供当前授权。缺合格异家族复核时标 `REVIEW_PENDING`。Orca worker 通过原生 `worker_done` 汇报，主控收结论和证据指针。任务记录注明角色、实际提供方和模型、推理档位、base/head SHA、worktree 和写入路径，未获回执的字段标 `UNKNOWN`。
 
-### Third-party models (owner 2026-10-01: Kimi subscription)
+### Third-party models
 
-Runner: `scripts/agents/ext-agent.sh` (sandboxed: private HOME, no MCP, Bash allowlist, no secrets, worktree only).
-`KIMI_MODEL=k3` (K3, default) or `kimi-for-coding` (K2.8). Calibrated on real units 2026-10-01. `k3.1-pro` (K3.1 Pro, owner 2026-10-27 "kimi新出了一个模型，编入车队") is allowed and is being calibrated as a cross-family reviewer against DeepSeek on live PRs; it becomes the default only after that calibration is recorded. `k3.1-pro-highspeed` is not used (2x usage cost).
-
-| Work | Model |
-| --- | --- |
-| cross-family adversarial review (second opinion next to the Claude reviewer), independent test author, test design, long logs | K3 |
-| visual QA of browser screenshots (second opinion: K3), small copy/gate-registration chores | K2.8 |
-| **all UI under `apps/`** (pages, components, CSS, copy in three locales, BFF route handlers) against a frozen API and the approved comps (owner 2026-10-02 "ui任务给codex来做"): the integrator queues a self-contained task into the owner's Codex thread with `codex queue --thread <id> --message …` (CLI inside ChatGPT.app), one dedicated worktree per task, completion = the task's `output/<unit>/SUMMARY.md` | Codex |
-| merges, contract rulings, final money/permission review, deploy and anything on a live host | Claude only |
-| well-specified Go/SQL/deploy implementation against a frozen brief, backend tests, focused backend bug fixes (calibrated 2026-10-01/02: live-tools tests, 0102, 0104 — all merged; small fixes ≈ ¥5-8, a full unit ≈ ¥35-55). **Never anything under `apps/`** — no UI, visual, page, component, CSS or copy work (owner 2026-10-02: "DeepSeek不能用来做视觉或ui的开发，做出来的不行"); a brief that needs both is split: DeepSeek backend first, API frozen, then K2.8 UI | DeepSeek Flash (`PROVIDER=deepseek`, default `MODEL=deepseek-flash`; owner 2026-10-22) |
-| text-only mechanical work: log summaries, inventories, renames. **Never images or visual QA** (owner 2026-10-02: Flash missed the blank-tile defect K3/K2.8 caught) | DeepSeek Flash |
-| browsing the owner's logged-in production consoles (SHOPLINE, Meta, Cloudflare) | Claude mid tier only (the sandbox has no network tools by design) |
-
-Default routing (owner 2026-10-02 "能使用 DeepSeek 或 Kimi 的使用"): backend implementation → DeepSeek Flash (owner 2026-10-22: use deepseek-flash, not V4-Pro — cheaper, faster, more effective); every `apps/` change → Codex
-(a DeepSeek diff touching `apps/` is rejected at merge); independent tests and cross-family review → K3; visual QA → K2.8 (images: K3 or K2.8, never Flash); Claude sub-agents only where the
-sandbox cannot work (browser on logged-in consoles, merges, live hosts) or for the final money/security verdict (top tier).
-Concurrency: at most 4 sub-agents, at most 2 writers at once; Kimi at most 2 at once and the Pro plan's 5-hour quota runs out in
-~30-90 min of two parallel K3/K2.8 agents (2026-10-02: both cut off), so run large Kimi units one at a time and resume a cut-off run with
-`RESUME=<session_id>` — or, when the quota is out and the work is on the critical path, hand it to a Claude mid-tier sub-agent
-(at most 3; owner 2026-10-02 "DeepSeek、kimi、Claude一起使用"); DeepSeek has a ¥10 reserve guard
-in ext-agent.sh. Every agent records role, model, effort, base SHA, worktree and allowed paths in its delivery record.
-
-Before launching: `pnpm install --offline --frozen-lockfile` in the worktree and merge the integration branch into it
-(the sandbox cannot do either). Kimi output is reviewed by the integrator and passes the same gates as any unit;
-check browser specs that assert behaviour the change touches (K2.8 cannot run Playwright reliably).
+历史脚本 [ext-agent.sh](../../scripts/agents/ext-agent.sh) 中的路由与预算只描述该脚本，当前是否可调度由负责人的本轮指令与现行编排规则决定。
 
 ## 4. Evidence labels (`AGENTS.md`)
 
-Every claim is one of DESIGN, MODEL_ONLY, MOCK, SANDBOX, LIVE, NOT_RUN. Zero tests matched, a
-SKIP, a cancelled run or a missing log is never PASS. Evidence file = log under
-`/Volumes/data/live_commerce_architecture_v1/output/<unit>/` — the **main checkout's** absolute
-path, never the worktree's own `output/` (worktrees are deleted after merge; untracked files in
-them are lost) — with command, commit SHA, exit code and top-level PASS/FAIL/SKIP counts.
+记录 `DESIGN`、`MODEL_ONLY`、`MOCK`、`SANDBOX`、`LIVE` 或 `NOT_RUN`，另列 `BLOCKED` 和风险。真实 PostgreSQL、真实浏览器和模拟供应商可以同时出现，分别注明。供应商 SANDBOX/LIVE 需要对应环境的原始回执。零匹配、取消、跳过或缺日志不能判 PASS，适用例外查 [GATES](GATES.md)。
 
-## 5. Code comments and dependency annotations (anti-rot standard)
+交付记录包含变更与契约指针、命令、退出码、适用的 PASS/FAIL/SKIP 数量、证据级和未跑项。证据绑当前提交或文件哈希，CI 记录 run ID/链接与实际测试树。长日志和浏览器产物写入仓库认可的忽略运行目录或 CI artifact，清理 worktree 前归档，回报用稳定路径。浏览器路径和 Git 证据保留要求分别由 [check-browser-evidence.mjs](../../scripts/dev/check-browser-evidence.mjs) 和 [check-evidence-retention.mjs](../../scripts/dev/check-evidence-retention.mjs) 执行。
 
-Goal: when something breaks at 3am, the code itself tells you who calls what, which table or
-external service it touches and why, without archaeology. These rules generalize
-`contracts/stripe-psp-v1.md` §15 (D9) to the whole repo.
+## 5. Source documentation checks
 
-**Package level** — every Go package has a package comment (in `doc.go` or the main file):
-1. `// Package x owns …` — the single responsibility.
-2. `// It never …` — the non-goals (what callers must not expect from it).
-3. External services it calls name the host and why (`api.stripe.com`, `graph.facebook.com`).
-   Internal "depends on / used by" is NOT hand-written: `docs/engineering/dependency-map.md` is
-   generated from `go list` and CI fails when it is stale, so it is the single source of truth
-   (hand-written lists rot; amended 2026-09-29).
+现行检查以代码为准。仓库不新增普遍性的文件头、调用点和导出声明注释要求。注释优先解释类型和代码无法表达的外部约束，并指向契约、ADR 或 Issue；保留适用契约和检查器要求的注释。
 
-**Call sites** — a call that crosses a package boundary into another domain, or any SQL on
-another domain's table, carries a one-line comment naming the table/role/function and why:
-`// payments.apply_capture: single stock writer; the worker never writes the ledger`.
+- [check-headers.sh](../../scripts/dev/check-headers.sh) 由 [check-gates.sh](../../scripts/dev/check-gates.sh) 与适用 CI 路径调用。基线差异中的新增受检源码（含未跟踪源码）须在前 25 行有 `Purpose:`、`Depends on:`、`Used by:`。默认修改已有受检源码只检查前 8 行中的 leading doc comment。strict 模式对新增和修改均检查三个标签。适用扩展名和测试、生成物、文档等豁免以脚本匹配为准。旧文档中的「每个改动文件都加三行」已由实际检查范围取代。保留并通过现行门禁，策略更改由单独获准的门禁卡处理。
+- [check-pkgdocs.sh](../../scripts/dev/check-pkgdocs.sh) 检查 Go 包注释同时包含 `owns` 与 `never`。[depmap.sh](../../scripts/dev/depmap.sh) 生成并校验 [Go 依赖图](../engineering/dependency-map.md)，`check-gates.sh` 核对 [依赖登记](../engineering/dependencies.md) 中 Go 直接依赖和版本。旧卡提到的 [gen-deps.sh](../../scripts/dev/gen-deps.sh) 与其生成物用于查询，CI 的依赖图判据见工作流。
+- 继续遵守特定契约的注释与所有权检查。例如 Meta 评论接入的 [MCI schema 测试](../../tests/foundation/meta_claims_intake_schema_test.go) 检查相应表、列与 definer 的 `COMMENT ON`，[MCI guard 测试](../../tests/foundation/meta_claims_intake_guards_test.go) 检查包注释及受检 wire 常量的官方文档 URL。
 
-**Money, stock, retries** — monetary comparisons carry `// I05:` + rule; stock transitions carry
-`// §11.5:` + required evidence; every UNKNOWN/retry branch says why it retries the same key or
-why it must not retry.
+## 6. Hard boundaries
 
-**External constants** — every third-party wire constant/parameter has its docs URL and the
-retrieval date.
-
-**SQL** — every new table, column, function and role gets `COMMENT ON` naming its owning
-package, allowed roles and non-goals.
-
-**Frontend** — every `apps/*` route/component file starts with a comment naming the BFF route(s)
-it calls and the Go endpoint behind them.
-
-**Dependencies** — adding a Go module or npm package requires a line in `docs/engineering/
-dependencies.md` (what, why, who imports it, alternatives rejected). The generated
-`docs/engineering/dependency-map.md` (package → imports → importers) is regenerated by
-`scripts/dev/depmap.sh`; CI fails when it is stale.
-
-Comments explain *why* and *what it touches*, not what the next line does.
-
-## 6. Hard boundaries (restated from AGENTS.md; do not relax)
-
-- No production deploy, real refund, live payment, message send to real users, or destructive
-  migration without explicit owner approval in chat.
-- Secrets only from env / `~/.config/livecommerce/secrets.env` (outside the repo); never in code,
-  tests, logs, commits or agent replies. Stripe keys must be `sk_test_`/`rk_test_`.
-  Fake keys in tests are written split (`"sk_" + "test_..."`) so no key-shaped literal exists;
-  CI step "No key-shaped secret literals" enforces it.
-  Synthetic DSNs are assembled with `net/url` (`url.URL{Scheme:"postgres", User:
-  url.UserPassword(u, dsnSentinel1), Host:..., Path:...}`), with the sentinel in a neutrally named
-  constant; leak assertions search for the constant. GitGuardian flagged every literal form
-  (whole literal, split literal, `"postgres://u:" + const + "@host"`, `*Password*` constants) in
-  2026-09-29.
-- Tenant/store scope comes from server-side auth only.
-- Migration numbers: this release branch owns 0060–0079. Only the integrator merges migrations,
-  OpenAPI, shared JSON schema, go.mod/go.sum and pnpm-lock.
-- Never delete or weaken a failing test to go green; fix the root cause.
-
-## Delegation preamble, documentation ratchet and token economy (owner 2026-10-05)
-- Every delegated prompt starts with `docs/delivery/AGENT-PREAMBLE.md` verbatim (stable prefix → provider prompt-cache hits; unit text comes after it). Change the preamble rarely: each edit invalidates every cached prefix.
-- `scripts/dev/check-headers.sh` (run by `check-gates.sh`) fails when a file added or changed since the base lacks `Purpose:` / `Depends on:` / `Used by:` header lines. Existing files are paid down by the doc-headers unit, never by loosening the script.
-- `scripts/dev/gen-deps.sh` regenerates `docs/architecture/DEPENDENCIES.md` (package imports, third-party modules, env vars, SQL calls) without any model tokens; the integrator runs it after each merge and agents read it instead of exploring.
-- Cost routing: judgment (contracts, money/security review, merges) stays with the integrator; implementation goes to DeepSeek (backend, pay-as-you-go) and Codex (UI, subscription); independent tests/review to Kimi K3 (subscription, 5-hour window) with Claude Sonnet as fallback.
+- 生产上线、真钱、live 密钥、真实广告／退款／客户消息、购买真实面单、重播营销、破坏性迁移及删除真实用户数据，须有本次明确的负责人授权。合并提交、历史试点授权、角色名及测试通过都不能授权生产操作。生产或破坏性写入先核对状态，准备备份、影响范围与回滚点，再等审批。上线条件见 [部署运行手册](../runbooks/deploy.md#10-发布检查清单)。
+- 后端基线为 Go，前端为 TypeScript strict，PostgreSQL 是库存和交易唯一真源。第二交易引擎、Kafka、Redis 业务队列及服务网格须有获准 ADR。
+- 租户和店铺范围由服务端认证确定，服务端核定金额，不采信请求中的 tenant_id、转发 Host 或客户端金额。关键写入与任务同事务，外部副作用幂等、可对账，UNKNOWN 不盲重试。Meta 使用官方 API，遵守消息窗口与同意，不收集 FB/IG 密码、不上传跨租户客户名单。
+- 密钥通过获准环境注入。生产密钥和真实买家 PII 不进入代码、fixture、日志、提交、URL 或 agent 上下文。支付测试使用测试凭据与供应商 sandbox，Meta 开发验证限已授权测试资产和测试用户。测试夹具使用合成数据并通过 CI 密钥扫描。
