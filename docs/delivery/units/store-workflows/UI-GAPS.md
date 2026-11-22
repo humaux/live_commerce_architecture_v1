@@ -63,7 +63,7 @@
 
 ## 修订画板及回读
 
-正式文件页面 `4:8829` 中，16 个业务状态各有桌面和手机画板。覆盖的 48 条操作连线逐根核对目标并导出 32 张原尺寸 PNG。每根与自己的来源相对照，新增视觉变量别名、填充或描边颜色、样式 ID 均为 0。删去旧控件后，部分旧变量已不再使用。单根移动版筛选溢出已修复，终版几何回读无横向越界。
+正式文件页面 `4:8829` 中，首批 16 个业务状态各有桌面和手机画板，已按 48 条操作连线核对目标并导出 32 张原尺寸 PNG。另补两端宅配编辑及保存回执。首批 32 根与各自来源比较，新增视觉变量别名、填充或描边颜色、样式 ID 均为 0。后补的桌面宅配回执复用了同端次按钮实例 1468:113871，带入原回执未使用的边框变量 3:13；原生读回确认该按钮与来源同一主组件，填充、描边及样式完全一致。删去旧控件后，部分旧变量已不再使用。单根移动版筛选溢出已修复，终版几何回读无横向越界。
 
 普通运费编辑保留费用、免运开关与门槛，移出填写变更原因的额外要求。以 NT$135 商品小计演示两种配送，商家能看到固定运费、何时免运和买家合计。
 
@@ -72,6 +72,8 @@
 | 日常设置与两种运费 | [1791:52720](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-52720) | [1791:52816](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-52816) |
 | 编辑 7-ELEVEN 运费及免运门槛 | [1791:52912](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-52912) | [1791:52969](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-52969) |
 | 保存费率后读回 | [1791:53004](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53004) | [1791:53047](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53047) |
+| 单独编辑宅配费用 | [1791:66505](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Untitled?node-id=1791-66505) | [1791:66561](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Untitled?node-id=1791-66561) |
+| 宅配费已保存 | [1791:66595](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Untitled?node-id=1791-66595) | [1791:66647](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Untitled?node-id=1791-66647) |
 | 非空商品列表新增商品 | [1791:53068](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53068) | [1791:53156](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53156) |
 | 商家待处理申请 | [1791:53956](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53956) | [1791:54001](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-54001) |
 | 商家批准或拒绝 | [1791:53597](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53597) | [1791:53639](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53639) |
@@ -87,3 +89,25 @@
 | 买家查看已拒绝及原因 | [1791:53534](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53534) | [1791:53570](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53570) |
 
 这些回执覆盖设计节点、目标动作和图片。店铺网页实际写入、隔离数据库、真实商家无指导任务与生产发布由业务卡另行验收。全文件 REST lint 在本机缺少 FIGMA_TOKEN，未取得该项报告；已有节点级原生回读单独归档。
+
+## 逐件核对商品与筛选
+
+旧列表的三行曾指向同一件帆布提袋，编辑器与列表连售价也不一致。两端各补三件商品的载入态，并将“全部 → 在售 → 草稿 → 已归档”和勾选状态接回各自的正常列表。选中的筛选保留选中外观，点击其他筛选才切换。普通商品列表保留新增、逐件编辑，并从商品操作进入既有 CSV 导入与匯出。店内实际上传、导入、库存写入和商品发布仍由 TW06 验收。
+
+| 目录状态及商品事实 | 桌面 | 手机 |
+|---|---|---|
+| 帆布提袋 · NT$1,280 · 在售 · 可售 3 | [1791:66709](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Untitled?node-id=1791-66709) | [1791:66775](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Untitled?node-id=1791-66775) |
+| 棉質上衣 · NT$690 · 在售 · 售罄 | [1791:66920](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Untitled?node-id=1791-66920) | [1791:66971](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Untitled?node-id=1791-66971) |
+| 保溫杯 · NT$490 · 草稿 · 可售 16 | [1791:66822](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Untitled?node-id=1791-66822) | [1791:66873](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Untitled?node-id=1791-66873) |
+| 只看在售 | [1791:67018](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Untitled?node-id=1791-67018) | [1791:67092](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Untitled?node-id=1791-67092) |
+| 只看草稿 | [1791:67176](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Untitled?node-id=1791-67176) | [1791:67237](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Untitled?node-id=1791-67237) |
+| 只看已归档（空列表） | [1791:67307](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Untitled?node-id=1791-67307) | [1791:67354](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Untitled?node-id=1791-67354) |
+| 已选当前页 | [1791:67414](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Untitled?node-id=1791-67414) | [1791:67504](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Untitled?node-id=1791-67504) |
+
+设置总览每端恢复店铺资料、收款、账单、使用说明、资产授权等六个正常去向，失效的“加入团队”从此处移出。邀请收件人从自己的邀请链接办理。商家售后队列亦可查看所选申请的订单。手机撤回确认页的“我的订单”点击区域为 y=789 至 833，高 44 像素，处于 844 像素画面内。
+
+工程师在 Figma 播放器实际走过手机宅配保存、买家撤回页返回我的订单、设置进入店铺资料、商家售后进入订单、手机跨筛选打开保温杯、桌面三件商品分别进入并返回。回执和原尺寸图指向具体画板。应用持久化与商家无指导人测仍依 TW14。
+
+日常编辑须从同一商品保存或取消。未修改时显示当前售价，改动后再允许保存，取消后列表仍读原价。保存后打开相同商品及其筛选列表均须读到新价，其他商品保留原价。可售库存沿用库存模块的真值。Figma 播放器可使用预置金额演示此过程，任意金额、员工权限、并发改价及刷新持久化由应用和数据库验证。
+
+台湾繁中菜单、手机操作区 44 像素、拒绝与撤回的状态颜色，以及多个历史页面调色板与现行 DS 的差异归入 TW02b。改图时按正式组件及令牌核对，原型演示、局部令牌对照与全文件 lint 的结果分别记录。目录的三件示范商品用于核对身份，保存回执须同时核同一商品和金额。
