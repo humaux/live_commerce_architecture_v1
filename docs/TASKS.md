@@ -1,5 +1,7 @@
 # 开发任务依赖与写路径
 
+台湾试点的跨角色修复按[商家工作流任务卡](delivery/units/store-workflows/TASKS.md)排期。各卡沿用下列父项、业务不变量与发布门禁。
+
 **本表是开发任务 DAG 和默认角色，不是实时完成状态。** 当前切片状态见
 `contracts/tasks.json` 与 `docs/implementation/` 的实际验收记录；已落地的基础、
 商品库存和身份切片不代表整个任务或全局门禁完成。实际 agent/worktree 另记在交付证据中。
