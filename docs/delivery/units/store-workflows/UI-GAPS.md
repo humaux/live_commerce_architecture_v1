@@ -23,11 +23,20 @@
 2. 优先改设置总览、单项运费、商品草稿三组桌面和手机状态，后续组按现有正式节点逐项比对。
 3. 设置只列本店已启用服务、金额与免运门槛；查看、编辑、保存、冲突和待确认有明确返回路径。
 4. 商品保存后能看到草稿状态。库存、订单与售后操作始终显示正在操作的店，角色受限时只提供可用动作。
-5. 复用正式变量、字号、组件及自动布局。仓库 DESIGN.md 标注导航 #193c61、正文 #142942、底色 #f5f7fa、主动作 #247965；已有差异单独记录。
+5. 复用正式变量、字号、组件及自动布局。正式帧绑定变量与 `packages/ui/src/tokens.css` 的 DS-1/DS-3 为依据（导航 --ds-nav-bg、画布 --ds-page、主动作 --ds-primary、正文 --ds-ink）。未迁移页面以 --ui-* 为界，代码执行现有 check-hex-ratchet.mjs，原有差异单独留证。
 6. 桌面保留服务和价格的横向比较，手机纵向显示名称与金额。检查窄屏长文案、键盘顺序和焦点恢复。
 7. Eagle 对照 Shopify 的配送分组与 Squarespace 的订单筛选；负例是把开店清单长期放在日常工作台。
 8. 改前导出原稿、记录源 ID。改后回读新 ID、节点与交互，导出同尺寸图，测量 token diff；用三问检查所在店、可做动作和结果。
 9. 正式文件与批复以实际 Figma 节点及独立截图回执为准。UI 设计、隔离运行、原店复验分别记证。
+
+## 本轮正式节点逐项裁决
+
+| 任务 | 桌面 / 手机源 | 核对结果 |
+|---|---|---|
+| 日常设置与改单项运费 | 总览 1429:32319 / 1429:32392；服务 1468:113545 / 1468:113598；满额编辑 1468:113719 / 1468:113779；宅配 1468:113817 / 1468:113873；回执 1468:113959 / 1468:114007 | 重排已开店总览，指向对应服务。在超商修改和回执采用同一组费用和门槛 |
+| 首件与日常新增 | 空列表 1253:16665 / 1253:16710 → 空白编辑器 858:5505 / 858:5506；非空列表 1429:62828 / 1429:62906 | 已读空列表原型的跳转，复用空白编辑器。非空列表缺可见新增，补同一动作，设置总览移出商品表单 |
+| 售后待处理 | 商家 1468:107474 / 1468:107559 → 1468:86170 / 1468:86221；买家 1468:99242 / 1468:99291 | 商家“处理退货”指向登记 RMA，买家待商家确认只支持返回列表。复用候选页已画出的待处理、决定、撤回及反馈结构，回正式页设计修订。批准关联 RMA、拒绝须有原因，消费者在待处理时可撤回 |
+| 消息及门市 | 早期 Meta/客服的 4:2881、4:3429、4:3528、4:3823 实际均在备份页 11:13810。售后候选页为 1763:26。现行门市核对 1431:71232 / 1431:71249 | 初验表内这些历史节点按所属页解释。门市核对、店内消息和回放优先接通已存在的正常入口，复用正式稿可表达的业务状态 |
 
 ## 初验矩阵与原始证据
 
@@ -51,3 +60,30 @@
 | 12 | **缺验证** · 直播场次/留言/库存及认领、未连接/等待/降级 | `tests/admin/live-console.spec.ts:931–945` 绑定 `1429:39502 / 1429:39607` 等控制台样本，`4:10687 / 4:10860` 已标取代；D `live-console-20261026/DELIVERY.md` 和 `full-review/figma-native-copy-final/M-4-10860.png` 历史原型。现有 `--browser-live-console(-parity)` 含真实页面与 MOCK 业务/Graph 边界，真实提供方和该 SHA 全程图 UNKNOWN。 | 正常目录开同一场，媒体、评论接入、消息发送权益各有状态；暂停、空、权限拒绝、断线复连可区分。切场/切店清旧数据；待确认操作可查原命令，确认后目标 SKU/认领/库存保持一致。 |
 | 13 | **缺验证** · 收件箱、模板、消息窗口/权限、失败与未知结果 | 历史 Meta `4:3528 / SPEC 4:3823` 与网站客服 `4:2881 / SPEC 4:3429` 是早期分域稿；当前根 `1429:37361 / 1429:39076` 对话、`1429:38090 / 1429:39229` 窗口关、`1429:38274 / 1429:39307` 失败保文。签稿像素 UNKNOWN，模板 `673:2847 / 673:2916`。源码 `apps/admin/app/[locale]/messages`、`internal/httpapi/{inbox,templates}.go`，现有 `--browser-inbox` 原生点击覆盖夹具，LIVE Meta NOT_RUN。 | 真实店内测试线程进入正确渠道、正确会话，权限/窗口限制阻发且给下一步；明确失败保留草稿，响应未知保留原意图并查回执，切换不把文本发到别的会话。保存模板重开读回；真实发送资格另由独立沙盒/渠道回执证明。 |
 | 14 | **缺验证** · 财务/报表、结算/退款、无数据和导出/拒绝状态 | `4:12097 / 4:12246`、`1173:10738–10747`；D `finance-20261026/verify2/mobile-finance-home-4-12246.png` 与 `DELIVERY.md` 记录设计。H 有独立同单 TEST 收款/退款触点，覆盖不延伸到该 SHA 财务界面三语/双端。 | 切换日期、币种及 TEST/LIVE 过滤后，收款、履约、退款、结算和应收由各自权威事实回读，日期保留，空态和无权区分；导出遵守相同筛选与权限，金额逐笔对账。 |
+
+## 修订画板及回读
+
+正式文件页面 `4:8829` 中，16 个业务状态各有桌面和手机画板。覆盖的 48 条操作连线逐根核对目标并导出 32 张原尺寸 PNG。每根与自己的来源相对照，新增视觉变量别名、填充或描边颜色、样式 ID 均为 0。删去旧控件后，部分旧变量已不再使用。单根移动版筛选溢出已修复，终版几何回读无横向越界。
+
+普通运费编辑保留费用、免运开关与门槛，移出填写变更原因的额外要求。以 NT$135 商品小计演示两种配送，商家能看到固定运费、何时免运和买家合计。
+
+| 业务状态 | 桌面修订 | 手机修订 |
+|---|---|---|
+| 日常设置与两种运费 | [1791:52720](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-52720) | [1791:52816](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-52816) |
+| 编辑 7-ELEVEN 运费及免运门槛 | [1791:52912](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-52912) | [1791:52969](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-52969) |
+| 保存费率后读回 | [1791:53004](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53004) | [1791:53047](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53047) |
+| 非空商品列表新增商品 | [1791:53068](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53068) | [1791:53156](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53156) |
+| 商家待处理申请 | [1791:53956](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53956) | [1791:54001](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-54001) |
+| 商家批准或拒绝 | [1791:53597](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53597) | [1791:53639](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53639) |
+| 拒绝原因尚未填写 | [1791:53659](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53659) | [1791:53710](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53710) |
+| 填写拒绝原因后可以提交 | [1791:53739](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53739) | [1791:53790](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53790) |
+| 已批准并关联退货单 | [1791:53819](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53819) | [1791:53874](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53874) |
+| 已拒绝并保留原因 | [1791:53894](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53894) | [1791:53936](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53936) |
+| 买家申请列表 | [1791:54024](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-54024) | [1791:54038](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-54038) |
+| 等待商家处理，可撤回 | [1791:53264](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53264) | [1791:53302](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53302) |
+| 买家确认撤回或继续等待 | [1791:53331](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53331) | [1791:53374](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53374) |
+| 已撤回 | [1791:53408](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53408) | [1791:53444](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53444) |
+| 买家查看已批准 | [1791:53471](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53471) | [1791:53507](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53507) |
+| 买家查看已拒绝及原因 | [1791:53534](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53534) | [1791:53570](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Live-Commerce?node-id=1791-53570) |
+
+这些回执覆盖设计节点、目标动作和图片。店铺网页实际写入、隔离数据库、真实商家无指导任务与生产发布由业务卡另行验收。全文件 REST lint 在本机缺少 FIGMA_TOKEN，未取得该项报告；已有节点级原生回读单独归档。
