@@ -1,5 +1,7 @@
 # R5 计划：对标 SHOPLINE 与 1688，按商家真实用法改造（2026-10-02）
 
+> 历史 R5 计划。下文的厂商分工与波次只记录当时安排。新任务从[仓库入口](../../AGENTS.md)进入。
+
 依据：
 - `docs/discovery/2026-10-02-shopline-admin-study.md`
 - `output/r5-research/admin/REPORT.md`（后台对标，P1 12 项 / P2 16 项 / P3 4 项）
