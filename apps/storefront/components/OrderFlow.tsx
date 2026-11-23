@@ -734,8 +734,8 @@ export function OrderDetails({
       </p>
       {order.payment_mode === "cash_on_delivery" && <CodOrderStatus order={order} locale={locale} />}
       <ul className="order-lines">
-        {order.snapshot.quote.lines.map((line) => (
-          <li key={line.sku_id}>
+        {order.snapshot.quote.lines.map((line, index) => (
+          <li key={`${line.sku_id}:${index}`}>
             <span>
               {line.name} · {line.code} × {line.quantity}
             </span>
