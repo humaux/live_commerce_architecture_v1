@@ -204,6 +204,7 @@
   }
 
   .detail {
+    gap: var(--ds-space-2);
     padding: var(--ds-space-4);
   }
 

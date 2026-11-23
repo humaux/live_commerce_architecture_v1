@@ -5,7 +5,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
-import { displayTime } from "@live-commerce/format";
 import { Badge, Button, ButtonLink, TextInput } from "@live-commerce/ui/ds";
 import { ReadError, useGuardedRead, type ReadCode } from "@/lib/customers-client";
 import type { Store } from "@/lib/model";
@@ -216,7 +215,6 @@ export function BuyerReturnWorkbench({ locale, store, initialError, refreshRmas,
         {selected.rejection_reason && <div className={styles.rejection} data-testid="returns-rejection-reason">
           <h3>{copy.reason}</h3><p>{selected.rejection_reason}</p>
         </div>}
-        <p className={styles.meta}>{copy.received} {displayTime(locale, selected.created_at)}</p>
         <ButtonLink size="lg" className={styles.original} data-testid="returns-original-order"
           href={`/${locale}/orders?store=${store.id}&state=all&order=${selected.order_id}`}>{copy.openOrder(orderLabel)}</ButtonLink>
         {selected.return_id && selected.return_state && <a href={`${requestsHref}&rma=${selected.return_id}`}>{copy.rma} · {c.states[selected.return_state]}</a>}

@@ -212,7 +212,7 @@
     "tests/admin/reports.spec.ts": "e7dc43497dd6f337f65a43fc8bd0767fbd8b0e3b7eddfecda75761877128b710",
     "tests/admin/returns-model.test.ts": "9b66d090646cd7eec2ab87fdd6a17d39e45d24c2018dc8398b8211330d2e1da0",
     "tests/admin/returns-request.test.ts": "994407786c2a73a0b2ae76f6ffc64daa9cf108ef23f4aaccf0cd9fef17b64caa",
-    "tests/admin/returns-ui.spec.ts": "ea8f58ba3a88a9907be8bcf94a781036f5abb3fe082d873e63fc01c4ddaaa216",
+    "tests/admin/returns-ui.spec.ts": "0ed3fca268e3fe55d8d4e01ebbf9896d9ed2a331f0074607020adaa8cc3def9d",
     "tests/admin/safe-json-cancel.test.ts": "ab24bd8a7156d66a0f738ec12cc24c6a742c947fd8bbe08f534a07f42c60e8ee",
     "tests/admin/settings-amount.acceptance.ts": "8103d6e013aff50522d063b09884af36aac311617556d90c66c66185913fc9ff",
     "tests/admin/settings-reactdom-ownership.test.mjs": "525e1977e56d2592e19597f3bc0bbd6df1b94a312c1ab55631d46b87a0faa831",

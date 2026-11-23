@@ -366,7 +366,9 @@ if (applicationFixture) {
       await expect(article).toContainText(note);
       await expect(article.locator("[data-state]")).toHaveAttribute("data-state", state);
       await page.evaluate(() => window.scrollTo(0, 0));
-      const target = new URL((await article.getByTestId("returns-original-order").getAttribute("href"))!, origin);
+      const originalOrder = article.getByTestId("returns-original-order");
+      await expect(originalOrder).toBeInViewport({ ratio: 1 });
+      const target = new URL((await originalOrder.getAttribute("href"))!, origin);
       expect(target.searchParams.get("store")).toBe(fixture.nonDefaultStore);
       expect(target.searchParams.get("order")).toBe(orderId);
       expect(await workspace.innerText()).not.toMatch(/\b[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\b|R-[0-9a-f]{32}\b/i);
