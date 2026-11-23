@@ -1,7 +1,8 @@
 # Member points v1 — merchant-kept member records and an append-only points ledger
 
-Status: **DESIGN, review round 3 2026-11-05; every LPG/LPU gate below is NOT_RUN.** No Go, SQL or TS exists for this
-contract. Nothing here authorizes a real buyer erasure, a message to a buyer or any LIVE action.
+Status: LP-1/LP-2 are the original contract. The [M09/M10 amendment](#m09m10-amendment-2026-11-22) specifies
+the next implementation; its new gates are NOT_RUN. The original design and review history below are retained.
+This contract grants no authority to erase a real buyer, send a message or take a LIVE action.
 Review history: round 1 `output/issue-107/review-549-55fc66b3f-fable.md` (REQUEST_CHANGES, 3 P1 + 9 P2) closed in place,
 ledger §9 (round 1 and round 2 tables).
 
@@ -51,9 +52,9 @@ Migration reserved (provisional, integrator confirms the number): **`0223_loyalt
 | LP13 | **Rights:** new permission **`customers:points`** = create/edit members, manual adjust, order award. Reading members and ledgers = existing `customers:read`. Export/erase a member = existing `customers:privacy`. Default bundles: **owner and admin** get `customers:points` (backfilled for existing owner/admin staff); viewer, live_operator and fulfilment do not. A manual order with `member_award` additionally needs `customers:points`, checked by LP7's pre-check and re-checked in the final transaction (LP18). | Same naming (`customers:<action>`) and same bundle rule as W6-01B `customers:write`. Points are value the merchant gives away, so they are not part of `inventory:reserve`. |
 | LP14 | **Audit = the actor on every ledger entry** (no duplicate audit row per entry). Member create/edit/export/erase write audit rows `member.created`, `member.updated`, `member.exported`, `member.erased` with ids and counts only — never name, contact note, notes or ledger note. `order.manual_created.details` gains `member_award:{member_id, points, state}` (ids, numbers, state only). | Ledger is itself the audit trail; PII stays out of the audit table (I11). |
 | LP15 | **Out of every other surface:** no buyer-facing UI, no buyer notification or DM, no ads/CAPI/audience/report use, no CSV import/export of members, no use by any job. Members are not customers for any metric. | Owner: points are only a record. Keeps I07/I22 consent paths unchanged. |
-| LP16 | **Manual order only.** `POST orders/for-buyer` (live DM shortcut) refuses `member_award` (`400 invalid_json`, its own body allow-list in `order_for_buyer.go`) in v1, even though it wraps the same `Place` pipeline. Gate LPG11. | Owner named 手工單. See open question Q3. |
+| LP16 | **Manual order only.** `POST orders/for-buyer` (live DM shortcut) refuses `member_award` (`400 invalid_json`, its body allow-list in `internal/httpapi/merchanttools.go`) in v1, even though it wraps the same `Place` pipeline. Gate LPG11. | Owner named 手工單. See [conversation-origin manual order](#conversation-origin-manual-order). |
 | LP17 | **Order customer name is independent of the member.** The UI may prefill the order's `customer.name` from the chosen member's `display_name` (「订购人的名字我用客户的名字」), editable; the server stores no relation other than the award entry. Member erasure does not alter the order snapshot. | §G3 order snapshot is financial record (CD7). |
-| LP18 | **Mid-flow race (member erased, `customers:points` revoked, or a bound newly crossed between the pre-check and the final transaction): the order still completes; the award is recorded as not given.** `loyalty.try_award_manual_order` locks the member row, re-checks right / member / bounds and returns `{state:"awarded", entry_id}` or `{state:"not_awarded", reason:"member_erased"\|"member_unavailable"\|"forbidden"\|"limit_reached"}` **without raising**, so the final transaction always commits receipt + source mark + audit. The 201 answer and every replay carry `member_award.state`; the UI shows 「積分未贈送：<reason>」 and the merchant may add points by a manual adjust referencing the order. Erasure and the award serialize on the member row lock: an erasure that commits first makes the award `not_awarded`; an award that commits first is then redacted like any entry. Revoking `inventory:reserve` mid-flow is the existing §G3 behaviour, unchanged. | An award problem can never leave a placed order stuck as `source=storefront` (review P1-1, P2-1): the only failure left in the final transaction is the pre-existing §G3 one. |
+| LP18 | **Mid-flow race (member erased, `customers:points` revoked, or a bound newly crossed between the pre-check and the final transaction): the order still completes; the award is recorded as not given.** `loyalty.try_award_manual_order` locks the member row, re-checks right / member / bounds and returns `{state:"awarded", entry_id}` or `{state:"not_awarded", reason:"member_erased"\|"member_unavailable"\|"forbidden"\|"limit_reached"}` **without raising on these refusals**, so the final transaction commits receipt + source mark + audit. The 201 answer and every replay carry `member_award.state`. The UI shows 「積分未贈送：<reason>」 and uses [original-order recovery](#original-order-award-recovery) for this failed award. Erasure and the award serialize on the member row lock: an erasure that commits first makes the award `not_awarded`; an award that commits first is then redacted like any entry. Revoking `inventory:reserve` mid-flow is the existing §G3 behaviour. | The listed award refusals leave a completed manual order and a durable record of the failed award (review P1-1, P2-1). |
 | LP19 | **Order page 「扣回本單積分」 = a prefilled manual deduct**: the order page reads the ledger entries referencing that order (`GET members/entries?order_id=`), and the button opens the LP10 adjust dialog with member = the award's member, `delta = -award points` (editable), `order_id` = this order, note required. No cap logic; LP6 still refuses going below 0. | The UI needs the award to prefill; a generic ledger filter is the smallest read (integrator: keep a read only if the UI needs it). |
 
 ### Rejected alternatives
@@ -250,9 +251,9 @@ test_worker + security_reviewer; author PASS is not acceptance.
 
 - **L1** Search is a substring scan over ≤ 20,000 members per store (no trigram index). Upgrade: p95 search > 300 ms on REAL_PG or a store near the cap → `pg_trgm` index (first confirm the extension is available on the managed PG).
 - **L2** No member merge. Upgrade: merchants report duplicates they want combined → a merchant-initiated merge that writes a transfer pair of entries (never automatic).
-- **L3** Mid-flow race (LP18) gives `not_awarded`, not a retry; the merchant re-adds points by a referenced adjust. Upgrade: if `not_awarded` is ever observed in production logs (counted by state, no PII).
+- **L3** LP18 records the outcome at placement. Use [original-order recovery](#original-order-award-recovery) for the current result and any later recovery.
 - **L4** No link to `buyer.owners` (LP3). Upgrade: owner asks to see points on a site customer → a manual, revocable link with its own erasure/export coverage and an amendment to CD7.
-- **L5** `for-buyer` cannot award (LP16). Upgrade: owner asks for points from the live DM shortcut.
+- **L5** `for-buyer` retains LP16. [Conversation-origin manual order](#conversation-origin-manual-order) adds an explicit source to `orders/manual`.
 - **L6** Restore replay depends on the external erased-id list (T20), same as CD8.
 - **L7** Member export over 1 MiB is refused `export_too_large`. Upgrade: the first such refusal → paged export (several files by entry range).
 - **L8** No expiry, tiers, rules, redemption, reversal cap or buyer view — owner decisions, not limits; reopen only on an owner request.
@@ -261,11 +262,139 @@ test_worker + security_reviewer; author PASS is not acceptance.
 
 - **Q1** Default bundle for a future customer-service role: none exists (W6-01B note); owner/admin only for now.
 - **Q2** Legal retention for an erased member's numbers (U08): kept indefinitely in this draft.
-- **Q3** Should the live-console 代建訂單 shortcut (`for-buyer`) award points? Owner named only 手工單.
+- **Q3** Resolved for M09/M10 by the [amendment](#m09m10-amendment-2026-11-22). LP16 still applies to A16.
 - **Q4** Whether merchant admin routes should start getting OpenAPI entries (none do today).
 - **Q5** Exact nav position and frames for 會員 (no Figma frame located for this feature).
 - **Q6** Final migration number (0223 provisional; another lane may claim it first).
 - **Q7** Command receipt retention for the `loyalty.*` operations: this draft assumes the existing `ops.command_results` lifetime; if receipts are purged, a later replay of an old key becomes a new request (same as every other merchant command).
+
+## M09/M10 amendment (2026-11-22)
+
+Authority: LP-1/LP-2, [P0 invariants](invariants.json) I01–I04, I08–I09, I11 and I14,
+[Live Console §5 (A15/A16) and A13](live-console-v1.md#51-flow), [Storefront §G3](storefront-v2.md#g3-manual-merchant-created-order), and
+[signed M09/M10 frames, version 2424754435852683752](https://www.figma.com/design/iJ9lDdFIXgTlKkt5Tvrc0X/Untitled?node-id=1826-109096&version-id=2424754435852683752).
+The source references below are relative to baseline `4b4c58059a8f573de5540b35164396217d0c6840`.
+LP16/LPG11, LP10 and LP1–LP3 remain in force.
+
+### Conversation-origin manual order
+
+| Entry | Existing authority and required behavior |
+| --- | --- |
+| M10 independently | `orders/new/page.tsx` → `ManualOrder` → tools BFF → `POST orders/manual` → `ManualOrders.Place`. Omit `source_context`. An empty draft and ordinary catalog ordering depend on the store's catalog, inventory and delivery/payment authorities. Meta/BM capability is immaterial. When no authorized local thread exists, the operator can open M10 independently and communicate separately in native Messenger. |
+| M09 Meta thread, no linked claim bundle | `Inbox.tsx` selects `InboxThread` by local conversation ID. A15 returns no claim lines for a same-store thread with no `inbox.bundle_peers` link. Submit an explicit conversation source with `bundle_ids:[]`; price from the catalog and persist the thread-to-order link. Recipient prefill comes only from A14's explicitly linked customer's last order. |
+| M09 linked claim bundle | A15 reads claim lines through the scoped peer association. Keep the verified bundle IDs through submission and use A16's internal reservation, live-price grant and claim-use rules, including fail-closed peer checks and `live:manage` for grants. The normal catalog-price outcome for a verified source without an eligible grant still displays the server's reason. A bundle-only Inbox row (`BundleRecovery`) has no local thread to return to and keeps its existing claim-recovery behavior. |
+| Existing order / add goods | Use A13 `GET inbox/buyer-panel` and the existing order detail. A13 derives bundle order IDs from `claims.order_origins`, live-price uses and `inbox.order_for_buyer` (migration 0165). Existing-order intent opens that order. Appending goods would require its own repricing, stock and collection contract and is outside this amendment. Never translate that intent or a consumed/placed bundle into a new order. |
+
+**Read context.** Reuse A15 at `/inbox/order-prefill?conversation_id={id}` (method `GET`). Keep the existing fields and bare-bundle
+read. For callers with `inbox:read` in addition to the existing A15 rights, add `order_context`:
+`{state:"ready",conversation_id,bundle_ids,revision,latest_order_id}`,
+`{state:"existing_order",conversation_id,order_id}`, or
+`{state:"review_required",conversation_id,reason}`. IDs are opaque UUIDs; `latest_order_id` may be null.
+The ready set is the complete verified in-scope set for this draft (0–5 non-purged bundles with claim lines that
+can still be placed). Derive the set from the association and current claim/placement facts; a capped A15 item list
+cannot certify completeness or the absence of a bundle. If all linked work is already placed and a single original
+order is known, return `existing_order`; competing candidates, unresolved placement or >5 selected bundles return
+`review_required`. A bundle attached to a non-cancelled order stays outside the ready set, including a price-neutral
+claim order proven by `claims.order_origins`. For a catalog-only
+thread with a previous completed contextual order, show that order on re-entry; an explicit new draft may use the latest
+revision. Never expose an original order pointer without `orders:read`.
+
+**Write once.** Extend existing `POST /orders/manual` with optional, non-null
+`"source_context":{"conversation_id":"<uuid>","bundle_ids":[],"revision":"<opaque A15 revision>"}`
+alongside the existing manual body and optional LP7 `member_award`. Body accepts no caller price, owner, tenant, order ID
+or DM instruction. For contextual writes require `inventory:reserve`, `catalog:read`, `orders:read` and `inbox:read`;
+LP7/LP13 govern a requested award. Before pipeline writes, resolve the same-store thread and verify the revision against
+the server's current bundle selection and latest contextual order under a scoped conversation lock. A missing/foreign/
+erased thread or bundle is `404 not_found`, a verified foreign peer is `409 bundle_buyer_mismatch`, changed selection
+is `409 source_changed`, and a reserved or already used bundle is `409 bundle_already_ordered` with the authorized
+order ID when known. Invalid source fields are `422 invalid_request`; missing rights are `403 forbidden`.
+
+Use one `ManualOrders.Place` pipeline and one command admission per intent. Bind the normalized body (including
+source, revision and award) to the Idempotency-Key **durably before the first effect**, including for an empty bundle set.
+Prevent a matching key from entering the independent path with the source stripped; changed body is
+`409 idempotency_conflict`. Preserve exact replay of pre-amendment receipts and their hashes. Within each tenant/store
+conversation, admit at most one request for the same draft revision, even across principals or keys. A pending command
+fences new contextual placement and re-entry; a committed prior revision returns `409 source_already_ordered` and its
+order ID. A pending conflicting attempt returns `409 source_order_pending`. A definitive no-order refusal can release
+the slot; age or the absence of a final receipt alone cannot.
+Bundle-bearing orders use the existing claims reservation authority and consumption ledger, including fences against
+the legacy A16 and buyer claim paths. A stale pending contextual reservation cannot be released while an order may exist.
+Keep Quote/Begin as sole price and stock authority. Finalize the scoped provenance, bundle placement, normal order
+mark/audit, original command receipt and LP18 award outcome together in the final merchant transaction. A resumed
+placement binds only its original order. Store provenance separately from customer/member identity. A conversation
+erasure must suppress the thread pointer on subsequent reads and replays while retaining the order and original
+idempotency binding. Contextual placement schedules zero DM operations.
+
+**Read back.** `201` first placement or `200` exact replay returns the existing manual receipt plus
+`order_origin:{conversation_id,bundle_ids}` when the source is still readable and
+`live_price:"applied"|"not_applied",live_price_reason`. Extend A13's conversation read to show contextual order
+links, including zero-bundle orders. Keep the current order detail as authority for the order. UI return target is the
+same-store Inbox thread (locale + local conversation ID), resumed only after a new authorized read. For a lost response,
+the new read endpoint at `/orders/manual/receipt` uses method `GET` and the original `Idempotency-Key` for a no-cache lookup for the
+submitting principal with current `orders:read`; origin fields additionally require `inbox:read`. It returns
+`{state:"pending"|"committed"|"absent",receipt?}` (committed
+receipt has no link capability). Keep the same key and use only exact-payload replay if available. `absent`, timeouts and
+an unavailable read preserve UNKNOWN until a definitive command resolution. Keep only opaque recovery identifiers
+through reload. A list search, a freshly generated key or dropping source cannot settle UNKNOWN.
+
+### Original-order award recovery
+
+**Read and write.** The new endpoint at `/orders/{order_id}/member-award-recovery` uses
+`GET` with `orders:read` + `customers:read`.
+It returns `{order_id,state,reason?,member_id?,points?,entry_id?}`, with `state` one of `eligible`,
+`already_awarded`, `review_required`, `not_eligible`. The same path accepts `POST` with `Idempotency-Key`, JSON
+`{}` and `orders:read` + `customers:points` (owner/admin by default). Return `201 {order_id,state:"awarded",member_id,points,entry_id}`
+for a new entry; `200` and the same facts for an exact replay or another key resolving an already recovered award.
+The original placement receipt stays immutable. The current recovery GET plus
+`GET /members/entries?order_id={order_id}` are the readback. Expose no notes, tokens or buyer data in recovery receipts.
+
+**Server admission.** Match the scoped order ID to its final manual placement receipt. Only an order with committed
+`source=merchant_manual`, current state other than `DRAFT`/`CANCELLED`, and original
+`member_award.state="not_awarded"` is eligible. Take the member and positive amount solely from that receipt.
+Missing/multiple/conflicting receipts, uncertain placement or an absent original award intent cannot authorize an entry.
+An existing canonical `manual_order_award` is definitive; for a failed receipt, reuse its matching recovery entry,
+and return `review_required` if the member or amount conflicts. Preserve the original LP19 ability to deduct points.
+
+**Prior adjustments.** Reuse the order-scoped LP19 ledger read for investigation, including receipt and actor/time
+evidence and member-ledger history if needed. On the server, check the complete scoped ledger for positive
+`manual_adjust` entries referencing this order (any member) and for unlinked credits to the original member at or after
+order creation. Either is a candidate and requires reconciliation (`409 award_review_required`). Amount, notes and
+timestamps alone cannot prove an award was paid. A negative adjustment alone does not credit the failed award.
+Staff compare the candidate entry IDs, actor and source records; ambiguous history stays on hold without an override.
+LP10 continues to accept separate ordinary adjustments, including repeats referencing the same order.
+
+**Transaction and refusals.** Under a scoped order lock, resolve the original receipt, then lock the original member
+row and check any canonical winner, prior adjustments, erasure, balance and current authority. The LP10 path
+for order-referenced credits shares the order-before-member lock order so a prior compensation cannot race the check.
+Use the existing partial unique index `point_entries_one_award` as the final arbiter at (tenant, store, order),
+including before and after a cancellation race. Insert one `manual_order_award` carrying the actual actor and update
+member balance/version and the scoped key receipt in the same transaction. Roll back all three on failure. Current
+authorization also gates replay. A cancelled order cannot receive a new entry; a completed recovery remains readable
+after cancellation without an automatic deduction. Same key for a different order returns `409 idempotency_conflict`.
+Use `404 not_found` for unknown/foreign order; `409 award_not_eligible`, `409 award_already_recorded`,
+`409 award_review_required`, `409 member_erased`, `422 limit_reached`, `401 unauthorized`, `403 forbidden`,
+`400 invalid_json` for unknown body fields, and `503 retry_later` for unavailable authority/storage.
+UNKNOWN re-reads the exact order-scoped recovery state and ledger. If the entry is still unresolved, preserve the
+original key and use its exact replay only; never issue a generic adjustment or a new order for this repair.
+
+### Acceptance and ownership
+
+| Gate (implementation NOT_RUN) | Falsifying case and required evidence |
+| --- | --- |
+| C · authorized source and independent fallback | Synthetic Meta-only and verified claim fixtures: inspect requests, order receipt, A13 reload, return to original thread, quote lines, claim-use, stock/hold and DM counts. Block BM capability and exercise the independent M10 entry. Foreign/erased source, empty/changed bundle set, mismatch, missing rights, missing delivery and forged price create no order, holds, points or sends. |
+| C · existing order and replay | Crash after Begin and before finalization, then retry exact key; same order, source, one hold and at most one award. Re-entry or a different key for the same revision must not create another order, including an empty bundle set. Strip source or change award under that key, or retry an already placed/consumed bundle through the other entry; prove the rejected write and original order readback. LP16/LPG11 remains `400 invalid_json`. |
+| D · recovery | Lose a response, race two authorized staff with different keys, and fail between entry and balance/receipt. Compare original receipt, current GET, ledger count and balance after each. Exercise cancelled/failed/foreign/missing receipt, revocation, erasure, pre-existing award and a prior positive adjustment beyond the LP19 display cap. No duplicate award or unauthorized write; multiple intentional LP10 adjustments still succeed. |
+| E · native journeys | Desktop and phone from ordinary Inbox and independent M10 entrances, with fresh readback and original-order recovery. Order and points results remain distinct. UNKNOWN shows reconciliation; retaining source, recipient, role, payment and ledger facts is part of the assertion. |
+
+C owns contextual placement in `internal/merchanttools/{manual,order_for_buyer}.go`,
+`internal/httpapi/merchanttools.go` and the A13 projection, the entrance in `apps/admin/app/[locale]/{messages,orders/new}/page.tsx`
+and `apps/admin/components/{Inbox,InboxThread,BuyerPanel,ManualOrder}.tsx`, and their tools/inbox BFF/client and placement tests.
+D owns `internal/loyalty/**`, `internal/httpapi/members.go` and recovery-specific transport/REAL_PG tests.
+It consumes the final-receipt authority agreed with C. E starts from merged C/D and owns the recovery BFF/client, order
+detail `apps/admin/app/[locale]/orders/[order]/page.tsx`, `apps/admin/components/members/ManualOrderAwardResult.tsx`,
+the recovery section of `ManualOrder.tsx`, and the two-device journeys. Integrator owns shared SQL/schema,
+migration numbering, route inventories and their verification. New paths in this amendment are implementation
+specifications. C/D add canonical entries in §2 and their routing inventories when the corresponding handlers ship.
 
 ## 9. Review ledger (round 1, Fable 5.1 @ 55fc66b3f)
 
