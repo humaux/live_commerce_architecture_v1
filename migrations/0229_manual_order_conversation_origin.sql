@@ -28,7 +28,14 @@ CREATE INDEX manual_order_source_orders ON inbox.manual_order_sources(tenant_id,
 ALTER TABLE inbox.manual_order_sources ENABLE ROW LEVEL SECURITY;
 ALTER TABLE inbox.manual_order_sources FORCE ROW LEVEL SECURITY;
 REVOKE ALL ON inbox.manual_order_sources FROM PUBLIC;
-GRANT SELECT ON inbox.manual_order_sources TO commerce_runtime,commerce_claims_writer,commerce_checkout_writer,commerce_integration_writer;
+GRANT SELECT(tenant_id,store_id,key_hash,conversation_id,bundle_ids,revision,state,buyer_id,claim_request_id,begin_key,price_reason,some_catalog,order_id)
+ ON inbox.manual_order_sources TO commerce_runtime;
+GRANT SELECT(tenant_id,store_id,key_hash,principal_id,conversation_id,bundle_ids,state,claim_request_id,begin_key,order_id,placed_at)
+ ON inbox.manual_order_sources TO commerce_claims_writer;
+GRANT SELECT(tenant_id,store_id,key_hash,state,buyer_id,begin_key)
+ ON inbox.manual_order_sources TO commerce_checkout_writer;
+GRANT SELECT(tenant_id,store_id,conversation_id,state,order_id)
+ ON inbox.manual_order_sources TO commerce_integration_writer;
 GRANT INSERT(tenant_id,store_id,key_hash,principal_id,conversation_id,bundle_ids,revision),
  UPDATE(buyer_id,claim_request_id,begin_key,price_reason,some_catalog) ON inbox.manual_order_sources TO commerce_runtime;
 GRANT UPDATE(state) ON inbox.manual_order_sources TO commerce_claims_writer;
@@ -111,6 +118,7 @@ END $$;
 ALTER FUNCTION claims.manual_order_context(uuid,uuid[]) OWNER TO commerce_claims_writer;
 REVOKE ALL ON FUNCTION claims.manual_order_context(uuid,uuid[]) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION claims.manual_order_context(uuid,uuid[]) TO commerce_runtime;
+COMMENT ON FUNCTION claims.manual_order_context(uuid,uuid[]) IS 'internal/claims: commerce_runtime reads scoped conversation and claim facts for manual orders.';
 
 CREATE FUNCTION claims.read_manual_order_source(p_key bytea,p_principal uuid,p_own boolean)
 RETURNS TABLE(conversation_id uuid,bundle_ids uuid[])
@@ -126,6 +134,7 @@ END $$;
 ALTER FUNCTION claims.read_manual_order_source(bytea,uuid,boolean) OWNER TO commerce_claims_writer;
 REVOKE ALL ON FUNCTION claims.read_manual_order_source(bytea,uuid,boolean) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION claims.read_manual_order_source(bytea,uuid,boolean) TO commerce_runtime;
+COMMENT ON FUNCTION claims.read_manual_order_source(bytea,uuid,boolean) IS 'internal/claims: commerce_runtime reads placed-order provenance subject to inbox read permission.';
 
 CREATE FUNCTION claims.release_manual_order_source(p_key bytea) RETURNS boolean
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -149,6 +158,7 @@ END $$;
 ALTER FUNCTION claims.release_manual_order_source(bytea) OWNER TO commerce_claims_writer;
 REVOKE ALL ON FUNCTION claims.release_manual_order_source(bytea) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION claims.release_manual_order_source(bytea) TO commerce_runtime;
+COMMENT ON FUNCTION claims.release_manual_order_source(bytea) IS 'internal/claims: commerce_runtime releases a scoped contextual reservation before checkout begins.';
 
 CREATE FUNCTION fulfillment.manual_conversation_checkout(p_key bytea,p_begin text) RETURNS jsonb
 LANGUAGE plpgsql STABLE SECURITY DEFINER SET search_path=pg_catalog AS $$
@@ -173,9 +183,9 @@ GRANT EXECUTE ON FUNCTION fulfillment.manual_conversation_checkout(bytea,text) T
 
 CREATE FUNCTION fulfillment.finish_manual_conversation_order(p_key bytea,p_order uuid,p_link bytea) RETURNS void
 LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
-DECLARE m inbox.manual_order_sources; v_now timestamptz:=clock_timestamp();
+DECLARE m record; v_now timestamptz:=clock_timestamp();
 BEGIN
- SELECT * INTO m FROM inbox.manual_order_sources s
+ SELECT s.tenant_id,s.store_id,s.buyer_id,s.begin_key INTO m FROM inbox.manual_order_sources s
   WHERE s.tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
     AND s.store_id=nullif(current_setting('app.store_id',true),'')::uuid AND s.key_hash=p_key AND s.state='pending'
   FOR UPDATE;
@@ -194,7 +204,7 @@ REVOKE ALL ON FUNCTION fulfillment.finish_manual_conversation_order(bytea,uuid,b
 GRANT EXECUTE ON FUNCTION fulfillment.finish_manual_conversation_order(bytea,uuid,bytea) TO commerce_runtime;
 
 CREATE FUNCTION claims.lock_manual_order_bundles(p_tenant uuid,p_store uuid,p_bundles uuid[]) RETURNS void
-LANGUAGE plpgsql VOLATILE SET search_path=pg_catalog AS $$
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE b uuid;
 BEGIN
  FOR b IN SELECT DISTINCT id FROM unnest(p_bundles) id ORDER BY 1 LOOP
@@ -203,6 +213,7 @@ BEGIN
 END $$;
 ALTER FUNCTION claims.lock_manual_order_bundles(uuid,uuid,uuid[]) OWNER TO commerce_claims_writer;
 REVOKE ALL ON FUNCTION claims.lock_manual_order_bundles(uuid,uuid,uuid[]) FROM PUBLIC;
+COMMENT ON FUNCTION claims.lock_manual_order_bundles(uuid,uuid,uuid[]) IS 'internal/claims: commerce_claims_writer serializes reservation and origin capture on the same sorted bundles.';
 
 CREATE OR REPLACE FUNCTION claims.for_buyer_begin(p_key_hash bytea, p_request_hash bytea, p_conversation uuid, p_bundles uuid[], p_buyer uuid)
 RETURNS TABLE(o_request uuid, o_reason text)
