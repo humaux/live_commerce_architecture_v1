@@ -226,6 +226,7 @@ try {
       assert.equal(r.status, 403, `${tag}: ${method} ${p} answered ${r.status} ${r.text}`);
     }
     await expect(b.getByTestId("transfer-form")).toHaveCount(0);
+    await expect(b.getByTestId("transfer-proof")).toHaveCount(0);
     const factsAfter = await control("facts");
     assert.equal(factsAfter.proofs, factsBefore.proofs, `${tag}: a proof was recorded by the guest session`);
     assert.equal(factsAfter.privacy_actions, factsBefore.privacy_actions, `${tag}: a privacy action was started by the guest session`);

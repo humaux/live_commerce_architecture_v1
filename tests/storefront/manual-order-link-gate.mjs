@@ -264,7 +264,8 @@ try {
   await expect(other.getByTestId("order-link-refused")).toBeVisible();
   assert.equal(new URL(other.url()).hash, "");
   assert.equal(new URL(other.url()).pathname, "/zh-TW/order-link");
-  assert.equal((await otherContext.cookies()).some(c => c.name === "__Host-commerce_buyer" || c.name === "__Host-commerce_buyer_link"), false, "a refused link sets no cookie");
+  assert.equal((await otherContext.cookies()).some(c => c.name === "__Host-commerce_buyer"), false, "a refused link sets no cookie");
+  assert.equal((await otherContext.cookies()).some(c => c.name === "__Host-commerce_buyer_link"), false, "a refused link sets no order capability cookie");
   // a malformed fragment is the very same page
   await other.goto(`${buyerOrigin}/zh-TW/order-link#o=${body.order_id}&t=short`);
   await expect(other.getByTestId("order-link-refused")).toBeVisible();
