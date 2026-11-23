@@ -245,7 +245,12 @@ try {
   await expect(p.getByTestId("cart-line")).toHaveCount(1);
   await p.getByRole("button", { name: "選擇配送" }).click();
   await expect(p.getByLabel("配送方式")).toBeVisible();
-  await p.getByRole("button", { name: "取得目前總額" }).click();
+  const [quoteResponse] = await Promise.all([
+    p.waitForResponse(r => r.request().method() === "POST" && new URL(r.url()).pathname === "/api/buyer/quotes"),
+    p.getByRole("button", { name: "取得目前總額" }).click(),
+  ]);
+  assert.equal(quoteResponse.status(), 200);
+  const phoneQuote = await quoteResponse.json();
   await p.getByTestId("checkout-details-toggle").click();
   await expect(p.locator(".quotation")).toBeVisible();
   await shot(p, "m-checkout");
@@ -324,17 +329,33 @@ try {
     });
     assert(r.n >= 10 && r.lastInView && r.bad.length === 0, `footer content under a bottom bar: ${JSON.stringify(r)}`);
   };
-  const checkoutStep = async (pg) => { // cart -> delivery -> quotation, the same clicks as SF05
-    await pg.goto(`${origin}/zh-TW/checkout`);
+  const checkoutStep = async (pg, existingQuote) => {
+    if (existingQuote) {
+      const [restored, destination] = await Promise.all([
+        pg.waitForResponse(r => r.request().method() === "GET" && new URL(r.url()).pathname === `/api/buyer/quotes/${existingQuote.id}`),
+        pg.waitForResponse(r => r.request().method() === "GET" && new URL(r.url()).pathname === "/api/buyer/destination"),
+        pg.goto(`${origin}/zh-TW/checkout`),
+      ]);
+      assert.equal(restored.status(), 200);
+      assert.deepEqual(await restored.json(), existingQuote, "re-entry restores the previously displayed quote");
+      assert.equal(destination.status(), 200);
+      assert.deepEqual(await destination.json(), { destination: null });
+    } else {
+      await pg.goto(`${origin}/zh-TW/checkout`);
+    }
     await pg.getByRole("button", { name: "選擇配送" }).click(); await expect(pg.getByLabel("配送方式")).toBeVisible();
-    await pg.getByRole("button", { name: "取得目前總額" }).click(); await pg.getByTestId("checkout-details-toggle").click(); await expect(pg.locator(".quotation")).toBeVisible();
-    await expect(pg.getByTestId("create-order")).toBeVisible();
+    const getTotal = pg.getByRole("button", { name: "取得目前總額" });
+    if (existingQuote) await expect(getTotal).toHaveCount(0);
+    else await getTotal.click();
+    await expect(pg.locator("#checkout-address-form fieldset")).toBeEnabled();
+    await pg.getByTestId("checkout-details-toggle").click();
+    await expect(pg.locator(".quotation")).toBeVisible();
   };
   const moneyTexts = (pg) => pg.evaluate(() => [...document.querySelectorAll(".sf-line__total, .sf-line__unit, [data-testid=cart-subtotal], .purchase-footer strong, .quotation li span:last-child, .quotation dd, .sf-summary__row strong")].map((e) => e.textContent.trim()).filter((t) => /\d/.test(t)));
   const noDecimals = async (pg, min, where) => { const t = await moneyTexts(pg); assert(t.length >= min, `${where}: only ${t.length} amounts found`); assert(!t.some((x) => /\d\.\d\d\b/.test(x)), `${where}: whole TWD amounts must not carry .00: ${t.join(" | ")}`); };
 
   await part("1 checkout bar 1280", async () => { await d.goto(`${origin}/zh-TW/checkout`); await d.locator(".purchase-footer").waitFor(); await footerCovered(d); });
-  await part("1 checkout bar 390", async () => { await checkoutStep(p); await footerCovered(p); });
+  await part("1 checkout bar 390", async () => { await checkoutStep(p, phoneQuote); await footerCovered(p); });
   const narrow = await browser.newContext(ctxOpts({ ignoreHTTPSErrors: true, viewport: { width: 320, height: 568 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: "zh-TW" })), np = await narrow.newPage();
   await part("1 checkout bar 320", async () => {
     await np.goto(`${origin}/zh-TW/products/cedar-fig-candle`); await np.getByTestId("add-to-cart").click(); await np.getByTestId("cart-checkout").waitFor();
@@ -353,12 +374,19 @@ try {
 
   // 2. one header, never repeated mid-page (the repeat in fullPage captures was the sticky header painted at the scroll offset)
   await part("2 one header", async () => {
-    for (const url of ["/zh-TW/products/cedar-fig-candle", "/zh-TW/products", "/zh-TW/checkout"]) {
+    for (const url of ["/zh-TW/products/cedar-fig-candle", "/zh-TW/products"]) {
       await p.goto(`${origin}${url}`); await expect(p.locator("header.sf-header")).toBeVisible();
       assert.equal(await p.locator("header.sf-header").count(), 1, `${url}: exactly one site header`);
       assert.equal(await p.getByTestId("menu-open").count(), 1, `${url}: exactly one menu button`);
       assert.equal(await p.locator(".sf-header").evaluate((e) => getComputedStyle(e).position), "sticky", "the header sticks inside normal flow");
     }
+    await p.goto(`${origin}/zh-TW/checkout`);
+    const checkoutHeader = p.locator("header.checkout-top");
+    await expect(checkoutHeader).toHaveCount(1);
+    await expect(checkoutHeader).toBeVisible();
+    await expect(p.locator("header.sf-header")).toBeHidden();
+    await expect(checkoutHeader.getByRole("link", { name: "返回購物車" })).toBeVisible();
+    assert.equal(await checkoutHeader.evaluate(e => getComputedStyle(e).position), "static", "checkout uses its own header in normal flow");
   });
 
   // 3. a product without a photo shows a recognisable placeholder (icon + localized accessible label) on the card, the gallery and the cart line
@@ -397,12 +425,15 @@ try {
     await expect(p.locator("label.sf-chip")).toHaveCount(2); assert.deepEqual(await small(p.locator("label.sf-chip")), [], "variant chips are at least 44x44");
   });
 
+  // The placeholder add/remove changed the cart version, so the money check obtains a fresh quote.
   await part("4 checkout money", async () => { await checkoutStep(p); await noDecimals(p, 6, "checkout"); });
 
-  // 5. a disabled create-order button is visibly different from the action colour and says why (the pale teal read as an enabled button gone wrong)
+  // 5. the visible disabled checkout action differs from the action colour and says why.
   await part("5 disabled CTA", async () => {
-    const create = p.getByTestId("create-order");
+    const create = p.getByTestId("checkout-continue");
+    await expect(create).toBeVisible();
     await expect(create).toBeDisabled();
+    await expect(create).toHaveAttribute("aria-describedby", "create-order-hint");
     const look = await create.evaluate((e) => { const s = getComputedStyle(e), hint = document.getElementById(e.getAttribute("aria-describedby") ?? "-"); return { opacity: s.opacity, bg: s.backgroundColor, hint: hint ? hint.textContent.trim() : "", hintShown: !!hint && hint.getBoundingClientRect().height > 0 }; });
     assert.equal(look.opacity, "1", "disabled is a distinct grey, the action colour is never just faded"); assert.notEqual(look.bg, "rgb(36, 121, 101)", "disabled must not wear the action teal");
     assert(look.hint.length > 6 && look.hintShown, `the disabled create-order button needs a visible description: ${JSON.stringify(look)}`);
