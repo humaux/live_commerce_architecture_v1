@@ -1,6 +1,6 @@
 // Purpose: Owns order list loading, filtering, bulk selection and selected-order detail.
 // Depends on: react, react-dom, next/navigation, @live-commerce/i18n, @/lib/model, @/lib/settings-client, @/lib/orders-client, @/lib/orders-model, @/lib/orders-copy, @/lib/orders-v2, @/lib/orders-v2-copy, ./OrderListFilters, ./WorkspaceFrame, ./AdminStateBlock, ./AdminForbidden, @live-commerce/ui, @/lib/presentation-copy, ./OrderDetailPanel, ./Icon, ./orders.css, ./order-actions.css, ./orders-v2.css, ./ParcelGroup, @/lib/parcels-copy
-// Depends on: ./OrderDetailView, ./orders/parity-copy, ./orders/parity.css, ./orders/OrderSelectionBar for the mounted shipping selection summary.
+// Depends on: ./OrderDetailView, ./orders/parity-copy, ./orders/parity.css, ./orders/OrderSelectionBar, @live-commerce/ui/ds, @/lib/merchant-tools-copy.
 // Used by: apps/admin/app/[locale]/orders/page.tsx
 // Invariants: Counts/rows/totals share the server snapshot; private search and selection stay in mounted memory.
 "use client";
@@ -34,7 +34,9 @@ import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminStateBlock } from "./AdminStateBlock";
 import { AdminForbidden } from "./AdminForbidden";
 import { TabStrip } from "@live-commerce/ui";
+import { ButtonLink } from "@live-commerce/ui/ds";
 import { presentationCopy } from "@/lib/presentation-copy";
+import { toolsCopy } from "@/lib/merchant-tools-copy";
 import { amount, badge } from "./OrderDetailPanel";
 import { OrderDetailView } from "./OrderDetailView";
 import { parityCopy, shortOrderNumber } from "./orders/parity-copy";
@@ -565,6 +567,9 @@ export function MerchantOrders({
             : status === "loading"
               ? c.loading
               : "";
+  const listAvailable = !["hidden", "signed-out", "forbidden", "not-found"].includes(current.status);
+  const canCreateOrder = listAvailable && store && ["orders:read", "catalog:read", "inventory:reserve"]
+    .every(permission => store.permissions?.includes(permission));
   return (
     <WorkspaceFrame
       locale={locale}
@@ -572,8 +577,16 @@ export function MerchantOrders({
       active="orders"
     >
       <div className="orders-page orders-v2 signed-orders" data-testid="merchant-orders">
-        {!order && <header className="signed-orders-heading"><h1>{c.title}</h1><a className="primary" href={`/${locale}/orders/shipping${store?`?store=${store.id}`:""}`}>{p.ship}</a></header>}
-        {!order && !["hidden", "signed-out", "forbidden", "not-found"].includes(current.status) && <OrderListFilters key={`${store?.id}|${filterKey}`} locale={locale} filters={filters} sessions={current.page?.sessions ?? []} disabled={!store}
+        {!order && <header className="signed-orders-heading signed-orders-list-heading">
+          <h1>{c.title}</h1>
+          <div className="signed-orders-heading-actions">
+            <ButtonLink href={`/${locale}/orders/shipping${store ? `?store=${store.id}` : ""}`}>{p.ship}</ButtonLink>
+            {store && canCreateOrder && <ButtonLink className="primary" variant="primary" href={`/${locale}/orders/new?store=${store.id}`}>
+              <Icon name="plus" size={16} />{toolsCopy[locale].dashboard.createOrder}
+            </ButtonLink>}
+          </div>
+        </header>}
+        {!order && listAvailable && <OrderListFilters key={`${store?.id}|${filterKey}`} locale={locale} filters={filters} sessions={current.page?.sessions ?? []} disabled={!store}
           onApply={next => { previous.current = []; navigate(store?.id ?? "", state, "", "", next); }}>
         <div className="orders-controls orders-v2-state-controls">
           <label id="orders-state-field" className="orders-v2-state-field">
