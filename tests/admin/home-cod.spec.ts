@@ -77,21 +77,25 @@ async function openOrders(page: Page, locale: string) {
   // The order list names its time zone (integration: the stop-bleed M06 label "Taipei time / 台北時間 / 台北时间" replaces "Taipei, UTC+8").
 
 }
-async function expand(page: Page, id: string): Promise<Locator> {
+async function expand(page: Page, id: string, revealFacts = true): Promise<Locator> {
   if(await page.getByTestId("order-detail-back").count())await page.getByTestId("order-detail-back").click();
+  await expect(page.getByTestId("orders-list")).toBeVisible();
   for (let pageNo = 0; pageNo < 5; pageNo++) {
     const button = page.getByTestId(`order-expand-${id}`);
     if (await button.count()) {
       if ((await button.getAttribute("aria-expanded")) !== "true") await button.click();
       const detail = page.getByTestId("order-detail");
       await expect(detail).toHaveAttribute("aria-label", new RegExp(id));
+      if (!revealFacts) return detail;
       const facts=page.getByTestId("order-more-details");
       if(await facts.getAttribute("open")===null) await facts.locator("summary").first().click();
       await expect(detail).toContainText(/Taipei time|台北時間|台北时间/);
       return detail.getByTestId("order-facts");
     }
     await expect(page.getByTestId("orders-next")).toBeEnabled();
+    const previousURL = page.url();
     await page.getByTestId("orders-next").click();
+    await expect(page).not.toHaveURL(previousURL);
     await expect(page.getByTestId("orders-list")).toBeVisible();
   }
   throw new Error("order was absent from the real cursor pages");
@@ -281,8 +285,7 @@ for (const width of [1440, 390]) {
       await page.getByTestId("nav-orders").filter({ visible: true }).click();
       const selector = page.getByTestId("store-selector");
       if (await selector.count() && await selector.inputValue() !== store) await selector.selectOption(store);
-      await page.getByTestId(`order-expand-${id}`).click();
-      const detail = page.getByTestId("order-detail");
+      const detail = await expand(page, id, false);
       const amend = detail.getByTestId("order-amendment");
       await amend.getByRole("button", { name: "修改原單", exact: true }).click();
       await amend.getByLabel("地址", { exact: true }).fill("合成測試路 88 號");
