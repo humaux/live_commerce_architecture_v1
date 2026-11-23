@@ -159,7 +159,7 @@ func (s *mtPointsSeam) seed(t *testing.T, e *tcvEnv) {
 		mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING`,
 			f.tenantA, f.storeA1, f.principalA, perm)
 	}
-	stock := t04CreateStock(t, &f, f.tokens["a"], f.storeA1, 10, 20)
+	stock := t04CreateStock(t, &f, f.tokens["a"], f.storeA1, 12, 20)
 	s.productName = stock.product.Name
 	view.p.stock = stock // re-bound to the real new stock/warehouse; the legacy stock is never reused
 	market, err := pricingScoped(ctx, &f, f.tokens["a"], f.storeA1, "pricing:write", func(tx pgx.Tx, scope platform.Scope) (pricing.Market, error) {

@@ -302,7 +302,7 @@
     "tests/foundation/browser_live_settings_test.go": "82940e2343aea47e6fd2dab88aaf0cc8f52c20e5107481270a7009151c1fe176",
     "tests/foundation/browser_live_tools_test.go": "a2338a21eac70e1738c5786e87b23dfb2e32371e91c00f81635d2ba42284145b",
     "tests/foundation/browser_manual_order_link_test.go": "139c358cb0d95bfebbc0f6df4c613665d3cc239b63fc3df18fa79aff6165a85f",
-    "tests/foundation/browser_manual_order_points_test.go": "f48d58730309fcddf726daaeec56e932faabc56972dcd7265a2b7ec4d355da16",
+    "tests/foundation/browser_manual_order_points_test.go": "ab14dce3044f9eac4dadf0a4758829fd515a023c535aa6c7a4eda2d1a6aa368c",
     "tests/foundation/browser_merchant_buyer_chain_test.go": "df9a330c2dc7aff2fbd8e988b9b5896ced523101c4d7fb5d0c15537565bc3a45",
     "tests/foundation/browser_merchant_orders_bff_test.go": "ab218bc4b8e2ff2f8777948083756399aa31227eb34bc7393a16c0287c221998",
     "tests/foundation/browser_merchant_orders_ui_test.go": "f43011820c0c2e3a2b2897bd815e9cfb1c4312368666518f16827836985e47d6",
