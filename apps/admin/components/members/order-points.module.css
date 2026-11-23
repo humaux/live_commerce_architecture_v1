@@ -26,4 +26,10 @@
 .receiptActions { display:grid; justify-items:start; gap:var(--ds-space-2); }
 .dialog { border:0; padding:0; border-radius:var(--ds-radius-control); max-width:520px; width:calc(100% - 32px); max-height:calc(100dvh - 32px); overflow:auto; color:var(--ds-members-ink); }
 .dialog::backdrop { background:var(--ds-members-scrim); }
-@media(max-width:600px) { .panel { padding:var(--ds-space-4); } .dialog { margin: auto 0 0; width:100%; max-width:none; max-height:90dvh; } .actions>* { flex:1; } .receiptActions { justify-items:stretch; } }
+@media(max-width:600px) {
+  .panel { padding:var(--ds-space-4); }
+  .dialog:not(.recoveryDialog) { margin:auto 0 0; width:100%; max-width:none; max-height:90dvh; }
+  .actions>* { flex:1; }
+  .recoveryDialog .actions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .receiptActions { justify-items:stretch; }
+}

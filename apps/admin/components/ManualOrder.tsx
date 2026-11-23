@@ -363,6 +363,7 @@ function ManualOrderForm({
     options.status === "signed-out" ? c.signedOut : options.status === "forbidden" ? c.forbidden
     : options.status === "not-found" ? (store ? c.unavailable : c.noStore) : options.status === "unavailable" ? c.notConfigured : "";
   const storeQuery = store ? `?store=${store.id}` : "";
+  const receiptAward = placed && boundary && placedScope.current === memberScope && options.status === "ready" ? placed.member_award : undefined;
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="orders">
       <div className={`orders-page customers-page ops-task ${s.page}`} data-testid="manual-order-page">
@@ -388,21 +389,23 @@ function ManualOrderForm({
             <dl className="mt-stats">
               <div><dt>{c.orderId}</dt><dd style={{ fontSize: 14 }}>{placed.order_id.slice(0, 8)}</dd></div>
               <div><dt>{conversationDraft && placed.payment_mode === "pay_at_pickup" ? c.pickup : c.total}</dt><dd>{money(locale, placed.currency, placed.total_minor)}</dd></div>
-              {codDue !== null && <div data-testid="manual-order-cod-due"><dt>{c.codDue}</dt><dd>{money(locale, placed.currency, codDue)}</dd></div>}
+              {!lookupOnly && codDue !== null && <div data-testid="manual-order-cod-due"><dt>{c.codDue}</dt><dd>{money(locale, placed.currency, codDue)}</dd></div>}
               {placed.payment_mode === "bank_transfer" && <div><dt>{c.expires}</dt><dd style={{ fontSize: 14 }}>{displayTime(locale, placed.expires_at)}</dd></div>}
             </dl>
-            {!initialReceipt && <><ul>{lines.map((line) => <li key={line.sku_id}>{line.label} · {line.quantity}</li>)}</ul>
+            {!lookupOnly && <ul>{lines.map((line) => <li key={line.sku_id}>{line.label} · {line.quantity}</li>)}</ul>}
             <dl>
-              <div><dt>{signed.name}</dt><dd>{name}</dd></div><div><dt>{signed.phone}</dt><dd>{phone}</dd></div>
-              <div><dt>{c.delivery}</dt><dd>{option ? optionName(option) : c.choose}</dd></div>
-              <div><dt>{option?.delivery_kind === "home" ? c.line1 : signed.pickup}</dt><dd>{option?.delivery_kind === "home" ?
-                [home.region, home.city, home.postal_code, home.line1, home.line2].filter(Boolean).join(" ") : `${cvs.store_name} · ${cvs.store_code} · ${cvs.store_address}`}</dd></div>
+              {!lookupOnly && <>
+                <div><dt>{signed.name}</dt><dd>{name}</dd></div><div><dt>{signed.phone}</dt><dd>{phone}</dd></div>
+                <div><dt>{c.delivery}</dt><dd>{option ? optionName(option) : c.choose}</dd></div>
+                <div><dt>{option?.delivery_kind === "home" ? c.line1 : signed.pickup}</dt><dd>{option?.delivery_kind === "home" ?
+                  [home.region, home.city, home.postal_code, home.line1, home.line2].filter(Boolean).join(" ") : `${cvs.store_name} · ${cvs.store_code} · ${cvs.store_address}`}</dd></div>
+              </>}
               <div><dt>{c.paymentTitle}</dt><dd>{placed.payment_mode === "bank_transfer" ? c.bank : placed.payment_mode === "cash_on_delivery" ? c.cod : c.pickup}</dd></div>
-            </dl></>}
+            </dl>
             {placed.live_price && placed.live_price_reason !== "no_bundle" && <p data-testid="manual-order-live-price">{sourceCopy.price} · {placed.live_price === "applied"
               ? placed.live_price_reason === "some_lines_catalog" ? sourceCopy.some : sourceCopy.applied
               : `${sourceCopy.catalog} · ${placed.live_price_reason === "permission" ? sourceCopy.permission : sourceCopy.ineligible}`}</p>}
-            {placedScope.current===memberScope && placed.member_award && options.status==="ready" && <ManualOrderAwardResult key={`${memberScope}|${placed.order_id}`} award={placed.member_award} orderURL={`/${locale}/orders/${placed.order_id}${storeQuery}`} locale={locale} store={store} scope={memberScope} boundary={boundary}/>}
+            {receiptAward && <ManualOrderAwardResult key={`${memberScope}|${placed.order_id}`} award={receiptAward} orderURL={`/${locale}/orders/${placed.order_id}${storeQuery}`} locale={locale} store={store} scope={memberScope} boundary={boundary}/>}
             {!lookupOnly && <h3>{c.linkTitle}</h3>}
             {lookupOnly ? null : placed.buyer_link ? (
               <>
@@ -421,7 +424,7 @@ function ManualOrderForm({
             ) : <p className="mt-warn">{c.noLink}</p>}
             <div className="mt-actions" style={{ marginTop: 16 }}>
               {!conversationDraft && !initialReceipt && <button type="button" className="primary" onClick={reset} data-testid="manual-order-another">{c.another}</button>}
-              {placed.member_award?.state !== "not_awarded" && <Link href={`/${locale}/orders/${placed.order_id}${storeQuery}`}>{awardRecoveryCopy[locale].view}</Link>}
+              {receiptAward?.state !== "not_awarded" && <Link href={`/${locale}/orders/${placed.order_id}${storeQuery}`}>{awardRecoveryCopy[locale].view}</Link>}
               <Link href={`/${locale}/orders${storeQuery}`}>{c.viewOrders}</Link>
             </div>
           </section>

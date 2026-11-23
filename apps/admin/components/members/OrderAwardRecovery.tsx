@@ -99,7 +99,7 @@ export function OrderAwardRecovery({ locale, store, order, boundary, permitted, 
         <p>{member?.display_name ?? recovery.member_id} · {common.points} {decimal(locale, recovery.points, 0)}</p>
         {status === "refused" && <p role="alert">{common.refused}</p>}
         {permitted && <Button ref={opener} type="button" variant="primary" data-testid="order-award-recovery-open" onClick={() => setConfirm(true)}>{c.review}</Button>}
-        {confirm && <dialog ref={dialog} className={s.dialog} aria-labelledby="order-award-recovery-title" onCancel={event => {
+        {confirm && <dialog ref={dialog} className={`${s.dialog} ${s.recoveryDialog}`} aria-labelledby="order-award-recovery-title" onCancel={event => {
           event.preventDefault();
           if (!active.current) setConfirm(false);
         }}>

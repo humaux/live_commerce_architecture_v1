@@ -570,6 +570,8 @@ for (const device of ["desktop", "mobile"] as const) {
         await page.getByTestId("manual-order-form").locator('button[type="submit"]').click();
         await page.getByTestId("manual-order-submit").click();
         await expect(page.getByTestId("manual-order-check-original")).toBeVisible();
+        const stored = await storedPrivateTerms(page);
+        for (const value of [recipient, "0912000003", "1 Order Points Road"]) expect(stored).not.toContain(value);
         await page.reload();
         const readback = page.waitForResponse(reply => new URL(reply.url()).pathname === pointsPath + "/receipt");
         await page.getByTestId("manual-order-check-original").click();
@@ -577,6 +579,7 @@ for (const device of ["desktop", "mobile"] as const) {
         expect(reply.request().headers()["idempotency-key"]).toBe(placementKey);
         const saved = await reply.json();
         expect(saved.state).toBe("committed");
+        expect(saved.receipt).toMatchObject({order_id:placed?.order_id,payment_mode:"bank_transfer",total_minor:1250});
         expect(saved.receipt.member_award).toEqual(placed?.member_award);
       } else {
         const reply = await reviewAndPlace(page);
@@ -593,6 +596,24 @@ for (const device of ["desktop", "mobile"] as const) {
       const ledger = (reply: import("@playwright/test").Response) => new URL(reply.url()).pathname === entryPath && new URL(reply.url()).searchParams.get("order_id") === order;
       await expect(page.getByTestId("manual-member-award-result")).toHaveAttribute("data-award-state","not_awarded");
       await page.screenshot({path:resolve(evidence,`m10-missed-${device}.png`),fullPage:true});
+      const result = page.getByTestId("manual-order-result");
+      await expect(result.getByRole("link", {name:"查看原單",exact:true})).toHaveAttribute("href", `/${locale}/orders/${order}?store=${store}`);
+      await expect(result).toContainText(order.slice(0, 8));
+      await expect(result).toContainText("NT$12.50");
+      if (device === "desktop") {
+        await expect(result.getByText("收件人",{exact:true})).toHaveCount(0);
+        await expect(result.getByText("聯絡電話",{exact:true})).toHaveCount(0);
+        await expect(result.getByText("配送方式",{exact:true})).toHaveCount(0);
+        await expect(result.getByText("取貨門市",{exact:true})).toHaveCount(0);
+        await expect(result.getByText("請選擇…",{exact:true})).toHaveCount(0);
+        await expect(result).not.toContainText("· ·");
+        await expect(result.locator("ul")).toHaveCount(0);
+      } else {
+        for (const value of [recipient, "0912000003", "Taipei 1 Order Points Road"]) {
+          await expect(result.getByText(value,{exact:true})).toBeVisible();
+        }
+      }
+      await expect(result.getByText("銀行轉帳（顧客須在期限內轉帳）",{exact:true})).toBeVisible();
       await setLevel("full");
       const check = page.waitForResponse(reply => new URL(reply.url()).pathname === path && reply.request().method() === "GET");
       const before = page.waitForResponse(ledger);
@@ -600,11 +621,27 @@ for (const device of ["desktop", "mobile"] as const) {
       expect(await (await check).json()).toMatchObject({order_id:order,member_id:memberId,points:30,state:"eligible"});
       expect((await (await before).json()).entries).toEqual([]);
       await page.getByTestId("order-award-recovery-open").click();
-      await expect(page.getByRole("dialog")).toBeVisible();
-      await expect(page.getByRole("dialog")).toContainText(memberName);
+      const dialog = page.getByRole("dialog");
+      await expect(dialog).toBeVisible();
+      await expect(dialog).toContainText(memberName);
       expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
       expect(writes).toHaveLength(1);
       await page.screenshot({path:resolve(evidence,`m10-confirm-${device}.png`)});
+      if (device === "mobile") {
+        const {left,right,top,bottom} = await dialog.evaluate(element => {
+          const rect = element.getBoundingClientRect();
+          return {left:rect.left,right:window.innerWidth-rect.right,top:rect.top,bottom:window.innerHeight-rect.bottom};
+        });
+        expect(left).toBeGreaterThanOrEqual(15);
+        expect(Math.abs(left-right)).toBeLessThan(2);
+        expect(top).toBeGreaterThan(0);
+        expect(Math.abs(top-bottom)).toBeLessThan(2);
+        const cancel = await dialog.getByRole("button",{name:"取消",exact:true}).boundingBox();
+        const confirm = await dialog.getByTestId("order-award-recovery-submit").boundingBox();
+        expect(cancel && confirm && Math.abs(cancel.y - confirm.y)).toBeLessThan(2);
+        expect(cancel && confirm && Math.abs(cancel.width - confirm.width)).toBeLessThan(2);
+        expect(cancel && confirm && cancel.x + cancel.width <= confirm.x).toBe(true);
+      }
       let checked;
       if (device === "mobile") {
         await page.route(abs(path), async route => {

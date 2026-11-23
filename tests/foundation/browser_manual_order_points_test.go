@@ -378,6 +378,11 @@ func (s *mtPointsSeam) check(t *testing.T, e *tcvEnv, evidence string) {
 			t.Fatalf("%s member entries: %d, want %d", member.Kind, n, want)
 		}
 	}
+	type recoveryReceipts struct {
+		Placement json.RawMessage `json:"placement_receipt"`
+		Recovery  json.RawMessage `json:"recovery_receipt"`
+	}
+	dbReceipts := make([]recoveryReceipts, 0, recovered)
 	for _, order := range ev.RealOrders {
 		var source, state, recipient string
 		if err := e.p.f.owner.QueryRow(ctx, `SELECT source,commercial_state,coalesce(snapshot#>>'{destination,recipient_name}','') FROM checkout.orders WHERE store_id=$1 AND id=$2`,
@@ -402,18 +407,23 @@ func (s *mtPointsSeam) check(t *testing.T, e *tcvEnv, evidence string) {
 			t.Fatalf("award entry for %s: %d", order.OrderID, n)
 		}
 		if order.Recovery {
-			if n := e.count(`SELECT count(*) FROM ops.command_results WHERE store_id=$1 AND operation='merchanttools.order.manual' AND idempotency_key=$2
+			var n int
+			var original, recovery []byte
+			if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) OVER (), response::text FROM ops.command_results
+				WHERE store_id=$1 AND operation='merchanttools.order.manual' AND idempotency_key=$2
 				AND response->>'order_id'=$3 AND response#>>'{member_award,state}'='not_awarded' AND response#>>'{member_award,reason}'='forbidden'
 				AND response#>>'{member_award,member_id}'=$4 AND response#>>'{member_award,points}'='30'`,
-				s.store, order.PlacementKey, order.OrderID, *order.MemberID); n != 1 {
-				t.Fatalf("original failed award receipt: %d", n)
+				s.store, order.PlacementKey, order.OrderID, *order.MemberID).Scan(&n, &original); err != nil || n != 1 {
+				t.Fatalf("original failed award receipt: count=%d err=%v", n, err)
 			}
-			if n := e.count(`SELECT count(*) FROM ops.command_results r JOIN loyalty.point_entries p ON p.store_id=r.store_id AND p.id::text=r.response->>'entry_id'
+			if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) OVER (), r.response::text FROM ops.command_results r
+				JOIN loyalty.point_entries p ON p.store_id=r.store_id AND p.id::text=r.response->>'entry_id'
 				WHERE r.store_id=$1 AND r.operation='loyalty.order_award.recover' AND r.idempotency_key=$2
 				AND p.order_id=$3 AND p.member_id=$4 AND p.id=$5 AND p.actor_principal_id=$6 AND r.response->>'state'='awarded'`,
-				s.store, order.RecoveryKey, order.OrderID, *order.MemberID, order.AwardEntryID, s.principal); n != 1 {
-				t.Fatalf("keyed recovery receipt and ledger: %d", n)
+				s.store, order.RecoveryKey, order.OrderID, *order.MemberID, order.AwardEntryID, s.principal).Scan(&n, &recovery); err != nil || n != 1 {
+				t.Fatalf("keyed recovery receipt and ledger: count=%d err=%v", n, err)
 			}
+			dbReceipts = append(dbReceipts, recoveryReceipts{Placement: original, Recovery: recovery})
 			if order.ConversationID != "" {
 				if order.ConversationID != s.conversation || e.count(`SELECT count(*) FROM inbox.manual_order_sources WHERE store_id=$1 AND conversation_id=$2 AND order_id=$3 AND state='placed'`, s.store, s.conversation, order.OrderID) != 1 {
 					t.Fatal("the Inbox source must persist on the recovered original order")
@@ -504,6 +514,13 @@ func (s *mtPointsSeam) check(t *testing.T, e *tcvEnv, evidence string) {
 		len(legacyAfter.members) != len(s.legacyBase.members) {
 		t.Fatalf("the points phase moved the legacy store: orders %d->%d audits %d->%d entries %d->%d",
 			len(s.legacyBase.manualOrders), len(legacyAfter.manualOrders), s.legacyBase.orderAudits, legacyAfter.orderAudits, s.legacyBase.entries, legacyAfter.entries)
+	}
+	receiptData, err := json.MarshalIndent(dbReceipts, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(evidence, "order-points", "pg-recovery-receipts.json"), append(receiptData, '\n'), 0600); err != nil {
+		t.Fatal(err)
 	}
 }
 
