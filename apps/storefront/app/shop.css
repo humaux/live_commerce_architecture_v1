@@ -390,15 +390,51 @@ a.sf-line__title:hover { text-decoration: underline; }
 .sf-free { display: grid; gap: 6px; font-size: 14px; font-weight: 600; text-align: left; }
 .sf-free__bar { height: 6px; background: var(--sf-line); border-radius: 3px; overflow: hidden; }
 .sf-free__bar span { display: block; height: 100%; background: var(--accent); border-radius: 3px; transition: width .3s cubic-bezier(.2,.8,.2,1); }
-.sf-cartpage__grid { display: grid; gap: 24px; }
-.sf-cartpage__aside { display: grid; gap: 12px; align-content: start; padding: 20px; border: 1px solid var(--sf-line); border-radius: 14px; background: #fff; text-align: center; }
+.sf-cart-main { padding-inline: max(20px, var(--sf-gutter)); }
+.sf-cart-main .sf-pagehead { padding-block: 12px 24px; }
+.sf-cart-main .sf-pagehead .sf-link { justify-content: center; gap: 4px; min-width: 124px; padding-inline: 12px; font-size: 14px; text-decoration: none; }
+.sf-cart-main .sf-pagehead .sf-link:hover { text-decoration: underline; }
+.sf-cart-main .sf-pagehead h1 { margin-top: 24px; }
+.sf-cart-main .sf-pagehead__intro { margin-top: 8px; color: var(--sf-mute); }
+.sf-cartpage__grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; }
+.sf-cartpage__aside { display: grid; gap: 12px; padding: 20px; border: 1px solid var(--sf-line); border-radius: var(--sf-radius); background: var(--sf-paper); }
+.sf-cartpage__aside h2 { font-size: 22px; line-height: 1.4; }
+.sf-cartpage__amounts { display: grid; gap: 12px; margin: 0; }
+.sf-cartpage__amounts .sf-summary__row { gap: 8px; font-size: 14px; }
+.sf-cartpage__amounts dd { margin: 0; text-align: end; font-variant-numeric: tabular-nums; }
+.sf-cartpage__total { padding-top: 12px; border-top: 1px solid var(--sf-line); font-weight: 700; }
+.sf-cartpage__aside .sf-free { padding-top: 8px; }
+.sf-cartpage .sf-line { grid-template-columns: 68px minmax(0, 1fr); gap: 8px 12px; }
+.sf-cartpage .sf-line:first-child { padding-top: 0; }
+.sf-cartpage .sf-line__media { width: 100%; aspect-ratio: 1; }
+.sf-cartpage .sf-line__body { display: contents; }
+.sf-cartpage .sf-line__head { grid-column: 2; grid-row: 1; align-items: center; align-self: center; flex-wrap: wrap; gap: 4px 8px; }
+.sf-cartpage .sf-line__label { display: grid; gap: 2px; min-width: 0; flex: 1 1 120px; }
+.sf-cartpage .sf-line__label .sf-line__variant { overflow-wrap: anywhere; }
+.sf-cartpage .sf-line__ctl { grid-column: 1 / -1; grid-row: 2; margin-top: 0; }
+.sf-cartpage .sf-line__unit { grid-column: 1 / -1; grid-row: 3; margin-top: 6px; }
+.sf-cartpage .sf-line__stock--in { color: var(--sf-mute); font-weight: 500; }
+.sf-cartpage .sf-stepper { border: 0; }
+.sf-cartpage .sf-stepper button { border: 1px solid var(--sf-line); }
+.sf-cartpage .sf-stepper button:hover:not(:disabled) { border-color: var(--accent-text); }
+.sf-cartpage .sf-stepper output { width: 44px; }
+.sf-cartpage .sf-line__ctl .sf-link-btn { min-width: 44px; padding-inline: 16px; color: var(--accent-text); font-weight: 600; text-decoration: none; }
+.sf-cartpage .sf-line__ctl .sf-link-btn:hover:not(:disabled) { text-decoration: underline; }
+@media (max-width: 719.98px) {
+  .sf-cart-main .sf-pagehead { padding-block: 4px 16px; }
+  .sf-cart-main .sf-pagehead h1 { margin-top: 12px; }
+  .sf-cartpage__grid { gap: 20px; }
+}
 @media (min-width: 900px) {
-  .sf-cartpage__grid { grid-template-columns: minmax(0, 1fr) 360px; gap: 48px; align-items: start; }
+  .sf-cart-main .sf-pagehead { padding-bottom: 28px; }
+  .sf-cart-main .sf-pagehead h1 { font-size: 36px; margin-top: 28px; }
+  .sf-cartpage__grid { grid-template-columns: minmax(0, 1fr) 380px; gap: 32px; align-items: start; }
   .sf-cartpage__aside { position: sticky; top: 92px; }
+  .sf-cartpage .sf-line { grid-template-columns: 92px minmax(0, 1fr); }
+  .sf-cartpage .sf-line__total { font-size: 18px; }
   .sf-line { grid-template-columns: 112px 1fr; }
   .sf-line__media { width: 112px; }
 }
-.sf-cartpage__aside .sf-link { justify-self: center; }
 .checkout-lines { margin-bottom: 24px; }
 .quotation li span:last-child { white-space: nowrap; }
 .checkout-lines h1 { font-size: 26px; font-weight: 800; margin-bottom: 8px; }
