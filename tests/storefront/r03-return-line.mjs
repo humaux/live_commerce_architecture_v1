@@ -193,12 +193,15 @@ export async function r03ReturnLineJourney({ origin, evidence, control, newConte
     const exactDetail = /\/api\/buyer\/return-requests\/[a-f0-9-]{36}$/;
     // Lose the first persisted read only. The browser still sends the real keyed POST to Go/PG.
     await page.route(exactDetail, (route) => route.fulfill({ status: 503, contentType: "application/json", body: '{"code":"unavailable"}' }), { times: 1 });
-    const detailRead = page.waitForResponse((r) => exactDetail.test(r.url()));
-    void detailRead.catch(() => {}); // The POST assertion reports refusal before waiting for a detail read.
-    const [ack] = await submit();
-    const request = await ack.json(), create = mutations()[1];
-    assert.equal(ack.status(), 201, request.code);
-    const failedRead = await detailRead;
+    const [failedRead, { ack, request }] = await Promise.all([
+      page.waitForResponse((r) => exactDetail.test(r.url())),
+      submit().then(async ([ack]) => {
+        const request = await ack.json();
+        assert.equal(ack.status(), 201, request.code);
+        return { ack, request };
+      }),
+    ]);
+    const create = mutations()[1];
     assert.equal(failedRead.status(), 503);
     record(page, copy.submit, "點選", { write: 201, persistedRead: 503 }, { write: ack.status(), persistedRead: failedRead.status() });
     assert.equal(mutations().length, 2);

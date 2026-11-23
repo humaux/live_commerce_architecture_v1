@@ -800,7 +800,7 @@
     "tests/storefront/order-gate.mjs": "046faaae0f790e7fb6b8b8a686dca722ed980b63a5abe4f5e0a038a890d4f97a",
     "tests/storefront/privacy-buyer.mjs": "1823f85a4bdbe4e38a6f5006d847cbb6f664971503ebf9fdd635f57ab3e28c85",
     "tests/storefront/promotions-gate.mjs": "22206eb140a4eeb9a13c479759c60538943e6ace4bab33e977b7b6a778265f52",
-    "tests/storefront/r03-return-line.mjs": "2c44612e48917bd9aa960d77699b2a20537df160bd86b12e8f64166128768b03",
+    "tests/storefront/r03-return-line.mjs": "286ca9c47bb191aa12918bac7b3e92170db80a03002f86e1ad1a0a48489f7882",
     "tests/storefront/refund-buyer.mjs": "e89297f2997f0153b811175d7c00718dec9657de3e606b759512248ca53acaca",
     "tests/storefront/shipment-buyer.mjs": "bedeb90babda691f1db89879711ffbdc0a29da2b476772eb367f00d5e1faf1db",
     "tests/storefront/shop-fake-api.mjs": "e439c2eb7fabce165b43e1cd12994b4ff25f43c65c8385292345848e7f8337f7",
