@@ -29,6 +29,7 @@ export async function prepareR04({ page, openCheckout, evidence, viewport }) {
   const confirm = page.getByTestId("cvs-picker-confirm");
   const close = page.getByTestId("cvs-picker-close");
   const change = page.getByTestId("cvs-change-store");
+  const hint = page.getByTestId("cvs-next-step");
   const [quote] = await Promise.all([page.waitForResponse(responseFor("POST", "quotes")), openCheckout()]);
   assert.equal(quote.status(), 200);
   const originalQuote = await quote.json();
@@ -53,6 +54,7 @@ export async function prepareR04({ page, openCheckout, evidence, viewport }) {
   await expect(page.getByTestId("delivery-kind-cvs")).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByTestId("delivery-kind-home")).toHaveAttribute("aria-pressed", "false");
   await page.screenshot({ path: path.join(evidence, `r04-${viewport}-selected-a.png`), fullPage: true });
+  await expect(hint, "R04 hides the next-step hint once A is shown").toHaveCount(0);
   const [write] = await Promise.all([page.waitForResponse(responseFor("PUT", "destination")), confirmCheckoutAddress(page)]);
   assert.equal(write.status(), 200);
   const buyerContext = (await write.request().allHeaders())["x-buyer-context"];
@@ -77,6 +79,7 @@ export async function prepareR04({ page, openCheckout, evidence, viewport }) {
     const unchanged = async () => {
       await expect(page.getByTestId("cvs-store-code"), "R04 keeps A after opening and cancelling replacement").toHaveText(store.code);
       await expect(page.getByTestId("cvs-store-address")).toHaveText(store.address);
+      await expect(hint).toHaveCount(0);
       const current = await readDestination();
       assert.equal(current.pickup.id, store.pickup_id);
       assert.equal(current.version, a.version);
@@ -106,7 +109,9 @@ export async function prepareR04({ page, openCheckout, evidence, viewport }) {
       await home.click();
       const line1 = page.locator('.address-section input[name="line1"]');
       await line1.fill("合成配送測試地址");
+      await expect(hint).toHaveCount(0);
       await pickup.click();
+      await expect(hint).toBeVisible();
       await home.click();
       await expect(line1).toHaveValue("合成配送測試地址");
       await pickup.click();
@@ -157,6 +162,7 @@ export async function prepareR04({ page, openCheckout, evidence, viewport }) {
       assert.equal(b.code, "121275");
       await expect(page.getByTestId("cvs-store-code")).toHaveText(b.code);
       await expect(page.getByTestId("cvs-store-address")).toHaveText(b.address);
+      await expect(hint).toHaveCount(0);
       assert.equal((await readDestination()).pickup.id, store.pickup_id, "review keeps the old destination until explicit confirmation");
       const [updated] = await Promise.all([page.waitForResponse(responseFor("PUT", "destination")), confirmCheckoutAddress(page)]);
       assert.equal(updated.status(), 200);

@@ -54,18 +54,21 @@ const mapPosts = []; // every form the browser POSTed to the stage map: { mobile
 const copy = {
   "zh-TW": {
     delivery: "選擇配送", quote: "取得目前總額", pick: "選擇門市", change: "更換門市",
+    cvsBeforeQuote: "取得目前總額後，即可選擇取貨門市。",
     consent: "取件人姓名與手機將提供給物流商與門市，用於通知與取貨。", enteredLabel: "你填寫的門市",
     comingSoon: "即將開放", chains: { cvs_711: "7-ELEVEN", cvs_familymart: "全家", cvs_hilife: "萊爾富", cvs_okmart: "OK超商" },
     confirmTotal: "確認新金額",
   },
   "zh-CN": {
     delivery: "选择配送", quote: "获取当前总额", pick: /选择门[市店]/, change: /更换门[市店]/,
+    cvsBeforeQuote: "获取当前总额后，即可选择取货门店。",
     consent: "取件人姓名与手机将提供给物流商与门店，用于通知与取货。", comingSoon: "即将开放",
     chains: { cvs_711: "7-ELEVEN", cvs_familymart: "全家", cvs_hilife: "莱尔富", cvs_okmart: "OK超商" },
     confirmTotal: "确认新金额",
   },
   en: {
     delivery: "Choose delivery", quote: "Get current total", pick: "Choose store", change: "Change store",
+    cvsBeforeQuote: "Get the current total to choose a pickup store.",
     consent: "The recipient's name and mobile are shared with the carrier and store for pickup notices.", comingSoon: "Coming soon",
     chains: { cvs_711: "7-ELEVEN", cvs_familymart: "FamilyMart", cvs_hilife: "Hi-Life", cvs_okmart: "OK mart" },
     confirmTotal: "Confirm new total",
@@ -135,10 +138,14 @@ async function toQuote(page, store, locale, kind, quantity = 1) {
   const group = { en: "Convenience-store pickup", "zh-TW": "超商取貨", "zh-CN": "便利店取货" }[locale];
   await expect(page.locator(`#delivery optgroup[label="${group}"] option`).filter({ hasText: copy[locale].chains[kind] })).toHaveCount(1);
   await page.locator("#delivery").selectOption({ label: `${copy[locale].chains[kind]}` });
+  const hint = page.getByTestId("cvs-next-step");
+  await expect(hint).toBeVisible();
+  await expect(hint).toHaveText(copy[locale].cvsBeforeQuote);
   // READ ONLY: retain the actual selection before the signed quote screen unmounts the delivery selector.
   const deliveryKey = await page.locator("#delivery").inputValue();
   await page.getByRole("button", { name: copy[locale].quote, exact: true }).click();
   await expect(page.getByTestId("address-section")).toBeVisible();
+  await expect(hint).toHaveCount(0);
   return deliveryKey;
 }
 async function mapRoundTrip(page, ctx, store, locale, kind, label) {
@@ -299,6 +306,7 @@ try {
     await expect(page.locator("#delivery option:enabled")).toHaveCount(1);
     await expect(page.locator('#delivery optgroup[label="宅配"] option')).toHaveCount(1);
     await expect(page.getByTestId("delivery-kind-cvs")).toHaveCount(0);
+    await expect(page.getByTestId("cvs-next-step")).toHaveCount(0);
     await page.getByRole("button", { name: copy["zh-TW"].quote, exact: true }).click();
     await expect(page.locator('.address-section input[name="line1"]')).toBeVisible();
     await expect(page.getByTestId("cvs-open-picker")).toHaveCount(0);

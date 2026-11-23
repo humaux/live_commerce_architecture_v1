@@ -65,9 +65,6 @@ function CheckoutDeliveryOptions({ locale, options, method, chosen, subtotal, cu
         </option>)}
       </optgroup>)}
     </select>
-    {chosen && chosen.delivery_kind !== "home" && (
-      <p data-testid="cvs-next-step">{copy.cvs}</p>
-    )}
     {progress && (
       // Hint only: the server quote remains the sole authority on shipping.
       <p className="sf-muted" data-testid="checkout-free-shipping">
@@ -110,6 +107,9 @@ export default function CheckoutDeliverySection({
         {selector.options.length ? <CheckoutDeliveryOptions {...selector} /> : <p>{copy.noDelivery}</p>}
         {showChooser && <button type="button" aria-controls="delivery" disabled={chooserDisabled} onClick={chooseDelivery}>{copy.delivery}</button>}
         {onQuote && <button type="button" disabled={quoteDisabled} onClick={onQuote}>{copy.quote}</button>}
+        {onQuote && !quoteDisabled && selector.chosen && selector.chosen.delivery_kind !== "home" && (
+          <p data-testid="cvs-next-step">{copy.cvsBeforeQuote}</p>
+        )}
       </div>
       {onMore && <button disabled={moreDisabled} onClick={onMore}>{copy.more}</button>}
     </section>
