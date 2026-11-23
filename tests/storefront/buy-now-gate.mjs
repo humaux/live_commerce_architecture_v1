@@ -4,6 +4,12 @@ import path from "node:path";
 import { expect } from "@playwright/test";
 import { shopCopy } from "../../apps/storefront/lib/shop-copy.ts";
 
+const presentation = (button) => button.evaluate((element) => {
+  const { x, y, width, height } = element.getBoundingClientRect();
+  const { backgroundColor, borderTopColor, borderTopStyle, borderTopWidth, color } = getComputedStyle(element);
+  return { x, y, width, height, backgroundColor, borderTopColor, borderTopStyle, borderTopWidth, color };
+});
+
 export async function checkBuyNow({ browser, origin, evidence, ctxOpts, engine, facts, control }) {
   const failures = [];
   for (const [device, width, height] of [["desktop", 1440, 900], ["phone", 390, 844]]) {
@@ -21,7 +27,7 @@ export async function checkBuyNow({ browser, origin, evidence, ctxOpts, engine, 
       assert.equal(response.status(), 200, `${response.request().method()} ${new URL(response.url()).pathname}`);
       return response.json();
     };
-    const shot = (stage) => page.screenshot({ path: path.join(evidence, `${device}-${stage}.png`), timeout: 5000 });
+    const shot = (stage, animations = "allow") => page.screenshot({ path: path.join(evidence, `${device}-${stage}.png`), timeout: 5000, animations });
     const lines = (items) => items.map(({ sku_id, quantity }) => ({ sku_id, quantity }));
     page.on("response", (response) => {
       const endpoint = new URL(response.url()).pathname.replace(/[0-9a-f-]{36}/g, ":id");
@@ -35,10 +41,11 @@ export async function checkBuyNow({ browser, origin, evidence, ctxOpts, engine, 
     });
 
     try {
+      const addToCart = page.getByTestId("add-to-cart");
+      const buyNow = page.getByTestId("buy-now");
       receipt.stages.push("seed-original-cart");
       const landing = await page.goto(`${origin}/en/products/${product("candle").slug}`);
       assert.equal(landing.status(), 200);
-      const addToCart = page.getByTestId("add-to-cart");
       await expect(addToCart).toBeEnabled();
       const [added] = await Promise.all([capture("PUT", "cart"), addToCart.click()]);
       receipt.before = await read(added);
@@ -46,17 +53,67 @@ export async function checkBuyNow({ browser, origin, evidence, ctxOpts, engine, 
       // Leaving on the HTTP receipt alone can interrupt the cart reread and journal settlement.
       await expect(page.getByRole("status").filter({ hasText: shopCopy.en.added })).toBeVisible();
 
+      receipt.stages.push("b03-sold-out-actions");
+      const soldOut = await page.goto(`${origin}/en/products/${product("diffuser").slug}`);
+      assert.equal(soldOut.status(), 200);
+      await expect(page.getByTestId("cart-count")).toHaveText("1");
+      await expect(page.getByTestId("stock-hint")).toHaveText(shopCopy.en.outOfStock);
+      await expect(addToCart).toBeDisabled();
+      await expect(buyNow).toBeDisabled();
+      receipt.b03 = { soldOutDisabled: true, soldOutCartReady: true };
+
       const b = product("dripper");
-      receipt.stages.push("site-buy-now");
+      receipt.stages.push("b03-action-presentation");
       const quantity = device === "desktop" ? 1 : 2;
-      await page.goto(`${origin}/en/products/${b.slug}`);
+      const detail = await page.goto(`${origin}/en/products/${b.slug}`);
+      assert.equal(detail.status(), 200);
+      await expect(addToCart).toBeEnabled();
+      await expect(buyNow).toBeEnabled();
+      await page.mouse.move(0, 0);
+      await shot("b03-first-viewport", "disabled");
       const sku = await page.getByTestId("product-buy").getAttribute("data-sku");
       const selected = [{ sku_id: sku, quantity }];
       await page.getByTestId("qty-input").fill(String(quantity));
+      await page.locator(".sf-buy__actions").scrollIntoViewIfNeeded();
+      await shot("b03-actions", "disabled");
+      const [add, buy] = await Promise.all([presentation(addToCart), presentation(buyNow)]);
+      const sameWidth = Math.abs(add.width - buy.width) <= 1;
+      const checks = {
+        geometry: sameWidth && (device === "desktop"
+          ? Math.abs(add.y - buy.y) <= 1 && add.x + add.width <= buy.x
+          : Math.abs(add.x - buy.x) <= 1 && add.y + add.height <= buy.y),
+        addOutlined: add.borderTopStyle === "solid" && parseFloat(add.borderTopWidth) > 0
+          && add.backgroundColor !== add.borderTopColor && add.color === add.borderTopColor,
+        buyFilled: buy.backgroundColor === buy.borderTopColor && buy.color === add.backgroundColor
+          && buy.backgroundColor !== add.backgroundColor,
+        usableTargets: add.height >= 44 && buy.height >= 44,
+      };
+      Object.assign(receipt.b03, { ready: true, add, buy, checks });
+      assert.deepEqual(checks, { geometry: true, addOutlined: true, buyFilled: true, usableTargets: true },
+        `B03 ${device}: Add to cart is outlined and Buy now is filled, with the expected button layout`);
+
+      const increase = page.getByTestId("product-buy").getByRole("button", { name: shopCopy.en.increase, exact: true });
+      await increase.focus();
+      // macOS WebKit's default Tab skips buttons. Option-Tab traverses the controls.
+      const focusKey = engine === "webkit" && process.platform === "darwin" ? "Alt+Tab" : "Tab";
+      receipt.b03.focusKey = focusKey;
+      for (const [name, button] of [["add-to-cart", addToCart], ["buy-now", buyNow]]) {
+        await page.keyboard.press(focusKey);
+        await expect(button).toBeFocused();
+        assert.ok(await button.evaluate((element) => element.matches(":focus-visible")
+          && getComputedStyle(element).outlineStyle === "solid" && parseFloat(getComputedStyle(element).outlineWidth) > 0),
+        `${name} has a visible keyboard focus ring`);
+        await shot(`b03-focus-${name}`, "disabled");
+      }
+      await page.keyboard.press(`Shift+${focusKey}`);
+      await expect(addToCart).toBeFocused();
+      receipt.b03.keyboard = ["add-to-cart", "buy-now", "add-to-cart"];
+
+      receipt.stages.push("site-buy-now");
       await shot("selection");
       observeWrites = true;
       const [created, options] = await Promise.all([
-        capture("POST", "buy-now"), capture("GET", "checkout-options"), page.getByTestId("buy-now").click(),
+        capture("POST", "buy-now"), capture("GET", "checkout-options"), buyNow.click(),
       ]);
       const checkout = await read(created);
       receipt.checkoutCart = checkout;
