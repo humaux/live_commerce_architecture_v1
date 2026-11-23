@@ -4,6 +4,8 @@
 // Invariants: server eligibility, CAS and UNKNOWN latches control every send; collapsed UI never grants authority.
 "use client";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import Link from "next/link";
+import { conversationOrderCopy } from "@/lib/merchant-tools-copy";
 import type { Store } from "@/lib/model";
 import { displayTime, instantToTaipei } from "@live-commerce/format";
 import type { ConversationItem, Thread, Template } from "@/lib/inbox-types";
@@ -48,6 +50,7 @@ export function InboxThread({
 }) {
   const c = inboxCopy(locale),
     cid = conversation.conversation_id;
+  const orderCopy = conversationOrderCopy[locale === "zh-TW" || locale === "zh-CN" ? locale : "en"];
   const fence = useRef(new InboxFence());
   const gone = useRef(false);
   const callbacks = useRef({ onUnauthorized, onRead });
@@ -468,6 +471,9 @@ export function InboxThread({
       </header>
       {!thread && <p className={styles.notice}>{busy ? c.loading : c.unavailable}</p>}
       {thread && <>
+        {cid && ["inbox:read", "orders:read", "catalog:read", "inventory:reserve"].every((permission) => permitted(store, permission)) &&
+          <Link className={styles.button} prefetch={false} data-testid="inbox-manual-order"
+            href={`/${locale}/orders/new?store=${store.id}&conversation_id=${cid}`}>{orderCopy.open}</Link>}
         <button className={styles.disclosure} data-testid="customer-details-toggle"
           aria-expanded={details} aria-controls={`customer-details-${cid}`} onClick={() => setDetails(value => !value)}>
           {`${c.customerDetails}${thread.mode === "human" ? ` · ${c.human} / ${c.autoPaused}` : ""}`}

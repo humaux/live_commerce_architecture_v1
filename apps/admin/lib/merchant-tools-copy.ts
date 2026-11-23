@@ -248,3 +248,36 @@ const zhCN: MerchantToolsCopy = {
 };
 
 export const toolsCopy: Record<Locale, MerchantToolsCopy> = { en, "zh-TW": zhTW, "zh-CN": zhCN };
+
+export const conversationOrderCopy = {
+  en: {
+    open: "Create order", back: "Back to conversation", view: "View order", newDraft: "Start a new order",
+    previous: "An order already exists for this conversation.", blocked: "Review the conversation before creating an order.",
+    pending: "The order result is still unknown. Check the original request before creating another order.",
+    unavailable: "The conversation source is unavailable. Return to the conversation and check it again.",
+    noDelivery: "Set up a delivery option and shipping fee before placing an order.",
+    check: "Check saved receipt", price: "Live price", applied: "Applied", catalog: "Catalog price",
+    some: "Some items used the catalog price.", permission: "Your role cannot apply live prices.",
+    ineligible: "These items did not qualify for a live price.",
+  },
+  "zh-TW": {
+    open: "建立訂單", back: "返回原對話", view: "查看訂單", newDraft: "建立另一張訂單",
+    previous: "這段對話已有訂單。", blocked: "請先回到對話確認認領資料，再建立訂單。",
+    pending: "訂單結果仍待確認。請查詢原請求，再決定是否建立另一張訂單。",
+    unavailable: "無法取得對話來源。請返回原對話重新確認。",
+    noDelivery: "請先設定配送方式與運費，再建立訂單。",
+    check: "查詢原請求回執", price: "直播價", applied: "已套用", catalog: "依商品原價",
+    some: "部分商品依原價計算。", permission: "目前角色沒有套用直播價的權限。",
+    ineligible: "商品不符合直播價條件。",
+  },
+  "zh-CN": {
+    open: "创建订单", back: "返回原对话", view: "查看订单", newDraft: "创建另一张订单",
+    previous: "这段对话已有订单。", blocked: "请先回到对话确认认领资料，再创建订单。",
+    pending: "订单结果仍待确认。请查询原请求，再决定是否创建另一张订单。",
+    unavailable: "无法获取对话来源。请返回原对话重新确认。",
+    noDelivery: "请先设置配送方式与运费，再创建订单。",
+    check: "查询原请求回执", price: "直播价", applied: "已应用", catalog: "按商品原价",
+    some: "部分商品按原价计算。", permission: "当前角色没有应用直播价的权限。",
+    ineligible: "商品不符合直播价条件。",
+  },
+} as const;

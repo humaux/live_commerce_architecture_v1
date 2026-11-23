@@ -213,12 +213,14 @@ const writes: [string, Record<string, unknown>][] = [
   [`${base}/customer-link`, { customer_id: null, expected_version: 2 }],
 ];
 
-test("A8/A9/A13 and published templates: exact reads forward once with no-store", async () => {
+test("A8/A9/A13/A15 and published templates: exact reads forward once with no-store", async () => {
   for (const [path, query] of [
     ["inbox/conversations", "?filter=messenger&limit=50"],
     [`${base}/messages`, "?before_seq=3&limit=2"],
     ["inbox/buyer-panel", `?conversation_id=${cid}`],
     ["inbox/buyer-panel", `?bundle_id=${customer}`],
+    ["inbox/order-prefill", `?conversation_id=${cid}`],
+    ["inbox/order-prefill", `?bundle_id=${customer}`],
     ["message-templates", ""],
   ]) {
     const count = seen.length;
@@ -228,6 +230,11 @@ test("A8/A9/A13 and published templates: exact reads forward once with no-store"
     assert.equal(seen.at(-1)?.url, `/v1/admin/stores/${store}/${path}${query}`);
     assert.match(result.headers.get("cache-control") ?? "", /no-store/);
   }
+  const count = seen.length;
+  for (const query of ["", `?conversation_id=${cid}&bundle_id=${customer}`, "?conversation_id=private-name"]) {
+    assert.equal((await call("inbox/order-prefill", { query })).status, 422);
+  }
+  assert.equal(seen.length, count);
 });
 test("real streamed POST bodies: A10-A14 exact keys reach upstream", async () => {
   answer = {

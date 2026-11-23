@@ -1116,38 +1116,6 @@
     {
       "kind": "GO_ONLY",
       "method": "GET",
-      "path": "/v1/admin/stores/{}/inbox/order-prefill",
-      "locations": [
-        {
-          "file": "internal/httpapi/handler.go",
-          "line": 233,
-          "end": 233
-        },
-        {
-          "file": "internal/httpapi/merchanttools.go",
-          "line": 153,
-          "end": 153
-        },
-        {
-          "file": "internal/httpapi/merchanttools.go",
-          "line": 345,
-          "end": 345
-        },
-        {
-          "file": "internal/httpapi/merchanttools.go",
-          "line": 346,
-          "end": 346
-        },
-        {
-          "file": "internal/httpapi/merchanttools.go",
-          "line": 346,
-          "end": 364
-        }
-      ]
-    },
-    {
-      "kind": "GO_ONLY",
-      "method": "GET",
       "path": "/v1/admin/stores/{}/live-sessions",
       "locations": [
         {

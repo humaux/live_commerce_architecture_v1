@@ -12,6 +12,7 @@ import {
   SESSION_COOKIE,
 } from "@/lib/auth";
 import type { Store } from "@/lib/model";
+import { canonicalUUID } from "@/lib/orders-model";
 import { Inbox } from "@/components/Inbox";
 import { inboxCalibration } from "@/src/features/messages/privacy";
 
@@ -26,8 +27,10 @@ export default async function MessagesPage({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const query = await searchParams;
-  if (Object.keys(query).some((key) => key !== "store")) notFound();
+  if (Object.keys(query).some((key) => key !== "store" && key !== "conversation_id")) notFound();
   const requested = query.store;
+  const conversation = query.conversation_id;
+  if (conversation !== undefined && (!requested || typeof conversation !== "string" || !canonicalUUID.test(conversation))) notFound();
   if (
     requested !== undefined &&
     (typeof requested !== "string" ||
@@ -66,6 +69,7 @@ export default async function MessagesPage({
       store={store}
       initialError={error}
       calibration={calibration}
+      resumeConversation={conversation}
     />
   );
 }

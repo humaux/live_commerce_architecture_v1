@@ -4,11 +4,29 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  csvFileProblem, draftProblem, manualBody, recipientGaps, parseDashboard, parseImportResult, parseManualOptions, parseManualResult, parseRegenerateResult, rowErrorCodes, toolsRoute,
+  csvFileProblem, draftProblem, manualBody, recipientGaps, parseDashboard, parseImportResult, parseManualOptions, parseManualPrefill, parseManualReceipt, parseManualResult, parseRegenerateResult, rowErrorCodes, toolsRoute,
   validManualBody, validRegenerateBody, MAX_CSV_BYTES, parsePickupRefusal, type ManualDraft, type ManualOption,
 } from "../../apps/admin/lib/merchant-tools-model.ts";
 import { toolsCopy } from "../../apps/admin/lib/merchant-tools-copy.ts";
 import { parseSummary } from "../../apps/admin/lib/catalog-v2-model.ts";
+
+test("conversation context is closed and a committed lookup has no buyer-link capability", () => {
+  const source = { conversation_id: id, bundle_ids: [], revision: "a".repeat(64) };
+  assert.equal(toolsRoute("GET", "orders/manual/receipt"), "manual-receipt");
+  const body = manualBody(draft({}));
+  assert.equal(validManualBody({ ...body, source_context: source }), true);
+  for (const invalid of [null, { ...source, bundle_ids: [sku, sku] }, { ...source, revision: "?" }, { ...source, send_payment_link: true }]) {
+    assert.equal(validManualBody({ ...body, source_context: invalid }), false);
+  }
+  const prefill = { items: [], bundles: [], customer: null, last_delivery: null, suggested_option_key: null,
+    live_price_eligible: false, live_price_reason: "bundle_buyer_unverified", order_context: { state: "ready", ...source, latest_order_id: null } };
+  assert.deepEqual(parseManualPrefill(prefill, id).order_context, prefill.order_context);
+  assert.throws(() => parseManualPrefill(prefill, sku), /unavailable/);
+  const { buyer_link, link_state, source: placedSource, ...snapshot } = result();
+  const receipt = { ...snapshot, order_origin: { conversation_id: id, bundle_ids: [] }, live_price: "not_applied", live_price_reason: "no_bundle" };
+  assert.equal(parseManualReceipt({ state: "committed", receipt }).state, "committed");
+  assert.throws(() => parseManualReceipt({ state: "committed", receipt: { ...receipt, buyer_link, link_state, source: placedSource } }), /unavailable/);
+});
 
 test("picker product model keeps the additive authenticated thumbnail and null without an image", () => {
   const image = "44444444-4444-4444-8444-444444444444";

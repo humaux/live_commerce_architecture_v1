@@ -62,8 +62,9 @@ var errNeedWork = errors.New("no receipt yet")
 // the cart lines (CartInput.Origins is json:"-", never a client value) and a step that runs right after CreateQuote on the buyer pool to bind the
 // quote's merchant-origin grant to that quote (migration 0129). A plain manual order carries none, so Place behaves exactly as before.
 type pipelineHooks struct {
-	origins    map[string]storefront.ClaimOrigin
-	afterQuote func(ctx context.Context, capability, storeID, quoteID string) error
+	origins     map[string]storefront.ClaimOrigin
+	afterQuote  func(ctx context.Context, capability, storeID, quoteID string) error
+	beforeBegin func(context.Context) error
 }
 
 type pipelineHooksKey struct{}
@@ -117,7 +118,8 @@ type ManualInput struct {
 	Locale      string                  `json:"locale"`
 	Discount    *pricing.ManualDiscount `json:"discount,omitempty"`
 	// MemberAward (loyalty-points-v1 LP7) is part of the hashed request; omitempty keeps every pre-LP request hash unchanged.
-	MemberAward *loyalty.Award `json:"member_award,omitempty"`
+	MemberAward   *loyalty.Award       `json:"member_award,omitempty"`
+	SourceContext *ManualSourceContext `json:"source_context,omitempty"`
 }
 
 // ManualOption is one delivery choice of GET orders/manual/options (the buyer checkout option, card dropped).
@@ -154,14 +156,17 @@ type manualReceipt struct {
 	ExpiresAt       time.Time               `json:"expires_at"`
 	Discount        *pricing.ManualDiscount `json:"discount,omitempty"`
 	MemberAward     *loyalty.AwardOutcome   `json:"member_award,omitempty"` // LP18: ids, numbers, state only
+	LivePrice       string                  `json:"live_price,omitempty"`
+	LivePriceReason *string                 `json:"live_price_reason,omitempty"`
 }
 
 // ManualResult is the 201 (or replayed 200) body.
 type ManualResult struct {
 	manualReceipt
-	BuyerLink *string `json:"buyer_link"`
-	LinkState string  `json:"link_state"`
-	Source    string  `json:"source"`
+	BuyerLink   *string            `json:"buyer_link"`
+	LinkState   string             `json:"link_state"`
+	Source      string             `json:"source"`
+	OrderOrigin *ManualOrderOrigin `json:"order_origin,omitempty"`
 }
 
 // ManualRegenerateInput is the exact POST orders/manual/regenerate-link body (K3 F2): the order whose buyer link is re-issued and the locale
@@ -193,8 +198,9 @@ type ManualOrders struct {
 	secret    []byte
 	// Test seams (nil in production, like ForBuyer.FaultAfterPlace): FaultBeforeFinal runs after the pipeline and before the final
 	// merchant transaction (the LPG06r race window); FaultAfterAward runs inside the final transaction right after the award (LPG02).
-	FaultBeforeFinal func() error
-	FaultAfterAward  func() error
+	FaultBeforeFinal        func() error
+	FaultAfterAward         func() error
+	FaultBeforeContextBegin func() error
 }
 
 // NewManualOrders wires the pipeline. issuer must have been built with the 30-day capability TTL; secret (>= 32 bytes) keys the HMAC that
@@ -224,6 +230,15 @@ func stepKey(key, step string) string {
 // payment mode against the option) need the options and are checked in Place.
 func ValidateManual(in ManualInput) (ManualInput, error) {
 	bad := &Error{Status: http.StatusUnprocessableEntity, Code: "invalid_request"}
+	if in.SourceContext != nil {
+		if !ValidManualSource(*in.SourceContext) {
+			return in, bad
+		}
+		source := *in.SourceContext
+		source.BundleIDs = slices.Clone(source.BundleIDs)
+		slices.Sort(source.BundleIDs)
+		in.SourceContext = &source
+	}
 	if len(in.Items) < 1 || len(in.Items) > maxManualLines {
 		return in, bad
 	}
@@ -370,11 +385,17 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 	}
 	var receipt manualReceipt
 	var origin, state string
+	var contextual *manualSourceAttempt
 	replayed := false
 	// Probe: authority, the storefront origin for the link, and any receipt of this key (command.Run replays it; nothing is written).
 	err = platform.WithScope(ctx, m.pool, token, storeID, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
 		if inner := requireCatalog(ctx, tx, scope, token); inner != nil {
 			return inner
+		}
+		if in.SourceContext != nil {
+			if inner := requireManualSource(ctx, tx, scope, token); inner != nil {
+				return inner
+			}
 		}
 		var inner error
 		if state, origin, inner = readOrigin(ctx, tx, token, scope); inner != nil {
@@ -385,23 +406,28 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 		case inner == nil:
 			replayed = true
 		case errors.Is(inner, errNeedWork):
-			inner = nil
-			if in.MemberAward != nil {
-				inner = loyalty.PrecheckAward(ctx, tx, scope, token, *in.MemberAward)
-			}
+			contextual, inner = admitManualIntent(ctx, tx, scope, token, key, in)
 		}
 		return inner
 	})
 	if err != nil {
-		return ManualResult{}, false, mapReceiptError(err)
+		return ManualResult{}, false, mapForBuyerError(err)
 	}
 	capability := m.capability("order", storeID, key)
 	// The link token is NOT the capability: it is a separate single-use secret (derived from the same key, so a replay re-derives the same link)
 	// that the storefront exchanges for a fresh capability of the order's owner (checkout.redeem_order_link); the capability never leaves the server.
 	linkToken := m.capability("link", storeID, key)
 	if !replayed {
-		if receipt, err = m.pipeline(ctx, token, capability, storeID, key, in); err != nil {
-			return ManualResult{}, false, classifyPipeline(ctx, err)
+		if contextual == nil {
+			receipt, err = m.pipeline(ctx, token, capability, storeID, key, in)
+			if err != nil {
+				err = classifyPipeline(ctx, err)
+			}
+		} else {
+			receipt, err = m.placeFromConversation(ctx, token, capability, storeID, key, in, contextual)
+		}
+		if err != nil {
+			return ManualResult{}, false, err
 		}
 		if m.FaultBeforeFinal != nil {
 			if e := m.FaultBeforeFinal(); e != nil {
@@ -417,10 +443,17 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 			return command.Run(ctx, tx, scope, manualOperation, key, in, &saved, func() error {
 				// fulfillment.mark_order_merchant_manual (0094): inventory:reserve re-verified in SQL, order of this store, <= 10 minutes old; it also
 				// records sha256 of the buyer link token (single-use, 7 days), so the plaintext token exists only in this response.
-				if _, err := tx.Exec(ctx, `SELECT fulfillment.mark_order_merchant_manual($1,$2::uuid,$3::uuid,$4)`, hash[:], storeID, receipt.OrderID, linkHash[:]); err != nil {
-					return err
-				}
 				saved = receipt
+				if contextual != nil {
+					if e := requireManualSource(ctx, tx, scope, token); e != nil {
+						return e
+					}
+					if e := finishManualSource(ctx, tx, scope, contextual, receipt.OrderID, linkHash[:], &saved); e != nil {
+						return e
+					}
+				} else if _, e := tx.Exec(ctx, `SELECT fulfillment.mark_order_merchant_manual($1,$2::uuid,$3::uuid,$4)`, hash[:], storeID, receipt.OrderID, linkHash[:]); e != nil {
+					return e
+				}
 				if in.MemberAward != nil {
 					award, e := loyalty.TryAward(ctx, tx, scope, token, receipt.OrderID, *in.MemberAward)
 					if e != nil {
@@ -447,12 +480,24 @@ func (m *ManualOrders) Place(ctx context.Context, token, storeID, key string, in
 			})
 		})
 		if err != nil {
+			if contextual != nil {
+				return ManualResult{}, false, manualSourceConflict("source_order_pending", "")
+			}
 			return ManualResult{}, false, mapReceiptError(err)
 		}
 		receipt = saved
 	}
 	receipt.ExpiresAt = receipt.ExpiresAt.UTC() // the wire is RFC 3339 UTC ("Z"), which the admin parser requires; a replayed receipt decodes in local time
 	out := ManualResult{manualReceipt: receipt, LinkState: state, Source: "merchant_manual"}
+	if in.SourceContext != nil {
+		err = platform.WithScope(ctx, m.pool, token, storeID, "orders:read", func(tx pgx.Tx, scope platform.Scope) error {
+			out.OrderOrigin, err = readManualOrigin(ctx, tx, storeID, scope.PrincipalID, key, false)
+			return err
+		})
+		if err != nil {
+			return ManualResult{}, false, mapReceiptError(err)
+		}
+	}
 	if state == "configured" && domains.ValidOrigin(origin) {
 		link := origin + "/" + in.Locale + "/order-link#o=" + receipt.OrderID + "&t=" + linkToken
 		out.BuyerLink = &link
@@ -631,6 +676,11 @@ func (m *ManualOrders) pipeline(ctx context.Context, token, capability, storeID,
 		return zero, err
 	}
 	// checkout.Service.Begin: the buyer begin path (begin_hold reserves stock, schedules the expiry job, applies the payment-mode rules).
+	if hooks != nil && hooks.beforeBegin != nil {
+		if err = hooks.beforeBegin(ctx); err != nil {
+			return zero, err
+		}
+	}
 	placed, err := m.checkout.Begin(ctx, capability, storeID, stepKey(key, "begin"), checkout.Input{QuoteID: quote.ID, DestinationID: selected.ID,
 		CartVersion: cart.Version, ServiceVersion: option.ServiceVersion, AllocationVersion: option.AllocationVersion, PaymentMode: in.PaymentMode,
 		BuyerEmail: in.Customer.Email})
