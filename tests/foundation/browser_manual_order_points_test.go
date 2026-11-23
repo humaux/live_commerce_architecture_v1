@@ -12,7 +12,7 @@ package foundation_test
 //
 // The task fixture permission control is a runner-only endpoint that reuses the existing control pattern (local httptest server +
 // random X-Gate-Key): the spec signs a FRESH context in after each level change, so ONE suite process exercises
-// full -> readonly -> noread. No timeout increase, no second Next, no legacy replay, and the public business API is unchanged.
+// full -> readonly -> noread -> orders-readonly. No timeout increase, no second Next, no legacy replay, and the public business API is unchanged.
 //
 // SEPARATE STORE, SAME PG, NO PARENT EDIT: mtPointsSeamNew creates its own store in the same already-open PG/API and seeds a complete
 // corpus through a value-copy view of tcvEnv (copy the struct + the fixture, re-point storeA1, keep the DB pools/services). Every
@@ -41,13 +41,12 @@ import (
 // pointsCanary is the synthetic marker every browser-created member name, contact note, adjust note and order customer name carries.
 const pointsCanary = "ZqPointsCanary"
 
-// mtPointsControlPermissions is the exact fixture grant set the control applies to the browser principal on the points store. Only the
-// customer permissions vary between levels; the rest is what one manual order plus the catalog picker already need, so the control
-// never widens a business rule (the real API still checks every permission on every request).
+// mtPointsControlPermissions applies fixture-only customer and order creation grants on the points store.
 var mtPointsControlPermissions = map[string][]string{
-	"full":     {"store:read", "catalog:read", "inventory:read", "inventory:reserve", "orders:read", "customers:read", "customers:points"},
-	"readonly": {"store:read", "catalog:read", "inventory:read", "inventory:reserve", "orders:read", "customers:read"},
-	"noread":   {"store:read", "catalog:read", "inventory:read", "inventory:reserve", "orders:read"},
+	"full":            {"store:read", "catalog:read", "inventory:read", "inventory:reserve", "orders:read", "customers:read", "customers:points"},
+	"readonly":        {"store:read", "catalog:read", "inventory:read", "inventory:reserve", "orders:read", "customers:read"},
+	"noread":          {"store:read", "catalog:read", "inventory:read", "inventory:reserve", "orders:read"},
+	"orders-readonly": {"store:read", "catalog:read", "inventory:read", "orders:read"},
 }
 
 type mtPointsBaseline struct {
@@ -153,7 +152,7 @@ func (s *mtPointsSeam) seed(t *testing.T, e *tcvEnv) {
 	if s.created {
 		mustExec(t, f.owner, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'fixture-store-order-points','TWD')`, f.tenantA, f.storeA1)
 	}
-	// SETUP grants of the browser principal on the points store (the permission control narrows only customers:read/points later).
+	// SETUP grants of the browser principal on the points store.
 	for _, perm := range []string{"store:read", "catalog:read", "catalog:write", "inventory:read", "inventory:write", "inventory:reserve",
 		"pricing:read", "pricing:write", "integration:manage", "integration:read", "orders:read", "fulfillment:write"} {
 		mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING`,
@@ -204,7 +203,7 @@ func (s *mtPointsSeam) grant(e *tcvEnv, level string) {
 	if perms == nil {
 		s.t.Fatalf("unknown points level %q", level)
 	}
-	mustExec(s.t, e.p.f.owner, `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission IN ('customers:read','customers:points')`,
+	mustExec(s.t, e.p.f.owner, `DELETE FROM identity.store_grants WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission IN ('customers:read','customers:points','inventory:reserve')`,
 		e.p.f.tenantA, s.store, s.principal)
 	for _, perm := range perms {
 		mustExec(s.t, e.p.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING`,
@@ -293,7 +292,7 @@ func (s *mtPointsSeam) check(t *testing.T, e *tcvEnv, evidence string) {
 	if err := json.Unmarshal(raw, &ev); err != nil {
 		t.Fatal(err)
 	}
-	if ev.Cases == 0 || strings.Join(ev.Phases, ",") != "full,readonly,noread" {
+	if ev.Cases == 0 || strings.Join(ev.Phases, ",") != "full,readonly,noread,orders-readonly" {
 		t.Fatalf("points evidence: cases=%d phases=%v", ev.Cases, ev.Phases)
 	}
 	awarded, recovered := 0, 0
@@ -402,9 +401,12 @@ func (s *mtPointsSeam) check(t *testing.T, e *tcvEnv, evidence string) {
 		if order.CustomerName != "" && memberName == recipient {
 			t.Fatalf("the order customer name must stay independent of the member display name (LP17)")
 		}
-		if n := e.count(`SELECT count(*) FROM loyalty.point_entries WHERE store_id=$1 AND order_id=$2 AND member_id=$3 AND reason='manual_order_award' AND delta=30 AND note IS NULL`,
-			s.store, order.OrderID, *order.MemberID); n != 1 {
-			t.Fatalf("award entry for %s: %d", order.OrderID, n)
+		var awardCount int
+		var awardEntryID string
+		if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*), coalesce(min(id::text),'') FROM loyalty.point_entries
+			WHERE store_id=$1 AND order_id=$2 AND member_id=$3 AND reason='manual_order_award' AND delta=30 AND note IS NULL`,
+			s.store, order.OrderID, *order.MemberID).Scan(&awardCount, &awardEntryID); err != nil || awardCount != 1 || awardEntryID != order.AwardEntryID {
+			t.Fatalf("award receipt for %s: count=%d entry=%q want=%q err=%v", order.OrderID, awardCount, awardEntryID, order.AwardEntryID, err)
 		}
 		if order.Recovery {
 			var n int

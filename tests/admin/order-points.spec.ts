@@ -1,7 +1,7 @@
 // Purpose: M7 order-points browser acceptance — LPU03 (award 30 -> order panel -> deduct -30 -> balance 0 -> persisted linked
 //   ledger -> award-sized deduct refused), LPU04 (permission-shaped controls and direct API refusal) and LPU07 (MOCK BFF-only
 //   not_awarded DTO, all four LP18 reasons). v2 (pre-publication correction 1): ONE suite process and ONE admin Next/Go lifecycle;
-//   the three permission phases full -> readonly -> noread run here, each with a fresh signed context after a fixture-only
+//   the permission phases full -> readonly -> noread -> orders-readonly run here, each with a fresh signed context after a fixture-only
 //   permission-control call (LC_POINTS_CONTROL, X-Gate-Key; no public API change, no timeout increase, no legacy replay).
 //   Authority: contracts/loyalty-points-v1.md LP7/LP17/LP18/LP19, LPU03/LPU04/LPU07 and the frozen selector seam in
 //   FLEET-NEXT-1115/M7-ORDER-POINTS/FROZEN-SEAM.md. Not authoritative here: UI copy that the contract does not spell out (only the
@@ -37,7 +37,7 @@ const evidence = browserEvidenceDirectory("order-points");
 if (!/^[A-Za-z0-9][A-Za-z0-9-]{5,40}$/.test(canary)) throw new Error("LC_POINTS_CANARY must be a short synthetic marker");
 
 // Fixture-only permission control (runner-owned httptest endpoint, X-Gate-Key): the REAL API still checks every permission itself.
-async function setLevel(level: "full" | "readonly" | "noread") {
+async function setLevel(level: "full" | "readonly" | "noread" | "orders-readonly") {
   const reply = await fetch(`${control}/points-permissions`, { method: "POST", headers: { "X-Gate-Key": controlKey, "Content-Type": "application/json" }, body: JSON.stringify({ level }) });
   if (reply.status !== 200) throw new Error(`permission control ${level}: ${reply.status}`);
 }
@@ -48,6 +48,7 @@ const cells: Cell[] = (["zh-TW", "zh-CN", "en"] as Locale[]).flatMap((locale) =>
   { locale, device: "desktop" as const, viewport: { width: 1440, height: 900 } },
   { locale, device: "mobile" as const, viewport: { width: 375, height: 812 } },
 ]);
+const createOrderLabel = { "zh-TW": "建立訂單", "zh-CN": "创建订单", en: "Create an order" };
 const pointsPath = `/api/stores/${store}/tools/orders/manual`;
 const adjustPath = (member: string) => `/api/stores/${store}/members/${member}/adjustments`;
 const memberCreatePath = `/api/stores/${store}/members`;
@@ -292,7 +293,7 @@ test.afterAll(async () => {
     resolve(evidence, "result.json"),
     JSON.stringify(
       {
-        phases: ["full", "readonly", "noread"],
+        phases: ["full", "readonly", "noread", "orders-readonly"],
         cases,
         real_orders: realOrders,
         real_members: realMembers,
@@ -321,7 +322,33 @@ for (const cell of cells) {
       const phone = "0912000000";
       try {
         console.info("LPU_PHASE manual.before", cell.locale, cell.device);
-        await openManualOrder(page, cell.locale);
+        let placementRequests = 0;
+        page.on("request", request => {
+          if (request.method() === "POST" && new URL(request.url()).pathname === pointsPath) placementRequests++;
+        });
+        await page.goto(abs(`/${cell.locale}/orders?store=${store}&state=unshipped`));
+        await page.getByTestId("orders-search").fill("0001");
+        const searched = page.waitForResponse(reply => reply.request().method() === "POST" &&
+          new URL(reply.url()).pathname === `/api/stores/${store}/orders/search`);
+        await page.getByTestId("orders-apply").click();
+        expect((await searched).status()).toBe(200);
+        const heading = page.getByTestId("merchant-orders").locator("header.signed-orders-heading");
+        await expect(heading.locator(`a[href="/${cell.locale}/orders/shipping?store=${store}"]`)).toBeVisible();
+        await page.screenshot({ path: resolve(evidence, `m11-list-${cell.locale}-${cell.device}.png`) });
+        const create = heading.getByRole("link", { name: createOrderLabel[cell.locale], exact: true });
+        await expect(create, "M11 order list exposes its create-order link").toBeVisible();
+        await create.click();
+        await expect(page).toHaveURL(abs(`/${cell.locale}/orders/new?store=${store}`));
+        await expect(page.getByTestId("manual-order-form")).toBeVisible();
+        await expect(page.getByTestId("store-selector")).toHaveValue(store);
+        await expect(page.getByTestId("mo-option")).toBeEnabled();
+        await expect(page.getByTestId("mo-name")).toHaveValue("");
+        await expect(page.getByTestId("mo-phone")).toHaveValue("");
+        await expect(page.getByTestId("mo-lines")).toHaveCount(0);
+        await expect(page.getByTestId("manual-member-selected")).toHaveCount(0);
+        await expect(page.getByTestId("manual-order-return-conversation")).toHaveCount(0);
+        expect(placementRequests, "opening the form does not place an order").toBe(0);
+        await page.screenshot({ path: resolve(evidence, `m11-blank-${cell.locale}-${cell.device}.png`) });
         console.info("LPU_PHASE manual.after", cell.locale, cell.device);
         console.info("LPU_PHASE product.before", cell.locale, cell.device);
         await addProduct(page);
@@ -377,6 +404,8 @@ for (const cell of cells) {
         });
         console.info("LPU_PHASE place.after", cell.locale, cell.device);
         expect(placed.status, "manual order placement").toBe(201);
+        expect(placementRequests).toBe(1);
+        expect(placed.body).not.toHaveProperty("source_context");
         expect(placed.body.customer).toEqual({ name: orderName, phone, email: "" });
         expect(placed.body.delivery).toEqual({
           option_key: optionKey,
@@ -393,8 +422,12 @@ for (const cell of cells) {
         await writeFile(resolve(evidence, `lpu03-submit-${cell.locale}-${cell.device}.json`),
           JSON.stringify(placed, null, 2), { mode: 0o600 });
         const orderId = placed.answer.order_id;
-        await expect(page.getByTestId("manual-order-result")).toBeVisible();
-        await expect(page.getByTestId("manual-member-award-result")).toHaveAttribute("data-award-state", "awarded");
+        const result = page.getByTestId("manual-order-result");
+        await expect(result).toContainText(orderName);
+        const awardResult = result.getByTestId("manual-member-award-result");
+        await expect(awardResult).toHaveAttribute("data-award-state", "awarded");
+        await expect(awardResult).toContainText(memberName);
+        await page.screenshot({ path: resolve(evidence, `m11-receipt-${cell.locale}-${cell.device}.png`), fullPage: true });
 
         // The order page reads the ledger entries of this order: 本單積分 shows the +30 award.
         console.info("LPU_PHASE orderPanel.before", cell.locale, cell.device);
@@ -464,6 +497,7 @@ for (const cell of cells) {
           locale: cell.locale,
           device: cell.device,
           viewport: cell.viewport,
+          entry: "orders_list",
         });
         cases++;
         await page.screenshot({ path: resolve(evidence, `lpu03-${cell.locale}-${cell.device}.png`), fullPage: true });
@@ -855,3 +889,22 @@ test("LPU04 no customers:read: picker, points, entries panel and member reads ar
       await context.close();
     }
   });
+
+test("M11 list-only staff cannot open a manual order", async ({ browser }) => {
+  await setLevel("orders-readonly");
+  const context = await openContext(browser, { locale: "en", viewport: { width: 1440, height: 900 } }, await freshSession(browser));
+  const page = await context.newPage();
+  try {
+    await page.goto(abs(`/en/orders?store=${store}`));
+    await expect(page.getByTestId("orders-list")).toBeVisible();
+    const heading = page.getByTestId("merchant-orders").locator("header.signed-orders-heading");
+    await expect(heading.getByRole("link", { name: createOrderLabel.en, exact: true })).toHaveCount(0);
+    const options = page.waitForResponse(reply => new URL(reply.url()).pathname === pointsPath + "/options");
+    await page.goto(abs(`/en/orders/new?store=${store}`));
+    expect((await options).status()).toBe(403);
+    await expect(page.getByTestId("manual-order-form")).toHaveCount(0);
+    cases++;
+  } finally {
+    await context.close();
+  }
+});
