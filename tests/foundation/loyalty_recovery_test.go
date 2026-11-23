@@ -503,8 +503,36 @@ func TestLoyaltyAwardRecoveryACL(t *testing.T) {
 		t.Fatalf("recovery ACL owner=%s settings=%s definer=%v runtimeExec=%v publicExec=%v runtimeOrderWrite=%v runtimeLedgerWrite=%v privacyReceiptWrite=%v err=%v",
 			name, settings, securityDefiner, runtimeExec, publicExec, runtimeOrderWrite, runtimeLedgerWrite, privacyWriteReceipt, err)
 	}
-	for _, scope := range []struct{ tenant, store string }{{o.s.tenant, o.s.store}, {other.tenant, other.store}} {
-		func() {
+	const locker = "checkout.lock_member_award_order(bytea,uuid,uuid,text)"
+	var grantees []string
+	var privacyOrderWrite, privacyOrderCreatedAt bool
+	err = o.s.f.owner.QueryRow(ctx, `SELECT pg_get_userbyid(p.proowner),array_to_string(p.proconfig,','),p.prosecdef,
+		ARRAY(SELECT pg_get_userbyid(a.grantee)::text FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a
+			WHERE a.grantee<>p.proowner AND a.privilege_type='EXECUTE' ORDER BY a.grantee),
+		has_any_column_privilege('commerce_privacy_writer','checkout.orders','UPDATE'),
+		has_column_privilege('commerce_privacy_writer','checkout.orders','created_at','SELECT')
+		FROM pg_proc p WHERE p.oid=$1::regprocedure`, locker).Scan(&name, &settings, &securityDefiner, &grantees, &privacyOrderWrite, &privacyOrderCreatedAt)
+	if err != nil || name != "commerce_checkout_writer" || settings != "search_path=pg_catalog" || !securityDefiner || !slices.Equal(grantees, []string{"commerce_privacy_writer"}) || privacyOrderWrite || privacyOrderCreatedAt {
+		t.Fatalf("lock ACL owner=%s settings=%s definer=%v grantees=%v privacy order update=%v created_at read=%v err=%v",
+			name, settings, securityDefiner, grantees, privacyOrderWrite, privacyOrderCreatedAt, err)
+	}
+	const callLocker = `SELECT source,commercial_state,created_at FROM checkout.lock_member_award_order($1,$2,$3,$4)`
+	var denied any
+	if err = o.s.f.runtime.QueryRow(ctx, `SELECT 1 FROM checkout.lock_member_award_order($1,$2,$3,'recover')`, lpHash(o.s.admin), o.s.store, order).Scan(&denied); sqlState(err) != "42501" {
+		t.Fatalf("runtime invoked private checkout lock: %v", err)
+	}
+	foreignActor, foreignToken := lcPrincipal(t, o.s.f, other.tenant, []string{other.store}, "store:read", "orders:read", "customers:points")
+	pointsToken, pointsActor := o.e.member("customers:points")
+	for _, tc := range []struct {
+		name, tenant, store, actor, token, purpose, denial string
+	}{
+		{"same store", o.s.tenant, o.s.store, o.s.adminID, o.s.admin, "recover", ""},
+		{"foreign order", other.tenant, other.store, foreignActor, foreignToken, "recover", ""},
+		{"points-only recovery", o.s.tenant, o.s.store, pointsActor, pointsToken, "recover", "PT403"},
+		{"points-only adjustment", o.s.tenant, o.s.store, pointsActor, pointsToken, "adjust", ""},
+		{"forged principal scope", o.s.tenant, o.s.store, randomUUID(), o.s.admin, "recover", "PT403"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
 			tx, err := o.s.f.owner.Begin(ctx)
 			if err != nil {
 				t.Fatal(err)
@@ -513,29 +541,42 @@ func TestLoyaltyAwardRecoveryACL(t *testing.T) {
 			if _, err = tx.Exec(ctx, `SET LOCAL ROLE commerce_privacy_writer`); err != nil {
 				t.Fatal(err)
 			}
-			if _, err = tx.Exec(ctx, `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true)`, scope.tenant, scope.store); err != nil {
+			if _, err = tx.Exec(ctx, `SELECT set_config('app.tenant_id',$1,true),set_config('app.store_id',$2,true),set_config('app.principal_id',$3,true)`, tc.tenant, tc.store, tc.actor); err != nil {
 				t.Fatal(err)
 			}
-			var id string
-			err = tx.QueryRow(ctx, `SELECT id FROM checkout.orders WHERE id=$1 FOR NO KEY UPDATE`, order).Scan(&id)
+			var source, state *string
+			var created *time.Time
+			err = tx.QueryRow(ctx, callLocker, lpHash(tc.token), tc.store, order, tc.purpose).Scan(&source, &state, &created)
+			if tc.denial != "" {
+				if sqlState(err) != tc.denial {
+					t.Fatalf("checkout lock authority state=%s err=%v, want %s", sqlState(err), err, tc.denial)
+				}
+				return
+			}
+			if tc.purpose == "adjust" {
+				if err != nil || source != nil || state != nil || created != nil {
+					t.Fatalf("LP10 order lock returned order facts or failed: %v %v %v %v", source, state, created, err)
+				}
+				return
+			}
 			var receipts int
 			if countErr := tx.QueryRow(ctx, `SELECT count(*) FROM ops.command_results WHERE operation='merchanttools.order.manual' AND idempotency_key=$1`, key).Scan(&receipts); countErr != nil {
 				t.Fatal(countErr)
 			}
-			if scope.store != o.s.store {
+			if tc.store != o.s.store {
 				if err != pgx.ErrNoRows || receipts != 0 {
-					t.Fatalf("foreign scope saw lock or receipt: %q, %d, %v", id, receipts, err)
+					t.Fatalf("foreign scope saw lock or receipt: %v, %d, %v", source, receipts, err)
 				}
 				return
 			}
-			if err != nil || id != order || receipts != 1 {
-				t.Fatalf("same-store scoped lock and receipt: id=%q receipts=%d err=%v", id, receipts, err)
+			if err != nil || source == nil || *source != "merchant_manual" || state == nil || *state != "AWAITING_TRANSFER" || created == nil || receipts != 1 {
+				t.Fatalf("same-store scoped lock and receipt: %v %v %v receipts=%d err=%v", source, state, created, receipts, err)
 			}
 			_, err = tx.Exec(ctx, `UPDATE checkout.orders SET commercial_state='CANCELLED' WHERE id=$1`, order)
 			if sqlState(err) != "42501" {
 				t.Fatalf("lock role must be unable to change the order; state=%s err=%v", sqlState(err), err)
 			}
-		}()
+		})
 	}
 	recoveryWant(t, o.a, "GET", order, "", 200, "state", "eligible")
 	recoveryFacts(t, o, order, key, m.ID, original, 0, 0, 0)

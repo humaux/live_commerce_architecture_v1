@@ -2,14 +2,41 @@
 -- Depends on: 0094 merchant manual source, 0139 scoped authority, 0223 loyalty ledger.
 -- Used by: internal/loyalty and the order member-award-recovery endpoint.
 
--- Row locks need an UPDATE privilege. RLS permits scoped locks and rejects every actual update.
-GRANT SELECT (created_at), UPDATE (commercial_state) ON checkout.orders TO commerce_privacy_writer;
-CREATE POLICY loyalty_order_lock ON checkout.orders FOR UPDATE TO commerce_privacy_writer
- USING (tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
-     AND store_id=nullif(current_setting('app.store_id',true),'')::uuid)
- WITH CHECK (false);
-CREATE POLICY loyalty_order_lock_only ON checkout.orders AS RESTRICTIVE FOR UPDATE TO commerce_privacy_writer
- USING (true) WITH CHECK (false);
+-- Checkout already owns the cancellation row lock. Keep its table privileges out of the privacy writer role.
+CREATE FUNCTION checkout.lock_member_award_order(h bytea,s uuid,o uuid,purpose text)
+RETURNS TABLE(source text,commercial_state text,created_at timestamptz)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE a record;
+BEGIN
+ IF h IS NULL OR octet_length(h)<>32 OR s IS NULL OR o IS NULL OR purpose IS NULL
+    OR purpose NOT IN ('adjust','recover','read') THEN
+  RAISE EXCEPTION 'invalid_request' USING ERRCODE='PT422';
+ END IF;
+ SELECT * INTO a FROM identity.resolve_access(h,s,CASE WHEN purpose='read' THEN 'customers:read' ELSE 'customers:points' END);
+ IF a.access_status='unauthorized' THEN RAISE EXCEPTION 'unauthorized' USING ERRCODE='PT401';END IF;
+ IF a.access_status='not_found' THEN RAISE EXCEPTION 'not_found' USING ERRCODE='PT404';END IF;
+ IF a.access_status IS DISTINCT FROM 'ok'
+    OR current_setting('app.tenant_id',true) IS DISTINCT FROM a.tenant_id::text
+    OR current_setting('app.store_id',true) IS DISTINCT FROM s::text
+    OR current_setting('app.principal_id',true) IS DISTINCT FROM a.principal_id::text THEN
+  RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403';
+ END IF;
+ IF purpose<>'adjust' AND NOT EXISTS (
+  SELECT 1 FROM identity.resolve_access(h,s,'orders:read') r WHERE r.access_status='ok'
+   AND r.tenant_id=a.tenant_id AND r.principal_id=a.principal_id AND r.authz_revision=a.authz_revision
+ ) THEN RAISE EXCEPTION 'forbidden' USING ERRCODE='PT403';END IF;
+ IF purpose='read' THEN
+  RETURN QUERY SELECT ord.source,ord.commercial_state,ord.created_at FROM checkout.orders ord
+   WHERE ord.tenant_id=a.tenant_id AND ord.store_id=s AND ord.id=o FOR SHARE;
+ ELSE
+  RETURN QUERY SELECT CASE WHEN purpose='recover' THEN ord.source END,
+   CASE WHEN purpose='recover' THEN ord.commercial_state END, CASE WHEN purpose='recover' THEN ord.created_at END
+   FROM checkout.orders ord WHERE ord.tenant_id=a.tenant_id AND ord.store_id=s AND ord.id=o FOR NO KEY UPDATE;
+ END IF;
+END $$;
+ALTER FUNCTION checkout.lock_member_award_order(bytea,uuid,uuid,text) OWNER TO commerce_checkout_writer;
+REVOKE ALL ON FUNCTION checkout.lock_member_award_order(bytea,uuid,uuid,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION checkout.lock_member_award_order(bytea,uuid,uuid,text) TO commerce_privacy_writer;
 
 CREATE POLICY loyalty_manual_receipt_read ON ops.command_results FOR SELECT TO commerce_privacy_writer
  USING (operation='merchanttools.order.manual'
@@ -26,7 +53,7 @@ BEGIN
  IF d IS NULL OR d=0 OR d NOT BETWEEN -1000000 AND 1000000 OR n IS NULL OR char_length(n) NOT BETWEEN 1 AND 200 OR btrim(n)='' THEN RAISE EXCEPTION 'invalid_request' USING ERRCODE='PT422';END IF;
  -- A positive compensation for any member must serialize with recovery's complete order ledger check.
  IF d>0 AND o IS NOT NULL THEN
-  PERFORM 1 FROM checkout.orders WHERE tenant_id=a.tenant_id AND store_id=s AND id=o FOR NO KEY UPDATE;
+  PERFORM 1 FROM checkout.lock_member_award_order(h,s,o,'adjust');
   IF NOT FOUND THEN RAISE EXCEPTION 'not_found' USING ERRCODE='PT404';END IF;
  END IF;
  SELECT * INTO m FROM loyalty.members WHERE tenant_id=a.tenant_id AND store_id=s AND id=i FOR UPDATE;
@@ -54,13 +81,7 @@ BEGIN
  permission := CASE WHEN apply THEN 'customers:points' ELSE 'customers:read' END;
  SELECT * INTO a FROM customers.tn_authority(h,s,'orders:read');
  PERFORM customers.tn_authority(h,s,permission);
- IF apply THEN
-  SELECT source,commercial_state,created_at INTO ord FROM checkout.orders
-   WHERE tenant_id=a.tenant_id AND store_id=s AND id=o FOR NO KEY UPDATE;
- ELSE
-  SELECT source,commercial_state,created_at INTO ord FROM checkout.orders
-   WHERE tenant_id=a.tenant_id AND store_id=s AND id=o FOR SHARE;
- END IF;
+ SELECT * INTO ord FROM checkout.lock_member_award_order(h,s,o,CASE WHEN apply THEN 'recover' ELSE 'read' END);
  IF NOT FOUND THEN RAISE EXCEPTION 'not_found' USING ERRCODE='PT404';END IF;
 
  SELECT ARRAY(SELECT response->'member_award' FROM ops.command_results
