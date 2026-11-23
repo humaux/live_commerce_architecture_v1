@@ -43,6 +43,8 @@ export async function checkBuyNow({ browser, origin, evidence, ctxOpts, engine, 
       const [added] = await Promise.all([capture("PUT", "cart"), addToCart.click()]);
       receipt.before = await read(added);
       assert.equal(receipt.before.items.length, 1);
+      // Leaving on the HTTP receipt alone can interrupt the cart reread and journal settlement.
+      await expect(page.getByRole("status").filter({ hasText: shopCopy.en.added })).toBeVisible();
 
       const b = product("dripper");
       receipt.stages.push("site-buy-now");
@@ -118,6 +120,7 @@ export async function checkBuyNow({ browser, origin, evidence, ctxOpts, engine, 
           const edited = await read(result);
           assert.deepEqual(edited, { ...receipt.before, version: receipt.before.version + 1,
             items: [{ ...receipt.before.items[0], quantity: 2 }] });
+          await expect(page.getByTestId("cart-line-qty")).toHaveText("2");
           return edited;
         } finally {
           observeWrites = true;
@@ -194,6 +197,7 @@ export async function checkBuyNow({ browser, origin, evidence, ctxOpts, engine, 
         const first = await firstReply.promise;
         assert.equal(first.status, 200, `placed request: ${first.result.code ?? first.status}`);
         await expect(page.getByTestId("checkout-unknown")).toBeVisible();
+        await shot("checkout-unknown");
         await page.reload();
         await expect(page.getByTestId("checkout-submit")).toBeDisabled();
         const [retry] = await Promise.all([capture("POST", "checkout"), page.getByTestId("recover-purchase").click()]);

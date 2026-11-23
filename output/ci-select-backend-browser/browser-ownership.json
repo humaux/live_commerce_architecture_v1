@@ -773,7 +773,7 @@
     "tests/storefront/amount-match.test.mjs": "1a82f40cbc42b92c7d5c79c7a171cb88cfd239ed76a3614f7f4e7f2dd15c3d74",
     "tests/storefront/browser-engine.mjs": "5dec33e55e6a5eb155a2b00fc0ed9c564cebf06c55cb24d5e93ea149b29bb711",
     "tests/storefront/browser-gate.mjs": "a90c0697ce659eb77a572f2517617f447930903f9274e808a9e33be21a744ddb",
-    "tests/storefront/buy-now-gate.mjs": "66bee022d8d390c051c1e484d25db26a97831a218113564011be79ca46888cef",
+    "tests/storefront/buy-now-gate.mjs": "f40c2e092635cc71c91d6e538a345c67f97976ba011979ca34b0ebc002fed7c8",
     "tests/storefront/buyer-after-parity.mjs": "d104063cc25474765af41442a052fc2a2e98bb5b0111c4caa1b2e85e4a0be6ee",
     "tests/storefront/buyer-browse-parity.spec.ts": "5388a4f840c26753e6765866cc1552ab69e65cdbe4b84b29ebcfef50153e23ce",
     "tests/storefront/buyer-comms-gate.mjs": "5cca8c34aba74ccc04e2531be4d30f79798b3ebcfe5f47f9d28b87043cadd28a",
