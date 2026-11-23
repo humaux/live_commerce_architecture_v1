@@ -143,36 +143,57 @@ export async function r03ReturnLineJourney({ origin, evidence, control, newConte
     await expect(qty(0)).toHaveCount(0);
     assert.equal(mutations().length, 0);
     assert.deepEqual(await facts(), before, "lookup, edits and order switches leave order and return facts untouched");
-    // Fixture preparation only: COD must be recorded as collected before Go accepts a return.
-    await control("r03/record-synthetic-collection", "POST");
-    const eligible = evidenceSnapshots.eligible = await facts();
-    assert.deepEqual(eligible, { ...before, collection: "COLLECTED" });
     await openLink(order, fresh_link);
     await openForm(order, 2);
     assert.deepEqual(await readRows(), rowsBefore);
     record(page, "專屬連結與申請入口", "登上另一筆訂單，再返回", rowsBefore, await readRows());
 
-    await box(1).click();
-    await box(0).click();
-    await qty(0).fill("2");
     const createPath = `/api/buyer/orders/${order}/return-requests`;
+    const submit = () => Promise.all([
+      page.waitForResponse((r) => new URL(r.url()).pathname === createPath && r.request().method() === "POST"),
+      page.getByRole("button", { name: copy.submit, exact: true }).click(),
+    ]);
+    const selectBothRows = async () => {
+      await box(1).click();
+      await box(0).click();
+      await qty(0).fill("2");
+    };
+    const expectedBody = { reason: "damaged", note: "", lines: [{ sku_id, quantity: 3 }] };
+    await selectBothRows();
+    const [refused] = await submit();
+    const refusal = { status: refused.status(), code: (await refused.json()).code };
+    record(page, copy.submit, "待收款時點選", { status: 409, code: "not_returnable" }, refusal);
+    assert.deepEqual(refusal, { status: 409, code: "not_returnable" });
+    await expect(page.getByText(copy.errors.not_returnable, { exact: true })).toBeVisible();
+    assert.equal(mutations().length, 1);
+    assert.deepEqual(JSON.parse(mutations()[0].body), expectedBody);
+    evidenceSnapshots.refused = await facts();
+    assert.deepEqual(evidenceSnapshots.refused, before);
+    await screenshot(page, "03-pending-refused");
+
+    // Fixture preparation only: COD must be recorded as collected before Go accepts a return.
+    await control("r03/record-synthetic-collection", "POST");
+    const eligible = evidenceSnapshots.eligible = await facts();
+    assert.deepEqual(eligible, { ...before, collection: "COLLECTED" });
+    await page.reload();
+    await expect(page.getByRole("checkbox")).toHaveCount(2);
+    assert.deepEqual(await readRows(), rowsBefore);
+
+    await selectBothRows();
     const exactDetail = /\/api\/buyer\/return-requests\/[a-f0-9-]{36}$/;
     // Lose the first persisted read only. The browser still sends the real keyed POST to Go/PG.
     await page.route(exactDetail, (route) => route.fulfill({ status: 503, contentType: "application/json", body: '{"code":"unavailable"}' }), { times: 1 });
     const detailRead = page.waitForResponse((r) => exactDetail.test(r.url()));
     void detailRead.catch(() => {}); // The POST assertion reports refusal before waiting for a detail read.
-    const [ack] = await Promise.all([
-      page.waitForResponse((r) => new URL(r.url()).pathname === createPath && r.request().method() === "POST"),
-      page.getByRole("button", { name: copy.submit, exact: true }).click(),
-    ]);
-    const request = await ack.json(), create = mutations()[0];
+    const [ack] = await submit();
+    const request = await ack.json(), create = mutations()[1];
     assert.equal(ack.status(), 201, request.code);
     const failedRead = await detailRead;
     assert.equal(failedRead.status(), 503);
     record(page, copy.submit, "點選", { write: 201, persistedRead: 503 }, { write: ack.status(), persistedRead: failedRead.status() });
-    assert.equal(mutations().length, 1);
+    assert.equal(mutations().length, 2);
     assert.match(create.key, /^[A-Za-z0-9_.:-]{8,128}$/);
-    assert.deepEqual(JSON.parse(create.body), { reason: "damaged", note: "", lines: [{ sku_id, quantity: 3 }] });
+    assert.deepEqual(JSON.parse(create.body), expectedBody);
     assert.deepEqual(request.lines, [{ sku_id, warehouse_id, quantity: 3 }]);
     const requested = evidenceSnapshots.requested = await facts();
     assert.equal(requested.receipts, 1);
@@ -187,10 +208,10 @@ export async function r03ReturnLineJourney({ origin, evidence, control, newConte
     ]);
     assert.equal(recovered.status(), 200);
     await expect(page.getByTestId("return-status")).toHaveAttribute("data-status", "requested");
-    assert.equal(mutations().length, 1);
+    assert.equal(mutations().length, 2);
     assert.deepEqual(await facts(), requested);
-    record(page, "重新讀取", "點選", { status: "requested", writes: 1 }, {
-      status: await page.getByTestId("return-status").getAttribute("data-status"), writes: mutations().length,
+    record(page, "重新讀取", "點選", { status: "requested", posts: 2 }, {
+      status: await page.getByTestId("return-status").getAttribute("data-status"), posts: mutations().length,
     });
     await screenshot(page, "05-requested-after-read-retry");
 
@@ -199,20 +220,20 @@ export async function r03ReturnLineJourney({ origin, evidence, control, newConte
     await expect(page.getByTestId("return-status")).toHaveAttribute("data-status", "withdrawn");
     await page.reload();
     await expect(page.getByTestId("return-status")).toHaveAttribute("data-status", "withdrawn");
-    record(page, copy.withdraw, "點選撤回、確認並刷新", { status: "withdrawn", writes: 2 }, {
-      status: await page.getByTestId("return-status").getAttribute("data-status"), writes: mutations().length,
+    record(page, copy.withdraw, "點選撤回、確認並刷新", { status: "withdrawn", posts: 3 }, {
+      status: await page.getByTestId("return-status").getAttribute("data-status"), posts: mutations().length,
     });
     await screenshot(page, "06-withdrawn-reloaded");
     const writes = mutations();
-    assert.deepEqual(writes.map(({ path, status }) => [path, status]), [[createPath, 201], [`/api/buyer/return-requests/${request.id}/withdraw`, 200]]);
-    assert.match(writes[1].key, /^[A-Za-z0-9_.:-]{8,128}$/);
-    assert.notEqual(writes[1].key, create.key);
-    assert.deepEqual(JSON.parse(writes[1].body), { expected_version: 1 });
+    assert.deepEqual(writes.map(({ path, status }) => [path, status]), [[createPath, 409], [createPath, 201], [`/api/buyer/return-requests/${request.id}/withdraw`, 200]]);
+    assert.match(writes[2].key, /^[A-Za-z0-9_.:-]{8,128}$/);
+    assert.notEqual(writes[2].key, create.key);
+    assert.deepEqual(JSON.parse(writes[2].body), { expected_version: 1 });
     const after = evidenceSnapshots.after = await facts();
     assert.deepEqual(after, { ...eligible, receipts: 2, requests: [{ id: request.id, status: "withdrawn", version: 2, lines: request.lines }] });
     assert.deepEqual(reactErrors, []);
     assert(ledger.every(({ status }) => status === "PASS"));
-    console.log("PASS R03 actual lookup/link/order/return: independent price rows, one SKU write, read retry, withdrawal and PG equality");
+    console.log("PASS R03 actual lookup/link/order/return: independent price rows, PENDING refused, COLLECTED one SKU write, read retry, withdrawal and PG equality");
   } finally {
     await json("network", {
       // Credentials and lookup contact are excluded. Return bodies are synthetic and contain no private order details.

@@ -596,9 +596,10 @@ case "$1" in
     lc_browsers=chromium
     lc_prepare() {
   test -f tests/foundation/browser_order_chain_test.go
+  grep -q '^func TestBrowserR03BuyerReturnLine(' tests/foundation/browser_r03_buyer_return_line_test.go
     }
     lc_run() {
-  LC_BROWSER_ORDER_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.4 go test -race -tags browser -count=1 -timeout=600s -run '^TestBrowserBuyerOrderUI$' -v ./tests/foundation
+  LC_BROWSER_ORDER_ACCEPTANCE=1 GOTOOLCHAIN=go1.27.4 go test -race -tags browser -count=1 -timeout=600s -run '^(TestBrowserBuyerOrderUI|TestBrowserR03BuyerReturnLine)$' -v ./tests/foundation
   printf 'PASS: isolated buyer address/order UI gate; not provider payment or deployment acceptance.\n'
     }
     ;;
@@ -973,7 +974,7 @@ case "$1" in
     if [[ "$rc" != 0 || "$verdict" != 0 ]]; then webkit_status=1; printf 'FAIL: %s (go test exit=%d, parse verdict=%d)\n' "$label" "$rc" "$verdict" >&2; fi
   }
   run_webkit_step buyer LC_BROWSER_BUYER_ACCEPTANCE '^TestBrowserBuyerRealChain$' 900s 0
-  run_webkit_step order LC_BROWSER_ORDER_ACCEPTANCE '^TestBrowserBuyerOrderUI$' 900s 0
+  run_webkit_step order LC_BROWSER_ORDER_ACCEPTANCE '^(TestBrowserBuyerOrderUI|TestBrowserR03BuyerReturnLine)$' 900s 0
   # payment = the Stripe buyer payment page (SU07 MOCK: popup/dedupe/return plus the iPhone 15 profile pass); SU09's keyboard Tab walk stays Chromium-only.
   run_webkit_step payment LC_STRIPE_BROWSER_ACCEPTANCE '^TestBrowserStripeCheckout$/^SU07' 900s 1
   run_webkit_step merchant-buyer LC_BROWSER_MERCHANT_BUYER_ACCEPTANCE '^TestBrowserMerchantBuyerRealChain$' 900s 0

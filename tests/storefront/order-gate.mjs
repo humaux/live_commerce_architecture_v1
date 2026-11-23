@@ -3,7 +3,7 @@
 // Used by: its scripts/dev/test-local.sh browser mode; GATE-PORT acceptance.
 // Purpose: real buyer checkout/order/history gate, including stable locale targets and complete context privacy audits.
 // Depends on: production Next/Go/PG, Playwright, shared Taipei formatting, browser-engine and shop-helpers.
-// Used by: TestBrowserBuyerOrderUI in --browser-order and the WebKit order scenario; only synthetic TLS/fixture faults.
+// Used by: TestBrowserBuyerOrderUI and TestBrowserR03BuyerReturnLine in --browser-order and the WebKit order scenario.
 // Invariants: original acceptance assertions/timeouts stay intact; focus setup never replaces real pointer activation.
 import { startNextWithPortRetry, nextAttemptLog } from "../helpers/next-startup.mjs";
 import assert from "node:assert/strict";
@@ -25,7 +25,7 @@ import { r03ReturnLineJourney } from "./r03-return-line.mjs";
 import { returnRequestCopy, returnProgressCopy } from "../../apps/storefront/components/order-status/return-request-copy.ts";
 
 const root=process.cwd(), evidence=process.env.LC_ORDER_EVIDENCE;
-const r03Only=process.env.LC_ORDER_R03_ONLY==="1";
+const r03Only=process.argv[2]==="r03-return-line";
 assert(evidence && /^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.LC_ORDER_CONTROL));
 const origin="https://buyer.example", checkoutPath="/en/checkout";
 const children=new Set(), sockets=new Set(), logs=[], contexts=[], orders=[], observations=[], storageWrites=[], consoleText=[], requestURLs=[], cartRetries=[], cartRefreshes=[], clickLedger=[];

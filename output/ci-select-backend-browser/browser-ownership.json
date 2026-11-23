@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "registryHash": "7176b7bf584d361a6c14fe54e096bf813717dfa3fd34a6d9bee5129def5cdfa2",
+  "registryHash": "178662383633cfd649a5fca3588fae49a20b6ca9a6ba3356b34339370d1958b3",
   "sources": {
     "tests/admin/ads-model.test.ts": "a89483826fba28e2e86fcc1196475cefe1851cec367e66cfdc7bb69def18f309",
     "tests/admin/ads-request.test.ts": "190103fd72ab76050512616cef988d13d7e3725659883f142710555f36686de5",
@@ -321,6 +321,7 @@
     "tests/foundation/browser_product_media_v2_fixture_test.go": "44ae8540fa92d78e66d48e4f694cbe469f64773d2d53aab7d1097ffddea76454",
     "tests/foundation/browser_product_media_v2_test.go": "a27c65c69a356443f027696fd27ae75665f35c213de6b54b9e6157fd7e865b1d",
     "tests/foundation/browser_promotions_test.go": "02d1c51144f009243bc08b2c33c3ccac54adb669b5dff3564236af2fbe64a68a",
+    "tests/foundation/browser_r03_buyer_return_line_test.go": "531c1f6335cd1ede5ce7737d95445e8d4a9a5bb7ee12448280d3ba3ebd80bc68",
     "tests/foundation/browser_refund_fulfilment_test.go": "26da4a0699b189f6c8c52bbded185cd5fa287e5be069f52450cd3d137971d1cd",
     "tests/foundation/browser_returns_ui_test.go": "87d69c24592400f96bc22dd67afd0d721beecfdc171d6d22fb071b0c6bf1062b",
     "tests/foundation/browser_staff_team_test.go": "77741041966846fa4427ca2d4fb8412ee7716bb4a195f73d0836cca3d7e5b32c",
@@ -796,9 +797,10 @@
     "tests/storefront/merchant-product.mjs": "2c36a724923195cdb9a5dac5397f986457a47612a24d0e31387a5b43de252c16",
     "tests/storefront/offline-buyer.mjs": "29998d0d3132f934c9dfbc1048abd8fb8e1635fb6acd39435533d68dda8f5324",
     "tests/storefront/offline-error.spec.ts": "bf531d759ba26fbb7731aa556a7de6c40a8e1686585e40a8250d62f1abe1969b",
-    "tests/storefront/order-gate.mjs": "dcfcf86e69704084d81532f7a62d42eb1adae81a1d1ddbea4bad8623acbe308e",
+    "tests/storefront/order-gate.mjs": "6b3ec092e0731fe3405df0d82830919dfac9b735bf9b578b6eca09e8493bfd7c",
     "tests/storefront/privacy-buyer.mjs": "1823f85a4bdbe4e38a6f5006d847cbb6f664971503ebf9fdd635f57ab3e28c85",
     "tests/storefront/promotions-gate.mjs": "22206eb140a4eeb9a13c479759c60538943e6ace4bab33e977b7b6a778265f52",
+    "tests/storefront/r03-return-line.mjs": "5c2a2735cdf8f269f568528ba32c5fa69f7f8f50c486bf0aa8294b2a975d536e",
     "tests/storefront/refund-buyer.mjs": "e89297f2997f0153b811175d7c00718dec9657de3e606b759512248ca53acaca",
     "tests/storefront/shipment-buyer.mjs": "bedeb90babda691f1db89879711ffbdc0a29da2b476772eb367f00d5e1faf1db",
     "tests/storefront/shop-fake-api.mjs": "e439c2eb7fabce165b43e1cd12994b4ff25f43c65c8385292345848e7f8337f7",
@@ -833,7 +835,7 @@
     "tests/ui/visual-lint-lib.test.mjs": "5e28a7b30ab357bb6bf266c3426d6fbd1122811fc7a156a077b213095086edd0",
     "tests/ui/visual-scroll-capture.mjs": "538525d5cb94cdc26e91954c0589a48372b5d4ce771721dcbbeb76e6b81a0229",
     "tests/ui/visual-scroll-capture.test.mjs": "1cf6d1a8bcb8481c65d19cd69e7bc1e25701067d4041e86f29b9a0a8cc8a58a5",
-    "scripts/dev/test-local.sh": "7176b7bf584d361a6c14fe54e096bf813717dfa3fd34a6d9bee5129def5cdfa2",
+    "scripts/dev/test-local.sh": "178662383633cfd649a5fca3588fae49a20b6ca9a6ba3356b34339370d1958b3",
     "playwright.config.ts": "1678f3d7c57ef17965b2b3478b166faaaebc3cc1eb0af190ebfa771f39647960",
     "apps/admin/package.json": "72d9632b9e5d45e81e48b6b67d5a2712a6e8f015c082ebf47811d65b0ec8055c",
     "apps/storefront/package.json": "744bc2944091f70ac1f9056fdefff7de1f2522d1ffe767381b62694712204c06",
@@ -1975,6 +1977,7 @@
         "tests/helpers/next-startup.mjs",
         "tests/storefront/browser-engine.mjs",
         "tests/storefront/order-gate.mjs",
+        "tests/storefront/r03-return-line.mjs",
         "tests/storefront/shop-helpers.mjs"
       ],
       "apps": [
@@ -1985,11 +1988,15 @@
       "foundationUnresolvedInputs": [],
       "evidence": [
         "harness:tests/foundation/browser_order_chain_test.go",
+        "harness:tests/foundation/browser_r03_buyer_return_line_test.go",
         "harness:tests/foundation/buyer_order_evidence_test.go",
         "scripts/dev/test-local.sh:--browser-order:lc_build=storefront",
         "tests/foundation/browser_order_chain_test.go -> tests/storefront/order-gate.mjs",
+        "tests/foundation/browser_r03_buyer_return_line_test.go -> tests/storefront/order-gate.mjs",
         "tests/storefront/order-gate.mjs:import apps/storefront/components/order-status/return-request-copy.ts",
         "tests/storefront/order-gate.mjs:server/import apps/storefront",
+        "tests/storefront/r03-return-line.mjs:import apps/storefront/components/order-status/return-request-copy.ts",
+        "tests/storefront/r03-return-line.mjs:server/import apps/storefront",
         "tests/storefront/shop-helpers.mjs:server/import apps/storefront"
       ]
     },
@@ -2729,6 +2736,7 @@
         "tests/storefront/merchant-buyer-gate.mjs",
         "tests/storefront/merchant-product.mjs",
         "tests/storefront/order-gate.mjs",
+        "tests/storefront/r03-return-line.mjs",
         "tests/storefront/shop-helpers.mjs",
         "tests/storefront/stripe-browser.mjs"
       ],
@@ -2745,6 +2753,7 @@
         "harness:tests/foundation/browser_merchant_buyer_chain_test.go",
         "harness:tests/foundation/browser_order_chain_test.go",
         "harness:tests/foundation/browser_password_auth_test.go",
+        "harness:tests/foundation/browser_r03_buyer_return_line_test.go",
         "harness:tests/foundation/browser_stripe_test.go",
         "harness:tests/foundation/browser_taiwan_cvs_test.go",
         "harness:tests/foundation/buyer_order_evidence_test.go",
@@ -2762,6 +2771,7 @@
         "tests/foundation/browser_password_auth_test.go:server/import apps/admin",
         "tests/foundation/browser_password_auth_test.go:suite=password-auth -> tests/admin/parity-entry.spec.ts",
         "tests/foundation/browser_password_auth_test.go:suite=password-auth -> tests/admin/password-auth.spec.ts",
+        "tests/foundation/browser_r03_buyer_return_line_test.go -> tests/storefront/order-gate.mjs",
         "tests/foundation/browser_stripe_test.go -> tests/storefront/browser-engine.mjs",
         "tests/foundation/browser_stripe_test.go -> tests/storefront/stripe-browser.mjs",
         "tests/foundation/browser_taiwan_cvs_test.go -> tests/admin/taiwan-cvs.spec.ts",
@@ -2776,6 +2786,8 @@
         "tests/storefront/merchant-buyer-gate.mjs:server/import apps/storefront",
         "tests/storefront/order-gate.mjs:import apps/storefront/components/order-status/return-request-copy.ts",
         "tests/storefront/order-gate.mjs:server/import apps/storefront",
+        "tests/storefront/r03-return-line.mjs:import apps/storefront/components/order-status/return-request-copy.ts",
+        "tests/storefront/r03-return-line.mjs:server/import apps/storefront",
         "tests/storefront/shop-helpers.mjs:server/import apps/storefront",
         "tests/storefront/stripe-browser.mjs:server/import apps/storefront"
       ]
