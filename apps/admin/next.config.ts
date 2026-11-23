@@ -20,6 +20,15 @@ const config: NextConfig = {
   reactStrictMode: true,
   // The orders proxy must see raw '?' and percent escapes before Next rewrites URLs.
   skipProxyUrlNormalize: true,
+  // Preserve ordinary canonical redirects while keeping the return-request command paths exact.
+  skipTrailingSlashRedirect: true,
+  async redirects() {
+    return [{
+      source: "/:path((?!api/stores/[^/]+/return-requests(?:/|$)).+)/",
+      destination: "/:path",
+      permanent: true,
+    }];
+  },
   output: "standalone",
   // #147 TH-13: Next only defines the NEXT_PUBLIC_* keys that exist in the build environment (next/dist/lib/static-env.js skips null
   // values), so an unset gallery flag would leave a runtime process.env lookup and the hold/release seam in client chunks. An explicit

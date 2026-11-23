@@ -8,11 +8,14 @@ import {
   cancelOrderBody,
   cancelReasonText,
   inspectBody,
+  parseBuyerReturnRequest,
+  parseBuyerReturnRequests,
   parseRmaList,
   parseRefundGaps,
   receiveBody,
   registerBody,
   registerReasonText,
+  rejectRequestBody,
   rmaStates,
   type Rma,
 } from "../../apps/admin/lib/returns-model.ts";
@@ -25,6 +28,40 @@ const WH = "55555555-5555-4555-8555-555555555555";
 const WH2 = "66666666-6666-4666-8666-666666666666";
 const T0 = "2026-10-06T02:03:04.123456+00:00";
 const T1 = "2026-10-06T03:03:04.123456+00:00";
+
+test("buyer return projection binds exact ID, shipped line pairs, decision facts and timeline", () => {
+  const requested = {
+    id: RMA_ID, number: `R-${RMA_ID.replaceAll("-", "")}`, order_id: ORDER, status: "requested",
+    version: 1, reason: "damaged", note: "", rejection_reason: null, return_id: null, return_state: null,
+    created_at: T0, updated_at: T0, lines: [
+      { warehouse_id: WH, sku_id: SKU, quantity: 1 }, { warehouse_id: WH2, sku_id: SKU, quantity: 1 },
+    ],
+    timeline: [{ status: "requested", at: T0 }],
+  };
+  const terminal = (status: string) => ({
+    ...requested, status, version: 2, updated_at: T1, timeline: [...requested.timeline, { status, at: T1 }],
+  });
+  const approved = { ...terminal("approved"), return_id: SKU2, return_state: "REGISTERED" };
+  const rejected = { ...terminal("rejected"), rejection_reason: "包裝完整" };
+  assert.deepEqual(parseBuyerReturnRequest(requested, RMA_ID), requested);
+  for (const result of [approved, rejected, terminal("withdrawn")])
+    assert.deepEqual(parseBuyerReturnRequests({ items: [result] }), [result]);
+  for (const drift of [
+    { ...requested, store_id: WH },
+    { ...requested, lines: [requested.lines[0], requested.lines[0]] },
+    { ...approved, return_id: null },
+    { ...rejected, rejection_reason: null },
+    { ...rejected, timeline: requested.timeline },
+  ]) assert.throws(() => parseBuyerReturnRequest(drift), /unavailable/);
+  assert.throws(() => parseBuyerReturnRequest(requested, ORDER), /unavailable/);
+  assert.throws(() => parseBuyerReturnRequests({ items: [requested, requested] }), /unavailable/);
+});
+
+test("merchant rejection sends only expected version and bounded nonblank reason", () => {
+  assert.equal(rejectRequestBody(1, " 包裝完整 "), '{"expected_version":1,"reason":"包裝完整"}');
+  assert.equal(rejectRequestBody(0, "包裝完整"), null);
+  for (const reason of [" ", "line\nline", "檢".repeat(1001)]) assert.equal(rejectRequestBody(1, reason), null);
+});
 
 const line = (change: Record<string, unknown> = {}) => ({
   warehouse_id: WH,

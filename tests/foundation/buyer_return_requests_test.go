@@ -14,6 +14,11 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/jackc/pgx/v5"
+	"livecommerce/internal/inventory"
+	"livecommerce/internal/platform"
+	"livecommerce/internal/storefront"
 )
 
 func TestBuyerReturnRequests(t *testing.T) {
@@ -478,6 +483,73 @@ func TestBuyerReturnRequests(t *testing.T) {
 		if e.count(`SELECT count(*) FROM returns.rmas WHERE order_id=$1`, order2) != wantRMAs {
 			t.Fatal("decision status and linked RMA did not commit atomically")
 		}
+	})
+
+	t.Run("BR09 original order with one SKU split across two warehouses", func(t *testing.T) {
+		h := e.p.cqHarness
+		second, err := t04Scoped(ctx, h.f, e.token(), e.store(), "inventory:write", func(tx pgx.Tx, scope platform.Scope) (inventory.Warehouse, error) {
+			return inventory.CreateWarehouse(ctx, tx, scope, t04Key("br-split-warehouse"), "One-unit test warehouse")
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = t04Scoped(ctx, h.f, e.token(), e.store(), "inventory:write", func(tx pgx.Tx, scope platform.Scope) (inventory.Balance, error) {
+			return inventory.AdjustOnHand(ctx, tx, scope, t04Key("br-split-stock"), inventory.Adjustment{
+				WarehouseID: second.ID, SKUID: sku, Delta: 1, ExpectedVersion: 0, Reason: "BR09 split checkout",
+			})
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		in := e.p.allocation
+		in.ExpectedVersion = 1
+		in.WarehouseIDs = []string{second.ID, wh}
+		allocation, err := daSet(h, t04Key("br-split-allocation"), in)
+		if err != nil {
+			t.Fatal(err)
+		}
+		cap := mustIssue(t, h.service, e.store())
+		b := tcvBuyer{e: e, h: e.p.bcHarness, cap: cap}
+		b.h.prepare(t, cap, []storefront.Item{{SKUID: sku, Quantity: 2}})
+		b.h.input.AllocationVersion = allocation.Version
+		order := e.payHoldFor(t, &b)
+		e.rtShip(order)
+		for _, warehouse := range in.WarehouseIDs {
+			if n := e.count(`SELECT count(*) FROM inventory.reservation_lines
+				WHERE reservation_id=$1 AND sku_id=$2 AND warehouse_id=$3 AND quantity=1`, order, sku, warehouse); n != 1 {
+				t.Fatal("the real checkout must persist one unit at each warehouse")
+			}
+		}
+		path := orderPath(order)
+		withoutWarehouse := body(1)
+		delete(withoutWarehouse["lines"].([]any)[0].(map[string]any), "warehouse_id")
+		bhError(t, call(t, &b, "POST", path, "br-split-ambiguous", withoutWarehouse), 422, "ambiguous_line")
+		lines := make([]any, 0, 2)
+		for i, warehouse := range in.WarehouseIDs {
+			in := body(2)
+			line := in["lines"].([]any)[0].(map[string]any)
+			line["warehouse_id"] = warehouse
+			bhError(t, call(t, &b, "POST", path, fmt.Sprintf("br-split-too-many-%d", i), in), 422, "exceeds_shipped")
+			line["quantity"] = 1
+			lines = append(lines, line)
+		}
+		if n := e.count(`SELECT count(*) FROM returns.buyer_requests WHERE order_id=$1`, order); n != 0 {
+			t.Fatal("an ambiguous or excessive request persisted")
+		}
+		request := bhRead[map[string]any](t, call(t, &b, "POST", path, "br-split-explicit",
+			map[string]any{"reason": "damaged", "lines": lines}), 201)
+		saved := bhRead[map[string]any](t, call(t, &b, "GET", requestPath(tcvStr(request, "id")), "", nil), 200)
+		for _, warehouse := range in.WarehouseIDs {
+			if n := e.count(`SELECT count(*) FROM returns.buyer_request_lines
+				WHERE order_id=$1 AND request_id=$2 AND sku_id=$3 AND warehouse_id=$4 AND quantity=1`,
+				order, tcvStr(saved, "id"), sku, warehouse); n != 1 {
+				t.Fatal("explicit warehouse selection must bind to the original shipped line")
+			}
+		}
+		if !reflect.DeepEqual(request, saved) || len(saved["lines"].([]any)) != 2 {
+			t.Fatal("readback must preserve both original selections")
+		}
+		t.Log("BR09 real checkout and shipment: same SKU 1 + 1, omitted warehouse 422 ambiguous_line, per-warehouse quantity 2 refused, explicit pair 201 and exact GET")
 	})
 }
 

@@ -4,19 +4,22 @@
 //   @/lib/customers-client (useGuardedRead session fence), @/lib/returns-client, @/lib/returns-model,
 //   @/lib/returns-copy, ./WorkspaceFrame, ./AdminPageHeader, ./order-ops.css, ./orders.css, ./order-actions.css
 // Used by: apps/admin/app/[locale]/returns/page.tsx
-// Invariants: read-only page — every mutating step happens inside the order detail panel (OrderReturns). Rows open a read-only RMA record; its original-order link
+// Invariants: RMA fulfillment stays in the order detail panel. The workbench only decides buyer requests. Rows open a read-only RMA record; its original-order link
 //   opens /{locale}/orders?store=…&state=all&order=…. The list re-reads after refresh; a
 //   drifted payload fails closed as "unavailable" (strict parsers in returns-model).
 "use client";
 
 import { orderOpsCopy, type Locale } from "@live-commerce/i18n";
 import { Badge, TableFrame } from "@live-commerce/ui";
+import { Button, ButtonLink } from "@live-commerce/ui/ds";
 import { displayTime, money } from "@live-commerce/format";
 import type { Store } from "@/lib/model";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
 import { readCancelRefundGaps, readReturns } from "@/lib/returns-client";
 import { rmaStates, type RefundGap, type Rma, type RmaState } from "@/lib/returns-model";
-import { returnsCopy, type ReturnsCopy } from "@/lib/returns-copy";
+import { buyerRequestCopy, returnsCopy, type ReturnsCopy } from "@/lib/returns-copy";
+import { BuyerReturnWorkbench } from "./BuyerReturnWorkbench";
+import styles from "./buyer-return-workbench.module.css";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
 import "./orders.css";
@@ -207,10 +210,9 @@ function GapsSection({
   );
 }
 
-/** Owns the returns page: two guarded reads (RMA list, refund gaps), session-fenced and re-run on focus. */
+/** Owns the returns page, with independent session-fenced buyer request, RMA and refund-gap reads. */
 export function ReturnsList({
   locale,
-  stores,
   store,
   state,
   initialError,
@@ -219,7 +221,6 @@ export function ReturnsList({
   rma = "",
 }: {
   locale: Locale;
-  stores: Store[];
   store: Store | null;
   state: RmaState | "";
   initialError: ReadCode | null;
@@ -229,6 +230,7 @@ export function ReturnsList({
 }) {
   const c = returnsCopy[locale];
   const signed = orderOpsCopy[locale];
+  const workbench = buyerRequestCopy[locale];
   const list = useGuardedRead(
     `${renderKey}|${locale}|${store?.id ?? ""}|${state}`,
     store ? (signal) => readReturns(store.id, state, signal) : null,
@@ -245,13 +247,22 @@ export function ReturnsList({
   const requestsHref = `/${locale}/returns?store=${store?.id ?? ""}&view=requests${state ? `&state=${state}` : ""}`;
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="returns">
-      <div className="orders-page returns-page" data-testid="returns-page">
-        <AdminPageHeader
-          locale={locale}
-          title={record ? record.state === "CLOSED" ? signed.completed : signed.requests : requests ? signed.requests : signed.returns}
-          description={signed.aftersales + (stores.length > 1 && store ? ` — ${store.name}` : "")}
-        />
-        {!requests && store && <button type="button" className="ops-wide" onClick={() => window.location.assign(requestsHref)}>{signed.view}</button>}
+      <div className={`orders-page returns-page ${styles.page}`} data-testid="returns-page">
+        <div className={styles.header}>
+          {store && <ButtonLink size="lg" className={styles.back} href={`/${locale}/orders?store=${store.id}`} data-testid="returns-back-orders">
+            ‹ {workbench.backOrders}
+          </ButtonLink>}
+          <div className={styles.heading}>
+            <AdminPageHeader
+              locale={locale}
+              title={record ? record.state === "CLOSED" ? signed.completed : signed.requests : requests ? signed.requests : workbench.title}
+              description={workbench.subtitle}
+            />
+            {store && <p className={styles.store} data-testid="returns-current-store">{store.name}</p>}
+          </div>
+          {!requests && store && <Button type="button" variant="primary" size="lg" className={styles.primary}
+            data-testid="returns-show-rmas" onClick={() => window.location.assign(requestsHref)}>{workbench.viewRmas}</Button>}
+        </div>
         {record && store && <section className="ops-review" data-testid="returns-record">
           <Badge tone={record.state === "CLOSED" ? "success" : "warning"}>{c.states[record.state]}</Badge>
           <dl><div><dt>{c.colReason}</dt><dd>{record.reason}</dd></div>
@@ -276,6 +287,8 @@ export function ReturnsList({
             </button>
           </div>
         )}
+        {!rma && store && <BuyerReturnWorkbench key={`${renderKey}|${store.id}`} locale={locale} store={store}
+          initialError={initialError} refreshRmas={list.refresh} requestsHref={`/${locale}/returns?store=${store.id}&view=requests`} />}
         {requests && !rma && list.status === "ready" && list.data && store && (
           <ReturnsTable locale={locale} store={store} state={state} list={list.data} c={c} />
         )}

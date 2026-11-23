@@ -1,4 +1,4 @@
-// W3-U5 BFF grammar half (contracts/returns-v1.md §6): the admin BFF must expose exactly the nine W3-08B
+// W3-U5 BFF grammar half (contracts/returns-v1.md §6 and buyer request amendment): the admin BFF exposes
 // returns/cancel resources — keyed command POSTs, bare JSON reads, and the single `?state=` query on GET returns —
 // and nothing else. Independent of the Next runtime: imports only the grammar functions.
 // Run: node --test --experimental-strip-types tests/admin/returns-request.test.ts
@@ -21,6 +21,10 @@ test("BFF grammar adds exactly the returns and merchant-cancel resources", () =>
     ["POST", `returns/${R}/inspect`, "command"],
     ["POST", `returns/${R}/close`, "command"],
     ["POST", `returns/${R}/cancel`, "command"],
+    ["GET", "return-requests", "get"],
+    ["GET", `return-requests/${R}`, "get"],
+    ["POST", `return-requests/${R}/approve`, "command"],
+    ["POST", `return-requests/${R}/reject`, "command"],
   ];
   for (const [method, path, kind] of accepted) assert.equal(orderActionRoute(method, path), kind, `${method} ${path}`);
   for (const [method, path] of [
@@ -38,6 +42,13 @@ test("BFF grammar adds exactly the returns and merchant-cancel resources", () =>
     ["GET", "returns/x"],
     ["GET", `orders/cancel-refund-gaps/${R}`],
     ["POST", `orders/${O}/cancel/refund`],
+    ["HEAD", "return-requests"],
+    ["POST", "return-requests"],
+    ["GET", `return-requests/${R}/approve`],
+    ["POST", `return-requests/${R}/withdraw`],
+    ["PATCH", `return-requests/${R}/reject`],
+    ["POST", `return-requests/${R}/approve/`],
+    ["GET", `return-requests/${R.toUpperCase()}`],
   ])
     assert.equal(orderActionRoute(method, path), null, `${method} ${path}`);
 });

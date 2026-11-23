@@ -27,7 +27,6 @@ export default async function ReturnsPage({
   return (
     <ReturnsList
       locale={page.locale}
-      stores={page.stores}
       store={page.store}
       state={state as RmaState | ""}
       initialError={page.initialError}

@@ -586,7 +586,7 @@ export function MerchantOrders({
             </ButtonLink>}
           </div>
         </header>}
-        {!order && listAvailable && <OrderListFilters key={`${store?.id}|${filterKey}`} locale={locale} filters={filters} sessions={current.page?.sessions ?? []} disabled={!store}
+        {!order && listAvailable && <OrderListFilters key={`${store?.id}|${filterKey}`} locale={locale} storeId={store?.id} filters={filters} sessions={current.page?.sessions ?? []} disabled={!store}
           onApply={next => { previous.current = []; navigate(store?.id ?? "", state, "", "", next); }}>
         <div className="orders-controls orders-v2-state-controls">
           <label id="orders-state-field" className="orders-v2-state-field">

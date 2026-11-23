@@ -26,12 +26,13 @@ const required = (name: string) => {
 };
 const origin = required("LC_BROWSER_PUBLIC_ORIGIN");
 const evidence = required("LC_BROWSER_EVIDENCE");
-const store = required("LC_BROWSER_STORE");
-const shippedOrder = required("LC_BROWSER_ORDER_SHIPPED");
-const paidOrder = required("LC_BROWSER_ORDER_PAID");
-const inFlightOrder = required("LC_BROWSER_ORDER_IN_FLIGHT");
-const gapOrder = required("LC_BROWSER_GAP_ORDER");
-const restrictedToken = required("LC_BROWSER_RESTRICTED_TOKEN");
+const applicationFixture = process.env.LC_BROWSER_RETURN_REQUESTS;
+const store = applicationFixture ? "" : required("LC_BROWSER_STORE");
+const shippedOrder = applicationFixture ? "" : required("LC_BROWSER_ORDER_SHIPPED");
+const paidOrder = applicationFixture ? "" : required("LC_BROWSER_ORDER_PAID");
+const inFlightOrder = applicationFixture ? "" : required("LC_BROWSER_ORDER_IN_FLIGHT");
+const gapOrder = applicationFixture ? "" : required("LC_BROWSER_GAP_ORDER");
+const restrictedToken = applicationFixture ? "" : required("LC_BROWSER_RESTRICTED_TOKEN");
 const cookieName = "__Host-commerce_session";
 
 const ui = {
@@ -115,6 +116,7 @@ function watchPosts(page: Page): Post[] {
 /** The RMA article (not its action buttons, whose testids share the rma- prefix). */
 const rmaCards = (detail: Locator, state: string) => detail.locator(`article[data-testid^="rma-"][data-state="${state}"]`);
 
+if (!applicationFixture) {
 test("W3-U5 full RMA walk: register -> receive -> inspect -> close, one keyed POST each, refresh persistence", async ({ page }) => {
   await signedLogin(page);
   const posts = watchPosts(page);
@@ -265,7 +267,7 @@ test("W3-U5 returns page: RMA list, state filter links and the refund-gap row su
   await page.goto(new URL(`/zh-TW/returns?store=${store}`, origin).toString());
   await expect(page.getByTestId("returns-page")).toBeVisible();
   // Signed after-sales home opens requests explicitly; retain the same list/filter/gap persistence assertions.
-  await page.getByRole("button", { name: "查看售後申請", exact: true }).click();
+  await page.getByRole("button", { name: "查看退貨單", exact: true }).click();
   await expect(page.getByTestId("returns-list")).toBeVisible();
   // the RMAs from the flows above are listed, newest first
   await expect(page.locator('[data-testid^="returns-row-"]').first()).toBeVisible();
@@ -321,5 +323,394 @@ for (const locale of ["zh-TW", "en"] as const) {
     await shot(page, "returns-list", locale, "mobile");
     await page.setViewportSize({ width: 1586, height: 992 });
     await shot(page, "returns-list", locale, "desktop");
+  });
+}
+
+}
+
+if (applicationFixture) {
+  test.describe("R02 buyer return requests", () => {
+    const fixture: Record<string, string> = JSON.parse(applicationFixture);
+    const alias = (id: string | null) => id === fixture.defaultStore ? "default-a" :
+      id === fixture.nonDefaultStore ? "non-default-b" : id === fixture.outside ? "outside" : id === null ? null : "other";
+    const safeURL = (url: string) => {
+      const u = new URL(url, origin);
+      return { path: u.pathname, store: alias(u.searchParams.get("store")), view: u.searchParams.get("view") };
+    };
+    const layouts = [{ name: "desktop", width: 1440, height: 900 }, { name: "mobile", width: 390, height: 844 }] as const;
+    async function openOrderReturnsLink(page: Page, viewport: (typeof layouts)[number], locale = "en") {
+      await signedLogin(page);
+      if (locale !== "en") await page.goto(`/${locale}/`);
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      const selector = page.getByTestId("shell-store-selector").filter({ visible: true });
+      await expect(selector.locator("option")).toHaveCount(2);
+      await selector.selectOption(fixture.nonDefaultStore);
+      await page.waitForURL(u => u.searchParams.get("store") === fixture.nonDefaultStore);
+      if (viewport.name === "mobile") await page.getByRole("button", { name: locale === "zh-TW" ? "開啟導覽" : "Open navigation", exact: true }).click();
+      await page.getByTestId("nav-orders").click();
+      await page.waitForURL(u => u.pathname === `/${locale}/orders` && u.searchParams.get("store") === fixture.nonDefaultStore);
+      await expect(selector).toHaveValue(fixture.nonDefaultStore);
+      const link = page.getByTestId("orders-returns-link");
+      if (!(await link.isVisible())) await page.getByTestId("orders-more-filters").click();
+      await expect(link).toBeVisible();
+      return { selector, link };
+    }
+    const resource = `/api/stores/${fixture.nonDefaultStore}/return-requests`;
+    async function verifyVisual(page: Page, viewport: (typeof layouts)[number], state: string, orderId: string, note: string) {
+      const workspace = page.getByTestId("returns-page");
+      const article = page.getByTestId("buyer-return-detail");
+      await expect(workspace.getByTestId("returns-current-store")).toHaveText("R02 non-default-b");
+      await expect(article.getByTestId("returns-order-lines")).toContainText(fixture.productName);
+      await expect(article.getByTestId("returns-order-lines")).toContainText(fixture.skuCode);
+      await expect(article.getByTestId("returns-order-number")).toHaveText(`#${orderId.slice(-5).toUpperCase()}`);
+      await expect(article).toContainText(note);
+      await expect(article.locator("[data-state]")).toHaveAttribute("data-state", state);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      const originalOrder = article.getByTestId("returns-original-order");
+      await expect(originalOrder).toBeInViewport({ ratio: 1 });
+      const target = new URL((await originalOrder.getAttribute("href"))!, origin);
+      expect(target.searchParams.get("store")).toBe(fixture.nonDefaultStore);
+      expect(target.searchParams.get("order")).toBe(orderId);
+      expect(await workspace.innerText()).not.toMatch(/\b[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\b|R-[0-9a-f]{32}\b/i);
+      const queue = await page.getByTestId("buyer-return-queue").boundingBox();
+      const details = await article.boundingBox();
+      expect(queue).not.toBeNull();
+      expect(details).not.toBeNull();
+      if (viewport.name === "mobile") {
+        expect(details!.y).toBeGreaterThanOrEqual(queue!.y + queue!.height);
+        expect(Math.abs(details!.x - queue!.x)).toBeLessThan(1);
+      } else {
+        expect(details!.x).toBeGreaterThanOrEqual(queue!.x + queue!.width);
+        expect(Math.abs(details!.y - queue!.y)).toBeLessThan(1);
+      }
+      return { queue, details };
+    }
+    for (const viewport of layouts) test(`R02 ordinary order-list returns link ${viewport.name}`, async ({ page }) => {
+      const { selector, link } = await openOrderReturnsLink(page, viewport);
+      await shot(page, "r02-before-orders", "en", viewport.name);
+      const pre = safeURL(page.url());
+      const href = safeURL((await link.getAttribute("href"))!);
+
+      const reads: Array<{ phase: string; path: string; store: string | null; status: number }> = [];
+      let phase = "ordinary-link";
+      page.on("response", r => {
+        const u = new URL(r.url());
+        const m = /^\/api\/stores\/([a-f0-9-]{36})\/(returns|orders\/cancel-refund-gaps|return-requests)$/.exec(u.pathname);
+        if (r.request().method() === "GET" && m) reads.push({
+          phase, path: "/api/stores/:store/" + m[2], store: alias(m[1]), status: r.status(),
+        });
+      });
+      const show = page.getByTestId("returns-page");
+      const firstRead = page.waitForResponse(r => r.request().method()==="GET" && /\/api\/stores\/[^/]+\/returns$/.test(new URL(r.url()).pathname));
+      await link.click();
+      await page.waitForURL(u => u.pathname === "/en/returns");
+      await expect(show).toBeVisible();
+      const landed = safeURL(page.url());
+      const visibleStore = alias(await selector.inputValue());
+      const initialRmas = await firstRead;
+      expect(initialRmas.status(), "R02 fixture authorization for resulting RMA read").toBe(200);
+      const responseStore = alias(new URL(initialRmas.url()).pathname.split("/")[3]);
+      await shot(page, "r02-landing", "en", viewport.name);
+
+      phase = "ordinary-view-requests";
+      await show.getByTestId("returns-show-rmas").click();
+      await page.waitForURL(u => u.searchParams.get("view") === "requests");
+      const list = show.getByTestId("returns-list");
+      const rows = list.locator('[data-testid^="returns-row-"]');
+      await expect(rows).toHaveCount(1);
+      const visibleRma = await rows.getAttribute("data-testid") === "returns-row-" + fixture.defaultRma ? "default-a" :
+        await rows.getAttribute("data-testid") === "returns-row-" + fixture.nonDefaultRma ? "non-default-b" : "unknown";
+      const visibleReason = await rows.innerText();
+      const visibleRmaState = await rows.locator("[data-state]").getAttribute("data-state");
+      const ordinaryViewURL = safeURL(page.url());
+      await shot(page, "r02-ordinary-list", "en", viewport.name);
+
+      // Positive control: establish that B's existing RMA renders under the same session.
+      phase = "explicit-allowed-b";
+      const allowedB = await page.goto(`/en/returns?store=${fixture.nonDefaultStore}&view=requests`);
+      expect(allowedB?.status()).toBe(200);
+      await expect(list.getByTestId("returns-row-" + fixture.nonDefaultRma)).toBeVisible();
+      const bRmaReason = await list.getByTestId("returns-row-" + fixture.nonDefaultRma).innerText();
+      const savedRequest = show.getByTestId("buyer-return-" + fixture.buyerRequestId);
+      await expect.soft(savedRequest, "R02_BUYER_REQUEST_UI: the persisted buyer request is visible in its own store").toBeVisible();
+      const buyerVisible = await savedRequest.isVisible();
+      if (buyerVisible) await expect(savedRequest).toContainText(`R-${fixture.buyerRequestNumber.slice(-8).toUpperCase()}`);
+      await shot(page, "r02-explicit-b", "en", viewport.name);
+      phase = "authenticated-bff-control";
+      const requestBff = await page.request.get(resource);
+      const requestBffBody: { items?: Array<{id: string}>; code?: string } = await requestBff.json();
+      const bffHasBuyerRequest = requestBffBody.items?.some((item) => item.id === fixture.buyerRequestId) === true;
+
+      // Negative control under the same permissions: no selected store or RMA UI for an unauthorized store.
+      phase = "explicit-outside";
+      const outside = await page.goto(`/en/returns?store=${fixture.outside}&view=requests`);
+      await expect(show).toHaveCount(0);
+      const outsideStatus = outside?.status() ?? 0;
+      const outsideBff = await page.request.get(`/api/stores/${fixture.outside}/returns`);
+      expect(outsideStatus).toBe(404);
+      expect(outsideBff.status(), "R02 outside-store RMA GET").toBe(404);
+      const outsideRequests = await page.request.get(`/api/stores/${fixture.outside}/return-requests`);
+      expect.soft(outsideRequests.status(), "R02 outside-store requests GET").toBe(404);
+
+      await writeFile(path.join(evidence, `r02-${viewport.name}.json`), JSON.stringify({
+        viewport, before: pre, link: href, landed, visibleStore, firstGETStore: responseStore,
+        observedGETs: reads, ordinaryList: { url: ordinaryViewURL, visibleRma, visibleRmaState, visibleMarker: visibleReason.includes("R02 " + visibleRma + " RMA") },
+        authorizedB: { status: allowedB.status(), markerVisible: bRmaReason.includes("R02 non-default-b RMA"), buyerRequestVisible: buyerVisible },
+        merchantBffBuyerRequests: { status: requestBff.status(), code: requestBffBody.code ?? null, includesBuyerRequest: bffHasBuyerRequest },
+        unauthorized: { path: "/en/returns", store: "outside", pageStatus: outsideStatus, rmaSurface: false, bffStatus: outsideBff.status(), requestStatus: outsideRequests.status() },
+      }, null, 2));
+
+      expect.soft(landed.store, "R02_STORE_URL: ordinary navigation retains the selected store").toBe("non-default-b");
+      expect.soft(visibleStore, "R02_STORE_VISIBLE: landing shows the selected store").toBe("non-default-b");
+      expect.soft(responseStore, "R02_STORE_GET: the actual RMA GET uses the selected store").toBe("non-default-b");
+      expect.soft(visibleRma, "R02_STORE_RMA: ordinary UI renders the selected store's RMA").toBe("non-default-b");
+      expect.soft(requestBff.status(), "R02_BUYER_REQUEST_BFF: existing authorized Go request is reachable through the merchant BFF").toBe(200);
+      expect.soft(bffHasBuyerRequest, "R02_BUYER_REQUEST_RECEIPT: BFF returns the same persisted request").toBe(true);
+    });
+
+    for (const viewport of layouts) test(`R02 visual pending and selected zh-TW ${viewport.name}`, async ({ page }) => {
+      const { link } = await openOrderReturnsLink(page, viewport, "zh-TW");
+      await link.click();
+      await page.waitForURL(u => u.pathname === "/zh-TW/returns" && u.searchParams.get("store") === fixture.nonDefaultStore);
+      await expect(page.getByRole("heading", { name: "售後工作台", exact: true })).toBeVisible();
+      await expect(page.getByTestId("returns-queue-pending")).toHaveText("待處理 2");
+      const initial = await verifyVisual(page, viewport, "requested", fixture.rejectOrder, fixture.rejectNote);
+      await shot(page, "m14-pending", "zh-TW", viewport.name);
+      const selected = page.getByTestId(`buyer-return-${fixture.buyerRequestId}`);
+      await selected.click();
+      await expect(selected).toHaveAttribute("aria-pressed", "true");
+      const detail = await verifyVisual(page, viewport, "requested", fixture.approveOrder, fixture.approveNote);
+      await shot(page, "m14-selected", "zh-TW", viewport.name);
+      await writeFile(path.join(evidence, `m14-pending-geometry-${viewport.name}.json`), JSON.stringify({ viewport, initial, detail }, null, 2));
+      await page.getByTestId("returns-back-orders").click();
+      await page.waitForURL(u => u.pathname === "/zh-TW/orders" && u.searchParams.get("store") === fixture.nonDefaultStore && !u.searchParams.has("order"));
+      await expect(page.getByTestId("merchant-orders")).toBeVisible();
+    });
+
+    test("R02 orders:read can inspect but cannot decide", async ({ page, context }) => {
+      await asToken(context, required("LC_BROWSER_RETURN_REQUESTS_READ_ONLY"));
+      await page.goto(`/en/returns?store=${fixture.nonDefaultStore}`);
+      const row = page.getByTestId(`buyer-return-${fixture.rejectRequestId}`);
+      await expect(row.locator("[data-state]")).toHaveAttribute("data-state", "requested");
+      await expect(row).toHaveAttribute("aria-pressed", "true");
+      await expect(page.getByTestId("buyer-return-detail")).toBeVisible();
+      await expect(page.getByRole("button", { name: /^(Approve|Reject) request$/ })).toHaveCount(0);
+      const csrf = (await context.cookies()).find(cookie => cookie.name === "__Host-commerce_csrf")!.value;
+      for (const [action, data] of [
+        ["approve", { expected_version: 1 }],
+        ["reject", { expected_version: 1, reason: fixture.rejectReason }],
+      ] as const) {
+        const response = await page.request.post(`${resource}/${fixture.rejectRequestId}/${action}`, {
+          headers: { Origin: origin, "X-CSRF-Token": csrf, "Idempotency-Key": randomBytes(16).toString("hex") }, data,
+        });
+        expect(response.status()).toBe(403);
+        expect(await response.json()).toMatchObject({ code: "forbidden" });
+      }
+    });
+    for (const viewport of layouts) test(`R02 decision and exact readback ${viewport.name}`, async ({ page, browser }) => {
+      const approve = viewport.name === "desktop";
+      const id = approve ? fixture.buyerRequestId : fixture.rejectRequestId;
+      const action = approve ? "approve" : "reject";
+      const decision = approve ? "approved" : "rejected";
+      const label = approve ? "Approve request" : "Reject request";
+      const detail = `${resource}/${id}`;
+      const exact = (url: string, resource: string) => new URL(url).pathname === resource;
+      const { link } = await openOrderReturnsLink(page, viewport);
+      await link.click();
+      await page.waitForURL(u => u.pathname === "/en/returns" && u.searchParams.get("store") === fixture.nonDefaultStore);
+      const row = page.getByTestId(`buyer-return-${id}`);
+      await expect(row.locator("[data-state]")).toHaveAttribute("data-state", "requested");
+      await page.getByTestId("returns-queue-closed").click();
+      await expect(page.getByTestId(`buyer-return-${fixture.withdrawnRequestId}`).locator("[data-state]")).toHaveAttribute("data-state", "withdrawn");
+      await page.getByTestId("returns-queue-pending").click();
+      if (approve) await row.click();
+      await expect(row).toHaveAttribute("aria-pressed", "true");
+      const review = page.getByTestId("returns-review-panel");
+      await review.getByRole("button", { name: label, exact: true }).click();
+      if (!approve) await review.getByLabel("Rejection reason").fill(fixture.rejectReason);
+      const pendingQueue = page.getByTestId("returns-queue-pending");
+      const closedQueue = page.getByTestId("returns-queue-closed");
+      await expect(pendingQueue).toBeDisabled();
+      await expect(closedQueue).toBeDisabled();
+      await expect(row).toBeDisabled();
+      if (approve) await expect(page.getByTestId(`buyer-return-${fixture.rejectRequestId}`)).toBeDisabled();
+      await closedQueue.press("Enter");
+      await expect(pendingQueue).toHaveAttribute("aria-pressed", "true");
+      if (!approve) await expect(review.getByLabel("Rejection reason")).toHaveValue(fixture.rejectReason);
+      const staleContext = approve ? null : await browser.newContext();
+      const stalePage = await staleContext?.newPage();
+      if (stalePage) {
+        await signedLogin(stalePage);
+        await stalePage.setViewportSize({ width: viewport.width, height: viewport.height });
+        await stalePage.goto(`/en/returns?store=${fixture.nonDefaultStore}`);
+        const staleRow = stalePage.getByTestId(`buyer-return-${id}`);
+        await expect(staleRow.locator("[data-state]")).toHaveAttribute("data-state", "requested");
+        await expect(staleRow).toHaveAttribute("aria-pressed", "true");
+        const staleReview = stalePage.getByTestId("returns-review-panel");
+        await staleReview.getByRole("button", { name: label, exact: true }).click();
+        await staleReview.getByLabel("Rejection reason").fill("Stale form witness");
+        await page.bringToFront();
+      }
+
+      const posts: string[] = [];
+      page.on("request", r => {
+        if (r.method() === "POST" && exact(r.url(), `${detail}/${action}`)) posts.push(r.headers()["idempotency-key"]);
+      });
+      const posted = page.waitForResponse(r => r.request().method() === "POST" && exact(r.url(), `${detail}/${action}`));
+      const readback = page.waitForResponse(r => r.request().method() === "GET" && exact(r.url(), detail));
+      await review.getByRole("button", { name: label, exact: true }).click();
+      const response = await posted;
+      expect(response.status()).toBe(200);
+      const persisted = await readback;
+      expect(persisted.status()).toBe(200);
+      const saved = await persisted.json();
+      expect(saved).toMatchObject({ id, version: 2, status: decision, rejection_reason: approve ? null : fixture.rejectReason });
+      if (approve) expect(saved.return_id).toMatch(/^[0-9a-f-]{36}$/);
+      else expect(saved.return_id).toBeNull();
+      await expect(row.locator("[data-state]")).toHaveAttribute("data-state", decision);
+      const notice = review.getByRole("status");
+      await expect(notice).toContainText(approve ? "Approved" : "Rejected");
+      await row.press("Enter");
+      await expect(notice).toContainText(approve ? "Approved" : "Rejected");
+      if (!approve) {
+        await expect(page.getByTestId("returns-rejection-reason")).toContainText(fixture.rejectReason);
+        const detailBox = await verifyVisual(page, viewport, "rejected", fixture.rejectOrder, fixture.rejectNote);
+        await writeFile(path.join(evidence, "m14-rejected-en-mobile-geometry.json"), JSON.stringify({ viewport, detail: detailBox }, null, 2));
+      }
+      await shot(page, `r02-${decision}`, "en", viewport.name);
+      expect(posts).toHaveLength(1);
+      expect(posts[0]).toMatch(/^[A-Za-z0-9_.:-]{8,128}$/);
+      const request = response.request();
+      const body = approve ? { expected_version: 1 } : { expected_version: 1, reason: fixture.rejectReason };
+      expect(request.postDataJSON()).toEqual(body);
+      const headers = {
+        Origin: origin, "Content-Type": "application/json", "Idempotency-Key": posts[0],
+        "X-CSRF-Token": (await request.allHeaders())["x-csrf-token"],
+      };
+      const replay = await page.request.post(`${detail}/${action}`, { headers, data: body });
+      expect(replay.status()).toBe(200);
+      expect(await replay.json()).toEqual(saved);
+      const stale = await page.request.post(`${detail}/${action}`, {
+        headers: { ...headers, "Idempotency-Key": randomBytes(16).toString("hex") }, data: body,
+      });
+      expect(stale.status()).toBe(409);
+      expect(await stale.json()).toMatchObject({ code: "version_changed" });
+      const afterConflict = await page.request.get(detail);
+      expect(afterConflict.status()).toBe(200);
+      expect(await afterConflict.json()).toEqual(saved);
+      if (stalePage) {
+        await stalePage.bringToFront();
+        const refused = stalePage.waitForResponse(r => r.request().method() === "POST" && exact(r.url(), `${detail}/reject`));
+        const reread = stalePage.waitForResponse(r => r.request().method() === "GET" && exact(r.url(), detail));
+        await stalePage.getByTestId("returns-review-panel").getByRole("button", { name: label, exact: true }).click();
+        const conflict = await refused;
+        expect(conflict.status()).toBe(409);
+        expect(await conflict.json()).toMatchObject({ code: "version_changed" });
+        expect(await (await reread).json()).toEqual(saved);
+        await expect(stalePage.getByRole("status").filter({ hasText: "The request changed." })).toBeVisible();
+        await expect(stalePage.getByTestId("returns-rejection-reason")).toContainText(fixture.rejectReason);
+        await staleContext!.close();
+      }
+      if (approve) {
+        const wrongStore = await page.request.get(`/api/stores/${fixture.defaultStore}/return-requests/${id}`);
+        expect(wrongStore.status()).toBe(404);
+        const slash = await page.request.post(`${detail}/approve/`, { maxRedirects: 0, headers, data: body });
+        expect(slash.status()).toBe(404);
+        const alias = await page.request.post(`${detail}/%61pprove`, { maxRedirects: 0, headers, data: body });
+        expect(alias.status()).toBe(404);
+        const ordinaryRedirect = await page.request.get("/en/orders/", { maxRedirects: 0 });
+        expect(ordinaryRedirect.status()).toBe(308);
+        const query = await page.request.get(`${detail}?state=requested`);
+        expect(query.status()).toBe(422);
+        const readWithKey = await page.request.get(detail, { headers: { "Idempotency-Key": posts[0] } });
+        expect(readWithKey.status()).toBe(422);
+        const head = await page.request.head(detail);
+        expect(head.status()).toBe(405);
+        const malformed = await page.request.post(`${detail}/approve`, {
+          headers: { ...headers, "Idempotency-Key": randomBytes(16).toString("hex") },
+          data: '{"expected_version":1,"expected_version":2}',
+        });
+        expect(malformed.status()).toBe(400);
+        expect(await malformed.json()).toMatchObject({ code: "invalid_json" });
+      }
+      await page.reload();
+      await page.getByTestId("returns-queue-closed").click();
+      await expect(row.locator("[data-state]")).toHaveAttribute("data-state", decision);
+    });
+
+    for (const viewport of layouts) test(`R02 visual rejected zh-TW ${viewport.name}`, async ({ page }) => {
+      const { link } = await openOrderReturnsLink(page, viewport, "zh-TW");
+      await link.click();
+      await page.waitForURL(u => u.pathname === "/zh-TW/returns" && u.searchParams.get("store") === fixture.nonDefaultStore);
+      await page.getByTestId("returns-queue-closed").click();
+      const rejected = page.getByTestId(`buyer-return-${fixture.rejectRequestId}`);
+      await rejected.click();
+      await expect(rejected).toHaveAttribute("aria-pressed", "true");
+      const detail = await verifyVisual(page, viewport, "rejected", fixture.rejectOrder, fixture.rejectNote);
+      await expect(page.getByTestId("returns-rejection-reason")).toHaveText(`拒絕原因${fixture.rejectReason}`);
+      await shot(page, "m14-rejected", "zh-TW", viewport.name);
+      await writeFile(path.join(evidence, `m14-rejected-geometry-${viewport.name}.json`), JSON.stringify({ viewport, detail }, null, 2));
+      await page.getByTestId("returns-original-order").click();
+      await page.waitForURL(u => u.pathname === "/zh-TW/orders" && u.searchParams.get("store") === fixture.nonDefaultStore &&
+        u.searchParams.get("order") === fixture.rejectOrder);
+      await expect(page.getByTestId("order-detail")).toBeVisible();
+    });
+
+    for (const locale of ["en", "zh-TW"] as const) for (const viewport of layouts) {
+      test(`R02 current return selection is focusable and unavailable ${locale} ${viewport.name}`, async ({ page }) => {
+        const { link } = await openOrderReturnsLink(page, viewport, locale);
+        await link.click();
+        await page.waitForURL(u => u.pathname === `/${locale}/returns` && u.searchParams.get("store") === fixture.nonDefaultStore);
+        const queue = page.getByTestId("buyer-return-queue");
+        const pending = queue.getByTestId("returns-queue-pending");
+        const closed = queue.getByTestId("returns-queue-closed");
+        const empty = locale === "en" ? "No cases in this queue." : "目前沒有此類個案。";
+        const article = page.getByTestId("buyer-return-detail");
+
+        async function pressCurrent(control: Locator, name: string) {
+          await expect(control).toHaveAttribute("aria-pressed", "true");
+          await expect.soft(control, `R02_CURRENT_${name}: selected control is unavailable`).toBeDisabled({ timeout: 1500 });
+          await control.focus();
+          await expect(control).toBeFocused();
+          await page.keyboard.press("Space");
+          await expect(control).toBeFocused();
+          await expect(control).toHaveAttribute("aria-pressed", "true");
+        }
+
+        await expect(queue.getByText(empty, { exact: true })).toBeVisible();
+        await expect(pending).toHaveText(locale === "en" ? "Pending 0" : "待處理 0");
+        await pressCurrent(pending, "PENDING");
+        await expect(queue.getByText(empty, { exact: true })).toBeVisible();
+        await expect(closed).toBeEnabled();
+        await page.keyboard.press("Tab");
+        await expect(closed).toBeFocused();
+        await page.keyboard.press("Enter");
+        await expect(pending).toBeEnabled();
+
+        const rejected = queue.getByTestId(`buyer-return-${fixture.rejectRequestId}`);
+        const withdrawn = queue.getByTestId(`buyer-return-${fixture.withdrawnRequestId}`);
+        await pressCurrent(withdrawn, "DEFAULT_CASE");
+        await expect(article.locator("[data-state]")).toHaveAttribute("data-state", "withdrawn");
+        await expect(rejected).toBeEnabled();
+        await rejected.click();
+        await pressCurrent(rejected, "PICKED_CASE");
+        await expect(withdrawn).toBeEnabled();
+        await pressCurrent(closed, "CLOSED");
+        await expect(rejected).toHaveAttribute("aria-pressed", "true");
+        await expect(article.getByTestId("returns-rejection-reason")).toContainText(fixture.rejectReason);
+
+        await pending.click();
+        await expect(queue.getByText(empty, { exact: true })).toBeVisible();
+        await expect(pending).toBeDisabled();
+        await expect(closed).toBeEnabled();
+        await closed.click();
+        await rejected.click();
+        await verifyVisual(page, viewport, "rejected", fixture.rejectOrder, fixture.rejectNote);
+        await article.getByTestId("returns-original-order").click();
+        await page.waitForURL(u => u.pathname === `/${locale}/orders` && u.searchParams.get("store") === fixture.nonDefaultStore &&
+          u.searchParams.get("order") === fixture.rejectOrder);
+        await expect(page.getByTestId("order-detail")).toBeVisible();
+      });
+    }
   });
 }

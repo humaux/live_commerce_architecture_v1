@@ -10,6 +10,24 @@
 export const rmaStates = ["REGISTERED", "RECEIVED", "INSPECTED", "CLOSED", "CANCELLED"] as const;
 export type RmaState = (typeof rmaStates)[number];
 
+const buyerRequestStatuses = ["requested", "approved", "rejected", "withdrawn"] as const;
+export type BuyerReturnRequest = {
+  id: string;
+  number: string;
+  order_id: string;
+  status: (typeof buyerRequestStatuses)[number];
+  version: number;
+  reason: "damaged";
+  note: string;
+  rejection_reason: string | null;
+  return_id: string | null;
+  return_state: RmaState | null;
+  created_at: string;
+  updated_at: string;
+  lines: { warehouse_id: string; sku_id: string; quantity: number }[];
+  timeline: { status: BuyerReturnRequest["status"]; at: string }[];
+};
+
 export type RmaLine = {
   warehouse_id: string;
   sku_id: string;
@@ -64,6 +82,59 @@ function money(value: unknown): value is number {
 function text(value: unknown, max: number): value is string {
   return typeof value === "string" && value.trim().length > 0 && Array.from(value).length <= max &&
     !/[\p{C}\p{Zl}\p{Zp}]/u.test(value);
+}
+
+function requestText(value: unknown): value is string {
+  return typeof value === "string" && Array.from(value).length <= 1000 &&
+    !/[\u0000-\u001f\u007f-\u009f]/u.test(value);
+}
+
+export function parseBuyerReturnRequest(value: unknown, expectedId?: string): BuyerReturnRequest {
+  const v = object(value, ["id", "number", "order_id", "status", "version", "reason", "note", "rejection_reason",
+    "return_id", "return_state", "created_at", "updated_at", "lines", "timeline"]);
+  if (typeof v.id !== "string" || !uuid.test(v.id) || (expectedId !== undefined && v.id !== expectedId) ||
+    v.number !== `R-${v.id.replaceAll("-", "")}` || typeof v.order_id !== "string" || !uuid.test(v.order_id) ||
+    !buyerRequestStatuses.includes(v.status as BuyerReturnRequest["status"]) ||
+    v.version !== (v.status === "requested" ? 1 : 2) || v.reason !== "damaged" || !requestText(v.note) ||
+    !date(v.created_at) || !date(v.updated_at) || Date.parse(v.updated_at) < Date.parse(v.created_at) ||
+    !Array.isArray(v.lines) || v.lines.length < 1 || v.lines.length > 50 ||
+    !Array.isArray(v.timeline) || v.timeline.length !== v.version) throw new Error("unavailable");
+  if (v.status === "approved"
+    ? typeof v.return_id !== "string" || !uuid.test(v.return_id) || !rmaStates.includes(v.return_state as RmaState)
+    : v.return_id !== null || v.return_state !== null) throw new Error("unavailable");
+  if (v.status === "rejected"
+    ? !requestText(v.rejection_reason) || !v.rejection_reason.trim()
+    : v.rejection_reason !== null) throw new Error("unavailable");
+  const pairs = new Set<string>();
+  for (const raw of v.lines) {
+    const line = object(raw, ["warehouse_id", "sku_id", "quantity"]);
+    if (typeof line.warehouse_id !== "string" || !uuid.test(line.warehouse_id) ||
+      typeof line.sku_id !== "string" || !uuid.test(line.sku_id) || !qty(line.quantity) ||
+      line.quantity < 1 || line.quantity >= MAX_QTY) throw new Error("unavailable");
+    const pair = `${line.warehouse_id}|${line.sku_id}`;
+    if (pairs.has(pair)) throw new Error("unavailable");
+    pairs.add(pair);
+  }
+  for (const [index, raw] of v.timeline.entries()) {
+    const event = object(raw, ["status", "at"]);
+    if (event.status !== (index === 0 ? "requested" : v.status) || event.at !== (index === 0 ? v.created_at : v.updated_at))
+      throw new Error("unavailable");
+  }
+  return v as unknown as BuyerReturnRequest;
+}
+
+export function parseBuyerReturnRequests(value: unknown): BuyerReturnRequest[] {
+  const v = object(value, ["items"]);
+  if (!Array.isArray(v.items) || v.items.length > 100) throw new Error("unavailable");
+  const items = v.items.map((item) => parseBuyerReturnRequest(item));
+  if (new Set(items.map((item) => item.id)).size !== items.length) throw new Error("unavailable");
+  return items;
+}
+
+export function rejectRequestBody(version: number, reason: string): string | null {
+  const trimmed = reason.trim();
+  if (!closeBody(version) || !requestText(trimmed) || !trimmed) return null;
+  return JSON.stringify({ expected_version: version, reason: trimmed });
 }
 
 function parseRmaLine(value: unknown, state: RmaState): RmaLine {

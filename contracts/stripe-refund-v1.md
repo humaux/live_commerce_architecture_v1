@@ -448,7 +448,7 @@ order converges given the `received_at` comparisons above.
 | Method/path | Input | Success |
 | --- | --- | --- |
 | POST `/v1/admin/stores/{store_id}/orders/{order_id}/refunds` | `Idempotency-Key` (required); body exactly `{amount_minor, reason, expected_refundable_minor}`; no query | 201 `{refund_id, state, amount_minor, currency, refundable_minor}` after COMMIT. 409 key conflict / `refundable_changed`; 422 `exceeds_refundable`, `amount_step`, `not_refundable`, `refund_blocked_review`, `refund_limit`; 403 missing `payments:refund`; 404 missing/other-store (indistinguishable). Currency is never accepted from the client. |
-| GET `/v1/admin/stores/{store_id}/orders/{order_id}/refunds` | none | `{captured_minor, refunded_minor, pending_minor, refundable_minor, currency, items:[{refund_id, amount_minor, reason, state, requested_at, updated_at, failure_reason?, stripe_refund_id: string\|null}]}` (≤20; A1/R-9: `stripe_refund_id` merchant-only, null until pinned). Requires `orders:read`. |
+| `GET /v1/admin/stores/{store_id}/orders/{order_id}/refunds` | none | `{captured_minor, refunded_minor, pending_minor, refundable_minor, currency, items:[{refund_id, amount_minor, reason, state, requested_at, updated_at, failure_reason?, stripe_refund_id: string\|null}]}` (≤20; A1/R-9: `stripe_refund_id` merchant-only, null until pinned). Requires `orders:read`. |
 | POST `.../refunds/{refund_id}/refresh` | no body, no key | `{refund_id, scheduled}`; `payments:refund`; throttled in SQL. |
 
 Existing rules apply: 64 KiB JSON, unknown/duplicate fields rejected, private/no-store, fixed error
