@@ -350,7 +350,8 @@ export function ManualOrder({
             </fieldset>
             </>}
             <div hidden={reviewing}>
-              <ManualOrderMemberFields key={memberScope} locale={locale} store={store} scope={memberScope} boundary={boundary} enabled={options.status==="ready"} disabled={busy||uncertain||reviewing} value={memberSelection} onChange={setMemberSelection} onName={setName} onBusy={setMemberBusy}/>
+              <ManualOrderMemberFields key={memberScope} locale={locale} store={store} scope={memberScope} boundary={boundary} enabled={options.status==="ready"} disabled={busy||uncertain||reviewing} value={memberSelection} onChange={setMemberSelection}
+                onPrefillName={memberName => setName(current => current.trim() === "" ? memberName : current)} onBusy={setMemberBusy}/>
             </div>
             {failure && <p className="mt-warn" role="alert" data-testid="manual-order-error">{failure}</p>}
             {problem && problem !== "pickupName" && problem !== "pickupPhone" && <p className="mt-note" data-testid="manual-order-hint">{c.problems[problem]}</p>}
