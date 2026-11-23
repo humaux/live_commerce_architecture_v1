@@ -37,7 +37,7 @@ export default function OrderPage({ locale, orderID, access }: { locale: Locale;
     try {
       const session = await readOrderSession(orderID, access);
       if (session.state !== "active" || !session.context) throw new BuyerClientError("requires_reset");
-      const found = await readOrder(session.context, orderID);
+      const found = await readOrder(session.context, orderID, access);
       if (mine !== epoch.current) return;
       setContext(session.context);
       setOrder(found);

@@ -18,6 +18,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { randomBytes } from "node:crypto";
 import { launch, ctxOpts } from "./browser-engine.mjs";
+import { openBuyerSession } from "./shop-helpers.mjs";
 import { createFakeApi } from "./shop-fake-api.mjs";
 import { browserEvidenceDirectory } from "../browser-evidence.mjs";
 import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
@@ -277,8 +278,17 @@ async function click(page, locator, row) {
   ledger.push({ page: row.page, control: row.control, action: "click", expected: row.expected, actual: "clicked", result: "PASS" });
 }
 
-// Reach an order the way a buyer does: lookup form -> real submit -> /orders/{id}. Selectors stay structural so the setup survives the redesign.
+// The parity fixture owns the synthetic payment orders. Setup activates its
+// shopping session, so owner-only controls use the same surface as checkout.
 async function openOrder(ctx, n) {
+  const page = await ctx.newPage();
+  await page.goto(`${origin}/zh-TW/orders/lookup`);
+  await openBuyerSession(page);
+  await page.goto(`${origin}/zh-TW/orders/${uid(n)}`);
+  return page;
+}
+
+async function openGuestOrder(ctx, n) {
   const page = await ctx.newPage();
   await page.goto(`${origin}/zh-TW/orders/lookup`);
   const inputs = page.locator("main form input");
@@ -499,6 +509,18 @@ test("order lookup · default and not-found states", async () => {
     if ((await inputs.nth(0).inputValue()) !== "0123-ABCD-4567" || (await inputs.nth(1).inputValue()) !== "name@example.com") c.problems.push("typed values were not kept after not-found");
     await c.shot(missFrame);
     try { c.done(); } finally { await page.close(); }
+  }
+});
+
+test("order lookup · successful entry stays read-only", async () => {
+  makeOrder(85, { commercial: "AWAITING_PAYMENT", pay: { state: "PENDING", handoff: "READY", methods: false } });
+  for (const device of [DEVICES.d, DEVICES.m]) {
+    const page = await openGuestOrder(device(), 85);
+    try {
+      await page.getByTestId("order-section").waitFor();
+      assert.equal(await page.getByTestId("pay-order").count(), 0);
+      assert.equal(await page.getByTestId("request-after-sales").count(), 0);
+    } finally { await page.close(); }
   }
 });
 

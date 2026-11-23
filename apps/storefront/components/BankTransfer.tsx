@@ -89,7 +89,7 @@ export default function BankTransfer({
     const version = ++live.current;
     try {
       const next = await readPurchase(`orders/${orderID}/bank-transfer`, context, (v): v is TransferView =>
-        validTransferView(v, orderID),
+        validTransferView(v, orderID), access ? { orderID, access } : undefined,
       );
       if (version !== live.current) return;
       setView(next);
@@ -97,7 +97,7 @@ export default function BankTransfer({
     } catch {
       if (version === live.current) setLoadFailed(true);
     }
-  }, [context, orderID]);
+  }, [context, orderID, access]);
 
   useEffect(() => {
     void load();

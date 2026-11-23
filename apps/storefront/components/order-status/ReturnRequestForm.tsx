@@ -49,7 +49,7 @@ export default function ReturnRequestForm({ locale, orderID, requestID, access }
       const session = await readOrderSession(orderID, access);
       if (session.state !== "active" || !session.context) throw new BuyerClientError("requires_reset");
       if (attempt.current && attempt.current.context !== session.context) throw new BuyerClientError("context_changed");
-      const order = await readOrder(session.context, orderID);
+      const order = await readOrder(session.context, orderID, access);
       let detail: ReturnRequest | null = null;
       let items: ReturnRequest[] | null = null;
       const exact = id ?? attempt.current?.requestID;

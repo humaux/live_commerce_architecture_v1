@@ -4,6 +4,7 @@
 //   POST orders/{id}/payment/handoff  -> payOrder                   (TakeHosted / Stripe take_stripe_handoff)
 //   POST orders/{id}/payment/refresh|cancel -> requestPaymentSignal (RefreshPayment / CancelPayment)
 // Stripe only: stripe-buyer-ui-v1 §4 (child tab, no stored URL).
+import type { OrderAccess } from "./buyer-query.ts";
 import { buyerRequest, BuyerClientError } from "./buyer-client.ts";
 import {
   isStripeView,
@@ -143,12 +144,14 @@ function matchesOrder(view: OrderPayment, order: Order): boolean {
 export function readOrderPayment(
   context: string,
   orderID: string,
+  access?: OrderAccess,
 ): Promise<OrderPayment> {
   markerKey(context, orderID);
   return readPurchase(
     `orders/${orderID}/payment`,
     context,
     (value): value is OrderPayment => validOrderPayment(value, orderID),
+    access ? { orderID, access } : undefined,
   );
 }
 

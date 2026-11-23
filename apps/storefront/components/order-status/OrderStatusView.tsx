@@ -80,23 +80,23 @@ export default function OrderStatusView({
   useEffect(() => {
     if (!shippedCard) return;
     let live = true;
-    readOrderPayment(context, order.order_id)
+    readOrderPayment(context, order.order_id, access)
       .then((view) => live && setShippedPay(view))
       .catch(() => live && setShippedPay(null));
     return () => {
       live = false;
     };
-  }, [shippedCard, context, order.order_id]);
+  }, [shippedCard, context, order.order_id, access]);
   useEffect(() => {
     if (!cancelledCard) return;
     let live = true;
-    readOrderPayment(context, order.order_id)
+    readOrderPayment(context, order.order_id, access)
       .then((view) => live && setProbe(view.payment_state === "NOT_STARTED" ? "unpaid" : "paid-or-started"))
       .catch(() => live && setProbe("paid-or-started"));
     return () => {
       live = false;
     };
-  }, [cancelledCard, context, order.order_id]);
+  }, [cancelledCard, context, order.order_id, access]);
 
   const quote = order.snapshot.quote;
   const amount = quote.amount;
@@ -270,7 +270,7 @@ export default function OrderStatusView({
                 refreshToken={paymentRefresh} onState={setTransferState} />
             )}
             {isCard && (
-              <OrderPayment key={`${context}:${order.order_id}`} context={context} order={order} locale={locale} money={money} busy={busy}
+              <OrderPayment key={`${context}:${order.order_id}`} context={context} access={access} order={order} locale={locale} money={money} busy={busy}
                 refreshToken={paymentRefresh} onBusy={onPaymentBusy} isSelected={isSelected} paymentSignalRef={paymentSignalRef}
                 renderFrame={renderPay} onSubmitted={() => setHandoff(true)} />
             )}

@@ -774,7 +774,7 @@
     "tests/storefront/browser-engine.mjs": "5dec33e55e6a5eb155a2b00fc0ed9c564cebf06c55cb24d5e93ea149b29bb711",
     "tests/storefront/browser-gate.mjs": "a90c0697ce659eb77a572f2517617f447930903f9274e808a9e33be21a744ddb",
     "tests/storefront/buy-now-gate.mjs": "0c33aac7dee722192f76917e1a6f9f0c72480d35eb9062795ba0a7ef99df2f98",
-    "tests/storefront/buyer-after-parity.mjs": "b141fc834c6060d585ea1c702f064ba40a115da16418e7ecd573984f7748b2f7",
+    "tests/storefront/buyer-after-parity.mjs": "2297df7e9a70f190d1dd23b33f21598e7459745e758838d185512ab903664a23",
     "tests/storefront/buyer-browse-parity.spec.ts": "5388a4f840c26753e6765866cc1552ab69e65cdbe4b84b29ebcfef50153e23ce",
     "tests/storefront/buyer-comms-gate.mjs": "907cd74726124dfb28d54014fd056e7fc0e5b32b1e19c89b2856e336a2506c0a",
     "tests/storefront/catalog-media-gate.mjs": "7c30bb93b241c69621656f78cdb3efb13169a88b6ab0b6c5fc886834e0223e3e",
@@ -3579,7 +3579,8 @@
         "tests/helpers/next-startup.mjs",
         "tests/storefront/browser-engine.mjs",
         "tests/storefront/buyer-after-parity.mjs",
-        "tests/storefront/shop-fake-api.mjs"
+        "tests/storefront/shop-fake-api.mjs",
+        "tests/storefront/shop-helpers.mjs"
       ],
       "apps": [
         "storefront"
@@ -3591,7 +3592,8 @@
         "registry:--browser-buyer-after-parity -> tests/storefront/buyer-after-parity.mjs",
         "scripts/dev/test-local.sh:--browser-buyer-after-parity:lc_build=storefront",
         "tests/storefront/buyer-after-parity.mjs:server/import apps/storefront",
-        "tests/storefront/shop-fake-api.mjs:server/import apps/storefront"
+        "tests/storefront/shop-fake-api.mjs:server/import apps/storefront",
+        "tests/storefront/shop-helpers.mjs:server/import apps/storefront"
       ]
     }
   }
