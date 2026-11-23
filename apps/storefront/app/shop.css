@@ -352,6 +352,7 @@ ul, ol { margin: 0; padding: 0; list-style: none; }
 .sf-stepper input:focus { outline: none; }
 .sf-stepper:focus-within { border-color: var(--accent-text); }
 .sf-buy__actions { display: grid; gap: 10px; }
+@media (min-width: 900px) { .sf-buy__actions { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .sf-buy__actions .sf-btn { min-height: 52px; }
 .sf-added { min-height: 20px; display: flex; align-items: center; gap: 6px; color: var(--sf-ok); font-size: 14px; font-weight: 600; margin-top: -8px; }
 .sf-sticky { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; display: flex; align-items: center; gap: 14px; padding: 10px var(--sf-gutter) max(10px, env(safe-area-inset-bottom)); background: rgba(255,255,255,.97); border-top: 1px solid var(--sf-line); box-shadow: 0 -10px 30px rgba(20,24,31,.08); animation: sf-up .2s cubic-bezier(.2,.8,.2,1); }
