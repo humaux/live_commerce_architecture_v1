@@ -153,9 +153,10 @@ async function fillRecipient(page: Page, name: string, phone: string) {
 }
 
 /** Real two-click placement: the "Review order" submit, then manual-order-submit. Returns the real request body and answer. */
-async function reviewAndPlace(page: Page) {
+async function reviewAndPlace(page: Page, checkReview?: () => Promise<void>) {
   await page.getByTestId("manual-order-form").locator('button[type="submit"]').click();
   await expect(page.getByTestId("manual-order-submit")).toBeVisible();
+  await checkReview?.();
   const placed = page.waitForResponse(
     (reply) => reply.request().method() === "POST" && new URL(reply.url()).pathname === pointsPath,
   );
@@ -305,6 +306,7 @@ test.afterAll(async () => {
   );
 });
 
+const sameNameMembers = new Map<Locale, string>();
 for (const cell of cells) {
     test(`LPU03 award 30 -> order panel +30 -> deduct -30 -> balance 0 -> persisted ledger -> award-sized deduct refused (${cell.locale}/${cell.device})`, async ({ browser }) => {
       test.setTimeout(240_000);
@@ -313,8 +315,9 @@ for (const cell of cells) {
       console.info("LPU_PHASE context.after", cell.locale, cell.device);
       const page = await context.newPage();
       const watched = watch(page);
-      const memberName = `Synthetic member ${canary} ${cell.locale} ${cell.device}`;
+      const memberName = `Synthetic member ${canary} ${cell.locale}`;
       const orderName = `Synthetic customer ${canary} ${cell.locale} ${cell.device}`; // merchant-edited, independent of the member (LP17)
+      const phone = "0912000000";
       try {
         console.info("LPU_PHASE manual.before", cell.locale, cell.device);
         await openManualOrder(page, cell.locale);
@@ -322,23 +325,63 @@ for (const cell of cells) {
         console.info("LPU_PHASE product.before", cell.locale, cell.device);
         await addProduct(page);
         console.info("LPU_PHASE product.after", cell.locale, cell.device);
+        const optionKey = await chooseHomeDelivery(page);
+        if (cell.device === "mobile") await fillRecipient(page, orderName, phone);
         console.info("LPU_PHASE create.before", cell.locale, cell.device);
-        const { memberId } = await createMember(page, memberName, `line-${canary}-${cell.locale}-${cell.device}`, "awarded");
+        const contact = `line-${canary}-${cell.locale}-${cell.device}`;
+        const { memberId } = await createMember(page, memberName, contact, "awarded");
         console.info("LPU_PHASE create.after", cell.locale, cell.device);
-        // LP17 prefill from the selected member, then a real edit of the order's customer name.
-        await expect(page.getByTestId("mo-name")).toHaveValue(memberName);
-        await expect(page.getByTestId("mo-name")).toBeEditable();
-        await page.getByTestId("mo-name").fill(orderName);
-        await expect(page.getByTestId("mo-name")).toHaveValue(orderName);
-        await pickMemberBySearch(page, memberName, memberId);
-        await page.getByTestId("manual-member-points").fill("30");
-        await chooseHomeDelivery(page);
-        await fillRecipient(page, orderName, "0912000000");
+        const selected = page.getByTestId("manual-member-selected");
+        const points = page.getByTestId("manual-member-points");
+        if (cell.device === "desktop") {
+          sameNameMembers.set(cell.locale, memberId);
+          await expect(page.getByTestId("mo-name"), "LP17 prefills a blank recipient").toHaveValue(memberName);
+          await expect(page.getByTestId("mo-name")).toBeEditable();
+          await fillRecipient(page, orderName, phone);
+          await pickMemberBySearch(page, memberName, memberId);
+        } else {
+          await expect(page.getByTestId("mo-name"), "create and select preserves the recipient").toHaveValue(orderName);
+          const otherId = sameNameMembers.get(cell.locale)!;
+          expect(memberId).not.toBe(otherId);
+          await points.fill("47");
+          await page.getByTestId("manual-member-change").click();
+          await expect(points, "changing member clears the former draft points").toHaveValue("");
+          await pickMemberBySearch(page, memberName, otherId);
+          await expect(selected).toContainText(`line-${canary}-${cell.locale}-desktop`);
+          await expect(points).toHaveValue("");
+          await expect(page.getByTestId("mo-name"), "selecting a different ID preserves the recipient").toHaveValue(orderName);
+          await points.fill("53");
+          await page.getByTestId("manual-member-remove").click();
+          await expect(points, "removing member clears the former draft points").toHaveValue("");
+          await pickMemberBySearch(page, memberName, memberId);
+        }
+        await expect(selected).toContainText(contact);
+        await expect(page.getByTestId("mo-name"), "selecting a search result preserves the recipient").toHaveValue(orderName);
+        await expect(page.getByTestId("mo-phone")).toHaveValue(phone);
+        await expect(page.getByTestId("mo-option")).toHaveValue(optionKey);
+        await expect(page.getByTestId("mo-city")).toHaveValue("Taipei");
+        await expect(page.getByTestId("mo-line1")).toHaveValue("1 Order Points Road");
+        await points.fill("30");
 
         console.info("LPU_PHASE place.before", cell.locale, cell.device);
-        const placed = await reviewAndPlace(page);
+        const placed = await reviewAndPlace(page, async () => {
+          const recipient = page.locator(".ops-review > dl");
+          await expect(recipient.getByText(orderName, { exact: true })).toBeVisible();
+          await expect(recipient.getByText(phone, { exact: true })).toBeVisible();
+          await expect(recipient.getByText("Taipei 1 Order Points Road", { exact: true })).toBeVisible();
+          const awardReview = page.getByTestId("manual-member-award-review");
+          await expect(awardReview.getByText(memberName, { exact: true })).toBeVisible();
+          await expect(awardReview).toContainText("+30");
+          await page.screenshot({ path: resolve(evidence, `lpu03-review-${cell.locale}-${cell.device}.png`), fullPage: true });
+        });
         console.info("LPU_PHASE place.after", cell.locale, cell.device);
         expect(placed.status, "manual order placement").toBe(201);
+        expect(placed.body.customer).toEqual({ name: orderName, phone, email: "" });
+        expect(placed.body.delivery).toEqual({
+          option_key: optionKey,
+          home_address: { region: "", city: "Taipei", postal_code: "", line1: "1 Order Points Road", line2: "" },
+          cvs: null,
+        });
         expect(placed.body.member_award).toEqual({ member_id: memberId, points: 30 });
         const award = placed.answer.member_award;
         expect(award).toBeDefined();
@@ -346,6 +389,8 @@ for (const cell of cells) {
         expect(award!.points).toBe(30);
         expect(award!.member_id).toBe(memberId);
         expect(award!.entry_id, "an awarded order carries its ledger entry id").toMatch(/^[0-9a-f-]{36}$/);
+        await writeFile(resolve(evidence, `lpu03-submit-${cell.locale}-${cell.device}.json`),
+          JSON.stringify(placed, null, 2), { mode: 0o600 });
         const orderId = placed.answer.order_id;
         await expect(page.getByTestId("manual-order-result")).toBeVisible();
         await expect(page.getByTestId("manual-member-award-result")).toHaveAttribute("data-award-state", "awarded");

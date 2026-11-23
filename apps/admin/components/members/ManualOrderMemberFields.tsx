@@ -14,7 +14,7 @@ import { orderPointsCopy, validOrderPoints } from "./order-points-copy";
 import s from "./order-points.module.css";
 export type OrderMemberSelection = { member: MemberRow | null; points: string };
 type Props = { locale:Locale; store:Store; scope:string; boundary:string; enabled:boolean; disabled:boolean;
-  value:OrderMemberSelection; onChange:(value:OrderMemberSelection)=>void; onName:(name:string)=>void; onBusy:(busy:boolean)=>void };
+  value:OrderMemberSelection; onChange:(value:OrderMemberSelection)=>void; onPrefillName:(name:string)=>void; onBusy:(busy:boolean)=>void };
 export function ManualOrderMemberFields(p:Props) {
   const c=orderPointsCopy[p.locale];
   const [query,setQuery]=useState(""), [after,setAfter]=useState<string|null>(null);
@@ -38,7 +38,15 @@ export function ManualOrderMemberFields(p:Props) {
   if(!authority.current.enabled || !p.boundary) return null;
   const locked=p.disabled||step==="pending"||step==="unknown";
   const lockedReason=locked?(step==="unknown"?c.unknown:c.loading):undefined;
-  function choose(member:MemberRow) { if(locked)return; p.onChange({...p.value,member});p.onName(member.display_name);setCreating(false);setQuery("");setAfter(null); }
+  function choose(member: MemberRow) {
+    if (locked) return;
+    p.onChange({ member, points: "" });
+    p.onPrefillName(member.display_name);
+    setCreating(false);
+    setQuery("");
+    setAfter(null);
+  }
+  function clearSelection() { p.onChange({member:null,points:""}); }
   async function save() {
     if(locked || active.current || !name.trim() || Array.from(name.trim()).length>60)return;
     if(step!=="confirm"){setStep("confirm");return;}
@@ -71,8 +79,8 @@ export function ManualOrderMemberFields(p:Props) {
       <div className={s.actions}><Button type="button" data-testid="manual-member-create-submit" disabledReason={lockedReason||(!name.trim()?c.name:undefined)} loading={step==="pending"} loadingLabel={c.loading} onClick={()=>void save()}>{step==="pending"?c.loading:step==="confirm"?c.confirm:c.select}</Button>
       <Button type="button" variant="secondary" data-testid="manual-member-create-cancel" disabledReason={lockedReason} onClick={()=>{setCreating(false);setStep("edit");setError("");p.onBusy(false);}}>{c.cancel}</Button></div></>}
     </div> : p.value.member ? <div className={s.selected} data-testid="manual-member-selected"><div><strong>{p.value.member.display_name}</strong><small>{p.value.member.contact_note}</small></div>
-      <Button type="button" variant="secondary" data-testid="manual-member-change" disabledReason={lockedReason} onClick={()=>p.onChange({...p.value,member:null})}>{c.change}</Button>
-      <Button type="button" variant="secondary" data-testid="manual-member-remove" disabledReason={lockedReason} onClick={()=>p.onChange({member:null,points:""})}>{c.remove}</Button></div> : <>
+      <Button type="button" variant="secondary" data-testid="manual-member-change" disabledReason={lockedReason} onClick={clearSelection}>{c.change}</Button>
+      <Button type="button" variant="secondary" data-testid="manual-member-remove" disabledReason={lockedReason} onClick={clearSelection}>{c.remove}</Button></div> : <>
       {readAllowed&&<><label>{c.member}<input data-testid="manual-member-query" placeholder={c.query} value={query} maxLength={60} disabled={locked} onChange={e=>{setQuery(e.target.value);setAfter(null);}}/></label>
       {read.status==="loading"?<p role="status">{c.loading}</p>:read.status==="ready"?<div className={s.results} data-testid="manual-member-results">
         {read.data?.members.length===0&&<p>{c.empty}</p>}{read.data?.members.map(member=><button type="button" key={member.id} data-member-id={member.id} disabled={locked} onClick={()=>choose(member)}><strong>{member.display_name}</strong><small>{member.contact_note}</small></button>)}
