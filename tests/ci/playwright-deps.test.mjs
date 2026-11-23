@@ -66,11 +66,12 @@ test('TH-7: front-only is a reviewed allowlist, so executablePath evidence canno
   assert.throws(() => assertWebKitCoverage(registryWith('TestMarkerBrowser'), [...goSources, browser], [...goFiles, 'tests/foundation/browser_marker_test.go']), /webkit/i);
 });
 
-function installer({ indexSha = 'MATCH', failures = 0, browsers = ['chromium'], first = 'missing', dpkg = 'installed', debs = false, offlineFails = false } = {}) {
+function installer({ indexSha = 'MATCH', failures = 0, browsers = ['chromium'], first = 'missing', dpkg = 'installed', debs = false, offlineFails = false, refresh = '' } = {}) {
   mkdirSync('output/playwright', { recursive: true }); // untracked: absent on a fresh checkout (PR #27 review)
   const dir = mkdtempSync('output/playwright/ci-playwright-deps-test.');
   const bin = path.resolve(dir, 'bin'), trace = path.resolve(dir, 'trace.jsonl'), debDir = path.resolve(dir, 'debs'); mkdirSync(bin);
   if (debs) { mkdirSync(debDir); writeFileSync(path.join(debDir, 'libfoo_1_amd64.deb'), 'x'); }
+  if (refresh) writeFileSync(path.join(debDir, 'libbar_1_amd64.deb'), 'x');
   const goodSha = createHash('sha256').update('x').digest('hex');
   const fake = `const fs=require('fs'); const tool=__TOOL__; const args=process.argv.slice(2); const e=process.env; fs.appendFileSync(e.EDGE_TRACE,JSON.stringify({tool,args})+'\\n');
 const count=(k)=>{const p=e.EDGE_TRACE+'.'+k;const n=(fs.existsSync(p)?Number(fs.readFileSync(p)):0)+1;fs.writeFileSync(p,String(n));return n};
@@ -78,10 +79,26 @@ if(tool==='uname'){console.log('Linux');process.exit(0)}
 if(tool==='sudo'){const r=require('child_process').spawnSync(args[0],args.slice(1),{stdio:'inherit'});process.exit(r.status??1)}
 if(tool==='timeout'){const i=args.findIndex(x=>/^\\d+s$/.test(x));const r=require('child_process').spawnSync(args[i+1],args.slice(i+2),{stdio:'inherit'});process.exit(r.status??1)}
 if(tool==='sleep')process.exit(0);
-if(tool==='dpkg-deb'){console.log(args[2]==='Package'?'libfoo':'1.0');process.exit(0)}
-if(tool==='apt-cache'){if(e.INDEX_SHA)console.log('Package: libfoo\\nSHA256: '+e.INDEX_SHA);process.exit(0)}
+if(tool==='dpkg-deb'){
+  const pkg=args[1].includes('libbar_')?'libbar':'libfoo';
+  if(pkg==='libfoo' && e.INDEX_SHA==='UNREADABLE')process.exit(2);
+  console.log(args[2]==='Package'?pkg:'1.0');process.exit(0)}
+if(tool==='apt-cache'){
+  const pkg=args[1].split('=')[0], refreshed=fs.existsSync(e.EDGE_TRACE+'.refreshed');
+  if(e.INDEX_SHA==='INDEX_ERROR'){console.error('E: package index is corrupt');process.exit(100)}
+  if(e.INDEX_SHA==='NO_SHA'){console.log('Package: '+pkg);process.exit(0)}
+  if(e.REFRESH && pkg==='libfoo' && (!refreshed || e.REFRESH==='still-missing')){
+    if(e.REFRESH==='package-absent'){console.error('E: No packages found');process.exit(100)}
+    process.exit(0)}
+  const sha=refreshed && pkg==='libbar' && e.REFRESH==='changed-hash'?'0'.repeat(64):e.INDEX_SHA;
+  if(sha)console.log('Package: '+pkg+'\\nSHA256: '+sha);
+  process.exit(0)}
 if(tool==='dpkg-query'){console.log(e.DPKG_STATE==='installed'?'installed':'not-installed');process.exit(0)}
 if(tool==='apt-get'){
+  if(args.includes('--error-on=any')){
+    if(e.REFRESH==='update-fails')process.exit(100);
+    if(e.REFRESH==='update-times-out')process.exit(124);
+    count('refreshed');process.exit(0)}
   if(args.includes('update'))process.exit(0);
   if(args.includes('--no-download'))process.exit(e.OFFLINE_FAILS==='1'?100:0);
   process.exit(count('apt')<=Number(e.EDGE_FAILURES)?17:0)}
@@ -99,15 +116,17 @@ if(tool==='node'){process.exit(count('cli')<=Number(e.EDGE_FAILURES)?17:0)}
   }
   // #164 self-check: a fixture that does not parse would fail every case for the wrong reason (SyntaxError, then ENOENT on the trace).
   for (const name of ['uname', 'sudo', 'timeout', 'sleep', 'node', 'pnpm', 'apt-get', 'dpkg-query', 'apt-cache', 'dpkg-deb']) execFileSync(process.execPath, ['--check', path.join(bin, name + '.cjs')]);
-  const probe = spawnSync(process.execPath, [path.join(bin, 'apt-cache.cjs'), 'show', 'x'], { encoding: 'utf8', env: { ...process.env, EDGE_TRACE: path.resolve(dir, 'probe.jsonl'), INDEX_SHA: 'abc' } });
+  const probe = spawnSync(process.execPath, [path.join(bin, 'apt-cache.cjs'), 'show', 'libfoo=1.0'], { encoding: 'utf8', env: { ...process.env, EDGE_TRACE: path.resolve(dir, 'probe.jsonl'), INDEX_SHA: 'abc', REFRESH: '' } });
   assert.deepEqual(probe.stdout.trimEnd().split('\n'), ['Package: libfoo', 'SHA256: abc'], 'the apt-cache double must print exactly two lines');
-  const result = spawnSync('bash', ['scripts/dev/ci-playwright-install.sh', ...browsers], { encoding: 'utf8', timeout: 10000, env: { ...process.env, PATH: bin + ':' + process.env.PATH, EDGE_TRACE: trace, EDGE_FAILURES: String(failures), DRY_FIRST: first, DPKG_STATE: dpkg, INDEX_SHA: indexSha === 'MATCH' ? goodSha : indexSha === 'NONE' ? '' : indexSha, OFFLINE_FAILS: offlineFails ? '1' : '0', LC_PLAYWRIGHT_DEBS_DIR: debDir, GITHUB_OUTPUT: path.resolve(dir, 'out'), FAKE_CLI: '/fixture/playwright-cli.js' } });
+  const result = spawnSync('bash', ['scripts/dev/ci-playwright-install.sh', ...browsers], { encoding: 'utf8', timeout: 10000, env: { ...process.env, PATH: bin + ':' + process.env.PATH, EDGE_TRACE: trace, EDGE_FAILURES: String(failures), DRY_FIRST: first, DPKG_STATE: dpkg, INDEX_SHA: indexSha === 'MATCH' ? goodSha : indexSha === 'NONE' ? '' : indexSha, REFRESH: refresh, OFFLINE_FAILS: offlineFails ? '1' : '0', LC_PLAYWRIGHT_DEBS_DIR: debDir, GITHUB_OUTPUT: path.resolve(dir, 'out'), FAKE_CLI: '/fixture/playwright-cli.js' } });
   const events = readFileSync(trace, 'utf8').trim().split('\n').map(JSON.parse);
   let out = ''; try { out = readFileSync(path.resolve(dir, 'out'), 'utf8'); } catch {}
-  rmSync(dir, { recursive: true }); return { result, events, out };
+  const cached = debs ? readdirSync(debDir).filter(name => name.endsWith('.deb')) : [];
+  rmSync(dir, { recursive: true }); return { result, events, out, cached };
 }
 const dryRuns = events => events.filter(x => x.tool === 'node' && x.args.includes('--dry-run'));
 const aptCalls = events => events.filter(x => x.tool === 'apt-get');
+const refreshCalls = events => aptCalls(events).filter(x => x.args.includes('--error-on=any'));
 test('#162: a runner image that already has every dependency makes no apt call at all', () => {
   const { result, events } = installer({ first: 'none' }); assert.equal(result.status, 0, result.stderr);
   assert.equal(aptCalls(events).length + events.filter(x => ['sudo', 'timeout', 'sleep'].includes(x.tool)).length, 0);
@@ -198,15 +217,63 @@ test('P2-3 hash match: a cached deb whose SHA256 equals the apt index is install
   const { result, events } = installer({ debs: true }); assert.equal(result.status, 0, result.stderr);
   assert.ok(aptCalls(events).some(x => x.args.includes('--no-download')));
 });
+for (const refresh of ['match', 'package-absent']) {
+  test(`P2-3 stale index (${refresh}): refresh once, then reverify the entire cache before installing without downloads`, () => {
+    const { result, events, out, cached } = installer({ debs: true, refresh, browsers: ['chromium', 'webkit'] });
+    assert.equal(result.status, 0, result.stderr);
+    const apt = aptCalls(events);
+    assert.equal(apt.length, 2);
+    assert.deepEqual(apt[0].args, ['update', '--error-on=any', '-o', 'Acquire::Retries=0'], result.stderr);
+    assert.ok(apt[1].args.includes('--no-download'));
+    assert.deepEqual(events.slice(events.indexOf(apt[0]), events.indexOf(apt[1]))
+      .filter(x => x.tool === 'apt-cache').map(x => x.args[1]).sort(), ['libbar=1.0', 'libfoo=1.0']);
+    assert.deepEqual(cached.sort(), ['libbar_1_amd64.deb', 'libfoo_1_amd64.deb']);
+    assert.deepEqual(events.filter(x => x.tool === 'pnpm').map(x => x.args), [['exec', 'playwright', 'install', 'chromium', 'webkit']]);
+    assert.equal(out, '', 'reused archives do not trigger a cache save');
+  });
+}
+for (const refresh of ['still-missing', 'changed-hash', 'update-fails', 'update-times-out']) {
+  test(`P2-3 refresh ${refresh}: reject the cache and take the original network path`, () => {
+    const { result, events, out, cached } = installer({ debs: true, refresh });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(refreshCalls(events).length, 1);
+    assert.deepEqual(aptCalls(events).map(x => x.args[0]), ['update', 'update', 'install']);
+    assert.ok(!aptCalls(events).some(x => x.args.includes('--no-download')));
+    if (refresh === 'changed-hash') assert.match(result.stderr, /cached libbar.*not verified/);
+    if (refresh.startsWith('update-')) assert.equal(events.filter(x => x.tool === 'apt-cache').length, 2, 'a failed refresh cannot authorize a second lookup');
+    assert.match(result.stderr, /discarding the cached \.debs/);
+    assert.deepEqual(cached, []);
+    assert.equal(out.trim(), 'debs=downloaded');
+  });
+}
 test('P2-3 hash mismatch: a tampered cached deb is never installed; the cache is discarded and the network path runs', () => {
   const { result, events } = installer({ debs: true, indexSha: 'deadbeef' }); assert.equal(result.status, 0, result.stderr);
   assert.ok(!aptCalls(events).some(x => x.args.includes('--no-download')), 'unverified debs were installed');
+  assert.equal(refreshCalls(events).length, 0);
   assert.ok(aptCalls(events).some(x => x.args.includes('update')));
   assert.match(result.stderr, /discarding the cached \.debs/);
 });
-test('P2-3 no index entry: a hash that cannot be verified counts as a mismatch', () => {
-  const { result, events } = installer({ debs: true, indexSha: 'NONE' }); assert.equal(result.status, 0, result.stderr);
-  assert.ok(!aptCalls(events).some(x => x.args.includes('--no-download')));
+test('P2-3 unreadable deb, digestless record and index error bypass the refresh', () => {
+  for (const indexSha of ['UNREADABLE', 'NO_SHA', 'INDEX_ERROR']) {
+    const { result, events } = installer({ debs: true, indexSha }); assert.equal(result.status, 0, result.stderr);
+    assert.equal(refreshCalls(events).length, 0, indexSha);
+    assert.ok(!aptCalls(events).some(x => x.args.includes('--no-download')), indexSha);
+    assert.match(result.stderr, /discarding the cached \.debs/);
+  }
+});
+test('P2-3 refresh and failed offline install preserve the network retry limits and failure exit', () => {
+  const { result, events } = installer({ debs: true, refresh: 'match', offlineFails: true, failures: 100 });
+  assert.equal(result.status, 17, result.stderr);
+  const timed = events.filter(x => x.tool === 'timeout').map(x => x.args.slice(0, 2));
+  assert.deepEqual(timed, [
+    ['--kill-after=5s', '20s'], ['--kill-after=15s', '60s'],
+    ...Array.from({ length: 3 }, () => ['--kill-after=15s', '240s']),
+  ]);
+  const aptSeconds = timed.reduce((total, [grace, limit]) => total + Number.parseInt(grace.split('=')[1], 10) + Number.parseInt(limit, 10), 0);
+  const backoffSeconds = events.filter(x => x.tool === 'sleep').reduce((total, x) => total + Number(x.args[0]), 0);
+  assert.equal(backoffSeconds, 20);
+  assert.ok(aptSeconds + backoffSeconds <= 15 * 60);
+  assert.equal(events.filter(x => x.tool === 'pnpm').length, 0);
 });
 test('P2-4: the .deb cache key carries the runner image OS', () => {
   assert.match(readFileSync('.github/workflows/gates.yml', 'utf8'), /echo "image=\$\{ImageOS:-noos\}-/);
