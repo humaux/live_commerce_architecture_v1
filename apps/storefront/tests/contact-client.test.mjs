@@ -151,5 +151,6 @@ test("ContactStoreButton separates contact intent from after-sales without using
 test("OrderStatusView preserves contact intent and the order after-sales return entry", async () => {
   const source = await readFile(new URL("../components/order-status/OrderStatusView.tsx", import.meta.url), "utf8");
   assert.match(source, /<ContactStoreButton[^>]*label=\{c\.contact\}[^>]*intent="contact"/);
-  assert.match(source, /<a\b[^>]*data-testid="request-after-sales"[^>]*href=\{`\/\$\{locale\}\/orders\/\$\{order\.order_id\}\/return`\}>\{c\.after\}<\/a>/);
+  assert.match(source, /access !== "lookup" && !\(isCard && order\.commercial_state === "CANCELLED"\)/);
+  assert.match(source, /<a\b[^>]*data-testid="request-after-sales"[^>]*href=\{`\/\$\{locale\}\/orders\/\$\{order\.order_id\}\/return\$\{access \? `\?access=\$\{access\}` : ""\}`\}>\{c\.after\}<\/a>/);
 });

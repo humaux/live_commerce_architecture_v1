@@ -37,7 +37,7 @@ This does not approve a buyer UI, domain deployment or provider payment.
 
 ## Cookie and request context
 
-- One distinct `__Host-commerce_buyer` Secure/HttpOnly/SameSite=Lax/Path=/ cookie,
+- The shopping cookie is `__Host-commerce_buyer` Secure/HttpOnly/SameSite=Lax/Path=/ cookie,
   no Domain. Bounded canonical HMAC envelope binds version, random256-bit bearer,
   issued-at, absolute expiry and origin. Cookie provenance is not store authority.
   Duplicate/malformed/forged/expired cookies never silently mint a replacement.
@@ -49,14 +49,50 @@ This does not approve a buyer UI, domain deployment or provider payment.
   and matching session-bound `X-Buyer-Context` (also CSRF proof), except first
   prepare with no cookie. A stale tab context fails before any upstream write;
   it is never refreshed transparently while retaining an old cart/order draft.
-- Prepare is the ONLY response that sets the cookie. Registration, data calls,
-  errors, status and logout never Set-Cookie. Initial prepare requires absent
+- Prepare and explicit reset issue the shopping cookie. Registration, ordinary
+  data calls, errors, status and logout do not issue it. Initial prepare requires absent
   cookie. Explicit reset of a valid old envelope first retires the same token
   successfully, then prepares a replacement; failures retain the old cookie.
   Expired envelopes can be explicitly reset, not used for commerce operations.
 - Public activation consumes cookie token and calls private bootstrap with `{}`;
   it never returns token to browser JSON/HTML/URL/storage. Response context stays
   stable; effective expiry cannot exceed cookie or returned database expiry.
+
+## Order access
+
+- Shopping and its checkout recovery always use the shopping cookie. A successful
+  E5 lookup or G3 link exchange sets its own Secure, HttpOnly, SameSite=Lax,
+  host-only `__Host-` cookie. Each mode has one current order per origin. Its
+  signed envelope binds the origin, exact order UUID, mode, bearer and absolute
+  expiry. Go resolves the store from the published origin and checks its own
+  capability on every access. Refusals set no cookie.
+- The ordinary order URL uses shopping authority. Explicit `access=lookup` or
+  `access=link` selects only that mode on the order and return pages. The
+  selector is public, carries no credential and stays on those links. The
+  same `GET /api/buyer/orders/{id}/session?access=lookup|link` returns the usual
+  status and a context bound to the selected envelope. Missing, expired,
+  revoked, superseded or invalid credentials fail within the selected mode.
+  There is no fallback among modes, including different permissions for the
+  same order. A later successful exchange can replace only its own mode's slot.
+- Order requests still present the exact `X-Buyer-Context`. A scoped context
+  can read only its named order, payment status and transfer instructions.
+  The link mode can also perform that order's authorized payment and after-sales
+  actions. Direct order routes must name the bound order. After-sales list,
+  detail and withdrawal rely on the manual order's single-order owner and
+  the existing Go ownership checks. Go's order and return state requirements
+  continue to apply. Neither order mode can use shopping, history, privacy,
+  claim or session mutation routes for the shopping identity.
+- `POST /api/buyer/orders/{id}/session/logout?access=lookup|link` requires the
+  matching scoped context and same-origin empty JSON. It retires only that
+  credential through the existing Go retirement endpoint. Browser expiry and
+  server retirement do not renew, remint or substitute a capability. Shopping
+  reset/logout still affects only shopping, and order-mode logout affects
+  neither shopping nor the other order-mode slot.
+- Go link redemption, explicit same-proof re-delivery, uniform refusal and
+  guest-only access guards keep their existing behavior. The browser stores
+  no bearer, link fragment, proof or signed envelope outside HttpOnly cookies
+  and the existing in-memory link handoff. Context is a non-bearer equality
+  guard and cannot identify or authorize a different order or channel.
 
 ## Durable retirement and admission
 
@@ -116,7 +152,7 @@ This does not approve a buyer UI, domain deployment or provider payment.
   Prepare alone accepts absent context; reset/logout accept expired signed
   envelopes with matching context. Prepare/reset alone may Set-Cookie, and only
   after all preconditions/retirement succeed. For clarity both are the same
-  cookie-preparation operation; no other endpoint writes a cookie.
+  shopping cookie preparation operation. Order access has its own cookies below.
 - Safe public errors use `{code,message,request_id,retryable,details:{}}` with
   newly generated request_id. Only fixed code/message mappings, never proxy raw
   error text/headers. Local context mismatch is409 `context_changed`, unsupported

@@ -3,6 +3,7 @@
 // Used by: storefront cart, ClaimLink, CheckoutFlow and order/payment components.
 // Invariants: only matching server quote/option money can authorize COD confirmation; amounts sent remain server-checked.
 import {
+  assertOrderContext,
   buyerRequest,
   BuyerClientError,
   readBuyerSession,
@@ -15,6 +16,7 @@ import {
   validBuyerCvsShipment,
   type PaymentMode,
 } from "./cvs-contract.ts";
+import type { OrderAccess } from "./buyer-query.ts";
 import { validBuyerEmail } from "./bank-transfer-contract.ts";
 import { validPromotion } from "./promo-contract.ts";
 import { validClaimRedeemed, type ClaimRedeemed } from "./claim-contract.ts";
@@ -638,17 +640,21 @@ export function cartWithQuantity(cart: Cart, sku: string, quantity: number): Car
   return { expected_version: cart.version, items };
 }
 
+type ScopedOrderRead = { orderID: string; access: OrderAccess };
+
 export async function readPurchase<T>(
   suffix: string,
   context: string,
   valid: (value: unknown) => value is T,
+  scope?: ScopedOrderRead,
 ): Promise<T> {
   const response = await buyerRequest("GET", suffix, context);
   if (!response.ok)
     throw new BuyerClientError("request_failed", response.status);
   const value: unknown = await response.json();
   if (!valid(value)) throw new BuyerClientError("invalid_response");
-  await assertPurchaseContext(context);
+  if (scope) await assertOrderContext(context, scope.orderID, scope.access);
+  else await assertPurchaseContext(context);
   return value;
 }
 
@@ -1108,9 +1114,10 @@ export async function writeDestination(
 export async function readOrder(
   context: string,
   orderID: string,
+  access?: OrderAccess,
 ): Promise<Order> {
   if (!id(orderID)) throw new BuyerClientError("invalid_response");
-  const order = await readPurchase(`orders/${orderID}`, context, validOrder);
+  const order = await readPurchase(`orders/${orderID}`, context, validOrder, access ? { orderID, access } : undefined);
   if (order.order_id !== orderID)
     throw new BuyerClientError("invalid_response");
   return order;

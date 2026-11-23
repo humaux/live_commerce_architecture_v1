@@ -842,3 +842,105 @@ test("CVS BFF: contract refusal codes pass through; pay_at_pickup_limit is a def
     globalThis.fetch = old;
   }
 });
+
+test("shopping, same-order lookup and link stay independent through refusal, expiry and retirement", async (t) => {
+  enabled();
+  const first = "0123abcd-1234-4def-8123-456789abcdef";
+  const other = "1123abcd-1234-4def-8123-456789abcdef";
+  const token = Buffer.alloc(32, 3).toString("base64url");
+  const proof = Buffer.alloc(32, 4).toString("base64url");
+  const calls = [];
+  const revoked = new Set();
+  let now = Date.now();
+  t.mock.method(Date, "now", () => now);
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    const path = new URL(url).pathname.replace("/v1/buyer/", "");
+    const bearer = options.headers.get("Authorization");
+    calls.push({ path, bearer });
+    if (path === "session/retire") {
+      revoked.add(bearer);
+      return new Response(null, { status: 204 });
+    }
+    if (revoked.has(bearer)) return Response.json({}, { status: 401 });
+    if (path === "session") return Response.json({ authenticated: true });
+    if (path === "orders/lookup" || path === "orders/link") {
+      if (JSON.parse(options.body).contact === "bad@example.test")
+        return Response.json({ code: "not_found" }, { status: 404 });
+      return Response.json({ order_id: first });
+    }
+    return Response.json({ order_id: first });
+  });
+
+  const call = (method, suffix, opts) => handleBuyerRequest(req(method, suffix, opts));
+  const lookup = JSON.stringify({ order_ref: first, contact: "buyer@example.test" });
+  const getSession = async (suffix, cookie) => {
+    const r = await call("GET", suffix, { cookie });
+    assert.equal(r.status, 200);
+    assert.equal(r.headers.get("set-cookie"), null);
+    return r.json();
+  };
+  const issue = async (kind, body, cookie) => {
+    const response = await call("POST", `orders/${kind}`, { body, cookie });
+    assert.equal(response.status, 200);
+    assert.deepEqual(await response.json(), { order_id: first });
+    const issued = response.headers.get("set-cookie");
+    assert.match(issued, new RegExp(`^__Host-commerce_buyer_${kind}=[^;]+; Path=/; Max-Age=3600; Secure; HttpOnly; SameSite=Lax$`));
+    return { cookie: issued.split(";", 1)[0], bearer: calls.at(-1).bearer };
+  };
+  const lookupPath = `orders/${first}/session?access=lookup`;
+  const linkPath = `orders/${first}/session?access=link`;
+  const guest = await issue("lookup", lookup);
+  assert.equal((await getSession("session", guest.cookie)).state, "absent");
+  now += 2000;
+  const root = cookie(await call("POST", "session/prepare", { body: "{}", cookie: guest.cookie }));
+  const link = await issue("link", JSON.stringify({ order_id: first, token, proof }), `${root}; ${guest.cookie}`);
+  const cookies = `${root}; ${guest.cookie}; ${link.cookie}`;
+  const shopping = await getSession("session", root);
+  const shoppingBearer = calls.at(-1).bearer;
+  assert.deepEqual(await getSession("session", cookies), shopping);
+  const view = await getSession(lookupPath, cookies);
+  const full = await getSession(linkPath, cookies);
+  assert.equal(new Set([shopping.context, view.context, full.context]).size, 3);
+  for (const [context, bearer] of [[shopping.context, shoppingBearer], [view.context, guest.bearer], [full.context, link.bearer]]) {
+    const response = await call("GET", `orders/${first}`, { cookie: cookies, context });
+    assert.equal(response.status, 200);
+    assert.equal(calls.at(-1).bearer, bearer);
+  }
+
+  const beforeRefusals = calls.length;
+  const headers = { "Idempotency-Key": "r01-exact-key" };
+  const proofBody = JSON.stringify({ last5: "12345", amount_minor: 100, paid_at: new Date(now).toISOString() });
+  const denied = [
+    ["GET", "cart", view.context, 403],
+    ["GET", "privacy", full.context, 403],
+    ["GET", `orders/${other}`, full.context, 403],
+    ["GET", `orders/${other}/session?access=lookup`, undefined, 403],
+    ["GET", `${lookupPath}&access=link`, undefined, 422],
+    ["POST", `orders/${first}/return-requests`, view.context, 403, "{}"],
+    ["PUT", `orders/${first}/bank-transfer/proof`, view.context, 403, proofBody],
+  ];
+  for (const [method, suffix, context, expected, body] of denied) {
+    const response = await call(method, suffix, { cookie: cookies, context, body, extra: method === "GET" ? {} : headers });
+    assert.equal(response.status, expected, suffix);
+    assert.equal(response.headers.get("set-cookie"), null);
+  }
+  assert.equal((await call("GET", linkPath, { cookie: cookies, extra: { Host: "other.example" } })).status, 401);
+  assert.equal(calls.length, beforeRefusals, "scope, origin and mode mismatches reach no Go route");
+
+  const mismatch = await call("POST", "orders/lookup", { body: JSON.stringify({ order_ref: first, contact: "bad@example.test" }), cookie: cookies });
+  assert.equal(mismatch.status, 404);
+  assert.equal(mismatch.headers.get("set-cookie"), null);
+
+  now += 3_599_000; // lookup expires one second before the other two identities
+  assert.equal((await getSession(lookupPath, cookies)).state, "expired");
+  assert.equal((await call("GET", `orders/${first}`, { cookie: cookies, context: view.context })).status, 401);
+  assert.equal((await getSession(lookupPath, `${root}; ${link.cookie}`)).state, "absent");
+  assert.deepEqual(await getSession(linkPath, cookies), full);
+  assert.deepEqual(await getSession("session", cookies), shopping);
+
+  const logout = await call("POST", `orders/${first}/session/logout?access=link`, { cookie: cookies, context: full.context, body: "{}" });
+  assert.equal(logout.status, 204);
+  assert.deepEqual([...revoked], [link.bearer]);
+  assert.equal((await getSession(linkPath, cookies)).state, "inactive");
+  assert.deepEqual(await getSession("session", cookies), shopping);
+});
