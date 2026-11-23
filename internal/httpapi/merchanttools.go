@@ -37,6 +37,11 @@ import (
 var manualOrderFields = []string{"items", "customer", "delivery", "payment_mode", "locale"}
 var manualRegenerateFields = []string{"order_id", "locale"}
 
+type manualOrderBody struct {
+	merchanttools.ManualInput
+	Source json.RawMessage `json:"source_context"`
+}
+
 // forBuyerFields is the exact POST orders/for-buyer body (live-console-v1 §5.1 step 3): no price, no tenant.
 var forBuyerFields = []string{"items", "customer", "delivery", "payment_mode", "locale", "for", "send_payment_link"}
 
@@ -116,9 +121,21 @@ func registerMerchantToolsRoutes(mux *http.ServeMux, pool *pgxpool.Pool, manual 
 		respond(w, http.StatusOK, map[string]any{"options": options})
 	}))
 	mux.HandleFunc("POST "+base+"/orders/manual", cvsRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
-		in, ok := manualDiscountBody[merchanttools.ManualInput](w, r, manualOrderFields)
+		body, ok := manualDiscountBody[manualOrderBody](w, r, manualOrderFields)
 		if !ok {
 			return
+		}
+		in := body.ManualInput
+		if body.Source != nil {
+			var fields map[string]json.RawMessage
+			var source merchanttools.ManualSourceContext
+			if json.Unmarshal(body.Source, &fields) != nil || len(fields) != 3 ||
+				fields["conversation_id"] == nil || fields["bundle_ids"] == nil || fields["revision"] == nil ||
+				json.Unmarshal(body.Source, &source) != nil || !merchanttools.ValidManualSource(source) {
+				respondError(w, 422, "invalid_request")
+				return
+			}
+			in.SourceContext = &source
 		}
 		// The pipeline is several transactions on three pools (each bounded to 5 s); the whole request gets 14 s inside the 15 s server cap.
 		ctx, cancel := context.WithTimeout(r.Context(), 14*time.Second)
@@ -463,7 +480,7 @@ func respondManualOrderError(w http.ResponseWriter, err error) {
 // at every nesting level and non-integer money at the typed JSON boundary.
 func manualDiscountBody[T any](w http.ResponseWriter, r *http.Request, required []string) (T, bool) {
 	fieldsAllowed := append(append([]string{}, required...), "discount")
-	if _, manual := any(*new(T)).(merchanttools.ManualInput); manual {
+	if _, manual := any(*new(T)).(manualOrderBody); manual {
 		fieldsAllowed = append(fieldsAllowed, "member_award", "source_context")
 	}
 	in, raw, ok := studioDecodeRaw[T](w, r, fieldsAllowed)
@@ -477,15 +494,6 @@ func manualDiscountBody[T any](w http.ResponseWriter, r *http.Request, required 
 	}
 	for _, key := range required {
 		if value, found := fields[key]; !found || bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
-			respondError(w, 422, "invalid_request")
-			return in, false
-		}
-	}
-	if value, found := fields["source_context"]; found {
-		manual := any(in).(merchanttools.ManualInput)
-		var source map[string]json.RawMessage
-		if json.Unmarshal(value, &source) != nil || len(source) != 3 || source["conversation_id"] == nil ||
-			source["bundle_ids"] == nil || source["revision"] == nil || manual.SourceContext == nil || !merchanttools.ValidManualSource(*manual.SourceContext) {
 			respondError(w, 422, "invalid_request")
 			return in, false
 		}

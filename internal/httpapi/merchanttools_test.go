@@ -88,6 +88,8 @@ func TestConversationManualOrderWire(t *testing.T) {
 		{"POST", "/orders/manual", "test-key-01", body + `,"source_context":` + source + "}", 503},
 		{"POST", "/orders/manual", "test-key-01", body + `,"source_context":null}`, 422},
 		{"POST", "/orders/manual", "test-key-01", body + `,"source_context":{"bundle_ids":null}}`, 422},
+		{"POST", "/orders/manual", "test-key-01", body + `,"source_context":{"conversation_id":false,"bundle_ids":[],"revision":"x"}}`, 422},
+		{"POST", "/orders/manual", "test-key-01", body + `,"source_context":` + strings.TrimSuffix(source, "}") + `,"send_payment_link":true}}`, 422},
 		{"POST", "/orders/for-buyer", "test-key-01", body + `,"source_context":` + source + "}", 400},
 		{"POST", "/orders/for-buyer", "test-key-01", body + `,"member_award":{"member_id":"11111111-1111-4111-8111-111111111111","points":1}}`, 400},
 		{"GET", "/orders/manual/receipt", "test-key-01", "", 503},
