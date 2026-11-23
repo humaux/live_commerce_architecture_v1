@@ -204,9 +204,11 @@ try {
   assert.equal(await buyer.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone), "America/Los_Angeles");
   buyer.on("pageerror", error => uiErrors.push(error.name));
   const leaked = [], exchanges = [];
+  let linkPrefetches = 0;
   buyer.on("request", request => {
     if (request.url().includes(token) || (request.headers()["referer"] ?? "").includes(token)) leaked.push(request.url());
     if (request.method() === "POST" && new URL(request.url()).pathname === "/api/buyer/orders/link") exchanges.push(request.postData());
+    if (new URL(buyer.url()).pathname === "/zh-TW/order-link" && request.headers()["next-router-prefetch"] === "1") linkPrefetches++;
   });
   await buyer.goto(link);
   await buyer.waitForURL(url => url.pathname === `/zh-TW/orders/${body.order_id}`);
@@ -353,6 +355,7 @@ try {
   pass("the buyer opens the COD link and sees the cash due on delivery (NT$75) waiting for the carrier");
 
   assert.deepEqual(uiErrors, []);
+  assert.equal(linkPrefetches, 0, "the order-link shell must not prefetch before leaving for the order");
   pass("no page errors");
   await writeFile(path.join(evidence, "result.json"), JSON.stringify({cases, order_id: body.order_id, cod_order_id: codBody.order_id, link_locale: "zh-TW", boundary: "production Next; signed MOCK IdP; synthetic local TLS/CONNECT; no provider or deployment DNS/TLS acceptance"}, null, 2), {mode: 0o600});
   if (process.env.LC_LINK_POINTS_CONTROL) await runOrderPointsSpec();
