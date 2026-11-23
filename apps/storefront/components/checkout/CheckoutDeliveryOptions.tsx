@@ -1,9 +1,10 @@
 "use client";
 
-// Purpose: render the checkout delivery selector and its pickup/free-shipping hints.
+// Purpose: render the checkout delivery section, selector and pickup/free-shipping hints.
 // Depends on: validated Option DTOs, localized storefront copy and shared money/shipping formatters.
 // Used by: CheckoutFlow's delivery section; the parent owns selection and quote invalidation.
 // Invariants: unavailable rows stay disabled; shipping progress is a hint, never authority for server quote amounts.
+import { useRef } from "react";
 import { deliveryOptionGroups, type Locale } from "@live-commerce/i18n";
 import { isUnavailable, optionKey, type Option, type OptionRow } from "../../lib/purchase";
 import { purchaseCopy } from "../../lib/purchase-copy";
@@ -12,7 +13,7 @@ import { fmt, shopCopy } from "../../lib/shop-copy";
 import { freeShippingProgress } from "../../lib/shop-contract";
 import { formatMoney } from "../../lib/money";
 
-export default function CheckoutDeliveryOptions({ locale, options, method, chosen, subtotal, currency, disabled, expanded, onClose, onSelect }: {
+type DeliveryOptionsProps = {
   locale: Locale;
   options: OptionRow[];
   method: string;
@@ -23,7 +24,9 @@ export default function CheckoutDeliveryOptions({ locale, options, method, chose
   expanded: boolean;
   onClose: () => void;
   onSelect: (value: string) => void;
-}) {
+};
+
+function CheckoutDeliveryOptions({ locale, options, method, chosen, subtotal, currency, disabled, expanded, onClose, onSelect }: DeliveryOptionsProps) {
   const copy = purchaseCopy[locale];
   const groups = deliveryOptionGroups(locale, options);
   const progress = chosen && subtotal !== null
@@ -53,4 +56,42 @@ export default function CheckoutDeliveryOptions({ locale, options, method, chose
       </p>
     )}
   </>;
+}
+
+export default function CheckoutDeliverySection({
+  showChooser, chooserDisabled, onExpand, onLoad,
+  onQuote, quoteDisabled, onMore, moreDisabled, ...selector
+}: DeliveryOptionsProps & {
+  showChooser: boolean;
+  chooserDisabled: boolean;
+  onExpand: () => void;
+  onLoad: () => void;
+  onQuote?: () => void;
+  quoteDisabled: boolean;
+  onMore?: () => void;
+  moreDisabled: boolean;
+}) {
+  const copy = purchaseCopy[selector.locale];
+  const section = useRef<HTMLElement>(null);
+
+  function chooseDelivery() {
+    onExpand();
+    requestAnimationFrame(() => {
+      document.getElementById("delivery")?.focus();
+      section.current?.scrollIntoView({ block: "start" });
+    });
+    if (!selector.options.length) onLoad();
+  }
+
+  return (
+    <section className="delivery-section" data-selected={!!selector.chosen} ref={section} aria-labelledby="delivery-title">
+      <h2 id="delivery-title">{copy.deliveryTitle}</h2>
+      <div className="checkout-entry-delivery-controls">
+        {selector.options.length ? <CheckoutDeliveryOptions {...selector} /> : <p>{copy.noDelivery}</p>}
+        {showChooser && <button type="button" aria-controls="delivery" disabled={chooserDisabled} onClick={chooseDelivery}>{copy.delivery}</button>}
+        {onQuote && <button type="button" disabled={quoteDisabled} onClick={onQuote}>{copy.quote}</button>}
+      </div>
+      {onMore && <button disabled={moreDisabled} onClick={onMore}>{copy.more}</button>}
+    </section>
+  );
 }

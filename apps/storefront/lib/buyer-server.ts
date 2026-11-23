@@ -3,6 +3,7 @@
 // Used by: /api/buyer catch-all route (app/api/buyer/[...path]/route.ts) and CI BFF tests.
 // Invariants: server-resolved published origin and scope; no generic proxy, client scope, raw diagnostics, PII logs, credential disclosure or mutation/contact retry.
 import { type BuyerReturnBody, type BuyerReturnFields, buyerReturnBodies, buyerReturnRoute, isBuyerReturnMutation, validBuyerReturnBody, validBuyerReturnResponse } from "./buyer-returns.ts";
+import { BUYER_UUID as UUID, type BuyerQuery, validQuery } from "./buyer-query.ts";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
 import { readAdSignals, readAdTouch } from "./ad-touch.ts";
@@ -53,7 +54,6 @@ const COOKIE = "__Host-commerce_buyer";
 const MAX_JSON = 64 * 1024;
 const MAX_UPSTREAM = 1024 * 1024;
 const INBOUND_DEADLINE = 12_000;
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const KEY = /^[A-Za-z0-9_.:-]{8,128}$/;
 const TOKEN = /^[A-Za-z0-9_-]{43}$/;
 
@@ -92,7 +92,7 @@ type Route = {
     | "link"
     | "contact"
     | BuyerReturnBody;
-  query?: "catalog" | "options" | "orders" | "purchaseCart";
+  query?: BuyerQuery;
   session?: string;
   payment?: "view" | "prepare" | "handoff" | "refresh" | "cancel";
   orderID?: string;
@@ -471,58 +471,6 @@ function route(
   };
 }
 
-function validQuery(rawURL: string, kind?: Route["query"]): string | null {
-  const mark = rawURL.indexOf("?");
-  if (mark < 0) return "";
-  if (!kind) return null;
-  const raw = rawURL.slice(mark + 1).split("#", 1)[0];
-  if (kind === "purchaseCart") {
-    const prefix = "buy_now_id=";
-    return raw.startsWith(prefix) && UUID.test(raw.slice(prefix.length)) ? `?${raw}` : null;
-  }
-  if (
-    !raw ||
-    raw.length > 2048 ||
-    raw.includes(";") ||
-    raw.includes("+") ||
-    raw.split("&").some((part) => !part || !part.includes("="))
-  )
-    return null;
-  const allowed =
-    kind === "catalog"
-      ? ["product_id", "limit", "cursor"]
-      : kind === "orders"
-        ? ["limit", "cursor"]
-        : ["market_id", "country", "limit", "cursor"];
-  const seen = new Set<string>();
-  for (const part of raw.split("&")) {
-    const at = part.indexOf("=");
-    let name: string, value: string;
-    try {
-      name = decodeURIComponent(part.slice(0, at));
-      value = decodeURIComponent(part.slice(at + 1));
-    } catch {
-      return null;
-    }
-    if (!allowed.includes(name) || seen.has(name) || !value) return null;
-    seen.add(name);
-    if ((name === "product_id" || name === "market_id") && !UUID.test(value))
-      return null;
-    if (name === "country" && !/^[A-Z]{2}$/.test(value)) return null;
-    if (
-      name === "limit" &&
-      (!/^[0-9]{1,3}$/.test(value) || +value < 1 || +value > 100)
-    )
-      return null;
-    if (
-      name === "cursor" &&
-      (value.length > 1024 || !/^[A-Za-z0-9_-]+$/.test(value))
-    )
-      return null;
-  }
-  return `?${raw}`;
-}
-
 async function readBounded(
   stream: ReadableStream<Uint8Array> | null,
   limit: number,
@@ -671,13 +619,11 @@ function matchesShape(value: unknown, shape: Shape): boolean {
 
 // Checks beyond key/type shape for the CVS bodies (exact key sets, allowlisted return_path) and the checkout
 // payment_mode enum. Go re-validates everything; this keeps malformed input off the private transport.
-const UUID_TEXT =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 function extraShapeOK(shape: Shape, parsed: unknown): boolean {
   const v = parsed as Record<string, unknown>;
-  if (v.buy_now_id !== undefined && !UUID_TEXT.test(String(v.buy_now_id))) return false;
+  if (v.buy_now_id !== undefined && !UUID.test(String(v.buy_now_id))) return false;
   if (shape === shapes.buyNow)
-    return UUID_TEXT.test(String(v.sku_id)) && Number.isSafeInteger(v.quantity) && Number(v.quantity) >= 1 && Number(v.quantity) <= 99;
+    return UUID.test(String(v.sku_id)) && Number.isSafeInteger(v.quantity) && Number(v.quantity) >= 1 && Number(v.quantity) <= 99;
   if (shape === shapes.contact) return validContactBody(v);
   if (shape === shapes.quote)
     return (
@@ -700,7 +646,7 @@ function extraShapeOK(shape: Shape, parsed: unknown): boolean {
   if (
     Object.keys(v).length !== Object.keys(shape).length - (v.buy_now_id === undefined ? 1 : 0) ||
     (v.cart_version as number) < 1 ||
-    !UUID_TEXT.test(String(v.market_id)) ||
+    !UUID.test(String(v.market_id)) ||
     !/^[a-z][a-z0-9_-]{0,39}$/.test(String(v.service_code))
   )
     return false;

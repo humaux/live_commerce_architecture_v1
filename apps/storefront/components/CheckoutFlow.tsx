@@ -26,7 +26,7 @@ import CheckoutPendingReview from "./checkout/CheckoutPendingReview";
 import CheckoutQuoteAmounts from "./checkout/CheckoutQuoteAmounts";
 import CheckoutAddressFields from "./checkout/CheckoutAddressFields";
 import { emptyOrderFields, type OrderFields } from "../lib/order-fields";
-import CheckoutDeliveryOptions from "./checkout/CheckoutDeliveryOptions";
+import CheckoutDeliverySection from "./checkout/CheckoutDeliveryOptions";
 import PromoCode from "./PromoCode";
 import OrderHistory from "./OrderHistory";
 import { CartLineDetails, useCartDetails } from "./CartLines";
@@ -124,7 +124,6 @@ export default function CheckoutFlow({
   const currentContext = useRef("");
   const currentOrder = useRef<Order | null>(null);
   const working = useRef(false);
-  const deliveryRef = useRef<HTMLElement>(null);
   const quoteRef = useRef<HTMLElement>(null);
   const footerRef = useRef<HTMLElement>(null);
   const [footerHeight, setFooterHeight] = useState(180);
@@ -606,44 +605,16 @@ export default function CheckoutFlow({
               <div hidden={inReview && !detailsOpen}><CartLineDetails locale={locale} view={lineView} readOnly compact={entry} /></div>
             </section>
             {entry && (
-              <section
-                className="delivery-section"
-                data-selected={!!chosen}
-                ref={deliveryRef}
-                aria-labelledby="delivery-title"
-              >
-                <h2 id="delivery-title">{copy.deliveryTitle}</h2>
-                <div className="checkout-entry-delivery-controls">
-                  {!options.length ? <p>{copy.noDelivery}</p> : (
-                    <CheckoutDeliveryOptions
-                      locale={locale} options={options} method={method} chosen={chosen}
-                      expanded={pickingMethod} onClose={() => setPickingMethod(false)}
-                      subtotal={quote ? null : subtotal} currency={cart.currency}
-                      disabled={busy || pending || orderLocked || error === "session"}
-                      onSelect={(value) => { if (value !== method) changeMethod(value); }}
-                    />
-                  )}
-                  {!detailsOpen && <button type="button" aria-controls="delivery" disabled={busy || pending || error === "session"} onClick={() => {
-                    setPickingMethod(true);
-                    requestAnimationFrame(() => {
-                      document.getElementById("delivery")?.focus();
-                      deliveryRef.current?.scrollIntoView({ block: "start" });
-                    });
-                    if (!options.length) void act(() => deliveryOptions());
-                  }}>{copy.delivery}</button>}
-                  {!quote && <button type="button" disabled={busy || pending || !chosen || error === "session"} onClick={requestQuote}>{copy.quote}</button>}
-                </div>
-                {optionCursor && (
-                  <button
-                    disabled={busy}
-                    onClick={() =>
-                      void act(() => deliveryOptions(optionCursor))
-                    }
-                  >
-                    {copy.more}
-                  </button>
-                )}
-              </section>
+              <CheckoutDeliverySection locale={locale} options={options} method={method} chosen={chosen}
+                expanded={pickingMethod} onClose={() => setPickingMethod(false)}
+                subtotal={quote ? null : subtotal} currency={cart.currency}
+                disabled={busy || pending || orderLocked || error === "session"}
+                onSelect={(value) => { if (value !== method) changeMethod(value); }}
+                showChooser={!detailsOpen} chooserDisabled={busy || pending || error === "session"}
+                onExpand={() => setPickingMethod(true)} onLoad={() => void act(() => deliveryOptions())}
+                onQuote={quote ? undefined : requestQuote} quoteDisabled={busy || pending || !chosen || error === "session"}
+                onMore={optionCursor ? () => void act(() => deliveryOptions(optionCursor)) : undefined} moreDisabled={busy}
+              />
             )}
             {entry && !quote && !pendingKind && chosen?.delivery_kind === "home" && <section className="address-section" aria-label={v2.recipient}>
               <h2>{v2.recipient}</h2>
