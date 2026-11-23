@@ -345,7 +345,7 @@
     "tests/foundation/buyer_comms_gate_lookup_test.go": "39d67e4294fbcad59aa822e4680e1f95c7916aa327234c1cf972567d2cdfbcea",
     "tests/foundation/buyer_comms_gate_test.go": "8cbcf76afaa80896a9514efa29f34737b477e5c0e34acbfe47ec4271e0fb9220",
     "tests/foundation/buyer_comms_smoke_test.go": "31293abb3631bc5fc0264faf318e85be7cf8c590f9862d7575d78ce6a90c4af0",
-    "tests/foundation/buyer_current_destination_test.go": "7fdde9c5be82cc22be221ef9ae46f274ddd75bb96900469d4e7b2342ccef2fda",
+    "tests/foundation/buyer_current_destination_test.go": "3262a8034bae441d7bfaa2b5ad3fbf89ce6ecb75916b31aee1d6b30c30a9249d",
     "tests/foundation/buyer_destination_test.go": "b137eb44d69abed64c93768e69b75715e036e770f62e8612db40ebce35edc32e",
     "tests/foundation/buyer_http_test.go": "921589dd1d5a5e38f255d2f0a594cbf4050487c88951ea72dcf274f3a766c201",
     "tests/foundation/buyer_kept_preflight_test.go": "6157aeb116576c22be45f89f77974b2e161ce9307e81255f6f488bb0e4f4de5f",

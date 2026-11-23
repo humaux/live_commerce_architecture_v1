@@ -154,7 +154,7 @@ func oneHeader(r *http.Request, name string) (string, bool) {
 func forbiddenInput(r *http.Request) bool {
 	queryRoute := r.URL != nil && r.Method == http.MethodGet && r.URL.EscapedPath() == r.URL.Path &&
 		(r.URL.Path == "/v1/buyer/catalog" || r.URL.Path == "/v1/buyer/checkout-options" || r.URL.Path == "/v1/buyer/orders" || r.URL.Path == v2Prefix+"products" ||
-			purchaseCartQueryRoute(matchRoute(r.URL.Path).kind) ||
+			(purchaseCartQueryRoute(matchRoute(r.URL.Path).kind) && purchaseCartIDFromQuery(r.URL.RawQuery) != "") ||
 			(matchRoute(r.URL.Path).kind == mediaRoute && (r.URL.RawQuery == "w=360" || r.URL.RawQuery == "w=720" || r.URL.RawQuery == "w=1080")))
 	if r.URL == nil || r.URL.ForceQuery || (!queryRoute && r.URL.RawQuery != "") {
 		return true
@@ -172,6 +172,13 @@ func forbiddenInput(r *http.Request) bool {
 
 func purchaseCartQueryRoute(kind routeKind) bool {
 	return kind == destinationRoute || kind == destinationItemRoute || kind == quoteRoute
+}
+
+func purchaseCartIDFromQuery(raw string) string {
+	if value, ok := strings.CutPrefix(raw, "buy_now_id="); ok && command.ValidID(value) {
+		return value
+	}
+	return ""
 }
 
 func catalogRequest(raw string) (storefront.CatalogRequest, error) {
@@ -553,12 +560,8 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 	var out any
 	var err error
 	var buyNowID string
-	if r.Method == http.MethodGet && purchaseCartQueryRoute(selected.kind) && r.URL.RawQuery != "" {
-		if value, ok := strings.CutPrefix(r.URL.RawQuery, "buy_now_id="); ok && command.ValidID(value) {
-			buyNowID = value
-		} else {
-			return command.ErrInvalid
-		}
+	if r.Method == http.MethodGet && purchaseCartQueryRoute(selected.kind) {
+		buyNowID = purchaseCartIDFromQuery(r.URL.RawQuery)
 	}
 	switch selected.kind {
 	case paymentRoute, paymentPrepareRoute, paymentHandoffRoute, paymentRefreshRoute, paymentCancelRoute:
