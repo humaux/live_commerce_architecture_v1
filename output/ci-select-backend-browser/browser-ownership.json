@@ -562,7 +562,7 @@
     "tests/foundation/operations_queue_helpers_test.go": "7eee77df06aca17c52faa83776ad09702e0eb49df1803926c5fca2557917a7be",
     "tests/foundation/operations_queue_test.go": "3dd314537a9d3fb54fcdcd412db054ce05a4bdb25522fda878ebf5989911c80c",
     "tests/foundation/ops_polish_test.go": "58668a076bb60c09b7dcf365f54de8a3003a00b5b35480e9f4eaade286b88a51",
-    "tests/foundation/order_amendment_test.go": "f60d39b1d30fda446d0ec177a8027989debe42acbcb12c3fde6ce091cc5d8162",
+    "tests/foundation/order_amendment_test.go": "23efea63c55ff1a8d5e52fcc0de299a448d000b906ba8c4eb2b3c44b9ffb135c",
     "tests/foundation/order_attempt_abort_service_test.go": "23408cd32f9b9761dc09fc9f5102e83ac34a141922adcbbf3b085c2fc32ef622",
     "tests/foundation/order_attempt_abort_test.go": "d47b7376611366dba21a8e9acd15ffa23364d07a8ab95001561ce7e4c1ac371b",
     "tests/foundation/order_attempt_admission_replay_test.go": "a0260772e8613e6cd19ef3c618f63733af14f135830b52d35850a0b664e40c60",

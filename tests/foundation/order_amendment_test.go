@@ -58,6 +58,30 @@ func TestHomeCODAmendmentProviderHold(t *testing.T) {
 	}
 }
 
+func TestHomeCODAmendmentPrepaidHold(t *testing.T) {
+	e := rfxNew(t)
+	e.startWorker(t)
+	paid := e.payMore(t, e.storeFor(t))
+	e.grant(t, paid, "orders:amend")
+	path := "/v1/admin/stores/" + paid.store() + "/orders/" + paid.order
+	status, raw, _ := e.call("POST", path+"/amendment/review", paid.token(),
+		map[string]string{"Content-Type": "application/json"},
+		`{"expected_revision":1,"recipient":{"line1":"Synthetic rejected change"}}`)
+	if status != 409 || cofCode(sraJSON(raw)) != "state_changed" {
+		t.Fatalf("prepaid refusal: %d %s", status, raw)
+	}
+	var revision, revisions, paymentAttempts int
+	if err := e.f.owner.QueryRow(context.Background(), `SELECT o.order_revision,
+		(SELECT count(*) FROM checkout.order_revisions r WHERE r.order_id=o.id),
+		(SELECT count(*) FROM checkout.payment_attempts p WHERE p.order_id=o.id)
+		FROM checkout.orders o WHERE o.id=$1`, paid.order).Scan(&revision, &revisions, &paymentAttempts); err != nil {
+		t.Fatal(err)
+	}
+	if revision != 1 || revisions != 0 || paymentAttempts != 1 {
+		t.Fatalf("prepaid refusal changed facts: revision=%d history=%d attempts=%d", revision, revisions, paymentAttempts)
+	}
+}
+
 func TestHomeCODAmendment(t *testing.T) {
 	e := tcvNew(t)
 	e.grantCreator("orders:read", "orders:amend", "fulfillment:write")
@@ -196,6 +220,16 @@ func TestHomeCODAmendment(t *testing.T) {
 		if status, out, _ := e.mcall(e.token(), "POST", strings.TrimSuffix(path, "/shipment")+"/amendment/review", "", address); status != 409 ||
 			cofCode(out) != "state_changed" {
 			t.Fatalf("amendment after recorded dispatch: %d %v", status, out)
+		}
+		if status, _, raw := e.record(e.token(), order, t04Key("r03-collected"), "PENDING", "collected"); status != 200 {
+			t.Fatalf("record synthetic collection: %d %s", status, raw)
+		}
+		if status, out, _ := e.mcall(e.token(), "POST", strings.TrimSuffix(path, "/shipment")+"/amendment/review", "", address); status != 409 ||
+			cofCode(out) != "state_changed" {
+			t.Fatalf("amendment after collected COD: %d %v", status, out)
+		}
+		if n := e.count(`SELECT count(*) FROM checkout.order_revisions WHERE order_id=$1`, order); n != 0 {
+			t.Fatalf("dispatch/collection refusal wrote %d revisions", n)
 		}
 	})
 }
