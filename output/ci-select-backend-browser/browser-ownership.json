@@ -668,7 +668,7 @@
     "tests/foundation/payuni_phase2b_test.go": "35f458df275b49dd792ac637718c8c4cbf5b049780f540a999b537b341e93a15",
     "tests/foundation/payuni_removal_test.go": "28656f826f0ea1409131d635de56af23b54705d62b63665a35be83928f447e9f",
     "tests/foundation/pg_teardown_test.go": "d377236265136dba172d93881a5c7a561bafc0a7cdc149213a543e3bc9ef9fae",
-    "tests/foundation/pick_list_test.go": "7bdf97ed53ae576620588b6e47a53ab7ac3cd75148aca99f637899cca9f64574",
+    "tests/foundation/pick_list_test.go": "a7d1f50e3be7f726b9213b8101e7ad5e049f46dca52f7591f8d6bdb0772f4e79",
     "tests/foundation/platform_operator_authority_test.go": "a3e09eb717fd914d1f7c2641ed501e94d0ef75b39f24d4f56b85df2372212b02",
     "tests/foundation/platform_operator_inflight_test.go": "b664bff16cf944ff0ec8dbdd312071a25b2abcd59576f6c47df58d388a1e06bd",
     "tests/foundation/platform_operator_test.go": "eb1ea5a4042b4f4589180b022505361216baf9e7c6f18cc596321a47b8b211d5",

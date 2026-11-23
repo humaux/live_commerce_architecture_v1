@@ -561,6 +561,12 @@ BEGIN
    '''principal_id'',v.principal_id) ORDER BY v.version',
    '''principal_id'',v.principal_id) || CASE WHEN v.order_revision IS NULL THEN ''{}''::jsonb
      ELSE jsonb_build_object(''order_revision'',v.order_revision) END ORDER BY v.version'),
+  -- The p_export branch emits a revisionless carrier file; the SKU pick list is informational.
+  ('fulfillment.read_pick_list(bytea,uuid,uuid[],uuid,boolean)',
+   'fulfillment.manual_shipment_eligible(s.tenant_id,p_store,o.id)',
+   'fulfillment.manual_shipment_eligible(s.tenant_id,p_store,o.id)
+      AND (o.payment_mode IS DISTINCT FROM ''cash_on_delivery''
+        OR o.snapshot#>>''{destination,kind}'' IS DISTINCT FROM ''home'')'),
   ('identity.export_unshipped_orders(bytea,uuid,integer)',
    'AND o.commercial_state IN (''CONFIRMED'',''AWAITING_COLLECTION'')',
    'AND o.commercial_state IN (''CONFIRMED'',''AWAITING_COLLECTION'') AND o.payment_mode<>''cash_on_delivery''')
