@@ -15,19 +15,18 @@ BEGIN
   (SELECT string_agg(quote_literal(p),',') FROM unnest(permissions||ARRAY['orders:amend']) p));
 END $$;
 
--- R03 admits explicit grants only. The owner/admin bundles otherwise expand with the live catalogue.
-CREATE OR REPLACE FUNCTION identity.staff_role_permissions(p_role text)
-RETURNS text[] LANGUAGE sql STABLE SET search_path=pg_catalog AS $$
- SELECT CASE p_role
-  WHEN 'owner' THEN array_remove(identity.staff_permission_catalogue(),'orders:amend')
-  WHEN 'admin' THEN ARRAY(SELECT x FROM unnest(identity.staff_permission_catalogue()) x WHERE x NOT IN ('billing:manage','orders:amend'))
-  WHEN 'live_operator' THEN ARRAY['store:read','live:read','live:manage','catalog:read','orders:read','inventory:read']
-  WHEN 'fulfilment' THEN ARRAY['store:read','orders:read','fulfillment:write','orders:export','inventory:read','inventory:write','inventory:reserve']
-  WHEN 'viewer' THEN ARRAY(SELECT x FROM unnest(identity.staff_permission_catalogue()) x WHERE x LIKE '%:read')
- END
-$$;
+-- Preserve the effective baseline bundles, including role-specific PII and inventory rules.
+-- Only the catalogue input of the existing role function excludes the explicit R03 grant.
+DO $$
+DECLARE d text; catalogue constant text := 'identity.staff_permission_catalogue()';
+BEGIN
+ d:=pg_get_functiondef('identity.staff_role_permissions(text)'::regprocedure);
+ IF (length(d)-length(replace(d,catalogue,'')))<>3*length(catalogue) THEN
+  RAISE EXCEPTION 'R03 staff role bundle baseline drift'; END IF;
+ EXECUTE replace(d,catalogue,'array_remove('||catalogue||',''orders:amend'')');
+END $$;
 COMMENT ON FUNCTION identity.staff_role_permissions(text) IS
- 'Default store role bundles. orders:amend is explicit only (R03), and admin also excludes billing:manage.';
+ 'Default store role bundles preserve the live-console role rules. orders:amend requires an explicit grant (R03).';
 
 ALTER TABLE checkout.orders ADD COLUMN order_revision bigint NOT NULL DEFAULT 1 CHECK(order_revision>0);
 GRANT SELECT(order_revision) ON checkout.orders TO commerce_auth;
