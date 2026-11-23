@@ -51,8 +51,8 @@ export async function prepareR04({ page, openCheckout, evidence, viewport }) {
   await expect(page.getByTestId("cvs-store-name")).toContainText(store.name);
   await expect(page.getByTestId("cvs-store-address")).toHaveText(store.address);
   await expect(change).toBeVisible();
-  await expect(page.getByTestId("delivery-kind-cvs")).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByTestId("delivery-kind-home")).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByTestId("delivery-kind-cvs")).toBeChecked();
+  await expect(page.getByTestId("delivery-kind-home")).not.toBeChecked();
   await page.screenshot({ path: path.join(evidence, `r04-${viewport}-selected-a.png`), fullPage: true });
   await expect(hint, "R04 hides the next-step hint once A is shown").toHaveCount(0);
   const [write] = await Promise.all([page.waitForResponse(responseFor("PUT", "destination")), confirmCheckoutAddress(page)]);
@@ -105,7 +105,7 @@ export async function prepareR04({ page, openCheckout, evidence, viewport }) {
 
       await page.getByRole("button", { name: "重新選擇配送", exact: true }).click();
       const home = page.getByTestId("delivery-kind-home"), pickup = page.getByTestId("delivery-kind-cvs");
-      await expect(pickup).toHaveAttribute("aria-pressed", "true");
+      await expect(pickup).toBeChecked();
       await home.click();
       const line1 = page.locator('.address-section input[name="line1"]');
       await line1.fill("合成配送測試地址");
