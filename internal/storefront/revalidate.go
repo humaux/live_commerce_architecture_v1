@@ -22,6 +22,10 @@ import (
 // after later destination or balance waits, the caller must recheck expiry
 // immediately before its first durable hold write. This function never writes.
 func RevalidateQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, quoteID string, cartVersion int64) (out Quote, err error) {
+	return RevalidateCheckoutQuote(ctx, tx, s, quoteID, cartVersion, "")
+}
+
+func RevalidateCheckoutQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, quoteID string, cartVersion int64, buyNowID string) (out Quote, err error) {
 	if !command.ValidID(quoteID) || cartVersion < 1 {
 		return out, command.ErrInvalid
 	}
@@ -32,7 +36,7 @@ func RevalidateQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, quoteID stri
 		return Quote{}, err
 	}
 
-	cart, err := readCart(ctx, tx, s, false)
+	cart, err := readCart(ctx, tx, s, buyNowID, false)
 	if err != nil {
 		return Quote{}, err
 	}

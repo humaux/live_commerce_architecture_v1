@@ -56,6 +56,8 @@ var routeRows = []routeEntry{
 	{Method: http.MethodGet, Path: "/v1/buyer/checkout-options", kind: optionsRoute},
 	{Method: http.MethodGet, Path: "/v1/buyer/cart", kind: cartRoute},
 	{Method: http.MethodPut, Path: "/v1/buyer/cart", kind: cartRoute},
+	{Method: http.MethodPost, Path: "/v1/buyer/buy-now", kind: buyNowCreateRoute},
+	{Method: http.MethodGet, Path: "/v1/buyer/buy-now/{id}", kind: buyNowReadRoute},
 	{Method: http.MethodPost, Path: "/v1/buyer/quotes", kind: quotesRoute},
 	{Method: http.MethodGet, Path: "/v1/buyer/destination", kind: destinationRoute},
 	{Method: http.MethodPut, Path: "/v1/buyer/destination", kind: destinationRoute},

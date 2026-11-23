@@ -50,6 +50,10 @@ func lriPre0032Fixture(t *testing.T) *testFixture {
 	if miCount(t, f.owner, `SELECT count(*) FROM public.lc_schema_migrations WHERE version IN ('0032_legacy_river_isolation.sql','post_river/0005_legacy_river_isolation.sql')`) != 0 {
 		t.Fatal("historical fixture crossed 0032 boundary")
 	}
+	if miCount(t, f.owner, `SELECT count(*) FROM information_schema.columns
+	 WHERE table_schema='storefront' AND table_name='carts' AND column_name IN ('cart_kind','checkout_only')`) != 0 {
+		t.Fatal("historical fixture installed modern cart columns before seeding")
+	}
 	// taiwan-cvs-logistics-v1 (post_river/0017): the current checkout Go calls the 10-argument begin_hold, which this old boundary
 	// (8-argument 0013 body, no CVS schema) cannot host. A SECURITY INVOKER shim keeps the card-order path of these historical
 	// fixtures exercising the old body unchanged; the extra arguments carry nothing an old schema could act on and the two result keys are the card-order constants.
@@ -78,8 +82,8 @@ func lriPre0032Fixture(t *testing.T) *testFixture {
 // each object (same name and signature as the real migration, no behaviour beyond what an old order can carry), only
 // when it is absent, exactly like the begin_hold shim in lriPre0032Fixture. Every legacy gate upgrades through
 // lriApply, which drops the shims whose migration is not yet recorded right before Apply (the real ADD COLUMN / CREATE
-// FUNCTION have no IF NOT EXISTS). Column shims only ever hold NULL (no legacy fixture sets a threshold or a claim
-// origin; the 0109 flag shim only ever holds its default true); lriApply refuses to drop one that holds data (held = SQL returning the count of non-default values).
+// FUNCTION have no IF NOT EXISTS). Column shims only hold NULL or the old schema's implicit defaults; lriApply refuses
+// to drop one that holds data (held = SQL returning the count of non-default values).
 var lriShims = []struct{ migration, exists, add, held, drop string }{
 	{"0088_checkout_offline.sql",
 		`SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='pricing' AND table_name='policy_versions' AND column_name='free_shipping_threshold_minor')`,
@@ -114,6 +118,18 @@ var lriShims = []struct{ migration, exists, add, held, drop string }{
 		 COMMENT ON COLUMN storefront.cart_lines.claim_line_version IS 'lri_prehead_0113_test_only';`,
 		`SELECT count(*) FROM storefront.cart_lines WHERE claim_line_version IS NOT NULL`,
 		`ALTER TABLE storefront.cart_lines DROP COLUMN claim_line_version`},
+	// Historical carts already have one row per owner. Supply only the two
+	// constants the current ordinary-cart predicate needs to seed a real order.
+	{"0171_order_attempt_provenance.sql",
+		`SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='storefront' AND table_name='carts' AND column_name='cart_kind')`,
+		`ALTER TABLE storefront.carts ADD COLUMN cart_kind text NOT NULL DEFAULT 'storefront' CHECK (cart_kind='storefront')`,
+		`SELECT count(*) FROM storefront.carts WHERE cart_kind IS DISTINCT FROM 'storefront'`,
+		`ALTER TABLE storefront.carts DROP COLUMN cart_kind`},
+	{"0230_storefront_buy_now.sql",
+		`SELECT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='storefront' AND table_name='carts' AND column_name='checkout_only')`,
+		`ALTER TABLE storefront.carts ADD COLUMN checkout_only boolean NOT NULL DEFAULT false CHECK (NOT checkout_only)`,
+		`SELECT count(*) FROM storefront.carts WHERE checkout_only IS DISTINCT FROM false`,
+		`ALTER TABLE storefront.carts DROP COLUMN checkout_only`},
 }
 
 const lriAttributionMarker = "lri_prehead_0113_test_only"

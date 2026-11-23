@@ -13,11 +13,13 @@ export const CLICK_VARIANTS = [
   { viewport: "desktop", size: { width: 1586, height: 992 }, locale: "en", mobile: false },
 ];
 /** Every buyer route of docs/engineering/ui-architecture.md section 4 that the click sweep must open at every variant. */
-export const STOREFRONT_ROUTES = ["/", "/products", "/collections", "/collections/[slug]", "/products/[slug]", "/search", "/cart", "/checkout", "/orders/lookup", "/orders/[orderID]", "/orders/[orderID]/return", "/order-link", "/claim", "/legal/anti-fraud", "/legal/[slug]", "/privacy", "/data-deletion", "/contact", "/pages/[slug]", "/replays", "/replays/[sessionID]"];
-/** Ordinary storefront walk in registry order. The caller owns the three cart-bearing click flows.
+export const BUY_NOW_ROUTE = "/checkout/buy-now/[cartID]";
+export const STOREFRONT_CART_ROUTES = ["/cart", "/checkout", BUY_NOW_ROUTE, "/orders/[orderID]", "/orders/[orderID]/return"];
+export const STOREFRONT_ROUTES = ["/", "/products", "/collections", "/collections/[slug]", "/products/[slug]", "/search", ...STOREFRONT_CART_ROUTES, "/orders/lookup", "/order-link", "/claim", "/legal/anti-fraud", "/legal/[slug]", "/privacy", "/data-deletion", "/contact", "/pages/[slug]", "/replays", "/replays/[sessionID]"];
+/** Ordinary storefront walk in registry order. The caller owns the cart-bearing click flows.
  * Fixture templates are explicit: a new dynamic route must never navigate to a literal placeholder.
  */
-export function storefrontWalk(facts, chrome, main, routes = STOREFRONT_ROUTES) {
+export function storefrontWalk(facts, chrome, main = [], routes = STOREFRONT_ROUTES) {
   const fixtureSlug = (value, route) => {
     if (typeof value !== "string" || !value.trim() || /[\[\]]/.test(value)) throw new Error(`storefront fixture missing for ${route}`);
     return value;
@@ -26,7 +28,7 @@ export function storefrontWalk(facts, chrome, main, routes = STOREFRONT_ROUTES) 
     if (typeof value !== "string" || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(value)) throw new Error(`storefront fixture missing for ${route}`);
     return value;
   };
-  return routes.filter(route => !["/cart", "/checkout", "/orders/[orderID]", "/orders/[orderID]/return"].includes(route)).map(route => {
+  return routes.filter(route => !STOREFRONT_CART_ROUTES.includes(route)).map(route => {
     let path = route === "/" ? "" : route;
     switch (route) {
       case "/collections/[slug]": path = `/collections/${fixtureSlug(facts.collections?.[0]?.slug, route)}`; break;
@@ -37,7 +39,7 @@ export function storefrontWalk(facts, chrome, main, routes = STOREFRONT_ROUTES) 
       case "/replays/[sessionID]": path = `/replays/${fixtureUUID(facts.replay, route)}`; break;
       default: if (/[\[\]]/.test(route)) throw new Error(`unsupported storefront route template: ${route}`);
     }
-    return { route, path, ...(route === "/" ? { scopes: [chrome, ...main] } : {}),
+    return { route, path, ...(route === "/" && chrome ? { scopes: [chrome, ...main] } : {}),
       ...(["/order-link", "/claim"].includes(route) ? { expectDegraded: true } : {}) };
   });
 }

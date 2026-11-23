@@ -1,3 +1,6 @@
+// Purpose: append and revalidate immutable buyer destination snapshots.
+// Depends on: the authenticated buyer transaction and fulfillment pickup facts.
+// Used by: buyerhttp and checkout placement.
 package storefront
 
 import (
@@ -24,6 +27,7 @@ type HomeAddress struct {
 }
 
 type DestinationInput struct {
+	BuyNowID        string      `json:"buy_now_id,omitempty"`
 	ExpectedVersion int64       `json:"expected_version"`
 	CartVersion     int64       `json:"cart_version"`
 	Kind            string      `json:"kind"`
@@ -62,7 +66,7 @@ func SetDestination(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, i
 		if !validDestinationInput(in) {
 			return command.ErrInvalid
 		}
-		cart, err := readCart(ctx, tx, s, false)
+		cart, err := readCart(ctx, tx, s, in.BuyNowID, false)
 		if err != nil {
 			return err
 		}
@@ -149,7 +153,7 @@ func SetDestination(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, i
 	if err != nil {
 		return Destination{}, err
 	}
-	if out.Version != receipt.Version || out.CartVersion != in.CartVersion || out.Kind != in.Kind || out.Country != in.Country ||
+	if (in.BuyNowID != "" && out.CartID != in.BuyNowID) || out.Version != receipt.Version || out.CartVersion != in.CartVersion || out.Kind != in.Kind || out.Country != in.Country ||
 		out.RecipientName != in.RecipientName || out.Phone != in.Phone || out.HomeAddress != in.HomeAddress ||
 		destinationPickupID(out.Pickup) != in.PickupID {
 		return Destination{}, command.ErrConflict
@@ -173,17 +177,20 @@ func GetDestination(ctx context.Context, tx pgx.Tx, s buyer.Scope, id string) (D
 // It deliberately includes expired/stale selections: the head version is needed
 // for the next CAS write. This read neither renews validity nor proves that a
 // particular idempotency key committed. Checkout still revalidates every fact.
-func CurrentDestination(ctx context.Context, tx pgx.Tx, s buyer.Scope) (*Destination, error) {
+func CurrentDestination(ctx context.Context, tx pgx.Tx, s buyer.Scope, buyNowID string) (*Destination, error) {
 	if err := buyer.CheckScope(ctx, tx, s); err != nil {
 		return nil, err
+	}
+	if buyNowID != "" && !command.ValidID(buyNowID) {
+		return nil, command.ErrInvalid
 	}
 	var id string
 	var version int64
 	err := tx.QueryRow(ctx, `SELECT h.destination_id::text,h.current_version
 		FROM storefront.destination_heads h JOIN storefront.carts c
 		ON c.tenant_id=h.tenant_id AND c.store_id=h.store_id AND c.owner_id=h.owner_id AND c.id=h.cart_id
-		WHERE h.tenant_id=$1 AND h.store_id=$2 AND h.owner_id=$3`,
-		s.TenantID, s.StoreID, s.OwnerID).Scan(&id, &version)
+		WHERE h.tenant_id=$1 AND h.store_id=$2 AND h.owner_id=$3 AND `+cartUse,
+		s.TenantID, s.StoreID, s.OwnerID, buyNowID).Scan(&id, &version)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -203,6 +210,10 @@ func CurrentDestination(ctx context.Context, tx pgx.Tx, s buyer.Scope) (*Destina
 // RevalidateDestination locks current inputs in checkout order. Callers with
 // later lock waits must check final database time again before a durable hold.
 func RevalidateDestination(ctx context.Context, tx pgx.Tx, s buyer.Scope, id string, cartVersion int64, country, kind string) (Destination, error) {
+	return RevalidateCheckoutDestination(ctx, tx, s, id, cartVersion, country, kind, "")
+}
+
+func RevalidateCheckoutDestination(ctx context.Context, tx pgx.Tx, s buyer.Scope, id string, cartVersion int64, country, kind, buyNowID string) (Destination, error) {
 	if err := buyer.CheckScope(ctx, tx, s); err != nil {
 		return Destination{}, err
 	}
@@ -213,7 +224,7 @@ func RevalidateDestination(ctx context.Context, tx pgx.Tx, s buyer.Scope, id str
 	if err != nil {
 		return Destination{}, err
 	}
-	cart, err := readCart(ctx, tx, s, false)
+	cart, err := readCart(ctx, tx, s, buyNowID, false)
 	if err != nil {
 		return Destination{}, err
 	}

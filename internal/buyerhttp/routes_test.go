@@ -20,7 +20,7 @@ func routeSample(pattern string) string {
 }
 
 func TestRouteTableEntriesAreDispatched(t *testing.T) {
-	if len(routeRows) != 53 { // 46 frozen legacy rows plus two FEAT-LIVE-REPLAY reads, four FEAT-BUYER-RMA return-request rows and one FEAT-CONTACT-STORE contact POST.
+	if len(routeRows) != 55 { // 53 prior routes plus Buy now create and read.
 		t.Fatalf("inventory changed: %d entries", len(routeRows))
 	}
 	seen := map[string]bool{}
@@ -90,6 +90,10 @@ func TestRouteTableMatchesLegacy(t *testing.T) {
 		} else if path == "/v1/buyer/contact-messages" {
 			// This exact new path has its own contract (storefront-v2 contact amendment); its cleaning aliases keep the old oracle.
 			want, contact = route{kind: contactRoute}, true
+		} else if path == "/v1/buyer/buy-now" {
+			want = route{kind: buyNowCreateRoute}
+		} else if id, ok := strings.CutPrefix(path, "/v1/buyer/buy-now/"); ok && id != "" && !strings.Contains(id, "/") {
+			want = route{kind: buyNowReadRoute, id: id}
 		}
 		if got != want {
 			t.Errorf("path %q: got %+v want %+v", path, got, want)
@@ -101,6 +105,11 @@ func TestRouteTableMatchesLegacy(t *testing.T) {
 			}
 			if contact {
 				wantMethod = method == http.MethodPost
+			}
+			if want.kind == buyNowCreateRoute {
+				wantMethod = method == http.MethodPost
+			} else if want.kind == buyNowReadRoute {
+				wantMethod = method == http.MethodGet
 			}
 			if allowed(got.kind, method) != wantMethod {
 				t.Errorf("method drift: %s %s", method, path)

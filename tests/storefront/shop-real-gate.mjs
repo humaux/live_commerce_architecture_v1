@@ -30,6 +30,7 @@ import { shopCopy } from "../../apps/storefront/lib/shop-copy.ts";
 import { measureMediaSizes } from "./media-sizes-perf.mjs";
 import { checkOfflineError } from "./offline-error.spec.ts";
 import { checkContactNative } from "./contact-native.spec.ts";
+import { checkBuyNow } from "./buy-now-gate.mjs";
 import { checkC7DraftCancel, checkC7Matrix } from "./buyer-browse-parity.spec.ts";
 
 const env = (name) => { const v = process.env[name]; assert(v, `${name} is required`); return v; };
@@ -106,6 +107,19 @@ try {
   });
   const proxyPort = await listen(proxy);
   browser = await launch({ headless: true, proxy: { server: `http://127.0.0.1:${proxyPort}` } });
+  if (process.env.LC_SFR_BUY_NOW === "true")
+    await checkBuyNow({ browser, origin, evidence, ctxOpts, engine, facts, control });
+  else await checkBrowse(next);
+} finally {
+  for (const c of children) c.kill("SIGTERM");
+  for (const s of sockets) s.destroy();
+  await browser?.close().catch(() => {});
+  edge?.close(); proxy?.close();
+  for (const l of logs) l.end();
+  await rm(certDir, { recursive: true, force: true });
+}
+
+async function checkBrowse(next) {
   await measureMediaSizes({ browser, origin, evidence, ctxOpts });
   const phone = () => browser.newContext(ctxOpts({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: "en" }));
   const noOverflow = (p) => p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
@@ -355,13 +369,6 @@ try {
 
   assert.equal(checkoutFailures.length, 0, checkoutFailures.join("\n"));
   console.log(`engine=${engine} cases=${cases} REAL-STACK (SANDBOX)`);
-} finally {
-  for (const c of children) c.kill("SIGTERM");
-  for (const s of sockets) s.destroy();
-  await browser?.close().catch(() => {});
-  edge?.close(); proxy?.close();
-  for (const l of logs) l.end();
-  await rm(certDir, { recursive: true, force: true });
 }
 
 // Follow the cart through its quoted entry and the distinct payment review, observing only native buyer requests.

@@ -78,6 +78,7 @@ type Service struct {
 }
 
 type Input struct {
+	BuyNowID string `json:"buy_now_id,omitempty"`
 	// Private BFF context, deliberately excluded from public JSON and the receipt digest.
 	AdTouch           *AdTouch   `json:"-"`
 	AdSignals         *AdSignals `json:"-"`
@@ -277,15 +278,15 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 		if err = advisory(callCtx, tx, "checkout.cart|"+scope.TenantID+"|"+scope.StoreID+"|"+scope.OwnerID); err != nil {
 			return err
 		}
-		quote, err := storefront.RevalidateQuote(callCtx, tx, scope, in.QuoteID, in.CartVersion)
+		quote, err := storefront.RevalidateCheckoutQuote(callCtx, tx, scope, in.QuoteID, in.CartVersion, in.BuyNowID)
 		if err != nil {
 			return err
 		}
 		var active bool
 		err = tx.QueryRow(callCtx, `SELECT EXISTS(SELECT 1 FROM checkout.orders WHERE tenant_id=$1 AND store_id=$2
 			AND owner_id=$3 AND cart_id=$4 AND cart_version=$5
-			AND commercial_state IN ('DRAFT','AWAITING_PAYMENT','AWAITING_TRANSFER','CONFIRMED','AWAITING_COLLECTION'))`,
-			scope.TenantID, scope.StoreID, scope.OwnerID, quote.CartID, quote.CartVersion).Scan(&active)
+			AND ($6 OR commercial_state IN ('DRAFT','AWAITING_PAYMENT','AWAITING_TRANSFER','CONFIRMED','AWAITING_COLLECTION')))`,
+			scope.TenantID, scope.StoreID, scope.OwnerID, quote.CartID, quote.CartVersion, in.BuyNowID != "").Scan(&active)
 		if err != nil {
 			return err
 		}
@@ -296,7 +297,7 @@ func (s *Service) Begin(ctx context.Context, token, storeID, key string, in Inpu
 		if err != nil {
 			return err
 		}
-		destination, err := storefront.RevalidateDestination(callCtx, tx, scope, in.DestinationID, in.CartVersion, quote.Policy.Country, historical.Kind)
+		destination, err := storefront.RevalidateCheckoutDestination(callCtx, tx, scope, in.DestinationID, in.CartVersion, quote.Policy.Country, historical.Kind, in.BuyNowID)
 		if err != nil {
 			return err
 		}
@@ -535,6 +536,7 @@ func (s *Service) Get(ctx context.Context, token, storeID, orderID string) (Orde
 
 func validInput(in Input) bool {
 	return command.ValidID(in.QuoteID) && command.ValidID(in.DestinationID) &&
+		(in.BuyNowID == "" || command.ValidID(in.BuyNowID)) &&
 		in.CartVersion > 0 && in.ServiceVersion > 0 && in.AllocationVersion > 0 &&
 		(in.PaymentMode == "" || in.PaymentMode == "card" || in.PaymentMode == "pay_at_pickup" || in.PaymentMode == "bank_transfer" || in.PaymentMode == "cash_on_delivery") &&
 		validBuyerEmail(in.BuyerEmail) && validLocale(in.Locale)

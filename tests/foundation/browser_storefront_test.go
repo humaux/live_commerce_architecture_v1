@@ -25,6 +25,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"syscall"
@@ -128,6 +129,7 @@ func TestBrowserStorefront(t *testing.T) {
 	admin := v2Admin{t: t, h: httpapi.NewHandler(f.runtime), token: f.tokens["a"], store: f.storeA1}
 	sdgGrant(t, f, f.tokens["a"], f.storeA1, "integration:read", "integration:manage")
 	var warehouse struct{ ID string }
+	var dripperSKU string
 	admin.do("POST", "/warehouses", t04Key("sfr-wh"), map[string]any{"name": "sfr-" + t04Tag()}, 200, &warehouse)
 
 	// ---- catalog, through the merchant API ------------------------------------------------------------------------------------
@@ -199,6 +201,9 @@ func TestBrowserStorefront(t *testing.T) {
 			}
 			var s v2SKU
 			admin.do("POST", "/skus", t04Key("sfr-sku-"+v.Code), sku, 200, &s)
+			if p.Key == "dripper" {
+				dripperSKU = s.ID
+			}
 			if p.Key == "c7_long_label" && len(v.Values) == 1 && v.Values[0] == c7LongOption {
 				facts.C7LongLabelSKU = s.ID
 			}
@@ -411,6 +416,14 @@ func TestBrowserStorefront(t *testing.T) {
 			apiDown.Store(true)
 		case "/api-up":
 			apiDown.Store(false)
+		case "/buy-now-price-rise", "/buy-now-price-restore":
+			// The only price mutation is on the known synthetic SKU in this isolated browser fixture.
+			delta := int64(100)
+			if r.URL.Path == "/buy-now-price-restore" {
+				delta = -delta
+			}
+			_, err = f.owner.Exec(r.Context(), `UPDATE catalog.skus SET price_minor=price_minor+$4,version=version+1
+				WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, f.tenantA, f.storeA1, dripperSKU, delta)
 		default:
 			http.NotFound(w, r)
 			return
@@ -430,77 +443,176 @@ func TestBrowserStorefront(t *testing.T) {
 	ordersBefore := countRows(t, f.owner, `SELECT (SELECT count(*) FROM checkout.orders WHERE store_id=$1)+(SELECT count(*) FROM inventory.reservations WHERE store_id=$1)`, f.storeA1)
 	ledgerBefore := countRows(t, f.owner, `SELECT count(*) FROM inventory.ledger WHERE store_id=$1`, f.storeA1)
 
-	cmd := exec.CommandContext(ctx, "node", "tests/storefront/shop-real-gate.mjs")
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	defer func() {
-		if cmd.Process != nil {
-			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+	orderFootprint := `SELECT (SELECT count(*) FROM checkout.orders WHERE store_id=$1)+(SELECT count(*) FROM inventory.reservations WHERE store_id=$1)`
+	stockFootprint := `SELECT count(*) FROM inventory.ledger WHERE store_id=$1`
+	launchBrowser := func(t *testing.T, evidence string, buyNow bool) []byte {
+		t.Helper()
+		cmd := exec.CommandContext(ctx, "node", "tests/storefront/shop-real-gate.mjs")
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+		defer func() {
+			if cmd.Process != nil {
+				_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+			}
+		}()
+		cmd.Dir = root
+		cmd.Env = browserEnvironment(map[string]string{
+			"LC_SFR_BUY_NOW":             strconv.FormatBool(buyNow),
+			"LC_MEDIA_SIZES_PHASE":       os.Getenv("LC_MEDIA_SIZES_PHASE"),
+			"LC_MEDIA_SIZES_BASELINE":    os.Getenv("LC_MEDIA_SIZES_BASELINE"),
+			"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_API_ORIGIN": h.server.URL, "COMMERCE_BUYER_BFF_KEY": h.key,
+			"COMMERCE_BUYER_COOKIE_KEY": brToken(), "COMMERCE_BUYER_SESSION_TTL": "3600",
+			"LC_SFR_EVIDENCE": evidence, "LC_SFR_FACTS": factsFile, "LC_SFR_CONTROL": control.URL, "LC_SFR_CONTROL_KEY": controlKey,
+		})
+		log := browserLog(t, filepath.Join(evidence, "shop-real-gate.log"))
+		cmd.Stdout, cmd.Stderr = log, log
+		if err := cmd.Run(); err != nil {
+			t.Fatalf("storefront real-stack gate failed: %v; evidence=%s", err, evidence)
 		}
-	}()
-	cmd.Dir = root
-	cmd.Env = browserEnvironment(map[string]string{
-		"LC_MEDIA_SIZES_PHASE":       os.Getenv("LC_MEDIA_SIZES_PHASE"),
-		"LC_MEDIA_SIZES_BASELINE":    os.Getenv("LC_MEDIA_SIZES_BASELINE"),
-		"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_API_ORIGIN": h.server.URL, "COMMERCE_BUYER_BFF_KEY": h.key,
-		"COMMERCE_BUYER_COOKIE_KEY": brToken(), "COMMERCE_BUYER_SESSION_TTL": "3600",
-		"LC_SFR_EVIDENCE": evidence, "LC_SFR_FACTS": factsFile, "LC_SFR_CONTROL": control.URL, "LC_SFR_CONTROL_KEY": controlKey,
-	})
-	log := browserLog(t, filepath.Join(evidence, "shop-real-gate.log"))
-	cmd.Stdout, cmd.Stderr = log, log
-	if err := cmd.Run(); err != nil {
-		t.Fatalf("storefront real-stack gate failed: %v; evidence=%s", err, evidence)
-	}
-	out, err := os.ReadFile(filepath.Join(evidence, "shop-real-gate.log"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !strings.Contains(string(out), "cases=9 ") {
-		t.Fatalf("the real-stack gate did not report all 9 cases; evidence=%s", evidence)
+		out, err := os.ReadFile(filepath.Join(evidence, "shop-real-gate.log"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return out
 	}
 
-	// OC-11: shop-real-gate.mjs runs tests/storefront/offline-error.spec.ts (error boundary + offline banner + read-only reload) after the nine cases.
-	if !strings.Contains(string(out), "OC11 error page:") {
-		t.Fatalf("offline-error.spec.ts did not report; evidence=%s", evidence)
-	}
+	t.Run("browse", func(t *testing.T) {
+		out := launchBrowser(t, evidence, false)
+		if !strings.Contains(string(out), "cases=9 ") {
+			t.Fatalf("the real-stack gate did not report all 9 cases; evidence=%s", evidence)
+		}
 
-	// tests/storefront/contact-native.spec.ts is actually awaited by shop-real-gate.mjs;
-	// this Go caller independently verifies its complete 61-case native contact ledger.
-	assertSFRContactLedger(t, evidence, string(out))
+		// OC-11: shop-real-gate.mjs runs tests/storefront/offline-error.spec.ts (error boundary + offline banner + read-only reload) after the nine cases.
+		if !strings.Contains(string(out), "OC11 error page:") {
+			t.Fatalf("offline-error.spec.ts did not report; evidence=%s", evidence)
+		}
 
-	// ---- independent PG readback ----------------------------------------------------------------------------------------------------
-	// Browsing, carts and quotes never place an order, hold stock or write the stock ledger (I05/§11.5: only checkout and payment move stock).
-	if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM checkout.orders WHERE store_id=$1)+(SELECT count(*) FROM inventory.reservations WHERE store_id=$1)`, f.storeA1); n != ordersBefore {
-		t.Errorf("orders+reservations %d -> %d: the storefront walk-through must not place an order or hold stock", ordersBefore, n)
-	}
-	if n := countRows(t, f.owner, `SELECT count(*) FROM storefront.store_contact_messages WHERE store_id=$1`, f.storeA1); n != contactBefore+1 {
-		t.Errorf("synthetic real contact write count = %d; expected baseline + 1", n)
-	}
-	if n := countRows(t, f.owner, `SELECT count(*) FROM inventory.ledger WHERE store_id=$1`, f.storeA1); n != ledgerBefore {
-		t.Errorf("inventory ledger rows %d -> %d: carts and quotes must not move stock", ledgerBefore, n)
-	}
-	if n := countRows(t, f.owner, `SELECT count(*) FROM control.storefront_publications WHERE tenant_id=$1 AND store_id=$2 AND published`, f.tenantA, f.storeA1); n != 1 {
-		t.Errorf("the gate must leave the store published (%d)", n)
-	}
-	var published, bound int
-	_ = f.owner.QueryRow(ctx, `SELECT (SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='merchant.storefront_published'),
+		// tests/storefront/contact-native.spec.ts is actually awaited by shop-real-gate.mjs;
+		// this Go caller independently verifies its complete 61-case native contact ledger.
+		assertSFRContactLedger(t, evidence, string(out))
+
+		// ---- independent PG readback ----------------------------------------------------------------------------------------------------
+		// Browsing, carts and quotes never place an order, hold stock or write the stock ledger (I05/§11.5: only checkout and payment move stock).
+		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM checkout.orders WHERE store_id=$1)+(SELECT count(*) FROM inventory.reservations WHERE store_id=$1)`, f.storeA1); n != ordersBefore {
+			t.Errorf("orders+reservations %d -> %d: the storefront walk-through must not place an order or hold stock", ordersBefore, n)
+		}
+		if n := countRows(t, f.owner, `SELECT count(*) FROM storefront.store_contact_messages WHERE store_id=$1`, f.storeA1); n != contactBefore+1 {
+			t.Errorf("synthetic real contact write count = %d; expected baseline + 1", n)
+		}
+		if n := countRows(t, f.owner, `SELECT count(*) FROM inventory.ledger WHERE store_id=$1`, f.storeA1); n != ledgerBefore {
+			t.Errorf("inventory ledger rows %d -> %d: carts and quotes must not move stock", ledgerBefore, n)
+		}
+		if n := countRows(t, f.owner, `SELECT count(*) FROM control.storefront_publications WHERE tenant_id=$1 AND store_id=$2 AND published`, f.tenantA, f.storeA1); n != 1 {
+			t.Errorf("the gate must leave the store published (%d)", n)
+		}
+		var published, bound int
+		_ = f.owner.QueryRow(ctx, `SELECT (SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='merchant.storefront_published'),
 		(SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='operator.domain_bound')`, f.storeA1).Scan(&published, &bound)
-	if published < 2 || bound != 1 {
-		t.Errorf("audit trail: merchant.storefront_published=%d (want >=2: publish, republish) operator.domain_bound=%d (want 1)", published, bound)
-	}
-	var c7Status string
-	if err := f.owner.QueryRow(ctx, `SELECT status FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, f.tenantA, f.storeA1, c7LongProductID).Scan(&c7Status); err != nil || c7Status != "draft" {
-		t.Errorf("c7_long_label final status = %q (err=%v); want draft", c7Status, err)
-	}
-	if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND status='active'`, f.tenantA, f.storeA1); n != facts.ActiveCount {
-		t.Errorf("active products after gate = %d; want %d", n, facts.ActiveCount)
-	}
-	if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND status='draft' AND slug IN ('secret-draft-mug','c7-long-option')`, f.tenantA, f.storeA1); n != 2 || countRows(t, f.owner, `SELECT count(*) FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND status='draft'`, f.tenantA, f.storeA1) != 2 {
-		t.Errorf("draft products after gate must be only secret-draft-mug and c7-long-option")
-	}
-	t.Logf("PASS: real-stack storefront shell; %d active products, %d collections; evidence=%s", facts.ActiveCount, len(facts.Collections), evidence)
+		if published < 2 || bound != 1 {
+			t.Errorf("audit trail: merchant.storefront_published=%d (want >=2: publish, republish) operator.domain_bound=%d (want 1)", published, bound)
+		}
+		var c7Status string
+		if err := f.owner.QueryRow(ctx, `SELECT status FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND id=$3`, f.tenantA, f.storeA1, c7LongProductID).Scan(&c7Status); err != nil || c7Status != "draft" {
+			t.Errorf("c7_long_label final status = %q (err=%v); want draft", c7Status, err)
+		}
+		if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND status='active'`, f.tenantA, f.storeA1); n != facts.ActiveCount {
+			t.Errorf("active products after gate = %d; want %d", n, facts.ActiveCount)
+		}
+		if n := countRows(t, f.owner, `SELECT count(*) FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND status='draft' AND slug IN ('secret-draft-mug','c7-long-option')`, f.tenantA, f.storeA1); n != 2 || countRows(t, f.owner, `SELECT count(*) FROM catalog.products WHERE tenant_id=$1 AND store_id=$2 AND status='draft'`, f.tenantA, f.storeA1) != 2 {
+			t.Errorf("draft products after gate must be only secret-draft-mug and c7-long-option")
+		}
+		t.Logf("PASS: real-stack storefront shell; %d active products, %d collections; evidence=%s", facts.ActiveCount, len(facts.Collections), evidence)
+	})
+	t.Run("buy-now", func(t *testing.T) {
+		// The storefront browse fixture stocks its products in a separate warehouse.
+		// Point the buyer-facing home service at that warehouse before placing orders.
+		allocation := b.allocation
+		allocation.ExpectedVersion, allocation.ExpectedServiceVersion = 1, 2
+		allocation.WarehouseIDs = []string{warehouse.ID}
+		if _, err := daSet(b.cqHarness, t04Key("sfr-buy-now-allocation"), allocation); err != nil {
+			t.Fatal(err)
+		}
+		ordersBefore := countRows(t, f.owner, orderFootprint, f.storeA1)
+		ledgerBefore := countRows(t, f.owner, stockFootprint, f.storeA1)
+		dir := filepath.Join(evidence, "buy-now")
+		if err := os.Mkdir(dir, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		out := launchBrowser(t, dir, true)
+		if !strings.Contains(string(out), "BUY_NOW_ISOLATION desktop=PASS phone=PASS") {
+			t.Fatalf("both Buy now journeys must pass; evidence=%s", dir)
+		}
+		if n := countRows(t, f.owner, orderFootprint, f.storeA1); n != ordersBefore+4 {
+			t.Fatalf("desktop and phone must each add one order and one hold: %d -> %d", ordersBefore, n)
+		}
+		if n := countRows(t, f.owner, stockFootprint, f.storeA1); n != ledgerBefore+2 {
+			t.Fatalf("desktop and phone must each reserve one SKU: %d -> %d", ledgerBefore, n)
+		}
+		assertSFRBuyNowOrders(t, ctx, f, dir)
+	})
 }
 
 const sfrOrigin = "https://shop.example"
+
+func assertSFRBuyNowOrders(t *testing.T, ctx context.Context, f *testFixture, evidence string) {
+	t.Helper()
+	type line struct {
+		SKUID    string `json:"sku_id"`
+		Quantity int64  `json:"quantity"`
+	}
+	type cart struct {
+		ID      string `json:"id"`
+		Version int64  `json:"version"`
+		Items   []line `json:"items"`
+	}
+	for _, device := range []string{"desktop", "phone"} {
+		raw, err := os.ReadFile(filepath.Join(evidence, device+"-buy-now.json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var proof struct {
+			RegularEdit   cart   `json:"regularEdit"`
+			DestinationID string `json:"destinationID"`
+			Quote         struct {
+				ID string `json:"id"`
+			} `json:"quote"`
+			Order struct {
+				ID     string `json:"id"`
+				CartID string `json:"cart_id"`
+				Lines  []line `json:"lines"`
+				Amount struct {
+					Shipping int64 `json:"shipping_minor"`
+					Total    int64 `json:"total_minor"`
+				} `json:"amount"`
+			} `json:"order"`
+		}
+		if err = json.Unmarshal(raw, &proof); err != nil || len(proof.Order.Lines) != 1 || len(proof.RegularEdit.Items) != 1 {
+			t.Fatalf("%s incomplete browser business receipt: %v", device, err)
+		}
+		selected, regular := proof.Order.Lines[0], proof.RegularEdit.Items[0]
+		var matches bool
+		if err = f.owner.QueryRow(ctx, `SELECT o.cart_id=$3 AND o.quote_id=$4 AND o.destination_id=$5
+		 AND o.creator_kind='storefront' AND o.create_attempt_id IS NULL AND direct.checkout_only AND NOT regular.checkout_only
+		 AND direct.creator_session_id=regular.creator_session_id AND direct.creator_session_id=o.creator_session_id
+		 AND direct.version=o.cart_version AND regular.version=$7 AND o.total_minor=$8
+		 AND (o.snapshot->'quote'->'amount'->>'shipping_minor')::bigint=$9
+		 AND jsonb_array_length(o.snapshot->'quote'->'lines')=1
+		 AND o.snapshot->'quote'->'lines'->0->>'sku_id'=$10 AND (o.snapshot->'quote'->'lines'->0->>'quantity')::bigint=$11
+		 AND (SELECT count(*) FROM storefront.cart_lines WHERE cart_id=regular.id)=1
+		 AND EXISTS(SELECT 1 FROM storefront.cart_lines WHERE cart_id=regular.id AND sku_id=$12 AND quantity=$13)
+		 AND (SELECT count(*) FROM checkout.orders WHERE cart_id=direct.id)=1
+		 AND (SELECT count(*) FROM checkout.command_results WHERE order_id=o.id)=1
+		 AND EXISTS(SELECT 1 FROM inventory.ledger WHERE reservation_id=o.id AND kind='RESERVE' AND sku_id=$10::uuid AND delta_reserved=$11)
+		 FROM checkout.orders o JOIN storefront.carts direct ON direct.id=o.cart_id
+		 JOIN storefront.carts regular ON regular.id=$6 AND regular.tenant_id=o.tenant_id AND regular.store_id=o.store_id AND regular.owner_id=o.owner_id
+		 WHERE o.store_id=$1 AND o.id=$2`, f.storeA1, proof.Order.ID, proof.Order.CartID, proof.Quote.ID,
+			proof.DestinationID, proof.RegularEdit.ID, proof.RegularEdit.Version, proof.Order.Amount.Total, proof.Order.Amount.Shipping,
+			selected.SKUID, selected.Quantity, regular.SKUID, regular.Quantity).Scan(&matches); err != nil || !matches {
+			t.Fatalf("%s order, destination, quote, inventory and regular cart PG readback: %t %v", device, matches, err)
+		}
+		t.Logf("BUY_NOW_PG device=%s order=%s quote=%s regular_cart=%s regular_version=%d quantity=%d shipping_minor=%d total_minor=%d", device,
+			proof.Order.ID, proof.Quote.ID, proof.RegularEdit.ID, proof.RegularEdit.Version, selected.Quantity, proof.Order.Amount.Shipping, proof.Order.Amount.Total)
+	}
+}
 
 // assertSFRContactLedger binds registration to each original contact case, not an aggregate-only PASS.
 // The native helper owns actions; this independent Go caller owns the mandatory case set and evidence admission.

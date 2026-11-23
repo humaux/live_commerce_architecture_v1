@@ -68,6 +68,8 @@ is limited to the explicit catalog/options GET amendments below.
 | GET /v1/buyer/checkout-options | no body; bounded market_id/country/limit/cursor query | Current scoped checkout options; options amendment governs strict parsing/projection |
 | GET /v1/buyer/cart | no body | GetCart / cart projection |
 | PUT /v1/buyer/cart | storefront.CartInput | SetCart / cart projection |
+| POST /v1/buyer/buy-now | `sku_id`, integer `quantity` between 1 and 99 | CreateBuyNow / checkout-only cart projection |
+| GET /v1/buyer/buy-now/{id} | no body or query | GetBuyNow / checkout-only cart projection |
 | POST /v1/buyer/quotes | storefront.QuoteInput | CreateQuote / quote projection |
 | GET /v1/buyer/quotes/{id} | no body | GetQuote / quote projection |
 | PUT /v1/buyer/destination | storefront.DestinationInput | SetDestination / destination projection |

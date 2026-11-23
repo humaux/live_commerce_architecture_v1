@@ -11,6 +11,35 @@
 //     hittable (Playwright actionability: no overlap), destructive/irreversible controls only up to their confirmation then cancelled
 //   - Ledger: JSON + Markdown click ledger; matchKnown(): the explicit known-defect list (no silent allowlist: unmatched entries fail too)
 import { writeFile } from "node:fs/promises";
+import assert from "node:assert/strict";
+
+const CART_UUID = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/;
+
+export async function openStorefrontBuyNow(page, origin, locale, product) {
+  await page.goto(`${origin}/${locale}/products`);
+  await page.getByTestId("product-card").filter({ hasText: product.title }).first().click();
+  await page.waitForURL(`${origin}/${locale}/products/${product.slug}`);
+  const sku = await page.getByTestId("product-buy").getAttribute("data-sku");
+  assert.match(sku ?? "", CART_UUID, "the storefront selected a real SKU");
+  const [response] = await Promise.all([
+    page.waitForResponse((res) => res.url() === `${origin}/api/buyer/buy-now` && res.request().method() === "POST"),
+    page.getByTestId("buy-now").click(),
+  ]);
+  assert.ok(response.ok(), `Buy now command returned HTTP ${response.status()}`);
+  const cart = await response.json();
+  assert.match(cart.id ?? "", CART_UUID, "Buy now returned a real cart ID");
+  assert.deepEqual(cart.items.map((line) => [line.sku_id, line.quantity]), [[sku, 1]]);
+  const url = `${origin}/${locale}/checkout/buy-now/${cart.id}`;
+  const requireState = async (checkoutPage) => {
+    await checkoutPage.waitForURL(url);
+    const lines = checkoutPage.getByTestId("cart-line").filter({ visible: true });
+    await lines.first().waitFor({ state: "visible" });
+    assert.equal(await lines.count(), 1, "the Buy now checkout shows only its selected line");
+    assert.equal(await lines.first().getAttribute("data-sku"), sku);
+  };
+  await requireState(page);
+  return { url, requireState };
+}
 
 // ---- classification (pure; unit tested in click-sweep-lib.test.mjs) ----------------------------------------------------------------------------------
 // Destructive or irreversible: exercised only up to the confirmation step, then cancelled (owner list: delete, archive, void, disconnect, refund,

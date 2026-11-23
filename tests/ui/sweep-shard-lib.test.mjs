@@ -10,7 +10,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync, readdirSync, readFileSyn
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { discover, verifyClick, verifyVisual } from "./sweep-aggregate.mjs";
-import { CLICK_VARIANTS, JOURNEY_PAGES, STOREFRONT_ROUTES, VISUAL_LOCALES, VISUAL_VIEWPORTS, assignShards, loadWeights, parseShard, planClick, routeId, shardReport, storefrontWalk } from "./sweep-shard-lib.mjs";
+import { BUY_NOW_ROUTE, CLICK_VARIANTS, JOURNEY_PAGES, STOREFRONT_ROUTES, VISUAL_LOCALES, VISUAL_VIEWPORTS, assignShards, loadWeights, pageKey, parseShard, planClick, routeId, shardReport, storefrontWalk } from "./sweep-shard-lib.mjs";
 
 const weights = await loadWeights();
 
@@ -28,7 +28,7 @@ function executorWalk(routes = STOREFRONT_ROUTES, facts = walkFacts) {
     (f, c, m) => storefrontWalk(f, c, m, routes), facts, walkChrome, walkMain);
 }
 
-test("storefront executor: exact legacy mappings plus four unique click-only routes", () => {
+test("storefront executor: exact legacy mappings and Buy now through the buyer session", () => {
   const expected = [
     { route: "/", path: "", scopes: [walkChrome, ...walkMain] },
     { route: "/products", path: "/products" },
@@ -50,13 +50,15 @@ test("storefront executor: exact legacy mappings plus four unique click-only rou
   ];
   assert.deepEqual(executorWalk(), expected);
   const special = ["/cart", "/checkout", "/orders/[orderID]", "/orders/[orderID]/return"];
-  const all = [...executorWalk().map(r => r.route), ...special];
-  assert.equal(all.length, 21);
-  assert.equal(new Set(all).size, 21);
+  const all = [...executorWalk().map(r => r.route), ...special, BUY_NOW_ROUTE];
+  assert.equal(all.length, 22);
+  assert.equal(new Set(all).size, 22);
   assert.deepEqual(all.sort(), [...STOREFRONT_ROUTES].sort());
   const raw = readFileSync("tests/ui/click-sweep.mjs", "utf8");
   const session = raw.slice(raw.indexOf("async function storefrontSession"), raw.indexOf("// ---- journeys by clicks"));
   for (const route of special) assert.equal(session.split(`await sweep({ route: "${route}"`).length - 1, 1);
+  assert.equal(session.split("await sweep({ route: BUY_NOW_ROUTE").length - 1, 1);
+  assert.ok(session.indexOf("await openStorefrontBuyNow") < session.indexOf("await sweep({ route: BUY_NOW_ROUTE"));
   assert.ok(session.indexOf('await addToCartByClicks') < session.indexOf('route: "/cart"'));
   assert.ok(session.indexOf('route: "/cart"') < session.indexOf('route: "/checkout"'));
   assert.ok(session.indexOf('await placeCodOrder') < session.indexOf('route: "/orders/[orderID]"'));
@@ -149,13 +151,17 @@ test("planClick: for every N the shards partition the whole universe (every regi
     const plan = planClick(adminRoutes, weights, of);
     const seen = new Map();
     for (const p of plan.pages) { const i = plan.owner.get(p.unit); assert.ok(i >= 1 && i <= of, p.page); assert.ok(!seen.has(p.page), `duplicate page ${p.page}`); seen.set(p.page, i); }
-    assert.equal(seen.size, (adminRoutes.length + 21) * CLICK_VARIANTS.length, "admin routes + 21 storefront routes, each at all variants");
+    assert.equal(seen.size, (adminRoutes.length + 22) * CLICK_VARIANTS.length, "admin routes + 22 storefront routes, each at all variants");
     for (const r of adminRoutes) for (const v of CLICK_VARIANTS) assert.ok(seen.has(`admin|${r.path}|${v.viewport}|${v.locale}`), `${r.path} ${v.viewport}/${v.locale}`);
     for (const [j, unit] of Object.entries(plan.journeyOwner)) assert.ok(plan.owner.has(unit), `journey ${j} has an owning unit`);
     // J2/J3 read the COD order of the storefront desktop/zh-TW session: same shard, always
     assert.equal(plan.owner.get(plan.journeyOwner.J23), plan.owner.get("storefront|desktop|zh-TW"));
     // a storefront walk is never split: all its pages sit in one shard
-    for (const v of CLICK_VARIANTS) assert.equal(new Set(plan.pages.filter((p) => p.unit === `storefront|${v.viewport}|${v.locale}`).map((p) => plan.owner.get(p.unit))).size, 1);
+    for (const v of CLICK_VARIANTS) {
+      const unit = `storefront|${v.viewport}|${v.locale}`;
+      assert.equal(new Set(plan.pages.filter((p) => p.unit === unit).map((p) => plan.owner.get(p.unit))).size, 1);
+      assert.equal(seen.get(pageKey("storefront", BUY_NOW_ROUTE, v.viewport, v.locale)), plan.owner.get(unit));
+    }
   }
 });
 

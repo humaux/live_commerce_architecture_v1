@@ -38,6 +38,8 @@ add the claim token as defined in their owning contract.
 | `GET /v1/buyer/checkout-options` | B + O + C; K forbidden | buyer-checkout-options-v1.md §Single surface and existing authority; §Stable bounded pagination and query admission |
 | `GET /v1/buyer/cart` | B + O + C; K forbidden | buyer-http-v1.md §Routes and strict input; §Explicit response projections |
 | `PUT /v1/buyer/cart` | B + O + C; K required | buyer-http-v1.md §Routes and strict input; §Explicit response projections |
+| `POST /v1/buyer/buy-now` | B + O + C; K required | buyer-checkout-v1.md §Buy now |
+| `GET /v1/buyer/buy-now/{id}` | B + O + C; K forbidden | buyer-checkout-v1.md §Buy now |
 | `POST /v1/buyer/quotes` | B + O + C; K required | buyer-http-v1.md §Routes and strict input; §Explicit response projections |
 | `GET /v1/buyer/destination` | B + O + C; K forbidden | buyer-current-destination-v1.md (GET); buyer-destination-v1.md §Buyer snapshot (PUT) |
 | `PUT /v1/buyer/destination` | B + O + C; K required | buyer-current-destination-v1.md (GET); buyer-destination-v1.md §Buyer snapshot (PUT) |

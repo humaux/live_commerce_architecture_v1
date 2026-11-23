@@ -90,7 +90,7 @@ export const validCvsSelectionOpen = (v: unknown): v is CvsSelectionOpen =>
 
 // §5.2 allowlist: the page the buyer checks out on, /{locale}/checkout or the product form (amended with migration 0093, mirrored in
 // internal/checkout/cvs.go and fulfillment.open_cvs_selection); anything else is 422 bad_return_path in Go.
-export const RETURN_PATH = /^\/(?:zh-TW|zh-CN|en)\/(?:products\/[A-Za-z0-9_-]{1,64}|checkout)$/;
+export const RETURN_PATH = /^\/(?:zh-TW|zh-CN|en)\/(?:products\/[A-Za-z0-9_-]{1,64}|checkout(?:\/buy-now\/[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12})?)$/;
 export const validReturnPath = (v: unknown): v is string =>
   typeof v === "string" && RETURN_PATH.test(v);
 

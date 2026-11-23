@@ -58,7 +58,7 @@ func GetCart(ctx context.Context, tx pgx.Tx, s buyer.Scope) (Cart, error) {
 	if err := buyer.CheckScope(ctx, tx, s); err != nil {
 		return Cart{}, err
 	}
-	out, err := readCart(ctx, tx, s, false)
+	out, err := readCart(ctx, tx, s, "", false)
 	if err != nil {
 		return out, err
 	}
@@ -66,6 +66,73 @@ func GetCart(ctx context.Context, tx pgx.Tx, s buyer.Scope) (Cart, error) {
 		return Cart{}, err
 	}
 	return out, nil
+}
+
+type BuyNowInput struct {
+	SKUID    string `json:"sku_id"`
+	Quantity int64  `json:"quantity"`
+}
+
+// CreateBuyNow freezes a single public catalog selection in its own cart. The
+// receipt and the cart are committed together; the shared cart is never locked.
+func CreateBuyNow(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in BuyNowInput) (out Cart, err error) {
+	if in.Quantity > 99 {
+		return out, command.ErrInvalid
+	}
+	items, err := canonicalItems([]Item{{SKUID: in.SKUID, Quantity: in.Quantity}})
+	if err != nil {
+		return out, command.ErrInvalid
+	}
+	err = buyer.RunCommand(ctx, tx, s, "cart.buy_now", key, in, &out, func() error {
+		if err := tx.QueryRow(ctx, `SELECT currency FROM control.stores WHERE tenant_id=$1 AND id=$2`, s.TenantID, s.StoreID).Scan(&out.Currency); err != nil {
+			return notFound(err)
+		}
+		if _, err := lockCatalog(ctx, tx, s, out.Currency, items); err != nil {
+			return err
+		}
+		if err := tx.QueryRow(ctx, `INSERT INTO storefront.carts(tenant_id,store_id,owner_id,creator_session_id,currency,version,checkout_only)
+			VALUES($1,$2,$3,$4,$5,1,true) RETURNING id::text,version`, s.TenantID, s.StoreID, s.OwnerID, s.SessionID, out.Currency).Scan(&out.ID, &out.Version); err != nil {
+			return err
+		}
+		if _, err := tx.Exec(ctx, `INSERT INTO storefront.cart_lines(tenant_id,store_id,owner_id,cart_id,sku_id,quantity)
+			VALUES($1,$2,$3,$4,$5,$6)`, s.TenantID, s.StoreID, s.OwnerID, out.ID, in.SKUID, in.Quantity); err != nil {
+			return err
+		}
+		out.Items = items
+		return event(ctx, tx, s, out.ID, "", "cart.updated")
+	})
+	return out, err
+}
+
+func GetBuyNow(ctx context.Context, tx pgx.Tx, s buyer.Scope, id string) (Cart, error) {
+	if !command.ValidID(id) {
+		return Cart{}, command.ErrInvalid
+	}
+	if err := buyer.CheckScope(ctx, tx, s); err != nil {
+		return Cart{}, err
+	}
+	return readCart(ctx, tx, s, id, false)
+}
+
+// CheckPurchaseCart binds a historical quote or destination read to the selected use.
+func CheckPurchaseCart(ctx context.Context, tx pgx.Tx, s buyer.Scope, cartID, buyNowID string) error {
+	if err := buyer.CheckScope(ctx, tx, s); err != nil {
+		return err
+	}
+	if !command.ValidID(cartID) || (buyNowID != "" && !command.ValidID(buyNowID)) {
+		return command.ErrInvalid
+	}
+	var found bool
+	err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM storefront.carts c
+		WHERE c.tenant_id=$1 AND c.store_id=$2 AND c.owner_id=$3 AND `+cartUse+` AND c.id=$5)`,
+		s.TenantID, s.StoreID, s.OwnerID, buyNowID, cartID).Scan(&found)
+	if err != nil {
+		return err
+	}
+	if !found {
+		return command.ErrNotFound
+	}
+	return nil
 }
 
 // applyCartLivePrices stamps the live unit price on every cart line whose claim origin claims.live_prices
@@ -101,7 +168,7 @@ func SetCart(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in CartI
 		if err := LockCartOwner(ctx, tx, s); err != nil {
 			return err
 		}
-		current, err := readCart(ctx, tx, s, true)
+		current, err := readCart(ctx, tx, s, "", true)
 		if err != nil {
 			return err
 		}
@@ -214,14 +281,25 @@ func carryOrigins(items []Item, existing, fresh map[string]ClaimOrigin) (map[str
 
 // A read lock prevents a READ COMMITTED header/line tear across two statements.
 // The absent GET has no row insertion, receipt, event or other durable write.
-func readCart(ctx context.Context, tx pgx.Tx, s buyer.Scope, write bool) (out Cart, err error) {
+const cartUse = `c.cart_kind='storefront' AND (CASE WHEN $4='' THEN NOT c.checkout_only
+	ELSE c.checkout_only AND c.id=nullif($4,'')::uuid END)`
+
+func readCart(ctx context.Context, tx pgx.Tx, s buyer.Scope, buyNowID string, write bool) (out Cart, err error) {
+	if buyNowID != "" && !command.ValidID(buyNowID) {
+		return out, command.ErrInvalid
+	}
 	out.Items = []Item{}
 	lock := " FOR SHARE"
 	if write {
 		lock = " FOR UPDATE"
 	}
-	err = tx.QueryRow(ctx, `SELECT id::text,currency,version FROM storefront.carts WHERE tenant_id=$1 AND store_id=$2 AND owner_id=$3`+lock, s.TenantID, s.StoreID, s.OwnerID).Scan(&out.ID, &out.Currency, &out.Version)
+	err = tx.QueryRow(ctx, `SELECT c.id::text,c.currency,c.version FROM storefront.carts c
+		WHERE c.tenant_id=$1 AND c.store_id=$2 AND c.owner_id=$3 AND `+cartUse+lock,
+		s.TenantID, s.StoreID, s.OwnerID, buyNowID).Scan(&out.ID, &out.Currency, &out.Version)
 	if errors.Is(err, pgx.ErrNoRows) {
+		if buyNowID != "" {
+			return out, command.ErrNotFound
+		}
 		err = tx.QueryRow(ctx, `SELECT currency FROM control.stores WHERE tenant_id=$1 AND id=$2`, s.TenantID, s.StoreID).Scan(&out.Currency)
 		return out, notFound(err)
 	}

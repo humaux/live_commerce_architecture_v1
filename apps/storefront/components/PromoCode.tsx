@@ -17,6 +17,7 @@ type Run = (work: (isCurrent: () => boolean) => Promise<void>) => Promise<void>;
 
 export default function PromoCode({
   context,
+  buyNowID,
   quote,
   locale,
   busy,
@@ -25,6 +26,7 @@ export default function PromoCode({
   money,
 }: {
   context: string;
+  buyNowID?: string;
   quote: Quote;
   locale: Locale;
   busy: boolean;
@@ -53,7 +55,7 @@ export default function PromoCode({
             method: quote.method,
             ...(code === null ? {} : { promo_code: code }),
           },
-        });
+        }, buyNowID);
         if (!isCurrent()) return;
         if (result.kind !== "quote") throw new BuyerClientError("invalid_response");
         onQuote(result.value);

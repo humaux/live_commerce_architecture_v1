@@ -117,6 +117,7 @@ export type QuoteWrite = {
 };
 export type Pending = { v: 1; context: string; key: string } & (
   | { kind: "cart"; body: CartWrite }
+  | { kind: "buy-now"; body: Pick<Item, "sku_id" | "quantity"> }
   | { kind: "next-cart"; body: CartWrite }
   | { kind: "quote"; body: QuoteWrite }
   | { kind: "destination"; body: DestinationMarker }

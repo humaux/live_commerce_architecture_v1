@@ -74,7 +74,7 @@ var (
 	// returnPathPattern: the ECPay map returns the buyer to exactly /{locale}/checkout (the storefront checkout page) or the legacy
 	// product form /{locale}/products/{id}. Same strictness as before (no query, no fragment, no extra segment, three locales).
 	// Mirrored byte for byte in migrations/0093 (open_cvs_selection and the cvs_selections CHECK): Go answers early, SQL is the authority.
-	returnPathPattern = regexp.MustCompile(`^/(zh-TW|zh-CN|en)/(products/[A-Za-z0-9_-]{1,64}|checkout)$`)
+	returnPathPattern = regexp.MustCompile(`^/(zh-TW|zh-CN|en)/(products/[A-Za-z0-9_-]{1,64}|checkout(/buy-now/([0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}))?)$`)
 	storeCodePattern  = regexp.MustCompile(`^([0-9]{4}|[0-9]{6}|[A-Z][0-9]{3})$`)
 	serviceCodeRx     = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,39}$`)
 )
@@ -82,6 +82,7 @@ var (
 // SelectionOpenInput is the exact POST /v1/buyer/cvs-selections body. return_origin is deliberately NOT a field: it is the
 // authenticated storefront origin of the request (§4.3 open_cvs_selection).
 type SelectionOpenInput struct {
+	BuyNowID    string `json:"buy_now_id,omitempty"`
 	CartVersion int64  `json:"cart_version"`
 	MarketID    string `json:"market_id"`
 	ServiceCode string `json:"service_code"`
@@ -105,10 +106,12 @@ type SelectionOpened struct {
 // stored, so a replay of the same key cannot re-derive it (SQL answers PT409 selection_replay_new_key and the client opens a new one).
 func (b *BuyerCVS) Open(ctx context.Context, token, storeID, key, origin string, mobile bool, in SelectionOpenInput) (SelectionOpened, error) {
 	if b == nil || !checkoutKey.MatchString(key) || in.CartVersion < 1 || !command.ValidID(in.MarketID) ||
-		!serviceCodeRx.MatchString(in.ServiceCode) || origin == "" || len(origin) > 261 {
+		!serviceCodeRx.MatchString(in.ServiceCode) || origin == "" || len(origin) > 261 ||
+		(in.BuyNowID != "" && !command.ValidID(in.BuyNowID)) {
 		return SelectionOpened{}, command.ErrInvalid
 	}
-	if !returnPathPattern.MatchString(in.ReturnPath) {
+	path := returnPathPattern.FindStringSubmatch(in.ReturnPath)
+	if path == nil || path[4] != in.BuyNowID {
 		return SelectionOpened{}, &fulfillment.CVSError{Status: 422, Code: "bad_return_path"}
 	}
 	if !b.cfg.ECPay.Enabled || b.cfg.PaymentEnvironment == "" {
@@ -133,6 +136,9 @@ func (b *BuyerCVS) Open(ctx context.Context, token, storeID, key, origin string,
 		ExpiresAt   time.Time `json:"expires_at"`
 	}
 	err = buyer.WithScope(ctx, b.pool, token, storeID, func(callCtx context.Context, tx pgx.Tx, scope buyer.Scope) error {
+		if _, err := tx.Exec(callCtx, `SELECT set_config('app.buy_now_cart_id',$1,true)`, in.BuyNowID); err != nil {
+			return err
+		}
 		var raw []byte
 		// fulfillment.open_cvs_selection: buyer scope, ACTIVE-domain origin, single enabled qualified profile, environment pin.
 		if err := tx.QueryRow(callCtx, `SELECT fulfillment.open_cvs_selection($1,$2::uuid,$3,$4,$5::bigint,$6::uuid,$7,$8,$9,$10,$11)`,
@@ -363,6 +369,7 @@ func (b *BuyerCVS) Verify(ctx context.Context, token, storeID, selectionID strin
 
 // StoreEntryInput is the exact POST /v1/buyer/cvs-stores body (§16.1).
 type StoreEntryInput struct {
+	BuyNowID     string `json:"buy_now_id,omitempty"`
 	CartVersion  int64  `json:"cart_version"`
 	MarketID     string `json:"market_id"`
 	ServiceCode  string `json:"service_code"`
@@ -384,7 +391,8 @@ type StoreEntered struct {
 // EnterStore resolves a typed code in the snapshot directory for a merchant without ECPay.
 // Legacy name/address stay accepted for wire compatibility but only SQL directory values are trusted.
 func (b *BuyerCVS) EnterStore(ctx context.Context, token, storeID, key string, in StoreEntryInput) (StoreEntered, error) {
-	if b == nil || !checkoutKey.MatchString(key) || in.CartVersion < 1 || !command.ValidID(in.MarketID) || !serviceCodeRx.MatchString(in.ServiceCode) {
+	if b == nil || !checkoutKey.MatchString(key) || in.CartVersion < 1 || !command.ValidID(in.MarketID) || !serviceCodeRx.MatchString(in.ServiceCode) ||
+		(in.BuyNowID != "" && !command.ValidID(in.BuyNowID)) {
 		return StoreEntered{}, command.ErrInvalid
 	}
 	if !storeCodePattern.MatchString(in.StoreCode) {
@@ -398,6 +406,9 @@ func (b *BuyerCVS) EnterStore(ctx context.Context, token, storeID, key string, i
 	tokenHash := sha256.Sum256([]byte(token))
 	var out StoreEntered
 	err := buyer.WithScope(ctx, b.pool, token, storeID, func(callCtx context.Context, tx pgx.Tx, scope buyer.Scope) error {
+		if _, err := tx.Exec(callCtx, `SELECT set_config('app.buy_now_cart_id',$1,true)`, in.BuyNowID); err != nil {
+			return err
+		}
 		var raw []byte
 		// fulfillment.record_buyer_cvs_store: BUYER_ENTERED, NULL principal, namespace buyer.<owner>; refused in ecpay_map mode.
 		if err := tx.QueryRow(callCtx, `SELECT fulfillment.record_buyer_cvs_store($1,$2::uuid,$3,$4,$5::bigint,$6::uuid,$7,$8,$9,$10)`,

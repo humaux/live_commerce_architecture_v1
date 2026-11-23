@@ -61,7 +61,9 @@ import {
   currentDestination,
   pendingPurchase,
   readPurchase,
-  validCart,
+  readCheckoutCart,
+  purchaseReadPath,
+  purchaseScope,
   validQuote,
   validDestinationWrite,
   writeDestination,
@@ -84,6 +86,7 @@ const noHome: HomeAddress = { region: "", city: "", postal_code: "", line1: "", 
 export default function OrderFlow({
   context,
   cart,
+  buyNowID,
   quote,
   recoveryCountry,
   locale,
@@ -107,6 +110,7 @@ export default function OrderFlow({
 }: {
   context: string;
   cart: Cart;
+  buyNowID?: string;
   quote: Quote | null;
   recoveryCountry: string | null;
   locale: Locale;
@@ -210,8 +214,8 @@ export default function OrderFlow({
     void (async () => {
       try {
         const [current, currentCart] = await Promise.all([
-          currentDestination(context),
-          readPurchase("cart", context, validCart),
+          currentDestination(context, buyNowID),
+          readCheckoutCart(context, buyNowID),
         ]);
         if (
           currentCart.id !== cart.id ||
@@ -238,7 +242,7 @@ export default function OrderFlow({
         if (!quote) return;
         // A fee refusal invalidates both reads. Publish neither until both are ready.
         const [currentQuote, found] = await Promise.all([
-          optionRefresh ? readPurchase(`quotes/${quote.id}`, context, validQuote) : Promise.resolve(quote),
+          optionRefresh ? readPurchase(purchaseReadPath(`quotes/${quote.id}`, buyNowID), context, validQuote) : Promise.resolve(quote),
           checkoutOption(context, quote),
         ]);
         const savedMode = sessionStorage.getItem(`commerce-checkout-mode-v2:${context}:${quote.id}`);
@@ -250,7 +254,7 @@ export default function OrderFlow({
         // due is hidden for non-COD modes (codFooter returns null), so a stale due is never shown or submitted.
         let latest = currentQuote;
         try {
-          latest = await refreshCodQuote(context, currentQuote, found);
+          latest = await refreshCodQuote(context, currentQuote, found, buyNowID);
         } catch (reason) {
           if (optionRefresh || selected === "cash_on_delivery" || (reason instanceof BuyerClientError && reason.status !== undefined))
             throw reason;
@@ -285,19 +289,19 @@ export default function OrderFlow({
       window.clearTimeout(timer);
       attempt.current = null;
     };
-  }, [context, quote?.id, country, cart.id, cart.version, optionRefresh, cvsResume]);
+  }, [context, buyNowID, quote?.id, country, cart.id, cart.version, optionRefresh, cvsResume]);
 
   useEffect(() => {
     let active = true;
     const recheck = async () => {
       setConfirmed(null);
       try {
-        const latest = await currentDestination(context);
+        const latest = await currentDestination(context, buyNowID);
         if (active) setHead(latest);
       } catch {}
     };
     const changed = (event: StorageEvent) => {
-      if (event.key === `commerce-purchase-pending-v1:${context}`)
+      if (event.key === `commerce-purchase-pending-v1:${purchaseScope(context, buyNowID)}`)
         void recheck();
     };
     window.addEventListener("storage", changed);
@@ -307,7 +311,7 @@ export default function OrderFlow({
       window.removeEventListener("storage", changed);
       window.removeEventListener("focus", recheck);
     };
-  }, [context]);
+  }, [context, buyNowID]);
 
   async function confirm(isCurrent: () => boolean) {
     const version = live.current;
@@ -341,7 +345,7 @@ export default function OrderFlow({
       setNotice("invalid");
       return;
     }
-    const pending = pendingPurchase(context);
+    const pending = pendingPurchase(context, buyNowID);
     let replace: string | undefined;
     if (pending?.kind === "destination") {
       if (
@@ -354,7 +358,7 @@ export default function OrderFlow({
       else replace = pending.key; // Explicit reconfirmation of the displayed head, never silent replay of lost PII.
     }
     try {
-      const saved = await writeDestination(context, body, replace);
+      const saved = await writeDestination(context, body, replace, buyNowID);
       if (!current()) return;
       setHead(saved);
       if (quote && Date.parse(quote.expires_at) > Date.now()) setConfirmed(saved);
@@ -362,14 +366,14 @@ export default function OrderFlow({
       attempt.current = null;
     } catch (reason) {
       if (current()) {
-        const waiting = pendingPurchase(context);
+        const waiting = pendingPurchase(context, buyNowID);
         if (waiting?.kind === "destination")
           attempt.current = { key: waiting.key, body };
         setNotice("uncertain");
         // Re-read the observed CAS head, but never replace typed fields or mark
         // it confirmed. A new intent requires the buyer's next explicit click.
         try {
-          const latest = await currentDestination(context);
+          const latest = await currentDestination(context, buyNowID);
           if (current()) setHead(latest);
         } catch {}
       }
@@ -429,6 +433,7 @@ export default function OrderFlow({
               locale={locale}
               option={cvsOption}
               cartVersion={cart.version}
+              buyNowID={buyNowID}
               recipient={{ recipient_name: fields.recipient_name, phone: fields.phone }}
               onRecipient={(next) => {
                 setFields({ ...fields, ...next });
@@ -581,6 +586,7 @@ export default function OrderFlow({
                   cvsOption || option.payment_modes !== undefined ? paymentMode : undefined,
                   typed,
                 ),
+                buyNowID,
               );
               void submitCheckoutConsents(context, consents); // never blocks the order (customers-billing-v1 U7)
               if (isCurrent() && version === live.current) onOrder(result);

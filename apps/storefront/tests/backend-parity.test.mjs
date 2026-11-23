@@ -48,7 +48,7 @@ test("design caps equal internal/design/schema.go (nav, sections, pages)", async
   assert.equal(d.pages.length, pages);
 });
 
-test("CVS snapshot store-code formats and return path equal Go (fulfillment/cvs_rules.go, migration 0093)", async () => {
+test("CVS snapshot store codes match Go and return paths match the active SQL CHECK", async () => {
   const go = await src("internal/fulfillment/cvs_rules.go");
   for (const [kinds, rule] of [
     [["cvs_711", "cvs_familymart", "cvs_okmart"], "storeCode6"],
@@ -59,11 +59,6 @@ test("CVS snapshot store-code formats and return path equal Go (fulfillment/cvs_
     assert.ok(go.includes(`case ${kinds.map((kind) => JSON.stringify(kind)).join(", ")}:\n\t\treturn ${rule}.MatchString(code)`), `${rule} Go kind dispatch`);
     for (const kind of kinds) assert.equal(CODE_RULES[kind].source, format[1], `${kind} regex source parity`);
   }
-  const sql = await src("migrations/0093_storefront_integration.sql");
-  const m = sql.match(/return_path ~ '([^']+)'/);
-  assert.ok(m, "return_path CHECK not found");
-  const norm = (re) => re.replaceAll("\\/", "/").replaceAll("?:", "");
-  assert.equal(norm(RETURN_PATH.source), norm(m[1]));
   assert.equal(validStoreCode("cvs_711", "123456"), true);
   assert.equal(validStoreCode("cvs_okmart", "123456"), true);
   assert.equal(validStoreCode("cvs_hilife", "1234"), true);
@@ -72,4 +67,38 @@ test("CVS snapshot store-code formats and return path equal Go (fulfillment/cvs_
   assert.equal(validStoreCode("cvs_711", "12345"), false);
   assert.equal(validStoreCode("cvs_hilife", "12345"), false);
   assert.equal(validStoreCode("cvs_hilife", "d123"), false);
+
+  const returnPathCheck = async (file) => {
+    const sql = await src(`migrations/${file}`);
+    const check = sql.match(/ADD CONSTRAINT cvs_selections_return_path_check\s+CHECK\s*\(\s*return_path ~ '([^']+)'\s*\)/);
+    assert.ok(check, `${file}: cvs_selections_return_path_check not found`);
+    return new RegExp(check[1]);
+  };
+  const historical = await returnPathCheck("0093_storefront_integration.sql");
+  const current = await returnPathCheck("0230_storefront_buy_now.sql");
+  const norm = (re) => re.source.replaceAll("\\/", "/").replaceAll("?:", "");
+  assert.equal(norm(RETURN_PATH), norm(current));
+
+  const id = "a12bcdef-0000-4000-8000-000000000001";
+  for (const locale of ["zh-TW", "zh-CN", "en"]) {
+    for (const path of [`/${locale}/checkout`, `/${locale}/products/item_01-A`]) {
+      for (const rule of [historical, current, RETURN_PATH]) assert.ok(rule.test(path), path);
+    }
+    const buyNow = `/${locale}/checkout/buy-now`;
+    assert.equal(historical.test(`${buyNow}/${id}`), false);
+    assert.equal(current.test(`${buyNow}/${id}`), true);
+    assert.equal(RETURN_PATH.test(`${buyNow}/${id}`), true);
+    for (const path of [
+      buyNow, `${buyNow}/`, `${buyNow}/${id.slice(1)}`, `${buyNow}/${id.toUpperCase()}`,
+      `${buyNow}/${id}/extra`, `${buyNow}/${id}?cart=1`,
+    ]) {
+      for (const rule of [historical, current, RETURN_PATH]) assert.equal(rule.test(path), false, path);
+    }
+  }
+  for (const path of [
+    "/fr/checkout", "//example.com/en/checkout", "/en/checkout?cart=1",
+    "/en/products/", `/en/products/${"P".repeat(65)}`,
+  ]) {
+    for (const rule of [historical, current, RETURN_PATH]) assert.equal(rule.test(path), false, path);
+  }
 });

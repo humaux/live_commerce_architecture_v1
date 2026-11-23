@@ -30,6 +30,7 @@ const en = {
   renew: "Reconnect",
   conflict:
     "Your cart or delivery settings changed. Reload the latest information and confirm your choices again.",
+  buyNowStock: "The selected quantity is no longer available. Return to the product and choose an available quantity.",
   savedCart:
     "Other items in your cart will be kept and included in the quotation.",
   deliveryTitle: "Delivery and quotation",
@@ -76,6 +77,7 @@ export const purchaseCopy: Record<Locale, Copy> = {
     session: "购物连接已过期，需要重新连接。重新连接不会取消已经创建的订单。",
     renew: "重新连接",
     conflict: "购物车或配送设置已变更。请重新加载最新信息，再确认选择。",
+    buyNowStock: "所选数量已超过可售库存。请返回商品页，重新选择数量。",
     savedCart: "购物车内其他商品将保留，并一同计入报价。",
     deliveryTitle: "收货方式",
     selectDelivery: "配送方式",
@@ -117,6 +119,7 @@ export const purchaseCopy: Record<Locale, Copy> = {
     session: "購物連線已過期，需要重新連線。重新連線不會取消已經建立的訂單。",
     renew: "重新連線",
     conflict: "購物車或配送設定已變更。請重新載入最新資訊，再確認選擇。",
+    buyNowStock: "所選數量已超過可售庫存。請返回商品頁，重新選擇數量。",
     savedCart: "購物車內其他商品將保留，並一同計入報價。",
     deliveryTitle: "收貨方式",
     selectDelivery: "配送方式",
