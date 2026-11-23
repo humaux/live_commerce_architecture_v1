@@ -391,10 +391,25 @@ parcel unless it sits in a group; cash-on-delivery and convenience-store (CVS) o
   Lock order is group -> order -> reservation -> balances, the same direction as `begin_parcel_group_shipment`.
 - **Returns** apply to shipped orders only and never change `fulfillment_state` or the shipment head; an order with a live RMA cannot be cancelled (`409 has_returns`).
 
-## Draft amendment R03 — order revision at print and dispatch
+<a id="draft-amendment-r03--order-revision-at-print-and-dispatch"></a>
 
-Status: **DRAFT for contract review**. Applies to the home COD scope in
-[merchant order revision](merchant-orders-v1.md#draft-amendment-r03--pre-dispatch-revision-of-a-home-cod-order).
+## Amendment R03 — order revision at print and dispatch
+
+Status: **Implementation contract effective on merge of PR #809. Implementation
+not delivered.** The conditions below apply to delivery of the implementation.
+Applies to the home COD scope in
+[merchant order revision](merchant-orders-v1.md#amendment-r03--pre-dispatch-revision-of-a-home-cod-order).
+
+**Baseline tested at `0ed2c13d3747cbeb4ddfbc500e044b58ea60e2ef`.** Browser print
+handoff left PostgreSQL facts unchanged. Manual shipment was recorded at version
+1 with collection pending. A stale shipment-head confirmation returned
+`409 version_changed`. The old preview could still be printed after shipment
+was recorded. Carrier handover was unknown.
+
+**R03 implementation verification: `NOT_RUN`.** This includes v1→v2 document
+invalidation, rejection of a dispatch confirmation based on old paper even when
+the shipment head matches, and both orders of the revision/dispatch race.
+
 The existing manual shipment head's `expected_version` remains the CAS for
 shipment records, corrections and voids. Order revision is a separate fence.
 A shipment head of 0 means no shipment record. It cannot identify the reviewed
@@ -424,7 +439,7 @@ correction and void operations keep their domain rules and do not substitute for
 an R03 confirmation. No additional warehouse write authority comes from
 `orders:read` or from a printable document.
 
-**Acceptance to freeze.** From the actual order list, open a pending synthetic
+**Implementation acceptance.** From the actual order list, open a pending synthetic
 COD order in the warehouse, prepare/print its v1 document, and confirm the print
 handoff leaves order, allocation, shipment and collection facts unchanged. Commit
 v2 from order detail and assert v1 cannot be reopened/generated for printing or

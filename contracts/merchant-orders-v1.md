@@ -194,12 +194,23 @@ access to the consumption ledger, session table or CVS tracking columns is allow
 KC03 explicitly enumerates the new claims helper, including its owner's implicit
 EXECUTE; its frozen table/column ACLs, LPC06 and TCV02 remain unchanged.
 
-## Draft amendment R03 — pre-dispatch revision of a home COD order
+<a id="draft-amendment-r03--pre-dispatch-revision-of-a-home-cod-order"></a>
 
-Status: **DRAFT for contract review**. Deployed behaviour remains as described
-above. The revision command, permissions and document fence are pending freeze.
-See [manual fulfilment](manual-fulfilment-v1.md#draft-amendment-r03--order-revision-at-print-and-dispatch)
+## Amendment R03 — pre-dispatch revision of a home COD order
+
+Status: **Implementation contract effective on merge of PR #809. Implementation
+not delivered.** The conditions below apply to delivery of the implementation.
+See [manual fulfilment](manual-fulfilment-v1.md#amendment-r03--order-revision-at-print-and-dispatch)
 for the consumer of the same order revision.
+
+**Baseline tested at `0ed2c13d3747cbeb4ddfbc500e044b58ea60e2ef`.** The real
+desktop and mobile order entry showed no item or recipient revision action for a
+synthetic home COD order. Go/PostgreSQL readback confirmed the due amount,
+committed stock and pending collection through the manual shipment workflow.
+
+**R03 implementation verification: `NOT_RUN`.** This includes v1→v2 revision,
+recipient changes, added units and their repricing and stock deltas, retry and
+concurrent edits or dispatch.
 
 - **Scope and authority.** The original order must belong to the authenticated
   active store and be home COD, `AWAITING_COLLECTION / PENDING /
@@ -211,12 +222,12 @@ for the consumer of the same order revision.
   R03. Resolve unknown facts through existing readback and reconciliation before
   reconsidering eligibility. A voided manual shipment alone does not establish
   that the parcel stayed in the warehouse.
-- **Admission.** Same-store `orders:read` plus proposed `orders:amend` is required
+- **Admission.** Same-store `orders:read` plus `orders:amend` is required
   to prepare or commit the edit. Additions also require `catalog:read` and
   `inventory:reserve`. The scoped order and principal come from server
   authentication. Check authority again after blocking locks, before release and
-  on replay. New permission has no default grants or historical backfill in this
-  draft. Merchant placement authority and `fulfillment:write` do not grant it.
+  on replay. The new permission has no default grants or historical backfill.
+  Merchant placement authority and `fulfillment:write` do not grant it.
   Keep the existing 401/403/opaque 404 boundary.
 - **Review and price.** A draft changes only home recipient/contact/address in
   the same market, service and currency, and/or adds positive SKU quantities.
@@ -269,8 +280,8 @@ for the consumer of the same order revision.
   Keep private revisions and receipts out of shared caches and recipient fields
   out of URLs and logs.
 
-**Acceptance to freeze.** Through the real list/detail and shipping entries on
-desktop and mobile, use isolated Go/PG, synthetic orders and mock logistics.
+**Implementation acceptance.** Through the real list/detail and shipping entries
+on desktop and mobile, use isolated Go/PG, synthetic orders and mock logistics.
 Capture independent order, inventory, fulfilment and collection/payment facts.
 
 | Case | Required observation |
