@@ -14,7 +14,7 @@
 import { useEffect, useRef, useState } from "react";
 import OrderPayment from "./OrderPayment";
 import { ConsentChoices, noConsentChoices, submitCheckoutConsents } from "./ConsentChoices";
-import CvsPickup, { CvsOrderStatus, type PickupHandle } from "./CvsPickup";
+import CvsPickup, { CvsOrderStatus, type CvsCheckoutDraft, type PickupHandle } from "./CvsPickup";
 import { ShipmentBlock } from "./ShipmentBlock";
 import BankTransfer from "./BankTransfer";
 import { CodAmount, CodOrderStatus } from "./CodOrderStatus";
@@ -27,7 +27,7 @@ import { bankTransferCopy } from "../lib/bank-transfer-copy";
 import { codCopy } from "../lib/cod-copy";
 import { checkoutCopy } from "../lib/checkout-copy";
 import CheckoutReview from "./checkout/CheckoutReview";
-import CheckoutAddressFields from "./checkout/CheckoutAddressFields";
+import CheckoutAddressFields, { CheckoutDestinationAddress } from "./checkout/CheckoutAddressFields";
 import CheckoutPaymentChoices from "./checkout/CheckoutPaymentChoices";
 import { checkoutOption } from "../lib/checkout-review";
 import { countryName } from "../lib/country-name";
@@ -105,6 +105,8 @@ export default function OrderFlow({
   detailsOpen = false,
   inReview, onContinue, entryDraft, onEntryDraftChange,
   cvsResume,
+  cvsDraft,
+  onCvsDraftChange,
   onCvsBrand,
   cvsKinds,
 }: {
@@ -132,6 +134,8 @@ export default function OrderFlow({
   onEntryDraftChange?: (fields: Fields) => void;
   onReviewState?: (state: { quoteID: string; ready: boolean; timing: string; quoteReady?: boolean; destinationReady?: boolean; submitting?: boolean; needsConfirm?: boolean }) => void;
   cvsResume?: CvsDraft;
+  cvsDraft?: CvsCheckoutDraft;
+  onCvsDraftChange?: (draft: CvsCheckoutDraft) => void;
   onCvsBrand?: (kind: CvsKind, draft: CvsDraft) => void;
   cvsKinds?: CvsKind[];
 }) {
@@ -139,7 +143,12 @@ export default function OrderFlow({
   // A destination journal intentionally stores no PII or quotation. A fresh
   // tab must still offer explicit address recovery when it has no quote ID.
   const country = quote?.country ?? recoveryCountry ?? "";
-  const [fields, setFields] = useState<Fields>(() => ({ ...(entryDraft ?? empty), ...(cvsResume ? { recipient_name: cvsResume.recipient_name, phone: cvsResume.phone } : {}) }));
+  const [fields, setFields] = useState<Fields>(() => ({
+    ...(entryDraft ?? empty),
+    ...(cvsDraft?.recipient_name !== undefined ? { recipient_name: cvsDraft.recipient_name } : {}),
+    ...(cvsDraft?.phone !== undefined ? { phone: cvsDraft.phone } : {}),
+    ...(cvsResume ? { recipient_name: cvsResume.recipient_name, phone: cvsResume.phone } : {}),
+  }));
   const [head, setHead] = useState<Destination | null>(null);
   const [option, setOption] = useState<Option | null>(null);
   const [confirmed, setConfirmed] = useState<Destination | null>(null);
@@ -154,7 +163,7 @@ export default function OrderFlow({
   const live = useRef(0);
   const attempt = useRef<{ body: DestinationWrite; key: string } | null>(null);
   // CVS (§16): payment mode, the picker's ensure() handle and the one refusal shown next to the create button.
-  const [paymentMode, setPaymentMode] = useState<PaymentMode>(cvsResume?.payment_mode ?? "card");
+  const [paymentMode, setPaymentMode] = useState<PaymentMode>(cvsResume?.payment_mode ?? cvsDraft?.payment_mode ?? "card");
   const [createError, setCreateError] = useState<CvsErrorCode | null>(null);
   const [codError, setCodError] = useState<string | null>(null);
   const [optionRefresh, setOptionRefresh] = useState(0);
@@ -168,6 +177,9 @@ export default function OrderFlow({
   const cod = codCopy[locale];
   const pickup = useRef<PickupHandle | null>(null);
   const cvsOption = option && isCvsKind(option.delivery_kind) ? (option as Option & { delivery_kind: CvsKind }) : null;
+  const mapPickup = cvsOption?.pickup_selection === "ecpay_map" && head?.kind === cvsOption.delivery_kind &&
+    head.country === country && head.cart_id === cart.id && head.cart_version === cart.version &&
+    Date.parse(head.expires_at) > Date.now() && head.pickup?.verification_kind === "PROVIDER_DIRECTORY_VERIFIED" ? head.pickup : null;
   const paymentChoices = option && quote ? offeredPaymentModes(option, quote.amount.total_minor)
     .filter((mode) => mode !== "cash_on_delivery" || codQuoteMatches(quote, option)) : [];
   const codFee = paymentMode === "cash_on_delivery" && option && paymentChoices.includes("cash_on_delivery") ? option.cod_surcharge_minor ?? 0 : null;
@@ -227,8 +239,8 @@ export default function OrderFlow({
         if (version !== live.current) return;
         setHead(current);
         setHeadLoaded(true);
-        // A quote-bound CVS draft wins over older home fields; the CAS head still loads above.
-        if (!entryDraft && !cvsResume && current?.kind === "home" && current.country === country) {
+        // The current delivery draft wins over older home fields; the CAS head still loads above.
+        if (!entryDraft && !cvsDraft && !cvsResume && current?.kind === "home" && current.country === country) {
           setFields(fieldsOf(current));
           setNotice((notice) => notice === "failed" ? notice : "recovered");
         } else setNotice((notice) => notice === "failed" ? notice : null);
@@ -316,7 +328,6 @@ export default function OrderFlow({
   async function confirm(isCurrent: () => boolean) {
     const version = live.current;
     const current = () => version === live.current && isCurrent();
-    setConfirmed(null);
     const quoteExpired = !quote || Date.parse(quote.expires_at) <= Date.now();
     if (quoteExpired) {
       setExpired(true);
@@ -328,7 +339,7 @@ export default function OrderFlow({
       // §16.1: the store first (map selection verified / buyer-entered record), then the ordinary destination
       // write with kind=cvs_* + pickup_id. A null means the picker already showed what is missing.
       setCreateError(null);
-      const pickupID = await pickup.current?.ensure();
+      const pickupID = await pickup.current?.ensure(current);
       if (!pickupID || !current()) return;
       body = {
         expected_version: head?.version ?? 0,
@@ -345,6 +356,7 @@ export default function OrderFlow({
       setNotice("invalid");
       return;
     }
+    setConfirmed(null);
     const pending = pendingPurchase(context, buyNowID);
     let replace: string | undefined;
     if (pending?.kind === "destination") {
@@ -435,18 +447,26 @@ export default function OrderFlow({
               cartVersion={cart.version}
               buyNowID={buyNowID}
               recipient={{ recipient_name: fields.recipient_name, phone: fields.phone }}
+              initialStore={cvsDraft?.store}
+              persistedMapStore={mapPickup?.id ? {
+                pickup_id: mapPickup.id, kind: cvsOption.delivery_kind, code: mapPickup.code,
+                name: mapPickup.name, address: mapPickup.address, source: "map",
+              } : undefined}
               onRecipient={(next) => {
                 setFields({ ...fields, ...next });
+                onCvsDraftChange?.(next);
                 setConfirmed(null);
                 if (notice === "invalid") setNotice(null);
               }}
               paymentMode={paymentMode}
               onPaymentMode={(mode) => {
                 setPaymentMode(mode);
+                onCvsDraftChange?.({ payment_mode: mode });
                 setConfirmed(null);
                 setCreateError(null);
               }}
               onRestore={(draft: CvsDraft) => {
+                onCvsDraftChange?.(draft);
                 setFields((old) => ({
                   ...old,
                   recipient_name: draft.recipient_name,
@@ -455,7 +475,10 @@ export default function OrderFlow({
                 if (cvsOption.payment_modes?.includes(draft.payment_mode))
                   setPaymentMode(draft.payment_mode);
               }}
-              onStoreChange={() => setConfirmed(null)}
+              onStoreChange={(store) => {
+                onCvsDraftChange?.({ store });
+                setConfirmed(null);
+              }}
               run={run}
               handle={pickup}
               total={quote ? money(quote.amount.total_minor, quote.currency) : ""}
@@ -758,31 +781,7 @@ export function OrderDetails({
         </strong>
       </p>
       <h2>{copy.address}</h2>
-      <address>
-        {destination.recipient_name}
-        <br />
-        {destination.phone}
-        <br />
-        {[
-          destination.home_address.region,
-          destination.home_address.city,
-          destination.home_address.postal_code,
-          destination.home_address.line1,
-          destination.home_address.line2,
-        ]
-          .filter(Boolean)
-          .join(" · ")}
-        {destination.pickup &&
-          `${destination.pickup.name} · ${destination.pickup.code} · ${destination.pickup.address}`}
-        {destination.pickup?.verification_kind === "BUYER_ENTERED" && (
-          <>
-            <br />
-            <span data-testid="order-pickup-entered">{cvsCopy[locale].enteredLabel}</span>
-          </>
-        )}
-        <br />
-        {countryName(locale, destination.country)}
-      </address>
+      <CheckoutDestinationAddress destination={destination} locale={locale} />
       {order.payment_mode !== "cash_on_delivery" && (
         <CvsOrderStatus order={order} locale={locale} money={money} />
       )}

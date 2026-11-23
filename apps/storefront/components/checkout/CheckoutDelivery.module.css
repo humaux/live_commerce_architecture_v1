@@ -1,0 +1,34 @@
+/* Purpose: distinguish the server-offered delivery choice and confirmed CVS card on checkout. */
+.deliveryKinds {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.deliveryKinds button,
+.confirmedStore button {
+  min-height: 44px;
+  padding: 8px 12px;
+  color: var(--sf-ink);
+  background: #fff;
+  border: 1px solid var(--sf-line);
+  border-radius: 6px;
+}
+
+.deliveryKinds button[aria-pressed="true"],
+.confirmedStore {
+  background: color-mix(in srgb, var(--accent) 8%, #fff);
+}
+
+.deliveryKinds button[aria-pressed="true"] {
+  border-color: var(--accent);
+}
+
+.confirmedStore {
+  padding: 12px;
+  border-radius: 6px;
+}
+
+.confirmedStore p {
+  margin-block: 0 8px;
+}

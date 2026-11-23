@@ -12,6 +12,7 @@ import { cvsCopy } from "../../lib/cvs-copy";
 import { fmt, shopCopy } from "../../lib/shop-copy";
 import { freeShippingProgress } from "../../lib/shop-contract";
 import { formatMoney } from "../../lib/money";
+import styles from "./CheckoutDelivery.module.css";
 
 type DeliveryOptionsProps = {
   locale: Locale;
@@ -24,14 +25,33 @@ type DeliveryOptionsProps = {
   expanded: boolean;
   onClose: () => void;
   onSelect: (value: string) => void;
+  lastDelivery?: { home?: string; cvs?: string };
 };
 
-function CheckoutDeliveryOptions({ locale, options, method, chosen, subtotal, currency, disabled, expanded, onClose, onSelect }: DeliveryOptionsProps) {
+function CheckoutDeliveryOptions({ locale, options, method, chosen, subtotal, currency, disabled, expanded, onClose, onSelect, lastDelivery }: DeliveryOptionsProps) {
   const copy = purchaseCopy[locale];
   const groups = deliveryOptionGroups(locale, options);
+  const choices = groups.flatMap((group) => {
+    const available = group.items.filter((option) => !isUnavailable(option));
+    const selected = available.find((option) => optionKey(option) === method);
+    const kind = available[0]?.delivery_kind === "home" ? "home" : "cvs";
+    const option = selected ?? available.find((item) => optionKey(item) === lastDelivery?.[kind]) ?? available[0];
+    return option ? [{ label: group.label, option, selected: !!selected }] : [];
+  });
   const progress = chosen && subtotal !== null
     ? freeShippingProgress(subtotal, chosen.free_shipping_threshold_minor ?? null) : null;
   return <>
+    {choices.length > 1 && (
+      <div className={styles.deliveryKinds} role="group" aria-label={copy.deliveryTitle}>
+        {choices.map(({ label, option, selected }) => (
+          <button key={label} type="button" aria-pressed={selected} disabled={disabled}
+            data-testid={option.delivery_kind === "home" ? "delivery-kind-home" : "delivery-kind-cvs"}
+            onClick={() => { onSelect(optionKey(option)); onClose(); }}>
+            {selected && <span aria-hidden="true">✓ </span>}{label}
+          </button>
+        ))}
+      </div>
+    )}
     <label className="delivery-label" htmlFor="delivery">
       {copy.selectDelivery}
     </label>

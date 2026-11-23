@@ -19,6 +19,7 @@ import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import { cvsPickerCopy, type Locale } from "@live-commerce/i18n";
 import type { CvsBrand, CvsStore } from "../../../packages/format/src/cvs-match";
 import CvsStorePicker from "./CvsStorePicker";
+import styles from "./checkout/CheckoutDelivery.module.css";
 import { BuyerClientError, buyerRequest } from "../lib/buyer-client";
 import {
   CVS_SEARCH_LINKS,
@@ -52,17 +53,19 @@ import type { Option, Order } from "../lib/purchase";
 export type PickupHandle = {
   // Resolves the chosen store's pickup_id (creating the buyer-entered record when needed), or null after
   // showing why the store or recipient inputs are not ready. Throws only for an uncertain/transport failure.
-  ensure: () => Promise<string | null>;
+  ensure: (isCurrent: () => boolean) => Promise<string | null>;
 };
-type Chosen = {
+export type CvsChoice = {
   pickup_id: string;
   kind: CvsKind;
   code: string;
   name: string;
   address: string;
-  outside: boolean;
+  outside?: boolean;
   source: "map" | "entered";
+  picker?: boolean;
 };
+export type CvsCheckoutDraft = Partial<CvsDraft> & { store?: CvsChoice };
 type Notice =
   | { key: "verifying" | "rejected" | "expired" | "mismatch" | "noSession" | "openFailed" | "unavailable" }
   | { key: "retry"; seconds: number }
@@ -103,6 +106,8 @@ export default function CvsPickup({
   pickerInitiallyOpen = false,
   onBrand,
   availableKinds = [option.delivery_kind],
+  initialStore,
+  persistedMapStore,
 }: {
   context: string;
   locale: Locale;
@@ -114,28 +119,33 @@ export default function CvsPickup({
   paymentMode: PaymentMode;
   onPaymentMode: (mode: PaymentMode) => void;
   onRestore: (draft: CvsDraft) => void;
-  onStoreChange: () => void;
+  onStoreChange: (store: CvsChoice) => void;
   run: Run;
   handle: MutableRefObject<PickupHandle | null>;
   total: string;
   pickerInitiallyOpen?: boolean;
   onBrand?: (kind: CvsKind, draft: CvsDraft) => void;
   availableKinds?: CvsKind[];
+  initialStore?: CvsChoice;
+  persistedMapStore?: CvsChoice;
 }) {
   const copy = cvsCopy[locale];
   const kind = option.delivery_kind;
   const mapMode = option.pickup_selection === "ecpay_map";
   const payAtPickup = paymentMode === "pay_at_pickup";
-  const [store, setStore] = useState<Chosen | null>(null);
+  const [selection, setStore] = useState<CvsChoice | null>(() =>
+    initialStore?.kind === kind && initialStore.source === (mapMode ? "map" : "entered") ? initialStore : null,
+  );
+  const store = selection ?? persistedMapStore;
+  const [editing, setEditing] = useState(false);
   const [notice, setNotice] = useState<Notice>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [opening, setOpening] = useState(false);
   const [retryReady, setRetryReady] = useState(true);
   const [copied, setCopied] = useState<"" | "ok" | "failed">("");
-  const [entered, setEntered] = useState({ code: "" });
+  const [entered, setEntered] = useState({ code: store?.code ?? "" });
   const [pickerOpen, setPickerOpen] = useState(pickerInitiallyOpen);
   const [cooldownUntil, setCooldownUntil] = useState(0);
-  const fromPicker = useRef(false);
   const confirmOutcome = useRef<"saved" | "rejected" | "retry">("retry");
   const pickerBrand: CvsBrand = kind === "cvs_familymart" ? "FAMI" : kind === "cvs_hilife" ? "HILIFE" : kind === "cvs_okmart" ? "OKMART" : "UNIMART";
   useEffect(() => {
@@ -201,7 +211,7 @@ export default function CvsPickup({
           setNotice({ key: "mismatch" });
           return;
         }
-        setStore({
+        const selected: CvsChoice = {
           pickup_id: result.pickup.pickup_id,
           kind,
           code: result.pickup.code,
@@ -209,9 +219,11 @@ export default function CvsPickup({
           address: result.pickup.address,
           outside: result.pickup.outside,
           source: "map",
-        });
+        };
+        setStore(selected);
+        setEditing(false);
         setNotice(null);
-        changed.current();
+        changed.current(selected);
       } else if (result.state === "RETURNED") {
         const seconds = result.retry_after_s ?? 5;
         setNotice({ key: "retry", seconds });
@@ -235,11 +247,17 @@ export default function CvsPickup({
     }
   }
   function changeStore() {
-    setStore(null);
     setNotice(null);
+    setErrors({});
     clearReturn();
-    changed.current();
-    if (!mapMode && fromPicker.current) setPickerOpen(true);
+    if (store?.picker) setPickerOpen(true);
+    else setEditing(true);
+  }
+
+  function cancelChange() {
+    setEditing(false);
+    setEntered({ code: store?.code ?? "" });
+    setErrors({});
   }
 
   // Same-tab hand-off to the ECPay map (§5.2, U5): the recipient inputs are saved first because the whole page
@@ -306,7 +324,7 @@ export default function CvsPickup({
     form.submit();
   }
 
-  async function ensure(pickerCode?: string): Promise<string | null> {
+  async function ensure(isCurrent: () => boolean, pickerCode?: string): Promise<string | null> {
     setErrors({});
     // C3/F5 mirror: pay-at-pickup and ECPay-created shipments need the real name and a 09 mobile.
     const strict = payAtPickup || mapMode;
@@ -323,7 +341,7 @@ export default function CvsPickup({
       }
       return store.pickup_id;
     }
-    const code = (pickerCode ?? entered.code).trim();
+    const code = (pickerCode ?? (editing ? entered.code : store?.code ?? entered.code)).trim();
     if (store?.source === "entered" && store.code === code)
       return store.pickup_id;
     const next: FieldErrors = {};
@@ -348,6 +366,7 @@ export default function CvsPickup({
     const text = JSON.stringify(scopedBody);
     if (attempt.current?.body !== text) attempt.current = { key: crypto.randomUUID(), body: text };
     const response = await buyerRequest("POST", "cvs-stores", context, scopedBody, attempt.current.key);
+    if (!isCurrent()) return null;
     if (!response.ok) {
       if (response.status === 429) {
         const seconds = Number(response.headers.get("Retry-After"));
@@ -375,8 +394,9 @@ export default function CvsPickup({
     const data: unknown = await response.json();
     if (!validBuyerStore(data) || data.kind !== kind || data.code !== code) throw new BuyerClientError("invalid_response");
     await assertPurchaseContext(context);
+    if (!isCurrent()) return null;
     attempt.current = null;
-    setStore({
+    const selected: CvsChoice = {
       pickup_id: data.pickup_id,
       kind,
       code: data.code,
@@ -384,7 +404,12 @@ export default function CvsPickup({
       address: data.address,
       outside: false,
       source: "entered",
-    });
+      picker: pickerCode !== undefined,
+    };
+    setStore(selected);
+    setEntered({ code: selected.code });
+    setEditing(false);
+    changed.current(selected);
     return data.pickup_id;
   }
   handle.current = { ensure };
@@ -393,11 +418,9 @@ export default function CvsPickup({
     confirmOutcome.current = "retry";
     if (cooldownUntil > Date.now()) return "retry";
     await run(async (current) => {
-      setEntered({ code: choice.code });
-      changed.current();
       try {
-        const id = await ensure(choice.code);
-        if (id && current()) { fromPicker.current = true; confirmOutcome.current = "saved"; }
+        const id = await ensure(current, choice.code);
+        if (id && current()) confirmOutcome.current = "saved";
       } catch (reason) {
         if (current()) setErrors({ store: copy.unavailable });
         throw reason;
@@ -407,11 +430,8 @@ export default function CvsPickup({
   }
 
   function edit(value: string) {
-    fromPicker.current = false;
     setEntered({ code: value });
-    setStore(null);
     setErrors({});
-    changed.current();
   }
   function setRecipient(field: "recipient_name" | "phone", value: string) {
     onRecipient({ ...recipient, [field]: value });
@@ -536,8 +556,8 @@ export default function CvsPickup({
         </p>
       )}
 
-      {store ? (
-        <div className="wide" data-testid="cvs-store-card">
+      {store && (
+        <div className={`wide ${styles.confirmedStore}`} data-testid="cvs-store-card">
           <p>
             <strong>{cardLabel}</strong>
             {store.outside && (
@@ -559,11 +579,12 @@ export default function CvsPickup({
           <p className="order-note" data-testid="cvs-consent">
             {copy.consent}
           </p>
-          <button type="button" className="text-button" data-testid="cvs-change-store" onClick={changeStore}>
+          <button type="button" data-testid="cvs-change-store" onClick={changeStore}>
             {copy.changeStore}
           </button>
         </div>
-      ) : mapMode ? (
+      )}
+      {(!store || editing) && (mapMode ? (
         <div className="wide">
           <p className="order-note">{copy.mapNote}</p>
           <button
@@ -605,7 +626,8 @@ export default function CvsPickup({
           </label>
           <p className="order-note wide">{copy.enteredNote}</p>
         </>
-      )}
+      ))}
+      {store && editing && <button type="button" className="text-button" data-testid="cvs-cancel-change" onClick={cancelChange}>{cvsPickerCopy[locale].close}</button>}
       {!mapMode && <CvsStorePicker open={pickerOpen} brand={pickerBrand} locale={locale}
         availableBrands={availableKinds.map((value) => value === "cvs_familymart" ? "FAMI" : value === "cvs_hilife" ? "HILIFE" : value === "cvs_okmart" ? "OKMART" : "UNIMART")}
         onClose={() => setPickerOpen(false)}

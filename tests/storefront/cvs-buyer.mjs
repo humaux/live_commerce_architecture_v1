@@ -5,7 +5,7 @@
 // TCV08 buyer half + TCV14 buyer_entered UI half (contracts/taiwan-cvs-logistics-v1.md §5.2, §5.3, §16.1, §16.2, §16.4, §10 TCV08/TCV14).
 // Real production storefront Next -> private buyerhttp -> isolated PG, driven by tests/foundation/browser_taiwan_cvs_test.go (MOCK variant).
 // The browser reaches only synthetic hosts through one CONNECT proxy and one self-signed edge:
-//   buyer.example / buyer2.example / buyer3.example -> the storefront Next  (three stores, three ACTIVE domains)
+//   buyer.example through buyer4.example            -> the storefront Next (ACTIVE synthetic domains)
 //   logistics-stage.ecpay.com.tw                     -> the ecpaytest fake over HTTP (the stage map: answers the auto-post form with its fixed store)
 //   hooks.tcv.example                                -> the Go hooks handler (POST /v1/cvs/ecpay/map-return/{id}, the unauthenticated provider return)
 // Nothing else is reachable. BFF routes exercised: /api/buyer/{checkout-options,quotes,cvs-selections,cvs-selections/{id}/verify,cvs-stores,destination,
@@ -26,7 +26,7 @@ import path from "node:path";
 import { expect } from "@playwright/test";
 import { engine, launch, ctxOpts, phone, iosZoomOffenders } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
-import { exerciseCvsPicker, exerciseCvsPaste, assertPickerDensity } from "./cvs-picker.mjs";
+import { exerciseCvsPicker, exerciseCvsPaste, assertPickerDensity, prepareR04 } from "./cvs-picker.mjs";
 
 const env = (name) => {
   const value = process.env[name];
@@ -38,6 +38,7 @@ const stores = {
   map1: { origin: env("LC_CVS_ORIGIN1"), product: env("LC_CVS_PRODUCT1") },
   map2: { origin: env("LC_CVS_ORIGIN2"), product: env("LC_CVS_PRODUCT2") },
   entered: { origin: env("LC_CVS_ORIGIN3"), product: env("LC_CVS_PRODUCT3") },
+  home: { origin: env("LC_CVS_ORIGIN4"), product: env("LC_CVS_PRODUCT4") },
 };
 const fakeURL = env("LC_CVS_FAKE_URL"), hooksURL = env("LC_CVS_HOOKS_URL");
 const hosts = new Set([...Object.values(stores).map((s) => new URL(s.origin).host), "logistics-stage.ecpay.com.tw", "hooks.tcv.example"]);
@@ -224,9 +225,13 @@ try {
     await confirmCheckoutAddress(page);
     await expect(page.getByTestId("create-order")).toBeEnabled();
     if (locale === "zh-TW" && !mobile) {
-      // change store, pick again: the second round trip works and the card returns
+      // R04: opening or cancelling a replacement preserves the accepted map pickup.
       await page.getByTestId("cvs-change-store").click();
-      await expect(page.getByTestId("cvs-store-card")).toHaveCount(0);
+      await expect(page.getByTestId("cvs-store-code")).toHaveText("131386");
+      await page.getByTestId("cvs-cancel-change").click();
+      await expect(page.getByTestId("cvs-store-code")).toHaveText("131386");
+      await expect(page.getByTestId("cvs-pick-store")).toHaveCount(0);
+      await page.getByTestId("cvs-change-store").click();
       await expect(page.getByTestId("cvs-pick-store")).toBeVisible();
       await mapRoundTrip(page, ctx, stores.map1, locale, "cvs_711", "store1 change");
       await showsStoreCard(page, stores.map1, locale, "cvs_711", "store1 change");
@@ -272,6 +277,32 @@ try {
       assert((await option.innerText()).includes(copy["zh-TW"].comingSoon), `${kind} must read ${copy["zh-TW"].comingSoon}`);
     }
     pass("OK mart and Hi-Life are disabled with 即將開放 until verified");
+    await ctx.close();
+  }
+
+  const r04 = [];
+  for (const mobile of [false, true]) {
+    const ctx = await newContext(mobile), page = await ctx.newPage();
+    const exercise = await prepareR04({ page, evidence, viewport: mobile ? "mobile" : "desktop",
+      openCheckout: () => toQuote(page, stores.entered, "zh-TW", "cvs_711"),
+    });
+    r04.push({ ctx, exercise });
+  }
+  for (const { ctx, exercise } of r04) {
+    await exercise();
+    await ctx.close();
+  }
+  for (const mobile of [false, true]) {
+    const ctx = await newContext(mobile), page = await ctx.newPage();
+    await reachCheckout(page, stores.home.origin, "zh-TW", stores.home.product);
+    await page.getByRole("button", { name: copy["zh-TW"].delivery, exact: true }).click();
+    await expect(page.locator("#delivery option:enabled")).toHaveCount(1);
+    await expect(page.locator('#delivery optgroup[label="宅配"] option')).toHaveCount(1);
+    await expect(page.getByTestId("delivery-kind-cvs")).toHaveCount(0);
+    await page.getByRole("button", { name: copy["zh-TW"].quote, exact: true }).click();
+    await expect(page.locator('.address-section input[name="line1"]')).toBeVisible();
+    await expect(page.getByTestId("cvs-open-picker")).toHaveCount(0);
+    await shot(page, "r04-home-only", "zh-TW", mobile ? "mobile" : "desktop");
     await ctx.close();
   }
 

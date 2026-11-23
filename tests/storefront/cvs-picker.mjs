@@ -5,7 +5,7 @@
 import { confirmCheckoutAddress } from "./shop-helpers.mjs";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { expect } from "@playwright/test";
 
@@ -20,6 +20,164 @@ const signedCopy = {
   "zh-CN": { browse: "按县市／区查门店", close: "关闭", helper: "输入自提门店的地址、名称或编号", hint: "请核对地址，或换一个品牌。", best: "最匹配", change: "更换", review: "核对自提门店", back: "返回", retry: "重试" },
   en: { browse: "Browse by city / district", close: "Close", helper: "Enter a pickup store address, name or code", hint: "Check the address or switch brand.", best: "Best match", change: "Change", review: "Review pickup store", back: "Back", retry: "Retry" },
 };
+
+export async function prepareR04({ page, openCheckout, evidence, viewport }) {
+  const responseFor = (method, resource) => (response) =>
+    response.request().method() === method && new URL(response.url()).pathname === `/api/buyer/${resource}`;
+  const picker = page.getByTestId("cvs-picker");
+  const query = page.getByTestId("cvs-picker-query");
+  const confirm = page.getByTestId("cvs-picker-confirm");
+  const close = page.getByTestId("cvs-picker-close");
+  const change = page.getByTestId("cvs-change-store");
+  const [quote] = await Promise.all([page.waitForResponse(responseFor("POST", "quotes")), openCheckout()]);
+  assert.equal(quote.status(), 200);
+  const originalQuote = await quote.json();
+  await expect(page.locator('#delivery optgroup[label="宅配"] option:enabled').first()).toHaveCount(1);
+  const cvs = page.locator('#delivery optgroup[label="超商取貨"] option').filter({ hasText: "7-ELEVEN" });
+  await expect(page.locator("#delivery")).toHaveValue(await cvs.getAttribute("value"));
+  const timing = page.locator('.checkout-bar-timing small');
+  const online = "送出後線上付款";
+  await page.getByTestId("cvs-recipient-name").fill("王小明");
+  await page.getByTestId("cvs-recipient-phone").fill("0912345678");
+  await page.getByTestId("cvs-open-picker").click();
+  await query.fill("231196");
+  await page.getByTestId("cvs-candidate-231196").click();
+  await confirm.click();
+  const [storeResponse] = await Promise.all([page.waitForResponse(responseFor("POST", "cvs-stores")), confirm.click()]);
+  assert.equal(storeResponse.status(), 200);
+  const store = await storeResponse.json();
+  assert.equal(store.code, "231196");
+  await expect(page.getByTestId("cvs-store-name")).toContainText(store.name);
+  await expect(page.getByTestId("cvs-store-address")).toHaveText(store.address);
+  await expect(change).toBeVisible();
+  await expect(page.getByTestId("delivery-kind-cvs")).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("delivery-kind-home")).toHaveAttribute("aria-pressed", "false");
+  await page.screenshot({ path: path.join(evidence, `r04-${viewport}-selected-a.png`), fullPage: true });
+  const [write] = await Promise.all([page.waitForResponse(responseFor("PUT", "destination")), confirmCheckoutAddress(page)]);
+  assert.equal(write.status(), 200);
+  const buyerContext = (await write.request().allHeaders())["x-buyer-context"];
+  const headers = { "X-Buyer-Context": buyerContext };
+  const readDestination = async () => {
+    const read = await page.request.get(new URL("/api/buyer/destination", page.url()).href, { headers });
+    assert.equal(read.status(), 200);
+    return (await read.json()).destination;
+  };
+  const a = await readDestination();
+  assert.equal(a.pickup.id, store.pickup_id);
+  await writeFile(path.join(evidence, `r04-${viewport}-a.json`), JSON.stringify({
+    code: store.code, pickup_id: store.pickup_id, destination_version: a.version, quote_status: quote.status(),
+  }));
+  return async () => {
+    const writes = [];
+    const watch = (request) => {
+      const route = new URL(request.url()).pathname;
+      if (["/api/buyer/cvs-stores", "/api/buyer/destination", "/api/buyer/checkout"].includes(route) &&
+          ["POST", "PUT"].includes(request.method())) writes.push(route);
+    };
+    const unchanged = async () => {
+      await expect(page.getByTestId("cvs-store-code"), "R04 keeps A after opening and cancelling replacement").toHaveText(store.code);
+      await expect(page.getByTestId("cvs-store-address")).toHaveText(store.address);
+      const current = await readDestination();
+      assert.equal(current.pickup.id, store.pickup_id);
+      assert.equal(current.version, a.version);
+    };
+    const reviewCandidate = async (code = "121275") => {
+      await change.click();
+      await query.fill(code);
+      await picker.getByTestId(`cvs-candidate-${code}`).click();
+      await confirm.click();
+      await expect(picker.getByRole("heading", { name: signedCopy["zh-TW"].review, exact: true })).toBeVisible();
+    };
+    page.on("request", watch);
+    try {
+      await change.click();
+      await query.fill("不存在的火星門市XYZ");
+      await expect(picker.getByTestId("cvs-picker-empty")).toBeVisible();
+      await close.click();
+      await unchanged();
+      await reviewCandidate();
+      await close.click();
+      await unchanged();
+      assert.deepEqual(writes, [], "opening, searching, previewing and cancelling never write");
+
+      await page.getByRole("button", { name: "重新選擇配送", exact: true }).click();
+      const home = page.getByTestId("delivery-kind-home"), pickup = page.getByTestId("delivery-kind-cvs");
+      await expect(pickup).toHaveAttribute("aria-pressed", "true");
+      await home.click();
+      const line1 = page.locator('.address-section input[name="line1"]');
+      await line1.fill("合成配送測試地址");
+      await pickup.click();
+      await home.click();
+      await expect(line1).toHaveValue("合成配送測試地址");
+      await pickup.click();
+      const [requoted] = await Promise.all([page.waitForResponse(responseFor("POST", "quotes")),
+        page.getByRole("button", { name: "取得目前總額", exact: true }).click()]);
+      assert.equal(requoted.status(), 200);
+      const currentQuote = await requoted.json();
+      assert.notEqual(currentQuote.id, originalQuote.id);
+      assert.equal(currentQuote.method, originalQuote.method);
+      assert.equal(currentQuote.amount.total_minor, originalQuote.amount.total_minor);
+      await unchanged();
+      await expect(page.getByTestId("cvs-recipient-name")).toHaveValue("王小明");
+      const options = await page.request.get(new URL("/api/buyer/checkout-options?limit=100", page.url()).href, { headers });
+      assert.equal(options.status(), 200);
+      const currentOption = (await options.json()).items.find((item) => item.method === currentQuote.method && item.market_id === currentQuote.market_id);
+      assert.ok(currentOption && currentOption.available !== false);
+      const allowedModes = currentOption.payment_modes ?? ["card"];
+      assert.deepEqual(allowedModes, ["card"]);
+      await expect(timing).toHaveText(online);
+      await expect(page.getByRole("radio", { name: "貨到付款 · 僅限宅配" })).toBeDisabled();
+      assert.deepEqual(writes, [], "changing delivery only requests a quote until reconfirmed");
+
+      await reviewCandidate("131386");
+      await page.route("**/api/buyer/cvs-stores", (route) =>
+        route.continue({ postData: { ...route.request().postDataJSON(), store_code: "000000" } }), { times: 1 });
+      const [refused] = await Promise.all([page.waitForResponse(responseFor("POST", "cvs-stores")), confirm.click()]);
+      assert.equal(refused.status(), 422);
+      assert.equal((await refused.json()).code, "store_not_found");
+      await expect(confirm).toHaveCount(0);
+      await close.click();
+      await unchanged();
+
+      await reviewCandidate();
+      await page.route("**/api/buyer/cvs-stores", (route) => route.abort("failed"), { times: 1 });
+      const [unknown] = await Promise.all([page.waitForEvent("requestfailed", { predicate: (request) =>
+        new URL(request.url()).pathname === "/api/buyer/cvs-stores",
+      }), confirm.click()]);
+      await expect(confirm).toBeEnabled();
+      await close.click();
+      await unchanged();
+      assert.deepEqual(writes, ["/api/buyer/cvs-stores", "/api/buyer/cvs-stores"]);
+
+      await reviewCandidate();
+      const [verified] = await Promise.all([page.waitForResponse(responseFor("POST", "cvs-stores")), confirm.click()]);
+      assert.equal(verified.status(), 200);
+      assert.equal(unknown.headers()["idempotency-key"], verified.request().headers()["idempotency-key"]);
+      const b = await verified.json();
+      assert.equal(b.code, "121275");
+      await expect(page.getByTestId("cvs-store-code")).toHaveText(b.code);
+      await expect(page.getByTestId("cvs-store-address")).toHaveText(b.address);
+      assert.equal((await readDestination()).pickup.id, store.pickup_id, "review keeps the old destination until explicit confirmation");
+      const [updated] = await Promise.all([page.waitForResponse(responseFor("PUT", "destination")), confirmCheckoutAddress(page)]);
+      assert.equal(updated.status(), 200);
+      const destination = await readDestination();
+      assert.equal(destination.pickup.id, b.pickup_id);
+      assert.equal(destination.pickup.code, b.code);
+      assert.equal(destination.pickup.address, b.address);
+      assert.equal(destination.version, a.version + 1);
+      assert.equal(new URL(page.url()).pathname, "/zh-TW/checkout");
+      assert.deepEqual(writes.slice(2), ["/api/buyer/cvs-stores", "/api/buyer/destination"]);
+      await writeFile(path.join(evidence, `r04-${viewport}-replacement.json`), JSON.stringify({
+        a: { code: store.code, pickup_id: store.pickup_id, version: a.version },
+        b: { code: b.code, pickup_id: b.pickup_id, version: destination.version },
+        quote: { id: currentQuote.id, method: currentQuote.method, total_minor: currentQuote.amount.total_minor, payment_modes: allowedModes },
+        refusal: refused.status(), unknown: "request aborted by fixture", writes, return_path: new URL(page.url()).pathname,
+      }, null, 2));
+    } finally {
+      page.off("request", watch);
+    }
+  };
+}
 
 // PARITY-CVS: the real checkout route, never /ui-gallery. Network interception below
 // prepares only an outage fixture; every state transition uses real user controls.
@@ -535,7 +693,8 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
       else await route.continue();
     });
     try { diagnostic = await observePicker(page); } catch { diagnosticFailed = true; }
-    await page.getByTestId("cvs-open-picker").click();
+    await expect(page.getByTestId("cvs-store-code")).toHaveText("127620");
+    await page.getByTestId("cvs-change-store").click();
     for (const [brand, code] of [["FAMI", "024793"], ["HILIFE", "2656"], ["OKMART", "000005"], ["UNIMART", "231196"]]) {
       diagnostic?.phase("before_brand", brand);
       // The brand switch recomputes the quote over POST /api/buyer/quotes and then commits the new
@@ -583,11 +742,12 @@ export async function exerciseCvsPicker({ page, locale, mobile, openCheckout, le
       confirmations++;
       await route.fulfill({ status: confirmations === 1 ? 422 : 429, headers: { "Content-Type": "application/json", "Retry-After": "1" }, body: JSON.stringify({ code: confirmations === 1 ? "store_not_found" : "too_many_stores_entered" }) });
     });
-    await choose("231196").click();
+    await query.fill("121275");
+    await choose("121275").click();
     await reviewChoice();
     await page.getByTestId("cvs-picker-confirm").click();
-    await expect(choose("231196")).toHaveCount(0);
-    await expect(query).toHaveValue("231196");
+    await expect(choose("121275")).toHaveCount(0);
+    await expect(query).toHaveValue("121275");
     await expect(page.getByTestId("cvs-picker-confirm")).toHaveCount(0);
     await query.fill("131386");
     await choose("131386").click();
