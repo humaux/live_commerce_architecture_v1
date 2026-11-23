@@ -65,6 +65,10 @@
 }
 
 @media (max-width: 599px) {
+  :global(.checkout-entry-layout .checkout-surface):has(.deliveryHeading) :global(.checkout-lines) {
+    margin-block-end: 8px;
+  }
+
   .deliveryHeading {
     display: grid;
     grid-template-columns: fit-content(100px) minmax(0, 1fr);
