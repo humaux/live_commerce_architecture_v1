@@ -70,6 +70,12 @@ func dbError(err error) error {
 				return ErrLimit
 			case "export_too_large":
 				return ErrExportTooLarge
+			case "award_not_eligible":
+				return ErrAwardNotEligible
+			case "award_already_recorded":
+				return ErrAwardAlreadyRecorded
+			case "award_review_required":
+				return ErrAwardReviewRequired
 			default:
 				return ErrVersion
 			}

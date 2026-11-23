@@ -106,6 +106,40 @@ func TestMemberRoutesTransportGates(t *testing.T) {
 	}
 }
 
+func TestMemberAwardRecoveryTransport(t *testing.T) {
+	const path = "/orders/" + lpMember + "/member-award-recovery"
+	const jsonType, key = "application/json", "lp-recovery-key"
+	for _, c := range []struct {
+		name, method, path, key, body string
+		status                        int
+		code                          string
+	}{
+		{"read", "GET", path, "", "", 401, "unauthorized"},
+		{"post", "POST", path, key, `{}`, 401, "unauthorized"},
+		{"missing key", "POST", path, "", `{}`, 422, "invalid_request"},
+		{"get key", "GET", path, key, "", 422, "invalid_request"},
+		{"get body", "GET", path, "", `{}`, 422, "invalid_request"},
+		{"query", "POST", path + "?points=7", key, `{}`, 422, "invalid_request"},
+		{"invalid order", "GET", "/orders/wrong/member-award-recovery", "", "", 422, "invalid_request"},
+		{"forged member", "POST", path, key, `{"member_id":"` + lpMember + `"}`, 400, "invalid_json"},
+		{"forged points", "POST", path, key, `{"points":7}`, 400, "invalid_json"},
+		{"forged state", "POST", path, key, `{"state":"CONFIRMED"}`, 400, "invalid_json"},
+		{"null", "POST", path, key, `null`, 400, "invalid_json"},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			w := memberCall(t, c.method, c.path, jsonType, c.key, c.body)
+			var out struct{ Code string }
+			_ = json.Unmarshal(w.Body.Bytes(), &out)
+			if w.Code != c.status || out.Code != c.code {
+				t.Fatalf("got %d %s, want %d %s", w.Code, w.Body.String(), c.status, c.code)
+			}
+			if w.Header().Get("Cache-Control") != "no-store, private" {
+				t.Fatalf("Cache-Control = %q", w.Header().Get("Cache-Control"))
+			}
+		})
+	}
+}
+
 // Every refusal the member routes and the award can answer is a contract §2 code that survives httperror's closed table (ruling 15:
 // an unknown code is rewritten to "internal").
 func TestMemberRefusalCodesSurviveHTTPError(t *testing.T) {

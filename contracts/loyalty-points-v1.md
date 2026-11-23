@@ -175,6 +175,8 @@ Route base: /v1/admin/stores/{store_id}
 | `POST /orders/manual` (existing §G3) | `inventory:reserve` + `catalog:read`; add `orders:read` + `inbox:read` for a conversation, and `customers:points` when requesting an award | Optional `member_award:{member_id,points}` and `source_context:{conversation_id,bundle_ids,revision}`. The receipt includes the LP18 award outcome when requested. Contextual placement adds the authorized `order_origin`, `live_price` and `live_price_reason`. |
 | `GET /orders/manual/receipt` | `orders:read`, original submitting principal; add `inbox:read` to see the readable origin | Original `Idempotency-Key` header only, private no-store. Returns `{state:"pending"\|"committed"\|"absent",receipt?}`; the receipt contains no buyer-link capability. |
 | `GET /inbox/order-prefill` (A15) | `orders:read` + `inventory:reserve`; add `inbox:read` for `order_context` | Exactly one `conversation_id` or `bundle_id`. A conversation can return a ready revision, an existing order, or a review-required state. A bare bundle retains A15 behavior. |
+| `GET /orders/{order_id}/member-award-recovery` | `orders:read` + `customers:read` | Current original-order recovery state. See [M09/M10](#original-order-award-recovery). |
+| `POST /orders/{order_id}/member-award-recovery` | `orders:read` + `customers:points` | `{}` with `Idempotency-Key` → 201 for a new award, 200 for a recovered award readback. See [M09/M10](#original-order-award-recovery). |
 
 Refusal codes (existing style, additive): `401 unauthorized`; `403 forbidden` (missing permission — including
 `customers:points` on a manual order with `member_award`, refused by the pre-check before any pipeline write);
