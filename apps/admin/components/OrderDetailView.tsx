@@ -83,7 +83,7 @@ export function OrderDetailView({detail,locale,c,sections,onBack,memberStore}:{m
       </div> : <p className="signed-order-panel">{parcel??c.shipNotEligible}</p>}
       {head&&<><p className="signed-order-note">{p.handover}</p><button className="signed-order-return" type="button" onClick={onBack}>{p.returnOrders}</button></>}
       {problem&&<div role="alert"><p>{problem}</p>{!uncertain&&<button type="button" onClick={()=>{setProblem("");setTick(value=>value+1);void sections.onChanged();}}>{c.retry}</button>}</div>}
-      <OrderPointsPanel key={`${sections.store}|${sections.boundary}|${detail.order_id}|${memberStore.permissions?.join(",")??""}`} locale={locale} store={memberStore} order={detail.order_id} scope={`${sections.store}|${detail.order_id}`} boundary={sections.boundary}/>
+      <OrderPointsPanel key={`${sections.store}|${sections.boundary}|${detail.order_id}|${memberStore.permissions?.join(",")??""}`} locale={locale} store={memberStore} order={detail.order_id} manual={detail.source==="merchant_manual"} scope={`${sections.store}|${detail.order_id}`} boundary={sections.boundary}/>
       <details className="signed-order-advanced" data-testid="order-more-details"><summary>{p.facts}</summary>
         {detailPanel(detail,locale,c,{...sections,orderNumber:shortOrderNumber(detail.order_id),onBack:undefined})}
       </details>
