@@ -254,6 +254,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// written only by claims.for_buyer_begin/bind_merchant_origin_grant/consume_live_prices, the reservation table only by the for_buyer_* definers,
 		// and the peer comparison reads the conversation and bundle peers and the session lifecycle (all scoped to the tenant/store GUCs).
 		add(wr, "claims.bundles", "SELECT", "purged_at")
+		// 0229: scoped conversation review, claim reservation fencing and pre-checkout release.
+		add(wr, "inbox.manual_order_sources", "SELECT", "tenant_id", "store_id", "key_hash", "principal_id", "conversation_id", "bundle_ids", "state", "claim_request_id", "begin_key", "order_id", "placed_at")
+		add(wr, "inbox.manual_order_sources", "UPDATE", "state")
 		// 0154 (W3-05B restricted actors): the blocklist definers resolve a bundle's platform and actor_key inside the caller's store (policy bundle_writer_read, GUC scoped),
 		// console_marks reads the one-way reply_kind mark, and the definers are the only readers/writers of claims.blocked_actors (retention deletes through apply_actor_erasure).
 		add(wr, "claims.bundles", "SELECT", "platform", "actor_key")
@@ -416,6 +419,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				// 0129 (LC-B6): the seven for-buyer definers it owns.
 				"claims.for_buyer_scope", "claims.for_buyer_peer_state", "claims.for_buyer_lines", "claims.for_buyer_begin", "claims.for_buyer_finish",
 				"claims.for_buyer_release", "claims.bind_merchant_origin_grant",
+				"claims.manual_order_context", "claims.read_manual_order_source", "claims.release_manual_order_source", "claims.lock_manual_order_bundles",
 				// 0147 (W6-02B): the two report seams it owns (EXECUTE: commerce_auth only).
 				"claims.report_order_bundles", "claims.report_funnel_bundles",
 				// order-attempt-v1 §1: owned private domain helpers (0175/0180/0185), callable only by the coordinator.
@@ -517,6 +521,13 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
 			"for_buyer_release":          {args: "p_request uuid", result: "integer", volatility: "v", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
 			"bind_merchant_origin_grant": {args: "p_quote uuid", result: "integer", volatility: "v", acl: "commerce_buyer_runtime:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_buyer_runtime"},
+			// 0229: only the merchant transaction reaches the three contextual entry points.
+			"manual_order_context": {args: "p_conversation uuid, p_requested uuid[]", result: "TABLE(bundle_ids uuid[], order_ids uuid[], reason text, latest_order_id uuid)",
+				volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
+			"read_manual_order_source": {args: "p_key bytea, p_principal uuid, p_own boolean", result: "TABLE(conversation_id uuid, bundle_ids uuid[])",
+				volatility: "s", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
+			"release_manual_order_source": {args: "p_key bytea", result: "boolean", volatility: "v", acl: "commerce_claims_writer:EXECUTE,commerce_runtime:EXECUTE", caller: "commerce_runtime"},
+			"lock_manual_order_bundles":   {args: "p_tenant uuid, p_store uuid, p_bundles uuid[]", result: "void", volatility: "v", acl: "commerce_claims_writer:EXECUTE", caller: "commerce_claims_writer"},
 			// 0110 ACL ruling: one narrow internal read capability, no new table grants.
 			"order_live_sources": {args: "p_tenant uuid, p_store uuid, p_orders uuid[]", result: "TABLE(order_id uuid, session_id uuid)",
 				volatility: "s", acl: "commerce_auth:EXECUTE,commerce_claims_writer:EXECUTE", caller: "commerce_auth"},
@@ -630,8 +641,9 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 		// 0165 (LC-B3b) adds exactly three: buyer_panel_claims, orders_of_bundles, session_peer_linked.
 		// 0129 (LC-B6) adds exactly seven: for_buyer_scope, for_buyer_peer_state, for_buyer_lines, for_buyer_begin, for_buyer_finish, for_buyer_release, bind_merchant_origin_grant.
 		// order-attempt-v1 §1 / 0175/0180/0185 add exactly four functions, no owned tables or schemas.
-		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 50 {
-			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its fifty functions (previous forty-six including two 0147 report seams + four OA1 domain helpers from 0175/0180/0185)", n)
+		// 0229 adds three contextual entry points and one owner-only bundle lock.
+		if n := countRows(t, f.owner, `SELECT (SELECT count(*) FROM pg_proc WHERE proowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_class WHERE relowner='commerce_claims_writer'::regrole)+(SELECT count(*) FROM pg_namespace WHERE nspowner='commerce_claims_writer'::regrole)`); n != 54 {
+			t.Fatalf("commerce_claims_writer owns %d objects, want exactly its 54 functions", n)
 		}
 		denied := lcStrings(t, f.owner, `SELECT r.rolname||' '||p.proname FROM pg_roles r CROSS JOIN pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace
 			WHERE n.nspname='claims' AND r.rolname LIKE 'commerce\_%' AND has_function_privilege(r.oid,p.oid,'EXECUTE')
@@ -660,6 +672,7 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 			       OR (r.rolname='commerce_runtime' AND p.proname IN ('block_actor','unblock_actor','list_blocked_actors','actor_restricted_for_bundle'))
 			       -- 0129 (LC-B6): the merchant transaction calls the four for-buyer definers and the peer-state helper; the buyer pool binds the grant.
 			       OR (r.rolname='commerce_runtime' AND p.proname IN ('for_buyer_peer_state','for_buyer_lines','for_buyer_begin','for_buyer_finish','for_buyer_release'))
+			       OR (r.rolname='commerce_runtime' AND p.proname IN ('manual_order_context','read_manual_order_source','release_manual_order_source'))
 			       OR (r.rolname='commerce_buyer_runtime' AND p.proname='bind_merchant_origin_grant')
 			       -- claims-retention-purge-v1 §4: owner, job and operator rows (§6 clause 1)
 			       OR (r.rolname='commerce_retention_writer' AND p.proname IN ('run_retention','erase_actor','apply_actor_erasure','set_retention_policy','retention_status','replay_actor_erasures','links_not_purged'))
@@ -998,6 +1011,8 @@ func TestLiveClaimsKC03Schema(t *testing.T) {
 				"inbox.plan_checkout_reminder(uuid,uuid,uuid,text,bigint,text,uuid,bigint,uuid,bytea,text,bytea,bytea,bytea,bytea,text,bigint)", "inbox.reminder_report(uuid)",
 				// 0129 (LC-B6): the merchant for-buyer definers read bundle ids/purged state and write no binding (owner_id is never read).
 				"claims.for_buyer_begin(bytea,bytea,uuid,uuid[],uuid)", "claims.for_buyer_lines(uuid,uuid)",
+				// 0229: merchant prefill reads same-store bundle membership and draft state.
+				"claims.manual_order_context(uuid,uuid[])",
 				// 0154 (W3-05B): the merchant blocklist definers read a bundle's platform/actor_key (never owner_id, bound_at or a link) to resolve or test one actor.
 				"claims.block_actor(uuid,jsonb,text)", "claims.actor_restricted_for_bundle(uuid)"})
 		lcSameSet(t, "roles able to write owner_id", lcStrings(t, f.owner, `SELECT DISTINCT p.grantee::text FROM information_schema.column_privileges p

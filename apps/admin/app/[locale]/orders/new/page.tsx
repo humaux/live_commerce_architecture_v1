@@ -2,6 +2,8 @@
 // authorized stores through the shared customers loader (session cookie -> Go GET /v1/admin/stores); it fetches no order data. The browser
 // reads/writes through the BFF: /api/stores/{store}/tools/orders/manual[/options] -> Go internal/httpapi/merchanttools.go (components/ManualOrder.tsx).
 import { ManualOrder } from "@/components/ManualOrder";
+import { notFound } from "next/navigation";
+import { canonicalUUID } from "@/lib/orders-model";
 import { loadPage } from "../../customers/page-data";
 
 export default async function NewOrderPage({
@@ -11,6 +13,8 @@ export default async function NewOrderPage({
   params: Promise<{ locale: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const page = await loadPage(params, searchParams, ["store"]);
-  return <ManualOrder locale={page.locale} stores={page.stores} store={page.store} initialError={page.initialError} renderKey={page.renderKey} />;
+  const page = await loadPage(params, searchParams, ["store", "conversation_id"]);
+  const conversation = page.query.conversation_id;
+  if (conversation && (!page.query.store || !canonicalUUID.test(conversation))) notFound();
+  return <ManualOrder locale={page.locale} stores={page.stores} store={page.store} initialError={page.initialError} renderKey={page.renderKey} conversation={conversation} />;
 }

@@ -261,6 +261,9 @@ func (f *ForBuyer) placeOrder(ctx context.Context, token, storeID, key string, m
 	var lines []claims.ForBuyerLine
 	err = platform.WithScope(ctx, m.pool, token, storeID, manualPermission, func(tx pgx.Tx, scope platform.Scope) error {
 		var inner error
+		if _, inner = admitManualIntent(ctx, tx, scope, token, key, manualIn); inner != nil {
+			return inner
+		}
 		// I02: even an empty bundle set needs a durable full-request binding before
 		// Place can commit independently; a failed begin rolls this receipt back.
 		var binding struct{}
@@ -516,6 +519,7 @@ func (f *ForBuyer) payLinkOutcome(err error) (ForBuyerSend, error) {
 // PrefillItem is one claim line of the prefill. LivePriceMinor is null when the offer has no usable live price; LiveQuantityRemaining is the
 // claimed quantity minus the units held by non-CANCELLED orders (P2-7 a).
 type PrefillItem struct {
+	BundleID              string `json:"bundle_id"`
 	SKUID                 string `json:"sku_id"`
 	OfferID               string `json:"offer_id"`
 	Keyword               string `json:"keyword"`
@@ -538,13 +542,14 @@ type PrefillDelivery struct {
 // Prefill is the A15 answer. Customer and LastDelivery are filled ONLY from an explicit merchant link (conversation_state.customer_id), never from
 // a bundle owner (I09); otherwise they are null and the UI shows empty fields.
 type Prefill struct {
-	Items              []PrefillItem    `json:"items"`
-	Bundles            []string         `json:"bundles"`
-	Customer           *ManualCustomer  `json:"customer"`
-	LastDelivery       *PrefillDelivery `json:"last_delivery"`
-	SuggestedOptionKey *string          `json:"suggested_option_key"`
-	LivePriceEligible  bool             `json:"live_price_eligible"`
-	LivePriceReason    string           `json:"live_price_reason"`
+	Items              []PrefillItem       `json:"items"`
+	Bundles            []string            `json:"bundles"`
+	Customer           *ManualCustomer     `json:"customer"`
+	LastDelivery       *PrefillDelivery    `json:"last_delivery"`
+	SuggestedOptionKey *string             `json:"suggested_option_key"`
+	LivePriceEligible  bool                `json:"live_price_eligible"`
+	LivePriceReason    string              `json:"live_price_reason"`
+	OrderContext       *ManualOrderContext `json:"order_context,omitempty"`
 }
 
 // Prefill reads the claim lines of one bundle or of the bundles linked to one conversation (exactly one non-nil), the live-price eligibility the
@@ -562,6 +567,21 @@ func (f *ForBuyer) Prefill(ctx context.Context, token, storeID string, conversat
 	err := platform.WithScope(ctx, f.manual.pool, token, storeID, "orders:read", func(tx pgx.Tx, scope platform.Scope) error {
 		if inner := platform.RequirePermission(ctx, tx, scope, token, manualPermission); inner != nil {
 			return inner
+		}
+		readContext := false
+		if conversationID != nil {
+			inner := platform.RequirePermission(ctx, tx, scope, token, "inbox:read")
+			if inner != nil && !errors.Is(inner, platform.ErrForbidden) {
+				return inner
+			}
+			readContext = inner == nil
+		}
+		if readContext {
+			current, inner := readManualContext(ctx, tx, *conversationID, nil)
+			if inner != nil {
+				return inner
+			}
+			out.OrderContext = &current
 		}
 		lines, inner := claims.ForBuyerLines(ctx, tx, conversationID, bundleID)
 		if inner != nil {
@@ -668,7 +688,7 @@ func prefillItems(ctx context.Context, tx pgx.Tx, scope platform.Scope, lines []
 	}
 	for _, l := range lines {
 		f := facts[l.SKUID]
-		items = append(items, PrefillItem{SKUID: l.SKUID, OfferID: l.OfferID, Keyword: l.Keyword, Name: f.name, Variant: f.code, Quantity: l.Quantity,
+		items = append(items, PrefillItem{BundleID: l.BundleID, SKUID: l.SKUID, OfferID: l.OfferID, Keyword: l.Keyword, Name: f.name, Variant: f.code, Quantity: l.Quantity,
 			LivePriceMinor: l.LivePriceMinor, CatalogPriceMinor: f.price, Sellable: f.sellable, LiveQuantityRemaining: l.LiveRemaining})
 	}
 	return items, nil

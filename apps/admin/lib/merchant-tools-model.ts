@@ -168,14 +168,32 @@ export type ManualResult = {
   order_id: string; commercial_state: "AWAITING_TRANSFER" | "CONFIRMED" | "AWAITING_COLLECTION"; payment_mode: ManualPaymentMode; total_minor: number; currency: string;
   expires_at: string; buyer_link: string | null; link_state: "configured" | "storefront_unavailable" | "domain_selection_required"; source: "merchant_manual"; discount?: ManualDiscount;
   member_award?: ManualMemberAward;
+  order_origin?: ManualOrderOrigin;
+  live_price?: "applied" | "not_applied";
+  live_price_reason?: string;
 };
+export type ManualOrderOrigin = { conversation_id: string; bundle_ids: string[] };
+export type ManualSourceContext = ManualOrderOrigin & { revision: string };
+const sourceRevision = /^[0-9a-f]{64}$/;
+const uuid = (value: unknown): value is string => typeof value === "string" && canonicalUUID.test(value);
+export const isManualReceiptKey = uuid;
+function validOrigin(v: Record<string, unknown>): boolean {
+  return uuid(v.conversation_id) && Array.isArray(v.bundle_ids) && v.bundle_ids.length <= 5 &&
+    v.bundle_ids.every(uuid) && new Set(v.bundle_ids).size === v.bundle_ids.length;
+}
+const contextualResultKeys = ["order_origin", "live_price", "live_price_reason"] as const;
 export function parseManualResult(value: unknown): ManualResult {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw fail();
   const raw = value as Record<string, unknown>;
   if ("discount" in raw && (!validDiscount(raw.discount) || raw.discount.name !== raw.discount.name.trim())) throw fail();
   if ("member_award" in raw && !validAwardOutcome(raw.member_award)) throw fail();
+  if ("order_origin" in raw && !validOrigin(object(raw.order_origin, ["conversation_id", "bundle_ids"]))) throw fail();
+  if ("live_price" in raw || "live_price_reason" in raw || "order_origin" in raw) {
+    if ((raw.live_price !== "applied" && raw.live_price !== "not_applied") ||
+      typeof raw.live_price_reason !== "string" || !/^[a-z_]{0,64}$/.test(raw.live_price_reason)) throw fail();
+  }
   const v = object(raw, ["order_id", "commercial_state", "payment_mode", "total_minor", "currency", "expires_at", "buyer_link", "link_state", "source",
-    ...("discount" in raw ? ["discount"] : []), ...("member_award" in raw ? ["member_award"] : [])]);
+    ...("discount" in raw ? ["discount"] : []), ...("member_award" in raw ? ["member_award"] : []), ...contextualResultKeys.filter((key) => key in raw)]);
   if (typeof v.order_id !== "string" || !canonicalUUID.test(v.order_id) ||
     !(manualPaymentModes as readonly string[]).includes(String(v.payment_mode)) || v.commercial_state !== placementState[v.payment_mode as ManualPaymentMode] ||
     !money(v.total_minor) || !/^[A-Z]{3}$/.test(String(v.currency)) ||
@@ -188,6 +206,73 @@ export function parseManualResult(value: unknown): ManualResult {
     if (url.protocol !== "https:" || url.search !== "" || !/^#o=[0-9a-f-]{36}&t=[A-Za-z0-9_-]{43}$/.test(url.hash) || !url.hash.includes(v.order_id)) throw fail();
   } else if (v.buyer_link !== null) throw fail();
   return v as unknown as ManualResult;
+}
+
+type PrefillItem = { bundle_id: string; sku_id: string; name: string; variant: string; quantity: number; catalog_price_minor: number; sellable: boolean };
+type PrefillContext =
+  | (ManualSourceContext & { state: "ready"; latest_order_id: string | null })
+  | { state: "existing_order"; conversation_id: string; order_id: string }
+  | { state: "review_required"; conversation_id: string; reason: string };
+type PrefillDelivery = { option_key: string; home_address?: ManualDraft["home"]; cvs?: ManualDraft["cvs"] };
+export type ManualPrefill = {
+  order_context: PrefillContext;
+  items: PrefillItem[];
+  customer: Pick<ManualDraft, "name" | "phone" | "email"> | null;
+  last_delivery: PrefillDelivery | null;
+};
+export function parseManualPrefill(value: unknown, conversation: string): ManualPrefill {
+  const v = object(value, ["items", "bundles", "customer", "last_delivery", "suggested_option_key", "live_price_eligible", "live_price_reason", "order_context"]);
+  const rawContext = v.order_context as PrefillContext | null;
+  if (!rawContext || rawContext.conversation_id !== conversation) throw fail();
+  if (rawContext.state === "ready") {
+    const source = object(rawContext, ["state", "conversation_id", "bundle_ids", "revision", "latest_order_id"]);
+    if (!validOrigin(source) || typeof source.revision !== "string" || !sourceRevision.test(source.revision) ||
+      (source.latest_order_id !== null && !uuid(source.latest_order_id))) throw fail();
+  } else if (rawContext.state === "existing_order") {
+    if (!uuid(object(rawContext, ["state", "conversation_id", "order_id"]).order_id)) throw fail();
+  } else if (rawContext.state === "review_required") {
+    if (typeof object(rawContext, ["state", "conversation_id", "reason"]).reason !== "string") throw fail();
+  } else throw fail();
+  if (!Array.isArray(v.items) || v.items.length > 50) throw fail();
+  const items = v.items.map((item) => {
+    const line = object(item, ["bundle_id", "sku_id", "offer_id", "keyword", "name", "variant", "quantity", "live_price_minor", "catalog_price_minor", "sellable", "live_quantity_remaining"]);
+    if (!uuid(line.bundle_id) || !uuid(line.sku_id) || typeof line.name !== "string" || typeof line.variant !== "string" ||
+      !count(line.quantity) || (line.quantity as number) < 1 || !money(line.catalog_price_minor) || typeof line.sellable !== "boolean") throw fail();
+    return line as unknown as PrefillItem;
+  });
+  const strings = (raw: unknown, keys: string[]) => {
+    const row = object(raw, keys);
+    if (!Object.values(row).every((item) => typeof item === "string")) throw fail();
+    return row;
+  };
+  let customer: ManualPrefill["customer"] = null;
+  if (v.customer !== null) customer = strings(v.customer, ["name", "phone", "email"]) as ManualPrefill["customer"];
+  let last_delivery: PrefillDelivery | null = null;
+  if (v.last_delivery !== null) {
+    const raw = v.last_delivery as PrefillDelivery;
+    if (typeof raw.option_key !== "string") throw fail();
+    if (raw.home_address) {
+      object(raw, ["option_key", "home_address"]);
+      last_delivery = { option_key: raw.option_key, home_address: strings(raw.home_address, ["region", "city", "postal_code", "line1", "line2"]) as ManualDraft["home"] };
+    } else {
+      object(raw, ["option_key", "cvs"]);
+      last_delivery = { option_key: raw.option_key, cvs: strings(raw.cvs, ["store_code", "store_name", "store_address"]) as ManualDraft["cvs"] };
+    }
+  }
+  return { order_context: rawContext, items, customer, last_delivery };
+}
+
+export type ManualReceiptLookup = { state: "pending" | "absent" } | { state: "committed"; receipt: ManualResult };
+export function parseManualReceipt(value: unknown): ManualReceiptLookup {
+  const raw = value as { state?: unknown };
+  if (raw?.state === "pending" || raw?.state === "absent") {
+    object(value, ["state"]);
+    return { state: raw.state };
+  }
+  const v = object(value, ["state", "receipt"]);
+  if (v.state !== "committed" || !v.receipt || typeof v.receipt !== "object" || Array.isArray(v.receipt) ||
+    ["buyer_link", "link_state", "source"].some((key) => Object.hasOwn(v.receipt as object, key))) throw fail();
+  return { state: "committed", receipt: parseManualResult({ ...v.receipt, buyer_link: null, link_state: "storefront_unavailable", source: "merchant_manual" }) };
 }
 
 export type ManualDraft = {
@@ -274,11 +359,11 @@ export function parseRegenerateResult(value: unknown): RegenerateResult {
 }
 
 // ---- BFF request grammar -----------------------------------------------------------------------------------------------------
-export type ToolsRoute = "dashboard" | "export" | "import-preview" | "import-commit" | "manual-options" | "manual-place" | "manual-regenerate";
+export type ToolsRoute = "dashboard" | "export" | "import-preview" | "import-commit" | "manual-options" | "manual-place" | "manual-regenerate" | "manual-receipt";
 /** The only resources of the tools BFF, per method. Everything else is a 404 there. */
 export function toolsRoute(method: string, path: string): ToolsRoute | null {
   const table: Record<string, Record<string, ToolsRoute>> = {
-    GET: { dashboard: "dashboard", "products/export.csv": "export", "orders/manual/options": "manual-options" },
+    GET: { dashboard: "dashboard", "products/export.csv": "export", "orders/manual/options": "manual-options", "orders/manual/receipt": "manual-receipt" },
     POST: { "products/import/preview": "import-preview", "products/import/commit": "import-commit", "orders/manual": "manual-place", "orders/manual/regenerate-link": "manual-regenerate" },
   };
   return table[method]?.[path] ?? null;
@@ -286,10 +371,18 @@ export function toolsRoute(method: string, path: string): ToolsRoute | null {
 /** A manual-order body is JSON with exactly these top-level keys and no price-like field anywhere. */
 export function validManualBody(body: unknown): boolean {
   if (!body || typeof body !== "object" || Array.isArray(body)) return false;
-  const keys = Object.keys(body).filter((key) => key !== "member_award").sort().join(",");
+  const keys = Object.keys(body).filter((key) => key !== "member_award" && key !== "source_context").sort().join(",");
   const raw = body as Record<string, unknown>;
   if (keys !== "customer,delivery,items,locale,payment_mode" && keys !== "customer,delivery,discount,items,locale,payment_mode") return false;
   if ("discount" in raw && !validDiscount(raw.discount)) return false;
+  if ("source_context" in raw) {
+    try {
+      const source = object(raw.source_context, ["conversation_id", "bundle_ids", "revision"]);
+      if (!validOrigin(source) || typeof source.revision !== "string" || !sourceRevision.test(source.revision)) return false;
+    } catch {
+      return false;
+    }
+  }
   // LP-1 §2: one optional, closed member award; Go/PG own rights and balance checks.
   if ("member_award" in raw) {
     const award = raw.member_award;

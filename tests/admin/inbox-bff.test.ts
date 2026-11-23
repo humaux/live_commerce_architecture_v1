@@ -95,6 +95,9 @@ const route = await import(
   pathToFileURL(adminRoot + "app/api/stores/[store]/[...resource]/route.ts")
     .href
 );
+const toolsRoute = await import(
+  pathToFileURL(adminRoot + "app/api/stores/[store]/tools/[...resource]/route.ts").href
+);
 test.after(() => upstream.close());
 type Options = {
   method?: string;
@@ -104,6 +107,7 @@ type Options = {
   headers?: Record<string, string>;
   storeId?: string;
   cookie?: string;
+  tools?: boolean;
 };
 async function call(path: string, over: Options = {}) {
   const method = over.method ?? "GET";
@@ -121,7 +125,7 @@ async function call(path: string, over: Options = {}) {
       headers.set("idempotency-key", "synthetic-receipt");
   }
   const request = new Request(
-    `${origin}/api/stores/${over.storeId ?? store}/${path}${over.query ?? ""}`,
+    `${origin}/api/stores/${over.storeId ?? store}/${over.tools ? "tools/" : ""}${path}${over.query ?? ""}`,
     {
       method,
       headers,
@@ -130,7 +134,7 @@ async function call(path: string, over: Options = {}) {
         : {}),
     },
   );
-  const response = await route[method](request, {
+  const response = await (over.tools ? toolsRoute : route)[method](request, {
     params: Promise.resolve({
       store: over.storeId ?? store,
       resource: path.split("/"),
@@ -213,12 +217,14 @@ const writes: [string, Record<string, unknown>][] = [
   [`${base}/customer-link`, { customer_id: null, expected_version: 2 }],
 ];
 
-test("A8/A9/A13 and published templates: exact reads forward once with no-store", async () => {
+test("A8/A9/A13/A15 and published templates: exact reads forward once with no-store", async () => {
   for (const [path, query] of [
     ["inbox/conversations", "?filter=messenger&limit=50"],
     [`${base}/messages`, "?before_seq=3&limit=2"],
     ["inbox/buyer-panel", `?conversation_id=${cid}`],
     ["inbox/buyer-panel", `?bundle_id=${customer}`],
+    ["inbox/order-prefill", `?conversation_id=${cid}`],
+    ["inbox/order-prefill", `?bundle_id=${customer}`],
     ["message-templates", ""],
   ]) {
     const count = seen.length;
@@ -227,6 +233,33 @@ test("A8/A9/A13 and published templates: exact reads forward once with no-store"
     assert.equal(seen.length, count + 1);
     assert.equal(seen.at(-1)?.url, `/v1/admin/stores/${store}/${path}${query}`);
     assert.match(result.headers.get("cache-control") ?? "", /no-store/);
+  }
+  const count = seen.length;
+  for (const query of ["", `?conversation_id=${cid}&bundle_id=${customer}`, "?conversation_id=private-name"]) {
+    assert.equal((await call("inbox/order-prefill", { query })).status, 422);
+  }
+  assert.equal(seen.length, count);
+});
+test("manual receipt BFF forwards only the original key in the header", async () => {
+  const count = seen.length;
+  const path = "orders/manual/receipt";
+  const key = "synthetic-manual-key";
+  const headers = { "Idempotency-Key": key };
+  assert.equal((await call(path, { tools: true })).status, 422);
+  assert.equal((await call(path, { tools: true, headers, query: `?key=${key}` })).status, 422);
+  assert.equal(seen.length, count);
+  const saved = answer;
+  try {
+    answer = { status: 200, body: JSON.stringify({ state: "pending" }) };
+    const got = await call(path, { tools: true, headers });
+    assert.equal(got.status, 200);
+    assert.deepEqual(got.body, { state: "pending" });
+    assert.match(got.headers.get("cache-control") ?? "", /no-store/);
+    assert.equal(seen.length, count + 1);
+    assert.equal(seen.at(-1)?.url, `/v1/admin/stores/${store}/${path}`);
+    assert.equal(seen.at(-1)?.headers["idempotency-key"], key);
+  } finally {
+    answer = saved;
   }
 });
 test("real streamed POST bodies: A10-A14 exact keys reach upstream", async () => {

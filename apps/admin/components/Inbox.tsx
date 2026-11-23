@@ -8,7 +8,7 @@ import { flushSync } from "react-dom";
 import type { Locale } from "@live-commerce/i18n";
 import type { Store } from "@/lib/model";
 import { displayTime } from "@live-commerce/format";
-import type { ConversationItem, ConversationList } from "@/lib/inbox-types";
+import type { BuyerData, ConversationItem, ConversationList } from "@/lib/inbox-types";
 import { inboxRead, InboxError } from "@/lib/inbox-client";
 import { inboxCopy, inboxError } from "@/src/features/messages/copy";
 import { permitted } from "@/src/features/messages/privacy";
@@ -25,11 +25,13 @@ export function Inbox({
   store,
   initialError,
   calibration = false,
+  resumeConversation,
 }: {
   locale: Locale;
   store: Store | null;
   initialError: string | null;
   calibration?: boolean;
+  resumeConversation?: string;
 }) {
   const c = inboxCopy(locale);
   const [filter, setFilter] = useState("all");
@@ -40,6 +42,7 @@ export function Inbox({
   const [busy, setBusy] = useState(false);
   const [reload, setReload] = useState(0);
   const loading = useRef(false);
+  const resumed = useRef(false);
   const clear = useCallback(() => {
     setPage(null);
     setCounts({ all: 0, assigned: 0 });
@@ -47,6 +50,7 @@ export function Inbox({
     setError(null);
     setBusy(false);
     loading.current = false;
+    resumed.current = false;
   }, []);
   const privacy = useInboxPrivacy(clear, calibration);
   const allowed = permitted(store, "inbox:read");
@@ -139,6 +143,29 @@ export function Inbox({
     privacy.fence,
     privacy.blocked,
   ]);
+  useEffect(() => {
+    if (!store || !resumeConversation || !page || !privacy.visible || privacy.blocked.current || resumed.current) return;
+    const found = page.items.find((item) => item.conversation_id === resumeConversation);
+    if (found) {
+      resumed.current = true;
+      setSelected(found);
+      return;
+    }
+    const ticket = privacy.fence.begin();
+    void inboxRead<BuyerData>(store.id, `inbox/buyer-panel?conversation_id=${resumeConversation}`, ticket.signal).then((data) => {
+      if (!privacy.fence.current(ticket) || resumed.current) return;
+      resumed.current = true;
+      setSelected({
+        conversation_id: resumeConversation, platform: data.platform, display_name: data.display_name,
+        last_at: "", unread: false, unreplied: false, mode: null, assignee: null, window_open_until: null, linked_customer_id: null,
+      });
+    }, (cause: unknown) => {
+      if (!privacy.fence.current(ticket) || resumed.current) return;
+      resumed.current = true;
+      setError(cause instanceof InboxError ? cause.code : "unavailable");
+      if (cause instanceof InboxError && (cause.status === 401 || cause.status === 403)) privacy.expire();
+    });
+  }, [page, privacy.blocked, privacy.expire, privacy.fence, privacy.visible, resumeConversation, store]);
   const changeFilter = (value: string) => {
     if (value === filter) return;
     privacy.fence.invalidate(true);
@@ -222,7 +249,7 @@ export function Inbox({
                           (selected?.conversation_id ?? selected?.bundle_id) ===
                           (item.conversation_id ?? item.bundle_id)
                         }
-                        onClick={() => setSelected(item)}
+                        onClick={() => { resumed.current = true; setSelected(item); }}
                       >
                         <strong>
                           {item.display_name ??
@@ -260,7 +287,8 @@ export function Inbox({
                           store={store}
                           conversation={selected}
                           locale={locale}
-                          customerPanel={<BuyerPanel store={store} conversationId={selected.conversation_id} compact onUnauthorized={privacy.expire} />}
+                          customerPanel={<BuyerPanel store={store} conversationId={selected.conversation_id} compact onUnauthorized={privacy.expire}
+                            onOrder={(orderId) => { flushSync(privacy.suspend); window.location.assign(`/${locale}/orders/${orderId}?store=${store.id}`); }} />}
                           onUnauthorized={privacy.expire}
                           onRead={() =>
                             setPage((old) =>

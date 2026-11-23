@@ -32,7 +32,7 @@ type Context = { params: Promise<{ store: string; resource: string[] }> };
 
 const budgets: Record<ToolsRoute | TrackingRoute, number> = {
   dashboard: 8000, export: 20000, "manual-options": 10000, "import-preview": 75000, "import-commit": 75000, "manual-place": 16000,
-  "manual-regenerate": 16000,
+  "manual-regenerate": 16000, "manual-receipt": 10000,
   "tracking-preview": 75000, "tracking-commit": 75000, "tracking-result": 20000,
 };
 
@@ -97,7 +97,9 @@ async function route(request: Request, context: Context) {
   if (tracking ? !validTrackingQuery(tracking, search) : request.url.includes("?")) return localError(422, "invalid_request");
   if (tracking && request.headers.has("idempotency-key")) return localError(422, "invalid_request");
   const isGet = request.method === "GET";
-  if (isGet && (request.body !== null || request.headers.has("transfer-encoding") || request.headers.has("idempotency-key") ||
+  const receiptKey = kind === "manual-receipt" ? request.headers.get("Idempotency-Key") ?? "" : null;
+  if (isGet && (request.body !== null || request.headers.has("transfer-encoding") ||
+    (receiptKey === null ? request.headers.has("idempotency-key") : !keyPattern.test(receiptKey)) ||
     (request.headers.has("content-length") && request.headers.get("content-length") !== "0"))) return localError(422, "invalid_request");
 
   let token: string | undefined;
@@ -126,6 +128,7 @@ async function route(request: Request, context: Context) {
   }
 
   const init: RequestInit = { method: request.method };
+  if (receiptKey !== null) init.headers = { "Idempotency-Key": receiptKey };
   if (!isGet) {
     const type = request.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase();
     const csv = kind === "import-preview" || kind === "import-commit" || kind === "tracking-preview" || kind === "tracking-commit";
@@ -208,6 +211,14 @@ async function route(request: Request, context: Context) {
       const details = parsePickupRefusal(value.details);
       if (!details) return denied;
       return Response.json({ ...await denied.json(), details }, { status: 422, headers: denied.headers });
+    }
+  }
+  if (kind === "manual-place" && response.status === 409) {
+    const value = await safeJSON<{ code?: unknown; details?: { order_id?: unknown } }>(response.clone());
+    const order = value?.details?.order_id;
+    if ((value?.code === "source_already_ordered" || value?.code === "bundle_already_ordered") && typeof order === "string" && uuid.test(order)) {
+      const denied = localError(409, value.code);
+      return Response.json({ ...await denied.json(), details: { order_id: order } }, { status: 409, headers: denied.headers });
     }
   }
   if (!response.ok) return safeError(response);

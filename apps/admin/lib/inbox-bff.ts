@@ -15,7 +15,7 @@ const id = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const uuid = new RegExp(`^${id}$`);
 const conversation = `inbox/conversations/${id}`;
 const readPath = new RegExp(
-  `^(?:inbox/conversations|${conversation}/messages|inbox/buyer-panel|message-templates)$`,
+  `^(?:inbox/conversations|${conversation}/messages|inbox/buyer-panel|inbox/order-prefill|message-templates)$`,
 );
 const writePath = new RegExp(
   `^${conversation}/(?:read|takeover|release|messages|customer-link)$`,
@@ -74,7 +74,7 @@ export function validInboxRequest(request: Request, path: string): boolean {
   )
     return false;
   if (path === "message-templates") return marker < 0;
-  if (path === "inbox/buyer-panel") {
+  if (path === "inbox/buyer-panel" || path === "inbox/order-prefill") {
     const entries = [...query];
     return (
       entries.length === 1 &&

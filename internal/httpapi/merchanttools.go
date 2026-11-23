@@ -28,6 +28,7 @@ import (
 
 	"livecommerce/internal/claims"
 	"livecommerce/internal/command"
+	"livecommerce/internal/httperror"
 	"livecommerce/internal/loyalty"
 	"livecommerce/internal/merchanttools"
 	"livecommerce/internal/platform"
@@ -35,6 +36,11 @@ import (
 
 var manualOrderFields = []string{"items", "customer", "delivery", "payment_mode", "locale"}
 var manualRegenerateFields = []string{"order_id", "locale"}
+
+type manualOrderBody struct {
+	merchanttools.ManualInput
+	Source json.RawMessage `json:"source_context"`
+}
 
 // forBuyerFields is the exact POST orders/for-buyer body (live-console-v1 §5.1 step 3): no price, no tenant.
 var forBuyerFields = []string{"items", "customer", "delivery", "payment_mode", "locale", "for", "send_payment_link"}
@@ -115,17 +121,28 @@ func registerMerchantToolsRoutes(mux *http.ServeMux, pool *pgxpool.Pool, manual 
 		respond(w, http.StatusOK, map[string]any{"options": options})
 	}))
 	mux.HandleFunc("POST "+base+"/orders/manual", cvsRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
-		in, ok := manualDiscountBody[merchanttools.ManualInput](w, r, manualOrderFields)
+		body, ok := manualDiscountBody[manualOrderBody](w, r, manualOrderFields)
 		if !ok {
 			return
+		}
+		in := body.ManualInput
+		if body.Source != nil {
+			var fields map[string]json.RawMessage
+			var source merchanttools.ManualSourceContext
+			if json.Unmarshal(body.Source, &fields) != nil || len(fields) != 3 ||
+				fields["conversation_id"] == nil || fields["bundle_ids"] == nil || fields["revision"] == nil ||
+				json.Unmarshal(body.Source, &source) != nil || !merchanttools.ValidManualSource(source) {
+				respondError(w, 422, "invalid_request")
+				return
+			}
+			in.SourceContext = &source
 		}
 		// The pipeline is several transactions on three pools (each bounded to 5 s); the whole request gets 14 s inside the 15 s server cap.
 		ctx, cancel := context.WithTimeout(r.Context(), 14*time.Second)
 		defer cancel()
 		result, replayed, err := manual.Place(ctx, bearerToken(r), r.PathValue("store_id"), r.Header.Get("Idempotency-Key"), in)
 		if err != nil {
-			status, code := toolsClassify(err)
-			respondErrorDetails(w, err, status, code)
+			respondManualOrderError(w, err)
 			return
 		}
 		status := http.StatusCreated
@@ -134,6 +151,32 @@ func registerMerchantToolsRoutes(mux *http.ServeMux, pool *pgxpool.Pool, manual 
 		}
 		respond(w, status, result)
 	}))
+	mux.HandleFunc("GET "+base+"/orders/manual/receipt", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "private, no-store")
+		keys := r.Header.Values("Idempotency-Key")
+		if r.Method != http.MethodGet {
+			respondError(w, http.StatusMethodNotAllowed, "method_not_allowed")
+			return
+		}
+		if r.URL.RawQuery != "" || r.URL.ForceQuery || r.Body != nil && r.Body != http.NoBody ||
+			r.ContentLength != 0 || len(r.TransferEncoding) != 0 || len(keys) != 1 || !claimsKey.MatchString(keys[0]) || !command.ValidID(r.PathValue("store_id")) {
+			respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+			return
+		}
+		if !canonicalBearer(r) {
+			respondError(w, http.StatusUnauthorized, "unauthorized")
+			return
+		}
+		ctx, cancel := context.WithTimeout(r.Context(), 8*time.Second)
+		defer cancel()
+		out, err := manual.ReadReceipt(ctx, bearerToken(r), r.PathValue("store_id"), r.Header.Get("Idempotency-Key"))
+		if err != nil {
+			status, code := toolsClassify(err)
+			respondError(w, status, code)
+			return
+		}
+		respond(w, http.StatusOK, out)
+	})
 	mux.HandleFunc("POST "+base+"/orders/manual/regenerate-link", cvsRoute(http.MethodPost, true, func(w http.ResponseWriter, r *http.Request) {
 		in, ok := cvsStrictBody[merchanttools.ManualRegenerateInput](w, r, manualRegenerateFields, nil)
 		if !ok {
@@ -417,13 +460,28 @@ func respondForBuyerError(w http.ResponseWriter, err error) {
 	respondErrorDetails(w, err, status, code)
 }
 
+func respondManualOrderError(w http.ResponseWriter, err error) {
+	status, code := toolsClassify(err)
+	messages := map[string]string{
+		"source_changed":         "The conversation order source changed. Open the conversation to review it again.",
+		"source_already_ordered": "An order already exists for this conversation draft.",
+		"source_order_pending":   "The conversation order request still needs reconciliation.",
+	}
+	var refusal *claims.ForBuyerError
+	if message, ok := messages[code]; ok && errors.As(err, &refusal) {
+		respond(w, status, httperror.Envelope{Code: code, Message: message, RequestID: w.Header().Get("X-Request-ID"), Details: refusal.ErrorDetails()})
+		return
+	}
+	respondErrorDetails(w, err, status, code)
+}
+
 // manualDiscountBody preserves the required legacy keys while admitting only an
 // optional non-null discount. studioDecodeRaw still rejects duplicate/unknown keys
 // at every nesting level and non-integer money at the typed JSON boundary.
 func manualDiscountBody[T any](w http.ResponseWriter, r *http.Request, required []string) (T, bool) {
 	fieldsAllowed := append(append([]string{}, required...), "discount")
-	if _, manual := any(*new(T)).(merchanttools.ManualInput); manual {
-		fieldsAllowed = append(fieldsAllowed, "member_award")
+	if _, manual := any(*new(T)).(manualOrderBody); manual {
+		fieldsAllowed = append(fieldsAllowed, "member_award", "source_context")
 	}
 	in, raw, ok := studioDecodeRaw[T](w, r, fieldsAllowed)
 	if !ok {

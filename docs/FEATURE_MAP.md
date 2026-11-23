@@ -73,9 +73,9 @@
 - 正常：刷新后余额按调整量变化，台账显示相应记录。浏览器控制台 0 error。
 
 ### 商家 · 订单与手工建单 · /orders、/orders/new、/orders/[order]
-- 操作：从测试商品建单，回到订单列表筛选并打开详情。
+- 操作：从订单列表或客服会话进入手工建单，选择测试商品与收件资料，回到订单详情或原会话。
 - 前端 `apps/admin/app/[locale]/orders/page.tsx`、`apps/admin/app/[locale]/orders/new/page.tsx`、`apps/admin/app/[locale]/orders/[order]/page.tsx` · 后端 `internal/httpapi/orders.go`、`internal/merchantorders/`
-- 正常：新订单只出现一次，详情显示已保存的商品、金额和状态。浏览器控制台 0 error。
+- 正常：同一会话草稿只产生一张订单，回执分列订单和赠点结果，原会话能查到订单。浏览器控制台 0 error。
 
 ### 商家 · 出货与超商配对 · /orders/shipping、/orders/cvs-match
 - 操作：在出货页选择待履约测试订单查看拣货信息，另打开门市工具按地区和门市资料查找。

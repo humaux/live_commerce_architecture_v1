@@ -26,9 +26,9 @@ import { catalogCopy } from "@/lib/catalog-v2-copy";
 import { readProduct, readProducts } from "@/lib/catalog-v2-client";
 import type { ProductDetail, Variant } from "@/lib/catalog-v2-model";
 import { sessionBoundary } from "@/lib/settings-client";
-import { placeManualOrder, readManualOptions, regenerateManualLink } from "@/lib/merchant-tools-client";
-import { draftProblem, manualBody, pickupRecipientErrors, recipientGaps, type ManualDraft, type ManualOption, type ManualPaymentMode, type ManualResult } from "@/lib/merchant-tools-model";
-import { toolsCopy } from "@/lib/merchant-tools-copy";
+import { placeManualOrder, readManualOptions, readManualPrefill, readManualReceipt, regenerateManualLink } from "@/lib/merchant-tools-client";
+import { draftProblem, isManualReceiptKey, manualBody, pickupRecipientErrors, recipientGaps, type ManualDraft, type ManualOption, type ManualPaymentMode, type ManualPrefill, type ManualResult, type ManualSourceContext } from "@/lib/merchant-tools-model";
+import { conversationOrderCopy, toolsCopy } from "@/lib/merchant-tools-copy";
 import { codCopy } from "@/lib/cod-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
@@ -44,13 +44,114 @@ type Line = { sku_id: string; quantity: number; limit: number; label: string; co
 const blankHome = { region: "", city: "", postal_code: "", line1: "", line2: "" };
 const blankCVS = { store_code: "", store_name: "", store_address: "" };
 
-/** Owns the merchant manual-order entry workflow. User actions submit manual-order commands through merchant-tools-client. */
-export function ManualOrder({
-  locale, stores, store, initialError, renderKey,
-}: {
+type ManualPageProps = {
   locale: Locale; stores: Store[]; store: Store | null; initialError: ReadCode | null; renderKey: string;
-}) {
+};
+
+type ConversationDraft = {
+  source: ManualSourceContext;
+  prefill: ManualPrefill;
+  remember: (key: string | null) => void;
+};
+
+/** Both entries use the same draft and placement command. */
+export function ManualOrder({ conversation, ...page }: ManualPageProps & { conversation?: string }) {
+  return conversation ? <ConversationOrder {...page} conversation={conversation} /> : <ManualOrderForm {...page} />;
+}
+
+function ConversationOrder(props: ManualPageProps & { conversation: string }) {
+  const { locale, store, initialError, renderKey, conversation } = props;
+  const c = conversationOrderCopy[locale];
+  const fallback = toolsCopy[locale].manual;
+  const prefill = useGuardedRead(`${renderKey}|${store?.id ?? ""}|${conversation}`,
+    store ? (signal) => readManualPrefill(store.id, conversation, signal) : null, initialError);
+  const [boundary, setBoundary] = useState("");
+  const [storage, setStorage] = useState<{ name: string; key: string | null } | null>(null);
+  const [started, setStarted] = useState<string | null>(null);
+  const [saved, setSaved] = useState<{ name: string; result: ManualResult } | null>(null);
+  const [checking, setChecking] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void sessionBoundary().then((value) => { if (live) setBoundary(value); }, () => { if (live) setBoundary(""); });
+    return () => { live = false; };
+  }, [renderKey, prefill.status]);
+  const storageName = store && boundary ? `manual-order-receipt|${store.id}|${conversation}|${boundary}` : "";
+  useEffect(() => {
+    if (!storageName) return;
+    let key: string | null = null;
+    try { key = sessionStorage.getItem(storageName); } catch { /* Storage can be restricted. */ }
+    setStorage({ name: storageName, key: isManualReceiptKey(key) ? key : null });
+  }, [storageName]);
+  function remember(key: string | null) {
+    if (!storageName) return;
+    try {
+      if (key) sessionStorage.setItem(storageName, key);
+      else sessionStorage.removeItem(storageName);
+    } catch { /* The exact request remains available in the open form. */ }
+  }
+  async function check(key: string) {
+    if (!store || checking) return;
+    setChecking(true);
+    try {
+      const result = await readManualReceipt(store.id, key, boundary);
+      if (result.state === "committed") {
+        setSaved({ name: storageName, result: result.receipt });
+        remember(null);
+      }
+    } catch { /* An unavailable original receipt keeps the outcome unknown. */ }
+    setChecking(false);
+  }
+  const source = prefill.data?.order_context;
+  const recoveryKey = storage?.name === storageName ? storage.key : null;
+  const recovered = saved?.name === storageName && prefill.status === "ready" ? saved.result : null;
+  const returnURL = `/${locale}/messages?store=${store?.id ?? ""}&conversation_id=${conversation}`;
+  if (store && recovered) return <ManualOrderForm {...props} initialReceipt={recovered} returnURL={recovered.order_origin ? returnURL : undefined} />;
+  const ready = source?.state === "ready" && prefill.data;
+  if (ready && storage?.name === storageName && !recoveryKey && (source.latest_order_id === null || started === source.revision)) {
+    const { conversation_id, bundle_ids, revision } = source;
+    return <ManualOrderForm key={revision} {...props} conversationDraft={{ source: { conversation_id, bundle_ids, revision }, prefill: ready, remember }} returnURL={returnURL} />;
+  }
+  const existing = source?.state === "existing_order" ? source.order_id : source?.state === "ready" ? source.latest_order_id : null;
+  const status = recoveryKey || source?.state === "review_required" && source.reason === "source_order_pending" ? c.pending
+    : prefill.status === "forbidden" ? fallback.forbidden
+    : prefill.status === "signed-out" ? fallback.signedOut
+    : prefill.status === "loading" || prefill.status === "hidden" || source?.state === "ready" && !storage ? fallback.loading
+    : existing ? c.previous : source?.state === "review_required" ? c.blocked : c.unavailable;
+  return (
+    <WorkspaceFrame locale={locale} storeName={store?.name ?? fallback.noStore} active="orders">
+      <div className={`orders-page customers-page ops-task ${s.page}`} data-testid="manual-order-page">
+        <AdminPageHeader locale={locale} title={orderOpsCopy[locale].manual} />
+        <p role="status" data-testid="conversation-order-status">{status}</p>
+        <div className="mt-actions">
+          {existing && <Link data-testid="conversation-order-existing" href={`/${locale}/orders/${existing}?store=${store?.id}`}>{c.view}</Link>}
+          {source?.state === "ready" && existing && !recoveryKey && storage?.name === storageName &&
+            <button type="button" onClick={() => setStarted(source.revision)}>{c.newDraft}</button>}
+          {recoveryKey && <button type="button" disabled={checking} onClick={() => void check(recoveryKey)}>{c.check}</button>}
+          {store && <Link href={returnURL} prefetch={false}>{c.back}</Link>}
+        </div>
+      </div>
+    </WorkspaceFrame>
+  );
+}
+
+function prefillLines(prefill: ManualPrefill | undefined, locale: Locale, currency: string): Line[] {
+  if (prefill?.order_context.state !== "ready") return [];
+  const lines = new Map<string, Line>();
+  for (const item of prefill.items) {
+    if (!item.sellable || !prefill.order_context.bundle_ids.includes(item.bundle_id)) continue;
+    const previous = lines.get(item.sku_id);
+    lines.set(item.sku_id, { sku_id: item.sku_id, quantity: (previous?.quantity ?? 0) + item.quantity, limit: 1000,
+      label: item.name, code: item.variant, price: money(locale, currency, item.catalog_price_minor) });
+  }
+  return [...lines.values()];
+}
+
+function ManualOrderForm({
+  locale, stores, store, initialError, renderKey, conversationDraft, initialReceipt, returnURL,
+}: ManualPageProps & { conversationDraft?: ConversationDraft; initialReceipt?: ManualResult; returnURL?: string }) {
   const c = toolsCopy[locale].manual;
+  const sourceCopy = conversationOrderCopy[locale];
+  const prefill = conversationDraft?.prefill;
   const signed = orderOpsCopy[locale];
   const options = useGuardedRead(`${renderKey}|${locale}|${store?.id ?? ""}`, store ? (signal) => readManualOptions(store.id, signal) : null, initialError);
   const [boundary, setBoundary] = useState("");
@@ -80,25 +181,27 @@ export function ManualOrder({
   useEffect(() => {
     if(options.status!=="ready") {setMemberSelection({member:null,points:""});setMemberBusy(false);}
   }, [options.status]);
-  const [lines, setLines] = useState<Line[]>([]);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [email, setEmail] = useState("");
-  const [optionKey, setOptionKey] = useState("");
+  const [lines, setLines] = useState(() => prefillLines(prefill, locale, store?.currency ?? "TWD"));
+  const [name, setName] = useState(prefill?.customer?.name ?? "");
+  const [phone, setPhone] = useState(prefill?.customer?.phone ?? "");
+  const [email, setEmail] = useState(prefill?.customer?.email ?? "");
+  const [optionKey, setOptionKey] = useState(prefill?.last_delivery?.option_key ?? "");
   const [mode, setMode] = useState<ManualPaymentMode | "">("");
-  const [home, setHome] = useState(blankHome);
-  const [cvs, setCVS] = useState(blankCVS);
+  const [home, setHome] = useState(prefill?.last_delivery?.home_address ?? blankHome);
+  const [cvs, setCVS] = useState(prefill?.last_delivery?.cvs ?? blankCVS);
   const [buyerLocale, setBuyerLocale] = useState<Locale>("zh-TW");
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState("");
   const [uncertain, setUncertain] = useState(false);
-  const [placed, setPlaced] = useState<ManualResult | null>(null);
+  const [placed, setPlaced] = useState<ManualResult | null>(initialReceipt ?? null);
+  const [lookupOnly, setLookupOnly] = useState(!!initialReceipt);
+  const [existingOrder, setExistingOrder] = useState("");
   const placedScope=useRef("");
   const [codDue, setCodDue] = useState<number | null>(null); // total + fee the carrier collects (COD orders only), from the options the order was placed with
   const [copied, setCopied] = useState(false);
   const [regenBusy, setRegenBusy] = useState(false);
   const [regenFailure, setRegenFailure] = useState("");
-  const attempt = useRef<{ body: string; key: string; payload: ReturnType<typeof manualBody> & {member_award?:{member_id:string;points:number}} } | null>(null);
+  const attempt = useRef<{ body: string; key: string; payload: ReturnType<typeof manualBody> & {member_award?:{member_id:string;points:number}; source_context?: ManualSourceContext} } | null>(null);
   const regen = useRef<{ body: string; key: string } | null>(null);
 
   const [reviewing, setReviewing] = useState(false);
@@ -114,6 +217,12 @@ export function ManualOrder({
   const pickupErrors = mode === "pay_at_pickup" ? pickupRecipientErrors(name, phone) : null;
   const gaps = recipientGaps(draft); // non-empty only when the recipient is the sole thing missing
   const showMissing = missing && gaps.length > 0;
+  const initialOption = useRef(optionKey);
+  useEffect(() => {
+    if (!initialOption.current || options.status !== "ready") return;
+    initialOption.current = "";
+    if (option?.payment_modes.length === 1) setMode(option.payment_modes[0]);
+  }, [option, options.status]);
 
   function selectOption(key: string) {
     setOptionKey(key); setCVS(blankCVS); setReviewing(false);
@@ -121,17 +230,18 @@ export function ManualOrder({
     setMode(next && next.payment_modes.length === 1 ? next.payment_modes[0] : "");
   }
   useEffect(() => {
-    attempt.current=null; setBusy(false); setUncertain(false); setPlaced(null);
-  }, [memberScope]);
+    attempt.current=null; setBusy(false); setUncertain(false); setPlaced(initialReceipt ?? null);
+    if (initialReceipt) placedScope.current = memberScope;
+  }, [memberScope, initialReceipt]);
   async function submit(event: FormEvent) {
     event.preventDefault();
-    if (!store || mapOnly || busy || memberBusy || options.status!=="ready" || !boundary) return;
+    if (!store || existingOrder || mapOnly || busy || memberBusy || options.status!=="ready" || !boundary) return;
     if (!uncertain && memberProblem) return;
     if (gaps.length) { setMissing(true); setReviewing(false); return; } // submission stays blocked until the recipient is complete
     if (problem) return;
     if (!reviewing) { setReviewing(true); return; }
     const body = uncertain && attempt.current ? attempt.current.payload : {
-      ...manualBody(draft), ...(canPoints && memberSelection.member && memberSelection.points!=="" ?
+      ...manualBody(draft), ...(conversationDraft ? {source_context: conversationDraft.source} : {}), ...(canPoints && memberSelection.member && memberSelection.points!=="" ?
         {member_award:{member_id:memberSelection.member.id,points:Number(memberSelection.points)}} : {})
     };
     const submittedScope=memberScope, submittedGeneration=orderAuthority.current.generation;
@@ -141,6 +251,7 @@ export function ManualOrder({
     setBusy(true);
     setFailure("");
     const submittedAttempt=attempt.current;
+    conversationDraft?.remember(submittedAttempt.key);
     const outcome = await placeManualOrder(store.id, submittedAttempt.key, body, boundary);
     const sameSession=(await sessionBoundary().catch(()=>""))===boundary;
     if (!sameSession || activeMemberScope.current!==submittedScope || orderAuthority.current.generation!==submittedGeneration || orderAuthority.current.status!=="ready") {
@@ -153,12 +264,15 @@ export function ManualOrder({
     }
     setBusy(false);
     if (outcome.ok) {
+      conversationDraft?.remember(null);
+      setLookupOnly(false);
       setCodDue(outcome.value.payment_mode === "cash_on_delivery" ? outcome.value.total_minor + (option?.cod_surcharge_minor ?? 0) : null);
       placedScope.current=submittedScope;
       setPlaced(outcome.value);
       return;
     }
     setUncertain(outcome.uncertain);
+    if (outcome.orderId) setExistingOrder(outcome.orderId);
     const amount = outcome.pickupAmount;
     if (amount) {
       const twd = (minor: number) => money(locale, "TWD", minor);
@@ -166,9 +280,33 @@ export function ManualOrder({
         amount.total_minor < 100 || amount.total_minor % 100 !== 0 ? c.pickupWhole : c.pickupChanged;
       setFailure([c.pickupQuote(twd(amount.subtotal_minor), twd(amount.shipping_minor), twd(amount.total_minor)), c.pickupCap(twd(amount.max_minor)), action].join(" "));
     } else {
-      setFailure(outcome.uncertain ? c.retrySame : c.errors[outcome.code] ?? c.errors.default);
+      setFailure(outcome.uncertain ? c.retrySame : outcome.orderId ? sourceCopy.previous :
+        outcome.code === "source_changed" || outcome.code === "not_found" && conversationDraft ? sourceCopy.unavailable : c.errors[outcome.code] ?? c.errors.default);
     }
-    if (!outcome.uncertain) attempt.current = null; // a definite refusal: the next send is a new attempt
+    if (!outcome.uncertain) {
+      conversationDraft?.remember(null);
+      attempt.current = null;
+    }
+  }
+  async function checkOriginal() {
+    const original = attempt.current;
+    if (!store || !original || busy) return;
+    const submittedScope = memberScope;
+    setBusy(true);
+    try {
+      const result = await readManualReceipt(store.id, original.key, boundary);
+      if (activeMemberScope.current !== submittedScope || attempt.current !== original) return;
+      if (result.state === "committed") {
+        conversationDraft?.remember(null);
+        setLookupOnly(true);
+        placedScope.current = submittedScope;
+        setPlaced(result.receipt);
+      } else setFailure(sourceCopy.pending);
+    } catch {
+      if (activeMemberScope.current === submittedScope) setFailure(sourceCopy.pending);
+    } finally {
+      if (activeMemberScope.current === submittedScope) setBusy(false);
+    }
   }
   function reset() {
     setReviewing(false); setChoosingCVS(false); setMemberSelection({member:null,points:""}); setMemberBusy(false);
@@ -203,7 +341,8 @@ export function ManualOrder({
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="orders">
       <div className={`orders-page customers-page ops-task ${s.page}`} data-testid="manual-order-page">
         {!showMissing && <AdminPageHeader locale={locale} title={signed.manual} description={placed ? c.created : signed.quote} />}
-        {stores.length > 1 && (
+        {returnURL && (!placed || placed.order_origin) && <Link data-testid="manual-order-return-conversation" href={returnURL} prefetch={false}>{sourceCopy.back}</Link>}
+        {stores.length > 1 && !conversationDraft && !initialReceipt && (
           <div className="orders-controls">
             <label>
               {c.store}
@@ -215,27 +354,32 @@ export function ManualOrder({
         )}
         {(options.status === "loading" || options.status === "hidden") && !placed && <p className="orders-message" role="status">{c.loading}</p>}
         {listFailure && <p className="orders-message" role="status">{listFailure}</p>}
+        {!placed && conversationDraft && options.status === "ready" && !available.length && <p role="status">{sourceCopy.noDelivery}</p>}
+        {existingOrder && <Link data-testid="conversation-order-existing" href={`/${locale}/orders/${existingOrder}${storeQuery}`}>{sourceCopy.view}</Link>}
         {placed && store && (
           <section className="mt-card" data-testid="manual-order-result" aria-label={c.created}>
             <h2>{c.created}</h2>
             <p role="status"><Badge tone={placed.commercial_state === "CONFIRMED" ? "success" : "warning"}>{placed.commercial_state === "AWAITING_TRANSFER" ? c.waiting : placed.commercial_state === "AWAITING_COLLECTION" ? c.waitingCollection : c.confirmed}</Badge></p>
             <dl className="mt-stats">
               <div><dt>{c.orderId}</dt><dd style={{ fontSize: 14 }}>{placed.order_id.slice(0, 8)}</dd></div>
-              <div><dt>{c.total}</dt><dd>{money(locale, placed.currency, placed.total_minor)}</dd></div>
+              <div><dt>{conversationDraft && placed.payment_mode === "pay_at_pickup" ? c.pickup : c.total}</dt><dd>{money(locale, placed.currency, placed.total_minor)}</dd></div>
               {codDue !== null && <div data-testid="manual-order-cod-due"><dt>{c.codDue}</dt><dd>{money(locale, placed.currency, codDue)}</dd></div>}
               {placed.payment_mode === "bank_transfer" && <div><dt>{c.expires}</dt><dd style={{ fontSize: 14 }}>{displayTime(locale, placed.expires_at)}</dd></div>}
             </dl>
-            <ul>{lines.map((line) => <li key={line.sku_id}>{line.label} · {line.quantity}</li>)}</ul>
+            {!initialReceipt && <><ul>{lines.map((line) => <li key={line.sku_id}>{line.label} · {line.quantity}</li>)}</ul>
             <dl>
               <div><dt>{signed.name}</dt><dd>{name}</dd></div><div><dt>{signed.phone}</dt><dd>{phone}</dd></div>
               <div><dt>{c.delivery}</dt><dd>{option ? optionName(option) : c.choose}</dd></div>
               <div><dt>{option?.delivery_kind === "home" ? c.line1 : signed.pickup}</dt><dd>{option?.delivery_kind === "home" ?
                 [home.region, home.city, home.postal_code, home.line1, home.line2].filter(Boolean).join(" ") : `${cvs.store_name} · ${cvs.store_code} · ${cvs.store_address}`}</dd></div>
               <div><dt>{c.paymentTitle}</dt><dd>{placed.payment_mode === "bank_transfer" ? c.bank : placed.payment_mode === "cash_on_delivery" ? c.cod : c.pickup}</dd></div>
-            </dl>
+            </dl></>}
+            {placed.live_price && placed.live_price_reason !== "no_bundle" && <p data-testid="manual-order-live-price">{sourceCopy.price} · {placed.live_price === "applied"
+              ? placed.live_price_reason === "some_lines_catalog" ? sourceCopy.some : sourceCopy.applied
+              : `${sourceCopy.catalog} · ${placed.live_price_reason === "permission" ? sourceCopy.permission : sourceCopy.ineligible}`}</p>}
             {placedScope.current===memberScope && placed.member_award && options.status==="ready" && <ManualOrderAwardResult key={`${memberScope}|${placed.order_id}`} award={placed.member_award} locale={locale} store={store} scope={memberScope} boundary={boundary}/>}
-            <h3>{c.linkTitle}</h3>
-            {placed.buyer_link ? (
+            {!lookupOnly && <h3>{c.linkTitle}</h3>}
+            {lookupOnly ? null : placed.buyer_link ? (
               <>
                 <p className="mt-note">{c.linkText}</p>
                 <p className="mt-link" data-testid="manual-order-link">{placed.buyer_link}</p>
@@ -251,14 +395,15 @@ export function ManualOrder({
               </>
             ) : <p className="mt-warn">{c.noLink}</p>}
             <div className="mt-actions" style={{ marginTop: 16 }}>
-              <button type="button" className="primary" onClick={reset} data-testid="manual-order-another">{c.another}</button>
+              {!conversationDraft && !initialReceipt && <button type="button" className="primary" onClick={reset} data-testid="manual-order-another">{c.another}</button>}
+              {(conversationDraft || initialReceipt) && <Link href={`/${locale}/orders/${placed.order_id}${storeQuery}`}>{sourceCopy.view}</Link>}
               <Link href={`/${locale}/orders${storeQuery}`}>{c.viewOrders}</Link>
             </div>
           </section>
         )}
         {/* The form stays mounted while the delivery choices (re)load: a guarded re-read must never wipe what the merchant typed. */}
         {!placed && store && !listFailure && showMissing && <ManualOrderMissing locale={locale} gaps={gaps} onBack={() => setMissing(false)} />}
-        {!placed && store && !listFailure && !showMissing && (
+        {!placed && store && !listFailure && !showMissing && !existingOrder && (
           <form className="mt-form" onSubmit={(event) => void submit(event)} data-testid="manual-order-form" noValidate>
             {reviewing ? <section className="ops-review" aria-label={signed.review}>
               <h2>{signed.review}</h2>
@@ -351,7 +496,7 @@ export function ManualOrder({
             </>}
             <div hidden={reviewing}>
               <ManualOrderMemberFields key={memberScope} locale={locale} store={store} scope={memberScope} boundary={boundary} enabled={options.status==="ready"} disabled={busy||uncertain||reviewing} value={memberSelection} onChange={setMemberSelection}
-                onPrefillName={memberName => setName(current => current.trim() === "" ? memberName : current)} onBusy={setMemberBusy}/>
+                onPrefillName={memberName => { if (!conversationDraft) setName(current => current.trim() === "" ? memberName : current); }} onBusy={setMemberBusy}/>
             </div>
             {failure && <p className="mt-warn" role="alert" data-testid="manual-order-error">{failure}</p>}
             {problem && problem !== "pickupName" && problem !== "pickupPhone" && <p className="mt-note" data-testid="manual-order-hint">{c.problems[problem]}</p>}
@@ -360,6 +505,7 @@ export function ManualOrder({
               <button type="submit" className="primary" data-testid={reviewing ? "manual-order-submit" : undefined} disabled={(!!problem && gaps.length === 0) || mapOnly || busy || memberBusy || (!uncertain && memberProblem) || !boundary}>
                 {reviewing ? busy ? c.submitting : uncertain ? c.retryButton : c.submit : signed.review}
               </button>
+              {uncertain && conversationDraft && <button type="button" disabled={busy} onClick={() => void checkOriginal()}>{sourceCopy.check}</button>}
               <Link href={`/${locale}/orders${storeQuery}`}>{c.back}</Link>
             </div>
           </form>

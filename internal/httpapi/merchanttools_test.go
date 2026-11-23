@@ -78,6 +78,37 @@ func TestUnwiredManualOrdersAnswer503WithTheirCode(t *testing.T) {
 	}
 }
 
+func TestConversationManualOrderWire(t *testing.T) {
+	const body = `{"items":[],"customer":{},"delivery":{},"payment_mode":"bank_transfer","locale":"en"`
+	const source = `{"conversation_id":"11111111-1111-4111-8111-111111111111","bundle_ids":[],"revision":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"}`
+	for _, c := range []struct {
+		method, path, key, body string
+		status                  int
+	}{
+		{"POST", "/orders/manual", "test-key-01", body + `,"source_context":` + source + "}", 503},
+		{"POST", "/orders/manual", "test-key-01", body + `,"source_context":null}`, 422},
+		{"POST", "/orders/manual", "test-key-01", body + `,"source_context":{"bundle_ids":null}}`, 422},
+		{"POST", "/orders/manual", "test-key-01", body + `,"source_context":{"conversation_id":false,"bundle_ids":[],"revision":"x"}}`, 422},
+		{"POST", "/orders/manual", "test-key-01", body + `,"source_context":` + strings.TrimSuffix(source, "}") + `,"send_payment_link":true}}`, 422},
+		{"POST", "/orders/for-buyer", "test-key-01", body + `,"source_context":` + source + "}", 400},
+		{"POST", "/orders/for-buyer", "test-key-01", body + `,"member_award":{"member_id":"11111111-1111-4111-8111-111111111111","points":1}}`, 400},
+		{"GET", "/orders/manual/receipt", "test-key-01", "", 503},
+		{"GET", "/orders/manual/receipt", "", "", 422},
+		{"GET", "/orders/manual/receipt?key=test-key-01", "test-key-01", "", 422},
+	} {
+		t.Run(c.method+c.path+c.body, func(t *testing.T) {
+			contentType := ""
+			if c.body != "" {
+				contentType = "application/json"
+			}
+			w := toolsCall(t, c.method, c.path, contentType, c.key, c.body)
+			if w.Code != c.status || !strings.Contains(w.Header().Get("Cache-Control"), "no-store") {
+				t.Fatalf("response = %d cache=%q %s, want %d no-store", w.Code, w.Header().Get("Cache-Control"), w.Body.String(), c.status)
+			}
+		})
+	}
+}
+
 // Every refusal code the manual-order and CSV paths can answer must survive httperror's closed message table (ruling 15: an unknown code is
 // rewritten to "internal").
 func TestMerchantToolsCodesReachJSONBody(t *testing.T) {

@@ -4,15 +4,30 @@
 // An import or an order is never retried here: an uncertain answer is shown and the caller re-sends the SAME key (manual order) or the same
 // file (import: idempotent by file hash), so a repeat can only replay.
 import { csrfCookie, safeError, sessionBoundary } from "./settings-client";
-import { get } from "./customers-client";
-import { parsePickupRefusal, parseDashboard, parseImportResult, parseManualOptions, parseManualResult, parseRegenerateResult, type Dashboard, type ImportResult, type ManualOption, type ManualResult, type RegenerateResult } from "./merchant-tools-model";
+import { get, ReadError } from "./customers-client";
+import { canonicalUUID } from "./orders-model";
+import { parsePickupRefusal, parseDashboard, parseImportResult, parseManualOptions, parseManualPrefill, parseManualReceipt, parseManualResult, parseRegenerateResult, type Dashboard, type ImportResult, type ManualOption, type ManualResult, type RegenerateResult } from "./merchant-tools-model";
 
-export type Outcome<T> = { ok: true; value: T; status: number } | { ok: false; code: string; uncertain: boolean; status: number; pickupAmount?: NonNullable<ReturnType<typeof parsePickupRefusal>> };
+export type Outcome<T> = { ok: true; value: T; status: number } | { ok: false; code: string; uncertain: boolean; status: number; pickupAmount?: NonNullable<ReturnType<typeof parsePickupRefusal>>; orderId?: string };
 const base = (store: string) => `/api/stores/${store}/tools`;
 
 export const readDashboard = (store: string, signal: AbortSignal): Promise<Dashboard> => get(`${base(store)}/dashboard`, parseDashboard, signal);
 export const readManualOptions = (store: string, signal: AbortSignal): Promise<ManualOption[]> =>
   get(`${base(store)}/orders/manual/options`, parseManualOptions, signal);
+export const readManualPrefill = (store: string, conversation: string, signal: AbortSignal) =>
+  get(`/api/stores/${store}/inbox/order-prefill?conversation_id=${conversation}`, (value) => parseManualPrefill(value, conversation), signal);
+
+export async function readManualReceipt(store: string, key: string, boundary: string) {
+  if (!await fenced(boundary)) throw new ReadError("signed-out");
+  const response = await fetch(`${base(store)}/orders/manual/receipt`, {
+    method: "GET", credentials: "same-origin", cache: "no-store", redirect: "error",
+    headers: { "Idempotency-Key": key }, signal: AbortSignal.timeout(10000),
+  });
+  if (!response.ok || !response.headers.get("cache-control")?.includes("no-store")) throw new ReadError("unavailable");
+  const parsed = parseManualReceipt(await response.json());
+  if (!await fenced(boundary)) throw new ReadError("signed-out");
+  return parsed;
+}
 
 async function fenced(boundary: string): Promise<string | null> {
   const csrf = csrfCookie();
@@ -38,7 +53,11 @@ async function write<T>(url: string, init: { headers: Record<string, string>; bo
       const code = safeError(value).code;
       const details = code === "pay_at_pickup_amount_exceeds" && response.status === 422
         ? parsePickupRefusal((value as { details?: unknown } | null)?.details) : null;
-      return { ok: false, code, uncertain: response.status >= 500, status: response.status, ...(details ? { pickupAmount: details } : {}) };
+      const order = (value as { details?: { order_id?: unknown } } | null)?.details?.order_id;
+      const orderId = response.status === 409 && ["bundle_already_ordered", "source_already_ordered"].includes(code) &&
+        typeof order === "string" && canonicalUUID.test(order) ? order : null;
+      return { ok: false, code, uncertain: response.status >= 500 || code === "source_order_pending", status: response.status,
+        ...(details ? { pickupAmount: details } : {}), ...(orderId ? { orderId } : {}) };
     }
     try {
       return { ok: true, value: parse(value), status: response.status };

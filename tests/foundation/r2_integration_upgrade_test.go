@@ -143,8 +143,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0226 (OC-Q1 bank-transfer offer policy) adds one: 150 -> 151.
 	// 0227 provisions the four manual CVS services: 151 -> 152.
 	// 0228_manual_order_award_recovery.sql adds original-order award recovery: 152 -> 153.
-	if len(r2) != 153 {
-		t.Fatalf("R2 migration set = %d files %v, want 153", len(r2), r2)
+	// 0229 records contextual manual order admission and provenance: 153 -> 154.
+	if len(r2) != 154 {
+		t.Fatalf("R2 migration set = %d files %v, want 154", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
