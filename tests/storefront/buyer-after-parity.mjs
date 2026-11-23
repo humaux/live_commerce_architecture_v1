@@ -558,14 +558,14 @@ test("payment return · neutral page", async () => {
 });
 
 // ---- privacy / data deletion -----------------------------------------------------------------------------------------------------------------------------------
-const PRIVACY_TEXT = ["隱私與資料", "你的隱私選擇", "購買不代表同意；關閉以下選擇不影響現有訂單。", "行銷私訊", "廣告個人化", "目前未開啟", "關閉廣告個人化會停止後續事件；已傳送的事件無法撤回。",
-  "下載資料副本", "下載本店持有的你的資料副本，包含訂單及目前的隱私選擇。", "抹除我的資料", "抹除會撤回你的選擇並結束購物連線；訂單、付款與出貨紀錄仍會保留。", "若仍有進行中的付款或退款，需先等待該操作結束。",
+const PRIVACY_TEXT = ["隱私與資料請求", "你的同意設定", "購買不代表同意；關閉以下選擇不影響現有訂單。", "Messenger／Instagram 私訊優惠", "Meta 個人化廣告", "目前未開啟", "關閉廣告個人化會停止後續事件；已傳送的事件無法撤回。",
+  "我的個人資料", "下載本店持有的你的資料副本，包含訂單及目前的隱私選擇。", "抹除我的資料", "抹除會撤回你的選擇並結束購物連線；訂單、付款與出貨紀錄仍會保留。", "若仍有進行中的付款或退款，需先等待該操作結束。",
   "資料如何用於購物", "收件人姓名、電話、地址或取貨門市資料，用於處理訂單與配送。", "可用付款方式與結果，請以結帳及訂單頁顯示為準。"];
 
 function resetPrivacy() { Object.assign(privacyState, { marketing: false, ads: false, erased: false, exportMode: "ok", eraseMode: "ok" }); }
 
 test("privacy · overview, consent settings, export", async () => {
-  for (const [dev, frames] of [["d", { main: "5:15460", consent: "26:888", done: "37:1083", fail: "37:1140" }], ["m", { main: "5:15540", consent: "26:1150", done: "37:1114", fail: "37:1173" }]]) {
+  for (const [dev, frames] of [["d", { main: "1826:112226", consent: "26:888", done: "37:1083", fail: "37:1140" }], ["m", { main: "1826:112295", consent: "26:1150", done: "37:1114", fail: "37:1173" }]]) {
     resetPrivacy();
     const page = await DEVICES[dev]().newPage();
     await page.goto(`${origin}/zh-TW/privacy`);
@@ -573,10 +573,15 @@ test("privacy · overview, consent settings, export", async () => {
     await c.load();
     c.text(...PRIVACY_TEXT);
     await c.noHeading("你的隱私");
-    await need(c, "管理這兩項選擇", "下載我的資料", "檢視抹除範圍");
+    await need(c, "下載我的資料", "檢視抹除範圍", "閱讀隱私說明");
+    assert.equal(await page.getByRole("link", { name: "返回商店", exact: true }).count(), 1);
+    const marketing = page.getByRole("button", { name: "Messenger／Instagram 私訊優惠 變更設定", exact: true });
+    const ads = page.getByRole("button", { name: "Meta 個人化廣告 變更設定", exact: true });
+    assert.equal(await marketing.count(), 1);
+    assert.equal(await ads.count(), 1);
     await c.shot(frames.main);
     // consent settings: tick, save, refresh, still ticked (persistence)
-    await click(page, btn(page, "管理這兩項選擇").first(), { page: "隱私與資料", control: "管理這兩項選擇", expected: "隱私與同意設定" });
+    await click(page, marketing, { page: "隱私與資料", control: "變更私訊設定", expected: "隱私與同意設定" });
     await c.load();
     c.text("隱私與同意設定", "必要資料", "完成訂購、配送與查詢訂單所需的資料，依商店的隱私政策處理。", "選擇性使用", "接收商店行銷資訊", "允許廣告個人化使用", "可隨時更新選擇，不影響已成立訂單。");
     await need(c, "儲存選擇");
@@ -587,7 +592,8 @@ test("privacy · overview, consent settings, export", async () => {
       await click(page, box, { page: "隱私與同意設定", control: "接收商店行銷資訊", expected: "checked" });
       await click(page, btn(page, "儲存選擇").first(), { page: "隱私與同意設定", control: "儲存選擇", expected: "saved" });
       await page.waitForTimeout(800); await page.reload(); await c.load();
-      if ((await btn(page, "管理這兩項選擇").count()) > 0) { await click(page, btn(page, "管理這兩項選擇").first(), { page: "隱私與資料", control: "管理這兩項選擇", expected: "saved choice is still ticked" }); await c.load(); }
+      await click(page, marketing, { page: "隱私與資料", control: "變更私訊設定", expected: "saved choice is still ticked" });
+      await c.load();
       if (!(await page.getByRole("checkbox", { name: /接收商店行銷資訊/ }).isChecked().catch(() => false))) c.problems.push("consent choice did not persist after refresh");
     }
     // export success then failure

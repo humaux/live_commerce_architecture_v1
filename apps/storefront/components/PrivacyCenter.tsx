@@ -1,6 +1,6 @@
 "use client";
 
-// Buyer privacy page UI (/{locale}/privacy, U8), laid out as the signed frames 5:15460.. / 26:888 / 29:950.. / 37:1083..: overview, consent settings
+// Buyer privacy page UI (/{locale}/privacy, U8), with the B11 overview and signed consent, export and erasure states: consent settings
 // (checkboxes + save, context "settings"), data copy download (done / failed screens), erase confirm (typed ERASE, one Idempotency-Key per erase
 // attempt, reused when the buyer confirms the same request) with completed / blocked / unconfirmed screens, and the erased state on 410.
 // BFF GET /api/buyer/privacy, PUT /api/buyer/consents, POST /api/buyer/privacy/export, POST /api/buyer/privacy/erasure
@@ -12,6 +12,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import LocaleSelect from "./LocaleSelect";
+import ShopChromeLink from "./ShopChromeLink";
 import {
   BuyerClientError,
   buyerRequest,
@@ -23,6 +24,7 @@ import { orderRecoveryRequired } from "../lib/purchase";
 import { privacyCopy } from "../lib/privacy-copy";
 import { privacyFrameCopy } from "./privacy/copy";
 import ContactStoreButton from "./privacy/ContactStoreButton";
+import styles from "./privacy/PrivacyCenter.module.css";
 import {
   consentBody,
   consentPairs,
@@ -41,6 +43,7 @@ import {
 
 type View = "loading" | "ready" | "erased" | "failed" | "session";
 type Screen = "overview" | "settings" | "exportDone" | "exportFail" | "confirm" | "blocked" | "unknown";
+type OverviewAction = ConsentPurpose | "download" | "erase";
 
 async function errorCode(response: Response): Promise<string> {
   const body: unknown = await response.json().catch(() => null);
@@ -69,6 +72,11 @@ export default function PrivacyCenter({
   const [typed, setTyped] = useState("");
   const [problem, setProblem] = useState("");
   const eraseKey = useRef("");
+  const returnTo = useRef<OverviewAction | null>(null);
+  const overviewButtons = useRef<Partial<Record<OverviewAction, HTMLButtonElement | null>>>({});
+  const consentInputs = useRef<Partial<Record<ConsentPurpose, HTMLInputElement | null>>>({});
+  const confirmationInput = useRef<HTMLInputElement>(null);
+  const resultHeading = useRef<HTMLHeadingElement>(null);
 
   function fail(reason: unknown) {
     if (reason instanceof BuyerClientError && (["context_changed", "requires_reset"].includes(reason.code) || reason.status === 401))
@@ -114,6 +122,24 @@ export default function PrivacyCenter({
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
+  useEffect(() => {
+    const action = returnTo.current;
+    if (!action) return;
+    if (view === "erased") {
+      resultHeading.current?.focus();
+    } else if (view === "ready") {
+      if (screen === "overview") {
+        overviewButtons.current[action]?.focus();
+        returnTo.current = null;
+      } else if (screen === "settings" && action !== "download" && action !== "erase") {
+        consentInputs.current[action]?.focus();
+      } else if (screen === "confirm") {
+        confirmationInput.current?.focus();
+      } else {
+        resultHeading.current?.focus();
+      }
+    }
+  }, [screen, view]);
 
   async function renew() {
     setBusy("renew");
@@ -165,6 +191,7 @@ export default function PrivacyCenter({
 
   async function download() {
     if (busy) return;
+    returnTo.current = "download";
     setBusy("export");
     setMessage(null);
     try {
@@ -199,6 +226,7 @@ export default function PrivacyCenter({
   }
 
   function beginErase() {
+    returnTo.current = "erase";
     eraseKey.current = `erase-${crypto.randomUUID()}`;
     setTyped("");
     setProblem("");
@@ -234,22 +262,25 @@ export default function PrivacyCenter({
 
   const label = (purpose: ConsentPurpose) => (purpose === "marketing_messages" ? f.marketing : f.ads);
   const overview = screen === "overview";
+  const showOverview = view === "ready" && overview;
   return (
-    <>
-      <header className="shop-header">
-        <span>{f.title}</span>
-        <LocaleSelect
-          locale={locale}
-          label={copy.language}
-          path="/privacy"
-          disabled={busy !== ""}
-          onSelect={(next) => {
-            window.history.replaceState(window.history.state, "", `/${next}/privacy`);
-            setLocale(next);
-          }}
-        />
-      </header>
-      <main className="purchase-main claim-main" aria-busy={view === "loading" || busy !== ""}>
+    <main className={showOverview ? styles.overview : "purchase-main claim-main"} aria-busy={view === "loading" || busy !== ""}>
+      <div className={showOverview ? `sf-wrap ${styles.content}` : undefined}>
+        <div className={styles.toolbar}>
+          {showOverview && (
+            <ShopChromeLink className="sf-link" href={`/${locale}`}><span aria-hidden="true">‹&nbsp;</span>{f.backToStore}</ShopChromeLink>
+          )}
+          <LocaleSelect
+            locale={locale}
+            label={copy.language}
+            path="/privacy"
+            disabled={busy !== ""}
+            onSelect={(next) => {
+              window.history.replaceState(window.history.state, "", `/${next}/privacy`);
+              setLocale(next);
+            }}
+          />
+        </div>
         {view === "loading" && <p role="status">{copy.loading}</p>}
         {view === "failed" && (
           <div role="alert" className="purchase-error">
@@ -265,57 +296,87 @@ export default function PrivacyCenter({
         )}
         {view === "erased" && (
           <section role="status" className="claim-preview" data-testid="privacy-erased">
-            <h1>{f.erasedTitle}</h1>
+            <h1 ref={resultHeading} tabIndex={-1}>{f.erasedTitle}</h1>
             <p>{f.erasedText}</p>
-            <p><a className="tap-link" href={`/${locale}`}>{f.backToStore}</a></p>
+            <p><ShopChromeLink className="sf-link" href={`/${locale}`}>{f.backToStore}</ShopChromeLink></p>
           </section>
         )}
-        {view === "ready" && privacy && overview && (
+        {showOverview && privacy && (
           <>
-            <h1>{f.title}</h1>
+            <header className={`sf-pagehead ${styles.heading}`}>
+              <h1>{f.title}</h1>
+              <p className="sf-pagehead__intro">{f.intro}</p>
+            </header>
             {message && (
               <p role={message.tone === "ok" ? "status" : "alert"} className={message.tone === "ok" ? "claim-success" : "claim-note"} data-testid="privacy-message">
                 {message.text}
               </p>
             )}
-            <section className="claim-preview" aria-labelledby="privacy-choices-title" data-testid="privacy-choices">
-              <h2 id="privacy-choices-title">{f.choicesTitle}</h2>
-              <p className="claim-note">{f.choicesIntro}</p>
-              <ul className="claim-lines">
-                {consentPairs.map(({ purpose }) => (
-                  <li key={purpose} data-testid={`privacy-${purpose}`}>
-                    <strong>{label(purpose)}</strong>
-                    <span>{privacy.consents[purpose] ? f.on : f.off}</span>
-                  </li>
-                ))}
-              </ul>
-              <button
-                data-testid="privacy-manage"
-                disabled={busy !== ""}
-                onClick={() => {
-                  setDraft({ ...privacy.consents });
-                  setMessage(null);
-                  setScreen("settings");
-                }}
-              >
-                {f.manage}
-              </button>
-              <p className="claim-note">{f.adsNote}</p>
-            </section>
-            <section className="claim-cart" aria-labelledby="privacy-download-title">
-              <h2 id="privacy-download-title">{f.downloadTitle}</h2>
-              <p>{f.downloadText}</p>
-              <button data-testid="privacy-download" disabled={busy !== ""} onClick={() => void download()}>
-                {busy === "export" ? f.downloading : f.download}
-              </button>
-            </section>
-            <section className="claim-cart" aria-labelledby="privacy-erase-title">
-              <h2 id="privacy-erase-title">{f.eraseTitle}</h2>
-              <p>{f.eraseText}</p>
-              <p className="claim-note">{f.eraseWait}</p>
-              <button data-testid="privacy-erase" disabled={busy !== ""} onClick={beginErase}>{f.eraseReview}</button>
-            </section>
-            <section className="claim-cart" aria-labelledby="privacy-use-title">
+            <div className={styles.cards}>
+              <section className={styles.card} aria-labelledby="privacy-choices-title" data-testid="privacy-choices">
+                <h2 id="privacy-choices-title">{f.choicesTitle}</h2>
+                <ul className={styles.choices}>
+                  {consentPairs.map(({ purpose }) => (
+                    <li key={purpose} className={styles.choice} data-testid={`privacy-${purpose}`}>
+                      <h3 id={`privacy-label-${purpose}`}>{label(purpose)}</h3>
+                      <p>{purpose === "ads_personalization" ? f.adsNote : f.marketingNote}</p>
+                      <div className={styles.choiceAction}>
+                        <button
+                          className="sf-btn sf-btn--ghost"
+                          id={`privacy-edit-${purpose}`}
+                          aria-labelledby={`privacy-label-${purpose} privacy-edit-${purpose}`}
+                          aria-describedby={`privacy-status-${purpose}`}
+                          data-testid={`privacy-manage-${purpose}`}
+                          ref={(button) => { overviewButtons.current[purpose] = button; }}
+                          disabled={busy !== ""}
+                          onClick={() => {
+                            returnTo.current = purpose;
+                            setDraft({ ...privacy.consents });
+                            setMessage(null);
+                            setScreen("settings");
+                          }}
+                        >
+                          {f.manage}
+                        </button>
+                        <span id={`privacy-status-${purpose}`}>{privacy.consents[purpose] ? f.on : f.off}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <p>{f.choicesIntro}</p>
+              </section>
+              <div>
+                <section className={styles.card} aria-labelledby="privacy-download-title" data-testid="privacy-data-card">
+                  <h2 id="privacy-download-title">{f.downloadTitle}</h2>
+                  <p>{f.downloadText}</p>
+                  <button
+                    className="sf-btn sf-btn--primary sf-btn--block"
+                    data-testid="privacy-download"
+                    ref={(button) => { overviewButtons.current.download = button; }}
+                    disabled={busy !== ""}
+                    onClick={() => void download()}
+                  >
+                    {busy === "export" ? f.downloading : f.download}
+                  </button>
+                  <div className={styles.erase}>
+                    <h3>{f.eraseTitle}</h3>
+                    <p>{f.eraseText}</p>
+                    <p>{f.eraseWait}</p>
+                    <button
+                      className="sf-btn sf-btn--ghost sf-btn--block"
+                      data-testid="privacy-erase"
+                      ref={(button) => { overviewButtons.current.erase = button; }}
+                      disabled={busy !== ""}
+                      onClick={beginErase}
+                    >
+                      {f.eraseReview}
+                    </button>
+                  </div>
+                </section>
+                <a className="sf-link" href="#notice">{f.readNotice}</a>
+              </div>
+            </div>
+            <section className={`claim-cart ${styles.supplement}`} aria-labelledby="privacy-use-title">
               <h2 id="privacy-use-title">{f.useTitle}</h2>
               <p>{f.useShip}</p>
               <p>{f.usePay}</p>
@@ -344,6 +405,7 @@ export default function PrivacyCenter({
               <label key={purpose} className="consent-box">
                 <input
                   type="checkbox"
+                  ref={(input) => { consentInputs.current[purpose] = input; }}
                   data-testid={`privacy-check-${purpose}`}
                   checked={draft[purpose]}
                   disabled={busy !== ""}
@@ -363,7 +425,7 @@ export default function PrivacyCenter({
         )}
         {view === "ready" && screen === "exportDone" && (
           <section className="claim-preview" role="status" data-testid="privacy-export-done">
-            <h1>{f.exportDoneTitle}</h1>
+            <h1 ref={resultHeading} tabIndex={-1}>{f.exportDoneTitle}</h1>
             <h2>{f.exportDoneBadge}</h2>
             <p>{f.exportDoneText}</p>
             <p className="claim-note">{f.exportDoneNote}</p>
@@ -372,7 +434,7 @@ export default function PrivacyCenter({
         )}
         {view === "ready" && screen === "exportFail" && (
           <section className="claim-preview" role="alert" data-testid="privacy-export-failed">
-            <h1>{f.exportFailTitle}</h1>
+            <h1 ref={resultHeading} tabIndex={-1}>{f.exportFailTitle}</h1>
             <h2>{f.exportFailBadge}</h2>
             <p>{f.exportFailText}</p>
             <div className="claim-actions">
@@ -396,6 +458,7 @@ export default function PrivacyCenter({
             <label className="wide">
               {f.typeLabel}
               <input
+                ref={confirmationInput}
                 data-testid="privacy-erase-typed"
                 autoComplete="off"
                 autoCapitalize="off"
@@ -415,7 +478,7 @@ export default function PrivacyCenter({
         )}
         {view === "ready" && screen === "blocked" && (
           <section className="claim-preview" role="alert" data-testid="privacy-erase-blocked">
-            <h1>{f.blockedTitle}</h1>
+            <h1 ref={resultHeading} tabIndex={-1}>{f.blockedTitle}</h1>
             <h2>{f.blockedSub}</h2>
             <p>{f.blockedText}</p>
             <p className="claim-note">{f.blockedNote}</p>
@@ -427,7 +490,7 @@ export default function PrivacyCenter({
         )}
         {view === "ready" && screen === "unknown" && (
           <section className="claim-preview" role="alert" data-testid="privacy-erase-unknown">
-            <h1>{f.unknownTitle}</h1>
+            <h1 ref={resultHeading} tabIndex={-1}>{f.unknownTitle}</h1>
             <h2>{f.unknownSub}</h2>
             <p>{f.unknownText}</p>
             <div className="claim-actions">
@@ -438,7 +501,7 @@ export default function PrivacyCenter({
         )}
         {(overview || view !== "ready") && (
           <section
-            className="claim-cart"
+            className={`claim-cart ${styles.supplement}`}
             aria-labelledby="privacy-notice-title"
             id="notice"
             data-testid="privacy-notice"
@@ -454,7 +517,7 @@ export default function PrivacyCenter({
             </ul>
           </section>
         )}
-      </main>
-    </>
+      </div>
+    </main>
   );
 }

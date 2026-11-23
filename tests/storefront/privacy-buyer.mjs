@@ -214,10 +214,18 @@ try {
   await expect(p4.getByTestId("privacy-notice")).toContainText(policy);
   for (const purpose of ["marketing_messages", "ads_personalization"]) await expect(p4.getByTestId(`privacy-${purpose}`)).toContainText(fr.off);
   const saveChoice = async (purpose, on) => {
-    await p4.getByTestId("privacy-manage").click();
-    if (on) await p4.getByTestId(`privacy-check-${purpose}`).check(); else await p4.getByTestId(`privacy-check-${purpose}`).uncheck();
+    const entry = p4.getByTestId(`privacy-manage-${purpose}`);
+    await entry.press("Enter");
+    const choice = p4.getByTestId(`privacy-check-${purpose}`);
+    await expect(choice).toBeFocused();
+    const before = puts4.length;
+    if (on) await choice.check(); else await choice.uncheck();
+    assert.equal(puts4.length, before, "editing a choice keeps a local draft until Save");
     await p4.getByTestId("privacy-save").click();
     await expect(p4.getByTestId(`privacy-${purpose}`)).toContainText(on ? fr.on : fr.off);
+    await expect(entry).toBeFocused();
+    assert.equal(puts4.length, before + 1);
+    assert.equal(JSON.parse(puts4.at(-1).body).purpose, purpose, "one purpose per saved change");
   };
   await saveChoice("marketing_messages", true);
   await expect(p4.getByTestId("privacy-message")).toHaveText(fr.saved);
@@ -331,7 +339,11 @@ try {
     for (const viewport of ["desktop", "mobile"]) {
       const c = await newContext(viewport === "mobile");
       const p = await c.newPage();
-      await p.goto(`${origin}/${locale}/privacy`);
+      await p.goto(`${origin}/${locale}`);
+      await p.locator("footer").locator(`a[href="/${locale}/data-deletion"]`).click();
+      await expect(p).toHaveURL(`${origin}/${locale}/data-deletion`);
+      await p.getByTestId("data-deletion-privacy-link").click();
+      await expect(p).toHaveURL(`${origin}/${locale}/privacy`);
       await expect(p.getByTestId("privacy-choices")).toBeVisible();
       await expect(p.locator("html")).toHaveAttribute("lang", locale);
       await expect(p.getByRole("heading", { level: 1 })).toHaveText(privacyFrameCopy[locale].title);
