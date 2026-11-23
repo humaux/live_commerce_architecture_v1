@@ -173,6 +173,8 @@ Route base: /v1/admin/stores/{store_id}
 | `POST /members/{member_id}/export` | `customers:privacy` | → 200 JSON attachment `{"member","entries":[{"id","delta","reason","order_id","note","actor_principal_id","created_at"}]}` (no staff names, LP12); 409 `export_too_large` over 1 MiB; same-key replay returns a fresh export of the same member and writes no second audit row (§1: bodies are always built from current rows) |
 | `POST /members/{member_id}/erasure` | `customers:privacy` | `{}` → 200 `{"member_id","erased_at","entries_redacted"}`; replay = the stored response |
 | `POST /orders/manual` (existing §G3) | existing + `customers:points` when `member_award` is present | additive optional `"member_award":{"member_id","points"}`; success adds `"member_award":{"member_id","points","state":"awarded","entry_id"}` or `{"member_id","points","state":"not_awarded","reason"}` (LP18) |
+| `GET /orders/{order_id}/member-award-recovery` | `orders:read` + `customers:read` | Current original-order recovery state. See [M09/M10](#original-order-award-recovery). |
+| `POST /orders/{order_id}/member-award-recovery` | `orders:read` + `customers:points` | `{}` with `Idempotency-Key` → 201 for a new award, 200 for a recovered award readback. See [M09/M10](#original-order-award-recovery). |
 
 Refusal codes (existing style, additive): `401 unauthorized`; `403 forbidden` (missing permission — including
 `customers:points` on a manual order with `member_award`, refused by the pre-check before any pipeline write);

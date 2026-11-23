@@ -1690,7 +1690,7 @@ func TestLoyaltyLPG10ACL(t *testing.T) {
 			t.Errorf("%s has column grants to %s (definers only)", tb, got)
 		}
 	}
-	runtimeExec := []string{"adjust_points", "create_member", "erase_member", "export_member", "precheck_award", "project_write", "read_entry", "read_member",
+	runtimeExec := []string{"adjust_points", "create_member", "erase_member", "export_member", "manual_order_award_recovery", "precheck_award", "project_write", "read_entry", "read_member",
 		"read_members", "read_order_entries", "require_recent_privacy", "try_award_manual_order", "update_member"}
 	rows, err := f.owner.Query(ctx, `SELECT p.proname,pg_get_userbyid(p.proowner),p.prosecdef,coalesce(p.proconfig::text,''),p.prorettype='trigger'::regtype,
 		coalesce((SELECT string_agg(coalesce(nullif(pg_get_userbyid(a.grantee),''),'PUBLIC'),',') FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a
