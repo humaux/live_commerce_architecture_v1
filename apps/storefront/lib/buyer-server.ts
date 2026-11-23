@@ -357,16 +357,17 @@ function route(
           : undefined,
     };
   }
-  const orderSession = /^orders\/([^/]+)\/session(?:\/(logout))?$/.exec(suffix);
-  if (orderSession) {
-    if (!UUID.test(orderSession[1])) return { known: true, invalidID: true };
-    const logout = !!orderSession[2];
+  const [resource, orderID, subresource, action, extra] = suffix.split("/");
+  if (resource === "orders" && subresource === "session" &&
+      (action === undefined || action === "logout") && extra === undefined) {
+    if (!UUID.test(orderID)) return { known: true, invalidID: true };
+    const logout = action === "logout";
     return {
       known: true,
       route: method === (logout ? "POST" : "GET") ? {
         method, privatePath: "session", body: logout ? "empty" : undefined,
         session: logout ? "logout" : "status", orderSession: true,
-        orderID: orderSession[1], query: "orderAccess",
+        orderID, query: "orderAccess",
       } : undefined,
     };
   }
