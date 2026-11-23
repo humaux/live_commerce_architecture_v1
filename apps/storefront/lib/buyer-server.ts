@@ -4,6 +4,7 @@
 // Invariants: server-resolved published origin and scope; no generic proxy, client scope, raw diagnostics, PII logs, credential disclosure or mutation/contact retry.
 import { type BuyerReturnBody, type BuyerReturnFields, buyerReturnBodies, buyerReturnRoute, isBuyerReturnMutation, validBuyerReturnBody, validBuyerReturnResponse } from "./buyer-returns.ts";
 import { BUYER_UUID as UUID, type BuyerQuery, type OrderAccess, isOrderAccess, validQuery } from "./buyer-query.ts";
+import { orderCookieLabel, ORDER_COOKIES, orderSessionRoute } from "./buyer-order-access.ts";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
 import { readAdSignals, readAdTouch } from "./ad-touch.ts";
@@ -51,10 +52,6 @@ import {
 } from "./cvs-contract.ts";
 
 const COOKIE = "__Host-commerce_buyer";
-const ORDER_COOKIES = {
-  lookup: "__Host-commerce_buyer_lookup",
-  link: "__Host-commerce_buyer_link",
-} satisfies Record<OrderAccess, string>;
 const MAX_JSON = 64 * 1024;
 const MAX_UPSTREAM = 1024 * 1024;
 const INBOUND_DEADLINE = 12_000;
@@ -225,13 +222,9 @@ function mac(config: Config, purpose: string, text: string): Buffer {
     .digest();
 }
 
-function cookieLabel(access?: OrderAccess): string {
-  return access ? `buyer-order-${access}-cookie-v1` : "buyer-cookie-v1";
-}
-
 function envelopeValue(config: Config, envelope: Envelope, access?: OrderAccess): string {
   const payload = Buffer.from(JSON.stringify(envelope)).toString("base64url");
-  return `${payload}.${mac(config, cookieLabel(access), payload).toString("base64url")}`;
+  return `${payload}.${mac(config, orderCookieLabel(access), payload).toString("base64url")}`;
 }
 
 function context(config: Config, origin: string, cookie: string): string {
@@ -272,7 +265,7 @@ function parseEnvelope(
     !canonical32(pieces[1])
   )
     return null;
-  const expected = mac(config, cookieLabel(access), pieces[0]);
+  const expected = mac(config, orderCookieLabel(access), pieces[0]);
   if (!timingSafeEqual(expected, Buffer.from(pieces[1], "base64url")))
     return null;
   try {
@@ -357,20 +350,8 @@ function route(
           : undefined,
     };
   }
-  const [resource, orderID, subresource, action, extra] = suffix.split("/");
-  if (resource === "orders" && subresource === "session" &&
-      (action === undefined || action === "logout") && extra === undefined) {
-    if (!UUID.test(orderID)) return { known: true, invalidID: true };
-    const logout = action === "logout";
-    return {
-      known: true,
-      route: method === (logout ? "POST" : "GET") ? {
-        method, privatePath: "session", body: logout ? "empty" : undefined,
-        session: logout ? "logout" : "status", orderSession: true,
-        orderID, query: "orderAccess",
-      } : undefined,
-    };
-  }
+  const scopedSession = orderSessionRoute(suffix, method);
+  if (scopedSession) return scopedSession;
   const exact: Record<string, Record<string, Omit<Route, "method">>> = {
     "contact-messages": { POST: { privatePath: "contact-messages", body: "contact", contact: true } },
     catalog: { GET: { privatePath: "catalog", query: "catalog" } },
