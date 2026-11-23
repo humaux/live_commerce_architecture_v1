@@ -200,7 +200,7 @@
   }
 
   .header {
-    row-gap: var(--ds-space-3);
+    row-gap: var(--ds-space-2);
   }
 
   .detail {
