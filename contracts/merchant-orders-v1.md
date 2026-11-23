@@ -193,3 +193,90 @@ Existing pre-0110 customer/CVS metadata grants remain unchanged; no additional d
 access to the consumption ledger, session table or CVS tracking columns is allowed.
 KC03 explicitly enumerates the new claims helper, including its owner's implicit
 EXECUTE; its frozen table/column ACLs, LPC06 and TCV02 remain unchanged.
+
+## Draft amendment R03 — pre-dispatch revision of a home COD order
+
+Status: **DRAFT for contract review**. Deployed behaviour remains as described
+above. The revision command, permissions and document fence are pending freeze.
+See [manual fulfilment](manual-fulfilment-v1.md#draft-amendment-r03--order-revision-at-print-and-dispatch)
+for the consumer of the same order revision.
+
+- **Scope and authority.** The original order must belong to the authenticated
+  active store and be home COD, `AWAITING_COLLECTION / PENDING /
+  MANUAL_UNASSIGNED`, with committed stock and no confirmed dispatch, unresolved
+  shipment record, return, refund or provider action. A browser print handoff
+  alone leaves it eligible. Dispatch, cancellation and collected COD refuse the
+  edit. Prepaid orders (including paid additions or differences), active parcel
+  groups, CVS and externally accepted or unknown fulfilment stay on HOLD for
+  R03. Resolve unknown facts through existing readback and reconciliation before
+  reconsidering eligibility. A voided manual shipment alone does not establish
+  that the parcel stayed in the warehouse.
+- **Admission.** Same-store `orders:read` plus proposed `orders:amend` is required
+  to prepare or commit the edit. Additions also require `catalog:read` and
+  `inventory:reserve`. The scoped order and principal come from server
+  authentication. Check authority again after blocking locks, before release and
+  on replay. New permission has no default grants or historical backfill in this
+  draft. Merchant placement authority and `fulfillment:write` do not grant it.
+  Keep the existing 401/403/opaque 404 boundary.
+- **Review and price.** A draft changes only home recipient/contact/address in
+  the same market, service and currency, and/or adds positive SKU quantities.
+  Review is read-only and shows the server's line amounts, shipping, tax, COD fee
+  and new cash due. The client supplies SKU and quantity, changed recipient
+  fields, the reviewed proposal identity and expected order revision at commit.
+  Original units retain their frozen purchase prices. Added units use a
+  server-priced offer for a currently sellable SKU in the same store, market and
+  currency. Keep the added units' price provenance even when the SKU matches an
+  original line. A recipient-only edit keeps merchandise prices. Use existing
+  authoritative shipping, tax and COD rules. Keep the frozen COD surcharge and
+  validate whole TWD and the applicable order cap against
+  `cod_collect_minor = total_minor + cod_surcharge_minor`. Changed review inputs
+  require new review before commit. Hold unreproducible discounts, shipping or
+  tax quotes, currency changes and paid differences. Client-supplied money is
+  refused.
+- **Commit.** Retain order ID, public order number, owner and original checkout
+  evidence. The eligible original snapshot starts at revision 1. Each
+  committed edit advances the revision by one and appends server-computed
+  items, totals and recipient snapshot. Preserve prior revisions under existing privacy and
+  erasure rules. Checkout owns the effective order facts, inventory owns
+  allocation and fulfilment owns dispatch facts. The merchant resource exposes
+  the command through scoped entry points, without direct cross-domain DML.
+  Use the existing order lock as the serialization point against
+  ship, cancel and collection. After scope, state and revision checks, commit
+  the revision, the inventory-owned committed allocation delta, invalidation of
+  prior fulfilment documents, minimal audit and the command receipt together.
+  Apply stock bounds and deterministic warehouse/SKU locks per
+  [inventory rules](catalog-inventory-v1.md#boundary-and-invariants). Recipient-only
+  changes write no stock delta. Cancellation and returns must observe the
+  effective per-warehouse allocation and release at most what remains. Preserve
+  checkout generation, payment facts, pending collection and finance. Failure
+  leaves the prior revision, stock, document eligibility and monetary facts
+  intact. No fresh checkout, payment attempt or customer message is part of
+  this command.
+- **Retry and readback.** A commit requires an `Idempotency-Key` bound to the
+  authorised actor, store, order, operation and canonical request, including the
+  base revision and reviewed proposal. Exact replay after a committed timeout
+  returns the original committed receipt without another revision or allocation,
+  even if the head advanced. Same key with altered input returns
+  `idempotency_conflict`. A fresh stale revision returns a version conflict with
+  no effects. On uncertain transport, resolve the original key or replay
+  the identical request under that key. On conflict read the current original
+  order and review again; never silently resubmit with a new version/key.
+  Authoritative merchant detail and warehouse readback present one effective
+  revision with matching items, recipient, totals and due. Existing buyer, COD
+  collection and cancellation readers must also use authoritative current facts
+  for their existing purposes. The immutable command receipt identifies the
+  committed order and revision, without a fresh shipping authorization.
+  Keep private revisions and receipts out of shared caches and recipient fields
+  out of URLs and logs.
+
+**Acceptance to freeze.** Through the real list/detail and shipping entries on
+desktop and mobile, use isolated Go/PG, synthetic orders and mock logistics.
+Capture independent order, inventory, fulfilment and collection/payment facts.
+
+| Case | Required observation |
+|---|---|
+| Cancel draft; address-only edit | Cancel leaves all four facts unchanged. Saving the edited recipient keeps the original order number, line prices and stock, and advances exactly one revision. |
+| Add same SKU after a catalog price change | Original units keep the prior unit price, added units carry the reviewed current price, and server totals and COD due match detail and warehouse reads. Inventory commits the increment once. Change a reviewed offer before commit and require a new review without effects. |
+| Stock or scope refusal | Insufficient inventory across the chosen warehouses, foreign store, read-only staff and grant revoked while locked leave the revision, stock, fulfilment and collection unchanged. |
+| Recovery and concurrency | Same key/body replays once, changed body conflicts, and two staff committing from one base revision produce one winner. Race with dispatch as defined in the fulfilment amendment. Cancel after the winning revision releases only the remaining allocated quantity once. |
+| Excluded states | Already dispatched, collected or paid, and external acceptance/unknown follow the refusal or HOLD boundary with zero new payment, refund, shipment or customer-message side effects. |

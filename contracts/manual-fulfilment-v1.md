@@ -390,3 +390,51 @@ parcel unless it sits in a group; cash-on-delivery and convenience-store (CVS) o
 - **Parcel groups (resolves PG-OPEN-1).** Cancelling a member of an OPEN group removes it (group `version` +1); a group left with one order is `DISSOLVED` and its survivor is free to ship alone or regroup.
   Lock order is group -> order -> reservation -> balances, the same direction as `begin_parcel_group_shipment`.
 - **Returns** apply to shipped orders only and never change `fulfillment_state` or the shipment head; an order with a live RMA cannot be cancelled (`409 has_returns`).
+
+## Draft amendment R03 — order revision at print and dispatch
+
+Status: **DRAFT for contract review**. Applies to the home COD scope in
+[merchant order revision](merchant-orders-v1.md#draft-amendment-r03--pre-dispatch-revision-of-a-home-cod-order).
+The existing manual shipment head's `expected_version` remains the CAS for
+shipment records, corrections and voids. Order revision is a separate fence.
+A shipment head of 0 means no shipment record. It cannot identify the reviewed
+items, address or COD amount.
+
+| State or action | Required fact and behaviour |
+|---|---|
+| Unshipped or browser print handed off | Browser print is a document output step. It may be canceled in the browser and creates no dispatch, carrier acceptance or collection fact. The order can still be revised while eligible. |
+| Generate/open an R03-controlled document | Authorize the scoped read and validate the current order revision on the server. Bind the document and review to store, original order and that revision. Render only that revision's items, recipient and cash due. Revalidate the same revision at print handoff, including from a preview left open in another tab. Browser printing leaves business state unchanged. |
+| Confirm dispatch | Require existing `fulfillment:write`, the reviewed order revision and the current shipment-head CAS. Validate both under the same order lock used by revision and record the order revision with the shipment receipt. After a revision, refuse generation or reuse of a stale document and a stale confirmation even if the shipment head is still 0. Refresh the order, regenerate the document and review again. Old paper remains physically present and must be discarded by the warehouse. |
+| Shipment recorded or carrier handover | A committed merchant shipment record establishes the merchant's recorded dispatch. Carrier handover needs attributable carrier evidence or explicit applicable handover attestation. Each remains distinct from COD collection. Already dispatched orders refuse revision. An accepted external label/shipment or unknown external outcome stays on HOLD pending authoritative reconciliation. No provider purchase, cancellation, refund or collection is initiated by R03. |
+
+The dispatch/revision race takes one order lock. If revision commits first, the
+old confirmation fails with a version conflict and no dispatch write. If
+dispatch commits first, the revision refuses with no order or inventory write.
+Exact shipment replay under the existing key returns its prior committed receipt
+after fresh authority checks. A fresh request cannot reuse a stale confirmation.
+On uncertain transport read the scoped history and current order and use the
+same key and body for an exact retry. An unknown external result instead needs
+reconciliation before a new attempt.
+
+All first-dispatch writers that can reach an R03 order must honor the same fence,
+including direct Go callers and bulk or tracking imports. An entry without
+revision evidence must refuse that order for dispatch. A legacy document or
+export that cannot carry the revision must likewise refuse R03 issuance. Existing parcel, CVS,
+correction and void operations keep their domain rules and do not substitute for
+an R03 confirmation. No additional warehouse write authority comes from
+`orders:read` or from a printable document.
+
+**Acceptance to freeze.** From the actual order list, open a pending synthetic
+COD order in the warehouse, prepare/print its v1 document, and confirm the print
+handoff leaves order, allocation, shipment and collection facts unchanged. Commit
+v2 from order detail and assert v1 cannot be reopened/generated for printing or
+confirmed for dispatch, including an old confirmation whose shipment CAS still
+matches. Recover by reading v2, generating its document and explicitly confirming
+v2. Exercise both commit orders of the revision/dispatch race, a legacy payload
+without order revision, a stale shipment-head CAS independently of order
+revision, and exact replay. Read back the order revision, shipment version and
+unchanged collection through their authoritative sources. Inject synthetic
+handover and unknown external results to verify that handover needs evidence and
+unknown stays on HOLD. Use the existing browser entry tests in
+`tests/admin/{orders-ui,shipping-center}.spec.ts`; add independent Go/PG
+race, rollback and authority coverage when implementing the amendment.
