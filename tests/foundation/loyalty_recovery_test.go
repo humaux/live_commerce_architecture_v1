@@ -5,8 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"slices"
+	"strings"
 	"testing"
 	"time"
 
@@ -76,7 +80,45 @@ func recoveryFacts(t *testing.T, o *lpOrderEnv, order, originalKey, member strin
 }
 
 func TestLoyaltyAwardRecovery(t *testing.T) {
-	t.Run("unknown HTTP response and concurrent keys", func(t *testing.T) {
+	t.Run("lost HTTP response re-reads the original order", func(t *testing.T) {
+		o := lpNewOrderEnv(t)
+		m := o.s.mustMember("測試會員-回應中斷", nil, nil)
+		order, originalKey := recoveryMissed(t, o, m.ID, 12)
+		_, original := o.receipt(originalKey)
+		key := t04Key("recovery-response-lost")
+		server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+			o.a.h.ServeHTTP(httptest.NewRecorder(), r)
+			panic(http.ErrAbortHandler)
+		}))
+		defer server.Close()
+		path := "/v1/admin/stores/" + o.s.store + "/orders/" + order + "/member-award-recovery"
+		request, err := http.NewRequest("POST", server.URL+path, strings.NewReader(`{}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		request.Header.Set("Authorization", "Bearer "+o.s.admin)
+		request.Header.Set("Content-Type", "application/json")
+		request.Header.Set("Idempotency-Key", key)
+		response, err := server.Client().Do(request)
+		if response != nil {
+			response.Body.Close()
+		}
+		if !errors.Is(err, io.EOF) || response != nil {
+			t.Fatalf("client should lose the entire response: response=%v error=%v", response, err)
+		}
+		get := recoveryWant(t, o.a, "GET", order, "", 200, "state", "already_awarded")
+		entries, err := o.s.orderEntries(o.s.admin, order)
+		if err != nil || len(entries.Entries) != 1 || entries.Entries[0].ID != get["entry_id"] {
+			t.Fatalf("ledger after EOF: %+v %v", entries, err)
+		}
+		replay := recoveryWant(t, o.a, "POST", order, key, 200, "state", "awarded")
+		if replay["entry_id"] != get["entry_id"] {
+			t.Fatalf("replay after EOF: %v vs %v", replay, get)
+		}
+		recoveryFacts(t, o, order, originalKey, m.ID, original, 12, 1, 1)
+	})
+
+	t.Run("concurrent keys and principals", func(t *testing.T) {
 		o := lpNewOrderEnv(t)
 		m := o.s.mustMember("測試會員-補登", nil, nil)
 		order, originalKey := recoveryMissed(t, o, m.ID, 24)
@@ -96,7 +138,7 @@ func TestLoyaltyAwardRecovery(t *testing.T) {
 		for i, a := range admins {
 			go func() {
 				<-start
-				status, _ := recoveryCall(a, "POST", order, keys[i]) // discard the response body as an interrupted client would
+				status, _ := recoveryCall(a, "POST", order, keys[i])
 				done <- response{i, status}
 			}()
 		}
