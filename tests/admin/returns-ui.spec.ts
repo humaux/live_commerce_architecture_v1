@@ -492,7 +492,7 @@ if (applicationFixture) {
       await page.goto(`/en/returns?store=${fixture.nonDefaultStore}`);
       const row = page.getByTestId(`buyer-return-${fixture.rejectRequestId}`);
       await expect(row.locator("[data-state]")).toHaveAttribute("data-state", "requested");
-      await row.click();
+      await expect(row).toHaveAttribute("aria-pressed", "true");
       await expect(page.getByTestId("buyer-return-detail")).toBeVisible();
       await expect(page.getByRole("button", { name: /^(Approve|Reject) request$/ })).toHaveCount(0);
       const csrf = (await context.cookies()).find(cookie => cookie.name === "__Host-commerce_csrf")!.value;
@@ -523,10 +523,20 @@ if (applicationFixture) {
       await page.getByTestId("returns-queue-closed").click();
       await expect(page.getByTestId(`buyer-return-${fixture.withdrawnRequestId}`).locator("[data-state]")).toHaveAttribute("data-state", "withdrawn");
       await page.getByTestId("returns-queue-pending").click();
-      await row.click();
+      if (approve) await row.click();
+      await expect(row).toHaveAttribute("aria-pressed", "true");
       const review = page.getByTestId("returns-review-panel");
       await review.getByRole("button", { name: label, exact: true }).click();
       if (!approve) await review.getByLabel("Rejection reason").fill(fixture.rejectReason);
+      const pendingQueue = page.getByTestId("returns-queue-pending");
+      const closedQueue = page.getByTestId("returns-queue-closed");
+      await expect(pendingQueue).toBeDisabled();
+      await expect(closedQueue).toBeDisabled();
+      await expect(row).toBeDisabled();
+      if (approve) await expect(page.getByTestId(`buyer-return-${fixture.rejectRequestId}`)).toBeDisabled();
+      await closedQueue.press("Enter");
+      await expect(pendingQueue).toHaveAttribute("aria-pressed", "true");
+      if (!approve) await expect(review.getByLabel("Rejection reason")).toHaveValue(fixture.rejectReason);
       const staleContext = approve ? null : await browser.newContext();
       const stalePage = await staleContext?.newPage();
       if (stalePage) {
@@ -535,7 +545,7 @@ if (applicationFixture) {
         await stalePage.goto(`/en/returns?store=${fixture.nonDefaultStore}`);
         const staleRow = stalePage.getByTestId(`buyer-return-${id}`);
         await expect(staleRow.locator("[data-state]")).toHaveAttribute("data-state", "requested");
-        await staleRow.click();
+        await expect(staleRow).toHaveAttribute("aria-pressed", "true");
         const staleReview = stalePage.getByTestId("returns-review-panel");
         await staleReview.getByRole("button", { name: label, exact: true }).click();
         await staleReview.getByLabel("Rejection reason").fill("Stale form witness");
@@ -558,6 +568,10 @@ if (applicationFixture) {
       if (approve) expect(saved.return_id).toMatch(/^[0-9a-f-]{36}$/);
       else expect(saved.return_id).toBeNull();
       await expect(row.locator("[data-state]")).toHaveAttribute("data-state", decision);
+      const notice = review.getByRole("status");
+      await expect(notice).toContainText(approve ? "Approved" : "Rejected");
+      await row.press("Enter");
+      await expect(notice).toContainText(approve ? "Approved" : "Rejected");
       if (!approve) {
         await expect(page.getByTestId("returns-rejection-reason")).toContainText(fixture.rejectReason);
         const detailBox = await verifyVisual(page, viewport, "rejected", fixture.rejectOrder, fixture.rejectNote);
@@ -641,5 +655,62 @@ if (applicationFixture) {
         u.searchParams.get("order") === fixture.rejectOrder);
       await expect(page.getByTestId("order-detail")).toBeVisible();
     });
+
+    for (const locale of ["en", "zh-TW"] as const) for (const viewport of layouts) {
+      test(`R02 current return selection is focusable and unavailable ${locale} ${viewport.name}`, async ({ page }) => {
+        const { link } = await openOrderReturnsLink(page, viewport, locale);
+        await link.click();
+        await page.waitForURL(u => u.pathname === `/${locale}/returns` && u.searchParams.get("store") === fixture.nonDefaultStore);
+        const queue = page.getByTestId("buyer-return-queue");
+        const pending = queue.getByTestId("returns-queue-pending");
+        const closed = queue.getByTestId("returns-queue-closed");
+        const empty = locale === "en" ? "No cases in this queue." : "目前沒有此類個案。";
+        const article = page.getByTestId("buyer-return-detail");
+
+        async function pressCurrent(control: Locator, name: string) {
+          await expect(control).toHaveAttribute("aria-pressed", "true");
+          await expect.soft(control, `R02_CURRENT_${name}: selected control is unavailable`).toBeDisabled({ timeout: 1500 });
+          await control.focus();
+          await expect(control).toBeFocused();
+          await page.keyboard.press("Space");
+          await expect(control).toBeFocused();
+          await expect(control).toHaveAttribute("aria-pressed", "true");
+        }
+
+        await expect(queue.getByText(empty, { exact: true })).toBeVisible();
+        await expect(pending).toHaveText(locale === "en" ? "Pending 0" : "待處理 0");
+        await pressCurrent(pending, "PENDING");
+        await expect(queue.getByText(empty, { exact: true })).toBeVisible();
+        await expect(closed).toBeEnabled();
+        await page.keyboard.press("Tab");
+        await expect(closed).toBeFocused();
+        await page.keyboard.press("Enter");
+        await expect(pending).toBeEnabled();
+
+        const rejected = queue.getByTestId(`buyer-return-${fixture.rejectRequestId}`);
+        const withdrawn = queue.getByTestId(`buyer-return-${fixture.withdrawnRequestId}`);
+        await pressCurrent(withdrawn, "DEFAULT_CASE");
+        await expect(article.locator("[data-state]")).toHaveAttribute("data-state", "withdrawn");
+        await expect(rejected).toBeEnabled();
+        await rejected.click();
+        await pressCurrent(rejected, "PICKED_CASE");
+        await expect(withdrawn).toBeEnabled();
+        await pressCurrent(closed, "CLOSED");
+        await expect(rejected).toHaveAttribute("aria-pressed", "true");
+        await expect(article.getByTestId("returns-rejection-reason")).toContainText(fixture.rejectReason);
+
+        await pending.click();
+        await expect(queue.getByText(empty, { exact: true })).toBeVisible();
+        await expect(pending).toBeDisabled();
+        await expect(closed).toBeEnabled();
+        await closed.click();
+        await rejected.click();
+        await verifyVisual(page, viewport, "rejected", fixture.rejectOrder, fixture.rejectNote);
+        await article.getByTestId("returns-original-order").click();
+        await page.waitForURL(u => u.pathname === `/${locale}/orders` && u.searchParams.get("store") === fixture.nonDefaultStore &&
+          u.searchParams.get("order") === fixture.rejectOrder);
+        await expect(page.getByTestId("order-detail")).toBeVisible();
+      });
+    }
   });
 }

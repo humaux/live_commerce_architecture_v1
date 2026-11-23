@@ -80,14 +80,14 @@ export function BuyerReturnWorkbench({ locale, store, initialError, refreshRmas,
   }, [queue, selected?.id]);
 
   function selectQueue(next: Queue) {
-    if (active) return;
+    if (active || next === queue) return;
     setQueue(next);
     setSelectedId("");
     setNotice("");
   }
 
   function selectCase(id: string) {
-    if (active) return;
+    if (active || id === selected?.id) return;
     setSelectedId(id);
     setNotice("");
   }
@@ -157,9 +157,9 @@ export function BuyerReturnWorkbench({ locale, store, initialError, refreshRmas,
     <div className={styles.queue} data-testid="buyer-return-queue">
       <h2>{queue === "pending" ? copy.pendingTitle : copy.closedTitle}</h2>
       <div className={styles.tabs} aria-label={copy.queueTitle} role="group">
-        <button type="button" aria-pressed={queue === "pending"} aria-disabled={!!active}
+        <button type="button" aria-pressed={queue === "pending"} aria-disabled={!!active || queue === "pending"}
           onClick={() => selectQueue("pending")} data-testid="returns-queue-pending">{copy.pendingQueue} {pendingCount}</button>
-        <button type="button" aria-pressed={queue === "closed"} aria-disabled={!!active}
+        <button type="button" aria-pressed={queue === "closed"} aria-disabled={!!active || queue === "closed"}
           onClick={() => selectQueue("closed")} data-testid="returns-queue-closed">{copy.closedQueue}</button>
       </div>
       {(list.status === "loading" || list.status === "hidden") && <p role="status">{c.loading}</p>}
@@ -167,7 +167,8 @@ export function BuyerReturnWorkbench({ locale, store, initialError, refreshRmas,
       {list.status === "ready" && rows.length === 0 && <p className={styles.meta}>{copy.empty}</p>}
       {list.status === "ready" && rows.length > 0 && <ul className={styles.cases} ref={queueList}>
         {rows.map((application) => <li key={application.id}>
-          <button type="button" className={styles.case} aria-pressed={selected?.id === application.id} aria-disabled={!!active}
+          <button type="button" className={styles.case} aria-pressed={selected?.id === application.id}
+            aria-disabled={!!active || selected?.id === application.id}
             data-testid={`buyer-return-${application.id}`} onClick={() => selectCase(application.id)}>
             <span className={styles.caseLine}><strong>{caseNumber(application)}</strong>
               <span className={styles.meta} data-state={application.status}>{copy.states[application.status]}</span>
