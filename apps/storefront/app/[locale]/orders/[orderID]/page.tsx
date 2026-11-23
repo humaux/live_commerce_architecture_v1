@@ -7,14 +7,20 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale } from "@live-commerce/i18n";
 import OrderPage from "./OrderPage";
+import { isOrderAccess } from "../../../../lib/buyer-query";
 
 export const metadata: Metadata = {
   referrer: "no-referrer",
   robots: { index: false, follow: false },
 };
 
-export default async function Page({ params }: { params: Promise<{ locale: string; orderID: string }> }) {
+export default async function Page({ params, searchParams }: {
+  params: Promise<{ locale: string; orderID: string }>;
+  searchParams: Promise<{ access?: string | string[] }>;
+}) {
   const { locale, orderID } = await params;
   if (!isLocale(locale) || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(orderID)) notFound();
-  return <OrderPage locale={locale} orderID={orderID} />;
+  const { access } = await searchParams;
+  if (access !== undefined && !isOrderAccess(access)) notFound();
+  return <OrderPage key={`${orderID}:${access ?? "shopping"}`} locale={locale} orderID={orderID} access={access} />;
 }

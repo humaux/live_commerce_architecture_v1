@@ -5,7 +5,8 @@
 "use client";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { Locale } from "@live-commerce/i18n";
-import { buyerRequest, BuyerClientError, definiteError, readBuyerSession } from "../../lib/buyer-client";
+import type { OrderAccess } from "../../lib/buyer-query";
+import { buyerRequest, BuyerClientError, definiteError, readOrderSession } from "../../lib/buyer-client";
 import { readOrder, type Order } from "../../lib/purchase";
 import { RETURN_REQUEST_CODES, validReturnRequestWithdraw } from "../../lib/return-request-contract";
 import { StorefrontState } from "../state/StorefrontState";
@@ -16,7 +17,7 @@ import "../../../../packages/ui/src/tokens.css";
 import styles from "./ReturnRequest.module.css";
 type Attempt = { key: string; body: string; context: string; suffix: string; requestID?: string };
 type View = { context: string; order: Order; detail: ReturnRequest | null };
-export default function ReturnRequestForm({ locale, orderID, requestID }: { locale: Locale; orderID: string; requestID?: string }) {
+export default function ReturnRequestForm({ locale, orderID, requestID, access }: { locale: Locale; orderID: string; requestID?: string; access?: OrderAccess }) {
   const c = returnRequestCopy[locale];
   const [view, setView] = useState<View | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "failed" | "forbidden">("loading");
@@ -36,7 +37,7 @@ export default function ReturnRequestForm({ locale, orderID, requestID }: { loca
     return reason instanceof BuyerClientError && ([401, 403, 404].includes(reason.status ?? 0) || reason.code === "requires_reset" || reason.code === "context_changed");
   }
   async function current(context: string) {
-    const session = await readBuyerSession();
+    const session = await readOrderSession(orderID, access);
     if (session.state !== "active" || session.context !== context) throw new BuyerClientError("context_changed");
   }
   async function load(id = selectedID.current) {
@@ -45,10 +46,10 @@ export default function ReturnRequestForm({ locale, orderID, requestID }: { loca
     const mine = ++epoch.current;
     setBusy(true); setView(null); setState("loading"); setError(""); setChoices(null);
     try {
-      const session = await readBuyerSession();
+      const session = await readOrderSession(orderID, access);
       if (session.state !== "active" || !session.context) throw new BuyerClientError("requires_reset");
       if (attempt.current && attempt.current.context !== session.context) throw new BuyerClientError("context_changed");
-      const order = await readOrder(session.context, orderID);
+      const order = await readOrder(session.context, orderID, access);
       let detail: ReturnRequest | null = null;
       let items: ReturnRequest[] | null = null;
       const exact = id ?? attempt.current?.requestID;
@@ -75,7 +76,7 @@ export default function ReturnRequestForm({ locale, orderID, requestID }: { loca
       selectedID.current = detail?.id ?? id;
       // Only a persisted, validated exact GET can install a refresh locator. Never navigate to reset uncertainty.
       if (detail && !attempt.current) {
-        window.history.replaceState(window.history.state, "", `/${locale}/orders/${orderID}/return?request=${detail.id}`);
+        window.history.replaceState(window.history.state, "", `/${locale}/orders/${orderID}/return?request=${detail.id}${access ? `&access=${access}` : ""}`);
       }
       setView({ context: session.context, order, detail }); setChoices(items); setState("ready");
     } catch (reason) {
@@ -165,7 +166,7 @@ export default function ReturnRequestForm({ locale, orderID, requestID }: { loca
   const locked = busy || unknown;
   const backClass = view?.detail ? styles.secondary : styles.back;
   const back = unknown ? <button type="button" disabled className={backClass}>{c.back}</button>
-    : <a className={backClass} href={`/${locale}/orders/${orderID}`}>{c.back}</a>;
+    : <a className={backClass} href={`/${locale}/orders/${orderID}${access ? `?access=${access}` : ""}`}>{c.back}</a>;
   return <main className={styles.root} lang={locale} aria-busy={busy} data-testid="return-page">
     <div className={view?.detail ? styles.detail : styles.apply}>
       {!view?.detail && back}

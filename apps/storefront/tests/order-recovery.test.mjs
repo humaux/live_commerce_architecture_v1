@@ -21,6 +21,7 @@ import {
   forgetAddressAttempt,
   continueShopping,
   validOrderSummary,
+  readOrder,
 } from "../lib/purchase.ts";
 
 // Deterministic browser-client tests only. Real Next/Go/PG gates are separate;
@@ -850,3 +851,23 @@ test("direct claim continuation keeps next-cart recovery after a conflicting cle
     assert.equal(knownOrderID(context), uid(6));
     assert.equal(pendingPurchase(context).key, pending.key);
   }));
+
+test("a scoped order read rechecks that order's mode, never the shopping session", async (t) => {
+  const orderID = uid(6);
+  const path = `/api/buyer/orders/${orderID}`;
+  const calls = [];
+  let current = context;
+  t.mock.method(globalThis, "fetch", async (url, init) => {
+    calls.push(url);
+    if (url === path) {
+      assert.equal(new Headers(init.headers).get("X-Buyer-Context"), context);
+      return Response.json(order());
+    }
+    assert.equal(url, `${path}/session?access=lookup`);
+    return Response.json({ state: "active", context: current, expires_at: until });
+  });
+  assert.deepEqual(await readOrder(context, orderID, "lookup"), order());
+  assert.deepEqual(calls, [path, `${path}/session?access=lookup`]);
+  current = foreignContext;
+  await assert.rejects(readOrder(context, orderID, "lookup"), { code: "context_changed" });
+});

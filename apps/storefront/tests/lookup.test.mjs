@@ -62,7 +62,7 @@ test("BFF lookup: no cookie needed, fresh token goes upstream, cookie only on 20
     assert.equal(call.headers.get("X-Commerce-Client-IP"), "203.0.113.9");
     assert.equal(call.headers.get("Idempotency-Key"), null);
     const set = response.headers.get("set-cookie");
-    assert.match(set, /^__Host-commerce_buyer=.+; Path=\/; Max-Age=3600; Secure; HttpOnly; SameSite=Lax$/);
+    assert.match(set, /^__Host-commerce_buyer_lookup=.+; Path=\/; Max-Age=3600; Secure; HttpOnly; SameSite=Lax$/);
     const payload = JSON.parse(Buffer.from(set.split("=", 2)[1].split(".")[0], "base64url").toString());
     assert.equal(call.headers.get("Authorization"), `Bearer ${payload.token}`, "the cookie holds the token Go registered");
     assert.equal(payload.origin, origin);

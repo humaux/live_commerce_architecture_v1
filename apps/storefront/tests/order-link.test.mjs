@@ -67,7 +67,7 @@ test("BFF link: no cookie needed, fresh token upstream, cookie only on a 200 nam
     assert.equal(call.body.includes(proof), false, "the browser-bound proof never leaves the BFF");
     assert.equal(call.headers.get("Idempotency-Key"), null);
     const set = response.headers.get("set-cookie");
-    assert.match(set, /^__Host-commerce_buyer=.+; Path=\/; Max-Age=3600; Secure; HttpOnly; SameSite=Lax$/);
+    assert.match(set, /^__Host-commerce_buyer_link=.+; Path=\/; Max-Age=3600; Secure; HttpOnly; SameSite=Lax$/);
     const payload = JSON.parse(Buffer.from(set.split("=", 2)[1].split(".")[0], "base64url").toString());
     assert.equal(call.headers.get("Authorization"), `Bearer ${payload.token}`, "the cookie holds the capability token Go registered");
     assert.notEqual(payload.token, token, "the cookie capability is NOT the link token");

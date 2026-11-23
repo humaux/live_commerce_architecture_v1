@@ -10,6 +10,7 @@
 //   POST .../payment/refresh | cancel (Stripe)   -> HostedPaymentStarter.RefreshPayment / CancelPayment
 // Stripe states and polling: contracts/stripe-buyer-ui-v1.md §5-§6, amended by SU09-POLL.
 // Refund summary (stripe-refund-v1 §7.2) is read from the same view; no refund route is called.
+import type { OrderAccess } from "../lib/buyer-query";
 import { useEffect, useRef, useState, type MutableRefObject, type ReactNode, type Ref } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { BuyerClientError } from "../lib/buyer-client";
@@ -107,6 +108,7 @@ export type PaymentFrame = {
 // this component owns only the selected-screen lifetime and visible read state.
 export default function OrderPayment({
   context,
+  access,
   order,
   locale,
   money,
@@ -119,6 +121,7 @@ export default function OrderPayment({
   onSubmitted,
 }: {
   context: string;
+  access?: OrderAccess;
   order: Order;
   locale: Locale;
   money: (amount: number, currency: string) => string;
@@ -169,7 +172,7 @@ export default function OrderPayment({
       setReading(true);
     }
     try {
-      const value = await readOrderPayment(context, order.order_id);
+      const value = await readOrderPayment(context, order.order_id, access);
       if (version !== epoch.current || request !== readVersion.current) return;
       if (
         value.currency !== order.snapshot.quote.currency ||
@@ -303,14 +306,14 @@ export default function OrderPayment({
       window.removeEventListener("storage", changed);
       document.removeEventListener("visibilitychange", visible);
     };
-  }, [context, order, refreshToken]);
+  }, [context, order, access, refreshToken]);
 
   const signedUnknown = readFailure && !!view && view.payment_state === "PENDING" &&
     ["CREATING", "UNAVAILABLE"].includes(view.handoff_state);
   const stripeMarker = marker?.body.method_code === "stripe_checkout";
   const plan =
     view && (isStripeView(view) || stripeMarker)
-      ? stripePlan(view, Date.now())
+      ? access === "lookup" ? { pay: false, cont: false, cancel: false, note: "readOnly" as const } : stripePlan(view, Date.now())
       : null;
   const attempt = !!view && activeAttempt(view) && !terminalPayment(view);
   // §5 disclosure text; null (nothing rendered) unless the hosted view returned `collector`.
@@ -319,7 +322,7 @@ export default function OrderPayment({
   // Refresh order's extra signal: registered only while a non-terminal Stripe attempt is
   // live and cleared with the epoch. A click is the only trigger; scheduled=false is silent.
   useEffect(() => {
-    if (!attempt) return;
+    if (!attempt || access === "lookup") return;
     const version = epoch.current;
     const signal = async () => {
       try {
@@ -336,7 +339,7 @@ export default function OrderPayment({
     return () => {
       if (paymentSignalRef.current === signal) paymentSignalRef.current = null;
     };
-  }, [attempt, context, order.order_id, paymentSignalRef, refreshToken]);
+  }, [attempt, context, access, order.order_id, paymentSignalRef, refreshToken]);
 
   // §8: when Continue/Cancel disappears, focus the status line instead of dropping it on <body>.
   const hasAction = !!plan && (plan.cont || plan.cancel);
