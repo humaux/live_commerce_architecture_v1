@@ -23,6 +23,31 @@ unchanged: it is locked by `inventory.lock_balance`, reserved as before, and car
 per-order cap. The order/reservation/receipt facts are still created for an
 all-untracked order (zero reservation/ledger lines, no stock moved).
 
+## Buy now
+
+`POST /v1/buyer/buy-now` accepts the current SKU and quantity and returns a new,
+checkout-only cart in the existing cart projection. The buyer capability and
+idempotency key bind creation and replay. The selection uses the shopper's
+tenant, store, owner and real storefront session. Its single line carries no
+claim provenance. `GET /v1/buyer/buy-now/{id}` requires the same scoped owner and
+that exact checkout-only cart. Ordinary cart reads/edits always address the one
+regular cart. The checkout-only selection is immutable and has version 1.
+
+`POST quotes`, `PUT destination`, `POST checkout`, `POST cvs-selections` and
+`POST cvs-stores` accept optional `buy_now_id`. Reads of the current destination,
+address snapshots and quotes take the same selector as the sole optional query.
+A missing selector uses ordinary cart semantics. A supplied selector must name
+an owned checkout-only cart. Quote and destination inputs for placement must
+belong to that cart. CVS may return only to the selected checkout path when
+given `buy_now_id`. The storefront serves `/{locale}/checkout/buy-now/{id}`.
+
+Pricing, current delivery policy, destination, allocation and order placement use
+the same server revalidation. The first order uses the existing checkout receipt
+and stock transaction. The same request recovers that order. A fresh placement
+on an already ordered checkout-only cart conflicts. The shopper can leave or
+reload the direct checkout, continue shopping after the order, and independently
+add to or check out the regular cart.
+
 ## Decisions
 
 1. Keep the existing Go `pricing.Calculate` as the single calculator. Implement

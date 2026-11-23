@@ -194,7 +194,7 @@ func TestOrderAttemptProvenanceIndependentCartsAndOrigins(t *testing.T) {
 		columns   []string
 		predicate string
 	}{
-		{"storefront.carts", []string{"tenant_id", "store_id", "owner_id"}, "cart_kind='storefront'"},
+		{"storefront.carts", []string{"tenant_id", "store_id", "owner_id"}, "cart_kind='storefront'ANDNOTcheckout_only"},
 		{"storefront.carts", []string{"tenant_id", "store_id", "create_attempt_id"}, "cart_kind='order_attempt'"},
 		{"storefront.cart_lines", []string{"tenant_id", "store_id", "owner_id", "cart_id", "sku_id"}, "cart_kind='storefront'"},
 		{"storefront.cart_lines", []string{"cart_id", "sku_id", "origin_kind", "origin_id"}, "cart_kind='order_attempt'"},

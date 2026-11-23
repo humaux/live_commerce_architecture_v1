@@ -77,6 +77,7 @@ type Route = {
   body?:
     | "empty"
     | "cart"
+    | "buyNow"
     | "quote"
     | "destination"
     | "checkout"
@@ -91,7 +92,7 @@ type Route = {
     | "link"
     | "contact"
     | BuyerReturnBody;
-  query?: "catalog" | "options" | "orders";
+  query?: "catalog" | "options" | "orders" | "purchaseCart";
   session?: string;
   payment?: "view" | "prepare" | "handoff" | "refresh" | "cancel";
   orderID?: string;
@@ -353,9 +354,10 @@ function route(
       GET: { privatePath: "cart" },
       PUT: { privatePath: "cart", body: "cart" },
     },
+    "buy-now": { POST: { privatePath: "buy-now", body: "buyNow" } },
     quotes: { POST: { privatePath: "quotes", body: "quote" } },
     destination: {
-      GET: { privatePath: "destination" },
+      GET: { privatePath: "destination", query: "purchaseCart" },
       PUT: { privatePath: "destination", body: "destination" },
     },
     checkout: { POST: { privatePath: "checkout", body: "checkout" } },
@@ -455,12 +457,17 @@ function route(
           : undefined,
     };
   }
+  const buyNow = /^buy-now\/([^/]+)$/.exec(suffix);
+  if (buyNow) {
+    if (!UUID.test(buyNow[1])) return { known: true, invalidID: true };
+    return { known: true, route: method === "GET" ? { method, privatePath: suffix } : undefined };
+  }
   const item = /^(quotes|destinations|orders)\/([^/]+)$/.exec(suffix);
   if (!item) return { known: false };
   if (!UUID.test(item[2])) return { known: true, invalidID: true };
   return {
     known: true,
-    route: method === "GET" ? { method, privatePath: suffix } : undefined,
+    route: method === "GET" ? { method, privatePath: suffix, query: item[1] === "orders" ? undefined : "purchaseCart" } : undefined,
   };
 }
 
@@ -469,6 +476,10 @@ function validQuery(rawURL: string, kind?: Route["query"]): string | null {
   if (mark < 0) return "";
   if (!kind) return null;
   const raw = rawURL.slice(mark + 1).split("#", 1)[0];
+  if (kind === "purchaseCart") {
+    const prefix = "buy_now_id=";
+    return raw.startsWith(prefix) && UUID.test(raw.slice(prefix.length)) ? `?${raw}` : null;
+  }
   if (
     !raw ||
     raw.length > 2048 ||
@@ -568,7 +579,9 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
     expected_version: "integer",
     items: [{ sku_id: "string", quantity: "integer" }],
   },
+  buyNow: { sku_id: "string", quantity: "integer" },
   quote: {
+    buy_now_id: "string",
     cart_version: "integer",
     market_id: "string",
     country: "string",
@@ -576,6 +589,7 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
     promo_code: "string", // optional (§F); extraShapeOK checks its grammar
   },
   destination: {
+    buy_now_id: "string",
     expected_version: "integer",
     cart_version: "integer",
     kind: "string",
@@ -592,6 +606,7 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
     pickup_id: "string",
   },
   checkout: {
+    buy_now_id: "string",
     quote_id: "string",
     destination_id: "string",
     cart_version: "integer",
@@ -611,12 +626,14 @@ const shapes: Record<Exclude<Route["body"], undefined>, Shape> = {
   contact: { name: "string", email: "string", order_number: "string", message: "string", website: "string" },
   link: { order_id: "string", token: "string", proof: "string" },
   cvsSelection: {
+    buy_now_id: "string",
     cart_version: "integer",
     market_id: "string",
     service_code: "string",
     return_path: "string",
   },
   cvsStore: {
+    buy_now_id: "string",
     cart_version: "integer",
     market_id: "string",
     service_code: "string",
@@ -658,6 +675,9 @@ const UUID_TEXT =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 function extraShapeOK(shape: Shape, parsed: unknown): boolean {
   const v = parsed as Record<string, unknown>;
+  if (v.buy_now_id !== undefined && !UUID_TEXT.test(String(v.buy_now_id))) return false;
+  if (shape === shapes.buyNow)
+    return UUID_TEXT.test(String(v.sku_id)) && Number.isSafeInteger(v.quantity) && Number(v.quantity) >= 1 && Number(v.quantity) <= 99;
   if (shape === shapes.contact) return validContactBody(v);
   if (shape === shapes.quote)
     return (
@@ -678,7 +698,7 @@ function extraShapeOK(shape: Shape, parsed: unknown): boolean {
     );
   if (shape !== shapes.cvsSelection && shape !== shapes.cvsStore) return true;
   if (
-    Object.keys(v).length !== Object.keys(shape).length ||
+    Object.keys(v).length !== Object.keys(shape).length - (v.buy_now_id === undefined ? 1 : 0) ||
     (v.cart_version as number) < 1 ||
     !UUID_TEXT.test(String(v.market_id)) ||
     !/^[a-z][a-z0-9_-]{0,39}$/.test(String(v.service_code))

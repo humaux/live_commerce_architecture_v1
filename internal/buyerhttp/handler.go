@@ -91,6 +91,8 @@ const (
 	catalogRoute
 	optionsRoute
 	cartRoute
+	buyNowCreateRoute
+	buyNowReadRoute
 	quotesRoute
 	quoteRoute
 	destinationRoute
@@ -152,6 +154,7 @@ func oneHeader(r *http.Request, name string) (string, bool) {
 func forbiddenInput(r *http.Request) bool {
 	queryRoute := r.URL != nil && r.Method == http.MethodGet && r.URL.EscapedPath() == r.URL.Path &&
 		(r.URL.Path == "/v1/buyer/catalog" || r.URL.Path == "/v1/buyer/checkout-options" || r.URL.Path == "/v1/buyer/orders" || r.URL.Path == v2Prefix+"products" ||
+			purchaseCartQueryRoute(matchRoute(r.URL.Path).kind) ||
 			(matchRoute(r.URL.Path).kind == mediaRoute && (r.URL.RawQuery == "w=360" || r.URL.RawQuery == "w=720" || r.URL.RawQuery == "w=1080")))
 	if r.URL == nil || r.URL.ForceQuery || (!queryRoute && r.URL.RawQuery != "") {
 		return true
@@ -165,6 +168,10 @@ func forbiddenInput(r *http.Request) bool {
 	// forbidden input, even when empty, so it can never ride along to another route.
 	claimRoute := r.URL.EscapedPath() == r.URL.Path && (r.URL.Path == claimLinkPath || r.URL.Path == claimRedeemPath)
 	return !claimRoute && len(r.Header.Values(claimTokenHeader)) != 0
+}
+
+func purchaseCartQueryRoute(kind routeKind) bool {
+	return kind == destinationRoute || kind == destinationItemRoute || kind == quoteRoute
 }
 
 func catalogRequest(raw string) (storefront.CatalogRequest, error) {
@@ -545,6 +552,14 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 	}
 	var out any
 	var err error
+	var buyNowID string
+	if r.Method == http.MethodGet && purchaseCartQueryRoute(selected.kind) && r.URL.RawQuery != "" {
+		if value, ok := strings.CutPrefix(r.URL.RawQuery, "buy_now_id="); ok && command.ValidID(value) {
+			buyNowID = value
+		} else {
+			return command.ErrInvalid
+		}
+	}
 	switch selected.kind {
 	case paymentRoute, paymentPrepareRoute, paymentHandoffRoute, paymentRefreshRoute, paymentCancelRoute:
 		out, err = h.paymentRequest(ctx, r, selected, storeID, token, key)
@@ -610,6 +625,23 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 		if err == nil {
 			out = projectCart(out.(storefront.Cart))
 		}
+	case buyNowCreateRoute, buyNowReadRoute:
+		var in storefront.BuyNowInput
+		if selected.kind == buyNowCreateRoute {
+			if err = decodeJSON(r, &in); err != nil {
+				return err
+			}
+		}
+		var current storefront.Cart
+		current, err = scoped(ctx, h.pool, token, storeID, func(c context.Context, tx pgx.Tx, s buyer.Scope) (storefront.Cart, error) {
+			if selected.kind == buyNowReadRoute {
+				return storefront.GetBuyNow(c, tx, s, selected.id)
+			}
+			return storefront.CreateBuyNow(c, tx, s, key, in)
+		})
+		if err == nil {
+			out = projectCart(current)
+		}
 	case quotesRoute:
 		var in storefront.QuoteInput
 		if err = decodeJSON(r, &in); err == nil {
@@ -622,7 +654,11 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 		}
 	case quoteRoute:
 		out, err = scoped(ctx, h.pool, token, storeID, func(c context.Context, tx pgx.Tx, s buyer.Scope) (storefront.Quote, error) {
-			return storefront.GetQuote(c, tx, s, selected.id)
+			q, err := storefront.GetQuote(c, tx, s, selected.id)
+			if err == nil {
+				err = storefront.CheckPurchaseCart(c, tx, s, q.CartID, buyNowID)
+			}
+			return q, err
 		})
 		if err == nil {
 			out, err = h.quoteWithCodDue(ctx, token, storeID, out.(storefront.Quote))
@@ -631,7 +667,7 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 		if r.Method == http.MethodGet {
 			var current *storefront.Destination
 			current, err = scoped(ctx, h.pool, token, storeID, func(c context.Context, tx pgx.Tx, s buyer.Scope) (*storefront.Destination, error) {
-				return storefront.CurrentDestination(c, tx, s)
+				return storefront.CurrentDestination(c, tx, s, buyNowID)
 			})
 			result := struct {
 				Destination *destinationResponse `json:"destination"`
@@ -654,7 +690,11 @@ func (h *handler) dispatch(ctx context.Context, w http.ResponseWriter, r *http.R
 		}
 	case destinationItemRoute:
 		out, err = scoped(ctx, h.pool, token, storeID, func(c context.Context, tx pgx.Tx, s buyer.Scope) (storefront.Destination, error) {
-			return storefront.GetDestination(c, tx, s, selected.id)
+			d, err := storefront.GetDestination(c, tx, s, selected.id)
+			if err == nil {
+				err = storefront.CheckPurchaseCart(c, tx, s, d.CartID, buyNowID)
+			}
+			return d, err
 		})
 		if err == nil {
 			out = projectDestination(out.(storefront.Destination))

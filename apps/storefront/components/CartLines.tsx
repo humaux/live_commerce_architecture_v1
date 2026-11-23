@@ -12,14 +12,16 @@ import type { Locale } from "@live-commerce/i18n";
 import { useCart } from "./CartProvider";
 import { cartDetails } from "../lib/cart-details";
 import type { CartDetails, LineView } from "../lib/cart-details";
+import type { Cart } from "../lib/purchase";
 import { freeShippingProgress } from "../lib/shop-contract";
 import { checkoutPath, productImage, productPath } from "../lib/routes";
 import { formatMoney } from "../lib/money";
 import { fmt, shopCopy } from "../lib/shop-copy";
 import { ArrowRightIcon, ImageIcon, MinusIcon, PlusIcon, TrashIcon } from "./icons";
 
-export function useCartDetails(): { details: CartDetails | null; failed: boolean; loading: boolean } {
-  const { cart, context } = useCart();
+export function useCartDetails(source?: { cart: Cart | null; context: string }): { details: CartDetails | null; failed: boolean; loading: boolean } {
+  const shared = useCart();
+  const { cart, context } = source ?? shared;
   const [details, setDetails] = useState<CartDetails | null>(null);
   const [failed, setFailed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -171,10 +173,15 @@ function Line({ locale, line, currency, readOnly, compact }: { locale: Locale; l
 }
 
 export function CartLines({ locale, readOnly = false, compact = false }: { locale: Locale; readOnly?: boolean; compact?: boolean }) {
-  const copy = shopCopy[locale];
   const { cart } = useCart();
-  const { details, failed, loading } = useCartDetails();
+  const view = useCartDetails();
   if (!cart || cart.items.length === 0) return null;
+  return <CartLineDetails locale={locale} view={view} readOnly={readOnly} compact={compact} />;
+}
+
+export function CartLineDetails({ locale, view, readOnly, compact }: { locale: Locale; view: ReturnType<typeof useCartDetails>; readOnly: boolean; compact: boolean }) {
+  const copy = shopCopy[locale];
+  const { details, failed, loading } = view;
   if (!details)
     return (
       <p className="sf-muted" role="status" aria-live="polite">

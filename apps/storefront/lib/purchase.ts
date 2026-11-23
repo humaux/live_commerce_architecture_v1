@@ -531,9 +531,9 @@ export function codQuoteMatches(quote: Quote, option: Option): boolean {
 
 // GET quotes/{id} recomputes COD due under current settings (buyer-http-v1).
 // Keep the original quotation, promotion and expiry; a concurrent second fee change fails closed.
-export async function refreshCodQuote(context: string, quote: Quote, option: Option): Promise<Quote> {
+export async function refreshCodQuote(context: string, quote: Quote, option: Option, buyNowID?: string): Promise<Quote> {
   if (!offeredPaymentModes(option, quote.amount.total_minor).includes("cash_on_delivery") || codQuoteMatches(quote, option)) return quote;
-  const latest = await readPurchase(`quotes/${quote.id}`, context, validQuote);
+  const latest = await readPurchase(purchaseReadPath(`quotes/${quote.id}`, buyNowID), context, validQuote);
   if (latest.id !== quote.id || latest.cart_id !== quote.cart_id || latest.cart_version !== quote.cart_version ||
     latest.market_id !== option.market_id || latest.country !== option.country || latest.method !== option.method ||
     latest.currency !== option.currency || Date.parse(latest.expires_at) <= Date.now() || !codQuoteMatches(latest, option))
@@ -670,10 +670,27 @@ export async function purchasePage<T>(
   );
 }
 
-function storageKey(context: string) {
-  if (!CONTEXT.test(context)) throw new BuyerClientError("context_changed");
-  return `commerce-purchase-pending-v1:${context}`;
+export function readCheckoutCart(context: string, buyNowID?: string) {
+  return readPurchase(buyNowID ? `buy-now/${buyNowID}` : "cart", context, (data): data is Cart =>
+    validCart(data) && (!buyNowID || data.id === buyNowID));
 }
+
+export function purchaseReadPath(path: string, buyNowID?: string) {
+  return buyNowID ? `${path}?buy_now_id=${buyNowID}` : path;
+}
+
+export function quoteStorageKey(context: string, buyNowID?: string) {
+  return `commerce-purchase-quote-v1:${purchaseScope(context, buyNowID)}`;
+}
+
+export function purchaseScope(context: string, scope?: string) {
+  if (!CONTEXT.test(context)) throw new BuyerClientError("context_changed");
+  return scope ? `${context}:${scope}` : context;
+}
+
+const storageKey = (context: string, scope?: string) => `commerce-purchase-pending-v1:${purchaseScope(context, scope)}`;
+
+const purchaseBody = <T extends object>(body: T, buyNowID?: string) => buyNowID ? { ...body, buy_now_id: buyNowID } : body;
 
 export function parsePending(raw: string, context: string): Pending {
   try {
@@ -689,6 +706,8 @@ export function parsePending(raw: string, context: string): Pending {
     )
       throw new Error();
     const b = v.body;
+    if (v.kind === "buy-now" && exact(b, ["sku_id", "quantity"]) && id(b.sku_id) && integer(b.quantity, 1, 99))
+      return v as Pending;
     if (
       (v.kind === "cart" || v.kind === "next-cart") &&
       exact(b, ["expected_version", "items"]) &&
@@ -720,9 +739,9 @@ export function parsePending(raw: string, context: string): Pending {
   }
 }
 
-export function pendingPurchase(context: string): Pending | null {
+export function pendingPurchase(context: string, scope?: string): Pending | null {
   try {
-    const raw = localStorage.getItem(storageKey(context));
+    const raw = localStorage.getItem(storageKey(context, scope));
     return raw === null ? null : parsePending(raw, context);
   } catch (error) {
     if (error instanceof BuyerClientError) throw error;
@@ -730,39 +749,38 @@ export function pendingPurchase(context: string): Pending | null {
   }
 }
 
-function persistPending(pending: Pending) {
+function persistPending(pending: Pending, scope?: string) {
   const raw = JSON.stringify(pending);
   parsePending(raw, pending.context); // Reject an accidental PII field before storage.
   try {
-    localStorage.setItem(storageKey(pending.context), raw);
-    if (localStorage.getItem(storageKey(pending.context)) !== raw)
+    localStorage.setItem(storageKey(pending.context, scope), raw);
+    if (localStorage.getItem(storageKey(pending.context, scope)) !== raw)
       throw new Error();
   } catch {
     throw new BuyerClientError("unavailable");
   }
 }
 
-function clearPending(pending: Pending) {
-  if (pendingPurchase(pending.context)?.key !== pending.key)
+function clearPending(pending: Pending, scope?: string) {
+  if (pendingPurchase(pending.context, scope)?.key !== pending.key)
     throw new BuyerClientError("uncertain");
   try {
-    localStorage.removeItem(storageKey(pending.context));
-    if (localStorage.getItem(storageKey(pending.context)) !== null)
+    localStorage.removeItem(storageKey(pending.context, scope));
+    if (localStorage.getItem(storageKey(pending.context, scope)) !== null)
       throw new Error();
   } catch {
     throw new BuyerClientError("unavailable");
   }
 }
 
-function orderKey(context: string) {
-  storageKey(context); // Same strict context validation, no foreign-context lookup.
-  return `commerce-purchase-order-v1:${context}`;
+function orderKey(context: string, buyNowID?: string) {
+  return `commerce-purchase-order-v1:${purchaseScope(context, buyNowID)}`;
 }
 
-export function knownOrderID(context: string): string | null {
+export function knownOrderID(context: string, buyNowID?: string): string | null {
   let raw: string | null;
   try {
-    raw = localStorage.getItem(orderKey(context));
+    raw = localStorage.getItem(orderKey(context, buyNowID));
   } catch {
     throw new BuyerClientError("unavailable");
   }
@@ -786,15 +804,49 @@ export function knownOrderID(context: string): string | null {
 
 // Call before offering a session reset. Losing access to an order is not proof
 // it failed. The UI must retain its old-context recovery record, not place anew.
-export function orderRecoveryRequired(context: string): boolean {
+function purchaseRecoveryRequired(context: string, buyNowID?: string): boolean {
   return (
-    ["checkout", "next-cart"].includes(pendingPurchase(context)?.kind ?? "") ||
-    knownOrderID(context) !== null
+    ["checkout", "next-cart"].includes(pendingPurchase(context, buyNowID)?.kind ?? "") ||
+    knownOrderID(context, buyNowID) !== null
   );
 }
 
-function assertNoOrder(context: string) {
-  if (orderRecoveryRequired(context)) throw new BuyerClientError("uncertain");
+export function orderRecoveryRequired(context: string, buyNowID?: string): boolean {
+  if (purchaseRecoveryRequired(context) || (buyNowID && purchaseRecoveryRequired(context, buyNowID))) return true;
+  const prefix = `${storageKey(context)}:`;
+  // A session reset also strands an unresolved direct checkout in a different tab.
+  for (let index = 0; index < localStorage.length; index++) {
+    const key = localStorage.key(index);
+    const scope = key?.startsWith(prefix) ? key.slice(prefix.length) : null;
+    if (id(scope) && pendingPurchase(context, scope)?.kind === "checkout") return true;
+  }
+  return false;
+}
+
+function assertNoOrder(context: string, buyNowID?: string) {
+  if (purchaseRecoveryRequired(context, buyNowID)) throw new BuyerClientError("uncertain");
+}
+
+export async function beginBuyNow(context: string, skuID: string, quantity: number): Promise<Cart> {
+  if (!id(skuID) || !integer(quantity, 1, 99)) throw new BuyerClientError("request_failed");
+  if (!navigator.locks) throw new BuyerClientError("unavailable");
+  const scope = `buy-now:${skuID}:${quantity}`;
+  return navigator.locks.request("commerce-purchase-write-v1", async () => {
+    const body = { sku_id: skuID, quantity };
+    const pending = pendingPurchase(context, scope);
+    if (pending && (pending.kind !== "buy-now" || pending.body.sku_id !== skuID || pending.body.quantity !== quantity))
+      throw new BuyerClientError("uncertain");
+    const attempt: Pending = pending ?? { v: 1, context, key: crypto.randomUUID(), kind: "buy-now", body };
+    if (!pending) persistPending(attempt, scope);
+    const response = await buyerRequest("POST", "buy-now", context, body, attempt.key);
+    const cart = await commandResponse(response, attempt, pending !== null, scope);
+    if (!validCart(cart) || !id(cart.id) || cart.version !== 1 || cart.items.length !== 1 ||
+        cart.items[0].sku_id !== skuID || cart.items[0].quantity !== quantity)
+      throw new BuyerClientError("uncertain");
+    await assertPurchaseContext(context);
+    clearPending(attempt, scope);
+    return cart;
+  });
 }
 
 /** Redeems a claim into the existing cart under the shared purchase lock (B2).
@@ -827,11 +879,12 @@ export async function writePurchase(
   context: string,
   input?:
     { kind: "cart"; body: CartWrite } | { kind: "quote"; body: QuoteWrite },
+  buyNowID?: string,
 ): Promise<{ kind: "cart"; value: Cart } | { kind: "quote"; value: Quote }> {
   if (!navigator.locks) throw new BuyerClientError("unavailable");
   return navigator.locks.request("commerce-purchase-write-v1", async () => {
-    assertNoOrder(context);
-    let pending = pendingPurchase(context);
+    assertNoOrder(context, buyNowID);
+    let pending = pendingPurchase(context, buyNowID);
     if (pending && pending.kind !== "cart" && pending.kind !== "quote")
       throw new BuyerClientError("uncertain");
     if (
@@ -850,15 +903,15 @@ export async function writePurchase(
         key: crypto.randomUUID(),
       });
       pending = parsePending(raw, context);
-      persistPending(pending);
+      persistPending(pending, buyNowID);
     }
-    if (pending.kind !== "cart" && pending.kind !== "quote")
+    if (pending.kind !== "quote" && (pending.kind !== "cart" || buyNowID))
       throw new BuyerClientError("uncertain");
     const response = await buyerRequest(
       pending.kind === "cart" ? "PUT" : "POST",
       pending.kind === "cart" ? "cart" : "quotes",
       context,
-      pending.body,
+      purchaseBody(pending.body, buyNowID),
       pending.key,
     );
     const conclusive =
@@ -880,7 +933,7 @@ export async function writePurchase(
         value.retryable === false &&
         typeof value.code === "string"
       ) {
-        clearPending(pending);
+        clearPending(pending, buyNowID);
         // §F: the server's coded refusal (promo_expired ...) reaches the UI as `detail`; text only, never a state.
         throw new BuyerClientError("request_failed", response.status, value.code);
       }
@@ -888,7 +941,7 @@ export async function writePurchase(
     }
     if (
       (pending.kind === "cart" && !validCart(value)) ||
-      (pending.kind === "quote" && !validQuote(value))
+      (pending.kind === "quote" && (!validQuote(value) || (buyNowID && value.cart_id !== buyNowID)))
     )
       throw new BuyerClientError("uncertain");
     await assertPurchaseContext(context);
@@ -900,10 +953,10 @@ export async function writePurchase(
     // the quote, including its expired state, without silently creating another.
     if (pending.kind === "quote")
       sessionStorage.setItem(
-        `commerce-purchase-quote-v1:${context}`,
+        quoteStorageKey(context, buyNowID),
         (value as Quote).id,
       );
-    clearPending(pending);
+    clearPending(pending, buyNowID);
     return pending.kind === "cart"
       ? { kind: "cart", value: value as Cart }
       : { kind: "quote", value: value as Quote };
@@ -912,12 +965,13 @@ export async function writePurchase(
 
 export async function currentDestination(
   context: string,
+  buyNowID?: string,
 ): Promise<Destination | null> {
   const result = await readPurchase(
-    "destination",
+    purchaseReadPath("destination", buyNowID),
     context,
     (v): v is { destination: Destination | null } =>
-      record(v) && (v.destination === null || validDestination(v.destination)),
+      record(v) && (v.destination === null || (validDestination(v.destination) && (!buyNowID || v.destination.cart_id === buyNowID))),
   );
   return result.destination;
 }
@@ -937,6 +991,7 @@ async function commandResponse(
   response: Response,
   pending: Pending,
   recovering: boolean,
+  scope?: string,
 ): Promise<unknown> {
   if (!response.ok) {
     const definitive =
@@ -949,7 +1004,7 @@ async function commandResponse(
       record(value) &&
       value.retryable === false
     ) {
-      clearPending(pending);
+      clearPending(pending, scope);
       throw new BuyerClientError(
         "request_failed",
         response.status,
@@ -969,6 +1024,7 @@ export async function writeDestination(
   context: string,
   input: DestinationWrite,
   replacePendingKey?: string,
+  buyNowID?: string,
 ): Promise<Destination> {
   if (!validDestinationWrite(input))
     throw new BuyerClientError("request_failed");
@@ -977,8 +1033,8 @@ export async function writeDestination(
   const body: DestinationWrite = structuredClone(input);
   if (!navigator.locks) throw new BuyerClientError("unavailable");
   return navigator.locks.request("commerce-purchase-write-v1", async () => {
-    assertNoOrder(context);
-    let pending = pendingPurchase(context);
+    assertNoOrder(context, buyNowID);
+    let pending = pendingPurchase(context, buyNowID);
     if (pending && pending.kind !== "destination")
       throw new BuyerClientError("uncertain");
     if (replacePendingKey !== undefined) {
@@ -988,7 +1044,7 @@ export async function writeDestination(
         body.expected_version < pending.body.expected_version
       )
         throw new BuyerClientError("uncertain");
-      const current = await currentDestination(context);
+      const current = await currentDestination(context, buyNowID);
       if ((current?.version ?? 0) !== body.expected_version)
         throw new BuyerClientError("request_failed", 409);
       // Caller explicitly reconfirmed the displayed current head. Do not clear
@@ -1011,19 +1067,19 @@ export async function writeDestination(
         kind: "destination",
         body: destinationMarker(body),
       };
-      persistPending(pending);
+      persistPending(pending, buyNowID);
       addressAttempt = { context, key: pending.key, body };
     }
     const response = await buyerRequest(
       "PUT",
       "destination",
       context,
-      body,
+      purchaseBody(body, buyNowID),
       pending.key,
     );
-    const receipt = await commandResponse(response, pending, recovering);
+    const receipt = await commandResponse(response, pending, recovering, buyNowID);
     if (!validDestination(receipt)) throw new BuyerClientError("uncertain");
-    const current = await currentDestination(context);
+    const current = await currentDestination(context, buyNowID);
     // Receipt may be historical. Compare both its identity and the exact PII
     // in memory to the current head before handing a confirmed snapshot to UI.
     const matches =
@@ -1041,7 +1097,7 @@ export async function writeDestination(
           current.home_address[k as keyof HomeAddress] ===
           body.home_address[k as keyof HomeAddress],
       );
-    clearPending(pending);
+    clearPending(pending, buyNowID);
     forgetAddressAttempt();
     if (!matches || !current || Date.parse(current.expires_at) <= Date.now())
       throw new BuyerClientError("request_failed", 409);
@@ -1184,14 +1240,15 @@ function validCheckoutReceipt(
 export async function writeCheckout(
   context: string,
   input?: CheckoutWrite,
+  buyNowID?: string,
 ): Promise<Order> {
   if (input !== undefined && !validCheckoutWrite(input))
     throw new BuyerClientError("request_failed");
   const body = input === undefined ? undefined : structuredClone(input);
   if (!navigator.locks) throw new BuyerClientError("unavailable");
   return navigator.locks.request("commerce-purchase-write-v1", async () => {
-    let pending = pendingPurchase(context);
-    const existingID = knownOrderID(context);
+    let pending = pendingPurchase(context, buyNowID);
+    const existingID = knownOrderID(context, buyNowID);
     if (pending && pending.kind !== "checkout")
       throw new BuyerClientError("uncertain");
     if (!pending && existingID) return readOrder(context, existingID);
@@ -1211,16 +1268,16 @@ export async function writeCheckout(
         kind: "checkout",
         body,
       };
-      persistPending(pending);
+      persistPending(pending, buyNowID);
     }
     const response = await buyerRequest(
       "POST",
       "checkout",
       context,
-      pending.body,
+      purchaseBody(pending.body, buyNowID),
       pending.key,
     );
-    const receipt = await commandResponse(response, pending, recovering);
+    const receipt = await commandResponse(response, pending, recovering, buyNowID);
     if (
       !validCheckoutReceipt(receipt, pending.body.payment_mode) ||
       (existingID !== null && existingID !== receipt.order_id)
@@ -1229,14 +1286,14 @@ export async function writeCheckout(
     await assertPurchaseContext(context);
     try {
       localStorage.setItem(
-        orderKey(context),
+        orderKey(context, buyNowID),
         JSON.stringify({ v: 1, context, order_id: receipt.order_id }),
       );
-      if (knownOrderID(context) !== receipt.order_id) throw new Error();
+      if (knownOrderID(context, buyNowID) !== receipt.order_id) throw new Error();
     } catch {
       throw new BuyerClientError("unavailable");
     }
-    clearPending(pending);
+    clearPending(pending, buyNowID);
     // Server GET, not the historical checkout receipt or elapsed browser timer,
     // decides whether this order is now DRAFT, cancelled, pending or confirmed.
     return readOrder(context, receipt.order_id);

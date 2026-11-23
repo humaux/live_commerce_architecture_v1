@@ -6,6 +6,7 @@ import type { Locale } from "@live-commerce/i18n";
 import type { ImageSize } from "./shop-contract";
 
 export const checkoutPath = (locale: Locale) => `/${locale}/checkout`;
+export const buyNowPath = (locale: Locale, cartID: string) => `${checkoutPath(locale)}/buy-now/${cartID}`;
 export const cartPath = (locale: Locale) => `/${locale}/cart`;
 export const productPath = (locale: Locale, slugOrID: string) => `/${locale}/products/${slugOrID}`;
 export const collectionPath = (locale: Locale, slug: string) => `/${locale}/collections/${slug}`;

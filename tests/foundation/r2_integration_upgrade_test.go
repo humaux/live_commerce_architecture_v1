@@ -144,8 +144,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0227 provisions the four manual CVS services: 151 -> 152.
 	// 0228_manual_order_award_recovery.sql adds original-order award recovery: 152 -> 153.
 	// 0229 records contextual manual order admission and provenance: 153 -> 154.
-	if len(r2) != 154 {
-		t.Fatalf("R2 migration set = %d files %v, want 154", len(r2), r2)
+	// 0230 adds checkout-only Buy now selections: 154 -> 155.
+	if len(r2) != 155 {
+		t.Fatalf("R2 migration set = %d files %v, want 155", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)
@@ -166,7 +167,25 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	if n := countRows(t, upgraded, `SELECT count(*) FROM pg_namespace WHERE nspname IN ('ads','billing','customers')`); n != 0 {
 		t.Fatalf("release-head database already has %d R2 schemas", n)
 	}
-	mustExec(t, upgraded, `DELETE FROM public.lc_schema_migrations WHERE version=ANY($1)`, r2)
+	const buyNowMigration = "0230_storefront_buy_now.sql"
+	mustExec(t, upgraded, `DELETE FROM public.lc_schema_migrations WHERE version=ANY($1) AND version<>$2`, r2, buyNowMigration)
+	if err := migrations.Apply(ctx, upgraded); err != nil {
+		t.Fatalf("R2 upgrade through pre-Buy now schema: %v", err)
+	}
+	tenant, store, owner, session, product, sku, cart := randomUUID(), randomUUID(), randomUUID(), randomUUID(), randomUUID(), randomUUID(), randomUUID()
+	mustExec(t, upgraded, `INSERT INTO control.tenants(id,name) VALUES($1,'Buy now upgrade')`, tenant)
+	mustExec(t, upgraded, `INSERT INTO control.stores(tenant_id,id,name,currency) VALUES($1,$2,'Buy now upgrade','USD')`, tenant, store)
+	mustExec(t, upgraded, `INSERT INTO buyer.owners(tenant_id,store_id,id) VALUES($1,$2,$3)`, tenant, store, owner)
+	mustExec(t, upgraded, `INSERT INTO buyer.capability_sessions(tenant_id,store_id,owner_id,id,token_hash,expires_at)
+		VALUES($1,$2,$3,$4,$5,clock_timestamp()+interval '1 hour')`, tenant, store, owner, session, randomBytes(32))
+	mustExec(t, upgraded, `INSERT INTO catalog.products(tenant_id,store_id,id,name) VALUES($1,$2,$3,'Existing product')`, tenant, store, product)
+	mustExec(t, upgraded, `INSERT INTO catalog.skus(tenant_id,store_id,id,product_id,code,currency,price_minor)
+		VALUES($1,$2,$3,$4,'EXISTING','USD',6800)`, tenant, store, sku, product)
+	mustExec(t, upgraded, `INSERT INTO storefront.carts(tenant_id,store_id,owner_id,id,creator_session_id,currency,version)
+		VALUES($1,$2,$3,$4,$5,'USD',7)`, tenant, store, owner, cart, session)
+	mustExec(t, upgraded, `INSERT INTO storefront.cart_lines(tenant_id,store_id,owner_id,cart_id,sku_id,quantity)
+		VALUES($1,$2,$3,$4,$5,3)`, tenant, store, owner, cart, sku)
+	mustExec(t, upgraded, `DELETE FROM public.lc_schema_migrations WHERE version=$1`, buyNowMigration)
 	for i := 0; i < 2; i++ { // the second Apply must be a no-op
 		if err := migrations.Apply(ctx, upgraded); err != nil {
 			t.Fatalf("R2 upgrade apply %d: %v", i+1, err)
@@ -174,6 +193,13 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	}
 	if n := countRows(t, upgraded, `SELECT count(*) FROM public.lc_schema_migrations WHERE version=ANY($1)`, r2); n != len(r2) {
 		t.Fatalf("ledger has %d of %d R2 files after the upgrade", n, len(r2))
+	}
+	if n := countRows(t, upgraded, `SELECT count(*) FROM storefront.carts c JOIN storefront.cart_lines l
+		ON (l.tenant_id,l.store_id,l.owner_id,l.cart_id)=(c.tenant_id,c.store_id,c.owner_id,c.id)
+		WHERE (c.tenant_id,c.store_id,c.owner_id,c.id,c.creator_session_id)=($1,$2,$3,$4,$5)
+		AND c.cart_kind='storefront' AND NOT c.checkout_only AND c.version=7 AND l.sku_id=$6 AND l.quantity=3`,
+		tenant, store, owner, cart, session, sku); n != 1 {
+		t.Fatal("0230 did not preserve the existing cart, creator, version and line")
 	}
 
 	fresh := mciStartPG(t)

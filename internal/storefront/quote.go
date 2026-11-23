@@ -17,6 +17,7 @@ import (
 )
 
 type QuoteInput struct {
+	BuyNowID    string `json:"buy_now_id,omitempty"`
 	CartVersion int64  `json:"cart_version"`
 	MarketID    string `json:"market_id"`
 	Country     string `json:"country"`
@@ -78,7 +79,8 @@ func CreateManualQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string
 }
 
 func createQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in QuoteInput, manual bool) (out Quote, err error) {
-	if in.CartVersion < 1 || !command.ValidID(in.MarketID) || len(in.Country) != 2 || in.Country[0] < 'A' || in.Country[0] > 'Z' || in.Country[1] < 'A' || in.Country[1] > 'Z' || !pricing.ValidMethod(in.Method) {
+	if in.CartVersion < 1 || !command.ValidID(in.MarketID) || len(in.Country) != 2 || in.Country[0] < 'A' || in.Country[0] > 'Z' || in.Country[1] < 'A' || in.Country[1] > 'Z' || !pricing.ValidMethod(in.Method) ||
+		(in.BuyNowID != "" && (manual || !command.ValidID(in.BuyNowID))) {
 		return out, command.ErrInvalid
 	}
 	var request any = in
@@ -89,7 +91,7 @@ func createQuote(ctx context.Context, tx pgx.Tx, s buyer.Scope, key string, in Q
 		}{in, true}
 	}
 	err = buyer.RunCommand(ctx, tx, s, "quote.create", key, request, &out, func() error {
-		cart, err := readCart(ctx, tx, s, false)
+		cart, err := readCart(ctx, tx, s, in.BuyNowID, false)
 		if err != nil {
 			return err
 		}

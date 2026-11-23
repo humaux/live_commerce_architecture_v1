@@ -46,7 +46,7 @@ import {
 } from "../lib/cvs-contract";
 import { cvsCopy } from "../lib/cvs-copy";
 import { bankTransferCopy } from "../lib/bank-transfer-copy";
-import { assertPurchaseContext } from "../lib/purchase";
+import { assertPurchaseContext, purchaseScope } from "../lib/purchase";
 import type { Option, Order } from "../lib/purchase";
 
 export type PickupHandle = {
@@ -90,6 +90,7 @@ export default function CvsPickup({
   locale,
   option,
   cartVersion,
+  buyNowID,
   recipient,
   onRecipient,
   paymentMode,
@@ -107,6 +108,7 @@ export default function CvsPickup({
   locale: Locale;
   option: Option & { delivery_kind: CvsKind };
   cartVersion: number;
+  buyNowID?: string;
   recipient: { recipient_name: string; phone: string };
   onRecipient: (next: { recipient_name: string; phone: string }) => void;
   paymentMode: PaymentMode;
@@ -154,7 +156,7 @@ export default function CvsPickup({
     if (!mapMode) return;
     const version = ++live.current;
     try {
-      const draft = takeCvsDraft(window.sessionStorage, context);
+      const draft = takeCvsDraft(window.sessionStorage, purchaseScope(context, buyNowID));
       if (draft) restore.current(draft);
     } catch {
       /* sessionStorage blocked: the buyer retypes name and mobile */
@@ -169,7 +171,7 @@ export default function CvsPickup({
       live.current++;
       window.removeEventListener("pageshow", back);
     };
-  }, [context, option.market_id, option.method]);
+  }, [context, buyNowID, option.market_id, option.method]);
 
   async function verify(selection: string, version: number) {
     setNotice({ key: "verifying" });
@@ -255,6 +257,7 @@ export default function CvsPickup({
       "cvs-selections",
       context,
       {
+        ...(buyNowID ? { buy_now_id: buyNowID } : {}),
         cart_version: cartVersion,
         market_id: option.market_id,
         service_code: serviceCode(option),
@@ -276,7 +279,7 @@ export default function CvsPickup({
     await assertPurchaseContext(context);
     if (!isCurrent()) return;
     try {
-      saveCvsDraft(window.sessionStorage, context, {
+      saveCvsDraft(window.sessionStorage, purchaseScope(context, buyNowID), {
         recipient_name: recipient.recipient_name,
         phone: recipient.phone,
         payment_mode: paymentMode,
@@ -341,9 +344,10 @@ export default function CvsPickup({
       setErrors({ store: copy.invalidStore });
       return null;
     }
-    const text = JSON.stringify(body);
+    const scopedBody = buyNowID ? { ...body, buy_now_id: buyNowID } : body;
+    const text = JSON.stringify(scopedBody);
     if (attempt.current?.body !== text) attempt.current = { key: crypto.randomUUID(), body: text };
-    const response = await buyerRequest("POST", "cvs-stores", context, body, attempt.current.key);
+    const response = await buyerRequest("POST", "cvs-stores", context, scopedBody, attempt.current.key);
     if (!response.ok) {
       if (response.status === 429) {
         const seconds = Number(response.headers.get("Retry-After"));

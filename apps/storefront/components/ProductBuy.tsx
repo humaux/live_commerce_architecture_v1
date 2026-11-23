@@ -5,15 +5,16 @@
 // Used by: ProductMedia on the product detail page; Go remains the stock and amount authority.
 // Buy box of the product page: option selectors that resolve to one variant (SKU), price + compare-at, stock hint, quantity,
 // Add to cart and Buy now. BFF routes (via CartProvider): /api/buyer/session, /api/buyer/cart -> Go /v1/buyer/session, /cart.
-// The variant list comes from the server-rendered catalog-v2 detail (Go decides price and stock hint; this only picks which
-// SKU). Add = merge into the shared multi-SKU cart (CartProvider.add, journalled + CAS); Buy now = add, then go to checkout.
+// Both actions use the SKU from the server-rendered catalog. Buy now keeps its single selection separate from the shared cart.
 // A sold-out variant cannot be added (button disabled); a combination that has no in-stock variant is disabled in the chips.
 // A sticky phone bar opens the same local option draft while the inline actions are scrolled out of view.
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
 import { formatMoney } from "../lib/money";
-import { cartPath, checkoutPath } from "../lib/routes";
+import { buyNowPath, cartPath } from "../lib/routes";
+import { BuyerClientError, initializeBuyerSession } from "../lib/buyer-client";
+import { beginBuyNow } from "../lib/purchase";
 import { resolveVariant, valueAvailable } from "../lib/shop-contract";
 import type { ProductDetail } from "../lib/shop-contract";
 import { fmt, shopCopy } from "../lib/shop-copy";
@@ -37,6 +38,7 @@ export default function ProductBuy({ locale, product, currency, chosen, onChoose
   const actions = useRef<HTMLDivElement>(null);
   const [optionsOpen, setOptionsOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [buyNowProblem, setBuyNowProblem] = useState<"uncertain" | "failed" | null>(null);
   const [recovery, setRecovery] = useState<{ values: string[]; quantity: number } | null>(null);
   const confirmation = useRef(false);
   const uncertainSeen = useRef(false);
@@ -122,14 +124,28 @@ export default function ProductBuy({ locale, product, currency, chosen, onChoose
     setAdded(false);
   }
 
-  async function addToCart(thenCheckout: boolean) {
+  async function addToCart() {
     if (!variant || soldOut) return;
     const ok = await cart.add(variant.sku_id, qty);
     if (!ok) return;
-    if (thenCheckout) router.push(checkoutPath(locale));
-    else {
-      setAdded(true);
-      cart.setDrawerOpen(true);
+    setAdded(true);
+    cart.setDrawerOpen(true);
+  }
+
+  async function buyNow() {
+    if (!variant || soldOut || confirmation.current) return;
+    confirmation.current = true;
+    setConfirming(true);
+    setBuyNowProblem(null);
+    try {
+      const { context } = await initializeBuyerSession();
+      if (!context) throw new BuyerClientError("requires_reset");
+      const selection = await beginBuyNow(context, variant.sku_id, qty);
+      router.push(buyNowPath(locale, selection.id));
+    } catch (reason) {
+      setBuyNowProblem(reason instanceof BuyerClientError && reason.code === "uncertain" ? "uncertain" : "failed");
+      confirmation.current = false;
+      setConfirming(false);
     }
   }
 
@@ -201,11 +217,11 @@ export default function ProductBuy({ locale, product, currency, chosen, onChoose
       </div>
 
       <div className="sf-buy__actions" ref={actions}>
-        <button type="button" className="sf-btn sf-btn--primary sf-btn--block" disabled={soldOut || cart.busy} onClick={() => void addToCart(false)} data-testid="add-to-cart">
-          {cart.busy ? copy.loading : addLabel}
+        <button type="button" className="sf-btn sf-btn--primary sf-btn--block" disabled={soldOut || !cart.ready || cart.busy || confirming} onClick={() => void addToCart()} data-testid="add-to-cart">
+          {!soldOut && (!cart.ready || cart.busy) ? copy.loading : addLabel}
         </button>
-        <button type="button" className="sf-btn sf-btn--outline sf-btn--block" disabled={soldOut || cart.busy} onClick={() => void addToCart(true)} data-testid="buy-now">
-          {copy.buyNow}
+        <button type="button" className="sf-btn sf-btn--outline sf-btn--block" disabled={soldOut || !cart.ready || confirming} onClick={() => void buyNow()} data-testid="buy-now">
+          {confirming ? copy.loading : buyNowProblem === "uncertain" ? copy.retry : copy.buyNow}
         </button>
       </div>
       <p className="sf-added" role="status" aria-live="polite">
@@ -216,6 +232,7 @@ export default function ProductBuy({ locale, product, currency, chosen, onChoose
         )}
       </p>
       <CartNotice locale={locale} />
+      {buyNowProblem && <p className="sf-notice" role="alert">{buyNowProblem === "uncertain" ? copy.buyNowUncertain : copy.buyNowFailed}</p>}
 
       {sticky && (
         <div className={`sf-sticky ${styles.entryDock}`} data-testid="sticky-buy">

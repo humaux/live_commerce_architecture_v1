@@ -3,17 +3,17 @@
 // Used by: OrderFlow and CheckoutFlow when loading, refreshing and acknowledging their review.
 // Invariants: bounded authenticated reads; server money only; no recipient data in the review journal.
 import { BuyerClientError } from "./buyer-client";
-import { isUnavailable, purchasePage, validOptionRow, type Option, type Quote } from "./purchase";
+import { isUnavailable, purchasePage, purchaseScope, validOptionRow, type Option, type Quote } from "./purchase";
 
-export function rememberCheckoutQuote(quote: Quote, context: string, old: number | null) {
-  sessionStorage.setItem(`commerce-checkout-review-v2:${context}`, JSON.stringify({
+export function rememberCheckoutQuote(quote: Quote, context: string, old: number | null, buyNowID?: string) {
+  sessionStorage.setItem(`commerce-checkout-review-v2:${purchaseScope(context, buyNowID)}`, JSON.stringify({
     id: quote.id, cartID: quote.cart_id, total: quote.amount.total_minor,
     codDue: quote.cod_due_minor ?? null, currency: quote.currency, old,
   }));
 }
 
-export function changedCheckoutQuote(quote: Quote, context: string): number | null {
-  const raw = sessionStorage.getItem(`commerce-checkout-review-v2:${context}`);
+export function changedCheckoutQuote(quote: Quote, context: string, buyNowID?: string): number | null {
+  const raw = sessionStorage.getItem(`commerce-checkout-review-v2:${purchaseScope(context, buyNowID)}`);
   const previous = raw ? JSON.parse(raw) : null;
   if (previous && (typeof previous.id !== "string" || !Number.isSafeInteger(previous.total) ||
     typeof previous.currency !== "string" || (previous.old !== null && !Number.isSafeInteger(previous.old)) ||
@@ -26,7 +26,7 @@ export function changedCheckoutQuote(quote: Quote, context: string): number | nu
   const old = previous?.currency === quote.currency && previous.cartID === quote.cart_id
     ? previousTotal !== currentTotal ? previous.old ?? previousTotal : previous.old
     : null;
-  rememberCheckoutQuote(quote, context, old);
+  rememberCheckoutQuote(quote, context, old, buyNowID);
   return old;
 }
 
