@@ -1,5 +1,6 @@
 // Browser-only buyer session coordination. The bearer stays in the HttpOnly
 // cookie; neither this module nor its journal ever reads it.
+import { BUYER_UUID, type OrderAccess } from "./buyer-query.ts";
 import { CLAIM_TOKEN } from "./claim-contract.ts";
 
 const LOCK = "commerce-buyer-session-v1";
@@ -192,8 +193,8 @@ async function parsedStatus(response: Response): Promise<SessionStatus> {
   return value as SessionStatus;
 }
 
-async function status(): Promise<SessionStatus> {
-  const response = await request("GET", "session");
+async function status(suffix = "session"): Promise<SessionStatus> {
+  const response = await request("GET", suffix);
   if (!response.ok) {
     if (response.status === 401)
       throw new BuyerClientError("requires_reset", 401);
@@ -319,6 +320,18 @@ export function readBuyerSession(): Promise<SessionStatus> {
     await recover(store, current);
     return current;
   });
+}
+
+export function readOrderSession(orderID: string, access?: OrderAccess): Promise<SessionStatus> {
+  if (!access) return readBuyerSession();
+  if (!BUYER_UUID.test(orderID)) throw new BuyerClientError("request_failed");
+  return status(`orders/${orderID}/session?access=${access}`);
+}
+
+export async function assertOrderContext(context: string, orderID: string, access?: OrderAccess) {
+  const current = await readOrderSession(orderID, access);
+  if (current.state !== "active" || current.context !== context)
+    throw new BuyerClientError("context_changed");
 }
 
 export function initializeBuyerSession(): Promise<SessionStatus> {

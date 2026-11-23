@@ -774,9 +774,9 @@
     "tests/storefront/browser-engine.mjs": "5dec33e55e6a5eb155a2b00fc0ed9c564cebf06c55cb24d5e93ea149b29bb711",
     "tests/storefront/browser-gate.mjs": "a90c0697ce659eb77a572f2517617f447930903f9274e808a9e33be21a744ddb",
     "tests/storefront/buy-now-gate.mjs": "21355d0dd8b7c606bce8d3e02366856106a2193e9f5d056272e1b105119f1432",
-    "tests/storefront/buyer-after-parity.mjs": "d104063cc25474765af41442a052fc2a2e98bb5b0111c4caa1b2e85e4a0be6ee",
+    "tests/storefront/buyer-after-parity.mjs": "2297df7e9a70f190d1dd23b33f21598e7459745e758838d185512ab903664a23",
     "tests/storefront/buyer-browse-parity.spec.ts": "5388a4f840c26753e6765866cc1552ab69e65cdbe4b84b29ebcfef50153e23ce",
-    "tests/storefront/buyer-comms-gate.mjs": "5cca8c34aba74ccc04e2531be4d30f79798b3ebcfe5f47f9d28b87043cadd28a",
+    "tests/storefront/buyer-comms-gate.mjs": "e4d19d6a7aaa1239dcb165e88ad2fafa98330b2de79721db9c4a9d7d5a3203f7",
     "tests/storefront/catalog-media-gate.mjs": "7c30bb93b241c69621656f78cdb3efb13169a88b6ab0b6c5fc886834e0223e3e",
     "tests/storefront/checkout-v2.mjs": "37d08ab36d56f2244721af2852173033bf1fe12dc6984433ac370a4071e6a7c4",
     "tests/storefront/claim-checkout.mjs": "6de428b3e6ea3d59a305d435b983a41cdaffde27a0e21e9ac0349dd241b58470",
@@ -788,7 +788,7 @@
     "tests/storefront/cvs-picker.mjs": "bca113c9860e820d422f4c391da8190984520a2cb069a471142f4c3080225422",
     "tests/storefront/home-cod-buyer.mjs": "6e1922d58aa75e6ce2c5f8c57279852e513421e58ddc1103bc4574fd8bb3dbd8",
     "tests/storefront/legal-pages.mjs": "75096e2148250a804a3ed4a35d29eae48aa017dec6978c569deb2a03d9341cbf",
-    "tests/storefront/manual-order-link-gate.mjs": "e2c26fe026bc57976ee0ac2e0cb6ab2ba47492c289932cf42ef689f8e78ec989",
+    "tests/storefront/manual-order-link-gate.mjs": "a4f057464abace2530ec4ed2c769547ce977bcf787aa1e4485656c06b66e8060",
     "tests/storefront/media-sizes-perf.mjs": "cda916ddd4385236dffca710f0d22169f91ceaab2e0390dc7d56a809e5d77ac6",
     "tests/storefront/merchant-buyer-gate.mjs": "099c2bf813e0f216fe0b41d77ff48f51619bcf0aff9ce6d41b436a2645dbd9a4",
     "tests/storefront/merchant-product.mjs": "2c36a724923195cdb9a5dac5397f986457a47612a24d0e31387a5b43de252c16",
@@ -3580,7 +3580,8 @@
         "tests/helpers/next-startup.mjs",
         "tests/storefront/browser-engine.mjs",
         "tests/storefront/buyer-after-parity.mjs",
-        "tests/storefront/shop-fake-api.mjs"
+        "tests/storefront/shop-fake-api.mjs",
+        "tests/storefront/shop-helpers.mjs"
       ],
       "apps": [
         "storefront"
@@ -3592,7 +3593,8 @@
         "registry:--browser-buyer-after-parity -> tests/storefront/buyer-after-parity.mjs",
         "scripts/dev/test-local.sh:--browser-buyer-after-parity:lc_build=storefront",
         "tests/storefront/buyer-after-parity.mjs:server/import apps/storefront",
-        "tests/storefront/shop-fake-api.mjs:server/import apps/storefront"
+        "tests/storefront/shop-fake-api.mjs:server/import apps/storefront",
+        "tests/storefront/shop-helpers.mjs:server/import apps/storefront"
       ]
     }
   }

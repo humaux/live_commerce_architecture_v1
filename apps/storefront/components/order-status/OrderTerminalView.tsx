@@ -4,6 +4,7 @@
 // Depends on: components/order-status/{copy,format}.ts, lib/payment-copy + payment-contract (refund lines), ShipmentBlock, lib/purchase (Order), lib/order-copy via ShipmentBlock.
 // Used by: components/order-status/OrderStatusView.tsx. Invariants: shows server order facts only (state, lines, amounts); never offers payment, never fabricates a state.
 import type { Locale } from "@live-commerce/i18n";
+import type { OrderAccess } from "../../lib/buyer-query";
 import type { Order } from "../../lib/purchase";
 import type { OrderPayment } from "../../lib/payment-contract";
 import { paymentCopy } from "../../lib/payment-copy";
@@ -13,12 +14,14 @@ import { shortOrderNumber } from "./format";
 
 export default function OrderTerminalView({
   order,
+  access,
   locale,
   money,
   kind,
   payment = null,
 }: {
   order: Order;
+  access?: OrderAccess;
   locale: Locale;
   money: (amount: number, currency: string) => string;
   kind: "completed" | "cancelled";
@@ -68,7 +71,7 @@ export default function OrderTerminalView({
           {!completed && <p className="order-note">{c.termNoEntry}</p>}
           <p className="order-total"><span>{c.termTotal}</span> <strong>{money(quote.amount.total_minor, quote.currency)}</strong></p>
           {order.shipment && <ShipmentBlock shipment={order.shipment} locale={locale} />}
-          {completed && <div className="os-actions"><a className="os-back" data-testid="request-after-sales" href={`/${locale}/orders/${order.order_id}/return`}>{c.after}</a></div>}
+          {completed && access !== "lookup" && <div className="os-actions"><a className="os-back" data-testid="request-after-sales" href={`/${locale}/orders/${order.order_id}/return${access ? `?access=${access}` : ""}`}>{c.after}</a></div>}
         </section>
       </div>
     </section>

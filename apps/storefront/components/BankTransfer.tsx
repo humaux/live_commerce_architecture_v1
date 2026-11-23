@@ -10,8 +10,9 @@
 // Used by: buyer order detail; buyer-entered datetime-local remains in the buyer's own zone.
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
-import { BuyerClientError, buyerRequest } from "../lib/buyer-client";
-import { assertPurchaseContext, readPurchase } from "../lib/purchase";
+import { BuyerClientError, assertOrderContext, buyerRequest } from "../lib/buyer-client";
+import type { OrderAccess } from "../lib/buyer-query";
+import { readPurchase } from "../lib/purchase";
 import { bankTransferCopy } from "../lib/bank-transfer-copy";
 import { browseCopy } from "../lib/browse-copy";
 import { displayTime } from "../../../packages/format/src/index";
@@ -52,6 +53,7 @@ const localInput = (date: Date) => {
 /** Show the buyer-owned bank transfer view and submit a reported payment instant. */
 export default function BankTransfer({
   context,
+  access,
   orderID,
   locale,
   money,
@@ -59,6 +61,7 @@ export default function BankTransfer({
   onState,
 }: {
   context: string;
+  access?: OrderAccess;
   orderID: string;
   locale: Locale;
   money: Money;
@@ -86,7 +89,7 @@ export default function BankTransfer({
     const version = ++live.current;
     try {
       const next = await readPurchase(`orders/${orderID}/bank-transfer`, context, (v): v is TransferView =>
-        validTransferView(v, orderID),
+        validTransferView(v, orderID), access ? { orderID, access } : undefined,
       );
       if (version !== live.current) return;
       setView(next);
@@ -94,7 +97,7 @@ export default function BankTransfer({
     } catch {
       if (version === live.current) setLoadFailed(true);
     }
-  }, [context, orderID]);
+  }, [context, orderID, access]);
 
   useEffect(() => {
     void load();
@@ -151,7 +154,7 @@ export default function BankTransfer({
       }
       const data: unknown = await response.json();
       if (!validProofResult(data, orderID)) throw new BuyerClientError("invalid_response");
-      await assertPurchaseContext(context);
+      await assertOrderContext(context, orderID, access);
       attempt.current = null;
       setMessage("sent");
       await load();
@@ -233,7 +236,7 @@ export default function BankTransfer({
           {copy.yourDetails}: ···{proof.last5} · {money(proof.amount_minor, view.currency)} · {displayTime(locale, proof.paid_at)} · {copy.storeTime}
         </p>
       )}
-      {open(view.state) && !clock.expired && (
+      {access !== "lookup" && open(view.state) && !clock.expired && (
         <form
           data-testid="transfer-form"
           onSubmit={(event) => {

@@ -6,7 +6,7 @@
 "use client";
 
 // Guest order lookup form: order number + (email or phone) -> BFF POST /api/buyer/orders/lookup -> Go POST /v1/buyer/orders/lookup
-// (internal/buyerhttp/lookup.go, contracts/storefront-v2.md §E5). On 200 the BFF has already set the buyer cookie, so the page navigates to
+// (internal/buyerhttp/lookup.go, contracts/storefront-v2.md §E5). On 200 the BFF has already set the lookup cookie, so the page navigates to
 // /{locale}/orders/{order_id}. Every refusal other than a format error or a throttle is the same "no match" text: the page never says which
 // half was wrong. Nothing is stored in the browser and the values are never logged.
 import { useState, type FormEvent } from "react";
@@ -41,7 +41,7 @@ export default function LookupForm({ locale }: { locale: Locale }) {
       if (response.status === 200) {
         const value: unknown = await response.json().catch(() => null);
         if (validLookupResult(value)) {
-          window.location.assign(`/${locale}/orders/${value.order_id}`);
+          window.location.assign(`/${locale}/orders/${value.order_id}?access=lookup`);
           return;
         }
         return setProblem("unavailable");

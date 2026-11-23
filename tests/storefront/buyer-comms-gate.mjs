@@ -192,7 +192,7 @@ try {
     await b.getByTestId("lookup-ref").fill(number.toLowerCase().replace(/-/g, " "));          // case and separators do not matter
     await b.getByTestId("lookup-contact").fill(mobile ? "0900000091" : ` ${email.toUpperCase()} `); // phone formats / e-mail case do not matter
     await b.getByTestId("lookup-submit").click();
-    await b.waitForURL(`${origin}/${locale}/orders/${orderID}`);
+    await b.waitForURL(`${origin}/${locale}/orders/${orderID}?access=lookup`);
     await expect(b.getByTestId("order-section")).toBeVisible();
     await expect(b.getByTestId("order-section").getByRole("heading", { level: 1 })).toContainText(mailNumber(orderID)); // signed frame: the page shows the mail order number, not the full id (URL asserted above)
     await expect(b.getByTestId("bank-transfer")).toBeVisible();
@@ -208,7 +208,7 @@ try {
       const r = await fetch(p, { method, credentials: "same-origin", cache: "no-store", headers: { ...(body ? { "Content-Type": "application/json" } : {}), ...headers }, body: body ? JSON.stringify(body) : undefined });
       return { status: r.status, text: await r.text() };
     }, [method, p, body, headers]);
-    const session = await call("GET", "/api/buyer/session");
+    const session = await call("GET", `/api/buyer/orders/${orderID}/session?access=lookup`);
     assert.equal(session.status, 200);
     const context = JSON.parse(session.text).context;
     const hdr = { "X-Buyer-Context": context };
@@ -225,14 +225,8 @@ try {
       verdicts.push(`${method} ${p.replace(orderID, "{id}")} -> ${r.status}`);
       assert.equal(r.status, 403, `${tag}: ${method} ${p} answered ${r.status} ${r.text}`);
     }
-    // the UI form: the buyer-facing proof form may still be drawn, but its submit must not record anything
-    const form = b.getByTestId("transfer-form");
-    if (await form.count()) {
-      await form.locator('input[name="last5"]').fill("12345");
-      await b.getByTestId("transfer-send").click();
-      await pause(800);
-      await expect(b.getByTestId("transfer-proof")).toHaveCount(0); // the "proof received" line never appears for a guest
-    }
+    await expect(b.getByTestId("transfer-form")).toHaveCount(0);
+    await expect(b.getByTestId("transfer-proof")).toHaveCount(0);
     const factsAfter = await control("facts");
     assert.equal(factsAfter.proofs, factsBefore.proofs, `${tag}: a proof was recorded by the guest session`);
     assert.equal(factsAfter.privacy_actions, factsBefore.privacy_actions, `${tag}: a privacy action was started by the guest session`);
