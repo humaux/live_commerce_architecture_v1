@@ -264,6 +264,25 @@ const CATALOG_ASSERTION_REWRITES = {
 // performs both real clicks; selectLedgerRow searches the requested code and returns its selected
 // inventory-current-available value. Only these complete calls migrate; exact role/name and zero stay required.
 const SIGNED_ASSERTION_REWRITES = {
+  // Checkout entry 782:4087 and review 1429:23484 (docs/delivery/units/store-workflows/UI-GAPS.md §11).
+  // Keep the old submit visibility at the actual payment review, and also assert the fixed submission control.
+  "tests/storefront/shop-gate.mjs": {
+    'expect(pg.getByTestId("create-order")).toBeVisible()': `
+      await expect(pg.getByTestId("checkout-submit")).toBeVisible();
+      await expect(pg.getByTestId("checkout-submit")).toBeEnabled();
+      await expect(pg.getByTestId("create-order")).toBeVisible();`,
+    'assert.equal(await p.locator(".sf-header").evaluate((e) => getComputedStyle(e).position), "sticky", "the header sticks inside normal flow")': `
+      assert.equal(await p.locator(".sf-header").evaluate((e) => getComputedStyle(e).position), "sticky", "the header sticks inside normal flow");
+      await expect(checkoutHeader).toHaveCount(1);
+      await expect(checkoutHeader).toBeVisible();
+      await expect(p.locator("header.sf-header")).toBeHidden();
+      await expect(checkoutHeader.getByRole("link", { name: "返回購物車" })).toBeVisible();
+      assert.equal(await checkoutHeader.evaluate(e => getComputedStyle(e).position), "static", "checkout uses its own header in normal flow");`,
+    'expect(create).toBeDisabled()': `
+      await expect(continuation).toBeVisible();
+      await expect(continuation).toBeDisabled();
+      await expect(continuation).toHaveAttribute("aria-describedby", "create-order-hint");`,
+  },
   // 0227 gives the four pickup services their own free tariff; the original home threshold still applies.
   "tests/storefront/shop-real-gate.mjs": {
     'assert(optionRows.length >= 1 && optionRows.every((o) => o.free_shipping_threshold_minor === T), `options must carry the policy threshold ${T}: ${JSON.stringify(optionRows.map((o) => o.free_shipping_threshold_minor))}`)': `
@@ -352,6 +371,15 @@ function assertGateParity(file, before, currentSource) {
   let at = 0;
   for (const call of kept) if (at < original.length && call === original[at]) at++;
   assert.equal(at, original.length, `${file}: original gate assertions changed (missing: ${original[at]})`);
+  if (file === "tests/storefront/shop-gate.mjs") {
+    const confirm = current.statements.find(n => ts.isFunctionDeclaration(n) && n.name?.text === "confirmMockAddress");
+    const step = collect(current, current, n => ts.isVariableDeclaration(n) && n.name.getText(current) === "checkoutStep")[0];
+    const printed = gatePrinter.printFile(current);
+    assert.match(confirm ? text(confirm, current) : "", /pg\.getByTestId\("checkout-continue"\)\.click\(\)[\s\S]*await expect\(pg\.getByTestId\("checkout-payment-review"\)\)\.toBeVisible\(\)/, `${file}: signed review must follow the real continuation click`);
+    assert.match(step ?? "", /if \(existingQuote\) \{\s*await footerCovered\(pg\);\s*await confirmMockAddress\(pg, existingQuote\);\s*await expect\(pg\.getByTestId\("checkout-submit"\)\)\.toBeVisible\(\);\s*await expect\(pg\.getByTestId\("checkout-submit"\)\)\.toBeEnabled\(\);\s*await pg\.getByTestId\("checkout-details-toggle"\)\.click\(\);\s*await expect\(pg\.getByTestId\("create-order"\)\)\.toBeVisible\(\);/, `${file}: signed payment review or submit disclosure was reordered`);
+    assert.match(printed, /const checkoutHeader = p\.locator\("header\.checkout-top"\);/, `${file}: signed checkout header locator changed`);
+    assert.match(printed, /const continuation = p\.getByTestId\("checkout-continue"\);\s*await expect\(continuation\)\.toBeVisible\(\);[\s\S]*const look = await continuation\.evaluate\(/, `${file}: signed disabled continuation locator changed`);
+  }
   if (file === "tests/storefront/catalog-media-gate.mjs") {
     const scenario = current.statements.find((n) => ts.isFunctionDeclaration(n) && n.name?.text === "scenario");
     const signed = ts.createSourceFile(file, CATALOG_SIGNED_READBACK, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
@@ -379,6 +407,29 @@ test("all eleven gate adapters preserve original assertions, readiness loops and
     if (assertGateParity(file, before, await readFile(file, "utf8"))) checked++;
   }
   assert.equal(checked, 11);
+});
+
+test("signed shop checkout parity rejects wrong phases, controls and weakened assertions", async () => {
+  const file = "tests/storefront/shop-gate.mjs";
+  const before = execFileSync("git", ["show", `${GATE_BASELINE}:${file}`], { encoding: "utf8" });
+  const current = await readFile(file, "utf8");
+  assert.equal(assertGateParity(file, before, current), true);
+  const submit = 'await expect(pg.getByTestId("create-order")).toBeVisible();';
+  const confirmation = "await confirmMockAddress(pg, existingQuote);";
+  for (const [label, mutated, expected] of [
+    ["skip the real address confirmation click", current.replace('pg.getByTestId("checkout-continue").click(),', 'Promise.resolve(),'), /signed review must follow/],
+    ["confirm after reading the submit control", current.replace(confirmation, "").replace(submit, `${submit}\n${confirmation}`), /review or submit disclosure was reordered/],
+    ["remove the original submit assertion", current.replace(submit, ""), /original gate assertions changed/],
+    ["weaken the fixed submit assertion", current.replace('expect(pg.getByTestId("checkout-submit")).toBeEnabled()', 'expect(pg.getByTestId("checkout-submit")).toBeAttached()'), /original gate assertions changed/],
+    ["use the hidden shop header", current.replace('const checkoutHeader = p.locator("header.checkout-top");', 'const checkoutHeader = p.locator("header.sf-header");'), /signed checkout header locator changed/],
+    ["allow duplicate checkout headers", current.replace("expect(checkoutHeader).toHaveCount(1)", "expect(checkoutHeader).toBeVisible()"), /original gate assertions changed/],
+    ["omit the checkout return action", current.replace('await expect(checkoutHeader.getByRole("link", { name: "返回購物車" })).toBeVisible();', ""), /original gate assertions changed/],
+    ["check the hidden old button for disabled styles", current.replace('const continuation = p.getByTestId("checkout-continue");', 'const continuation = p.getByTestId("create-order");'), /signed disabled continuation locator changed/],
+    ["remove the disabled reason association", current.replace('await expect(continuation).toHaveAttribute("aria-describedby", "create-order-hint");', ""), /original gate assertions changed/],
+  ]) {
+    assert.notEqual(mutated, current, `${label}: mutation target missing`);
+    assert.throws(() => assertGateParity(file, before, mutated), expected, label);
+  }
 });
 
 test("signed inventory parity rejects missing facts, changed price oracles and wrong SKU interactions", async () => {
