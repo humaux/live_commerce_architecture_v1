@@ -510,9 +510,14 @@ async function aftersalesPhase() {
     await act(caseID,"reason",()=>p.getByRole("combobox").selectOption("damaged"),()=>expect(p.getByRole("combobox")).toHaveValue("damaged"));
     await act(caseID,"note",()=>p.getByRole("textbox").fill("Synthetic aftersales note 😀"),()=>expect(p.getByRole("textbox")).toHaveValue("Synthetic aftersales note 😀"));
     if(index===0) {
-      await act(caseID,"excess quantity input",()=>p.getByRole("spinbutton").fill("3"),()=>expect(p.getByRole("spinbutton")).toHaveValue("3"));const denied=p.waitForResponse(r=>requestIs(r,`orders/${world.order}/return-requests`,"POST"));
-      const [deniedResponse]=await Promise.all([denied,act(caseID,"excess quantity refusal",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),()=>expect(p.getByTestId("return-page").getByRole("alert")).toHaveText(c.errors.exceeds_shipped))]);
-      assert.equal(deniedResponse.status(),422);assert.equal((await readFact(world)).requests,0);
+      const quantity=p.getByRole("spinbutton"),before=await readFact(world),posts=postCount();
+      await act(caseID,"excess quantity input",()=>quantity.fill("3"),async()=>{
+        await expect(quantity).toHaveValue("3");
+        assert.equal(await quantity.evaluate(input=>input.validity.rangeOverflow),true);
+      });
+      await act(caseID,"browser blocks excess quantity",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),async()=>{
+        assert.equal(postCount(),posts);assert.deepEqual(await readFact(world),before);
+      });
     }
     await act(caseID,"positive quantity",()=>p.getByRole("spinbutton").fill("1"),()=>expect(p.getByRole("spinbutton")).toHaveValue("1"));
     const item=await submit(p,world,locale,caseID);requestIDs.push(item.id);const before=await readFact(world);
@@ -536,7 +541,21 @@ async function aftersalesPhase() {
       await expect(p.getByTestId("return-rma-state")).toHaveAttribute("data-state",state);
       await expect(p.getByTestId("return-rma-state")).toContainText(returnProgressCopy(locale)[state]);
     }
-    await apply(p,world,locale,caseID,true);const rejected=await submit(p,world,locale,caseID);await terminal(p,rejected,locale,"reject","rejected",caseID);
+    await apply(p,world,locale,caseID,true);
+    if(index===0) {
+      // One unit has already been returned. Two fit the snapshot's input range, while Go sees only one left.
+      const quantity=p.getByRole("spinbutton"),before=await readFact(world);
+      await act(caseID,"quantity above remaining after return",()=>quantity.fill("2"),async()=>{
+        await expect(quantity).toHaveValue("2");
+        assert.equal(await quantity.evaluate(input=>input.validity.valid),true);
+      });
+      const denied=p.waitForResponse(r=>requestIs(r,`orders/${world.order}/return-requests`,"POST"));
+      const [deniedResponse]=await Promise.all([denied,act(caseID,"excess quantity refusal",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),()=>expect(p.getByTestId("return-page").getByRole("alert")).toHaveText(c.errors.exceeds_shipped))]);
+      assert.equal(deniedResponse.status(),422);assert.equal((await deniedResponse.json()).code,"exceeds_shipped");
+      assert.deepEqual(await readFact(world),before);
+      await act(caseID,"quantity within remaining after return",()=>quantity.fill("1"),()=>expect(quantity).toHaveValue("1"));
+    }
+    const rejected=await submit(p,world,locale,caseID);await terminal(p,rejected,locale,"reject","rejected",caseID);
     if(locale==="zh-TW")await capture(p,`aftersales-zh-TW-${mobile?"mobile":"desktop"}-rejected.png`,true,path.join(review,"buyer-aftersales"));
     await apply(p,world,locale,caseID,true);const cancelled=await submit(p,world,locale,caseID);await terminal(p,cancelled,locale,"approve","approved",caseID);await terminal(p,cancelled,locale,"cancel","approved",caseID);
     await expect(p.getByTestId("return-rma-state")).toContainText(returnProgressCopy(locale).CANCELLED);

@@ -71,10 +71,20 @@ export async function r03ReturnLineJourney({ origin, evidence, control, newConte
     assert.deepEqual(before.requests, []);
     assert.equal(before.receipts, 0);
 
-    await guest.goto(`${origin}/${locale}/orders/lookup`, { waitUntil: "domcontentloaded" });
-    await guest.getByTestId("lookup-ref").fill(order);
-    await guest.getByTestId("lookup-contact").fill(contact);
-    await guest.getByTestId("lookup-submit").click();
+    await Promise.all([
+      guest.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/session" && r.request().method() === "GET" && r.status() === 200),
+      guest.goto(`${origin}/${locale}/orders/lookup`),
+    ]);
+    const lookupRef = guest.getByTestId("lookup-ref"), lookupContact = guest.getByTestId("lookup-contact");
+    await lookupRef.fill(order);
+    await lookupContact.fill(contact);
+    await expect(lookupRef).toHaveValue(order);
+    await expect(lookupContact).toHaveValue(contact);
+    const [found] = await Promise.all([
+      guest.waitForResponse((r) => new URL(r.url()).pathname === "/api/buyer/orders/lookup" && r.request().method() === "POST"),
+      guest.getByTestId("lookup-submit").click(),
+    ]);
+    assert.equal(found.status(), 200);
     await expect(guest).toHaveURL(origin + orderPath(order) + "?access=lookup");
     await getRows(guest);
     const guestEntry = guest.getByTestId("request-after-sales");
