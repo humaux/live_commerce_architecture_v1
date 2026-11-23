@@ -29,6 +29,7 @@ import { sessionBoundary } from "@/lib/settings-client";
 import { placeManualOrder, readManualOptions, readManualPrefill, readManualReceipt, regenerateManualLink } from "@/lib/merchant-tools-client";
 import { draftProblem, manualBody, pickupRecipientErrors, recipientGaps, type ManualDraft, type ManualOption, type ManualPaymentMode, type ManualPrefill, type ManualResult, type ManualSourceContext } from "@/lib/merchant-tools-model";
 import { canonicalUUID } from "@/lib/orders-model";
+import { permitted } from "@/src/features/messages/privacy";
 import { conversationOrderCopy, toolsCopy } from "@/lib/merchant-tools-copy";
 import { codCopy } from "@/lib/cod-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -64,7 +65,7 @@ function ConversationOrder(props: ManualPageProps & { conversation: string }) {
   const { locale, store, initialError, renderKey, conversation } = props;
   const c = conversationOrderCopy[locale];
   const fallback = toolsCopy[locale].manual;
-  const allowed = !!store && ["inbox:read", "orders:read", "catalog:read", "inventory:reserve"].every((permission) => store.permissions?.includes(permission));
+  const allowed = ["inbox:read", "orders:read", "catalog:read", "inventory:reserve"].every((permission) => permitted(store, permission));
   const prefill = useGuardedRead(`${renderKey}|${store?.id ?? ""}|${conversation}`,
     store && allowed ? (signal) => readManualPrefill(store.id, conversation, signal) : null, initialError);
   const [boundary, setBoundary] = useState("");
@@ -343,7 +344,7 @@ function ManualOrderForm({
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="orders">
       <div className={`orders-page customers-page ops-task ${s.page}`} data-testid="manual-order-page">
         {!showMissing && <AdminPageHeader locale={locale} title={signed.manual} description={placed ? c.created : signed.quote} />}
-        {returnURL && <Link data-testid="manual-order-return-conversation" href={returnURL} prefetch={false}>{sourceCopy.back}</Link>}
+        {returnURL && (!placed || placed.order_origin) && <Link data-testid="manual-order-return-conversation" href={returnURL} prefetch={false}>{sourceCopy.back}</Link>}
         {stores.length > 1 && !conversationDraft && !initialReceipt && (
           <div className="orders-controls">
             <label>
