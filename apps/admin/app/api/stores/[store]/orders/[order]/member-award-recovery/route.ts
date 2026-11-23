@@ -1,3 +1,6 @@
+// Purpose: proxy original-order points recovery through the existing merchant session and CSRF guards.
+// Depends on: members/proxy and the frozen Go recovery endpoint.
+// Used by: the order-scoped recovery client.
 import { finish, prepare } from "@/app/api/stores/[store]/members/proxy";
 import { localError } from "@/lib/auth";
 import { callBackend } from "@/lib/backend";

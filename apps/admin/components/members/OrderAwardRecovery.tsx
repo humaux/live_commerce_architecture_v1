@@ -1,3 +1,6 @@
+// Purpose: review and confirm a missed award against the original order.
+// Depends on: scoped recovery and ledger reads, the keyed member command, and DS controls.
+// Used by: OrderPointsPanel on the original merchant order.
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@live-commerce/ui/ds";
