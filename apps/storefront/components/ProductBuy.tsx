@@ -217,10 +217,10 @@ export default function ProductBuy({ locale, product, currency, chosen, onChoose
       </div>
 
       <div className="sf-buy__actions" ref={actions}>
-        <button type="button" className="sf-btn sf-btn--primary sf-btn--block" disabled={soldOut || !cart.ready || cart.busy || confirming} onClick={() => void addToCart()} data-testid="add-to-cart">
+        <button type="button" className="sf-btn sf-btn--outline sf-btn--block" disabled={soldOut || !cart.ready || cart.busy || confirming} onClick={() => void addToCart()} data-testid="add-to-cart">
           {!soldOut && (!cart.ready || cart.busy) ? copy.loading : addLabel}
         </button>
-        <button type="button" className="sf-btn sf-btn--outline sf-btn--block" disabled={soldOut || !cart.ready || confirming} onClick={() => void buyNow()} data-testid="buy-now">
+        <button type="button" className="sf-btn sf-btn--primary sf-btn--block" disabled={soldOut || !cart.ready || confirming} onClick={() => void buyNow()} data-testid="buy-now">
           {confirming ? copy.loading : buyNowProblem === "uncertain" ? copy.retry : copy.buyNow}
         </button>
       </div>
