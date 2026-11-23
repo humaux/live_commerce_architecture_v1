@@ -305,10 +305,30 @@ async function checkBrowse(next) {
     await page.getByTestId("cart-checkout").waitFor();
   };
   await addProduct(p, "candle"); await addProduct(p, "dripper");
-  await p.goto(`${origin}/en/cart`);
+  const viewCart = async (page) => {
+    const drawer = page.getByTestId("cart-drawer");
+    await drawer.getByRole("link", { name: COPY.viewCart, exact: true }).click();
+    await expect(page).toHaveURL(`${origin}/en/cart`);
+    await expect(drawer).not.toBeVisible();
+  };
+  const expectCartSummary = async (page, subtotal) => {
+    const cart = page.getByTestId("cart-page");
+    await expect(cart.getByRole("heading", { name: COPY.cartSummaryTitle })).toBeVisible();
+    await expect(cart.getByTestId("cart-shipping")).toHaveText(COPY.cartCalculatedAtCheckout);
+    await expect(cart.getByTestId("cart-merchandise-total")).toHaveText(shop$(subtotal));
+  };
+  await viewCart(p);
   await expect(p.getByTestId("cart-line")).toHaveCount(2);
   const below = candlePrice + dripperPrice;
   await expect(p.getByTestId("cart-subtotal")).toHaveText(shop$(below));
+  await expectCartSummary(p, below);
+  const cartHeading = p.locator("header").filter({ has: p.getByRole("heading", { name: COPY.cartTitle, level: 1 }) });
+  await expect(cartHeading.getByText(COPY.cartIntro, { exact: true })).toBeVisible();
+  await cartHeading.getByRole("link", { name: COPY.continueShopping, exact: true }).click();
+  await expect(p).toHaveURL(`${origin}/en/products`);
+  await p.getByTestId("header-cart").click();
+  await expect(p.getByTestId("cart-drawer").getByTestId("cart-subtotal")).toHaveText(shop$(below));
+  await viewCart(p);
   await expect(p.getByTestId("free-shipping")).toContainText(fmt(COPY.freeShipRemaining, { amount: shop$(T - below) }));
   await p.getByTestId("cart-checkout").click();
   await p.waitForURL(`**/en/checkout`);
@@ -344,8 +364,10 @@ async function checkBrowse(next) {
   await expect(p.locator(".quotation dl div").filter({ hasText: "Delivery" }).locator("dd")).toHaveText(shop$(F)); // below the threshold the quote charges the fee
   const pc2 = await phone(), q = await pc2.newPage();
   await addProduct(q, "candle", 2); await addProduct(q, "dripper");
-  await q.goto(`${origin}/en/cart`);
+  await viewCart(q);
   await expect(q.getByTestId("cart-subtotal")).toHaveText(shop$(2 * candlePrice + dripperPrice));
+  await expect(q.getByTestId("cart-line")).toHaveCount(2);
+  await expectCartSummary(q, 2 * candlePrice + dripperPrice);
   await expect(q.getByTestId("free-shipping")).toContainText(COPY.freeShipReached);
   await q.getByTestId("cart-checkout").click();
   await q.waitForURL(`**/en/checkout`);
