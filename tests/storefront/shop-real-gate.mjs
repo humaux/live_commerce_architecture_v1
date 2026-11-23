@@ -32,6 +32,42 @@ import { checkOfflineError } from "./offline-error.spec.ts";
 import { checkContactNative } from "./contact-native.spec.ts";
 import { checkBuyNow } from "./buy-now-gate.mjs";
 import { checkC7DraftCancel, checkC7Matrix } from "./buyer-browse-parity.spec.ts";
+import { INIT_SCRIPT, listControls } from "../ui/click-sweep-lib.mjs";
+
+async function checkDeliveryKinds(page) {
+  const home = page.getByTestId("delivery-kind-home");
+  const pickup = page.getByTestId("delivery-kind-cvs");
+  const hint = page.getByTestId("cvs-next-step");
+  const writes = [];
+  const observe = (request) => {
+    const resource = new URL(request.url()).pathname;
+    if (["POST", "PUT"].includes(request.method()) &&
+        ["/api/buyer/cart", "/api/buyer/buy-now", "/api/buyer/quotes", "/api/buyer/destination", "/api/buyer/cvs-stores", "/api/buyer/checkout"].includes(resource)) writes.push(resource);
+  };
+  page.on("request", observe);
+  try {
+    await expect(home).toBeChecked();
+    await pickup.click();
+    await expect(pickup).toBeChecked();
+    await expect(hint).toBeVisible();
+    await pickup.click();
+    await pickup.press("Space");
+    await expect(pickup).toBeFocused();
+    await expect(pickup).toBeChecked();
+    await page.evaluate(INIT_SCRIPT);
+    const controls = await listControls(page, ".delivery-section", "main");
+    const selected = controls.find(control => control.testid === "delivery-kind-cvs");
+    assert.equal(selected?.current, true, "the existing click sweep must classify the checked option as current");
+    await pickup.press("ArrowLeft");
+    await expect(home).toBeChecked();
+    await expect(home).toBeFocused();
+    await expect(hint).toHaveCount(0);
+    assert.deepEqual(writes, []);
+    return { selected: selected.testid, current: selected.current, focusReturnedToHome: true, writes };
+  } finally {
+    page.off("request", observe);
+  }
+}
 
 const env = (name) => { const v = process.env[name]; assert(v, `${name} is required`); return v; };
 const root = process.cwd(), evidence = env("LC_SFR_EVIDENCE");
@@ -108,7 +144,7 @@ try {
   const proxyPort = await listen(proxy);
   browser = await launch({ headless: true, proxy: { server: `http://127.0.0.1:${proxyPort}` } });
   if (process.env.LC_SFR_BUY_NOW === "true")
-    await checkBuyNow({ browser, origin, evidence, ctxOpts, engine, facts, control });
+    await checkBuyNow({ browser, origin, evidence, ctxOpts, engine, facts, control, checkDeliveryKinds });
   else await checkBrowse(next);
 } finally {
   for (const c of children) c.kill("SIGTERM");
@@ -410,6 +446,7 @@ async function checkSharedCheckout(addProduct) {
           recipient: box('input[name="recipient_name"]'), street: box('input[name="line1"]'), next: box('[data-testid="checkout-continue"]'),
           footerAmount: document.querySelector(".checkout-bar-amount strong")?.textContent };
       });
+      receipt.entryGeometry = { recipientBottom: surface.recipient?.bottom, actionTop: surface.action?.top };
       assert.deepEqual(surface.lines.map(line => line.sku).sort(), cartSKUs);
       assert(surface.lines.every(({box}) => box && box.top >= 0 && box.bottom <= viewport.height));
       assert(surface.recipient && surface.street && surface.summary && surface.next);
@@ -500,6 +537,8 @@ async function checkSharedCheckout(addProduct) {
       assert.deepEqual(writes, { quotes: 0, destination: 0, checkout: 0 });
       receipt.prequote = await capture("prequote");
       receipt.prequoteSurface = await checkEntrySurface();
+      receipt.deliveryKinds = await checkDeliveryKinds(page);
+      assert.deepEqual(writes, { quotes: 0, destination: 0, checkout: 0 });
       await checkStreet(entry);
       const recipient = { recipient_name: "Synthetic Recipient", phone: "+886900000091", city: "Synthetic City", line1: "Synthetic Street" };
       for (const [key, value] of Object.entries(recipient)) await entry.locator(`input[name="${key}"]`).fill(value);

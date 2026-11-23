@@ -16,6 +16,7 @@ package foundation_test
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -94,10 +95,11 @@ func brcMock(t *testing.T) {
 	root, _ := filepath.Abs("../..")
 	evidence := brfEvidence(t, root, "taiwan-cvs")
 
-	const o1, o2, o3 = "https://buyer.example", "https://buyer2.example", "https://buyer3.example"
+	const o1, o2, o3, o4 = "https://buyer.example", "https://buyer2.example", "https://buyer3.example", "https://buyer4.example"
 	e1 := tcvNew(t, tcvOpts{origin: o1})
 	e2 := tcvNew(t, tcvOpts{origin: o2, share: e1})
 	e3 := tcvNew(t, tcvOpts{origin: o3, share: e1}) // no ECPay profile: buyer_entered mode
+	e4 := tcvNew(t, tcvOpts{origin: o4, share: e1}) // default home delivery only
 	for _, e := range []*tcvEnv{e1, e2, e3} {
 		e.grantCreator("orders:read", "fulfillment:write", "integration:manage", "integration:read")
 	}
@@ -125,7 +127,7 @@ func brcMock(t *testing.T) {
 	for _, kind := range []string{"cvs_711", "cvs_familymart", "cvs_hilife", "cvs_okmart"} {
 		e3.service(kind, "MANUAL", 0)
 	}
-	for _, e := range []*tcvEnv{e1, e2, e3} {
+	for _, e := range []*tcvEnv{e1, e2, e3, e4} {
 		mustExec(t, e.p.f.owner, `UPDATE catalog.products SET name='Synthetic CVS browser product',description='Synthetic acceptance fixture' WHERE id=$1`, e.p.stock.product.ID)
 		sfiAxisBySKUCode(t, e.p.f.owner, e.p.stock.product.ID) // the storefront shell sells variants (one chip per SKU code)
 	}
@@ -143,8 +145,8 @@ func brcMock(t *testing.T) {
 	values := map[string]string{"COMMERCE_BUYER_WEB_ENABLED": "1", "COMMERCE_BUYER_API_ORIGIN": buyerAPI.URL, "COMMERCE_BUYER_DEMO_LABEL": "1", "COMMERCE_BUYER_BFF_KEY": bffKey,
 		"COMMERCE_BUYER_COOKIE_KEY": base64.RawURLEncoding.EncodeToString(randomBytes(32)), "COMMERCE_BUYER_SESSION_TTL": "3600",
 		"LC_CVS_EVIDENCE": evidence, "LC_CVS_FAKE_URL": fake.URL, "LC_CVS_HOOKS_URL": hooks.URL,
-		"LC_CVS_ORIGIN1": o1, "LC_CVS_ORIGIN2": o2, "LC_CVS_ORIGIN3": o3,
-		"LC_CVS_PRODUCT1": e1.p.stock.product.ID, "LC_CVS_PRODUCT2": e2.p.stock.product.ID, "LC_CVS_PRODUCT3": e3.p.stock.product.ID}
+		"LC_CVS_ORIGIN1": o1, "LC_CVS_ORIGIN2": o2, "LC_CVS_ORIGIN3": o3, "LC_CVS_ORIGIN4": o4,
+		"LC_CVS_PRODUCT1": e1.p.stock.product.ID, "LC_CVS_PRODUCT2": e2.p.stock.product.ID, "LC_CVS_PRODUCT3": e3.p.stock.product.ID, "LC_CVS_PRODUCT4": e4.p.stock.product.ID}
 	cmd := exec.CommandContext(ctx, "node", "tests/storefront/cvs-buyer.mjs")
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	defer func() {
@@ -159,6 +161,7 @@ func brcMock(t *testing.T) {
 	if err := cmd.Run(); err != nil {
 		t.Fatalf("storefront browser gate failed: %v; evidence=%s", err, evidence)
 	}
+	brcR04WriteCounts(t, e3, evidence)
 	brfShots(t, evidence, 8)
 
 	// ---- merchant half (production admin Next build, signed mock OIDC, private Go API with the CVS routes) --------------------------
@@ -219,6 +222,41 @@ func brcMock(t *testing.T) {
 		t.Error("no directory-verified pickup row was written for store 1")
 	}
 	t.Logf("TCV08 BROWSER (MOCK) buyer half + TCV14 buyer_entered UI half passed; screenshots hashed; evidence=%s", evidence)
+}
+
+func brcR04WriteCounts(t *testing.T, e *tcvEnv, evidence string) {
+	t.Helper()
+	for _, viewport := range []string{"desktop", "mobile"} {
+		raw, err := os.ReadFile(filepath.Join(evidence, "r04-"+viewport+"-replacement.json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var receipt struct {
+			A, B struct {
+				PickupID string `json:"pickup_id"`
+			}
+		}
+		if err := json.Unmarshal(raw, &receipt); err != nil {
+			t.Fatal(err)
+		}
+		var validations, pickups, destinations, events, orders int
+		err = e.p.f.owner.QueryRow(context.Background(), `
+			SELECT
+			 (SELECT count(*) FROM buyer.command_results r WHERE r.store_id=b.store_id AND r.owner_id=b.owner_id AND r.operation='fulfillment.cvs_store.enter'),
+			 (SELECT count(*) FROM fulfillment.pickup_versions p WHERE p.store_id=b.store_id AND p.namespace='buyer.'||b.owner_id::text),
+			 (SELECT count(*) FROM storefront.destination_snapshots s WHERE s.store_id=b.store_id AND s.cart_id=b.cart_id),
+			 (SELECT count(*) FROM storefront.destination_events d WHERE d.store_id=b.store_id AND d.destination_id=b.id),
+			 (SELECT count(*) FROM checkout.orders o WHERE o.store_id=b.store_id AND o.cart_id=b.cart_id)
+			 FROM storefront.destination_snapshots b JOIN storefront.destination_heads h
+			   ON h.store_id=b.store_id AND h.owner_id=b.owner_id AND h.cart_id=b.cart_id AND h.destination_id=b.id
+			 JOIN storefront.destination_snapshots a ON a.store_id=b.store_id AND a.cart_id=b.cart_id AND a.owner_id=b.owner_id AND a.version=1
+			 WHERE b.store_id=$1 AND b.version=2 AND a.pickup_id=$2 AND b.pickup_id=$3`,
+			e.store(), receipt.A.PickupID, receipt.B.PickupID).Scan(&validations, &pickups, &destinations, &events, &orders)
+		if err != nil || validations != 2 || pickups != 2 || destinations != 2 || events != 1 || orders != 0 {
+			t.Fatalf("R04 %s PG: validations=%d pickups=%d destinations=%d B events=%d orders=%d err=%v", viewport, validations, pickups, destinations, events, orders, err)
+		}
+		t.Logf("R04 %s PG: validations=%d pickups=%d destinations=%d B events=%d orders=%d", viewport, validations, pickups, destinations, events, orders)
+	}
 }
 
 // brcStartAdmin is brfStartAdmin for the CVS gates: the private Go API (identity + admin routes incl. the CVS routes) over the isolated database,
