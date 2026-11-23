@@ -15,8 +15,8 @@ import { parityCopy } from "./orders/parity-copy";
 import { presentationCopy } from "@/lib/presentation-copy";
 
 /** Owns the editable order filter controls and validated apply callback. */
-export function OrderListFilters({ locale, filters, sessions, disabled, onApply, children }: {
-  locale: Locale; filters: OrderFilters; sessions: OrderSession[]; disabled: boolean;
+export function OrderListFilters({ locale, storeId, filters, sessions, disabled, onApply, children }: {
+  locale: Locale; storeId: string | undefined; filters: OrderFilters; sessions: OrderSession[]; disabled: boolean;
   onApply: (next: OrderFilters) => void;
   children: ReactNode;
 }) {
@@ -46,7 +46,7 @@ export function OrderListFilters({ locale, filters, sessions, disabled, onApply,
     <label>{c.from}<DateControl emptyLabel={presentationCopy[locale].date} data-testid="orders-from" type="date" lang={locale} min="2000-01-01" max="2199-12-31" value={draft.from} onChange={e => change("from", e.target.value)} /><small>{c.dateHint}</small></label>
     <label>{c.to}<DateControl emptyLabel={presentationCopy[locale].date} data-testid="orders-to" type="date" lang={locale} min="2000-01-01" max="2199-12-31" value={draft.to} onChange={e => change("to", e.target.value)} /><small>{c.dateHint}</small></label>
     </div>
-    <div className="orders-v2-filter-actions"><button type="button" data-testid="orders-reset" disabled={disabled} onClick={() => { setDraft(emptyFilters); setInvalid(false); onApply(emptyFilters); }}>{c.reset}</button><a className="orders-v2-returns-link" data-testid="orders-returns-link" href={`/${locale}/returns`}>{returnsCopy[locale].listLink}</a></div>
+    <div className="orders-v2-filter-actions"><button type="button" data-testid="orders-reset" disabled={disabled} onClick={() => { setDraft(emptyFilters); setInvalid(false); onApply(emptyFilters); }}>{c.reset}</button>{storeId && <a className="orders-v2-returns-link" data-testid="orders-returns-link" href={`/${locale}/returns?store=${storeId}`}>{returnsCopy[locale].listLink}</a>}</div>
     </div>
     {invalid && <p role="alert">{c.invalid}</p>}
   </form>;

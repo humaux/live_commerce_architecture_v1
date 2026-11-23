@@ -31,6 +31,7 @@ import { adsAny, adsBodyless, adsKeyless, adsRoutes, validAdsQuery, validIfMatch
 import { parseAdsUnbind, parseCatalogFeed, parseAdsInFlight } from "@/lib/ads-model";
 import { operationRoute, validOperationsRequest, validOperationBody, operationRetryAfter } from "@/lib/operations-request";
 import { parseOperationList, parseOperationDetail, parseOperationResult } from "@/lib/operations-model";
+import { parseBuyerReturnRequest, parseBuyerReturnRequests } from "@/lib/returns-model";
 import { parseStudioInput, parseStudioInputPrepared } from "@/lib/studio-model";
 import {
   authConfig,
@@ -137,6 +138,7 @@ async function route(request: Request, context: Context) {
   if (health && !validMetaHealthRequest(request)) return error(422, "invalid_request");
   // Refund/shipment/export/permission resources (orders-request.ts grammar) -> Go refunds.go/shipments.go.
   const action = orderActionRoute(request.method, path);
+  const buyerReturn = action && resource[0] === "return-requests";
   // customers-billing-ui: customers/finance/billing resources (lib/customers-request.ts grammar) -> Go customers.go/finance.go/billing.go.
   const customers = customersRoute(request.method, path);
   // W4-U1: platform card payments + settlements (lib/card-payments-request.ts grammar; PUT is keyless CAS).
@@ -157,6 +159,8 @@ async function route(request: Request, context: Context) {
   if (exactStore.test(store) && studio && studioAny.test(path) && !routes[request.method]?.test(path))
     return error(405, "method_not_allowed", "GET, POST, PATCH, PUT");
   if (!exactStore.test(store) || (!routes[request.method]?.test(path) && !action && !customers && !cardPayments && !logistic && !health && !parcel && !inbox && !operation))
+    return error(404, "not_found");
+  if (buyerReturn && (!authConfig || new URL(request.url).pathname !== `/api/stores/${store}/${path}`))
     return error(404, "not_found");
   const order = request.method === "GET" && orderRoute.test(path);
   const orderSearch = request.method === "POST" && path === "orders/search";
@@ -511,6 +515,21 @@ async function route(request: Request, context: Context) {
     if (response.status === 422 && isDesignPath(path))
       return localError(422, "invalid_request", undefined, designDetails((await safeJSON<{ details?: unknown }>(response))?.details));
     return safeError(response);
+  }
+  if (buyerReturn) {
+    try {
+      if (response.status !== 200) return error(503, "retry_later");
+      const raw: unknown = JSON.parse(await readBody(response, "application/json", 2 << 20));
+      const id = resource[1];
+      const headers = { "Cache-Control": "private, no-store", "X-Request-ID": response.headers.get("x-request-id") ?? "" };
+      if (!id) return Response.json({ items: parseBuyerReturnRequests(raw) }, { headers });
+      const item = parseBuyerReturnRequest(raw, id);
+      if (action === "command" && item.status !== (resource[2] === "approve" ? "approved" : "rejected"))
+        return error(503, "retry_later");
+      return Response.json(item, { headers });
+    } catch {
+      return error(503, "retry_later");
+    }
   }
   if (imageBytes) {
     // Preview bytes stream straight through, only as a validated raster type, never as a document.

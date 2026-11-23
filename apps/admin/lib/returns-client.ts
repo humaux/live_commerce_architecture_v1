@@ -8,9 +8,10 @@
 //   their own response body — the caller re-GETs; one Idempotency-Key per distinct body, reused only for a
 //   byte-identical retry after an unknown outcome (§4). Status: MOCK evidence (no provider involved).
 import { read, type WriteResult } from "./orders-client";
+import { get as guardedGet } from "./customers-client";
 import { writeSettings } from "./settings-client";
 import {
-  parseRefundGaps, parseRmaList, type RefundGap, type Rma, type RmaState,
+  parseBuyerReturnRequest, parseBuyerReturnRequests, parseRefundGaps, parseRmaList, type RefundGap, type Rma, type RmaState,
 } from "./returns-model";
 
 async function get<T>(path: string, parse: (value: unknown) => T, signal: AbortSignal): Promise<T> {
@@ -26,6 +27,11 @@ export const readReturns = (store: string, state: RmaState | "", signal: AbortSi
 /** Go GET orders/cancel-refund-gaps (orders:read): cancelled card orders still owing the buyer (§3). */
 export const readCancelRefundGaps = (store: string, signal: AbortSignal): Promise<RefundGap[]> =>
   get(`/api/stores/${store}/orders/cancel-refund-gaps`, parseRefundGaps, signal);
+
+export const readBuyerReturnRequests = (store: string, signal: AbortSignal) =>
+  guardedGet(`/api/stores/${store}/return-requests`, parseBuyerReturnRequests, signal);
+export const readBuyerReturnRequest = (store: string, id: string, signal: AbortSignal) =>
+  guardedGet(`/api/stores/${store}/return-requests/${id}`, (value) => parseBuyerReturnRequest(value, id), signal);
 
 async function write(store: string, resource: string, key: string, body: string, boundary: string): Promise<WriteResult> {
   try {
@@ -48,3 +54,7 @@ export const postRegisterReturn = (store: string, orderId: string, key: string, 
 export const postRmaStep = (
   store: string, rmaId: string, step: "receive" | "inspect" | "close" | "cancel", key: string, body: string, boundary: string,
 ) => write(store, `returns/${rmaId}/${step}`, key, body, boundary);
+
+export const postBuyerReturnDecision = (
+  store: string, id: string, action: "approve" | "reject", key: string, body: string, boundary: string,
+) => write(store, `return-requests/${id}/${action}`, key, body, boundary);

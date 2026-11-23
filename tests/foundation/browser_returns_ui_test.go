@@ -14,10 +14,13 @@ package foundation_test
 import (
 	"context"
 	"encoding/json"
+
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"livecommerce/internal/httpapi"
 )
 
 // bruSeed holds the fixture orders the spec reads through LC_BROWSER_* (fixture contract in the spec header).
@@ -149,4 +152,179 @@ func TestBrowserReturnsUI(t *testing.T) {
 	}
 	bruShots(t, evidence, 8)
 	t.Logf("W3-U5 BROWSER(MOCK): returns/cancel UI passed; screenshots hashed; evidence=%s", evidence)
+	t.Run("buyer-requests", bruBuyerRequests)
+}
+
+func bruBuyerRequests(t *testing.T) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
+	t.Cleanup(cancel)
+	alpha, beta := tcvNew(t), tcvNew(t)
+	// loadPage chooses the smallest UUID if no explicit store exists.
+	if alpha.store() > beta.store() {
+		alpha, beta = beta, alpha
+	}
+	external := alpha.p.f.storeB
+	aliases := map[string]string{alpha.store(): "default-a", beta.store(): "non-default-b", external: "outside"}
+	for _, e := range []*tcvEnv{alpha, beta} {
+		e.grantCreator("orders:read", "fulfillment:write")
+		mustExec(t, e.p.f.owner, "UPDATE control.stores SET name=$2 WHERE id=$1", e.store(), "R02 "+aliases[e.store()])
+		st, out := e.hcodSettings(0, true, 20000, 0, "black_cat")
+		rtExpect(t, "R02 enable synthetic COD", st, out, 200, "")
+	}
+	buyerOrder := func(e *tcvEnv) (*tcvBuyer, string) {
+		b := e.newBuyer()
+		order, err := e.hcodPlace(b)
+		if err != nil {
+			t.Fatalf("R02 synthetic COD placement %s: %v", aliases[e.store()], err)
+		}
+		e.rtShip(order.OrderID)
+		st, out, _ := e.record(e.token(), order.OrderID, t04Key("r02-collect"), "PENDING", "collected")
+		rtExpect(t, "R02 synthetic COD record", st, out, 200, "")
+		return b, order.OrderID
+	}
+	rma := func(e *tcvEnv, order string) string {
+		res := `{"reason":"damaged: R02 ` + aliases[e.store()] + ` RMA","lines":` + e.rtLines("quantity", 1) + `}`
+		st, out, _ := e.mcall(e.token(), "POST", e.rtPath("/orders/"+order+"/returns"), t04Key("r02-rma"), res)
+		rtExpect(t, "R02 existing RMA marker", st, out, 201, "")
+		if id := tcvStr(out, "id"); id != "" {
+			return id
+		}
+		t.Fatal("R02 existing RMA marker ID missing")
+		return ""
+	}
+	_, orderA := buyerOrder(alpha)
+	_, orderB := buyerOrder(beta)
+	rmaA, rmaB := rma(alpha, orderA), rma(beta, orderB)
+	type application struct {
+		ID              string  `json:"id"`
+		Number          string  `json:"number"`
+		Order           string  `json:"order_id"`
+		Status          string  `json:"status"`
+		Version         int     `json:"version"`
+		ReturnID        *string `json:"return_id"`
+		RejectionReason *string `json:"rejection_reason"`
+	}
+	sku, warehouse := beta.rtSKU()
+	create := func() (*tcvBuyer, application) {
+		b, order := buyerOrder(beta)
+		res := beta.bh.request(t, "POST", "/v1/buyer/orders/"+order+"/return-requests", b.cap.Token, t04Key("r02-damage"),
+			map[string]any{"reason": "damaged", "note": "R02 buyer request witness", "lines": []any{map[string]any{"sku_id": sku, "warehouse_id": warehouse, "quantity": 1}}}, nil)
+		out := bhRead[application](t, res, 201)
+		if out.ID == "" || out.Number == "" || out.Order != order || out.Status != "requested" || out.Version != 1 || out.ReturnID != nil {
+			t.Fatal("R02 buyer request needs an open request with no RMA")
+		}
+		return b, out
+	}
+	approveBuyer, approve := create()
+	rejectBuyer, reject := create()
+	withdrawBuyer, withdraw := create()
+	withdrawPath := "/v1/buyer/return-requests/" + withdraw.ID
+	withdrawn := bhRead[application](t, beta.bh.request(t, "POST", withdrawPath+"/withdraw", withdrawBuyer.cap.Token,
+		t04Key("r02-withdraw"), map[string]any{"expected_version": 1}, nil), 200)
+	if withdrawn.Status != "withdrawn" || withdrawn.Version != 2 || withdrawn.ReturnID != nil {
+		t.Fatal("R02 withdrawal did not persist a withdrawn request")
+	}
+	const rejectReason = "Synthetic package review found no damage"
+	// One employee has actual read grants and an explicit fulfilment role in both fixture stores.
+	token, principal := beta.member("orders:read", "fulfillment:write", "inventory:write")
+	readOnly, _ := beta.member("orders:read")
+	f := beta.p.f
+	mustExec(t, f.owner, "INSERT INTO identity.memberships(tenant_id,principal_id) VALUES($1,$2)", alpha.tenant(), principal)
+	mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission)
+ SELECT $1,$2,$3,p FROM unnest(ARRAY['store:read','orders:read','fulfillment:write','inventory:write']) p`, alpha.tenant(), alpha.store(), principal)
+	for _, e := range []*tcvEnv{alpha, beta} {
+		mustExec(t, f.owner, "INSERT INTO identity.store_staff(tenant_id,store_id,principal_id,role) VALUES($1,$2,$3,'fulfilment')", e.tenant(), e.store(), principal)
+	}
+	root, _ := filepath.Abs("../..")
+	evidence := brfEvidence(t, root, "r02")
+	receipt := map[string]any{"buyerPost": 201, "buyerRequestState": "requested", "buyerRequestHasRMA": false, "principalRole": "fulfilment"}
+	for _, prober := range []struct {
+		alias, id string
+		want      int
+		items     int
+	}{{"default-a", alpha.store(), 200, 0}, {"non-default-b", beta.store(), 200, 3}, {"outside", external, 0, 0}} {
+		st, out, _ := beta.mcall(token, "GET", "/v1/admin/stores/"+prober.id+"/return-requests", "", "")
+		if prober.want == 0 {
+			if st != 403 && st != 404 {
+				t.Fatalf("R02 outside requests status=%d", st)
+			}
+		} else {
+			rtExpect(t, "R02 Go scoped request list "+prober.alias, st, out, prober.want, "")
+			items, ok := out["items"].([]any)
+			if !ok || len(items) != prober.items {
+				t.Fatalf("R02 Go request count %s got=%d", prober.alias, len(items))
+			}
+
+		}
+		receipt["go-request-list-"+prober.alias] = map[string]any{"status": st, "items": prober.items}
+		rmaStatus, rmaOut, _ := beta.mcall(token, "GET", "/v1/admin/stores/"+prober.id+"/returns", "", "")
+		if prober.want == 0 {
+			if rmaStatus != 403 && rmaStatus != 404 {
+				t.Fatalf("R02 outside RMA status=%d", rmaStatus)
+			}
+		} else {
+			rtExpect(t, "R02 Go scoped RMA "+prober.alias, rmaStatus, rmaOut, 200, "")
+			items, ok := rmaOut["items"].([]any)
+			if !ok || len(items) != 1 {
+				t.Fatalf("R02 Go RMA count %s got=%d", prober.alias, len(items))
+			}
+		}
+		receipt["go-rma-list-"+prober.alias] = rmaStatus
+	}
+	count := func() map[string]int {
+		bound := func(q string) int { return beta.count(q, alpha.store(), beta.store()) }
+		return map[string]int{
+			"paymentFacts":  bound("SELECT count(*) FROM payments.facts WHERE store_id IN ($1,$2)"),
+			"refunds":       bound("SELECT count(*) FROM payments.stripe_refunds WHERE store_id IN ($1,$2)"),
+			"refundLedger":  bound("SELECT count(*) FROM payments.facts WHERE store_id IN ($1,$2) AND kind LIKE 'REFUND%'"),
+			"rmas":          bound("SELECT count(*) FROM returns.rmas WHERE store_id IN ($1,$2)"),
+			"buyerRequests": bound("SELECT count(*) FROM returns.buyer_requests WHERE store_id IN ($1,$2)"),
+		}
+	}
+	counts := count()
+	receipt["beforeBrowser"] = counts
+	t.Cleanup(func() {
+		after := count()
+		receipt["afterBrowser"] = after
+		for k, v := range counts {
+			if k == "rmas" {
+				v++
+			}
+			if after[k] != v {
+				t.Errorf("R02 %s: want %d, got %d", k, v, after[k])
+			}
+		}
+		if err := os.WriteFile(filepath.Join(evidence, "go-receipt.json"), []byte(mustJSON(t, receipt)), 0600); err != nil {
+			t.Error(err)
+		}
+	})
+	stack := brfStartAdminOn(t, ctx, f, principal, evidence, httpapi.Options{SessionStoreList: true}, browserEnvironment)
+	brfPlaywright(t, ctx, stack, []string{"returns-ui.spec.ts"}, map[string]string{
+		"LC_BROWSER_RETURN_REQUESTS": mustJSON(t, map[string]string{
+			"defaultStore": alpha.store(), "nonDefaultStore": beta.store(), "outside": external,
+			"defaultRma": rmaA, "nonDefaultRma": rmaB, "buyerRequestNumber": approve.Number, "buyerRequestId": approve.ID,
+			"rejectRequestId": reject.ID, "withdrawnRequestId": withdraw.ID, "rejectReason": rejectReason,
+		}),
+		"LC_BROWSER_RETURN_REQUESTS_READ_ONLY": readOnly,
+	})
+	readBuyer := func(b *tcvBuyer, id string) application {
+		return bhRead[application](t, beta.bh.request(t, "GET", "/v1/buyer/return-requests/"+id, b.cap.Token, "", nil, nil), 200)
+	}
+	approved := readBuyer(approveBuyer, approve.ID)
+	if n := beta.count(`SELECT count(*) FROM returns.rmas WHERE order_id=$1`, approve.Order); n != 1 ||
+		approved.Status != "approved" || approved.Version != 2 || approved.ReturnID == nil ||
+		beta.count(`SELECT count(*) FROM returns.rmas WHERE id=$1 AND order_id=$2 AND state='REGISTERED'`, *approved.ReturnID, approve.Order) != 1 {
+		t.Fatal("R02 approval must expose exactly one associated REGISTERED RMA to the buyer")
+	}
+	rejected := readBuyer(rejectBuyer, reject.ID)
+	if rejected.Status != "rejected" || rejected.Version != 2 || rejected.ReturnID != nil ||
+		rejected.RejectionReason == nil || *rejected.RejectionReason != rejectReason ||
+		beta.count(`SELECT count(*) FROM returns.rmas WHERE order_id IN ($1,$2)`, reject.Order, withdraw.Order) != 0 {
+		t.Fatal("R02 rejection must expose the reason to the buyer and register no RMA")
+	}
+	if saved := readBuyer(withdrawBuyer, withdraw.ID); saved.Status != "withdrawn" || saved.Version != 2 || saved.ReturnID != nil {
+		t.Fatal("R02 withdrawn request did not persist")
+	}
+	receipt["afterDecisions"] = map[string]any{"approved": true, "linkedRmas": 1, "buyerReadRejectionReason": true, "withdrawn": true}
 }

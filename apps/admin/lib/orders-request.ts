@@ -72,6 +72,8 @@ const actionRoutes: [string, RegExp, OrderActionKind][] = [
   ["GET", /^orders\/cancel-refund-gaps$/, "get"],
   ["GET", /^returns$/, "get"],
   ["POST", new RegExp(`^returns/${uuid}/(?:receive|inspect|close|cancel)$`), "command"],
+  ["GET", new RegExp(`^return-requests(?:/${uuid})?$`), "get"],
+  ["POST", new RegExp(`^return-requests/${uuid}/(?:approve|reject)$`), "command"],
 ];
 export function orderActionRoute(method: string, path: string): OrderActionKind | null {
   return actionRoutes.find(([m, re]) => m === method && re.test(path))?.[2] ?? null;

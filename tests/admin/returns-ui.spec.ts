@@ -26,12 +26,13 @@ const required = (name: string) => {
 };
 const origin = required("LC_BROWSER_PUBLIC_ORIGIN");
 const evidence = required("LC_BROWSER_EVIDENCE");
-const store = required("LC_BROWSER_STORE");
-const shippedOrder = required("LC_BROWSER_ORDER_SHIPPED");
-const paidOrder = required("LC_BROWSER_ORDER_PAID");
-const inFlightOrder = required("LC_BROWSER_ORDER_IN_FLIGHT");
-const gapOrder = required("LC_BROWSER_GAP_ORDER");
-const restrictedToken = required("LC_BROWSER_RESTRICTED_TOKEN");
+const applicationFixture = process.env.LC_BROWSER_RETURN_REQUESTS;
+const store = applicationFixture ? "" : required("LC_BROWSER_STORE");
+const shippedOrder = applicationFixture ? "" : required("LC_BROWSER_ORDER_SHIPPED");
+const paidOrder = applicationFixture ? "" : required("LC_BROWSER_ORDER_PAID");
+const inFlightOrder = applicationFixture ? "" : required("LC_BROWSER_ORDER_IN_FLIGHT");
+const gapOrder = applicationFixture ? "" : required("LC_BROWSER_GAP_ORDER");
+const restrictedToken = applicationFixture ? "" : required("LC_BROWSER_RESTRICTED_TOKEN");
 const cookieName = "__Host-commerce_session";
 
 const ui = {
@@ -115,6 +116,7 @@ function watchPosts(page: Page): Post[] {
 /** The RMA article (not its action buttons, whose testids share the rma- prefix). */
 const rmaCards = (detail: Locator, state: string) => detail.locator(`article[data-testid^="rma-"][data-state="${state}"]`);
 
+if (!applicationFixture) {
 test("W3-U5 full RMA walk: register -> receive -> inspect -> close, one keyed POST each, refresh persistence", async ({ page }) => {
   await signedLogin(page);
   const posts = watchPosts(page);
@@ -321,5 +323,246 @@ for (const locale of ["zh-TW", "en"] as const) {
     await shot(page, "returns-list", locale, "mobile");
     await page.setViewportSize({ width: 1586, height: 992 });
     await shot(page, "returns-list", locale, "desktop");
+  });
+}
+
+}
+
+if (applicationFixture) {
+  test.describe("R02 buyer return requests", () => {
+    const fixture: Record<string, string> = JSON.parse(applicationFixture);
+    const alias = (id: string | null) => id === fixture.defaultStore ? "default-a" :
+      id === fixture.nonDefaultStore ? "non-default-b" : id === fixture.outside ? "outside" : id === null ? null : "other";
+    const safeURL = (url: string) => {
+      const u = new URL(url, origin);
+      return { path: u.pathname, store: alias(u.searchParams.get("store")), view: u.searchParams.get("view") };
+    };
+    const layouts = [{ name: "desktop", width: 1586, height: 992 }, { name: "mobile", width: 390, height: 844 }] as const;
+    async function openOrderReturnsLink(page: Page, viewport: (typeof layouts)[number]) {
+      await signedLogin(page);
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      const selector = page.getByTestId("shell-store-selector").filter({ visible: true });
+      await expect(selector.locator("option")).toHaveCount(2);
+      await selector.selectOption(fixture.nonDefaultStore);
+      await page.waitForURL(u => u.searchParams.get("store") === fixture.nonDefaultStore);
+      if (viewport.name === "mobile") await page.getByRole("button", { name: "Open navigation", exact: true }).click();
+      await page.getByTestId("nav-orders").click();
+      await page.waitForURL(u => u.pathname === "/en/orders" && u.searchParams.get("store") === fixture.nonDefaultStore);
+      await expect(selector).toHaveValue(fixture.nonDefaultStore);
+      const link = page.getByTestId("orders-returns-link");
+      if (!(await link.isVisible())) await page.getByTestId("orders-more-filters").click();
+      await expect(link).toBeVisible();
+      return { selector, link };
+    }
+    const resource = `/api/stores/${fixture.nonDefaultStore}/return-requests`;
+    for (const viewport of layouts) test(`R02 ordinary order-list returns link ${viewport.name}`, async ({ page }) => {
+      const { selector, link } = await openOrderReturnsLink(page, viewport);
+      await shot(page, "r02-before-orders", "en", viewport.name);
+      const pre = safeURL(page.url());
+      const href = safeURL((await link.getAttribute("href"))!);
+
+      const reads: Array<{ phase: string; path: string; store: string | null; status: number }> = [];
+      let phase = "ordinary-link";
+      page.on("response", r => {
+        const u = new URL(r.url());
+        const m = /^\/api\/stores\/([a-f0-9-]{36})\/(returns|orders\/cancel-refund-gaps|return-requests)$/.exec(u.pathname);
+        if (r.request().method() === "GET" && m) reads.push({
+          phase, path: "/api/stores/:store/" + m[2], store: alias(m[1]), status: r.status(),
+        });
+      });
+      const show = page.getByTestId("returns-page");
+      const firstRead = page.waitForResponse(r => r.request().method()==="GET" && /\/api\/stores\/[^/]+\/returns$/.test(new URL(r.url()).pathname));
+      await link.click();
+      await page.waitForURL(u => u.pathname === "/en/returns");
+      await expect(show).toBeVisible();
+      const landed = safeURL(page.url());
+      const visibleStore = alias(await selector.inputValue());
+      const initialRmas = await firstRead;
+      expect(initialRmas.status(), "R02 fixture authorization for resulting RMA read").toBe(200);
+      const responseStore = alias(new URL(initialRmas.url()).pathname.split("/")[3]);
+      await shot(page, "r02-landing", "en", viewport.name);
+
+      phase = "ordinary-view-requests";
+      await show.locator("button.ops-wide").click();
+      await page.waitForURL(u => u.searchParams.get("view") === "requests");
+      const list = show.getByTestId("returns-list");
+      const rows = list.locator('[data-testid^="returns-row-"]');
+      await expect(rows).toHaveCount(1);
+      const visibleRma = await rows.getAttribute("data-testid") === "returns-row-" + fixture.defaultRma ? "default-a" :
+        await rows.getAttribute("data-testid") === "returns-row-" + fixture.nonDefaultRma ? "non-default-b" : "unknown";
+      const visibleReason = await rows.innerText();
+      const visibleRmaState = await rows.locator("[data-state]").getAttribute("data-state");
+      const ordinaryViewURL = safeURL(page.url());
+      await shot(page, "r02-ordinary-list", "en", viewport.name);
+
+      // Positive control: establish that B's existing RMA renders under the same session.
+      phase = "explicit-allowed-b";
+      const allowedB = await page.goto(`/en/returns?store=${fixture.nonDefaultStore}&view=requests`);
+      expect(allowedB?.status()).toBe(200);
+      await expect(list.getByTestId("returns-row-" + fixture.nonDefaultRma)).toBeVisible();
+      const bRmaReason = await list.getByTestId("returns-row-" + fixture.nonDefaultRma).innerText();
+      const savedRequest = show.getByTestId("buyer-return-" + fixture.buyerRequestId);
+      await expect.soft(savedRequest, "R02_BUYER_REQUEST_UI: the persisted buyer request is visible in its own store").toBeVisible();
+      const buyerVisible = await savedRequest.isVisible();
+      if (buyerVisible) await expect(savedRequest).toContainText(fixture.buyerRequestNumber);
+      await shot(page, "r02-explicit-b", "en", viewport.name);
+      phase = "authenticated-bff-control";
+      const requestBff = await page.request.get(resource);
+      const requestBffBody: { items?: Array<{id: string}>; code?: string } = await requestBff.json();
+      const bffHasBuyerRequest = requestBffBody.items?.some((item) => item.id === fixture.buyerRequestId) === true;
+
+      // Negative control under the same permissions: no selected store or RMA UI for an unauthorized store.
+      phase = "explicit-outside";
+      const outside = await page.goto(`/en/returns?store=${fixture.outside}&view=requests`);
+      await expect(show).toHaveCount(0);
+      const outsideStatus = outside?.status() ?? 0;
+      const outsideBff = await page.request.get(`/api/stores/${fixture.outside}/returns`);
+      expect(outsideStatus).toBe(404);
+      expect(outsideBff.status(), "R02 outside-store RMA GET").toBe(404);
+      const outsideRequests = await page.request.get(`/api/stores/${fixture.outside}/return-requests`);
+      expect.soft(outsideRequests.status(), "R02 outside-store requests GET").toBe(404);
+
+      await writeFile(path.join(evidence, `r02-${viewport.name}.json`), JSON.stringify({
+        viewport, before: pre, link: href, landed, visibleStore, firstGETStore: responseStore,
+        observedGETs: reads, ordinaryList: { url: ordinaryViewURL, visibleRma, visibleRmaState, visibleMarker: visibleReason.includes("R02 " + visibleRma + " RMA") },
+        authorizedB: { status: allowedB.status(), markerVisible: bRmaReason.includes("R02 non-default-b RMA"), buyerRequestVisible: buyerVisible },
+        merchantBffBuyerRequests: { status: requestBff.status(), code: requestBffBody.code ?? null, includesBuyerRequest: bffHasBuyerRequest },
+        unauthorized: { path: "/en/returns", store: "outside", pageStatus: outsideStatus, rmaSurface: false, bffStatus: outsideBff.status(), requestStatus: outsideRequests.status() },
+      }, null, 2));
+
+      expect.soft(landed.store, "R02_STORE_URL: ordinary navigation retains the selected store").toBe("non-default-b");
+      expect.soft(visibleStore, "R02_STORE_VISIBLE: landing shows the selected store").toBe("non-default-b");
+      expect.soft(responseStore, "R02_STORE_GET: the actual RMA GET uses the selected store").toBe("non-default-b");
+      expect.soft(visibleRma, "R02_STORE_RMA: ordinary UI renders the selected store's RMA").toBe("non-default-b");
+      expect.soft(requestBff.status(), "R02_BUYER_REQUEST_BFF: existing authorized Go request is reachable through the merchant BFF").toBe(200);
+      expect.soft(bffHasBuyerRequest, "R02_BUYER_REQUEST_RECEIPT: BFF returns the same persisted request").toBe(true);
+    });
+
+    test("R02 orders:read can inspect but cannot decide", async ({ page, context }) => {
+      await asToken(context, required("LC_BROWSER_RETURN_REQUESTS_READ_ONLY"));
+      await page.goto(`/en/returns?store=${fixture.nonDefaultStore}`);
+      const row = page.getByTestId(`buyer-return-${fixture.rejectRequestId}`);
+      await expect(row.locator("[data-state]")).toHaveAttribute("data-state", "requested");
+      await row.locator("summary").click();
+      await expect(row.getByRole("button", { name: /^(Approve|Reject) request$/ })).toHaveCount(0);
+      const csrf = (await context.cookies()).find(cookie => cookie.name === "__Host-commerce_csrf")!.value;
+      for (const [action, data] of [
+        ["approve", { expected_version: 1 }],
+        ["reject", { expected_version: 1, reason: fixture.rejectReason }],
+      ] as const) {
+        const response = await page.request.post(`${resource}/${fixture.rejectRequestId}/${action}`, {
+          headers: { Origin: origin, "X-CSRF-Token": csrf, "Idempotency-Key": randomBytes(16).toString("hex") }, data,
+        });
+        expect(response.status()).toBe(403);
+        expect(await response.json()).toMatchObject({ code: "forbidden" });
+      }
+    });
+    for (const viewport of layouts) test(`R02 decision and exact readback ${viewport.name}`, async ({ page, browser }) => {
+      const approve = viewport.name === "desktop";
+      const id = approve ? fixture.buyerRequestId : fixture.rejectRequestId;
+      const action = approve ? "approve" : "reject";
+      const decision = approve ? "approved" : "rejected";
+      const label = approve ? "Approve request" : "Reject request";
+      const detail = `${resource}/${id}`;
+      const exact = (url: string, resource: string) => new URL(url).pathname === resource;
+      const { link } = await openOrderReturnsLink(page, viewport);
+      await link.click();
+      await page.waitForURL(u => u.pathname === "/en/returns" && u.searchParams.get("store") === fixture.nonDefaultStore);
+      const row = page.getByTestId(`buyer-return-${id}`);
+      await expect(row.locator("[data-state]")).toHaveAttribute("data-state", "requested");
+      await expect(page.getByTestId(`buyer-return-${fixture.withdrawnRequestId}`).locator("[data-state]")).toHaveAttribute("data-state", "withdrawn");
+      await row.locator("summary").click();
+      await row.getByRole("button", { name: label, exact: true }).click();
+      if (!approve) await row.getByLabel("Rejection reason").fill(fixture.rejectReason);
+      const staleContext = approve ? null : await browser.newContext({ viewport });
+      const stalePage = await staleContext?.newPage();
+      if (stalePage) {
+        await signedLogin(stalePage);
+        await stalePage.goto(`/en/returns?store=${fixture.nonDefaultStore}`);
+        const staleRow = stalePage.getByTestId(`buyer-return-${id}`);
+        await expect(staleRow.locator("[data-state]")).toHaveAttribute("data-state", "requested");
+        await staleRow.locator("summary").click();
+        await staleRow.getByRole("button", { name: label, exact: true }).click();
+        await staleRow.getByLabel("Rejection reason").fill("Stale form witness");
+        await page.bringToFront();
+      }
+
+      const posts: string[] = [];
+      page.on("request", r => {
+        if (r.method() === "POST" && exact(r.url(), `${detail}/${action}`)) posts.push(r.headers()["idempotency-key"]);
+      });
+      const posted = page.waitForResponse(r => r.request().method() === "POST" && exact(r.url(), `${detail}/${action}`));
+      const readback = page.waitForResponse(r => r.request().method() === "GET" && exact(r.url(), detail));
+      await row.getByRole("button", { name: label, exact: true }).click();
+      const response = await posted;
+      expect(response.status()).toBe(200);
+      const persisted = await readback;
+      expect(persisted.status()).toBe(200);
+      const saved = await persisted.json();
+      expect(saved).toMatchObject({ id, version: 2, status: decision, rejection_reason: approve ? null : fixture.rejectReason });
+      if (approve) expect(saved.return_id).toMatch(/^[0-9a-f-]{36}$/);
+      else expect(saved.return_id).toBeNull();
+      await expect(row.locator("[data-state]")).toHaveAttribute("data-state", decision);
+      if (!approve) await expect(row).toContainText(fixture.rejectReason);
+      await shot(page, `r02-${decision}`, "en", viewport.name);
+      expect(posts).toHaveLength(1);
+      expect(posts[0]).toMatch(/^[A-Za-z0-9_.:-]{8,128}$/);
+      const request = response.request();
+      const body = approve ? { expected_version: 1 } : { expected_version: 1, reason: fixture.rejectReason };
+      expect(request.postDataJSON()).toEqual(body);
+      const headers = {
+        Origin: origin, "Content-Type": "application/json", "Idempotency-Key": posts[0],
+        "X-CSRF-Token": (await request.allHeaders())["x-csrf-token"],
+      };
+      const replay = await page.request.post(`${detail}/${action}`, { headers, data: body });
+      expect(replay.status()).toBe(200);
+      expect(await replay.json()).toEqual(saved);
+      const stale = await page.request.post(`${detail}/${action}`, {
+        headers: { ...headers, "Idempotency-Key": randomBytes(16).toString("hex") }, data: body,
+      });
+      expect(stale.status()).toBe(409);
+      expect(await stale.json()).toMatchObject({ code: "version_changed" });
+      const afterConflict = await page.request.get(detail);
+      expect(afterConflict.status()).toBe(200);
+      expect(await afterConflict.json()).toEqual(saved);
+      if (stalePage) {
+        await stalePage.bringToFront();
+        const refused = stalePage.waitForResponse(r => r.request().method() === "POST" && exact(r.url(), `${detail}/reject`));
+        const reread = stalePage.waitForResponse(r => r.request().method() === "GET" && exact(r.url(), detail));
+        const staleRow = stalePage.getByTestId(`buyer-return-${id}`);
+        await staleRow.getByRole("button", { name: label, exact: true }).click();
+        const conflict = await refused;
+        expect(conflict.status()).toBe(409);
+        expect(await conflict.json()).toMatchObject({ code: "version_changed" });
+        expect(await (await reread).json()).toEqual(saved);
+        await expect(stalePage.getByRole("status").filter({ hasText: "The request changed." })).toBeVisible();
+        await expect(staleRow).toContainText(fixture.rejectReason);
+        await staleContext!.close();
+      }
+      if (approve) {
+        const wrongStore = await page.request.get(`/api/stores/${fixture.defaultStore}/return-requests/${id}`);
+        expect(wrongStore.status()).toBe(404);
+        const slash = await page.request.post(`${detail}/approve/`, { maxRedirects: 0, headers, data: body });
+        expect(slash.status()).toBe(404);
+        const alias = await page.request.post(`${detail}/%61pprove`, { maxRedirects: 0, headers, data: body });
+        expect(alias.status()).toBe(404);
+        const ordinaryRedirect = await page.request.get("/en/orders/", { maxRedirects: 0 });
+        expect(ordinaryRedirect.status()).toBe(308);
+        const query = await page.request.get(`${detail}?state=requested`);
+        expect(query.status()).toBe(422);
+        const readWithKey = await page.request.get(detail, { headers: { "Idempotency-Key": posts[0] } });
+        expect(readWithKey.status()).toBe(422);
+        const head = await page.request.head(detail);
+        expect(head.status()).toBe(405);
+        const malformed = await page.request.post(`${detail}/approve`, {
+          headers: { ...headers, "Idempotency-Key": randomBytes(16).toString("hex") },
+          data: '{"expected_version":1,"expected_version":2}',
+        });
+        expect(malformed.status()).toBe(400);
+        expect(await malformed.json()).toMatchObject({ code: "invalid_json" });
+      }
+      await page.reload();
+      await expect(row.locator("[data-state]")).toHaveAttribute("data-state", decision);
+    });
   });
 }

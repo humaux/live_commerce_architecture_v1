@@ -435,3 +435,36 @@ export type ReturnsCopy = typeof zhTW;
 export const returnsCopy: Record<Locale, ReturnsCopy> = { en, "zh-CN": zhCN, "zh-TW": zhTW };
 /** Maps a Go refusal code to merchant copy (returns-v1 §7 closed set); unknown codes fall back to `default`. */
 export const returnsError = (c: ReturnsCopy, code: string): string => c.errors[code] ?? c.errors.default;
+
+export const buyerRequestCopy = {
+  en: {
+    title: "Buyer return requests", empty: "No buyer return requests.", damaged: "Damaged item", warehouse: "Warehouse",
+    states: { requested: "Awaiting review", approved: "Approved", rejected: "Rejected", withdrawn: "Withdrawn" },
+    approve: "Approve request", reject: "Reject request", reason: "Rejection reason",
+    approveHint: "Approval registers one return for the selected items. Refunds are handled separately.",
+    rejectHint: "The buyer can read the rejection reason.",
+    invalidReason: "Enter a reason of up to 1,000 characters without line breaks.",
+    check: "Check this request", checking: "Checking the request", pending: "The decision is unconfirmed. Check this request again.",
+    changed: "The request changed. Its current status is shown below.",
+  },
+  "zh-TW": {
+    title: "買家退貨申請", empty: "目前沒有買家退貨申請。", damaged: "商品有瑕疵", warehouse: "倉庫",
+    states: { requested: "待審核", approved: "已批准", rejected: "已拒絕", withdrawn: "已撤回" },
+    approve: "批准申請", reject: "拒絕申請", reason: "拒絕原因",
+    approveHint: "批准後會為所選商品登記一張退貨單。退款另行處理。",
+    rejectHint: "買家可以查看拒絕原因。",
+    invalidReason: "請填寫拒絕原因，最多 1,000 字，請勿換行。",
+    check: "查詢這筆申請", checking: "正在查詢申請", pending: "審核結果尚未確認，請再次查詢這筆申請。",
+    changed: "申請已變更，下方顯示目前狀態。",
+  },
+  "zh-CN": {
+    title: "买家退货申请", empty: "目前没有买家退货申请。", damaged: "商品有瑕疵", warehouse: "仓库",
+    states: { requested: "待审核", approved: "已批准", rejected: "已拒绝", withdrawn: "已撤回" },
+    approve: "批准申请", reject: "拒绝申请", reason: "拒绝原因",
+    approveHint: "批准后会为所选商品登记一张退货单。退款另行处理。",
+    rejectHint: "买家可以查看拒绝原因。",
+    invalidReason: "请填写拒绝原因，最多 1,000 字，请勿换行。",
+    check: "查询这笔申请", checking: "正在查询申请", pending: "审核结果尚未确认，请再次查询这笔申请。",
+    changed: "申请已变更，下方显示当前状态。",
+  },
+} as const;
