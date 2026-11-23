@@ -2,7 +2,12 @@
 // Depends on: the buyer route query kinds and canonical buyer identifiers.
 // Used by: buyer-server before forwarding an authenticated buyer request to Go.
 // Invariants: direct checkout admits only one exact cart ID; other queries reject unknown or repeated keys.
-export type BuyerQuery = "catalog" | "options" | "orders" | "purchaseCart";
+export type BuyerQuery = "catalog" | "options" | "orders" | "purchaseCart" | "orderAccess";
+export type OrderAccess = "lookup" | "link";
+
+export function isOrderAccess(value: unknown): value is OrderAccess {
+  return value === "lookup" || value === "link";
+}
 
 export const BUYER_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -11,6 +16,7 @@ export function validQuery(rawURL: string, kind?: BuyerQuery): string | null {
   if (mark < 0) return "";
   if (!kind) return null;
   const raw = rawURL.slice(mark + 1).split("#", 1)[0];
+  if (kind === "orderAccess") return /^access=(lookup|link)$/.test(raw) ? `?${raw}` : null;
   if (kind === "purchaseCart") {
     const prefix = "buy_now_id=";
     return raw.startsWith(prefix) && BUYER_UUID.test(raw.slice(prefix.length)) ? `?${raw}` : null;

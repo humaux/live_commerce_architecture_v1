@@ -9,15 +9,16 @@
 // checkout / history order detail (OrderDetails in OrderFlow.tsx, unchanged). A visitor without a valid capability (cookie missing, expired or another owner's order) gets the lookup link.
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
-import { BuyerClientError, readBuyerSession } from "../../../../lib/buyer-client";
+import { BuyerClientError, readOrderSession } from "../../../../lib/buyer-client";
 import { lookupCopy } from "../../../../lib/lookup-copy";
 import { formatMoney } from "../../../../lib/money";
+import type { OrderAccess } from "../../../../lib/buyer-query";
 import { readOrder } from "../../../../lib/purchase";
 import type { Order } from "../../../../lib/purchase";
 import { StorefrontState } from "../../../../components/state/StorefrontState";
 import OrderStatusView from "../../../../components/order-status/OrderStatusView";
 
-export default function OrderPage({ locale, orderID }: { locale: Locale; orderID: string }) {
+export default function OrderPage({ locale, orderID, access }: { locale: Locale; orderID: string; access?: OrderAccess }) {
   const copy = lookupCopy[locale];
   const [order, setOrder] = useState<Order | null>(null);
   const [context, setContext] = useState("");
@@ -34,9 +35,9 @@ export default function OrderPage({ locale, orderID }: { locale: Locale; orderID
     if (!isRetry && !orderRef.current) setState("loading");
     else if (orderRef.current) setRefreshing(true);
     try {
-      const session = await readBuyerSession();
+      const session = await readOrderSession(orderID, access);
       if (session.state !== "active" || !session.context) throw new BuyerClientError("requires_reset");
-      const found = await readOrder(session.context, orderID);
+      const found = await readOrder(session.context, orderID, access);
       if (mine !== epoch.current) return;
       setContext(session.context);
       setOrder(found);
@@ -60,7 +61,7 @@ export default function OrderPage({ locale, orderID }: { locale: Locale; orderID
     return () => {
       epoch.current++;
     };
-  }, [orderID]);
+  }, [orderID, access]);
 
   const money = (amount: number, currency: string) => formatMoney(locale, amount, currency);
 
@@ -80,6 +81,7 @@ export default function OrderPage({ locale, orderID }: { locale: Locale; orderID
       {state === "ready" && order && (
         <OrderStatusView
           context={context}
+          access={access}
           order={order}
           locale={locale}
           money={money}

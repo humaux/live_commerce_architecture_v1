@@ -51,7 +51,7 @@ export default function OrderLink({ locale }: { locale: Locale }) {
         const value: unknown = await response.json().catch(() => null);
         if (validLinkResult(value, held.orderID)) {
           link.current = null;
-          window.location.replace(`/${locale}/orders/${held.orderID}`);
+          window.location.replace(`/${locale}/orders/${held.orderID}?access=link`);
           return;
         }
         return setView("unavailable");

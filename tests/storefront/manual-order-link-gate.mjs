@@ -195,7 +195,7 @@ try {
   const token = /&t=([A-Za-z0-9_-]{43})$/.exec(fragment)?.[1];
   assert(token, "link carries the token only in the fragment");
   assert.equal(new URL(link).search, "");
-  await merchant.screenshot({path: path.join(evidence, "merchant-created.png"), fullPage: true});
+  await merchant.screenshot({path: path.join(evidence, "merchant-created.png"), fullPage: true, mask: [merchant.getByTestId("manual-order-link")]});
   pass("merchant created a manual bank-transfer order in the admin UI and got the buyer link");
 
   // ---- buyer: a FRESH browser opens the link ------------------------------------------------------------------------------------------
@@ -211,7 +211,7 @@ try {
     if (new URL(buyer.url()).pathname === "/zh-TW/order-link" && request.headers()["next-router-prefetch"] === "1") linkPrefetches++;
   });
   await buyer.goto(link);
-  await buyer.waitForURL(url => url.pathname === `/zh-TW/orders/${body.order_id}`);
+  await buyer.waitForURL(url => url.pathname === `/zh-TW/orders/${body.order_id}` && url.search === "?access=link");
   assert.equal(new URL(buyer.url()).hash, "", "the fragment is gone from the address bar");
   assert.equal(await buyer.evaluate(() => location.href.includes("t=")), false);
   assert.deepEqual(leaked, [], "the link token never appears in any request URL or Referer");
@@ -222,7 +222,8 @@ try {
   assert.equal(posted.token, token);
   assert.match(posted.proof, /^[A-Za-z0-9_-]{43}$/, "the proof is a 43-character secret");
   const cookies = await buyerContext.cookies();
-  const session = cookies.find(c => c.name === "__Host-commerce_buyer");
+  const session = cookies.find(c => c.name === "__Host-commerce_buyer_link");
+  assert.equal(cookies.some(c => c.name === "__Host-commerce_buyer"), false, "link-only entry leaves shopping absent");
   assert(session && session.httpOnly && session.secure, "buyer cookie set HttpOnly+Secure by the BFF");
   assert.equal(session.value.includes(token), false, "the cookie is a fresh capability, not the link token");
   pass("fresh browser: fragment read client-side, posted once, history replaced, redirected to the order page, cookie set");
@@ -264,6 +265,7 @@ try {
   assert.equal(new URL(other.url()).hash, "");
   assert.equal(new URL(other.url()).pathname, "/zh-TW/order-link");
   assert.equal((await otherContext.cookies()).some(c => c.name === "__Host-commerce_buyer"), false, "a refused link sets no cookie");
+  assert.equal((await otherContext.cookies()).some(c => c.name === "__Host-commerce_buyer_link"), false, "a refused link sets no order capability cookie");
   // a malformed fragment is the very same page
   await other.goto(`${buyerOrigin}/zh-TW/order-link#o=${body.order_id}&t=short`);
   await expect(other.getByTestId("order-link-refused")).toBeVisible();
@@ -281,7 +283,7 @@ try {
   const newFragment = new URL(newLink).hash;
   const newToken = /&t=([A-Za-z0-9_-]{43})$/.exec(newFragment)?.[1];
   assert(newToken && newToken !== token, "the regenerated link carries a fresh token");
-  await merchant.screenshot({path: path.join(evidence, "merchant-regenerated.png"), fullPage: true});
+  await merchant.screenshot({path: path.join(evidence, "merchant-regenerated.png"), fullPage: true, mask: [merchant.getByTestId("manual-order-link")]});
   // the OLD link, still in a fresh browser, is refused (it is used AND now invalidated)
   await other.goto(link);
   await expect(other.getByTestId("order-link-refused")).toBeVisible();
@@ -290,7 +292,7 @@ try {
   const third = await thirdContext.newPage();
   third.on("pageerror", error => uiErrors.push(error.name));
   await third.goto(newLink);
-  await third.waitForURL(url => url.pathname === `/zh-TW/orders/${body.order_id}`);
+  await third.waitForURL(url => url.pathname === `/zh-TW/orders/${body.order_id}` && url.search === "?access=link");
   assert.equal(await third.evaluate(() => Intl.DateTimeFormat().resolvedOptions().timeZone), "UTC");
   await expect(third.getByTestId("transfer-deadline")).toContainText(displayTime("zh-TW", body.expires_at));
   await expect(third.getByTestId("transfer-deadline")).toContainText("UTC+8");
@@ -339,14 +341,14 @@ try {
   await expect(merchant.getByTestId("manual-order-result")).toContainText("Waiting for cash on delivery");
   const codLink = (await merchant.getByTestId("manual-order-link").innerText()).trim();
   assert.equal(codLink, codBody.buyer_link);
-  await merchant.screenshot({path: path.join(evidence, "merchant-created-cod.png"), fullPage: true});
+  await merchant.screenshot({path: path.join(evidence, "merchant-created-cod.png"), fullPage: true, mask: [merchant.getByTestId("manual-order-link")]});
   pass("merchant created a manual cash-on-delivery order in the admin UI (whole-NT$ fee and cap shown, cash due NT$75) and got the buyer link");
 
   const codBuyerContext = await browser.newContext(ctxOpts({ignoreHTTPSErrors: true, viewport: {width: 390, height: 844}, timezoneId: "America/Los_Angeles"}));
   const codBuyer = await codBuyerContext.newPage();
   codBuyer.on("pageerror", error => uiErrors.push(error.name));
   await codBuyer.goto(codLink);
-  await codBuyer.waitForURL(url => url.pathname === `/zh-TW/orders/${codBody.order_id}`);
+  await codBuyer.waitForURL(url => url.pathname === `/zh-TW/orders/${codBody.order_id}` && url.search === "?access=link");
   await expect(codBuyer.getByTestId("order-cod")).toBeVisible();
   await expect(codBuyer.getByTestId("order-cod-amount")).toContainText("NT$75");
   await expect(codBuyer.getByTestId("order-cod-state")).toHaveAttribute("data-state", "PENDING");
