@@ -34,9 +34,9 @@ import { expect } from "@playwright/test";
 import { uploadJourneyMainCover } from "./product-media-journey.mjs";
 import { launch } from "../storefront/browser-engine.mjs";
 import { routes as adminRoutes } from "../../apps/admin/src/routes.ts";
-import { CLICK_VARIANTS, J23_OWNER, JOURNEY_PAGES, storefrontWalk, loadWeights, pageKey, parseShard, planClick, shardReport } from "./sweep-shard-lib.mjs";
+import { BUY_NOW_ROUTE, CLICK_VARIANTS, J23_OWNER, JOURNEY_PAGES, storefrontWalk, loadWeights, pageKey, parseShard, planClick, shardReport } from "./sweep-shard-lib.mjs";
 import {
-  CANCEL_RE, INIT_SCRIPT, LAYER_CSS, Ledger, classKey, controlLabel, controlLocator, isCartLineRemoval, isDestructive, isIrreversible, isSignOut, listControls, matchKnown, monitor,
+  CANCEL_RE, INIT_SCRIPT, LAYER_CSS, Ledger, classKey, controlLabel, controlLocator, isCartLineRemoval, isDestructive, isIrreversible, isSignOut, listControls, matchKnown, monitor, openStorefrontBuyNow,
   degradedMessages, pageState, restore, settle, sweepControl, writeLedger,
 } from "./click-sweep-lib.mjs";
 import { nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
@@ -166,6 +166,17 @@ async function sweepPage({ make, unit, scopes, fresh = false, session = null }) 
       const degraded = await degradedMessages(cur.page);
       if (degraded.length) { lr.result = "fail"; lr.failure = "page-error-state"; lr.actual += ` | the page opens in a degraded state: ${degraded.map((d) => `[${d.role}${d.testid ? " " + d.testid : ""}] ${d.text}`).join(" ; ").slice(0, 280)}`; }
     }
+    if (lr.result === "pass" && unit.requireState) {
+      lr.expected += ", with the selected Buy now line at the acquired checkout URL";
+      try {
+        await unit.requireState(cur.page);
+        lr.actual += ` | ${new URL(cur.page.url()).pathname}`;
+      } catch (error) {
+        lr.result = "fail";
+        lr.failure = "page-error-state";
+        lr.actual += ` | ${String(error.message || error).split("\n")[0]}`;
+      }
+    }
     if (lr.result === "fail") await shot(cur.page, lr);
     if (status >= 400 || status === 0) return;
     for (const [si, scope] of scopes.entries()) {
@@ -291,6 +302,10 @@ async function storefrontSession(v, placed) {
       if (wanted("/orders/[orderID]")) await sweep({ route: "/orders/[orderID]", url: `${base}/orders/${order.id}`, viewport: v.viewport, locale: v.locale }, main);
       // Same actual COD order/session; walking an unshipped apply page is not successful return submission.
       if (wanted("/orders/[orderID]/return")) await sweep({ route: "/orders/[orderID]/return", url: `${base}/orders/${order.id}/return`, viewport: v.viewport, locale: v.locale }, main);
+    }
+    if (wanted(BUY_NOW_ROUTE)) {
+      const checkout = await openStorefrontBuyNow(page, origin, v.locale, product);
+      await sweep({ route: BUY_NOW_ROUTE, ...checkout, viewport: v.viewport, locale: v.locale }, main);
     }
     for (const r of list) {
       if (!wanted(r.route)) continue;

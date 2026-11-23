@@ -30,9 +30,9 @@ import { launch } from "../storefront/browser-engine.mjs";
 import { childExited, nextAttemptLog, startNextWithPortRetry } from "../helpers/next-startup.mjs";
 import { routes as adminRoutes } from "../../apps/admin/src/routes.ts";
 import { fixture as platformFixture } from "../admin/shell-fixture.mjs";
-import { INIT_SCRIPT, degradedMessages, monitor, settle } from "./click-sweep-lib.mjs";
+import { INIT_SCRIPT, degradedMessages, monitor, openStorefrontBuyNow, settle } from "./click-sweep-lib.mjs";
 import { captureInnerScrollFrames, supplementalViewportFor, foldSupplementalCapture } from "./visual-scroll-capture.mjs";
-import { VISUAL_LOCALES, VISUAL_VIEWPORTS, assignShards, parseShard, routeId, shardReport } from "./sweep-shard-lib.mjs";
+import { BUY_NOW_ROUTE, STOREFRONT_CART_ROUTES, VISUAL_LOCALES, VISUAL_VIEWPORTS, assignShards, parseShard, routeId, shardReport, storefrontWalk } from "./sweep-shard-lib.mjs";
 import { BLOCKING, BLOCKING_KINDS, RULES, SCROLL_POSITIONS, T, collect, countByRule, describe, evaluate, r10Occlusion, scrollToFraction, selectRecords } from "./visual-lint-lib.mjs";
 
 export { VISUAL_LOCALES as LOCALES, VISUAL_VIEWPORTS as VIEWPORTS, routeId }; // the matrix lives in sweep-shard-lib.mjs: sweep-aggregate.mjs counts the same one
@@ -40,25 +40,7 @@ const LOCALES = VISUAL_LOCALES, VIEWPORTS = VISUAL_VIEWPORTS;
 const sizeOf = (v) => `${v.size.width}x${v.size.height}`;
 const ctxOptions = (v, locale, extra = {}) => ({ viewport: v.size, screen: v.size, isMobile: v.mobile, hasTouch: v.mobile, locale, deviceScaleFactor: 1, ignoreHTTPSErrors: true, ...extra });
 
-// storefront routes of docs/engineering/ui-architecture.md section 4 (the same list the click sweep walks); cart/checkout/order need the cart the buyer fills.
-const STOREFRONT = (facts) => {
-  const product = facts.products[1];
-  const replayUUID = (value, route) => {
-    if (typeof value !== "string" || !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(value)) throw new Error(`storefront fixture missing for ${route}`);
-    return value;
-  };
-  return [
-    { route: "/", path: "" }, { route: "/products", path: "/products" }, { route: "/collections", path: "/collections" },
-    { route: "/collections/[slug]", path: `/collections/${facts.collections[0].slug}` }, { route: "/products/[slug]", path: `/products/${product.slug}` },
-    { route: "/search", path: `/search?q=${encodeURIComponent("Sweep")}` }, { route: "/orders/lookup", path: "/orders/lookup" },
-    { route: "/order-link", path: "/order-link", expectDegraded: true }, { route: "/claim", path: "/claim", expectDegraded: true },
-    { route: "/legal/anti-fraud", path: "/legal/anti-fraud" }, { route: "/legal/[slug]", path: "/legal/refunds" }, { route: "/privacy", path: "/privacy" },
-    { route: "/data-deletion", path: "/data-deletion" }, { route: "/pages/[slug]", path: "/pages/about" },
-    { route: "/replays", path: "/replays" },
-    { route: "/replays/[sessionID]", path: `/replays/${replayUUID(facts.replay, "/replays/[sessionID]")}` },
-  ];
-};
-const STOREFRONT_CART = [{ route: "/cart", path: "/cart" }, { route: "/checkout", path: "/checkout" }, { route: "/orders/[orderID]", path: null }, { route: "/orders/[orderID]/return", path: null }];
+const STOREFRONT_CART = STOREFRONT_CART_ROUTES.map((route) => ({ route, path: route.includes("[") ? null : route }));
 const PLATFORM_PAGES = ["home", "privacy", "terms", "data-deletion", "contact"];
 const PLATFORM = { host: "platform.example.invalid", adminHost: "admin.example.invalid", email: "contact@example.invalid" }; // the build-time values of test-local.sh
 
@@ -172,7 +154,7 @@ export async function main() {
   }
   if (wanted("=/")) adminUnits.push({ id: "signed-out-home", route: "/", state: "signed-out", url: (l) => `${adminOrigin}/${l}`, auth: false });
   const platformUnits = PLATFORM_PAGES.filter((n) => pageFilter.length === 0 || pageFilter.includes("platform") || wanted(`/${n}`)).map((name) => ({ id: name, route: name === "home" ? "/" : `/${name}`, state: "public", name }));
-  const storefrontUnits = [...STOREFRONT(facts), ...STOREFRONT_CART].filter((r) => wanted(r.route)).map((r) => ({ id: routeId(r.route), ...r }));
+  const storefrontUnits = [...storefrontWalk(facts), ...STOREFRONT_CART].filter((r) => wanted(r.route)).map((r) => ({ id: routeId(r.route), ...r }));
   const universe = [];
   for (const l of LOCALES) for (const v of VIEWPORTS) {
     for (const u of adminUnits) universe.push({ app: "admin", id: u.id, locale: l, v });
@@ -402,7 +384,7 @@ export async function main() {
     const s = await newContext(v, locale);
     const unit = (u, url) => ({ app: "storefront", id: u.id, route: u.route, state: "registry", url, locale, v, expectDegraded: !!u.expectDegraded });
     try {
-      const needsCart = storefrontUnits.some((u) => STOREFRONT_CART.some((c) => c.route === u.route));
+      const needsCart = storefrontUnits.some((u) => u.route !== BUY_NOW_ROUTE && STOREFRONT_CART_ROUTES.includes(u.route));
       let orderID = null;
       if (needsCart) {
         const buy = await fillCart(s.page, locale, facts.products[1]);
@@ -413,7 +395,12 @@ export async function main() {
         const returns = storefrontUnits.find((x) => x.route === "/orders/[orderID]/return");
         if (returns && orderID) await capture(s, unit(returns, `${origin}/${locale}/orders/${orderID}/return`));
       }
-      for (const u of storefrontUnits) if (u.path !== null && !STOREFRONT_CART.some((c) => c.route === u.route)) await capture(s, unit(u, `${origin}/${locale}${u.path}`));
+      const direct = storefrontUnits.find((u) => u.route === BUY_NOW_ROUTE);
+      if (direct) {
+        const checkout = await openStorefrontBuyNow(s.page, origin, locale, facts.products[1]);
+        await capture(s, { ...unit(direct, checkout.url), prepare: checkout.requireState });
+      }
+      for (const u of storefrontUnits) if (u.path !== null && !STOREFRONT_CART_ROUTES.includes(u.route)) await capture(s, unit(u, `${origin}/${locale}${u.path}`));
     } finally { await s.c.close().catch(() => {}); }
   };
   async function pool(tasks, n) {
