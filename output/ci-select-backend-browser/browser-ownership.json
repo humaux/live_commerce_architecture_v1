@@ -399,7 +399,7 @@
     "tests/foundation/customers_billing_mock_test.go": "171eb7c5c37db472cf47325911fe5f5f137701da5ec4e7e8bab21c4079734cc6",
     "tests/foundation/customers_billing_restricted_test.go": "13a500f2b3629e7e9afb845db41d379223af6757b347583d0aaca997e974a549",
     "tests/foundation/customers_billing_sandbox_test.go": "147984b66d37a81ff4dc93429824e4667a0f0dc9df9576d44d06d3c0f00c0a3d",
-    "tests/foundation/customers_billing_schema_test.go": "1af02bc40ab14dd9a7bfcdab3e9e8df684b13c571597f5f19eb86f72b46f586f",
+    "tests/foundation/customers_billing_schema_test.go": "e8ba78ee6b0b6fcd0e9bc65c7fe1116156ae9c28cc8eda2df4eaa0581209d321",
     "tests/foundation/customers_billing_subscription_test.go": "bae2a95ebd65a6bc74c698264f2b4848c9fb5badfaf31dceb8c8052af948ec08",
     "tests/foundation/customers_billing_unit_test.go": "f35e66b80b13adc77970f7e117ead4c29b65b58f4d6b08a5170f347c30abfcb5",
     "tests/foundation/delivery_allocation_auto_test.go": "538c8b8b30ecc84bc1f086aff25ebee10fa39b83de8c5d29005a5e17923bdf97",
