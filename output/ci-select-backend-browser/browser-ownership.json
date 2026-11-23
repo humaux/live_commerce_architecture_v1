@@ -434,7 +434,7 @@
     "tests/foundation/l01_go_w1_test.go": "1c6b62630f8deb8e0d8be3a08c82be88b64678d336f6fc5582863e2049bc9e46",
     "tests/foundation/legacy_runtime_admission_test.go": "435c1ae4cb6de7ca943bfd7b12450ab0a2444fd8e75d758fc9e48c455e358fd0",
     "tests/foundation/legacy_runtime_isolation_test.go": "b3daf36b0f0d55f73d7cb71ae79103d73d8b09d6b52712ef9464b35c4b2d35ba",
-    "tests/foundation/legacy_runtime_upgrade_test.go": "5bc4c759691a6f2dedd95a1ccc7bf369be8fcec1ce7c67a560af1670d886495b",
+    "tests/foundation/legacy_runtime_upgrade_test.go": "cf532ee7fe073a1b729e06a101de69841d3e0a4db4c0005da712adf599396abd",
     "tests/foundation/live_browser_input_cleanup_fault_test.go": "788c162b398980c7a122e3f2c923a0c2d352cf576c04b9473997a88d355ed89b",
     "tests/foundation/live_browser_input_fault_test.go": "8752ee1dd476e6dfff1cfd234c0295def9d496c86c4236deede7855f00a63f04",
     "tests/foundation/live_browser_input_holds_test.go": "6b9998ef144628ef40f5788a1c4df27567d1f1da909c4349b6abd79b38057d65",
