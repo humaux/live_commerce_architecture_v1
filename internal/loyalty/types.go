@@ -17,13 +17,16 @@ import (
 
 // Sentinel refusals of contract §2 (Classify maps them to status + code).
 var (
-	ErrInsufficient        = errors.New("points_insufficient")
-	ErrErased              = errors.New("member_erased")
-	ErrLimit               = errors.New("limit_reached")
-	ErrVersion             = errors.New("conflict")
-	ErrExportTooLarge      = errors.New("export_too_large")
-	ErrIdempotencyConflict = errors.New("idempotency_conflict")
-	ErrUnavailable         = errors.New("loyalty unavailable")
+	ErrInsufficient         = errors.New("points_insufficient")
+	ErrErased               = errors.New("member_erased")
+	ErrLimit                = errors.New("limit_reached")
+	ErrVersion              = errors.New("conflict")
+	ErrExportTooLarge       = errors.New("export_too_large")
+	ErrIdempotencyConflict  = errors.New("idempotency_conflict")
+	ErrAwardNotEligible     = errors.New("award_not_eligible")
+	ErrAwardAlreadyRecorded = errors.New("award_already_recorded")
+	ErrAwardReviewRequired  = errors.New("award_review_required")
+	ErrUnavailable          = errors.New("loyalty unavailable")
 )
 
 // Award bounds and states (LP7, LP18).
@@ -195,6 +198,9 @@ func Classify(err error) (status int, code string, ok bool) {
 		{ErrVersion, 409, "conflict"},
 		{ErrExportTooLarge, 409, "export_too_large"},
 		{ErrIdempotencyConflict, 409, "idempotency_conflict"},
+		{ErrAwardNotEligible, 409, "award_not_eligible"},
+		{ErrAwardAlreadyRecorded, 409, "award_already_recorded"},
+		{ErrAwardReviewRequired, 409, "award_review_required"},
 		{ErrUnavailable, 503, "unavailable"},
 	} {
 		if errors.Is(err, refusal.err) {

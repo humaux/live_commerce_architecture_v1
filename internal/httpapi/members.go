@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"livecommerce/internal/command"
+	"livecommerce/internal/httperror"
 	"livecommerce/internal/loyalty"
 	"livecommerce/internal/platform"
 	"net/http"
@@ -27,10 +28,11 @@ func memberRoute(method string, read bool, query string, next http.HandlerFunc) 
 			respondError(w, 405, "method_not_allowed")
 			return
 		}
-		id := r.PathValue("member_id")
-		if id != "" && !command.ValidID(id) {
-			respondError(w, 422, "invalid_request")
-			return
+		for _, field := range []string{"member_id", "order_id"} {
+			if id := r.PathValue(field); id != "" && !command.ValidID(id) {
+				respondError(w, 422, "invalid_request")
+				return
+			}
 		}
 		q, err := parseMemberQuery(r, query)
 		if err != nil {
@@ -85,6 +87,40 @@ func memberBody[T any](w http.ResponseWriter, r *http.Request, fields []string) 
 	return in, present, ok
 }
 func memberScope(w http.ResponseWriter, r *http.Request, pool *pgxpool.Pool, permission string, fn action) (any, bool) {
+	return memberScopeAs(w, r, pool, permission, func(w http.ResponseWriter, err error) {
+		status, code := memberClassify(err)
+		respondError(w, status, code)
+	}, fn)
+}
+
+func memberClassify(err error) (int, string) {
+	if status, code, ok := loyalty.Classify(err); ok {
+		return status, code
+	}
+	return claimsClassify(err)
+}
+
+func respondAwardRecoveryError(w http.ResponseWriter, err error) {
+	status, code := memberClassify(err)
+	if status == http.StatusServiceUnavailable {
+		code = "retry_later"
+	}
+	var message string
+	switch code {
+	case "award_not_eligible":
+		message = "This order is not eligible for an award."
+	case "award_already_recorded":
+		message = "An award is already recorded for this order."
+	case "award_review_required":
+		message = "Review the original order and points history before proceeding."
+	default:
+		respondError(w, status, code)
+		return
+	}
+	respond(w, status, httperror.Envelope{Code: code, Message: message, RequestID: w.Header().Get("X-Request-ID"), Details: map[string]any{}})
+}
+
+func memberScopeAs(w http.ResponseWriter, r *http.Request, pool *pgxpool.Pool, permission string, respondErr func(http.ResponseWriter, error), fn action) (any, bool) {
 	if pool == nil || !canonicalBearer(r) {
 		respondError(w, 401, "unauthorized")
 		return nil, false
@@ -94,16 +130,41 @@ func memberScope(w http.ResponseWriter, r *http.Request, pool *pgxpool.Pool, per
 	var result any
 	err := platform.WithScope(ctx, pool, bearerToken(r), r.PathValue("store_id"), permission, func(tx pgx.Tx, s platform.Scope) error { var e error; result, e = fn(ctx, tx, s, r); return e })
 	if err != nil {
-		status, code, ok := loyalty.Classify(err)
-		if !ok {
-			status, code = claimsClassify(err)
-		}
-		respondError(w, status, code)
+		respondErr(w, err)
 		return nil, false
 	}
 	return result, true
 }
+
 func registerMemberRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
+	const recovery = "/v1/admin/stores/{store_id}/orders/{order_id}/member-award-recovery"
+	mux.HandleFunc("GET "+recovery, memberRoute("GET", true, "", func(w http.ResponseWriter, r *http.Request) {
+		if out, ok := memberScopeAs(w, r, pool, "orders:read", respondAwardRecoveryError, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+			return loyalty.ReadAwardRecovery(ctx, tx, s, bearerToken(r), r.PathValue("order_id"))
+		}); ok {
+			respond(w, http.StatusOK, out)
+		}
+	}))
+	mux.HandleFunc("POST "+recovery, memberRoute("POST", false, "", func(w http.ResponseWriter, r *http.Request) {
+		body, _, ok := memberBody[map[string]json.RawMessage](w, r, nil)
+		if !ok {
+			return
+		}
+		if body == nil {
+			respondError(w, 400, "invalid_json")
+			return
+		}
+		status := http.StatusOK
+		if out, ok := memberScopeAs(w, r, pool, "orders:read", respondAwardRecoveryError, func(ctx context.Context, tx pgx.Tx, s platform.Scope, r *http.Request) (any, error) {
+			v, created, err := loyalty.RecoverAward(ctx, tx, s, bearerToken(r), r.Header.Get("Idempotency-Key"), r.PathValue("order_id"))
+			if created {
+				status = http.StatusCreated
+			}
+			return v, err
+		}); ok {
+			respond(w, status, out)
+		}
+	}))
 	mux.HandleFunc("POST "+memberBase+"/search", memberRoute("POST", true, "", func(w http.ResponseWriter, r *http.Request) {
 		in, _, ok := memberBody[loyalty.SearchInput](w, r, []string{"q", "include_erased", "cursor", "limit"})
 		if !ok {
