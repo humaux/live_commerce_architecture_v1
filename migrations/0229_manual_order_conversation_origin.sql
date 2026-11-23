@@ -1,3 +1,6 @@
+-- Purpose: retain one contextual order per Inbox revision and fence unsettled claim reservations.
+-- Depends on: 0094 manual order marks, 0165 buyer panel and 0177 legacy claim reservation authority.
+-- Used by: internal/merchanttools/manual_source.go and the A13 buyer-panel projection.
 CREATE TABLE inbox.manual_order_sources (
  tenant_id uuid NOT NULL,
  store_id uuid NOT NULL,

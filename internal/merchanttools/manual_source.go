@@ -1,3 +1,6 @@
+// Purpose: admit and reconcile manual orders from a verified Inbox source.
+// Depends on: scoped platform transactions, claim reservations, and immutable checkout receipts.
+// Used by: ManualOrders.Place, the A15 prefill and the original-key receipt route.
 package merchanttools
 
 import (
