@@ -143,7 +143,7 @@ for (const [locale, generic] of [["en", "Your device time zone"], ["zh-TW", "你
 test("ShopFooter uses Taipei year across UTC year boundary", () => {
   const stub = () => null;
   const component = load("ShopChrome", [], {
-    "next/link": { default: stub }, "../lib/design": { resolveNav: () => [], safeExternal: () => null },
+    "./ShopChromeLink": { default: stub }, "../lib/design": { resolveNav: () => [], safeExternal: () => null },
     "../lib/legal-copy": { legalFooterLinks: () => [] }, "../lib/routes": { storeImage: () => "" },
     "../lib/shop-copy": { shopCopy }, "./CartDrawer": { HeaderCart: stub },
     "./icons": Object.fromEntries(["ChatIcon", "FacebookIcon", "InstagramIcon", "MailIcon", "PhoneIcon", "PinIcon", "SearchIcon"].map((name) => [name, stub])),

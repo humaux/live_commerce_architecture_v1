@@ -4,13 +4,13 @@
 // and the language links. No BFF/Go call. Links arrive resolved from the server (lib/design.ts resolveNav), so this file
 // never builds a URL from merchant text. Closes itself on every navigation (usePathname) and on Esc/backdrop.
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
 import type { NavLink } from "../lib/design";
 import { shopCopy } from "../lib/shop-copy";
 import { CloseIcon, MenuIcon, SearchIcon } from "./icons";
 import LocaleSwitch from "./LocaleSwitch";
+import ShopChromeLink from "./ShopChromeLink";
 
 export default function MobileMenu({ locale, links, preview, searchable = true }: { locale: Locale; links: NavLink[]; preview: string | null; searchable?: boolean }) {
   const copy = shopCopy[locale];
@@ -65,7 +65,7 @@ export default function MobileMenu({ locale, links, preview, searchable = true }
                       {link.label}
                     </a>
                   ) : link.href.startsWith("/") ? (
-                    <Link href={link.href}>{link.label}</Link>
+                    <ShopChromeLink href={link.href}>{link.label}</ShopChromeLink>
                   ) : (
                     <a href={link.href}>{link.label}</a>
                   )}

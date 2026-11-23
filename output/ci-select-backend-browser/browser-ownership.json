@@ -788,7 +788,7 @@
     "tests/storefront/cvs-picker.mjs": "53a2935ebb107c1495390c308f5e827836fd820eb9ff7928d2acf383ef6aa905",
     "tests/storefront/home-cod-buyer.mjs": "6e1922d58aa75e6ce2c5f8c57279852e513421e58ddc1103bc4574fd8bb3dbd8",
     "tests/storefront/legal-pages.mjs": "75096e2148250a804a3ed4a35d29eae48aa017dec6978c569deb2a03d9341cbf",
-    "tests/storefront/manual-order-link-gate.mjs": "6a0cd546099ae45715a1438017fc5c430d9eb8de360c46a7f75f273ce4d6ec97",
+    "tests/storefront/manual-order-link-gate.mjs": "e2c26fe026bc57976ee0ac2e0cb6ab2ba47492c289932cf42ef689f8e78ec989",
     "tests/storefront/media-sizes-perf.mjs": "cda916ddd4385236dffca710f0d22169f91ceaab2e0390dc7d56a809e5d77ac6",
     "tests/storefront/merchant-buyer-gate.mjs": "099c2bf813e0f216fe0b41d77ff48f51619bcf0aff9ce6d41b436a2645dbd9a4",
     "tests/storefront/merchant-product.mjs": "2c36a724923195cdb9a5dac5397f986457a47612a24d0e31387a5b43de252c16",

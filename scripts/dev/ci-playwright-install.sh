@@ -28,20 +28,43 @@ dry_run() {
 }
 # Bounded apt call as root: the monitor can terminate the complete apt process group. Never use --foreground.
 apt_bounded() { sudo timeout --kill-after=15s 240s "$@"; }
-# P2-3: every cached .deb must hash to the SHA256 the runner's apt index lists for that exact package=version; otherwise the cache is
-# discarded (never installed unverified). Without an index entry the hash cannot be verified, which counts as a mismatch.
+# P2-3: every cached .deb must match the runner's apt index for its exact package=version.
+# Return 2 for a missing version, and 1 for a cache or index error that a refresh cannot safely resolve.
 verify_debs() {
-  local f pkg ver want got n=0
+  local f pkg ver index rc want got needs_refresh=0
   for f in "$debs"/*.deb; do
     [[ -e "$f" ]] || return 1
-    pkg="$(dpkg-deb -f "$f" Package 2>/dev/null)"; ver="$(dpkg-deb -f "$f" Version 2>/dev/null)"
-    [[ -n "$pkg" && -n "$ver" ]] || { echo "ci-playwright-install: unreadable cached deb ${f##*/}" >&2; return 1; }
-    want="$(apt-cache show "$pkg=$ver" 2>/dev/null | sed -n 's/^SHA256: *//p' | head -n 1)"
-    got="$(sha256sum "$f" | cut -d' ' -f1)"
-    [[ -n "$want" && "$want" == "$got" ]] || { echo "ci-playwright-install: cached ${f##*/} not verified against the apt index (index=${want:-none} file=$got)" >&2; return 1; }
-    n=$((n+1))
+    if ! pkg="$(dpkg-deb -f "$f" Package 2>/dev/null)" ||
+       ! ver="$(dpkg-deb -f "$f" Version 2>/dev/null)" ||
+       [[ ! "$pkg" =~ ^[a-z0-9][a-z0-9+.-]*$ || ! "$ver" =~ ^[0-9][A-Za-z0-9.+:~_-]*$ ]] ||
+       ! got="$(sha256sum "$f" | cut -d' ' -f1)"; then
+      echo "ci-playwright-install: unreadable cached deb ${f##*/}" >&2
+      return 1
+    fi
+    rc=0
+    index="$(LC_ALL=C apt-cache show "$pkg=$ver" 2>&1)" || rc=$?
+    if [[ "$rc" == 0 && -z "$index" || "$rc" == 100 && "$index" == 'E: No packages found' ]]; then
+      echo "ci-playwright-install: cached ${f##*/} version absent from apt index" >&2
+      needs_refresh=2
+      continue
+    fi
+    want="$(awk '/^SHA256: / { print $2; exit }' <<<"$index")"
+    [[ "$rc" == 0 && "$want" == "$got" ]] || { echo "ci-playwright-install: cached ${f##*/} not verified against the apt index (index=${want:-none} file=$got)" >&2; return 1; }
   done
-  [[ "$n" -gt 0 ]]
+  return "$needs_refresh"
+}
+
+verify_debs_with_refresh() {
+  local rc=0
+  verify_debs || rc=$?
+  [[ "$rc" == 2 ]] || return "$rc"
+  echo 'ci-playwright-install: refreshing apt index once for missing cached versions'
+  # 20s + 5s grace leaves the existing offline and network apt bounds intact (885s combined).
+  sudo timeout --kill-after=5s 20s apt-get update --error-on=any -o Acquire::Retries=0 || {
+    echo "ci-playwright-install: apt index refresh failed (exit=$?)" >&2
+    return 1
+  }
+  verify_debs
 }
 
 state="$(dry_run "$@")"
@@ -54,10 +77,10 @@ else
     # shellcheck disable=SC2206
     missing=(${state#missing:})
     [[ -z "$debs" ]] || mkdir -p "$debs"
-    # 1. Offline from the cached .debs (no index refresh, no download); any miss or partial cache falls through to the network.
+    # Install from verified cached .debs without downloads. A version absent from the index can justify one refresh.
     offline=0
     if [[ -n "$debs" ]] && compgen -G "$debs/*.deb" >/dev/null; then
-      if verify_debs; then
+      if verify_debs_with_refresh; then
         # No network involved, so a short bound (the whole step stays within its 15 min budget even when this fails).
         if sudo timeout --kill-after=15s 60s apt-get install -y --no-install-recommends --no-download -o "Dir::Cache::archives=$debs" "${missing[@]}"; then offline=1; fi
       else
