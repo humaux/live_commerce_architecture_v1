@@ -6,6 +6,7 @@
 import { useEffect, useId, useRef } from "react";
 import type { Locale } from "@live-commerce/i18n";
 import { money } from "@/lib/client";
+import { codCopy } from "@/lib/cod-copy";
 import type { OrdersCopy } from "@/lib/orders-copy";
 import type { OrderDetail } from "@/lib/orders-model";
 
@@ -30,8 +31,10 @@ export function ShipmentConfirm({ open, order, orderNumber, carrier, tracking, l
       <h2 id={title}>{c.shipReview}</h2>
       <section className="orders-confirm-identity" aria-label={c.order}>
         <strong>{orderNumber ?? order.order_id}</strong>
-        <ul>{order.items.map(item => <li key={item.sku_id}>{item.name} · {item.code} · {c.quantity}: {item.quantity}</li>)}</ul>
+        {order.payment_mode === "cash_on_delivery" && order.order_revision && <span> · v{order.order_revision}</span>}
+        <ul>{order.items.map((item, index) => <li key={`${item.sku_id}:${index}`}>{item.name} · {item.code} · {c.quantity}: {item.quantity}</li>)}</ul>
         <p>{c.total}: {money(locale, order.currency, order.totals.total_minor)}</p>
+        {order.cod_collect_minor !== null && <p>{codCopy[locale].collectAmount}: {money(locale, order.currency, order.cod_collect_minor)}</p>}
         <p>{c.payment}: {c.statuses[order.payment_state]}</p>
         <p>{c.fulfillment}: {c.statuses[order.fulfillment_state]}</p>
       </section>

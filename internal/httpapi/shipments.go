@@ -102,12 +102,17 @@ func registerShipmentRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 // decodeShipmentBody decodes the eight-key ShipmentInput body shared by the single PUT and the group PUT: explicit null is the only
 // way to omit a nullable field, and a missing key or a null expected_version/status is a 422, never a silent zero value.
 func decodeShipmentBody(w http.ResponseWriter, r *http.Request) (merchantorders.ShipmentInput, bool) {
-	in, raw, ok := studioDecodeRaw[merchantorders.ShipmentInput](w, r, shipmentBodyFields)
+	in, raw, ok := studioDecodeRaw[merchantorders.ShipmentInput](w, r, append(append([]string{}, shipmentBodyFields...), "order_revision"))
 	if !ok {
 		return in, false
 	}
 	var present map[string]json.RawMessage
-	if json.Unmarshal(raw, &present) != nil || len(present) != len(shipmentBodyFields) ||
+	if json.Unmarshal(raw, &present) != nil || string(present["order_revision"]) == "null" {
+		respondError(w, http.StatusUnprocessableEntity, "invalid_request")
+		return in, false
+	}
+	delete(present, "order_revision")
+	if len(present) != len(shipmentBodyFields) ||
 		string(present["expected_version"]) == "null" || string(present["status"]) == "null" {
 		respondError(w, http.StatusUnprocessableEntity, "invalid_request")
 		return in, false
@@ -188,6 +193,12 @@ func shipmentClassify(err error) (int, string) {
 		return http.StatusConflict, parcel.Code // W3-07B parcel-group refusals (in_parcel_group, cod_not_mergeable, ...)
 	case errors.Is(err, merchantorders.ErrVersionChanged):
 		return http.StatusConflict, "version_changed"
+	case errors.Is(err, merchantorders.ErrAmendmentOnHold):
+		return http.StatusConflict, "state_changed"
+	case errors.Is(err, merchantorders.ErrAmendmentStock):
+		return http.StatusConflict, "insufficient_inventory"
+	case errors.Is(err, merchantorders.ErrAmendmentReplay):
+		return http.StatusConflict, "idempotency_conflict"
 	case errors.Is(err, merchantorders.ErrNotShippable):
 		return http.StatusUnprocessableEntity, "not_shippable"
 	case errors.Is(err, merchantorders.ErrInvalidCarrier):

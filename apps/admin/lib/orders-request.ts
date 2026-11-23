@@ -54,6 +54,9 @@ const actionRoutes: [string, RegExp, OrderActionKind][] = [
   ["POST", new RegExp(`^orders/${uuid}/refunds$`), "command"],
   ["POST", new RegExp(`^orders/${uuid}/refunds/${uuid}/refresh$`), "refresh"],
   ["PUT", new RegExp(`^orders/${uuid}/shipment$`), "command"],
+  ["POST", new RegExp(`^orders/${uuid}/amendment/review$`), "keyless-command"],
+  ["PUT", new RegExp(`^orders/${uuid}/amendment$`), "command"],
+  ["POST", new RegExp(`^orders/${uuid}/shipment/document$`), "keyless-command"],
   // taiwan-cvs-logistics-v1 §8: abandon/collection/release are keyed (their definers take a key), print-form is not.
   ["GET", new RegExp(`^orders/${uuid}/cvs-shipment$`), "get"],
   ["POST", new RegExp(`^orders/${uuid}/cvs-shipment$`), "command"],

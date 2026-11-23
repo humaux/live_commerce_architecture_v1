@@ -96,7 +96,7 @@ func (e *tcvEnv) hcrPlace(items ...storefront.Item) (string, *tcvBuyer) {
 // hcrShip records the first manual shipment of an order.
 func (e *tcvEnv) hcrShip(order string) {
 	e.t.Helper()
-	if st, _, raw := e.mcall(e.token(), "PUT", e.hcrShipPath(order), t04Key("hcr-ship"), mfxShip(0, "sf_express", "HCR"+t04Tag())); st != 200 {
+	if st, _, raw := e.mcall(e.token(), "PUT", e.hcrShipPath(order), t04Key("hcr-ship"), r03ShipmentBody(0, 1, "sf_express", "HCR"+t04Tag())); st != 200 {
 		e.t.Fatalf("manual shipment of %s: %d %s", order, st, raw)
 	}
 }
@@ -482,7 +482,7 @@ func TestHomeCodReviewConcurrency(t *testing.T) {
 			res := e.hcrGated(order,
 				func() hcrResp { return e.hcrRelease(writer, order, "cancel", "PENDING") },
 				func() hcrResp {
-					st, out, raw := e.mcall(e.token(), "PUT", e.hcrShipPath(order), t04Key("hcr-race-ship"), mfxShip(0, "sf_express", "RACE"+t04Tag()))
+					st, out, raw := e.mcall(e.token(), "PUT", e.hcrShipPath(order), t04Key("hcr-race-ship"), r03ShipmentBody(0, 1, "sf_express", "RACE"+t04Tag()))
 					return hcrResp{st, out, raw}
 				},
 			)
@@ -660,7 +660,7 @@ func TestHomeCodReviewTransitionMatrix(t *testing.T) {
 			"cancel again":     {"release", "cancel,PENDING"},
 			"restock":          {"release", "restock,RETURNED"},
 		}, codes...)
-		st, out, raw := e.mcall(e.token(), "PUT", e.hcrShipPath(order), t04Key("hcr-ship-cancelled"), mfxShip(0, "sf_express", "NOPE"+t04Tag()))
+		st, out, raw := e.mcall(e.token(), "PUT", e.hcrShipPath(order), t04Key("hcr-ship-cancelled"), r03ShipmentBody(0, 1, "sf_express", "NOPE"+t04Tag()))
 		if st != 422 || tcvStr(out, "code") != "not_shippable" {
 			t.Errorf("shipping a CANCELLED COD order: want 422 not_shippable, got %d %s", st, raw)
 		}

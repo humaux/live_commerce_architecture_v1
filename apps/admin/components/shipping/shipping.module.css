@@ -103,6 +103,7 @@
   .selectedOrders { display: block; }
   .selectedOrder { border: 0; padding: 0; background: var(--ui-surface); }
   .slip { display: block; width: 100%; max-width: none; margin: 0; padding: 0; border: 0; border-radius: 0; break-after: page; page-break-after: always; break-inside: avoid; }
+  .slip[data-print-blocked="true"] { display: none; }
   .slip .printOnly { display: flex; }
   .slip p.printOnly { display: block; white-space: pre-line; }
 }

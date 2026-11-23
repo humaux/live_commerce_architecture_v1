@@ -8,18 +8,23 @@ import { useEffect, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { shippingCopy, type Locale } from '@live-commerce/i18n';
 import type { Store } from '@/lib/model';
-import { readOrderListV2, readOrderDetail, OrderReadError, type OrderReadCode } from '@/lib/orders-client';
+import { readOrderActions, readOrderListV2, readOrderDetail, readOrderDocument, OrderReadError, type OrderReadCode } from '@/lib/orders-client';
 import { canonicalCursor, canonicalUUID, type OrderDetail } from '@/lib/orders-model';
 import { ordersCopy } from '@/lib/orders-copy';
 import { emptyFilters, type OrderSummaryV2 } from '@/lib/orders-v2';
 import { readWorkspace } from '@/src/shell/api';
-import { csrfCookie } from '@/lib/settings-client';
+import { csrfCookie, sessionBoundary } from '@/lib/settings-client';
+import { codCopy } from '@/lib/cod-copy';
+import { OrderShipment } from '../OrderShipment';
+import { amount } from '../OrderDetailPanel';
+import { parityCopy } from '../orders/parity-copy';
 import { ShippingShell } from './ShippingShell';
 import s from './shipping.module.css';
 
 export type ShippingStep = 'select' | 'review' | 'preview' | 'done';
-type Data = { store: Store; rows: OrderSummaryV2[]; details: OrderDetail[]; next: string; cursor: string };
+type Data = { store: Store; rows: OrderSummaryV2[]; details: OrderDetail[]; next: string; cursor: string; canShip: boolean; boundary: string };
 const itemsText = (order: OrderDetail) => order.items.map(item => `${item.name}×${item.quantity}`).join(' · ');
+const isHomeCOD = (order: OrderDetail) => order.payment_mode === 'cash_on_delivery' && order.destination.kind === 'home';
 // Display-only short number; full server identities remain in links, scoped reads and URL selection.
 const shortNumber = (id: string, rows: OrderSummaryV2[]) => `#${(rows.find(row => row.order_id === id)?.order_number ?? id.replaceAll('-', '')).slice(-5).toUpperCase()}`;
 
@@ -34,6 +39,10 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
   const [error, setError] = useState<OrderReadCode | null>(initialError);
   const [printError, setPrintError] = useState(false);
   const [expired, setExpired] = useState(false);
+  const [documents, setDocuments] = useState<OrderDetail[]>([]);
+  const [documentBusy, setDocumentBusy] = useState(false);
+  const [handingOffPrint, setHandingOffPrint] = useState(false);
+  const [documentChanged, setDocumentChanged] = useState(false);
 
   useEffect(() => {
     const abort = new AbortController();
@@ -44,6 +53,7 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
       current = false;
       abort.abort();
       flushSync(() => setData(null));
+      setDocuments([]);
       setIDs([]);
       setStep('select');
       setExpired(true);
@@ -98,7 +108,11 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
           }
           if (current && !sessionCookie) throw new OrderReadError('signed-out');
           if (current && csrfCookie() !== sessionCookie) { clear(); return; }
-          if (current) setData({ store: authenticated, rows, details, next: page.next_cursor, cursor });
+          const [actions, boundary] = await Promise.all([
+            details.some(isHomeCOD) ? readOrderActions(authenticated.id, abort.signal) : Promise.resolve(null), sessionBoundary(sessionCookie),
+          ]);
+          if (current && csrfCookie() === sessionCookie) setData({ store: authenticated, rows, details, next: page.next_cursor, cursor,
+            canShip: actions?.fulfillment_write === true, boundary });
         } catch (failure) {
           if (!current) return;
           abort.abort();
@@ -134,6 +148,7 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
         (nextCursor && !canonicalCursor.test(nextCursor))) { window.location.reload(); return; }
       setIDs(selected);
       setStep(nextStep as ShippingStep);
+      setDocuments([]);
       setCursor(nextCursor);
       setRetry(value => value + 1);
       setPrintError(false);
@@ -153,10 +168,18 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
     setStep(next);
     setCursor(nextCursor);
     setPrintError(false);
+    setDocumentChanged(false);
+    if (next === 'select' || next === 'review') setDocuments([]);
   }
   const active = data?.cursor === cursor ? data : null;
   const selected = ids.map(id => active?.details.find(order => order.order_id === id)).filter((order): order is OrderDetail => !!order);
   const complete = !!active && ids.length > 0 && selected.length === ids.length;
+  const controlled = selected.filter(isHomeCOD);
+  const validDocuments = controlled.every(order => documents.some(doc => doc.order_id === order.order_id &&
+    doc.order_revision === order.order_revision));
+  const dispatched = controlled.some(order => order.fulfillment_state === 'MERCHANT_SHIPPED');
+  const staleCopy = locale === 'zh-TW' ? '出貨文件已變更。請丟棄舊文件並重新檢視。' :
+    locale === 'zh-CN' ? '发货文件已变更。请丢弃旧文件并重新检查。' : 'The shipping document changed. Discard the old copy and review again.';
   const count = c.selected.replace('{n}', String(ids.length));
   const center = step === 'select';
   const number = (id: string) => shortNumber(id, active?.rows ?? []);
@@ -170,6 +193,43 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
     order.work_state === 'READY' && order.fulfillment_state === 'MANUAL_UNASSIGNED' ? c.ready : ordersCopy[locale].statuses[order.commercial_state];
   const deliveryLabel = (order: OrderDetail) => ({ home: c.manual, cvs_711: c.seven, cvs_familymart: c.family,
     cvs_hilife: c.hilife, cvs_okmart: c.ok })[order.destination.kind];
+
+  async function validateDocuments(orders: OrderDetail[]) {
+    if (!active) throw new Error("unavailable");
+    const token = csrfCookie();
+    if (await sessionBoundary(token) !== active.boundary) throw new Error("unauthorized");
+    return Promise.all(orders.map(order => {
+      if (!order.order_revision) throw new Error("version_changed");
+      return readOrderDocument(active.store.id, order.order_id, order.order_revision, AbortSignal.timeout(8000));
+    }));
+  }
+  async function prepareDocuments() {
+    if (!controlled.length) { navigate('preview'); return; }
+    setDocumentBusy(true); setDocumentChanged(false);
+    try {
+      setDocuments(await validateDocuments(controlled));
+      navigate('preview');
+    } catch {
+      setDocuments([]); setDocumentChanged(true); setRetry(value => value+1);
+    } finally { setDocumentBusy(false); }
+  }
+  async function printDocuments() {
+    setDocumentBusy(true);
+    try {
+      if (controlled.length) {
+        if (!validDocuments) throw new Error("version_changed");
+        const fresh = await validateDocuments(documents);
+        flushSync(() => {setDocuments(fresh); setHandingOffPrint(true);});
+      }
+      window.print();
+      navigate('done');
+    } catch {
+      if (controlled.length) { setDocuments([]); setDocumentChanged(true); setRetry(value => value+1); }
+      else setPrintError(true);
+    } finally {
+      setHandingOffPrint(false); setDocumentBusy(false);
+    }
+  }
 
   return <ShippingShell locale={locale} store={currentStore} demo={demo}>
     <title>{title}</title>
@@ -225,13 +285,19 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
         </section> : <>
           <h2 className={`${s.count} ${s.screenOnly}`}>{count}</h2>
           <div className={s.selectedOrders} data-testid="shipping-selected-orders">
-            {selected.map(order => <article className={s.selectedOrder} key={order.order_id}>
+            {selected.map(current => {
+              const controlled = isHomeCOD(current);
+              const order = controlled && step === 'preview' ? documents.find(doc => doc.order_id === current.order_id &&
+                doc.order_revision === current.order_revision) : current;
+              if (!order) return null;
+              return <article className={s.selectedOrder} key={order.order_id}>
               <strong className={s.screenOnly}>{number(order.order_id)}</strong>
               <p className={s.screenOnly}>{itemsText(order)}</p>
-              {step === 'preview' && <section className={s.slip} data-testid="shipping-packing-slip">
+              {step === 'preview' && <section className={s.slip} data-testid="shipping-packing-slip" data-print-blocked={controlled && !handingOffPrint}>
                 <strong>{active.store.name}</strong><h3>{c.order} {number(order.order_id)}</h3>
                 <dl><div><dt>{c.recipient}</dt><dd>{order.destination.recipient_name}</dd></div>
                   <div><dt>{c.delivery}</dt><dd>{deliveryLabel(order)}</dd></div>
+                  {controlled && <div><dt>v{order.order_revision}</dt><dd>{codCopy[locale].collectAmount} {amount(locale,order.currency,order.cod_collect_minor ?? 0)}</dd></div>}
                   <div className={s.printOnly}><dt>{c.address}</dt><dd>{order.destination.pickup ?
                     `${order.destination.pickup.name} · ${order.destination.pickup.code} · ${order.destination.pickup.address}` :
                     [order.destination.home_address.postal_code, order.destination.home_address.region, order.destination.home_address.city,
@@ -240,9 +306,25 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
                   <div className={s.printOnly}><dt>{c.phone}</dt><dd>{order.destination.phone}</dd></div>
                 </dl>
                 <p className={s.printOnly}>{itemsText(order)}</p><small className={s.screenOnly}>{c.source}</small>
+                {controlled && (order.order_revision ?? 0)>1 && <p className={s.screenOnly}>{staleCopy}</p>}
               </section>}
-            </article>)}
+              {step === 'preview' && controlled && active.canShip && <div className={s.screenOnly}>
+                <OrderShipment store={active.store.id} detail={order.work_state==='NONE' ? {...order,work_state:'READY'} : order} orderNumber={number(order.order_id)}
+                  locale={locale} c={ordersCopy[locale]} canWrite={active.canShip} boundary={active.boundary} onChanged={async () => {
+                    try {
+                      const latest = await readOrderDetail(active.store.id, order.order_id, AbortSignal.timeout(8000));
+                      setData(previous => previous && {...previous,details:previous.details.map(row=>row.order_id===latest.order_id?latest:row)});
+                      setDocuments(previous => previous.flatMap(row=>row.order_id!==latest.order_id ? [row] :
+                        row.order_revision===latest.order_revision ? [latest] : []));
+                      return true;
+                    } catch {return false;}
+                  }}/>
+                {order.shipment && <p>{parityCopy[locale].handover} · {codCopy[locale].orderStates[order.collection_state ?? '']}</p>}
+              </div>}
+            </article>;
+            })}
           </div>
+          {(documentChanged || step === 'preview' && !validDocuments) && <p role="alert">{staleCopy}</p>}
           <p className={`${s.notice} ${s.screenOnly}`}>{c.boundary}</p>
           {printError && <p role="alert">{c.printFailed}</p>}
         </>}
@@ -254,10 +336,9 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
       </footer> : complete && !error && step !== 'done' && <footer className={`${s.actions} ${s.screenOnly}`}>
         <button className={s.control} onClick={() => navigate('select')}>{c.cancel}</button>
         <button className={s.control} onClick={() => navigate('select')}>{c.edit}</button>
-        {step === 'review' ? <button className={`${s.control} ${s.primary}`} onClick={() => navigate('preview')}>{c.confirm}</button> :
-          <button className={`${s.control} ${s.primary}`} onClick={() => {
-            try { window.print(); navigate('done'); } catch { setPrintError(true); }
-          }}>{c.print}</button>}
+        {step === 'review' ? <button className={`${s.control} ${s.primary}`} disabled={documentBusy} onClick={() => void prepareDocuments()}>{c.confirm}</button> :
+          validDocuments && !dispatched ? <button className={`${s.control} ${s.primary}`} disabled={documentBusy} onClick={() => void printDocuments()}>{c.print}</button> :
+            !dispatched && <button className={s.control} onClick={() => navigate('review')}>{c.review}</button>}
       </footer>}
     </main>
   </ShippingShell>;

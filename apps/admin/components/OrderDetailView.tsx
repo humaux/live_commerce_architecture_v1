@@ -6,13 +6,15 @@
 "use client";
 import {useEffect, useRef, useState} from "react";
 import type {Locale} from "@live-commerce/i18n";
-import {putShipment, readShipmentHistory} from "@/lib/orders-client";
+import {putShipment, readOrderDocument, readShipmentHistory} from "@/lib/orders-client";
 import {trackingNumber, type CarrierCode, type OrderDetail} from "@/lib/orders-model";
 import type {OrdersCopy} from "@/lib/orders-copy";
 import {amount, badge, detailPanel, type Sections} from "./OrderDetailPanel";
 import type {Store} from "@/lib/model";
 import {OrderPointsPanel} from "./members/OrderPointsPanel";
 import {parityCopy, shortOrderNumber} from "./orders/parity-copy";
+import {OrderAmendment} from "./orders/OrderAmendment";
+import {codCopy} from "@/lib/cod-copy";
 
 const signedCarriers:CarrierCode[]=["black_cat","hsinchu","chunghwa_post","sf_express","seven_eleven_cvs","familymart_cvs","hilife_cvs","okmart_cvs","other"];
 
@@ -25,10 +27,12 @@ export function OrderDetailView({detail,locale,c,sections,onBack,memberStore}:{m
   const [tracking,setTracking]=useState("");
   const [version,setVersion]=useState<number|null>(null);
   const [reviewed,setReviewed]=useState<number|null>(null);
+  const [reviewedOrder,setReviewedOrder]=useState<number|undefined>();
   const [problem,setProblem]=useState("");
   const [busy,setBusy]=useState(false);
   const [tick,setTick]=useState(0);
   const [uncertain,setUncertain]=useState(false);
+  const [editingOrder,setEditingOrder]=useState(false);
   const pending=useRef<{key:string;body:string}|null>(null);
   useEffect(()=>{
     const active=new AbortController();
@@ -46,11 +50,27 @@ export function OrderDetailView({detail,locale,c,sections,onBack,memberStore}:{m
   const parcel=sections.parcelBlockText?.(detail.order_id);
   const valid=trackingNumber.test(tracking.trim()) && (carrier!=="other" || name.trim().length>0) && [...name.trim()].length<=80;
   const head=detail.shipment;
+  const homeCOD=detail.payment_mode==="cash_on_delivery" && detail.destination.kind==="home";
+  const orderRevision=homeCOD?detail.order_revision:undefined;
   const carrierName=carrier==="other"?name.trim():p.carriers[carrier];
   const heading=stage==="carrier"?p.carrier:stage==="review"?p.review:head?p.saved:p.detail;
+  async function review() {
+    if(version===null || busy)return;
+    setBusy(true);setProblem("");
+    try {
+      if(homeCOD) {
+        if(!orderRevision)throw new Error("version_changed");
+        await readOrderDocument(sections.store,detail.order_id,orderRevision,AbortSignal.timeout(8000));
+      }
+      setReviewed(version);setReviewedOrder(orderRevision);setStage("review");
+    } catch(error) {
+      setProblem(error instanceof Error && error.message==="version_changed"?c.errors.version_changed:c.sectionUnavailable);
+      await sections.onChanged();
+    } finally {setBusy(false);}
+  }
   async function confirm() {
-    if(busy || !eligible || parcel || !valid || reviewed!==version || version===null)return;
-    const body=JSON.stringify({expected_version:version,status:"SHIPPED",carrier_code:carrier,carrier_name:carrier==="other"?name.trim():null,tracking_number:tracking.trim(),tracking_url:null,note:null,void_reason:null});
+    if(busy || !eligible || parcel || !valid || reviewed!==version || version===null || (!uncertain && reviewedOrder!==orderRevision))return;
+    const body=uncertain && pending.current ? pending.current.body : JSON.stringify({expected_version:version,order_revision:reviewedOrder,status:"SHIPPED",carrier_code:carrier,carrier_name:carrier==="other"?name.trim():null,tracking_number:tracking.trim(),tracking_url:null,note:null,void_reason:null});
     if(pending.current?.body!==body)pending.current={key:`ship-${crypto.randomUUID()}`,body};
     setBusy(true);setProblem("");
     try {
@@ -70,8 +90,12 @@ export function OrderDetailView({detail,locale,c,sections,onBack,memberStore}:{m
         <strong>{shortOrderNumber(detail.order_id)}</strong>
         <p>{detail.items.map(item=>`${item.name} ×${item.quantity}`).join(" · ")} · {amount(locale,detail.currency,detail.total_minor)}</p>
         <div className="signed-order-state">{badge(detail.fulfillment_state,{...c,statuses:{...c.statuses,MANUAL_UNASSIGNED:p.tabs.ready_to_ship}})}{sections.parcelBadge&&<span data-testid={`parcel-badge-${detail.order_id}`}>{sections.parcelBadge}</span>}{blocked&&<span data-state={detail.work_state}>{p.reviewState}</span>}</div>
+        {homeCOD && detail.cod_collect_minor!==null && <p>{codCopy[locale].collectAmount} {amount(locale,detail.currency,detail.cod_collect_minor)}</p>}
       </div>
-      {blocked ? <p className="signed-order-panel" role="status">{p.blocked}</p> : head ? <div className="signed-order-panel" data-testid="signed-shipment-record">
+      {stage==="record" && orderRevision && eligible && !head && !parcel && memberStore.permissions?.includes("orders:amend") &&
+        <OrderAmendment order={detail} locale={locale} sections={sections}
+          onEditing={setEditingOrder} canAdd={["catalog:read","inventory:reserve"].every(permission=>memberStore.permissions?.includes(permission))}/>}
+      {!editingOrder && (blocked ? <p className="signed-order-panel" role="status">{p.blocked}</p> : head ? <div className="signed-order-panel" data-testid="signed-shipment-record">
         <p>{head.carrier_name??p.carriers[head.carrier_code]}</p><p>{p.tracking}{head.tracking_number}</p>
       </div> : eligible && sections.actions.fulfillment_write && !parcel ? stage==="review" ? <div className="signed-order-panel">
         <p>{carrierName}</p><p>{p.tracking}{tracking.trim()}</p><p className="signed-order-note">{p.note}</p>
@@ -80,16 +104,16 @@ export function OrderDetailView({detail,locale,c,sections,onBack,memberStore}:{m
         {carrier==="other"&&<label>{p.other}<input value={name} maxLength={80} onChange={event=>setName(event.target.value)} autoComplete="off"/></label>}
         <label>{p.tracking}<input aria-label={p.tracking} placeholder={p.trackingHint} value={tracking} maxLength={64} autoComplete="off" onChange={event=>setTracking(event.target.value)}/></label>
         <p>{c.shipping}{amount(locale,detail.currency,detail.totals.shipping_minor)}</p>
-      </div> : <p className="signed-order-panel">{parcel??c.shipNotEligible}</p>}
+      </div> : <p className="signed-order-panel">{parcel??c.shipNotEligible}</p>)}
       {head&&<><p className="signed-order-note">{p.handover}</p><button className="signed-order-return" type="button" onClick={onBack}>{p.returnOrders}</button></>}
       {problem&&<div role="alert"><p>{problem}</p>{!uncertain&&<button type="button" onClick={()=>{setProblem("");setTick(value=>value+1);void sections.onChanged();}}>{c.retry}</button>}</div>}
       <OrderPointsPanel key={`${sections.store}|${sections.boundary}|${detail.order_id}|${memberStore.permissions?.join(",")??""}`} locale={locale} store={memberStore} order={detail.order_id} manual={detail.source==="merchant_manual"} scope={`${sections.store}|${detail.order_id}`} boundary={sections.boundary}/>
       <details className="signed-order-advanced" data-testid="order-more-details"><summary>{p.facts}</summary>
         {detailPanel(detail,locale,c,{...sections,orderNumber:shortOrderNumber(detail.order_id),onBack:undefined})}
       </details>
-      {eligible && sections.actions.fulfillment_write && !head && !parcel && <footer className="signed-order-footer">
-        {stage==="review"?<><button type="button" className="primary" disabled={busy||reviewed!==version} onClick={()=>void confirm()}>{busy?c.shipSending:uncertain?c.shipRetry:p.confirm}</button><button type="button" disabled={busy||uncertain} onClick={()=>setStage("record")}>{p.edit}</button></>:
-        <button type="button" className="primary" disabled={!valid||version===null} onClick={()=>{setReviewed(version);setStage("review");}}>{p.record}</button>}
+      {!editingOrder && eligible && sections.actions.fulfillment_write && !head && !parcel && <footer className="signed-order-footer">
+        {stage==="review"?<><button type="button" className="primary" disabled={busy||reviewed!==version||(!uncertain&&reviewedOrder!==orderRevision)} onClick={()=>void confirm()}>{busy?c.shipSending:uncertain?c.shipRetry:p.confirm}</button><button type="button" disabled={busy||uncertain} onClick={()=>setStage("record")}>{p.edit}</button></>:
+        <button type="button" className="primary" disabled={!valid||version===null||busy} onClick={()=>void review()}>{p.record}</button>}
       </footer>}
     </>}
   </section>;

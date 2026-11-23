@@ -291,3 +291,13 @@ Capture independent order, inventory, fulfilment and collection/payment facts.
 | Stock or scope refusal | Insufficient inventory across the chosen warehouses, foreign store, read-only staff and grant revoked while locked leave the revision, stock, fulfilment and collection unchanged. |
 | Recovery and concurrency | Same key/body replays once, changed body conflicts, and two staff committing from one base revision produce one winner. Race with dispatch as defined in the fulfilment amendment. Cancel after the winning revision releases only the remaining allocated quantity once. |
 | Excluded states | Already dispatched, collected or paid, and external acceptance/unknown follow the refusal or HOLD boundary with zero new payment, refund, shipment or customer-message side effects. |
+
+### R03 HTTP binding
+
+- `POST /v1/admin/stores/{store_id}/orders/{order_id}/amendment/review` accepts
+  `expected_revision` and at least one of `recipient` (changed home fields)
+  or `additions` (unique `sku_id` and positive `quantity`). It returns the
+  reviewed items, totals, COD due and a proposal ID. It accepts no idempotency key.
+- `PUT /v1/admin/stores/{store_id}/orders/{order_id}/amendment` accepts the
+  same draft plus `proposal` and a required `Idempotency-Key`. The receipt
+  carries the original order identity, committed order revision and COD due.

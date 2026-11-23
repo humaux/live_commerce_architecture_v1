@@ -453,3 +453,12 @@ handover and unknown external results to verify that handover needs evidence and
 unknown stays on HOLD. Use the existing browser entry tests in
 `tests/admin/{orders-ui,shipping-center}.spec.ts`; add independent Go/PG
 race, rollback and authority coverage when implementing the amendment.
+
+### R03 document binding
+
+`POST /v1/admin/stores/{store_id}/orders/{order_id}/shipment/document`
+accepts `expected_revision` without an idempotency key. It returns the
+current order detail only when that revision remains eligible for the
+warehouse document. A first R03 dispatch through the existing shipment PUT
+adds `order_revision` to its confirmation and retains `expected_version`
+for the shipment head.
