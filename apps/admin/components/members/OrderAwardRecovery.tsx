@@ -95,7 +95,7 @@ export function OrderAwardRecovery({ locale, store, order, boundary, permitted, 
         <h3>{c.missed}</h3>
         <p>{member?.display_name ?? recovery.member_id} · {common.points} {decimal(locale, recovery.points, 0)}</p>
         {status === "refused" && <p role="alert">{common.refused}</p>}
-        {permitted && <Button ref={opener} type="button" data-testid="order-award-recovery-open" onClick={() => setConfirm(true)}>{c.review}</Button>}
+        {permitted && <Button ref={opener} type="button" variant="primary" data-testid="order-award-recovery-open" onClick={() => setConfirm(true)}>{c.review}</Button>}
         {confirm && <dialog ref={dialog} className={s.dialog} aria-labelledby="order-award-recovery-title" onCancel={event => {
           event.preventDefault();
           if (!active.current) setConfirm(false);
@@ -110,7 +110,7 @@ export function OrderAwardRecovery({ locale, store, order, boundary, permitted, 
             </dl>
             <div className={s.actions}>
               <Button type="button" variant="secondary" disabledReason={status === "pending" ? common.loading : undefined} onClick={() => setConfirm(false)}>{common.cancel}</Button>
-              <Button type="button" data-testid="order-award-recovery-submit" loading={status === "pending"} onClick={() => void submit()}>{c.submit}</Button>
+              <Button type="button" variant="primary" data-testid="order-award-recovery-submit" loading={status === "pending"} onClick={() => void submit()}>{c.submit}</Button>
             </div>
           </section>
         </dialog>}

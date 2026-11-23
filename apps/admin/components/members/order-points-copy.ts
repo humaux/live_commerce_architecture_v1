@@ -17,21 +17,21 @@ export function validOrderPoints(value:string) { return /^[0-9]+$/.test(value) &
 
 export const awardRecoveryCopy = {
   "zh-TW": {
-    missed: "積分未贈送", check: "查核原單積分", original: "原單",
+    missed: "積分未贈送", check: "查核原單積分", original: "原單", view: "查看原單",
     review: "按原單補登積分", submit: "確認補登",
     confirmBody: "請核對原單與積分。確認後會依原單回執將積分記入原會員。",
     hold: "原單積分需核對。請檢查流水與既有調整紀錄。",
     recorded: "已查得原單積分紀錄",
   },
   "zh-CN": {
-    missed: "积分未赠送", check: "核对原单积分", original: "原单",
+    missed: "积分未赠送", check: "核对原单积分", original: "原单", view: "查看原单",
     review: "按原单补登积分", submit: "确认补登",
     confirmBody: "请核对原单与积分。确认后会依原单回执将积分记入原会员。",
     hold: "原单积分需核对。请检查流水与已有调整记录。",
     recorded: "已查到原单积分记录",
   },
   en: {
-    missed: "Points not awarded", check: "Check original order points", original: "Original order",
+    missed: "Points not awarded", check: "Check original order points", original: "Original order", view: "View original order",
     review: "Recover points on this order", submit: "Confirm recovery",
     confirmBody: "Check the original order and points. Confirmation credits the member named in the original receipt.",
     hold: "Review this order’s points history and prior adjustments.",

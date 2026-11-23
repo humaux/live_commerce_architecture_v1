@@ -17,7 +17,7 @@ import { displayTime } from "@live-commerce/format";
 import { Badge, Field, FormRow } from "@live-commerce/ui";
 import { ManualOrderMemberFields, type OrderMemberSelection } from "./members/ManualOrderMemberFields";
 import { ManualOrderAwardResult } from "./members/ManualOrderAwardResult";
-import { orderPointsCopy, validOrderPoints } from "./members/order-points-copy";
+import { awardRecoveryCopy, orderPointsCopy, validOrderPoints } from "./members/order-points-copy";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
 import { useGuardedRead, type ReadCode } from "@/lib/customers-client";
@@ -33,7 +33,6 @@ import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
 import { CvsLookup } from "./CvsLookup";
 import { ManualOrderMissing } from "./orders/ManualOrderMissing";
-import { shortOrderNumber } from "./orders/parity-copy";
 import "./order-ops.css";
 import s from "./OperationalForms.module.css";
 import "./orders.css";
@@ -367,7 +366,7 @@ function ManualOrderForm({
   return (
     <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="orders">
       <div className={`orders-page customers-page ops-task ${s.page}`} data-testid="manual-order-page">
-        {!showMissing && <AdminPageHeader locale={locale} title={signed.manual} description={placed ? c.created : signed.quote} />}
+        {!showMissing && <AdminPageHeader locale={locale} title={placed ? c.created : signed.manual} description={placed ? undefined : signed.quote} />}
         {returnURL && (!placed || placed.order_origin) && <Link data-testid="manual-order-return-conversation" href={returnURL} prefetch={false}>{sourceCopy.back}</Link>}
         {stores.length > 1 && !conversationDraft && !initialReceipt && (
           <div className="orders-controls">
@@ -385,10 +384,9 @@ function ManualOrderForm({
         {existingOrder && <Link data-testid="conversation-order-existing" href={`/${locale}/orders/${existingOrder}${storeQuery}`}>{sourceCopy.view}</Link>}
         {placed && store && (
           <section className="mt-card" data-testid="manual-order-result" aria-label={c.created}>
-            <h2>{c.created}</h2>
             <p role="status"><Badge tone={placed.commercial_state === "CONFIRMED" ? "success" : "warning"}>{placed.commercial_state === "AWAITING_TRANSFER" ? c.waiting : placed.commercial_state === "AWAITING_COLLECTION" ? c.waitingCollection : c.confirmed}</Badge></p>
             <dl className="mt-stats">
-              <div><dt>{c.orderId}</dt><dd>{shortOrderNumber(placed.order_id)}</dd></div>
+              <div><dt>{c.orderId}</dt><dd style={{ fontSize: 14 }}>{placed.order_id.slice(0, 8)}</dd></div>
               <div><dt>{conversationDraft && placed.payment_mode === "pay_at_pickup" ? c.pickup : c.total}</dt><dd>{money(locale, placed.currency, placed.total_minor)}</dd></div>
               {codDue !== null && <div data-testid="manual-order-cod-due"><dt>{c.codDue}</dt><dd>{money(locale, placed.currency, codDue)}</dd></div>}
               {placed.payment_mode === "bank_transfer" && <div><dt>{c.expires}</dt><dd style={{ fontSize: 14 }}>{displayTime(locale, placed.expires_at)}</dd></div>}
@@ -423,7 +421,7 @@ function ManualOrderForm({
             ) : <p className="mt-warn">{c.noLink}</p>}
             <div className="mt-actions" style={{ marginTop: 16 }}>
               {!conversationDraft && !initialReceipt && <button type="button" className="primary" onClick={reset} data-testid="manual-order-another">{c.another}</button>}
-              <Link href={`/${locale}/orders/${placed.order_id}${storeQuery}`}>{sourceCopy.view}</Link>
+              {placed.member_award?.state !== "not_awarded" && <Link href={`/${locale}/orders/${placed.order_id}${storeQuery}`}>{awardRecoveryCopy[locale].view}</Link>}
               <Link href={`/${locale}/orders${storeQuery}`}>{c.viewOrders}</Link>
             </div>
           </section>
