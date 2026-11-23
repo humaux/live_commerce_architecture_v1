@@ -1,21 +1,26 @@
 package foundation_test
 
 // storefront_integration_smoke_test.go: author smoke of unit storefront-integration (migration 0093) on real PostgreSQL through the real
-// buyerhttp handler: SI01 the widened CVS map return-path allowlist (Go AND SQL, exactly /{locale}/checkout in addition to the product form),
+// buyerhttp handler: SI01 the CVS return-path allowlist and Buy now cart binding (Go and SQL),
 // SI02 free_shipping_threshold_minor on every checkout-options row, SI03 the collection id on both catalog/v2 collection reads. Evidence label:
 // SANDBOX (isolated disposable PG, synthetic published origin). The browser side is TestBrowserStorefront and the ported buyer gates.
 
 import (
 	"context"
 	"crypto/sha256"
+	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"livecommerce/internal/buyer"
+	"livecommerce/internal/checkout"
 	"livecommerce/internal/httpapi"
+	"livecommerce/internal/storefront"
 )
 
 func TestStorefrontIntegrationSmoke(t *testing.T) {
@@ -25,62 +30,133 @@ func TestStorefrontIntegrationSmoke(t *testing.T) {
 	e.connect("C2C")
 	code, _, _ := e.service("cvs_711", "API", 0)
 
-	t.Run("SI01 return path allowlist: /{locale}/checkout in Go and SQL, every near miss refused", func(t *testing.T) {
-		good := []string{"/en/checkout", "/zh-TW/checkout", "/zh-CN/checkout", "/en/products/prod_1", "/zh-TW/products/" + strings.Repeat("a", 64)}
+	t.Run("SI01 CVS return paths and exact Buy now cart binding", func(t *testing.T) {
+		good := []string{"/en/checkout", "/zh-TW/checkout", "/zh-CN/checkout", "/en/products/prod_1", "/zh-TW/products/x", "/zh-TW/products/" + strings.Repeat("a", 64)}
 		bad := []string{"/en/checkout/", "/en/checkout/x", "/en/Checkout", "/en/CHECKOUT", "/fr/checkout", "/en/checkout?x=1", "/en/checkout#f", "//evil.example/en/checkout",
 			"https://evil.example/en/checkout", "en/checkout", "/en/products/Checkout/x", "/en/products/", "/en/claim", "/en/cart"}
+		b := e.newBuyer()
+		newSelection := func(b *tcvBuyer) string {
+			t.Helper()
+			res := b.req("POST", "/v1/buyer/buy-now", t04Key("si01-buy-now"), storefront.BuyNowInput{
+				SKUID: e.p.stock.skus[0].ID, Quantity: 1,
+			}, nil)
+			var cart storefront.Cart
+			if err := json.Unmarshal(res.body, &cart); res.status != 200 || err != nil || cart.ID == "" || cart.Version != 1 {
+				t.Fatalf("create Buy now cart: HTTP %d, %s (%v)", res.status, res.body, err)
+			}
+			return cart.ID
+		}
+		regular, direct, other := b.h.destination.CartID, newSelection(b), newSelection(b)
+		foreign := newSelection(e.newBuyer())
+		const directPath = "/en/checkout/buy-now/"
+		bad = append(bad, "/en/checkout/buy-now", directPath+"bad-id", directPath+direct+"/", directPath+direct+"?x=1", directPath+direct+"#f")
+
+		// The CHECK enforces path shape. The Go entry and definer also enforce
+		// cart binding, so a well-formed path can still be refused by both.
+		type pathCase struct {
+			name, path, selector, cart, code, sqlState string
+			status                                     int
+			validShape                                 bool
+		}
+		var cases []pathCase
 		for _, path := range good {
-			b := e.newBuyer()
-			sel, res := e.tclOpen(b, code, path, nil)
-			if sel.ID == "" {
-				t.Errorf("return_path %q must be accepted: %d %s", path, res.status, res.body)
-				continue
-			}
-			// The stored path is what the unauthenticated map return redirects to: origin + stored path, never a body value.
-			w := e.mapReturn(sel.ID, sel.Fields)
-			if want := e.origin + path + "?cvs_selection=" + sel.ID; w.Code != http.StatusSeeOther || w.Header().Get("Location") != want {
-				t.Errorf("map return for %q: %d %q want %q", path, w.Code, w.Header().Get("Location"), want)
-			}
+			cases = append(cases, pathCase{name: path, path: path, cart: regular, status: 201, validShape: true})
 		}
 		for _, path := range bad {
-			if res := e.newBuyer().openSelection(code, path); res.status != 422 || tcvStr(tcvJSON(t, res.body), "code") != "bad_return_path" {
-				t.Errorf("return_path %q: want 422 bad_return_path, got %d %s", path, res.status, res.body)
+			cases = append(cases, pathCase{name: path, path: path, status: 422, code: "bad_return_path", sqlState: "PT422"})
+		}
+		for _, locale := range []string{"en", "zh-TW", "zh-CN"} {
+			path := "/" + locale + "/checkout/buy-now/" + direct
+			cases = append(cases, pathCase{name: locale + " matched Buy now", path: path, selector: direct, cart: direct, status: 201, validShape: true})
+		}
+		cases = append(cases,
+			pathCase{name: "no selector", path: directPath + direct, status: 422, code: "bad_return_path", sqlState: "PT422", validShape: true},
+			pathCase{name: "other owned cart path", path: directPath + other, selector: direct, status: 422, code: "bad_return_path", sqlState: "PT422", validShape: true},
+			pathCase{name: "ordinary path with selector", path: "/en/checkout", selector: direct, status: 422, code: "bad_return_path", sqlState: "PT422", validShape: true},
+			pathCase{name: "ordinary cart as Buy now", path: directPath + regular, selector: regular, status: 409, code: "conflict", sqlState: "PT409", validShape: true},
+			pathCase{name: "other buyer's cart", path: directPath + foreign, selector: foreign, status: 409, code: "conflict", sqlState: "PT409", validShape: true},
+		)
+
+		assertSelection := func(t *testing.T, id string, tc pathCase) {
+			t.Helper()
+			var cart, path string
+			err := f.owner.QueryRow(ctx, `SELECT cart_id::text,return_path FROM fulfillment.cvs_selections WHERE id=$1 AND store_id=$2 AND owner_id=$3`,
+				id, f.storeA1, b.cap.Scope.OwnerID).Scan(&cart, &path)
+			if err != nil || cart != tc.cart || path != tc.path {
+				t.Fatalf("saved selection cart=%q path=%q, want %q %q: %v", cart, path, tc.cart, tc.path, err)
 			}
 		}
-		// SQL is the authority: the definer refuses a near miss even when Go's pattern is bypassed (direct call as the checkout pool).
-		b := e.newBuyer()
-		call := func(path string) error {
-			token := b.cap.Token
-			hash := sha256.Sum256([]byte(token))
-			return buyer.WithScope(ctx, e.p.pool, token, f.storeA1, func(c context.Context, tx pgx.Tx, _ buyer.Scope) error {
-				nonce, req := sha256.Sum256([]byte("nonce"+path)), sha256.Sum256([]byte("req"+path))
-				var raw []byte
-				return tx.QueryRow(c, `SELECT fulfillment.open_cvs_selection($1,$2::uuid,$3,$4,$5::bigint,$6::uuid,$7,$8,$9,$10,$11)`,
-					hash[:], f.storeA1, t04Key("si01-sql"), req[:], b.cartVersion(), e.p.market.ID, code, nonce[:], e.origin, path, "SANDBOX").Scan(&raw)
+		var sampleID string
+		var accepted int64
+		for _, tc := range cases {
+			t.Run(tc.name, func(t *testing.T) {
+				in := checkout.SelectionOpenInput{BuyNowID: tc.selector, CartVersion: b.cartVersion(), MarketID: e.p.market.ID, ServiceCode: code, ReturnPath: tc.path}
+				res := b.req("POST", "/v1/buyer/cvs-selections", t04Key("si01-http"), in, nil)
+				if res.status != tc.status {
+					t.Fatalf("HTTP %d %s, want %d", res.status, res.body, tc.status)
+				}
+				body := tcvJSON(t, res.body)
+				if tc.sqlState == "" {
+					id := tcvStr(body, "selection_id")
+					assertSelection(t, id, tc)
+					if sampleID == "" {
+						sampleID = id
+					}
+					w := e.mapReturn(id, tcvFormFields(body))
+					if want := e.origin + tc.path + "?cvs_selection=" + id; w.Code != http.StatusSeeOther || w.Header().Get("Location") != want {
+						t.Errorf("map return: %d %q want %q", w.Code, w.Header().Get("Location"), want)
+					}
+				} else if tcvStr(body, "code") != tc.code {
+					t.Errorf("HTTP %d code in %s, want %s", res.status, res.body, tc.code)
+				}
+
+				// Call the definer directly under the buyer's checkout pool.
+				hash := sha256.Sum256([]byte(b.cap.Token))
+				nonce, req := sha256.Sum256([]byte("nonce"+tc.path)), sha256.Sum256([]byte("req"+tc.path))
+				var id string
+				err := buyer.WithScope(ctx, e.p.pool, b.cap.Token, f.storeA1, func(c context.Context, tx pgx.Tx, _ buyer.Scope) error {
+					if _, err := tx.Exec(c, `SELECT set_config('app.buy_now_cart_id',$1,true)`, tc.selector); err != nil {
+						return err
+					}
+					return tx.QueryRow(c, `SELECT fulfillment.open_cvs_selection($1,$2::uuid,$3,$4,$5::bigint,$6::uuid,$7,$8,$9,$10,$11)->>'selection_id'`,
+						hash[:], f.storeA1, t04Key("si01-sql"), req[:], b.cartVersion(), e.p.market.ID, code, nonce[:], e.origin, tc.path, "SANDBOX").Scan(&id)
+				})
+				if tc.sqlState != "" {
+					requirePGCode(t, err, tc.sqlState, "SQL open_cvs_selection")
+					return
+				}
+				if err != nil {
+					t.Fatalf("SQL open_cvs_selection: %v", err)
+				}
+				assertSelection(t, id, tc)
+				accepted++
 			})
 		}
-		for _, path := range []string{"/en/Checkout", "/en/checkout/x", "/en/checkout?x=1", "/fr/checkout", "/en/products/"} {
-			if pgCode(call(path)) != "PT422" {
-				t.Errorf("SQL open_cvs_selection must answer PT422 for %q, got %v", path, call(path))
-			}
+		if got := miCount(t, f.owner, `SELECT count(*) FROM fulfillment.cvs_selections WHERE store_id=$1 AND owner_id=$2`, f.storeA1, b.cap.Scope.OwnerID); got != 2*accepted {
+			t.Errorf("HTTP and SQL created %d selections, want %d", got, 2*accepted)
 		}
-		if err := call("/en/checkout"); err != nil {
-			t.Errorf("SQL open_cvs_selection must accept /en/checkout: %v", err)
+		if sampleID == "" {
+			t.Fatal("no real selection for the CHECK probes")
 		}
-		// The table CHECK is the last wall: a stored row can never hold another shape.
-		var def string
-		if err := f.owner.QueryRow(ctx, `SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conrelid='fulfillment.cvs_selections'::regclass AND conname='cvs_selections_return_path_check'`).Scan(&def); err != nil {
-			t.Fatal(err)
-		}
-		const pattern = `^/(zh-TW|zh-CN|en)/(products/[A-Za-z0-9_-]{1,64}|checkout)$`
-		if !strings.Contains(def, pattern) {
-			t.Fatalf("return_path CHECK is not the 0093 pattern: %s", def)
-		}
-		for path, ok := range map[string]bool{"/en/checkout": true, "/zh-TW/products/x": true, "/en/Checkout": false, "/en/checkout/x": false, "/en/claim": false} {
-			var matches bool
-			if err := f.owner.QueryRow(ctx, `SELECT $1::text ~ $2::text`, path, pattern).Scan(&matches); err != nil || matches != ok {
-				t.Errorf("pattern vs %q = %v (err %v), want %v", path, matches, err, ok)
-			}
+		for _, tc := range cases {
+			t.Run("CHECK "+tc.name, func(t *testing.T) {
+				tx, err := f.owner.Begin(ctx)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer tx.Rollback(ctx)
+				result, err := tx.Exec(ctx, `UPDATE fulfillment.cvs_selections SET return_path=$1 WHERE id=$2`, tc.path, sampleID)
+				if tc.validShape {
+					if err != nil || result.RowsAffected() != 1 {
+						t.Fatalf("return_path CHECK rejected %q: %v", tc.path, err)
+					}
+					return
+				}
+				var pg *pgconn.PgError
+				if !errors.As(err, &pg) || pg.Code != "23514" || pg.ConstraintName != "cvs_selections_return_path_check" {
+					t.Fatalf("return_path CHECK did not reject %q: %v", tc.path, err)
+				}
+			})
 		}
 	})
 
