@@ -176,6 +176,7 @@ export type ManualOrderOrigin = { conversation_id: string; bundle_ids: string[] 
 export type ManualSourceContext = ManualOrderOrigin & { revision: string };
 const sourceRevision = /^[0-9a-f]{64}$/;
 const uuid = (value: unknown): value is string => typeof value === "string" && canonicalUUID.test(value);
+export const isManualReceiptKey = uuid;
 function validOrigin(v: Record<string, unknown>): boolean {
   return uuid(v.conversation_id) && Array.isArray(v.bundle_ids) && v.bundle_ids.length <= 5 &&
     v.bundle_ids.every(uuid) && new Set(v.bundle_ids).size === v.bundle_ids.length;

@@ -27,9 +27,7 @@ import { readProduct, readProducts } from "@/lib/catalog-v2-client";
 import type { ProductDetail, Variant } from "@/lib/catalog-v2-model";
 import { sessionBoundary } from "@/lib/settings-client";
 import { placeManualOrder, readManualOptions, readManualPrefill, readManualReceipt, regenerateManualLink } from "@/lib/merchant-tools-client";
-import { draftProblem, manualBody, pickupRecipientErrors, recipientGaps, type ManualDraft, type ManualOption, type ManualPaymentMode, type ManualPrefill, type ManualResult, type ManualSourceContext } from "@/lib/merchant-tools-model";
-import { canonicalUUID } from "@/lib/orders-model";
-import { permitted } from "@/src/features/messages/privacy";
+import { draftProblem, isManualReceiptKey, manualBody, pickupRecipientErrors, recipientGaps, type ManualDraft, type ManualOption, type ManualPaymentMode, type ManualPrefill, type ManualResult, type ManualSourceContext } from "@/lib/merchant-tools-model";
 import { conversationOrderCopy, toolsCopy } from "@/lib/merchant-tools-copy";
 import { codCopy } from "@/lib/cod-copy";
 import { WorkspaceFrame } from "./WorkspaceFrame";
@@ -65,9 +63,8 @@ function ConversationOrder(props: ManualPageProps & { conversation: string }) {
   const { locale, store, initialError, renderKey, conversation } = props;
   const c = conversationOrderCopy[locale];
   const fallback = toolsCopy[locale].manual;
-  const allowed = ["inbox:read", "orders:read", "catalog:read", "inventory:reserve"].every((permission) => permitted(store, permission));
   const prefill = useGuardedRead(`${renderKey}|${store?.id ?? ""}|${conversation}`,
-    store && allowed ? (signal) => readManualPrefill(store.id, conversation, signal) : null, initialError);
+    store ? (signal) => readManualPrefill(store.id, conversation, signal) : null, initialError);
   const [boundary, setBoundary] = useState("");
   const [storage, setStorage] = useState<{ name: string; key: string | null } | null>(null);
   const [started, setStarted] = useState<string | null>(null);
@@ -83,7 +80,7 @@ function ConversationOrder(props: ManualPageProps & { conversation: string }) {
     if (!storageName) return;
     let key: string | null = null;
     try { key = sessionStorage.getItem(storageName); } catch { /* Storage can be restricted. */ }
-    setStorage({ name: storageName, key: key && canonicalUUID.test(key) ? key : null });
+    setStorage({ name: storageName, key: isManualReceiptKey(key) ? key : null });
   }, [storageName]);
   function remember(key: string | null) {
     if (!storageName) return;
@@ -116,7 +113,7 @@ function ConversationOrder(props: ManualPageProps & { conversation: string }) {
   }
   const existing = source?.state === "existing_order" ? source.order_id : source?.state === "ready" ? source.latest_order_id : null;
   const status = recoveryKey || source?.state === "review_required" && source.reason === "source_order_pending" ? c.pending
-    : prefill.status === "forbidden" || store && !allowed ? fallback.forbidden
+    : prefill.status === "forbidden" ? fallback.forbidden
     : prefill.status === "signed-out" ? fallback.signedOut
     : prefill.status === "loading" || prefill.status === "hidden" || source?.state === "ready" && !storage ? fallback.loading
     : existing ? c.previous : source?.state === "review_required" ? c.blocked : c.unavailable;

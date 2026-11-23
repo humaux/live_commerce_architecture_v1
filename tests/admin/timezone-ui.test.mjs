@@ -101,13 +101,15 @@ test("ManualOrder bank-transfer expiry uses Taipei at the year boundary", () => 
     currency: "TWD", total_minor: 100, expires_at: instant, buyer_link: null };
   // ManualOrder's 16th direct useState owns `placed`; preceding hook additions must update this fixture.
   // The literal expiry assertion below fails if this injection stops reaching the loaded result view.
-  const hooks = { ...react, useState(value) { return [state++ === 15 ? placed : value, () => {}]; } };
+  const hooks = { ...react, useState(value) {
+    return [state++ === 15 ? placed : typeof value === "function" ? value() : value, () => {}];
+  } };
   const { ManualOrder } = compile("apps/admin/components/ManualOrder.tsx", {
     react: hooks,
     "@/lib/customers-client": { useGuardedRead: () => ({ status: "ready", data: [] }) },
     "@/lib/catalog-v2-copy": compile("apps/admin/lib/catalog-v2-copy.ts", {}),
     "@/lib/merchant-tools-model": { draftProblem: () => null, recipientGaps: () => [] },
-    "@/lib/merchant-tools-copy": { toolsCopy: { "zh-TW": { manual: { created: "created", expires: "expires" } } } },
+    "@/lib/merchant-tools-copy": compile("apps/admin/lib/merchant-tools-copy.ts", {}),
     "@/lib/client": { money: () => "NT$100" },
     "./OperationalForms.module.css": { page: "page" },
     "next/link": { default: passthrough }, "@/lib/catalog-v2-client": {}, "@/lib/merchant-tools-client": {}, "@/lib/cod-copy": {},

@@ -5,7 +5,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { useRouter } from "next/navigation";
 import type { Locale } from "@live-commerce/i18n";
 import type { Store } from "@/lib/model";
 import { displayTime } from "@live-commerce/format";
@@ -34,7 +33,6 @@ export function Inbox({
   calibration?: boolean;
   resumeConversation?: string;
 }) {
-  const router = useRouter();
   const c = inboxCopy(locale);
   const [filter, setFilter] = useState("all");
   const [counts, setCounts] = useState({ all: 0, assigned: 0 });
@@ -290,7 +288,7 @@ export function Inbox({
                           conversation={selected}
                           locale={locale}
                           customerPanel={<BuyerPanel store={store} conversationId={selected.conversation_id} compact onUnauthorized={privacy.expire}
-                            onOrder={(orderId) => { flushSync(privacy.suspend); router.push(`/${locale}/orders/${orderId}?store=${store.id}`); }} />}
+                            onOrder={(orderId) => { flushSync(privacy.suspend); window.location.assign(`/${locale}/orders/${orderId}?store=${store.id}`); }} />}
                           onUnauthorized={privacy.expire}
                           onRead={() =>
                             setPage((old) =>
