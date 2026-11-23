@@ -306,19 +306,21 @@ async function checkBrowse(next) {
   };
   await addProduct(p, "candle"); await addProduct(p, "dripper");
   const viewCart = async (page) => {
-    await page.getByTestId("cart-drawer").getByRole("link", { name: COPY.viewCart, exact: true }).click();
+    const drawer = page.getByTestId("cart-drawer");
+    await drawer.getByRole("link", { name: COPY.viewCart, exact: true }).click();
     await expect(page).toHaveURL(`${origin}/en/cart`);
+    await expect(drawer).not.toBeVisible();
   };
   const expectCartSummary = async (page, subtotal) => {
     const cart = page.getByTestId("cart-page");
-    await expect(cart.getByTestId("cart-line")).toHaveCount(2);
     await expect(cart.getByRole("heading", { name: COPY.cartSummaryTitle })).toBeVisible();
-    await expect(cart.getByTestId("cart-subtotal")).toHaveText(shop$(subtotal));
     await expect(cart.getByTestId("cart-shipping")).toHaveText(COPY.cartCalculatedAtCheckout);
     await expect(cart.getByTestId("cart-merchandise-total")).toHaveText(shop$(subtotal));
   };
   await viewCart(p);
+  await expect(p.getByTestId("cart-line")).toHaveCount(2);
   const below = candlePrice + dripperPrice;
+  await expect(p.getByTestId("cart-subtotal")).toHaveText(shop$(below));
   await expectCartSummary(p, below);
   const cartHeading = p.locator("header").filter({ has: p.getByRole("heading", { name: COPY.cartTitle, level: 1 }) });
   await expect(cartHeading.getByText(COPY.cartIntro, { exact: true })).toBeVisible();
@@ -363,6 +365,8 @@ async function checkBrowse(next) {
   const pc2 = await phone(), q = await pc2.newPage();
   await addProduct(q, "candle", 2); await addProduct(q, "dripper");
   await viewCart(q);
+  await expect(q.getByTestId("cart-subtotal")).toHaveText(shop$(2 * candlePrice + dripperPrice));
+  await expect(q.getByTestId("cart-line")).toHaveCount(2);
   await expectCartSummary(q, 2 * candlePrice + dripperPrice);
   await expect(q.getByTestId("free-shipping")).toContainText(COPY.freeShipReached);
   await q.getByTestId("cart-checkout").click();

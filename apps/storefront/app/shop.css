@@ -420,6 +420,11 @@ a.sf-line__title:hover { text-decoration: underline; }
 .sf-cartpage .sf-stepper output { width: 44px; }
 .sf-cartpage .sf-line__ctl .sf-link-btn { min-width: 44px; padding-inline: 16px; color: var(--accent-text); font-weight: 600; text-decoration: none; }
 .sf-cartpage .sf-line__ctl .sf-link-btn:hover:not(:disabled) { text-decoration: underline; }
+@media (max-width: 719.98px) {
+  .sf-cart-main .sf-pagehead { padding-block: 4px 16px; }
+  .sf-cart-main .sf-pagehead h1 { margin-top: 12px; }
+  .sf-cartpage__grid { gap: 20px; }
+}
 @media (min-width: 900px) {
   .sf-cart-main .sf-pagehead { padding-bottom: 28px; }
   .sf-cart-main .sf-pagehead h1 { font-size: 36px; margin-top: 28px; }
