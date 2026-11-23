@@ -1,3 +1,7 @@
+// Purpose: Expose scoped merchant review, amendment and shipping-document routes.
+// Depends on: merchantorders, the strict shipment route adapter and platform store scope.
+// Used by: the merchant API handler and admin BFF.
+
 package httpapi
 
 import (

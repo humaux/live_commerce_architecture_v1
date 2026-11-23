@@ -253,7 +253,7 @@ func TestBrowserHomeCod(t *testing.T) {
 	}
 	beforeCleanup := openCOD()
 	for _, order := range pendingOrders {
-		if st, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+order.ID+"/shipment", t04Key("rv273-fixture-ship"), mfxShip(0, "black_cat", "RV273SYNTHETIC")); st != 200 {
+		if st, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+order.ID+"/shipment", t04Key("rv273-fixture-ship"), r03ShipmentBody(0, 1, "black_cat", "RV273SYNTHETIC")); st != 200 {
 			t.Fatalf("recovered-order fixture shipment: %d %s", st, raw)
 		}
 		_, fulfilment, mode, collection, amount, fee := e.hcodRow(order.ID)
@@ -368,6 +368,20 @@ func TestBrowserHomeCod(t *testing.T) {
 	if n := e.count(`SELECT count(*) FROM checkout.orders WHERE id=$1 AND commercial_state='AWAITING_COLLECTION' AND collection_state='COLLECTED'`, orders["A"].ID); n != 1 {
 		t.Error("order A must stay AWAITING_COLLECTION after collection (it is never CONFIRMED)")
 	}
+	// Use two original unshipped orders after the lifecycle assertions above. No collection action is made here.
+	e.grantCreator("orders:amend")
+	brfPlaywright(t, ctx, stack, []string{"home-cod.spec.ts"}, adminEnv("r03", map[string]string{
+		"LC_HCOD_R03_DESKTOP": orders["B"].ID, "LC_HCOD_R03_MOBILE": orders["C"].ID,
+	}))
+	for _, id := range []string{orders["B"].ID, orders["C"].ID} {
+		if n := e.count(`SELECT count(*) FROM checkout.orders o JOIN fulfillment.manual_shipment_versions s
+			ON (s.tenant_id,s.store_id,s.order_id)=(o.tenant_id,o.store_id,o.id)
+			WHERE o.id=$1 AND o.order_revision=2 AND s.order_revision=2 AND s.version=1
+			AND o.total_minor=$2 AND o.cod_surcharge_minor=$3 AND o.collection_state='PENDING'`, id, total, surchargeMinor); n != 1 {
+			t.Errorf("R03 order %s: amended revision, shipment CAS, original payable and pending collection must agree", id)
+		}
+	}
+
 	t.Logf("home-cod BROWSER (MOCK) merchant settings -> buyer checkout -> merchant ship/collect -> buyer sees COLLECTED -> finance COD columns; evidence=%s", evidence)
 }
 

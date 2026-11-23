@@ -808,8 +808,8 @@ func TestLegacyRuntimeIsolationPopulatedUpgrade(t *testing.T) {
 	// (collection_state NULL), so the backfill matches no row and collected_at stays NULL; a card order that DID gain a non-null
 	// collected_at, or any other changed value, still fails the equality below.
 	// 0171 (OA1) adds creator_kind='storefront' and create_attempt_id=NULL. Pin
-	// both exact historical defaults instead of dropping provenance from equality.
-	const addedOrderKeys = `{"payment_mode":"card","collection_state":null,"buyer_email":null,"source":"storefront","locale":null,"cod_surcharge_minor":null,"cod_carrier":null,"collected_at":null,"creator_kind":"storefront","create_attempt_id":null}`
+	// both exact historical defaults instead of dropping provenance from equality. R03 adds order_revision=1 in 0231.
+	const addedOrderKeys = `{"payment_mode":"card","collection_state":null,"buyer_email":null,"source":"storefront","locale":null,"cod_surcharge_minor":null,"cod_carrier":null,"collected_at":null,"creator_kind":"storefront","create_attempt_id":null,"order_revision":1}`
 	var expectedOrders string
 	if err := f.owner.QueryRow(ctx, `SELECT coalesce(jsonb_agg(
 	 value || $2::jsonb

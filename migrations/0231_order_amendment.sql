@@ -1,3 +1,7 @@
+-- Purpose: Add transactional pre-dispatch amendments and revision-checked fulfillment for home COD.
+-- Depends on: the existing checkout, inventory, identity and manual fulfillment authorities.
+-- Used by: internal/merchantorders amendments and shipment recording.
+
 DO $$
 DECLARE d text; permissions text[];
 BEGIN
@@ -11,9 +15,50 @@ BEGIN
   (SELECT string_agg(quote_literal(p),',') FROM unnest(permissions||ARRAY['orders:amend']) p));
 END $$;
 
+-- R03 admits explicit grants only. The owner/admin bundles otherwise expand with the live catalogue.
+CREATE OR REPLACE FUNCTION identity.staff_role_permissions(p_role text)
+RETURNS text[] LANGUAGE sql STABLE SET search_path=pg_catalog AS $$
+ SELECT CASE p_role
+  WHEN 'owner' THEN array_remove(identity.staff_permission_catalogue(),'orders:amend')
+  WHEN 'admin' THEN ARRAY(SELECT x FROM unnest(identity.staff_permission_catalogue()) x WHERE x NOT IN ('billing:manage','orders:amend'))
+  WHEN 'live_operator' THEN ARRAY['store:read','live:read','live:manage','catalog:read','orders:read','inventory:read']
+  WHEN 'fulfilment' THEN ARRAY['store:read','orders:read','fulfillment:write','orders:export','inventory:read','inventory:write','inventory:reserve']
+  WHEN 'viewer' THEN ARRAY(SELECT x FROM unnest(identity.staff_permission_catalogue()) x WHERE x LIKE '%:read')
+ END
+$$;
+COMMENT ON FUNCTION identity.staff_role_permissions(text) IS
+ 'Default store role bundles. orders:amend is explicit only (R03), and admin also excludes billing:manage.';
+
 ALTER TABLE checkout.orders ADD COLUMN order_revision bigint NOT NULL DEFAULT 1 CHECK(order_revision>0);
-GRANT UPDATE(order_revision,snapshot,total_minor) ON checkout.orders TO commerce_checkout_writer;
 GRANT SELECT(order_revision) ON checkout.orders TO commerce_auth;
+
+-- Only the amendment persistence helper can update frozen order contents.
+CREATE ROLE commerce_order_amendment_writer NOLOGIN NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION;
+GRANT USAGE ON SCHEMA checkout TO commerce_order_amendment_writer;
+GRANT SELECT(tenant_id,store_id,owner_id,id,order_revision), UPDATE(order_revision,snapshot,total_minor,updated_at)
+ ON checkout.orders TO commerce_order_amendment_writer;
+CREATE POLICY order_amendment_writer ON checkout.orders TO commerce_order_amendment_writer
+ USING (tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
+  AND store_id=nullif(current_setting('app.store_id',true),'')::uuid
+  AND owner_id=nullif(current_setting('app.buyer_id',true),'')::uuid)
+ WITH CHECK (tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
+  AND store_id=nullif(current_setting('app.store_id',true),'')::uuid
+  AND owner_id=nullif(current_setting('app.buyer_id',true),'')::uuid);
+CREATE FUNCTION checkout.persist_order_amendment(p_tenant uuid,p_store uuid,p_owner uuid,p_order uuid,
+ p_revision bigint,p_snapshot jsonb,p_total bigint)
+RETURNS boolean LANGUAGE sql VOLATILE SECURITY DEFINER SET search_path=pg_catalog AS $$
+ WITH modified AS (
+  UPDATE checkout.orders k SET order_revision=p_revision+1,snapshot=p_snapshot,total_minor=p_total,updated_at=clock_timestamp()
+  WHERE (k.tenant_id,k.store_id,k.owner_id,k.id,k.order_revision)=(p_tenant,p_store,p_owner,p_order,p_revision)
+  RETURNING 1
+ )
+ SELECT EXISTS(SELECT 1 FROM modified)
+$$;
+ALTER FUNCTION checkout.persist_order_amendment(uuid,uuid,uuid,uuid,bigint,jsonb,bigint) OWNER TO commerce_order_amendment_writer;
+REVOKE ALL ON FUNCTION checkout.persist_order_amendment(uuid,uuid,uuid,uuid,bigint,jsonb,bigint) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION checkout.persist_order_amendment(uuid,uuid,uuid,uuid,bigint,jsonb,bigint) TO commerce_checkout_writer;
+COMMENT ON FUNCTION checkout.persist_order_amendment(uuid,uuid,uuid,uuid,bigint,jsonb,bigint) IS
+ 'Internal scoped write of the prepared R03 snapshot under the existing order lock. Only the checkout definer may execute.';
 
 -- Like the order-referenced checkout destination (U08), revision snapshots retain the
 -- order's legal record. No runtime role can query the historical recipient payload.
@@ -223,11 +268,12 @@ ALTER FUNCTION inventory.amend_committed_allocation(checkout.orders,jsonb,text) 
 REVOKE ALL ON FUNCTION inventory.amend_committed_allocation(checkout.orders,jsonb,text) FROM PUBLIC;
 
 GRANT UPDATE(quantity) ON inventory.reservation_lines TO commerce_checkout_writer;
+-- Flat comparisons retain the same stored policy expression after pg_dump/pg_restore.
 CREATE POLICY amendment_reservation_lines ON inventory.reservation_lines FOR UPDATE TO commerce_checkout_writer
  USING(tenant_id=nullif(current_setting('app.tenant_id',true),'')::uuid
   AND store_id=nullif(current_setting('app.store_id',true),'')::uuid
-  AND EXISTS(SELECT 1 FROM inventory.reservations r WHERE (r.tenant_id,r.store_id,r.id)=
-   (reservation_lines.tenant_id,reservation_lines.store_id,reservation_lines.reservation_id)
+  AND EXISTS(SELECT 1 FROM inventory.reservations r WHERE r.tenant_id=reservation_lines.tenant_id
+   AND r.store_id=reservation_lines.store_id AND r.id=reservation_lines.reservation_id
    AND r.state='COMMITTED' AND r.buyer_owner_id=nullif(current_setting('app.buyer_id',true),'')::uuid));
 CREATE POLICY amendment_ledger ON inventory.ledger FOR INSERT TO commerce_checkout_writer
  WITH CHECK(operation='checkout.order_amendment' AND actor_kind='MERCHANT' AND kind='ALLOCATE'
@@ -236,7 +282,8 @@ CREATE POLICY amendment_ledger ON inventory.ledger FOR INSERT TO commerce_checko
   AND principal_id=nullif(current_setting('app.principal_id',true),'')::uuid
   AND EXISTS(SELECT 1 FROM checkout.orders o JOIN inventory.reservations r
    ON (r.tenant_id,r.store_id,r.id)=(o.tenant_id,o.store_id,o.id)
-   WHERE (o.tenant_id,o.store_id,o.id,o.owner_id)=(ledger.tenant_id,ledger.store_id,ledger.checkout_id,ledger.buyer_owner_id)
+   WHERE o.tenant_id=ledger.tenant_id AND o.store_id=ledger.store_id
+   AND o.id=ledger.checkout_id AND o.owner_id=ledger.buyer_owner_id
    AND o.commercial_state='AWAITING_COLLECTION' AND o.payment_mode='cash_on_delivery' AND o.collection_state='PENDING'
    AND o.fulfillment_state='MANUAL_UNASSIGNED' AND r.state='COMMITTED'));
 
@@ -395,9 +442,9 @@ BEGIN
    INSERT INTO checkout.order_revisions VALUES(tenant,p_store,o.owner_id,p_order,1,o.total_minor,o.snapshot);
   END IF;
   INSERT INTO checkout.order_revisions VALUES(tenant,p_store,o.owner_id,p_order,o.order_revision+1,total,next_snapshot);
-  UPDATE checkout.orders k SET order_revision=o.order_revision+1,snapshot=next_snapshot,
-   total_minor=total,updated_at=clock_timestamp()
-   WHERE k.tenant_id=tenant AND k.store_id=p_store AND k.owner_id=o.owner_id AND k.id=p_order;
+  IF NOT checkout.persist_order_amendment(tenant,p_store,o.owner_id,p_order,o.order_revision,next_snapshot,total) THEN
+   RAISE EXCEPTION 'version_changed' USING ERRCODE='PT409';
+  END IF;
   receipt:=jsonb_build_object('order_id',p_order,'order_revision',o.order_revision+1,'cod_collect_minor',total+o.cod_surcharge_minor);
   INSERT INTO ops.audit_events(tenant_id,store_id,principal_id,action) VALUES(tenant,p_store,principal,'checkout.order_amended');
   INSERT INTO ops.command_results(tenant_id,store_id,operation,idempotency_key,request_hash,response,principal_id)

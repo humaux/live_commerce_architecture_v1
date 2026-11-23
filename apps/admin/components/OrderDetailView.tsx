@@ -14,6 +14,8 @@ import type {Store} from "@/lib/model";
 import {OrderPointsPanel} from "./members/OrderPointsPanel";
 import {parityCopy, shortOrderNumber} from "./orders/parity-copy";
 import {OrderAmendment} from "./orders/OrderAmendment";
+import {orderRevisionCopy, OrderRevisionAmounts, OrderRevisionLines, OrderRevisionRecipient} from "./orders/OrderRevisionSummary";
+import revisionStyle from "./orders/order-revision.module.css";
 import {codCopy} from "@/lib/cod-copy";
 
 const signedCarriers:CarrierCode[]=["black_cat","hsinchu","chunghwa_post","sf_express","seven_eleven_cvs","familymart_cvs","hilife_cvs","okmart_cvs","other"];
@@ -33,6 +35,8 @@ export function OrderDetailView({detail,locale,c,sections,onBack,memberStore}:{m
   const [tick,setTick]=useState(0);
   const [uncertain,setUncertain]=useState(false);
   const [editingOrder,setEditingOrder]=useState(false);
+  const [savedRevision,setSavedRevision]=useState<number>();
+  const savedHeading=useRef<HTMLHeadingElement>(null);
   const pending=useRef<{key:string;body:string}|null>(null);
   useEffect(()=>{
     const active=new AbortController();
@@ -52,6 +56,13 @@ export function OrderDetailView({detail,locale,c,sections,onBack,memberStore}:{m
   const head=detail.shipment;
   const homeCOD=detail.payment_mode==="cash_on_delivery" && detail.destination.kind==="home";
   const orderRevision=homeCOD?detail.order_revision:undefined;
+  const saved=orderRevision!==undefined && orderRevision===savedRevision && eligible && !head;
+  useEffect(()=>{
+    if(saved) {
+      savedHeading.current?.focus({preventScroll:true});
+      window.scrollTo({top:0});
+    }
+  },[saved]);
   const carrierName=carrier==="other"?name.trim():p.carriers[carrier];
   const heading=stage==="carrier"?p.carrier:stage==="review"?p.review:head?p.saved:p.detail;
   async function review() {
@@ -80,21 +91,50 @@ export function OrderDetailView({detail,locale,c,sections,onBack,memberStore}:{m
       else{pending.current=null;setProblem(c.errors[result.code as keyof typeof c.errors]??c.sectionUnavailable);sections.onShipmentRefused?.(result.code);if(result.code==="version_changed"){setVersion(null);setReviewed(null);await sections.onChanged();setStage("record");}}
     } finally {setBusy(false);}
   }
+  if(saved) {
+    const revisionCopy=orderRevisionCopy[locale];
+    const shippingURL=new URLSearchParams({
+      store:sections.store,selected:detail.order_id,step:"preview",revision:String(orderRevision),
+    });
+    return <section data-testid="order-detail" aria-label={`${c.order} ${detail.order_id}`} className="signed-order-detail">
+      <header className="signed-orders-heading">
+        <h1 tabIndex={-1} ref={savedHeading}>{revisionCopy.saved}</h1>
+        <button type="button" data-testid="order-detail-back" onClick={onBack}>{p.back}</button>
+      </header>
+      <div className={`${revisionStyle.panel} ${revisionStyle.summary}`}>
+        <strong>{shortOrderNumber(detail.order_id)} · v{orderRevision}</strong>
+        <p>{revisionCopy.delivery} · {codCopy[locale].orderStates[detail.collection_state ?? ""]}</p>
+        <div className={revisionStyle.layout}>
+          <div>
+            <OrderRevisionLines items={detail.items} locale={locale} currency={detail.currency} />
+            <OrderRevisionRecipient locale={locale} address={{...detail.destination.home_address,
+              recipient_name:detail.destination.recipient_name,phone:detail.destination.phone}} />
+          </div>
+          <OrderRevisionAmounts locale={locale} currency={detail.currency} totals={detail.totals}
+            fee={detail.cod_surcharge_minor} due={detail.cod_collect_minor} />
+        </div>
+        <div className={revisionStyle.actions}>
+          <a className={revisionStyle.next} href={`/${locale}/orders/shipping?${shippingURL}`}>{revisionCopy.next}</a>
+        </div>
+        <p>{revisionCopy.stale}</p>
+      </div>
+    </section>;
+  }
   return <section data-testid="order-detail" aria-label={`${c.order} ${detail.order_id}`} className="signed-order-detail">
     <header className="signed-orders-heading"><h1>{heading}</h1><button type="button" data-testid="order-detail-back" onClick={()=>{if(stage!=="record"&&!uncertain)setStage("record");else onBack();}}>{p.back}</button></header>
     {stage==="carrier" ? <>
       <div className="signed-order-summary signed-order-carrier-identity"><strong>{shortOrderNumber(detail.order_id)}</strong></div>
       <div className="signed-order-panel signed-carriers">{signedCarriers.map(code=><button type="button" key={code} onClick={()=>{setCarrier(code);setStage("record");}}>{p.carriers[code]}</button>)}<p className="signed-order-note">{p.deliveryUnchanged}</p></div>
     </> : <>
-      <div className="signed-order-summary">
+      {!editingOrder && <div className="signed-order-summary">
         <strong>{shortOrderNumber(detail.order_id)}</strong>
         <p>{detail.items.map(item=>`${item.name} ×${item.quantity}`).join(" · ")} · {amount(locale,detail.currency,detail.total_minor)}</p>
         <div className="signed-order-state">{badge(detail.fulfillment_state,{...c,statuses:{...c.statuses,MANUAL_UNASSIGNED:p.tabs.ready_to_ship}})}{sections.parcelBadge&&<span data-testid={`parcel-badge-${detail.order_id}`}>{sections.parcelBadge}</span>}{blocked&&<span data-state={detail.work_state}>{p.reviewState}</span>}</div>
         {homeCOD && detail.cod_collect_minor!==null && <p>{codCopy[locale].collectAmount} {amount(locale,detail.currency,detail.cod_collect_minor)}</p>}
-      </div>
+      </div>}
       {stage==="record" && orderRevision && eligible && !head && !parcel && memberStore.permissions?.includes("orders:amend") &&
         <OrderAmendment order={detail} locale={locale} sections={sections}
-          onEditing={setEditingOrder} canAdd={["catalog:read","inventory:reserve"].every(permission=>memberStore.permissions?.includes(permission))}/>}
+          onEditing={setEditingOrder} onSaved={setSavedRevision} canAdd={["catalog:read","inventory:reserve"].every(permission=>memberStore.permissions?.includes(permission))}/>}
       {!editingOrder && (blocked ? <p className="signed-order-panel" role="status">{p.blocked}</p> : head ? <div className="signed-order-panel" data-testid="signed-shipment-record">
         <p>{head.carrier_name??p.carriers[head.carrier_code]}</p><p>{p.tracking}{head.tracking_number}</p>
       </div> : eligible && sections.actions.fulfillment_write && !parcel ? stage==="review" ? <div className="signed-order-panel">
@@ -107,10 +147,10 @@ export function OrderDetailView({detail,locale,c,sections,onBack,memberStore}:{m
       </div> : <p className="signed-order-panel">{parcel??c.shipNotEligible}</p>)}
       {head&&<><p className="signed-order-note">{p.handover}</p><button className="signed-order-return" type="button" onClick={onBack}>{p.returnOrders}</button></>}
       {problem&&<div role="alert"><p>{problem}</p>{!uncertain&&<button type="button" onClick={()=>{setProblem("");setTick(value=>value+1);void sections.onChanged();}}>{c.retry}</button>}</div>}
-      <OrderPointsPanel key={`${sections.store}|${sections.boundary}|${detail.order_id}|${memberStore.permissions?.join(",")??""}`} locale={locale} store={memberStore} order={detail.order_id} manual={detail.source==="merchant_manual"} scope={`${sections.store}|${detail.order_id}`} boundary={sections.boundary}/>
+      {!editingOrder && <><OrderPointsPanel key={`${sections.store}|${sections.boundary}|${detail.order_id}|${memberStore.permissions?.join(",")??""}`} locale={locale} store={memberStore} order={detail.order_id} manual={detail.source==="merchant_manual"} scope={`${sections.store}|${detail.order_id}`} boundary={sections.boundary}/>
       <details className="signed-order-advanced" data-testid="order-more-details"><summary>{p.facts}</summary>
         {detailPanel(detail,locale,c,{...sections,orderNumber:shortOrderNumber(detail.order_id),onBack:undefined})}
-      </details>
+      </details></>}
       {!editingOrder && eligible && sections.actions.fulfillment_write && !head && !parcel && <footer className="signed-order-footer">
         {stage==="review"?<><button type="button" className="primary" disabled={busy||reviewed!==version||(!uncertain&&reviewedOrder!==orderRevision)} onClick={()=>void confirm()}>{busy?c.shipSending:uncertain?c.shipRetry:p.confirm}</button><button type="button" disabled={busy||uncertain} onClick={()=>setStage("record")}>{p.edit}</button></>:
         <button type="button" className="primary" disabled={!valid||version===null||busy} onClick={()=>void review()}>{p.record}</button>}

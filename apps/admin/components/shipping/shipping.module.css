@@ -107,3 +107,29 @@
   .slip .printOnly { display: flex; }
   .slip p.printOnly { display: block; white-space: pre-line; }
 }
+.revisedSlip { max-width: none; margin-top: 0; border: 0; padding: 0; }
+.slip .revisedPrintFacts { display: none; }
+@media print {
+  .slip .revisedPrintFacts { display: grid; }
+}
+.revisedOrder { max-width: 800px; }
+.slip .revisedNotice {
+  margin: 12px 0 0;
+  border-radius: 6px;
+  background: var(--ui-warning-soft);
+  color: var(--ui-warning);
+}
+.revisedTask:has([data-r03-confirmation]) :is(.heading, .slip, .actions) { display: none; }
+.revisedTask:has([data-r03-confirmation]) .viewport { inset-block: 24px; }
+.revisedOrder:has([data-r03-confirmation]), .revisedOrder:has([data-r03-confirmation]) [data-testid="order-shipment"] {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+@media (max-width: 760px) {
+  .task.revisedTask:has(.actions) .viewport { bottom: 92px; }
+  .task.revisedTask:has([data-r03-confirmation]) .viewport { inset-block: 16px; }
+}
+@media print {
+  .slip > strong.printOnly { display: block; }
+}

@@ -17,6 +17,8 @@ import { csrfCookie, sessionBoundary } from '@/lib/settings-client';
 import { codCopy } from '@/lib/cod-copy';
 import { OrderShipment } from '../OrderShipment';
 import { amount } from '../OrderDetailPanel';
+import { orderRevisionCopy, OrderRevisionAmounts, OrderRevisionLines, OrderRevisionRecipient } from '../orders/OrderRevisionSummary';
+import revisionStyle from '../orders/order-revision.module.css';
 import { parityCopy } from '../orders/parity-copy';
 import { ShippingShell } from './ShippingShell';
 import s from './shipping.module.css';
@@ -28,11 +30,12 @@ const isHomeCOD = (order: OrderDetail) => order.payment_mode === 'cash_on_delive
 // Display-only short number; full server identities remain in links, scoped reads and URL selection.
 const shortNumber = (id: string, rows: OrderSummaryV2[]) => `#${(rows.find(row => row.order_id === id)?.order_number ?? id.replaceAll('-', '')).slice(-5).toUpperCase()}`;
 
-export function ShippingCenter({ locale, store, initialIDs, initialStep, initialCursor, initialError }: {
+export function ShippingCenter({ locale, store, initialIDs, initialStep, initialCursor, initialError, initialRevision }: {
   locale: Locale; store: Store | null; initialIDs: string[]; initialStep: ShippingStep;
-  initialCursor: string; initialError: OrderReadCode | null;
+  initialCursor: string; initialError: OrderReadCode | null; initialRevision?: number;
 }) {
   const c = shippingCopy[locale];
+  const revisionCopy = orderRevisionCopy[locale];
   const [ids, setIDs] = useState(initialIDs), [step, setStep] = useState(initialStep);
   const [cursor, setCursor] = useState(initialCursor), [retry, setRetry] = useState(0);
   const [data, setData] = useState<Data | null>(null);
@@ -43,6 +46,8 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
   const [documentBusy, setDocumentBusy] = useState(false);
   const [handingOffPrint, setHandingOffPrint] = useState(false);
   const [documentChanged, setDocumentChanged] = useState(false);
+  const [revision, setRevision] = useState(initialRevision);
+  const [enteringTracking, setEnteringTracking] = useState(false);
 
   useEffect(() => {
     const abort = new AbortController();
@@ -56,6 +61,8 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
       setDocuments([]);
       setIDs([]);
       setStep('select');
+      setRevision(undefined);
+      setEnteringTracking(false);
       setExpired(true);
       setError('signed-out');
     };
@@ -64,7 +71,7 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
       concealed = true;
       abort.abort();
       // Clear the rendered recipient snapshot before the browser captures a bfcache entry.
-      flushSync(() => setData(null));
+      flushSync(() => { setData(null); setEnteringTracking(false); });
     };
     const reveal = () => {
       if (!current && !concealed) return;
@@ -111,8 +118,27 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
           const [actions, boundary] = await Promise.all([
             details.some(isHomeCOD) ? readOrderActions(authenticated.id, abort.signal) : Promise.resolve(null), sessionBoundary(sessionCookie),
           ]);
-          if (current && csrfCookie() === sessionCookie) setData({ store: authenticated, rows, details, next: page.next_cursor, cursor,
-            canShip: actions?.fulfillment_write === true, boundary });
+          let pinnedDocument: OrderDetail | undefined;
+          let pinnedChanged = false;
+          if (revision !== undefined) {
+            const order = details.find(row => row.order_id === ids[0]);
+            pinnedChanged = !order || !isHomeCOD(order);
+            if (order && isHomeCOD(order) && !(order.shipment && order.order_revision === revision)) {
+              try { pinnedDocument = await readOrderDocument(authenticated.id, order.order_id, revision, abort.signal); }
+              catch (failure) {
+                if (failure instanceof Error && failure.message === 'version_changed') pinnedChanged = true;
+                else throw failure;
+              }
+            }
+          }
+          if (current && csrfCookie() === sessionCookie) {
+            if (revision !== undefined) {
+              setDocuments(pinnedDocument ? [pinnedDocument] : []);
+              setDocumentChanged(pinnedChanged);
+            }
+            setData({ store: authenticated, rows, details, next: page.next_cursor, cursor,
+              canShip: actions?.fulfillment_write === true, boundary });
+          }
         } catch (failure) {
           if (!current) return;
           abort.abort();
@@ -140,13 +166,16 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
   useEffect(() => {
     const restore = () => {
       const query = new URLSearchParams(window.location.search);
-      if (query.get('store') !== store?.id) { window.location.reload(); return; }
+      if (query.get('store') !== store?.id || query.has('revision')) { window.location.reload(); return; }
       const selected = query.get('selected')?.split(',') ?? [], nextStep = query.get('step') ?? 'select';
       const nextCursor = query.get('cursor') ?? '';
       if (selected.length > 100 || selected.some(id => !canonicalUUID.test(id)) ||
         new Set(selected).size !== selected.length || !['select', 'review', 'preview', 'done'].includes(nextStep) ||
         (nextCursor && !canonicalCursor.test(nextCursor))) { window.location.reload(); return; }
       setIDs(selected);
+      setRevision(undefined);
+      setEnteringTracking(false);
+      setDocumentChanged(false);
       setStep(nextStep as ShippingStep);
       setDocuments([]);
       setCursor(nextCursor);
@@ -163,6 +192,9 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
     if (selected.length) query.set('selected', selected.join(','));
     if (next !== 'select') query.set('step', next);
     if (nextCursor) query.set('cursor', nextCursor);
+    if (revision !== undefined && (next === 'preview' || next === 'done')) query.set('revision', String(revision));
+    else setRevision(undefined);
+    setEnteringTracking(false);
     window.history[replace ? 'replaceState' : 'pushState'](null, '', `/${locale}/orders/shipping?${query}`);
     setIDs(selected);
     setStep(next);
@@ -174,6 +206,11 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
   const active = data?.cursor === cursor ? data : null;
   const selected = ids.map(id => active?.details.find(order => order.order_id === id)).filter((order): order is OrderDetail => !!order);
   const complete = !!active && ids.length > 0 && selected.length === ids.length;
+  const revised = step === 'preview' && selected.length === 1 && isHomeCOD(selected[0]) &&
+    (selected[0].order_revision ?? 0) > 1 ? selected[0] : undefined;
+  // An amendment is refused once any shipment head exists. A persisted head belongs to the current order revision.
+  const revisedReceipt = revised?.shipment ? revised : undefined;
+  const pinnedStale = revision !== undefined && (documentChanged || !!active && selected[0]?.order_revision !== revision);
   const controlled = selected.filter(isHomeCOD);
   const validDocuments = controlled.every(order => documents.some(doc => doc.order_id === order.order_id &&
     doc.order_revision === order.order_revision));
@@ -185,7 +222,9 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
   const number = (id: string) => shortNumber(id, active?.rows ?? []);
   const ordersHref = `/${locale}/orders${store ? `?store=${store.id}` : ''}`;
   const detailHref = (id: string) => `${ordersHref}&order=${id}`;
-  const title = center ? c.center : step === 'review' ? c.review : step === 'preview' ? c.preview : c.print;
+  const title = !pinnedStale && revisedReceipt ? revisionCopy.recorded :
+    !pinnedStale && revised && validDocuments ? revisionCopy.preview.replace('{n}', String(revised.order_revision)) :
+    center ? c.center : step === 'review' ? c.review : step === 'preview' ? c.preview : c.print;
   const summary = (order: OrderDetail) => `${number(order.order_id)} · ${order.items.map(item => `${item.name.replace(/\s*·\s*/g, ' · ')} × ${item.quantity}`).join(' · ')}`;
   const currentStore = active?.store ?? (expired || error === 'signed-out' ? null : store);
   const demo = !!active?.rows.length && active.rows.every(row => row.test_mode);
@@ -231,12 +270,25 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
     }
   }
 
+  async function refreshShipment(orderID: string) {
+    if (!active) return false;
+    try {
+      const latest = await readOrderDetail(active.store.id, orderID, AbortSignal.timeout(8000));
+      if (await sessionBoundary(csrfCookie()) !== active.boundary) return false;
+      setData(previous => previous && {...previous, details: previous.details.map(row => row.order_id === latest.order_id ? latest : row)});
+      setDocuments(previous => previous.flatMap(row => row.order_id !== latest.order_id ? [row] :
+        row.order_revision === latest.order_revision ? [latest] : []));
+      return true;
+    } catch { return false; }
+  }
+
   return <ShippingShell locale={locale} store={currentStore} demo={demo}>
     <title>{title}</title>
-    <main className={s.task} data-testid="shipping-center">
+    <main className={`${s.task} ${revised ? s.revisedTask : ''}`} data-testid="shipping-center">
       <div className={`${s.heading} ${s.screenOnly}`}>
         <h1>{title}</h1>
         {center ? <a className={s.control} href={ordersHref}>{c.backOrders}</a> :
+          revised || pinnedStale ? <a className={s.control} href={detailHref(ids[0])}>{revisionCopy.original}</a> :
           step !== 'done' && <button className={s.control} onClick={() => navigate('select')}>{c.back}</button>}
       </div>
       {center && <>
@@ -276,7 +328,9 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
             {cursor && <button className={s.control} onClick={() => navigate('select', ids, '')}>{c.firstPage}</button>}
             {active.next && <button className={s.control} onClick={() => navigate('select', ids, active.next)}>{c.nextPage}</button>}
           </nav>}
-        </> : !complete ? <div role="alert"><p>{c.selectionUnavailable}</p>
+        </> : pinnedStale ? <div className={s.error} role="alert">
+          <p>{staleCopy}</p><a className={s.control} href={detailHref(ids[0])}>{c.backOrders}</a>
+        </div> : !complete ? <div role="alert"><p>{c.selectionUnavailable}</p>
           <button className={s.control} onClick={() => navigate('select', [])}>{c.back}</button>
         </div> : step === 'done' ? <section className={s.result}>
           <h2>{c.done}</h2><p className={s.notice}>{c.outcome}</p>
@@ -285,20 +339,47 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
             <button className={s.control} onClick={() => navigate('preview')}>{c.backPreview}</button>
             <button className={s.control} onClick={() => navigate('select')}>{c.backCenter}</button>
           </div>
+        </section> : revisedReceipt ? <section className={`${revisionStyle.panel} ${revisionStyle.summary} ${s.screenOnly}`}>
+          <strong>{number(revisedReceipt.order_id)} · v{revisedReceipt.order_revision}</strong>
+          <p>{parityCopy[locale].handover}</p>
+          <p>{codCopy[locale].orderStates[revisedReceipt.collection_state ?? '']}</p>
+          <div className={revisionStyle.layout}>
+            <OrderShipment store={active.store.id} detail={revisedReceipt} orderNumber={number(revisedReceipt.order_id)}
+              locale={locale} c={ordersCopy[locale]} canWrite={active.canShip} boundary={active.boundary}
+              onChanged={() => refreshShipment(revisedReceipt.order_id)} />
+            <OrderRevisionAmounts locale={locale} currency={revisedReceipt.currency} totals={revisedReceipt.totals}
+              fee={revisedReceipt.cod_surcharge_minor}
+              due={revisedReceipt.collection_state === 'PENDING' ? revisedReceipt.cod_collect_minor : null} />
+          </div>
+          <div className={revisionStyle.actions}>
+            <a className={revisionStyle.next} href={ordersHref}>{c.backOrders}</a>
+          </div>
         </section> : <>
-          <h2 className={`${s.count} ${s.screenOnly}`}>{count}</h2>
+          {!revised && <h2 className={`${s.count} ${s.screenOnly}`}>{count}</h2>}
           <div className={s.selectedOrders} data-testid="shipping-selected-orders">
             {selected.map(current => {
               const controlled = isHomeCOD(current);
               const order = controlled && step === 'preview' ? documents.find(doc => doc.order_id === current.order_id &&
                 doc.order_revision === current.order_revision) : current;
               if (!order) return null;
-              return <article className={s.selectedOrder} key={order.order_id}>
-              <strong className={s.screenOnly}>{number(order.order_id)}</strong>
-              <p className={s.screenOnly}>{itemsText(order)}</p>
-              {step === 'preview' && <section className={s.slip} data-testid="shipping-packing-slip" data-print-blocked={controlled && !handingOffPrint}>
-                <strong>{active.store.name}</strong><h3>{c.order} {number(order.order_id)}</h3>
-                <dl><div><dt>{c.recipient}</dt><dd>{order.destination.recipient_name}</dd></div>
+              return <article className={`${s.selectedOrder} ${revised ? s.revisedOrder : ''}`} key={order.order_id}>
+              {!revised && <><strong className={s.screenOnly}>{number(order.order_id)}</strong>
+              <p className={s.screenOnly}>{itemsText(order)}</p></>}
+              {step === 'preview' && <section className={`${s.slip} ${revised ? s.revisedSlip : ''}`} data-testid="shipping-packing-slip" data-print-blocked={controlled && !handingOffPrint}>
+                <strong className={revised ? s.printOnly : undefined}>{active.store.name}</strong><h3>{c.order} {number(order.order_id)}{revised && <span className={s.screenOnly}> · v{order.order_revision}</span>}</h3>
+                {revised && <div className={s.screenOnly}>
+                  <p className={`${s.notice} ${s.revisedNotice}`}>{revisionCopy.stale}</p>
+                  <div className={revisionStyle.layout}>
+                    <div>
+                      <OrderRevisionLines items={order.items} locale={locale} currency={order.currency} />
+                      <OrderRevisionRecipient locale={locale} address={{...order.destination.home_address,
+                        recipient_name: order.destination.recipient_name, phone: order.destination.phone}} />
+                    </div>
+                    <OrderRevisionAmounts locale={locale} currency={order.currency} totals={order.totals}
+                      fee={order.cod_surcharge_minor} due={order.cod_collect_minor} />
+                  </div>
+                </div>}
+                <dl className={revised ? s.revisedPrintFacts : undefined}><div><dt>{c.recipient}</dt><dd>{order.destination.recipient_name}</dd></div>
                   <div><dt>{c.delivery}</dt><dd>{deliveryLabel(order)}</dd></div>
                   {controlled && <div><dt>v{order.order_revision}</dt><dd>{codCopy[locale].collectAmount} {amount(locale,order.currency,order.cod_collect_minor ?? 0)}</dd></div>}
                   <div className={s.printOnly}><dt>{c.address}</dt><dd>{order.destination.pickup ?
@@ -308,27 +389,20 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
                       order.destination.country].filter(Boolean).join(' ')}</dd></div>
                   <div className={s.printOnly}><dt>{c.phone}</dt><dd>{order.destination.phone}</dd></div>
                 </dl>
-                <p className={s.printOnly}>{itemsText(order)}</p><small className={s.screenOnly}>{c.source}</small>
-                {controlled && (order.order_revision ?? 0)>1 && <p className={s.screenOnly}>{staleCopy}</p>}
+                <p className={s.printOnly}>{itemsText(order)}</p>{!revised && <small className={s.screenOnly}>{c.source}</small>}
+                {!revised && controlled && (order.order_revision ?? 0) > 1 && <p className={s.screenOnly}>{staleCopy}</p>}
               </section>}
-              {step === 'preview' && controlled && active.canShip && <div className={s.screenOnly}>
+              {step === 'preview' && controlled && active.canShip && (!revised || enteringTracking) && <div className={s.screenOnly}>
                 <OrderShipment store={active.store.id} detail={order.work_state==='NONE' ? {...order,work_state:'READY'} : order} orderNumber={number(order.order_id)}
-                  locale={locale} c={ordersCopy[locale]} canWrite={active.canShip} boundary={active.boundary} onChanged={async () => {
-                    try {
-                      const latest = await readOrderDetail(active.store.id, order.order_id, AbortSignal.timeout(8000));
-                      setData(previous => previous && {...previous,details:previous.details.map(row=>row.order_id===latest.order_id?latest:row)});
-                      setDocuments(previous => previous.flatMap(row=>row.order_id!==latest.order_id ? [row] :
-                        row.order_revision===latest.order_revision ? [latest] : []));
-                      return true;
-                    } catch {return false;}
-                  }}/>
+                  locale={locale} c={ordersCopy[locale]} canWrite={active.canShip} boundary={active.boundary}
+                  inlineReview={!!revised} onChanged={() => refreshShipment(order.order_id)}/>
                 {order.shipment && <p>{parityCopy[locale].handover} · {codCopy[locale].orderStates[order.collection_state ?? '']}</p>}
               </div>}
             </article>;
             })}
           </div>
           {(documentChanged || step === 'preview' && !validDocuments) && <p role="alert">{staleCopy}</p>}
-          <p className={`${s.notice} ${s.screenOnly}`}>{c.boundary}</p>
+          {!revised && <p className={`${s.notice} ${s.screenOnly}`}>{c.boundary}</p>}
           {printError && <p role="alert">{c.printFailed}</p>}
         </>}
       </div>
@@ -336,12 +410,17 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
         <strong>{count}</strong><span>{selected.length ? selected.map(summary).join('；') : c.empty}</span>
         <button className={`${s.control} ${s.primary}`} disabled={!complete || !!error} onClick={() => navigate('review')}>{c.view}</button>
         <button className={s.control} onClick={() => navigate('select', [], cursor, true)}>{c.cancel}</button>
-      </footer> : complete && !error && step !== 'done' && <footer className={`${s.actions} ${s.screenOnly}`}>
+      </footer> : complete && !error && !pinnedStale && !revisedReceipt && step !== 'done' && <footer className={`${s.actions} ${s.screenOnly}`}>
+        {revised && validDocuments && !dispatched ? <>
+          {active?.canShip && !enteringTracking && <button className={`${s.control} ${s.primary}`} onClick={() => setEnteringTracking(true)}>{revisionCopy.fill}</button>}
+          <button className={s.control} disabled={documentBusy} onClick={() => void printDocuments()}>{c.print}</button>
+        </> : <>
         <button className={s.control} onClick={() => navigate('select')}>{c.cancel}</button>
         <button className={s.control} onClick={() => navigate('select')}>{c.edit}</button>
         {step === 'review' ? <button className={`${s.control} ${s.primary}`} disabled={documentBusy} onClick={() => void prepareDocuments()}>{c.confirm}</button> :
           validDocuments && !dispatched ? <button className={`${s.control} ${s.primary}`} disabled={documentBusy} onClick={() => void printDocuments()}>{c.print}</button> :
             !dispatched && <button className={s.control} onClick={() => navigate('review')}>{c.review}</button>}
+        </>}
       </footer>}
     </main>
   </ShippingShell>;

@@ -1,3 +1,7 @@
+// Purpose: Prepare and persist home COD revisions and authorize versioned shipping documents.
+// Depends on: platform store scope and the 0231 checkout and fulfillment definers.
+// Used by: internal/httpapi/order_amendment.go.
+
 package merchantorders
 
 import (

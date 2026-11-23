@@ -117,6 +117,7 @@ export function OrderShipment({
   onChanged,
   parcelBlock,
   onRefused,
+  inlineReview = false,
 }: {
   store: string;
   detail: OrderDetail;
@@ -131,6 +132,7 @@ export function OrderShipment({
   parcelBlock?: string;
   // Called with the refusal code of a failed submit so the page can re-read the parcel state on in_parcel_group.
   onRefused?: (code: string) => void;
+  inlineReview?: boolean;
 }) {
   const orderID = detail.order_id;
   const head: Shipment | null = detail.shipment;
@@ -154,6 +156,7 @@ export function OrderShipment({
   const homeCOD = detail.payment_mode === "cash_on_delivery" && detail.destination.kind === "home";
   const orderRevision = homeCOD ? detail.order_revision : undefined;
   // One key per submission; only a byte-identical retry after an unknown outcome reuses it.
+  const submitButton = useRef<HTMLButtonElement>(null);
   const pending = useRef<{ key: string; body: string } | null>(null);
 
   useEffect(() => {
@@ -305,20 +308,25 @@ export function OrderShipment({
       {problem && <p className="orders-bad" role="alert" data-testid="shipment-problem">{problem}</p>}
       <div className="orders-form-actions">
         {mode !== "record" && !uncertain && <button type="button" onClick={() => choose("record")}>{c.cancel}</button>}
-        <button type="submit" className="primary" data-testid="shipment-submit" disabled={busy}>
+        <button type="submit" className="primary" ref={submitButton} data-testid="shipment-submit" disabled={busy}>
           {busy ? c.shipSending : uncertain ? c.shipRetry : mode === "void" ? c.shipVoidConfirm : mode === "correct" ? c.shipCorrectSave : c.shipMark}
         </button>
       </div>
     </form>
   );
 
+  const reviewOpen = reviewVersion === expectedVersion && reviewOrder === orderRevision && canWrite && !head && eligible && !parcelBlock;
   return (
     <section className="orders-section" data-testid="order-shipment" aria-label={c.shipTitle}>
-      <h2>{c.shipTitle}</h2>
-      <ShipmentConfirm open={reviewVersion === expectedVersion && reviewOrder === orderRevision && canWrite && !head && eligible && !parcelBlock}
+      <ShipmentConfirm open={reviewOpen} inline={inlineReview}
         order={detail} orderNumber={orderNumber} carrier={carrier ? carrierLabel(c, { carrier_code: carrier, carrier_name: carrierName.trim() || null }) : ""}
-        tracking={tracking.trim()} locale={locale} c={c} onCancel={() => setReviewVersion(null)}
+        tracking={tracking.trim()} locale={locale} c={c} onCancel={() => {
+          setReviewVersion(null);
+          if (inlineReview) requestAnimationFrame(() => submitButton.current?.focus());
+        }}
         onConfirm={() => { if (reviewVersion !== expectedVersion || reviewOrder !== orderRevision) return; setReviewVersion(null); void send(); }} />
+      {(!inlineReview || !reviewOpen) && <>
+      <h2>{c.shipTitle}</h2>
       {status === "error" && (
         <div role="status">
           <p>{c.sectionUnavailable}</p>
@@ -382,6 +390,7 @@ export function OrderShipment({
           )}
         </details>
       )}
+      </>}
     </section>
   );
 }

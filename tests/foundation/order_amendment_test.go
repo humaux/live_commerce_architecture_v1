@@ -96,6 +96,18 @@ func TestHomeCODAmendment(t *testing.T) {
 	address := `{"expected_revision":1,"recipient":{"line1":"Synthetic updated address"}}`
 	sku := e.p.stock.skus[0].ID
 	initialBalance := e.tppBalance(sku)
+	t.Run("explicit permission and private persistence", func(t *testing.T) {
+		f := e.p.f
+		if !srsBoolPG(t, f, `SELECT NOT EXISTS (
+		        SELECT 1 FROM unnest(ARRAY['owner','admin','viewer','fulfilment','live_operator']) AS r
+		        WHERE 'orders:amend'=ANY(identity.staff_role_permissions(r)))
+		  AND NOT has_column_privilege('commerce_checkout_writer','checkout.orders','snapshot','UPDATE')
+		  AND NOT pg_has_role('commerce_checkout_writer','commerce_order_amendment_writer','MEMBER')
+		  AND NOT has_function_privilege('commerce_runtime','checkout.persist_order_amendment(uuid,uuid,uuid,uuid,bigint,jsonb,bigint)','EXECUTE')`) {
+			t.Fatal("amendment must be explicitly granted and the frozen order write must remain internal")
+		}
+	})
+
 	t.Run("review through original order resource", func(t *testing.T) {
 		status, _, raw := e.mcall(e.token(), http.MethodPost, path+"/amendment/review", "", address)
 		if status != http.StatusOK {

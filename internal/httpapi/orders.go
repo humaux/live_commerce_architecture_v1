@@ -1,3 +1,7 @@
+// Purpose: Expose the permission-scoped merchant order reads.
+// Depends on: merchantorders projections and platform store scope.
+// Used by: the merchant API handler and admin BFF.
+
 package httpapi
 
 import (

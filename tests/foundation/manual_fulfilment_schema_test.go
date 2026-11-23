@@ -103,6 +103,7 @@ func TestManualFulfilmentMF02Schema(t *testing.T) {
 		}
 		for _, f := range []fn{
 			{"fulfillment.record_manual_shipment(bytea,uuid,uuid,text,bytea,bigint,text,text,text,text,text,text,text)", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime"}},
+			{"fulfillment.record_manual_shipment(bytea,uuid,uuid,text,bytea,bigint,text,text,text,text,text,text,text,bigint)", "commerce_checkout_writer", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy, "commerce_checkout_runtime"}},
 			{"identity.read_merchant_orders(bytea,uuid,uuid,integer,timestamptz,uuid,text)", "commerce_auth", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy}},
 			{"fulfillment.read_manual_shipment_history(bytea,uuid,uuid)", "commerce_auth", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy}},
 			{"identity.export_unshipped_orders(bytea,uuid,integer)", "commerce_auth", []string{"commerce_runtime"}, []string{waPayment, waLive, waExpiry, waAds, waClaims, waLegacy}},
