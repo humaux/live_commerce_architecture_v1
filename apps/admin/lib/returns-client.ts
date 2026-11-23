@@ -7,8 +7,8 @@
 // Invariants: reads parse the frozen DTOs (a drifted answer is "unavailable", never rendered); writes never trust
 //   their own response body — the caller re-GETs; one Idempotency-Key per distinct body, reused only for a
 //   byte-identical retry after an unknown outcome (§4). Status: MOCK evidence (no provider involved).
-import { read, type WriteResult } from "./orders-client";
-import { get as guardedGet } from "./customers-client";
+import { OrderReadError, read, readOrderDetail, type WriteResult } from "./orders-client";
+import { get as guardedGet, ReadError } from "./customers-client";
 import { writeSettings } from "./settings-client";
 import {
   parseBuyerReturnRequest, parseBuyerReturnRequests, parseRefundGaps, parseRmaList, type RefundGap, type Rma, type RmaState,
@@ -32,6 +32,16 @@ export const readBuyerReturnRequests = (store: string, signal: AbortSignal) =>
   guardedGet(`/api/stores/${store}/return-requests`, parseBuyerReturnRequests, signal);
 export const readBuyerReturnRequest = (store: string, id: string, signal: AbortSignal) =>
   guardedGet(`/api/stores/${store}/return-requests/${id}`, (value) => parseBuyerReturnRequest(value, id), signal);
+
+export async function readReturnOrderLines(store: string, orderId: string, signal: AbortSignal) {
+  try {
+    const { items } = await readOrderDetail(store, orderId, signal);
+    return items.map(({ sku_id, name, code, quantity }) => ({ sku_id, name, code, quantity }));
+  } catch (error) {
+    if (error instanceof OrderReadError) throw new ReadError(error.code);
+    throw error;
+  }
+}
 
 async function write(store: string, resource: string, key: string, body: string, boundary: string): Promise<WriteResult> {
   try {

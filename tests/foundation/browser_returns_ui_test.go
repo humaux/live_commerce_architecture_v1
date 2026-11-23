@@ -172,6 +172,10 @@ func bruBuyerRequests(t *testing.T) {
 		st, out := e.hcodSettings(0, true, 20000, 0, "black_cat")
 		rtExpect(t, "R02 enable synthetic COD", st, out, 200, "")
 	}
+	const productName = "帆布通勤提袋"
+	const skuCode = "TOTE-NATURAL"
+	mustExec(t, beta.p.f.owner, "UPDATE catalog.products SET name=$2 WHERE id=$1", beta.p.stock.product.ID, productName)
+	mustExec(t, beta.p.f.owner, "UPDATE catalog.skus SET code=$2 WHERE id=$1", beta.p.stock.skus[0].ID, skuCode)
 	buyerOrder := func(e *tcvEnv) (*tcvBuyer, string) {
 		b := e.newBuyer()
 		order, err := e.hcodPlace(b)
@@ -206,19 +210,21 @@ func bruBuyerRequests(t *testing.T) {
 		RejectionReason *string `json:"rejection_reason"`
 	}
 	sku, warehouse := beta.rtSKU()
-	create := func() (*tcvBuyer, application) {
+	create := func(note string) (*tcvBuyer, application) {
 		b, order := buyerOrder(beta)
 		res := beta.bh.request(t, "POST", "/v1/buyer/orders/"+order+"/return-requests", b.cap.Token, t04Key("r02-damage"),
-			map[string]any{"reason": "damaged", "note": "R02 buyer request witness", "lines": []any{map[string]any{"sku_id": sku, "warehouse_id": warehouse, "quantity": 1}}}, nil)
+			map[string]any{"reason": "damaged", "note": note, "lines": []any{map[string]any{"sku_id": sku, "warehouse_id": warehouse, "quantity": 1}}}, nil)
 		out := bhRead[application](t, res, 201)
 		if out.ID == "" || out.Number == "" || out.Order != order || out.Status != "requested" || out.Version != 1 || out.ReturnID != nil {
 			t.Fatal("R02 buyer request needs an open request with no RMA")
 		}
 		return b, out
 	}
-	approveBuyer, approve := create()
-	rejectBuyer, reject := create()
-	withdrawBuyer, withdraw := create()
+	const approveNote = "拆封後發現提帶有一道裂口，請協助確認。"
+	const rejectNote = "提袋到貨時布面有磨痕，想確認能否退貨。"
+	approveBuyer, approve := create(approveNote)
+	rejectBuyer, reject := create(rejectNote)
+	withdrawBuyer, withdraw := create("已確認商品狀況，先撤回申請。")
 	withdrawPath := "/v1/buyer/return-requests/" + withdraw.ID
 	withdrawn := bhRead[application](t, beta.bh.request(t, "POST", withdrawPath+"/withdraw", withdrawBuyer.cap.Token,
 		t04Key("r02-withdraw"), map[string]any{"expected_version": 1}, nil), 200)
@@ -305,6 +311,8 @@ func bruBuyerRequests(t *testing.T) {
 			"defaultStore": alpha.store(), "nonDefaultStore": beta.store(), "outside": external,
 			"defaultRma": rmaA, "nonDefaultRma": rmaB, "buyerRequestNumber": approve.Number, "buyerRequestId": approve.ID,
 			"rejectRequestId": reject.ID, "withdrawnRequestId": withdraw.ID, "rejectReason": rejectReason,
+			"approveOrder": approve.Order, "rejectOrder": reject.Order, "approveNote": approveNote, "rejectNote": rejectNote,
+			"productName": productName, "skuCode": skuCode,
 		}),
 		"LC_BROWSER_RETURN_REQUESTS_READ_ONLY": readOnly,
 	})

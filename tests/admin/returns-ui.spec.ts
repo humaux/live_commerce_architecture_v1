@@ -267,7 +267,7 @@ test("W3-U5 returns page: RMA list, state filter links and the refund-gap row su
   await page.goto(new URL(`/zh-TW/returns?store=${store}`, origin).toString());
   await expect(page.getByTestId("returns-page")).toBeVisible();
   // Signed after-sales home opens requests explicitly; retain the same list/filter/gap persistence assertions.
-  await page.getByRole("button", { name: "查看售後申請", exact: true }).click();
+  await page.getByRole("button", { name: "查看退貨單", exact: true }).click();
   await expect(page.getByTestId("returns-list")).toBeVisible();
   // the RMAs from the flows above are listed, newest first
   await expect(page.locator('[data-testid^="returns-row-"]').first()).toBeVisible();
@@ -337,17 +337,18 @@ if (applicationFixture) {
       const u = new URL(url, origin);
       return { path: u.pathname, store: alias(u.searchParams.get("store")), view: u.searchParams.get("view") };
     };
-    const layouts = [{ name: "desktop", width: 1586, height: 992 }, { name: "mobile", width: 390, height: 844 }] as const;
-    async function openOrderReturnsLink(page: Page, viewport: (typeof layouts)[number]) {
+    const layouts = [{ name: "desktop", width: 1440, height: 900 }, { name: "mobile", width: 390, height: 844 }] as const;
+    async function openOrderReturnsLink(page: Page, viewport: (typeof layouts)[number], locale = "en") {
       await signedLogin(page);
+      if (locale !== "en") await page.goto(`/${locale}/`);
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       const selector = page.getByTestId("shell-store-selector").filter({ visible: true });
       await expect(selector.locator("option")).toHaveCount(2);
       await selector.selectOption(fixture.nonDefaultStore);
       await page.waitForURL(u => u.searchParams.get("store") === fixture.nonDefaultStore);
-      if (viewport.name === "mobile") await page.getByRole("button", { name: "Open navigation", exact: true }).click();
+      if (viewport.name === "mobile") await page.getByRole("button", { name: locale === "zh-TW" ? "開啟導覽" : "Open navigation", exact: true }).click();
       await page.getByTestId("nav-orders").click();
-      await page.waitForURL(u => u.pathname === "/en/orders" && u.searchParams.get("store") === fixture.nonDefaultStore);
+      await page.waitForURL(u => u.pathname === `/${locale}/orders` && u.searchParams.get("store") === fixture.nonDefaultStore);
       await expect(selector).toHaveValue(fixture.nonDefaultStore);
       const link = page.getByTestId("orders-returns-link");
       if (!(await link.isVisible())) await page.getByTestId("orders-more-filters").click();
@@ -355,6 +356,33 @@ if (applicationFixture) {
       return { selector, link };
     }
     const resource = `/api/stores/${fixture.nonDefaultStore}/return-requests`;
+    async function verifyVisual(page: Page, viewport: (typeof layouts)[number], state: string, orderId: string, note: string) {
+      const workspace = page.getByTestId("returns-page");
+      const article = page.getByTestId("buyer-return-detail");
+      await expect(workspace.getByTestId("returns-current-store")).toHaveText("R02 non-default-b");
+      await expect(article.getByTestId("returns-order-lines")).toContainText(fixture.productName);
+      await expect(article.getByTestId("returns-order-lines")).toContainText(fixture.skuCode);
+      await expect(article.getByTestId("returns-order-number")).toHaveText(`#${orderId.slice(-5).toUpperCase()}`);
+      await expect(article).toContainText(note);
+      await expect(article.locator("[data-state]")).toHaveAttribute("data-state", state);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      const target = new URL((await article.getByTestId("returns-original-order").getAttribute("href"))!, origin);
+      expect(target.searchParams.get("store")).toBe(fixture.nonDefaultStore);
+      expect(target.searchParams.get("order")).toBe(orderId);
+      expect(await workspace.innerText()).not.toMatch(/\b[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}\b|R-[0-9a-f]{32}\b/i);
+      const queue = await page.getByTestId("buyer-return-queue").boundingBox();
+      const details = await article.boundingBox();
+      expect(queue).not.toBeNull();
+      expect(details).not.toBeNull();
+      if (viewport.name === "mobile") {
+        expect(details!.y).toBeGreaterThanOrEqual(queue!.y + queue!.height);
+        expect(Math.abs(details!.x - queue!.x)).toBeLessThan(1);
+      } else {
+        expect(details!.x).toBeGreaterThanOrEqual(queue!.x + queue!.width);
+        expect(Math.abs(details!.y - queue!.y)).toBeLessThan(1);
+      }
+      return { queue, details };
+    }
     for (const viewport of layouts) test(`R02 ordinary order-list returns link ${viewport.name}`, async ({ page }) => {
       const { selector, link } = await openOrderReturnsLink(page, viewport);
       await shot(page, "r02-before-orders", "en", viewport.name);
@@ -383,7 +411,7 @@ if (applicationFixture) {
       await shot(page, "r02-landing", "en", viewport.name);
 
       phase = "ordinary-view-requests";
-      await show.locator("button.ops-wide").click();
+      await show.getByTestId("returns-show-rmas").click();
       await page.waitForURL(u => u.searchParams.get("view") === "requests");
       const list = show.getByTestId("returns-list");
       const rows = list.locator('[data-testid^="returns-row-"]');
@@ -404,7 +432,7 @@ if (applicationFixture) {
       const savedRequest = show.getByTestId("buyer-return-" + fixture.buyerRequestId);
       await expect.soft(savedRequest, "R02_BUYER_REQUEST_UI: the persisted buyer request is visible in its own store").toBeVisible();
       const buyerVisible = await savedRequest.isVisible();
-      if (buyerVisible) await expect(savedRequest).toContainText(fixture.buyerRequestNumber);
+      if (buyerVisible) await expect(savedRequest).toContainText(`R-${fixture.buyerRequestNumber.slice(-8).toUpperCase()}`);
       await shot(page, "r02-explicit-b", "en", viewport.name);
       phase = "authenticated-bff-control";
       const requestBff = await page.request.get(resource);
@@ -438,13 +466,33 @@ if (applicationFixture) {
       expect.soft(bffHasBuyerRequest, "R02_BUYER_REQUEST_RECEIPT: BFF returns the same persisted request").toBe(true);
     });
 
+    for (const viewport of layouts) test(`R02 visual pending and selected zh-TW ${viewport.name}`, async ({ page }) => {
+      const { link } = await openOrderReturnsLink(page, viewport, "zh-TW");
+      await link.click();
+      await page.waitForURL(u => u.pathname === "/zh-TW/returns" && u.searchParams.get("store") === fixture.nonDefaultStore);
+      await expect(page.getByRole("heading", { name: "售後工作台", exact: true })).toBeVisible();
+      await expect(page.getByTestId("returns-queue-pending")).toHaveText("待處理 2");
+      const initial = await verifyVisual(page, viewport, "requested", fixture.rejectOrder, fixture.rejectNote);
+      await shot(page, "m14-pending", "zh-TW", viewport.name);
+      const selected = page.getByTestId(`buyer-return-${fixture.buyerRequestId}`);
+      await selected.click();
+      await expect(selected).toHaveAttribute("aria-pressed", "true");
+      const detail = await verifyVisual(page, viewport, "requested", fixture.approveOrder, fixture.approveNote);
+      await shot(page, "m14-selected", "zh-TW", viewport.name);
+      await writeFile(path.join(evidence, `m14-pending-geometry-${viewport.name}.json`), JSON.stringify({ viewport, initial, detail }, null, 2));
+      await page.getByTestId("returns-back-orders").click();
+      await page.waitForURL(u => u.pathname === "/zh-TW/orders" && u.searchParams.get("store") === fixture.nonDefaultStore && !u.searchParams.has("order"));
+      await expect(page.getByTestId("merchant-orders")).toBeVisible();
+    });
+
     test("R02 orders:read can inspect but cannot decide", async ({ page, context }) => {
       await asToken(context, required("LC_BROWSER_RETURN_REQUESTS_READ_ONLY"));
       await page.goto(`/en/returns?store=${fixture.nonDefaultStore}`);
       const row = page.getByTestId(`buyer-return-${fixture.rejectRequestId}`);
       await expect(row.locator("[data-state]")).toHaveAttribute("data-state", "requested");
-      await row.locator("summary").click();
-      await expect(row.getByRole("button", { name: /^(Approve|Reject) request$/ })).toHaveCount(0);
+      await row.click();
+      await expect(page.getByTestId("buyer-return-detail")).toBeVisible();
+      await expect(page.getByRole("button", { name: /^(Approve|Reject) request$/ })).toHaveCount(0);
       const csrf = (await context.cookies()).find(cookie => cookie.name === "__Host-commerce_csrf")!.value;
       for (const [action, data] of [
         ["approve", { expected_version: 1 }],
@@ -470,20 +518,25 @@ if (applicationFixture) {
       await page.waitForURL(u => u.pathname === "/en/returns" && u.searchParams.get("store") === fixture.nonDefaultStore);
       const row = page.getByTestId(`buyer-return-${id}`);
       await expect(row.locator("[data-state]")).toHaveAttribute("data-state", "requested");
+      await page.getByTestId("returns-queue-closed").click();
       await expect(page.getByTestId(`buyer-return-${fixture.withdrawnRequestId}`).locator("[data-state]")).toHaveAttribute("data-state", "withdrawn");
-      await row.locator("summary").click();
-      await row.getByRole("button", { name: label, exact: true }).click();
-      if (!approve) await row.getByLabel("Rejection reason").fill(fixture.rejectReason);
-      const staleContext = approve ? null : await browser.newContext({ viewport });
+      await page.getByTestId("returns-queue-pending").click();
+      await row.click();
+      const review = page.getByTestId("returns-review-panel");
+      await review.getByRole("button", { name: label, exact: true }).click();
+      if (!approve) await review.getByLabel("Rejection reason").fill(fixture.rejectReason);
+      const staleContext = approve ? null : await browser.newContext();
       const stalePage = await staleContext?.newPage();
       if (stalePage) {
         await signedLogin(stalePage);
+        await stalePage.setViewportSize({ width: viewport.width, height: viewport.height });
         await stalePage.goto(`/en/returns?store=${fixture.nonDefaultStore}`);
         const staleRow = stalePage.getByTestId(`buyer-return-${id}`);
         await expect(staleRow.locator("[data-state]")).toHaveAttribute("data-state", "requested");
-        await staleRow.locator("summary").click();
-        await staleRow.getByRole("button", { name: label, exact: true }).click();
-        await staleRow.getByLabel("Rejection reason").fill("Stale form witness");
+        await staleRow.click();
+        const staleReview = stalePage.getByTestId("returns-review-panel");
+        await staleReview.getByRole("button", { name: label, exact: true }).click();
+        await staleReview.getByLabel("Rejection reason").fill("Stale form witness");
         await page.bringToFront();
       }
 
@@ -493,7 +546,7 @@ if (applicationFixture) {
       });
       const posted = page.waitForResponse(r => r.request().method() === "POST" && exact(r.url(), `${detail}/${action}`));
       const readback = page.waitForResponse(r => r.request().method() === "GET" && exact(r.url(), detail));
-      await row.getByRole("button", { name: label, exact: true }).click();
+      await review.getByRole("button", { name: label, exact: true }).click();
       const response = await posted;
       expect(response.status()).toBe(200);
       const persisted = await readback;
@@ -503,7 +556,11 @@ if (applicationFixture) {
       if (approve) expect(saved.return_id).toMatch(/^[0-9a-f-]{36}$/);
       else expect(saved.return_id).toBeNull();
       await expect(row.locator("[data-state]")).toHaveAttribute("data-state", decision);
-      if (!approve) await expect(row).toContainText(fixture.rejectReason);
+      if (!approve) {
+        await expect(page.getByTestId("returns-rejection-reason")).toContainText(fixture.rejectReason);
+        const detailBox = await verifyVisual(page, viewport, "rejected", fixture.rejectOrder, fixture.rejectNote);
+        await writeFile(path.join(evidence, "m14-rejected-en-mobile-geometry.json"), JSON.stringify({ viewport, detail: detailBox }, null, 2));
+      }
       await shot(page, `r02-${decision}`, "en", viewport.name);
       expect(posts).toHaveLength(1);
       expect(posts[0]).toMatch(/^[A-Za-z0-9_.:-]{8,128}$/);
@@ -529,14 +586,13 @@ if (applicationFixture) {
         await stalePage.bringToFront();
         const refused = stalePage.waitForResponse(r => r.request().method() === "POST" && exact(r.url(), `${detail}/reject`));
         const reread = stalePage.waitForResponse(r => r.request().method() === "GET" && exact(r.url(), detail));
-        const staleRow = stalePage.getByTestId(`buyer-return-${id}`);
-        await staleRow.getByRole("button", { name: label, exact: true }).click();
+        await stalePage.getByTestId("returns-review-panel").getByRole("button", { name: label, exact: true }).click();
         const conflict = await refused;
         expect(conflict.status()).toBe(409);
         expect(await conflict.json()).toMatchObject({ code: "version_changed" });
         expect(await (await reread).json()).toEqual(saved);
         await expect(stalePage.getByRole("status").filter({ hasText: "The request changed." })).toBeVisible();
-        await expect(staleRow).toContainText(fixture.rejectReason);
+        await expect(stalePage.getByTestId("returns-rejection-reason")).toContainText(fixture.rejectReason);
         await staleContext!.close();
       }
       if (approve) {
@@ -562,7 +618,26 @@ if (applicationFixture) {
         expect(await malformed.json()).toMatchObject({ code: "invalid_json" });
       }
       await page.reload();
+      await page.getByTestId("returns-queue-closed").click();
       await expect(row.locator("[data-state]")).toHaveAttribute("data-state", decision);
+    });
+
+    for (const viewport of layouts) test(`R02 visual rejected zh-TW ${viewport.name}`, async ({ page }) => {
+      const { link } = await openOrderReturnsLink(page, viewport, "zh-TW");
+      await link.click();
+      await page.waitForURL(u => u.pathname === "/zh-TW/returns" && u.searchParams.get("store") === fixture.nonDefaultStore);
+      await page.getByTestId("returns-queue-closed").click();
+      const rejected = page.getByTestId(`buyer-return-${fixture.rejectRequestId}`);
+      await rejected.click();
+      await expect(rejected).toHaveAttribute("aria-pressed", "true");
+      const detail = await verifyVisual(page, viewport, "rejected", fixture.rejectOrder, fixture.rejectNote);
+      await expect(page.getByTestId("returns-rejection-reason")).toHaveText(`拒絕原因${fixture.rejectReason}`);
+      await shot(page, "m14-rejected", "zh-TW", viewport.name);
+      await writeFile(path.join(evidence, `m14-rejected-geometry-${viewport.name}.json`), JSON.stringify({ viewport, detail }, null, 2));
+      await page.getByTestId("returns-original-order").click();
+      await page.waitForURL(u => u.pathname === "/zh-TW/orders" && u.searchParams.get("store") === fixture.nonDefaultStore &&
+        u.searchParams.get("order") === fixture.rejectOrder);
+      await expect(page.getByTestId("order-detail")).toBeVisible();
     });
   });
 }
