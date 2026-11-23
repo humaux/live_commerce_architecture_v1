@@ -5,7 +5,6 @@
 // Merchant text is rendered only as React text nodes; outbound links come pre-filtered by lib/design.ts.
 // Depends on: Next Link, design/nav and legal helpers, shell islands, shop copy and shared Taipei instant conversion.
 // Used by: the storefront layout and store pages.
-import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
 import { resolveNav, safeExternal } from "../lib/design";
 import type { Design, NavLink } from "../lib/design";
@@ -16,6 +15,7 @@ import { HeaderCart } from "./CartDrawer";
 import { ChatIcon, FacebookIcon, InstagramIcon, MailIcon, PhoneIcon, PinIcon, SearchIcon } from "./icons";
 import LocaleSwitch from "./LocaleSwitch";
 import MobileMenu from "./MobileMenu";
+import ShopChromeLink from "./ShopChromeLink";
 import { instantToTaipei } from "../../../packages/format/src/index";
 
 function NavAnchor({ link, className }: { link: NavLink; className?: string }) {
@@ -26,9 +26,9 @@ function NavAnchor({ link, className }: { link: NavLink; className?: string }) {
       </a>
     );
   return link.href.startsWith("/") ? (
-    <Link className={className} href={link.href}>
+    <ShopChromeLink className={className} href={link.href}>
       {link.label}
-    </Link>
+    </ShopChromeLink>
   ) : (
     <a className={className} href={link.href}>
       {link.label}
@@ -68,9 +68,9 @@ export function ShopHeader({ locale, design, preview, closed = false }: { locale
     <header className="sf-header">
       <div className="sf-header__row">
         <MobileMenu locale={locale} links={links} preview={preview} searchable={!closed} />
-        <Link className="sf-brand" href={home} aria-label={profile.name}>
+        <ShopChromeLink className="sf-brand" href={home} aria-label={profile.name}>
           {profile.logo_image_id ? <img src={storeImage(profile.logo_image_id)} alt={profile.name} height={34} /> : <span>{profile.name}</span>}
-        </Link>
+        </ShopChromeLink>
         <nav className="sf-nav" aria-label={copy.mainNav}>
           <ul>
             {links.map((link) => (
@@ -93,9 +93,9 @@ export function ShopHeader({ locale, design, preview, closed = false }: { locale
                   <SearchIcon />
                 </button>
               </form>
-              <Link className="sf-iconbtn sf-searchlink" href={withSearch(locale, preview)} aria-label={copy.search}>
+              <ShopChromeLink className="sf-iconbtn sf-searchlink" href={withSearch(locale, preview)} aria-label={copy.search}>
                 <SearchIcon />
-              </Link>
+              </ShopChromeLink>
               <HeaderCart locale={locale} />
             </>
           )}
