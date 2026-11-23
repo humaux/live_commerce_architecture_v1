@@ -10,7 +10,7 @@ const presentation = (button) => button.evaluate((element) => {
   return { x, y, width, height, backgroundColor, borderTopColor, borderTopStyle, borderTopWidth, color };
 });
 
-export async function checkBuyNow({ browser, origin, evidence, ctxOpts, engine, facts, control }) {
+export async function checkBuyNow({ browser, origin, evidence, ctxOpts, engine, facts, control, checkDeliveryKinds }) {
   const failures = [];
   for (const [device, width, height] of [["desktop", 1440, 900], ["phone", 390, 844]]) {
     const context = await browser.newContext(ctxOpts({
@@ -145,6 +145,7 @@ export async function checkBuyNow({ browser, origin, evidence, ctxOpts, engine, 
       assert(home, "home delivery fixture missing");
       await page.getByRole("button", { name: "Choose delivery", exact: true }).click();
       await page.getByLabel("Delivery method").selectOption([home.market_id, home.country, home.method].join(":"));
+      receipt.deliveryKinds = await checkDeliveryKinds(page);
       const [quoted] = await Promise.all([
         capture("POST", "quotes"), page.getByRole("button", { name: "Get current total", exact: true }).click(),
       ]);

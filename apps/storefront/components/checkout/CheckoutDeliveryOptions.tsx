@@ -12,6 +12,7 @@ import { cvsCopy } from "../../lib/cvs-copy";
 import { fmt, shopCopy } from "../../lib/shop-copy";
 import { freeShippingProgress } from "../../lib/shop-contract";
 import { formatMoney } from "../../lib/money";
+import styles from "./CheckoutDelivery.module.css";
 
 type DeliveryOptionsProps = {
   locale: Locale;
@@ -24,43 +25,12 @@ type DeliveryOptionsProps = {
   expanded: boolean;
   onClose: () => void;
   onSelect: (value: string) => void;
+  lastDelivery?: { home?: string; cvs?: string };
 };
 
-function CheckoutDeliveryOptions({ locale, options, method, chosen, subtotal, currency, disabled, expanded, onClose, onSelect }: DeliveryOptionsProps) {
-  const copy = purchaseCopy[locale];
-  const groups = deliveryOptionGroups(locale, options);
-  const progress = chosen && subtotal !== null
-    ? freeShippingProgress(subtotal, chosen.free_shipping_threshold_minor ?? null) : null;
-  return <>
-    <label className="delivery-label" htmlFor="delivery">
-      {copy.selectDelivery}
-    </label>
-    <select id="delivery" value={method} disabled={disabled} size={expanded ? Math.min(options.length, 6) : undefined}
-      onBlur={onClose} onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
-      onChange={(e) => { onSelect(e.target.value); onClose(); }}>
-      {groups.map(group => <optgroup key={group.label} label={group.label}>
-        {group.items.map(o => <option key={optionKey(o)} value={optionKey(o)} disabled={isUnavailable(o)}>
-          {locale === "zh-CN" ? o.name_hans : locale === "zh-TW" ? o.name_hant : o.name_en}
-          {isUnavailable(o) ? ` · ${cvsCopy[locale].comingSoon}` : ""}
-        </option>)}
-      </optgroup>)}
-    </select>
-    {chosen && chosen.delivery_kind !== "home" && (
-      <p data-testid="cvs-next-step">{copy.cvs}</p>
-    )}
-    {progress && (
-      // Hint only: the server quote remains the sole authority on shipping.
-      <p className="sf-muted" data-testid="checkout-free-shipping">
-        {progress.reached ? shopCopy[locale].freeShipReached
-          : fmt(shopCopy[locale].freeShipRemaining, { amount: formatMoney(locale, progress.remaining, currency) })}
-      </p>
-    )}
-  </>;
-}
-
 export default function CheckoutDeliverySection({
-  showChooser, chooserDisabled, onExpand, onLoad,
-  onQuote, quoteDisabled, onMore, moreDisabled, ...selector
+  locale, options, method, chosen, subtotal, currency, disabled, expanded, onClose, onSelect, lastDelivery,
+  showChooser, chooserDisabled, onExpand, onLoad, onQuote, quoteDisabled, onMore, moreDisabled,
 }: DeliveryOptionsProps & {
   showChooser: boolean;
   chooserDisabled: boolean;
@@ -71,25 +41,67 @@ export default function CheckoutDeliverySection({
   onMore?: () => void;
   moreDisabled: boolean;
 }) {
-  const copy = purchaseCopy[selector.locale];
+  const copy = purchaseCopy[locale];
   const section = useRef<HTMLElement>(null);
-
+  const groups = deliveryOptionGroups(locale, options);
+  const choices = groups.flatMap((group) => {
+    const available = group.items.filter((option) => !isUnavailable(option));
+    const selected = available.find((option) => optionKey(option) === method);
+    const kind = available[0]?.delivery_kind === "home" ? "home" : "cvs";
+    const option = selected ?? available.find((item) => optionKey(item) === lastDelivery?.[kind]) ?? available[0];
+    return option ? [{ label: group.label, option, selected: !!selected }] : [];
+  });
+  const progress = chosen && subtotal !== null
+    ? freeShippingProgress(subtotal, chosen.free_shipping_threshold_minor ?? null) : null;
   function chooseDelivery() {
     onExpand();
     requestAnimationFrame(() => {
       document.getElementById("delivery")?.focus();
       section.current?.scrollIntoView({ block: "start" });
     });
-    if (!selector.options.length) onLoad();
+    if (!options.length) onLoad();
   }
 
   return (
-    <section className="delivery-section" data-selected={!!selector.chosen} ref={section} aria-labelledby="delivery-title">
-      <h2 id="delivery-title">{copy.deliveryTitle}</h2>
+    <section className="delivery-section" data-selected={!!chosen} ref={section} aria-labelledby="delivery-title">
+      <div className={choices.length > 1 ? styles.deliveryHeading : undefined}>
+        <h2 id="delivery-title">{copy.deliveryTitle}</h2>
+        {choices.length > 1 && (
+          <div className={styles.deliveryKinds} role="radiogroup" aria-labelledby="delivery-title">
+            {choices.map(({ label, option, selected }) => (
+              <label key={label}>
+                <input type="radio" name="delivery-kind" value={optionKey(option)} checked={selected} disabled={disabled}
+                  data-testid={option.delivery_kind === "home" ? "delivery-kind-home" : "delivery-kind-cvs"}
+                  onChange={() => { onSelect(optionKey(option)); onClose(); }} />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+        )}
+      </div>
       <div className="checkout-entry-delivery-controls">
-        {selector.options.length ? <CheckoutDeliveryOptions {...selector} /> : <p>{copy.noDelivery}</p>}
+        {options.length ? <>
+          <label className="delivery-label" htmlFor="delivery">{copy.selectDelivery}</label>
+          <select id="delivery" value={method} disabled={disabled} size={expanded ? Math.min(options.length, 6) : undefined}
+            onBlur={onClose} onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+            onChange={(e) => { onSelect(e.target.value); onClose(); }}>
+            {groups.map(group => <optgroup key={group.label} label={group.label}>
+              {group.items.map(o => <option key={optionKey(o)} value={optionKey(o)} disabled={isUnavailable(o)}>
+                {locale === "zh-CN" ? o.name_hans : locale === "zh-TW" ? o.name_hant : o.name_en}
+                {isUnavailable(o) ? ` · ${cvsCopy[locale].comingSoon}` : ""}
+              </option>)}
+            </optgroup>)}
+          </select>
+          {progress && <p className="sf-muted" data-testid="checkout-free-shipping">
+            {progress.reached ? shopCopy[locale].freeShipReached
+              : fmt(shopCopy[locale].freeShipRemaining, { amount: formatMoney(locale, progress.remaining, currency) })}
+          </p>}
+        </> : <p>{copy.noDelivery}</p>}
         {showChooser && <button type="button" aria-controls="delivery" disabled={chooserDisabled} onClick={chooseDelivery}>{copy.delivery}</button>}
         {onQuote && <button type="button" disabled={quoteDisabled} onClick={onQuote}>{copy.quote}</button>}
+        {onQuote && !quoteDisabled && chosen && chosen.delivery_kind !== "home" && (
+          <p data-testid="cvs-next-step">{copy.cvsBeforeQuote}</p>
+        )}
       </div>
       {onMore && <button disabled={moreDisabled} onClick={onMore}>{copy.more}</button>}
     </section>

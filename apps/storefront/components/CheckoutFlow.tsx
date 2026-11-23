@@ -23,11 +23,11 @@ import { checkoutCopy } from "../lib/checkout-copy";
 import { changedCheckoutQuote, checkoutOption, rememberCheckoutQuote } from "../lib/checkout-review";
 import OrderFlow, { OrderDetails } from "./OrderFlow";
 import CheckoutPendingReview from "./checkout/CheckoutPendingReview";
-import CheckoutQuoteAmounts from "./checkout/CheckoutQuoteAmounts";
+import CheckoutQuotation from "./checkout/CheckoutQuoteAmounts";
 import CheckoutAddressFields from "./checkout/CheckoutAddressFields";
 import { emptyOrderFields, type OrderFields } from "../lib/order-fields";
 import CheckoutDeliverySection from "./checkout/CheckoutDeliveryOptions";
-import PromoCode from "./PromoCode";
+import { useCheckoutDeliveryDraft } from "./checkout/useCheckoutDeliveryDraft";
 import OrderHistory from "./OrderHistory";
 import { CartLineDetails, useCartDetails } from "./CartLines";
 import CheckoutEntryHeader, { CheckoutHistoryControl } from "./checkout/CheckoutEntryHeader";
@@ -124,7 +124,6 @@ export default function CheckoutFlow({
   const currentContext = useRef("");
   const currentOrder = useRef<Order | null>(null);
   const working = useRef(false);
-  const quoteRef = useRef<HTMLElement>(null);
   const footerRef = useRef<HTMLElement>(null);
   const [footerHeight, setFooterHeight] = useState(180);
   useEffect(() => {
@@ -146,6 +145,13 @@ export default function CheckoutFlow({
   const found = options.find((o) => optionKey(o) === method);
   // Unavailable rows are listed disabled, so they can never be the chosen delivery.
   const chosen = found && !isUnavailable(found) ? found : undefined;
+  const draftScope = context && cart ? `${purchaseScope(context, buyNowID)}:${cart.id}:${cart.version}` : "";
+  const deliveryDraft = useCheckoutDeliveryDraft(draftScope, method);
+  const retainedDraft = deliveryDraft.draft;
+  function keepHomeDraft(fields: OrderFields) {
+    setDraft(fields);
+    deliveryDraft.remember({ home: fields });
+  }
   // One money format for the whole storefront (lib/money.ts): the bar, the quotation, the order and the history read like the cart lines.
   const money = (amount: number, currency: string) => formatMoney(locale, amount, currency);
 
@@ -219,6 +225,7 @@ export default function CheckoutFlow({
     setOrderLocked(true);
     setQuote(null);
     setDraft(null);
+    deliveryDraft.clear();
     setReviewID("");
     forgetAddressAttempt();
   }
@@ -404,7 +411,7 @@ export default function CheckoutFlow({
     }
   }
 
-  async function deliveryOptions(nextCursor = "", ctx = context, currency = cart?.currency, restored: Quote | null = null) {
+  async function deliveryOptions(nextCursor = "", ctx = context, currency = cart?.currency, restored: Quote | null = null, preferred = "") {
     const version = epoch.current;
     const page = await purchasePage(
       `checkout-options?limit=100${nextCursor ? `&cursor=${encodeURIComponent(nextCursor)}` : ""}`,
@@ -419,12 +426,14 @@ export default function CheckoutFlow({
     setOptions((old) => nextCursor ? [...old, ...rows.filter((row) => !old.some((o) => optionKey(o) === optionKey(row)))] : rows);
     setOptionCursor(page.next_cursor);
     if (!nextCursor) {
-      const first = rows.find((o) => !isUnavailable(o));
-      setMethod(selected || (first ? optionKey(first) : ""));
+      const available = rows.filter((row) => !isUnavailable(row));
+      const option = available.find((row) => optionKey(row) === preferred) ?? available[0];
+      setMethod(selected || (option ? optionKey(option) : ""));
     }
   }
 
   function changeMethod(value: string) {
+    if (chosen) deliveryDraft.rememberMethod(chosen.delivery_kind === "home" ? "home" : "cvs");
     sessionStorage.removeItem(quoteStorageKey(context, buyNowID));
     setMethod(value);
     setQuote(null);
@@ -606,6 +615,7 @@ export default function CheckoutFlow({
             </section>
             {entry && (
               <CheckoutDeliverySection locale={locale} options={options} method={method} chosen={chosen}
+                lastDelivery={deliveryDraft.last}
                 expanded={pickingMethod} onClose={() => setPickingMethod(false)}
                 subtotal={quote ? null : subtotal} currency={cart.currency}
                 disabled={busy || pending || orderLocked || error === "session"}
@@ -619,42 +629,18 @@ export default function CheckoutFlow({
             {entry && !quote && !pendingKind && chosen?.delivery_kind === "home" && <section className="address-section" aria-label={v2.recipient}>
               <h2>{v2.recipient}</h2>
               <fieldset className="address-fields" disabled={busy || !!error}>
-                <CheckoutAddressFields entry locale={locale} fields={draft ?? emptyOrderFields} onChange={setDraft} />
+                <CheckoutAddressFields entry locale={locale} fields={draft ?? retainedDraft?.home ?? emptyOrderFields} onChange={keepHomeDraft} />
               </fieldset>
             </section>}
-            {quote && (
-              <section
-                className="quotation"
-                id="checkout-details"
-                hidden={!detailsOpen || pendingKind === "checkout" || !!reviewState?.submitting}
-                ref={quoteRef}
-                aria-labelledby="quote-title"
-              >
-                <h2 id="quote-title">{copy.lines}</h2>
-                <CheckoutQuoteAmounts quote={quote} locale={locale} money={money} />
-                <p>{copy.unpaid}</p>
-                {/* storefront-v2 §F: discount code; re-quotes this cart + delivery through writePurchase and replaces the quote. */}
-                {!orderLocked && error !== "session" && (
-                  <PromoCode context={context} buyNowID={buyNowID} quote={quote} locale={locale} busy={busy || pending} run={act} onQuote={acceptQuote} money={money} />
-                )}
-                <button className="quote-navigation" disabled={busy || pending || orderLocked || error === "session"}
-                  onClick={() => quoteRef.current?.scrollIntoView({ behavior: "auto", block: "start" })}>{copy.viewQuote}</button>
-                <button
-                  className="text-button"
-                  disabled={
-                    busy || pending || orderLocked || error === "session"
-                  }
-                  onClick={() =>
-                    void act(async (isCurrent) => {
-                      changeMethod("");
-                      await deliveryOptions();
-                    })
-                  }
-                >
-                  {copy.changeDelivery}
-                </button>
-              </section>
-            )}
+            {quote && <CheckoutQuotation quote={quote} locale={locale} money={money}
+              hidden={!detailsOpen || pendingKind === "checkout" || !!reviewState?.submitting}
+              disabled={busy || pending || orderLocked || error === "session"}
+              promo={orderLocked || error === "session" ? undefined : { context, buyNowID, busy: busy || pending, run: act, onQuote: acceptQuote }}
+              onChangeDelivery={() => void act(async () => {
+                changeMethod("");
+                await deliveryOptions("", context, cart.currency, null, method);
+              })}
+            />}
             {quote && quoteChange !== null && <section data-testid="quote-reconfirm" role="status" style={{ marginTop: 24 }}>
               <p>{v2.changed}</p>
               <p>{money(quoteChange, quote.currency)} → {money(codFee === null ? quote.amount.total_minor : quote.cod_due_minor ?? quote.amount.total_minor, quote.currency)}</p>
@@ -687,8 +673,10 @@ export default function CheckoutFlow({
                   onQuoteRefresh={acceptQuote}
                   onReviewState={setReviewState}
                   inReview={inReview}
-                  entryDraft={draft}
-                  onEntryDraftChange={quote && !inReview && !pending && cartMatches ? setDraft : undefined}
+                  entryDraft={draft ?? retainedDraft?.home ?? null}
+                  onEntryDraftChange={quote && !pending && cartMatches ? keepHomeDraft : undefined}
+                  cvsDraft={retainedDraft?.cvs}
+                  onCvsDraftChange={(cvs) => deliveryDraft.remember({ cvs })}
                   onContinue={(id) => {
                     if (reviewID === id) return;
                     setReviewID(id);
