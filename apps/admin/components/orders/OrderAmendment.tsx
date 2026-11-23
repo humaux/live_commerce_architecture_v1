@@ -2,9 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
-import { readProduct, readProducts } from "@/lib/catalog-v2-client";
-import type { ProductSummary, Variant } from "@/lib/catalog-v2-model";
-import { putOrderAmendment, reviewOrderAmendment } from "@/lib/orders-client";
+import type { CatalogProduct, CatalogSKU } from "@/lib/claims-model";
+import { amendmentProducts, amendmentSKUs, putOrderAmendment, reviewOrderAmendment } from "@/lib/orders-client";
 import type { OrderDetail } from "@/lib/orders-model";
 import { amount, type Sections } from "../OrderDetailPanel";
 
@@ -43,8 +42,9 @@ export function OrderAmendment({ order, sections, locale, canAdd, onEditing }: {
   const [address, setAddress] = useState(() => recipient(order));
   const [additions, setAdditions] = useState<DraftAddition[]>([]);
   const [query, setQuery] = useState("");
-  const [products, setProducts] = useState<ProductSummary[]>([]);
-  const [variants, setVariants] = useState<Variant[]>([]);
+  const [products, setProducts] = useState<CatalogProduct[]>([]);
+  const [cursor, setCursor] = useState("");
+  const [variants, setVariants] = useState<CatalogSKU[]>([]);
   const [sku, setSKU] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [quote, setQuote] = useState<Quote | null>(null);
@@ -62,6 +62,18 @@ export function OrderAmendment({ order, sections, locale, canAdd, onEditing }: {
   const field = (key: RecipientField, label: string, maxLength: number) =>
     <label>{label}<input name={key} value={address[key]} maxLength={maxLength}
       onChange={event => setAddress({...address, [key]: event.target.value})} /></label>;
+
+  async function loadProducts(next = "") {
+    setBusy(true); setMessage("");
+    if (!next) { setProducts([]); setVariants([]); setSKU(""); setCursor(""); }
+    try {
+      const page = await amendmentProducts(sections.store, next, AbortSignal.timeout(8000));
+      const match = query.trim().toLocaleLowerCase();
+      const items = page.items.filter(product => product.name.toLocaleLowerCase().includes(match));
+      setProducts(previous => next ? [...previous, ...items] : items);
+      setCursor(page.next_cursor);
+    } catch { setMessage(c.error); } finally { setBusy(false); }
+  }
 
   function dismiss() {
     setEditing(false);
@@ -122,20 +134,17 @@ export function OrderAmendment({ order, sections, locale, canAdd, onEditing }: {
         {canAdd && <fieldset disabled={busy}>
           <legend>{c.add}</legend>
           <label>{c.search}<input value={query} onChange={event => setQuery(event.target.value)} /></label>
-          <button type="button" onClick={async () => {
-            setBusy(true);
-            try { setProducts((await readProducts(sections.store, query.trim(), "active", "", AbortSignal.timeout(8000))).items); }
-            catch { setMessage(c.error); } finally { setBusy(false); }
-          }}>{c.search}</button>
-          <label>{c.product}<select defaultValue="" onChange={async event => {
+          <button type="button" onClick={() => void loadProducts()}>{c.search}</button>
+          {cursor && <button type="button" onClick={() => void loadProducts(cursor)}>{locale === "zh-TW" ? "搜尋下一頁" : locale === "zh-CN" ? "搜索下一页" : "Search next page"}</button>}
+          <label>{c.product}<select aria-label={c.product} defaultValue="" onChange={async event => {
             setSKU(""); setVariants([]);
             if (!event.target.value) return;
             setBusy(true);
-            try { setVariants((await readProduct(sections.store, event.target.value, AbortSignal.timeout(8000))).skus); }
+            try { setVariants(await amendmentSKUs(sections.store, event.target.value, order.currency, AbortSignal.timeout(8000))); }
             catch { setMessage(c.error); } finally { setBusy(false); }
           }}><option value="">—</option>{products.map(product => <option key={product.id} value={product.id}>{product.name}</option>)}</select></label>
-          <label>{c.sku}<select value={sku} onChange={event => setSKU(event.target.value)}><option value="">—</option>
-            {variants.map(variant => <option value={variant.id} key={variant.id}>{variant.title || variant.code}</option>)}</select></label>
+          <label>{c.sku}<select aria-label={c.sku} value={sku} onChange={event => setSKU(event.target.value)}><option value="">—</option>
+            {variants.map(variant => <option value={variant.id} key={variant.id}>{variant.code}</option>)}</select></label>
           <label>{c.qty}<input type="number" min="1" max="999999999" value={quantity} onChange={event => setQuantity(Number(event.target.value))} /></label>
           <button type="button" disabled={!sku || !Number.isSafeInteger(quantity) || quantity < 1 || quantity > 999999999 || additions.some(item => item.sku_id === sku)}
             onClick={() => setAdditions([...additions, { sku_id: sku, quantity, title: variants.find(variant => variant.id === sku)?.code ?? "" }])}>{c.add}</button>

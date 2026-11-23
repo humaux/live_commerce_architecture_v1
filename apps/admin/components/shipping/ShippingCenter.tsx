@@ -252,6 +252,9 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
           <div className={s.rows}>
             {active.rows.map(row => {
               const order = active.details.find(detail => detail.order_id === row.order_id)!;
+              const mobileHref = isHomeCOD(order) ? `/${locale}/orders/shipping?${new URLSearchParams({
+                store: active.store.id, selected: order.order_id, step: 'review',
+              })}` : detailHref(row.order_id);
               return <div key={row.order_id} className={s.order} data-testid={`shipping-order-${row.order_id}`}>
                 <label className={s.checkbox}>
                   <input type="checkbox" aria-label={number(row.order_id)} checked={ids.includes(row.order_id)}
@@ -261,7 +264,7 @@ export function ShippingCenter({ locale, store, initialIDs, initialStep, initial
                 <div className={s.orderText}><strong>{number(row.order_id)}</strong><span>{itemsText(order)}</span></div>
                 <span className={`${s.status} ${order.work_state === 'REVIEW_REQUIRED' ? s.reviewStatus : ''}`}>{stateLabel(order)}</span>
                 <a className={`${s.control} ${s.rowView}`} href={detailHref(row.order_id)}>{c.rowView}</a>
-                <a className={s.mobileOrder} href={detailHref(row.order_id)}>
+                <a className={s.mobileOrder} href={mobileHref}>
                   <span>{`${number(row.order_id)}\n${itemsText(order)}\n${stateLabel(order)}`}</span>
                   <svg aria-hidden="true" viewBox="0 0 8 14"><path d="m1 1 6 6-6 6" /></svg>
                 </a>
