@@ -14,3 +14,27 @@ export const orderPointsCopy: Record<Locale, Copy> = {
   en: {truncated:"Showing the oldest 100 entries; additional entries are omitted.",title:"Member and points (optional)",member:"Member",query:"Search member name or contact note",search:"Search",create:"Create member",name:"Display name (required)",contact:"Contact note (optional)",select:"Create and select",cancel:"Cancel",change:"Change",remove:"Remove",points:"Points to award for this order",optional:"Enter points manually. Leave blank to omit the award.",invalid:"Enter a whole number from 1 to 1,000,000, or leave blank.",needMember:"Select a member before awarding points.",loading:"Loading…",empty:"No related records.",failed:"Unable to load. Refresh to try again.",refresh:"Refresh",more:"Load more",confirm:"Confirm",unknown:"Result unconfirmed. Refresh before taking further action. Refresh only reads; it never resends.",refused:"The action was refused. Check the details and your permissions.",balance:"Current member balance",record:"View member record",awarded:"Points recorded",notAwarded:"Order created; points were not awarded",deduct:"Deduct points for this order",amount:"Points to deduct",note:"Explanation (required)",required:"Enter an explanation.",insufficient:"Insufficient points. Change the amount to deduct.",adjustment:"Manual adjustment",preview:"Estimated balance (checked again on submission)",reasons:{member_erased:"Member details have been erased.",member_unavailable:"Member not found.",forbidden:"Points permission was revoked.",limit_reached:"Member balance limit reached."}}
 };
 export function validOrderPoints(value:string) { return /^[0-9]+$/.test(value) && Number.isSafeInteger(Number(value)) && Number(value)>=1 && Number(value)<=1e6; }
+
+export const awardRecoveryCopy = {
+  "zh-TW": {
+    missed: "積分未贈送", check: "查核原單積分", original: "原單", view: "查看原單",
+    review: "按原單補登積分", submit: "確認補登",
+    confirmBody: "請核對原單與積分。確認後會依原單回執將積分記入原會員。",
+    hold: "原單積分需核對。請檢查流水與既有調整紀錄。",
+    recorded: "已查得原單積分紀錄",
+  },
+  "zh-CN": {
+    missed: "积分未赠送", check: "核对原单积分", original: "原单", view: "查看原单",
+    review: "按原单补登积分", submit: "确认补登",
+    confirmBody: "请核对原单与积分。确认后会依原单回执将积分记入原会员。",
+    hold: "原单积分需核对。请检查流水与已有调整记录。",
+    recorded: "已查到原单积分记录",
+  },
+  en: {
+    missed: "Points not awarded", check: "Check original order points", original: "Original order", view: "View original order",
+    review: "Recover points on this order", submit: "Confirm recovery",
+    confirmBody: "Check the original order and points. Confirmation credits the member named in the original receipt.",
+    hold: "Review this order’s points history and prior adjustments.",
+    recorded: "Points found on the original order",
+  },
+} satisfies Record<Locale, Record<string, string>>;

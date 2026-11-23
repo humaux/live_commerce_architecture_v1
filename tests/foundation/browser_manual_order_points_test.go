@@ -28,6 +28,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/jackc/pgx/v5"
@@ -60,20 +61,22 @@ type mtPointsBaseline struct {
 }
 
 type mtPointsSeam struct {
-	t           *testing.T
-	productName string
-	store       string
-	legacy      string
-	principal   string
-	canary      string
-	control     *httptest.Server
-	key         string
-	created     bool
-	base        mtPointsBaseline // points store, taken BEFORE the browser run: the oracle is delta-based, never an absolute zero
-	legacyBase  mtPointsBaseline
+	t            *testing.T
+	productName  string
+	conversation string
+	store        string
+	legacy       string
+	principal    string
+	canary       string
+	control      *httptest.Server
+	key          string
+	created      bool
+	base         mtPointsBaseline // points store, taken BEFORE the browser run: the oracle is delta-based, never an absolute zero
+	legacyBase   mtPointsBaseline
 	// legacyStamped records that the control stamped the legacy baseline AFTER the old ten cases (the only correct instant: the
 	// legacy gate itself creates two orders/audits). Without the stamp the legacy comparison is refused instead of guessed.
 	legacyStamped bool
+	missAward     atomic.Bool
 }
 
 // mtPointsSeamNew binds the points corpus to its own store in the SAME already-open PG/API, snapshots the store-scoped baseline (the
@@ -88,6 +91,10 @@ func mtPointsSeamNew(t *testing.T, e *tcvEnv, pointsStore string) *mtPointsSeam 
 		t.Fatal("SETUP_FAIL: the points corpus must not share the legacy manual-order store (it would move the legacy audit/order counts)")
 	}
 	s.seed(t, e) // same PG/API, own store/corpus; the original e is never re-pointed
+	s.conversation = lcConversation(t, e.p.f, e.p.f.tenantA, s.store, "page")
+	mustExec(t, e.p.f.owner, "UPDATE inbox.conversation_state SET last_inbound_at=clock_timestamp() WHERE conversation_id=$1", s.conversation)
+	mustExec(t, e.p.f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,'inbox:read') ON CONFLICT DO NOTHING`,
+		e.p.f.tenantA, s.store, s.principal)
 	s.grant(e, "full")
 	s.base = s.snapshotAt(context.Background(), e, s.store)
 	mux := http.NewServeMux()
@@ -115,6 +122,14 @@ func mtPointsSeamNew(t *testing.T, e *tcvEnv, pointsStore string) *mtPointsSeam 
 		}
 		s.grant(e, in.Level)
 		_ = json.NewEncoder(w).Encode(map[string]string{"level": in.Level, "store": s.store})
+	})
+	mux.HandleFunc("POST /points-miss-award", func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Gate-Key") != s.key {
+			http.Error(w, "forbidden", http.StatusForbidden)
+			return
+		}
+		s.missAward.Store(true)
+		w.WriteHeader(http.StatusNoContent)
 	})
 	s.control = httptest.NewServer(mux)
 	t.Cleanup(s.control.Close)
@@ -144,7 +159,7 @@ func (s *mtPointsSeam) seed(t *testing.T, e *tcvEnv) {
 		mustExec(t, f.owner, `INSERT INTO identity.store_grants(tenant_id,store_id,principal_id,permission) VALUES($1,$2,$3,$4) ON CONFLICT DO NOTHING`,
 			f.tenantA, f.storeA1, f.principalA, perm)
 	}
-	stock := t04CreateStock(t, &f, f.tokens["a"], f.storeA1, 10, 20)
+	stock := t04CreateStock(t, &f, f.tokens["a"], f.storeA1, 12, 20)
 	s.productName = stock.product.Name
 	view.p.stock = stock // re-bound to the real new stock/warehouse; the legacy stock is never reused
 	market, err := pricingScoped(ctx, &f, f.tokens["a"], f.storeA1, "pricing:write", func(tx pgx.Tx, scope platform.Scope) (pricing.Market, error) {
@@ -173,11 +188,12 @@ func (s *mtPointsSeam) seed(t *testing.T, e *tcvEnv) {
 // env is merged into the existing child env map by the parent hook; the spec reads exactly these names.
 func (s *mtPointsSeam) env() map[string]string {
 	return map[string]string{
-		"LC_POINTS_PRODUCT":          s.productName,
-		"LC_LINK_POINTS_STORE":       s.store,
-		"LC_LINK_POINTS_CONTROL":     s.control.URL,
-		"LC_LINK_POINTS_CONTROL_KEY": s.key,
-		"LC_LINK_POINTS_CANARY":      s.canary,
+		"LC_POINTS_PRODUCT":           s.productName,
+		"LC_LINK_POINTS_STORE":        s.store,
+		"LC_LINK_POINTS_CONTROL":      s.control.URL,
+		"LC_LINK_POINTS_CONTROL_KEY":  s.key,
+		"LC_LINK_POINTS_CANARY":       s.canary,
+		"LC_LINK_POINTS_CONVERSATION": s.conversation,
 	}
 }
 
@@ -241,6 +257,10 @@ type pointsEvidence struct {
 		AwardEntryID     string  `json:"award_entry_id"`
 		DeductionEntryID string  `json:"deduction_entry_id"`
 		BalanceAfter     int64   `json:"balance_after"`
+		Recovery         bool    `json:"recovery"`
+		PlacementKey     string  `json:"placement_key"`
+		RecoveryKey      string  `json:"recovery_key"`
+		ConversationID   string  `json:"conversation_id"`
 		CustomerName     string  `json:"customer_name"`
 		Permission       string  `json:"permission"`
 	} `json:"real_orders"`
@@ -276,7 +296,7 @@ func (s *mtPointsSeam) check(t *testing.T, e *tcvEnv, evidence string) {
 	if ev.Cases == 0 || strings.Join(ev.Phases, ",") != "full,readonly,noread" {
 		t.Fatalf("points evidence: cases=%d phases=%v", ev.Cases, ev.Phases)
 	}
-	awarded := 0
+	awarded, recovered := 0, 0
 	full, readonly, noread := 0, 0, 0
 	readonlyID, noreadID := "", ""
 	seenOrders := make(map[string]bool, len(ev.RealOrders))
@@ -300,13 +320,15 @@ func (s *mtPointsSeam) check(t *testing.T, e *tcvEnv, evidence string) {
 		if order.Permission != "" && order.MemberID != nil {
 			t.Fatal("a permission-refusal order carries a member award")
 		}
-		if order.MemberID != nil {
+		if order.Recovery {
+			recovered++
+		} else if order.MemberID != nil {
 			awarded++
 		}
 	}
-	// The single lifecycle places seven full-permission orders and one in each refusal phase.
-	if len(ev.RealOrders) != 9 || full != 7 || readonly != 1 || noread != 1 || len(ev.RealMembers) != 11 || len(ev.MockAwards) != 12 || awarded != 6 {
-		t.Fatalf("points corpus: orders=%d phases=%d/%d/%d awarded=%d members=%d mock=%d", len(ev.RealOrders), full, readonly, noread, awarded, len(ev.RealMembers), len(ev.MockAwards))
+	// The two recovery orders augment the existing placement and refusal corpus.
+	if len(ev.RealOrders) != 11 || full != 9 || readonly != 1 || noread != 1 || len(ev.RealMembers) != 13 || len(ev.MockAwards) != 12 || awarded != 6 || recovered != 2 {
+		t.Fatalf("points corpus: orders=%d phases=%d/%d/%d awarded=%d recovered=%d members=%d mock=%d", len(ev.RealOrders), full, readonly, noread, awarded, recovered, len(ev.RealMembers), len(ev.MockAwards))
 	}
 	if len(ev.Permission) != 2 || ev.Permission["readonly"].OrderID != readonlyID || ev.Permission["readonly"].DirectAdjustStatus != 403 ||
 		ev.Permission["noread"].OrderID != noreadID || len(ev.Permission["noread"].MemberReads) != 0 {
@@ -319,7 +341,7 @@ func (s *mtPointsSeam) check(t *testing.T, e *tcvEnv, evidence string) {
 			t.Fatalf("%s delta: %d, want %d", what, now-before, want)
 		}
 	}
-	delta(s.base.entries, after.entries, "ledger entries", 2*awarded)
+	delta(s.base.entries, after.entries, "ledger entries", 2*awarded+recovered)
 	delta(s.base.orderAudits, after.orderAudits, "manual-order audits", len(ev.RealOrders))
 	delta(s.base.orderReceipts, after.orderReceipts, "manual-order receipts", len(ev.RealOrders))
 	delta(s.base.memberReceipts, after.memberReceipts, "member-create receipts", len(ev.RealMembers))
@@ -340,18 +362,27 @@ func (s *mtPointsSeam) check(t *testing.T, e *tcvEnv, evidence string) {
 		}
 	}
 	for _, member := range ev.RealMembers {
-		var balance int64
-		if err := e.p.f.owner.QueryRow(ctx, `SELECT balance FROM loyalty.members WHERE store_id=$1 AND id=$2`, s.store, member.MemberID).Scan(&balance); err != nil || balance != 0 {
-			t.Fatalf("member balance: %d err=%v", balance, err)
-		}
 		want := 0
+		var wantBalance int64
 		if member.Kind == "awarded" {
 			want = 2
+		}
+		if member.Kind == "recovered" {
+			want, wantBalance = 1, 30
+		}
+		var balance int64
+		if err := e.p.f.owner.QueryRow(ctx, `SELECT balance FROM loyalty.members WHERE store_id=$1 AND id=$2`, s.store, member.MemberID).Scan(&balance); err != nil || balance != wantBalance {
+			t.Fatalf("member balance: %d, want %d, err=%v", balance, wantBalance, err)
 		}
 		if n := e.count(`SELECT count(*) FROM loyalty.point_entries WHERE store_id=$1 AND member_id=$2`, s.store, member.MemberID); n != want {
 			t.Fatalf("%s member entries: %d, want %d", member.Kind, n, want)
 		}
 	}
+	type recoveryReceipts struct {
+		Placement json.RawMessage `json:"placement_receipt"`
+		Recovery  json.RawMessage `json:"recovery_receipt"`
+	}
+	dbReceipts := make([]recoveryReceipts, 0, recovered)
 	for _, order := range ev.RealOrders {
 		var source, state, recipient string
 		if err := e.p.f.owner.QueryRow(ctx, `SELECT source,commercial_state,coalesce(snapshot#>>'{destination,recipient_name}','') FROM checkout.orders WHERE store_id=$1 AND id=$2`,
@@ -374,6 +405,34 @@ func (s *mtPointsSeam) check(t *testing.T, e *tcvEnv, evidence string) {
 		if n := e.count(`SELECT count(*) FROM loyalty.point_entries WHERE store_id=$1 AND order_id=$2 AND member_id=$3 AND reason='manual_order_award' AND delta=30 AND note IS NULL`,
 			s.store, order.OrderID, *order.MemberID); n != 1 {
 			t.Fatalf("award entry for %s: %d", order.OrderID, n)
+		}
+		if order.Recovery {
+			var n int
+			var original, recovery []byte
+			if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) OVER (), response::text FROM ops.command_results
+				WHERE store_id=$1 AND operation='merchanttools.order.manual' AND idempotency_key=$2
+				AND response->>'order_id'=$3 AND response#>>'{member_award,state}'='not_awarded' AND response#>>'{member_award,reason}'='forbidden'
+				AND response#>>'{member_award,member_id}'=$4 AND response#>>'{member_award,points}'='30'`,
+				s.store, order.PlacementKey, order.OrderID, *order.MemberID).Scan(&n, &original); err != nil || n != 1 {
+				t.Fatalf("original failed award receipt: count=%d err=%v", n, err)
+			}
+			if err := e.p.f.owner.QueryRow(ctx, `SELECT count(*) OVER (), r.response::text FROM ops.command_results r
+				JOIN loyalty.point_entries p ON p.store_id=r.store_id AND p.id::text=r.response->>'entry_id'
+				WHERE r.store_id=$1 AND r.operation='loyalty.order_award.recover' AND r.idempotency_key=$2
+				AND p.order_id=$3 AND p.member_id=$4 AND p.id=$5 AND p.actor_principal_id=$6 AND r.response->>'state'='awarded'`,
+				s.store, order.RecoveryKey, order.OrderID, *order.MemberID, order.AwardEntryID, s.principal).Scan(&n, &recovery); err != nil || n != 1 {
+				t.Fatalf("keyed recovery receipt and ledger: count=%d err=%v", n, err)
+			}
+			dbReceipts = append(dbReceipts, recoveryReceipts{Placement: original, Recovery: recovery})
+			if order.ConversationID != "" {
+				if order.ConversationID != s.conversation || e.count(`SELECT count(*) FROM inbox.manual_order_sources WHERE store_id=$1 AND conversation_id=$2 AND order_id=$3 AND state='placed'`, s.store, s.conversation, order.OrderID) != 1 {
+					t.Fatal("the Inbox source must persist on the recovered original order")
+				}
+				if n := e.count(`SELECT count(*) FROM inbox.outbound_messages WHERE store_id=$1 AND conversation_id=$2`, s.store, s.conversation); n != 0 {
+					t.Fatalf("contextual manual placement and recovery queued %d customer messages", n)
+				}
+			}
+			continue
 		}
 		if n := e.count(`SELECT count(*) FROM loyalty.point_entries WHERE store_id=$1 AND order_id=$2 AND member_id=$3 AND reason='manual_adjust' AND delta=-30 AND note IS NOT NULL AND actor_principal_id=$4`,
 			s.store, order.OrderID, *order.MemberID, s.principal); n != 1 {
@@ -455,6 +514,13 @@ func (s *mtPointsSeam) check(t *testing.T, e *tcvEnv, evidence string) {
 		len(legacyAfter.members) != len(s.legacyBase.members) {
 		t.Fatalf("the points phase moved the legacy store: orders %d->%d audits %d->%d entries %d->%d",
 			len(s.legacyBase.manualOrders), len(legacyAfter.manualOrders), s.legacyBase.orderAudits, legacyAfter.orderAudits, s.legacyBase.entries, legacyAfter.entries)
+	}
+	receiptData, err := json.MarshalIndent(dbReceipts, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(evidence, "order-points", "pg-recovery-receipts.json"), append(receiptData, '\n'), 0600); err != nil {
+		t.Fatal(err)
 	}
 }
 

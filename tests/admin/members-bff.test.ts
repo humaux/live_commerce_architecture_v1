@@ -61,3 +61,32 @@ test('manual BFF admits only frozen optional member_award with/without discount'
  assert.equal(validManualBody({...base,discount:{name:'Synthetic discount',amount_minor:10},member_award:{member_id:member,points:5}}),true);
  for(const award of [null,{}, {member_id:member,points:0},{member_id:member,points:1.5},{member_id:member,points:1000001},{member_id:member,points:5,balance:10},{member_id:'foreign input',points:5}]) assert.equal(validManualBody({...base,member_award:award}),false);
 });
+test('original-order award recovery proxies only the scoped order and the frozen empty command',async()=>{
+ const file='app/api/stores/[store]/orders/[order]/member-award-recovery/route.ts';
+ const route=await import(pathToFileURL(root+file).href);
+ const path=`/api/stores/${store}/orders/${member}/member-award-recovery`;
+ const context={params:Promise.resolve({store,order:member})};
+ const readHeaders={cookie:`__Host-commerce_session=${token}`};
+ const writeHeaders={...readHeaders,origin,'content-type':'application/json',
+   cookie:readHeaders.cookie+`; __Host-commerce_csrf=${csrf}`,'x-csrf-token':csrf,'idempotency-key':'recovery-123'};
+ const before=seen.length;
+ status=200;payload=JSON.stringify({order_id:member,state:'eligible',member_id:member,points:5});
+ const read=await route.GET(new Request(origin+path,{headers:readHeaders}),context);
+ assert.equal(read.status,200);
+ assert.match(read.headers.get('cache-control'),/private, no-store/);
+ assert.deepEqual(await read.json(),JSON.parse(payload));
+ for(const [request,expected] of [
+   [new Request(origin+path+'?member_id='+member,{headers:readHeaders}),422],
+   [new Request(origin+path,{method:'POST',headers:{...writeHeaders,'x-csrf-token':'mismatch'},body:'{}'}),403],
+   [new Request(origin+path,{method:'POST',headers:writeHeaders,body:'{"points":5}'}),400],
+ ] as const) assert.equal((await route[request.method](request,context)).status,expected);
+ assert.equal(seen.length,before+1);
+ status=201;payload=JSON.stringify({order_id:member,state:'awarded',member_id:member,points:5,entry_id:member});
+ const written=await route.POST(new Request(origin+path,{method:'POST',headers:writeHeaders,body:'{}'}),context);
+ assert.equal(written.status,201);
+ assert.deepEqual(await written.json(),JSON.parse(payload));
+ assert.deepEqual(seen.slice(before).map(({url,method,body,key})=>({url,method,body,key})),[
+   {url:'/v1/admin/stores/'+store+'/orders/'+member+'/member-award-recovery',method:'GET',body:'',key:''},
+   {url:'/v1/admin/stores/'+store+'/orders/'+member+'/member-award-recovery',method:'POST',body:'{}',key:'recovery-123'},
+ ]);
+});

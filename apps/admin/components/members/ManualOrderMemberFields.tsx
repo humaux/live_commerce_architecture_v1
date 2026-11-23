@@ -5,6 +5,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
+import { decimal } from "@live-commerce/format";
 import { Button } from "@live-commerce/ui/ds";
 import type { Store } from "@/lib/model";
 import { useGuardedRead } from "@/lib/customers-client";
@@ -22,6 +23,7 @@ export function ManualOrderMemberFields(p:Props) {
   const [step,setStep]=useState<"edit"|"confirm"|"pending"|"unknown"|"refused">("edit");
   const [error,setError]=useState("");
   const active=useRef<AbortController|null>(null), epoch=useRef(0);
+  const pointsField=useRef<HTMLInputElement>(null);
   const readAllowed=p.enabled && !!p.boundary && !!p.store.permissions?.includes("customers:read");
   const permitted=!!p.store.permissions?.includes("customers:points");
   const read=useGuardedRead(`${p.scope}|${p.boundary}|${readAllowed}|${step==="unknown"?name:query}|${after??""}`,
@@ -29,6 +31,7 @@ export function ManualOrderMemberFields(p:Props) {
   const authority=useRef({enabled:false,boundary:""});
   authority.current={enabled:p.enabled&&permitted&&!(["signed-out","forbidden","hidden"].includes(read.status)),boundary:p.boundary};
   useEffect(()=>()=>{epoch.current++;active.current?.abort();},[]);
+  useEffect(()=>{if(p.value.member)pointsField.current?.focus();},[p.value.member?.id]);
   useEffect(()=>{
     if(!p.enabled || !permitted || !p.boundary || read.status==="signed-out" || read.status==="forbidden" || read.status==="hidden") {
       epoch.current++;active.current?.abort();active.current=null;setQuery("");setAfter(null);setName("");setContact("");setCreating(false);setStep("edit");setError("");
@@ -78,16 +81,24 @@ export function ManualOrderMemberFields(p:Props) {
       {error&&<p role="alert" className={s.error}>{error}</p>}
       <div className={s.actions}><Button type="button" data-testid="manual-member-create-submit" disabledReason={lockedReason||(!name.trim()?c.name:undefined)} loading={step==="pending"} loadingLabel={c.loading} onClick={()=>void save()}>{step==="pending"?c.loading:step==="confirm"?c.confirm:c.select}</Button>
       <Button type="button" variant="secondary" data-testid="manual-member-create-cancel" disabledReason={lockedReason} onClick={()=>{setCreating(false);setStep("edit");setError("");p.onBusy(false);}}>{c.cancel}</Button></div></>}
-    </div> : p.value.member ? <div className={s.selected} data-testid="manual-member-selected"><div><strong>{p.value.member.display_name}</strong><small>{p.value.member.contact_note}</small></div>
-      <Button type="button" variant="secondary" data-testid="manual-member-change" disabledReason={lockedReason} onClick={clearSelection}>{c.change}</Button>
-      <Button type="button" variant="secondary" data-testid="manual-member-remove" disabledReason={lockedReason} onClick={clearSelection}>{c.remove}</Button></div> : <>
+    </div> : p.value.member ? <>
+      <div className={s.selected} data-testid="manual-member-selected">
+        <strong>{p.value.member.display_name}</strong>
+        <small>{p.value.member.contact_note}</small>
+        <small>{c.balance} · {decimal(p.locale,p.value.member.balance,0)}</small>
+      </div>
+      <div className={s.actions}>
+        <Button type="button" variant="secondary" data-testid="manual-member-change" disabledReason={lockedReason} onClick={clearSelection}>{c.change}</Button>
+        <Button type="button" variant="secondary" data-testid="manual-member-remove" disabledReason={lockedReason} onClick={clearSelection}>{c.remove}</Button>
+      </div>
+    </> : <>
       {readAllowed&&<><label>{c.member}<input data-testid="manual-member-query" placeholder={c.query} value={query} maxLength={60} disabled={locked} onChange={e=>{setQuery(e.target.value);setAfter(null);}}/></label>
       {read.status==="loading"?<p role="status">{c.loading}</p>:read.status==="ready"?<div className={s.results} data-testid="manual-member-results">
         {read.data?.members.length===0&&<p>{c.empty}</p>}{read.data?.members.map(member=><button type="button" key={member.id} data-member-id={member.id} disabled={locked} onClick={()=>choose(member)}><strong>{member.display_name}</strong><small>{member.contact_note}</small></button>)}
         {read.data?.next_cursor&&<Button type="button" disabledReason={lockedReason} onClick={()=>setAfter(read.data!.next_cursor)}>{c.more}</Button>}</div>:<p role="status">{c.failed}<Button type="button" onClick={read.reload}>{c.refresh}</Button></p>}</>}
       <Button type="button" data-testid="manual-member-create-open" disabledReason={lockedReason} onClick={()=>{setCreating(true);setName(query);setStep("edit");}}>{c.create}</Button>
     </>}
-    {!creating&&<><label>{c.points}<input data-testid="manual-member-points" inputMode="numeric" value={p.value.points} disabled={locked} aria-invalid={invalid} onChange={e=>p.onChange({...p.value,points:e.target.value})}/></label><p className={s.muted}>{c.optional}</p>
+    {!creating&&<><label>{c.points}<input ref={pointsField} data-testid="manual-member-points" inputMode="numeric" value={p.value.points} disabled={locked} aria-invalid={invalid} onChange={e=>p.onChange({...p.value,points:e.target.value})}/></label><p className={s.muted}>{c.optional}</p>
     {(invalid || (p.value.points!==""&&!p.value.member))&&<p role="alert" className={s.error} data-testid="manual-member-error">{invalid?c.invalid:c.needMember}</p>}</>}
   </section>;
 }

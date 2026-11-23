@@ -9,6 +9,7 @@ package foundation_test
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -22,6 +23,8 @@ import (
 	"livecommerce/internal/httpapi"
 	"livecommerce/internal/identity"
 	"livecommerce/internal/identityhttp"
+	"livecommerce/internal/inbox"
+	"livecommerce/internal/merchanttools"
 	"livecommerce/internal/oidclogin"
 )
 
@@ -35,7 +38,11 @@ func TestBrowserManualOrderLink(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	evidence, err := os.MkdirTemp(filepath.Join(root, "output/playwright"), "manual-order-link-")
+	evidenceRoot := os.Getenv("LC_BROWSER_EVIDENCE_ROOT")
+	if evidenceRoot == "" {
+		evidenceRoot = filepath.Join(root, "output/playwright")
+	}
+	evidence, err := os.MkdirTemp(evidenceRoot, "manual-order-link-")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +80,38 @@ func TestBrowserManualOrderLink(t *testing.T) {
 	}
 	mux := http.NewServeMux()
 	mux.Handle("/v1/identity/", private)
-	mux.Handle("/", httpapi.NewHandler(e.p.f.runtime, httpapi.Options{SessionStoreList: true, CVS: e.cvs, ManualOrders: mtManualOrders(t, e)}))
+	points := mtPointsSeamNew(t, e, "")
+	keys, err := inbox.LoadKeyring(func(name string) string {
+		switch name {
+		case "COMMERCE_META_PAYLOAD_ACTIVE_KEY_ID":
+			return miKeyID
+		case "COMMERCE_META_PAYLOAD_KEYS_JSON":
+			return `{"keys":[{"id":"` + miKeyID + `","key_base64":"` + base64.StdEncoding.EncodeToString(randomBytes(32)) + `"}]}`
+		}
+		return ""
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	inbound, err := inbox.NewService(keys)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manual := mtManualOrders(t, e)
+	forBuyer, err := merchanttools.NewForBuyer(manual, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	manual.FaultBeforeFinal = func() error {
+		if points.missAward.Swap(false) {
+			_, err := e.p.f.owner.Exec(ctx, `DELETE FROM identity.store_grants
+				WHERE tenant_id=$1 AND store_id=$2 AND principal_id=$3 AND permission='customers:points'`,
+				e.p.f.tenantA, points.store, points.principal)
+			return err
+		}
+		return nil
+	}
+	mux.Handle("/", httpapi.NewHandler(e.p.f.runtime, httpapi.Options{SessionStoreList: true, CVS: e.cvs, ManualOrders: manual, ForBuyer: forBuyer, Inbox: inbound}))
 	api := httptest.NewServer(mux)
 	t.Cleanup(api.Close)
 
@@ -100,7 +138,6 @@ func TestBrowserManualOrderLink(t *testing.T) {
 		}
 	}()
 	cmd.Dir = root
-	points := mtPointsSeamNew(t, e, "")
 	childEnv := map[string]string{
 		"COMMERCE_IDENTITY_ENABLED": "1", "COMMERCE_IDENTITY_ALLOW_LOOPBACK_TESTS": "1",
 		"COMMERCE_PUBLIC_ORIGIN": adminOrigin, "COMMERCE_API_ORIGIN": api.URL, "COMMERCE_OIDC_ISSUER": idp.server.URL, "COMMERCE_BFF_KEY": adminKey,

@@ -98,6 +98,7 @@ async function runOrderPointsSpec() {
     LC_POINTS_CONTROL: process.env.LC_LINK_POINTS_CONTROL,
     LC_POINTS_CONTROL_KEY: process.env.LC_LINK_POINTS_CONTROL_KEY,
     LC_POINTS_CANARY: process.env.LC_LINK_POINTS_CANARY,
+    LC_POINTS_CONVERSATION: process.env.LC_LINK_POINTS_CONVERSATION,
     NEXT_TELEMETRY_DISABLED: "1",
   });
   const child = spawn("pnpm", ["exec", "playwright", "test", "tests/admin/order-points.spec.ts", "--reporter=list", "--output=" + path.join(evidence, "order-points", "results")], {cwd: root, env, stdio: ["ignore", "inherit", "inherit"]});

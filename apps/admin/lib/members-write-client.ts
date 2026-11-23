@@ -14,6 +14,9 @@ export type MemberWriteCode =
   | "export_too_large"
   | "points_insufficient"
   | "member_erased"
+  | "award_not_eligible"
+  | "award_already_recorded"
+  | "award_review_required"
   | "idempotency_conflict"
   | "conflict"
   | "limit_reached"
@@ -195,6 +198,9 @@ export async function writeMemberCommand<T>(
             "export_too_large",
             "points_insufficient",
             "member_erased",
+            "award_not_eligible",
+            "award_already_recorded",
+            "award_review_required",
             "idempotency_conflict",
             "conflict",
           ].includes(String(code))) ||

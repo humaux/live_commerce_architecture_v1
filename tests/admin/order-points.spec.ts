@@ -53,6 +53,7 @@ const adjustPath = (member: string) => `/api/stores/${store}/members/${member}/a
 const memberCreatePath = `/api/stores/${store}/members`;
 const searchPath = `/api/stores/${store}/members/search`;
 const entryPath = `/api/stores/${store}/members/entries`;
+const recoveryPath = (order: string) => `/api/stores/${store}/orders/${order}/member-award-recovery`;
 const abs = (path: string) => `${origin}${path}`;
 const randomKey = () => `points-${crypto.randomUUID()}`;
 const uuid = () => crypto.randomUUID();
@@ -515,6 +516,172 @@ test("LPU03 empty award field omits member_award entirely; typed decimal/0/>1000
       await context.close();
     }
   });
+
+for (const device of ["desktop", "mobile"] as const) {
+  test(`M10 original award recovery uses the real receipt and ledger (${device})`, async ({ browser }) => {
+    test.setTimeout(180_000);
+    const locale = "zh-TW";
+    const context = await openContext(browser, { locale, viewport: device === "desktop" ? { width: 1440, height: 900 } : { width: 375, height: 812 } });
+    const page = await context.newPage();
+    const watched = watch(page);
+    const recipient = `Synthetic customer ${canary} recovery ${device}`;
+    const conversation = device === "mobile" ? required("LC_POINTS_CONVERSATION") : "";
+    let placed: Placed | undefined, placementKey = "";
+    let credit: { order_id: string; member_id: string; points: number; entry_id: string; state: string } | undefined;
+    const writes: Array<{path: string; key?: string; body?: unknown}> = [];
+    page.on("request", request => {
+      const path = new URL(request.url()).pathname;
+      if (request.method() === "POST" && (path === pointsPath || path.endsWith("/member-award-recovery") || path.endsWith("/adjustments")))
+        writes.push({path,key:request.headers()["idempotency-key"],body:request.postDataJSON()});
+    });
+    try {
+      if (conversation) {
+        await page.goto(abs(`/${locale}/messages?store=${store}`));
+        await page.getByTestId(`conversation-${conversation}`).click();
+        await page.getByTestId("inbox-manual-order").click();
+      } else {
+        await page.goto(abs(`/${locale}?store=${store}`));
+        await page.getByTestId("action-create-order").click();
+      }
+      const memberName = `Synthetic member ${canary} recovery ${device}`;
+      const {memberId} = await createMember(page, memberName, `line-${canary}-recovery-${device}`, "recovered");
+      if (!conversation) {
+        await page.getByTestId("manual-order-form").locator(`a[href="/${locale}/orders?store=${store}"]`).click();
+        await expect(page.getByTestId("manual-order-form")).toHaveCount(0);
+        expect(writes).toHaveLength(0);
+        await page.goto(abs(`/${locale}?store=${store}`));
+        await page.getByTestId("action-create-order").click();
+        await pickMemberBySearch(page, memberName, memberId);
+      }
+      await addProduct(page);
+      await chooseHomeDelivery(page);
+      await fillRecipient(page, recipient, "0912000003");
+      await page.getByTestId("manual-member-points").fill("30");
+      const arm = await fetch(`${control}/points-miss-award`, {method:"POST",headers:{"X-Gate-Key":controlKey}});
+      expect(arm.status).toBe(204);
+      if (device === "desktop") {
+        await page.route(abs(pointsPath), async route => {
+          const reply = await route.fetch({maxRetries:0});
+          expect(reply.status()).toBe(201);
+          placed = await reply.json();
+          placementKey = route.request().headers()["idempotency-key"];
+          await route.abort();
+        }, {times:1});
+        await page.getByTestId("manual-order-form").locator('button[type="submit"]').click();
+        await page.getByTestId("manual-order-submit").click();
+        await expect(page.getByTestId("manual-order-check-original")).toBeVisible();
+        const stored = await storedPrivateTerms(page);
+        for (const value of [recipient, "0912000003", "1 Order Points Road"]) expect(stored).not.toContain(value);
+        await page.reload();
+        const readback = page.waitForResponse(reply => new URL(reply.url()).pathname === pointsPath + "/receipt");
+        await page.getByTestId("manual-order-check-original").click();
+        const reply = await readback;
+        expect(reply.request().headers()["idempotency-key"]).toBe(placementKey);
+        const saved = await reply.json();
+        expect(saved.state).toBe("committed");
+        expect(saved.receipt).toMatchObject({order_id:placed?.order_id,payment_mode:"bank_transfer",total_minor:1250});
+        expect(saved.receipt.member_award).toEqual(placed?.member_award);
+      } else {
+        const reply = await reviewAndPlace(page);
+        expect(reply.status).toBe(201);
+        expect(reply.body.source_context).toMatchObject({conversation_id:conversation,bundle_ids:[]});
+        const back = page.getByTestId("manual-order-return-conversation");
+        await expect(back).toHaveAttribute("href", `/${locale}/messages?store=${store}&conversation_id=${conversation}`);
+        placed = reply.answer;
+        placementKey = writes[0].key!;
+      }
+      expect(placed?.member_award).toMatchObject({member_id:memberId,points:30,state:"not_awarded",reason:"forbidden"});
+      const order = placed!.order_id;
+      const path = recoveryPath(order);
+      const ledger = (reply: import("@playwright/test").Response) => new URL(reply.url()).pathname === entryPath && new URL(reply.url()).searchParams.get("order_id") === order;
+      await expect(page.getByTestId("manual-member-award-result")).toHaveAttribute("data-award-state","not_awarded");
+      await page.screenshot({path:resolve(evidence,`m10-missed-${device}.png`),fullPage:true});
+      const result = page.getByTestId("manual-order-result");
+      await expect(result.getByRole("link", {name:"查看原單",exact:true})).toHaveAttribute("href", `/${locale}/orders/${order}?store=${store}`);
+      await expect(result).toContainText(order.slice(0, 8));
+      await expect(result).toContainText("NT$12.50");
+      if (device === "desktop") {
+        await expect(result.getByText("收件人",{exact:true})).toHaveCount(0);
+        await expect(result.getByText("聯絡電話",{exact:true})).toHaveCount(0);
+        await expect(result.getByText("配送方式",{exact:true})).toHaveCount(0);
+        await expect(result.getByText("取貨門市",{exact:true})).toHaveCount(0);
+        await expect(result.getByText("請選擇…",{exact:true})).toHaveCount(0);
+        await expect(result).not.toContainText("· ·");
+        await expect(result.locator("ul")).toHaveCount(0);
+      } else {
+        for (const value of [recipient, "0912000003", "Taipei 1 Order Points Road"]) {
+          await expect(result.getByText(value,{exact:true})).toBeVisible();
+        }
+      }
+      await expect(result.getByText("銀行轉帳（顧客須在期限內轉帳）",{exact:true})).toBeVisible();
+      await setLevel("full");
+      const check = page.waitForResponse(reply => new URL(reply.url()).pathname === path && reply.request().method() === "GET");
+      const before = page.waitForResponse(ledger);
+      await page.getByTestId("manual-award-check-original").click();
+      expect(await (await check).json()).toMatchObject({order_id:order,member_id:memberId,points:30,state:"eligible"});
+      expect((await (await before).json()).entries).toEqual([]);
+      await page.getByTestId("order-award-recovery-open").click();
+      const dialog = page.getByRole("dialog");
+      await expect(dialog).toBeVisible();
+      await expect(dialog).toContainText(memberName);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+      expect(writes).toHaveLength(1);
+      await page.screenshot({path:resolve(evidence,`m10-confirm-${device}.png`)});
+      if (device === "mobile") {
+        const {left,right,top,bottom} = await dialog.evaluate(element => {
+          const rect = element.getBoundingClientRect();
+          return {left:rect.left,right:window.innerWidth-rect.right,top:rect.top,bottom:window.innerHeight-rect.bottom};
+        });
+        expect(left).toBeGreaterThanOrEqual(15);
+        expect(Math.abs(left-right)).toBeLessThan(2);
+        expect(top).toBeGreaterThan(0);
+        expect(Math.abs(top-bottom)).toBeLessThan(2);
+        const cancel = await dialog.getByRole("button",{name:"取消",exact:true}).boundingBox();
+        const confirm = await dialog.getByTestId("order-award-recovery-submit").boundingBox();
+        expect(cancel && confirm && Math.abs(cancel.y - confirm.y)).toBeLessThan(2);
+        expect(cancel && confirm && Math.abs(cancel.width - confirm.width)).toBeLessThan(2);
+        expect(cancel && confirm && cancel.x + cancel.width <= confirm.x).toBe(true);
+      }
+      let checked;
+      if (device === "mobile") {
+        await page.route(abs(path), async route => {
+          const reply = await route.fetch({maxRetries:0});
+          expect(reply.status()).toBe(201);
+          credit = await reply.json();
+          await route.abort();
+        }, {times:1});
+        await page.getByTestId("order-award-recovery-submit").click();
+        await expect(page.getByTestId("order-award-recovery-check")).toBeVisible();
+        checked = page.waitForResponse(ledger);
+        await page.getByTestId("order-award-recovery-check").click();
+      } else {
+        const committed = page.waitForResponse(reply => new URL(reply.url()).pathname === path && reply.request().method() === "POST");
+        checked = page.waitForResponse(ledger);
+        await page.getByTestId("order-award-recovery-submit").click();
+        const reply = await committed;
+        expect(reply.status()).toBe(201);
+        credit = await reply.json();
+      }
+      expect(credit).toMatchObject({order_id:order,member_id:memberId,points:30,state:"awarded"});
+      const after = (await (await checked).json()).entries;
+      expect(after).toEqual([expect.objectContaining({id:credit!.entry_id,member_id:memberId,delta:30,reason:"manual_order_award"})]);
+      await expect(page.getByTestId("order-award-recorded")).toContainText("+30");
+      await expect(page.getByTestId("order-award-recovery-open")).toHaveCount(0);
+      await page.screenshot({path:resolve(evidence,`m10-recovered-${device}.png`),fullPage:true});
+      expect(writes).toEqual([
+        {path:pointsPath,key:placementKey,body:expect.objectContaining({member_award:{member_id:memberId,points:30}})},
+        {path,key:expect.any(String),body:{}},
+      ]);
+      watched.assertClean([recipient]);
+      realOrders.push({order_id:order,member_id:memberId,customer_name:recipient,recovery:true,award_entry_id:credit!.entry_id,
+        placement_key:placementKey,recovery_key:writes[1].key,conversation_id:conversation,receipt:placed?.member_award,recovery_receipt:credit,
+        ledger:after.map(({id,member_id,delta,reason}: {id:string;member_id:string;delta:number;reason:string})=>({id,member_id,delta,reason}))});
+      cases++;
+    } finally {
+      await context.close();
+    }
+  });
+}
 
 // LPU07 is explicitly MOCK at the BFF boundary only: no Go/PG order is written and the Go helper pins that no REAL row appears.
 for (const locale of ["zh-TW", "zh-CN", "en"] as Locale[]) {

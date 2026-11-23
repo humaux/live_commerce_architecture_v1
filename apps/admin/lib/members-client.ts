@@ -289,6 +289,43 @@ export function readOrderPointEntries(store: string, order: string, signal: Abor
   return read(`/api/stores/${store}/members/entries?order_id=${order}`, signal, parseOrderPointEntries);
 }
 
+type AwardFacts = { member_id: string; points: number };
+type RecordedAward = AwardFacts & { entry_id: string };
+export type AwardRecovery =
+  | ({ state: "eligible" } & AwardFacts)
+  | ({ state: "already_awarded" } & RecordedAward)
+  | { state: "review_required" | "not_eligible"; reason: string };
+
+function awardRecoveryPath(store: string, order: string) {
+  return `/api/stores/${id(store)}/orders/${id(order)}/member-award-recovery`;
+}
+
+function recoveryFacts(p: Record<string, unknown>): AwardFacts {
+  return { member_id: id(p.member_id), points: num(p.points, 1, 1e6) };
+}
+
+export function readAwardRecovery(store: string, order: string, signal: AbortSignal): Promise<AwardRecovery> {
+  return read(awardRecoveryPath(store, order), signal, value => {
+    const p = obj(value);
+    if (p.order_id !== order) return invalid();
+    switch (p.state) {
+      case "eligible": return { state: p.state, ...recoveryFacts(p) };
+      case "already_awarded": return { state: p.state, ...recoveryFacts(p), entry_id: id(p.entry_id) };
+      case "review_required":
+      case "not_eligible": return { state: p.state, reason: str(p.reason, 64) };
+      default: return invalid();
+    }
+  });
+}
+
+export function recoverOrderAward(store: string, order: string, key: string, signal: AbortSignal) {
+  return writeMemberCommand(awardRecoveryPath(store, order), "{}", key, signal, value => {
+    const p = obj(value);
+    if (p.order_id !== order || p.state !== "awarded") return invalid();
+    return { ...recoveryFacts(p), entry_id: id(p.entry_id) };
+  });
+}
+
 // Guarded head read owns logout/visibility; extra pages share its boundary and are never exposed across head/scope changes.
 export function useMemberPages<T>(
   scope: string,
