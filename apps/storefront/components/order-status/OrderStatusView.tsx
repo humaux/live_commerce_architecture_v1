@@ -27,6 +27,7 @@ import type { Order } from "../../lib/purchase";
 import type { OrderPayment as OrderPaymentView } from "../../lib/payment-contract";
 import { orderStatusCopy } from "./copy";
 import { addressLines, shortOrderNumber } from "./format";
+import type { OrderAccess } from "../../lib/buyer-query";
 import OrderTerminalView from "./OrderTerminalView";
 import "./order-status.css";
 
@@ -34,6 +35,7 @@ type Money = (amount: number, currency: string) => string;
 
 export default function OrderStatusView({
   context,
+  access,
   order,
   locale,
   money,
@@ -43,6 +45,7 @@ export default function OrderStatusView({
   isSelected,
 }: {
   context: string;
+  access?: OrderAccess;
   order: Order;
   locale: Locale;
   money: Money;
@@ -101,9 +104,9 @@ export default function OrderStatusView({
   const short = shortOrderNumber(order.order_id);
 
   if (shippedCard && shippedPay === "pending") return <p role="status">{pay.loading}</p>;
-  if (shippedCard) return <OrderTerminalView order={order} locale={locale} money={money} kind="completed" payment={shippedPay === "pending" ? null : shippedPay} />;
+  if (shippedCard) return <OrderTerminalView access={access} order={order} locale={locale} money={money} kind="completed" payment={shippedPay === "pending" ? null : shippedPay} />;
   if (cancelledCard && probe === "pending") return <p role="status">{pay.loading}</p>;
-  if (cancelledCard && probe === "unpaid") return <OrderTerminalView order={order} locale={locale} money={money} kind="cancelled" />;
+  if (cancelledCard && probe === "unpaid") return <OrderTerminalView access={access} order={order} locale={locale} money={money} kind="cancelled" />;
 
   async function recheck() {
     // Errors are swallowed inside the handler (shown in the payment section).
@@ -263,7 +266,7 @@ export default function OrderStatusView({
               </section>
             )}
             {order.payment_mode === "bank_transfer" && (
-              <BankTransfer key={`${context}:${order.order_id}:transfer`} context={context} orderID={order.order_id} locale={locale} money={money}
+              <BankTransfer key={`${context}:${order.order_id}:transfer`} context={context} access={access} orderID={order.order_id} locale={locale} money={money}
                 refreshToken={paymentRefresh} onState={setTransferState} />
             )}
             {isCard && (
@@ -283,8 +286,8 @@ export default function OrderStatusView({
             {order.shipment && <ShipmentBlock shipment={order.shipment} locale={locale} />}
             <div className="os-actions">
               <ContactStoreButton label={c.contact} locale={locale} intent="contact" />
-              {!(isCard && order.commercial_state === "CANCELLED") && (
-                <a className="os-back" data-testid="request-after-sales" href={`/${locale}/orders/${order.order_id}/return`}>{c.after}</a>
+              {access !== "lookup" && !(isCard && order.commercial_state === "CANCELLED") && (
+                <a className="os-back" data-testid="request-after-sales" href={`/${locale}/orders/${order.order_id}/return${access ? `?access=${access}` : ""}`}>{c.after}</a>
               )}
             </div>
           </section>

@@ -284,7 +284,7 @@ async function openOrder(ctx, n) {
   const inputs = page.locator("main form input");
   await inputs.nth(0).fill(refOf(n));
   await inputs.nth(1).fill("name@example.com");
-  await Promise.all([page.waitForURL(/\/zh-TW\/orders\/[0-9a-f-]{36}$/, { timeout: 15000 }), click(page, page.locator("main form button[type=submit]"), { page: "查詢訂單", control: "submit", expected: "navigate to the order" })]);
+  await Promise.all([page.waitForURL(/\/zh-TW\/orders\/[0-9a-f-]{36}\?access=lookup$/, { timeout: 15000 }), click(page, page.locator("main form button[type=submit]"), { page: "查詢訂單", control: "submit", expected: "navigate to the order" })]);
   return page;
 }
 

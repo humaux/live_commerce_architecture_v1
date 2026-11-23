@@ -3,7 +3,7 @@
 // Used by: /api/buyer catch-all route (app/api/buyer/[...path]/route.ts) and CI BFF tests.
 // Invariants: server-resolved published origin and scope; no generic proxy, client scope, raw diagnostics, PII logs, credential disclosure or mutation/contact retry.
 import { type BuyerReturnBody, type BuyerReturnFields, buyerReturnBodies, buyerReturnRoute, isBuyerReturnMutation, validBuyerReturnBody, validBuyerReturnResponse } from "./buyer-returns.ts";
-import { BUYER_UUID as UUID, type BuyerQuery, validQuery } from "./buyer-query.ts";
+import { BUYER_UUID as UUID, type BuyerQuery, type OrderAccess, isOrderAccess, validQuery } from "./buyer-query.ts";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { isIP } from "node:net";
 import { readAdSignals, readAdTouch } from "./ad-touch.ts";
@@ -51,6 +51,10 @@ import {
 } from "./cvs-contract.ts";
 
 const COOKIE = "__Host-commerce_buyer";
+const ORDER_COOKIES = {
+  lookup: "__Host-commerce_buyer_lookup",
+  link: "__Host-commerce_buyer_link",
+} satisfies Record<OrderAccess, string>;
 const MAX_JSON = 64 * 1024;
 const MAX_UPSTREAM = 1024 * 1024;
 const INBOUND_DEADLINE = 12_000;
@@ -64,6 +68,7 @@ type Envelope = {
   iat: number;
   exp: number;
   origin: string;
+  order?: string;
 };
 type Session = {
   state: "absent" | "expired" | "inactive" | "active";
@@ -94,6 +99,7 @@ type Route = {
     | BuyerReturnBody;
   query?: BuyerQuery;
   session?: string;
+  orderSession?: boolean;
   payment?: "view" | "prepare" | "handoff" | "refresh" | "cancel";
   orderID?: string;
   // Claim-link preview/redeem (live-keyword-claims-v1 B1/B2): the only routes that take
@@ -219,9 +225,13 @@ function mac(config: Config, purpose: string, text: string): Buffer {
     .digest();
 }
 
-function envelopeValue(config: Config, envelope: Envelope): string {
+function cookieLabel(access?: OrderAccess): string {
+  return access ? `buyer-order-${access}-cookie-v1` : "buyer-cookie-v1";
+}
+
+function envelopeValue(config: Config, envelope: Envelope, access?: OrderAccess): string {
   const payload = Buffer.from(JSON.stringify(envelope)).toString("base64url");
-  return `${payload}.${mac(config, "buyer-cookie-v1", payload).toString("base64url")}`;
+  return `${payload}.${mac(config, cookieLabel(access), payload).toString("base64url")}`;
 }
 
 function context(config: Config, origin: string, cookie: string): string {
@@ -230,7 +240,7 @@ function context(config: Config, origin: string, cookie: string): string {
   );
 }
 
-function cookieValue(request: Request): {
+function cookieValue(request: Request, name: string): {
   kind: "absent" | "invalid" | "present";
   value?: string;
 } {
@@ -239,7 +249,7 @@ function cookieValue(request: Request): {
   const values: string[] = [];
   for (const part of source.split(";")) {
     const at = part.indexOf("=");
-    if (at >= 0 && part.slice(0, at).trim() === COOKIE)
+    if (at >= 0 && part.slice(0, at).trim() === name)
       values.push(part.slice(at + 1).trim());
   }
   return values.length === 0
@@ -253,6 +263,7 @@ function parseEnvelope(
   config: Config,
   origin: string,
   value: string,
+  access?: OrderAccess,
 ): Envelope | null {
   const pieces = value.split(".");
   if (
@@ -261,7 +272,7 @@ function parseEnvelope(
     !canonical32(pieces[1])
   )
     return null;
-  const expected = mac(config, "buyer-cookie-v1", pieces[0]);
+  const expected = mac(config, cookieLabel(access), pieces[0]);
   if (!timingSafeEqual(expected, Buffer.from(pieces[1], "base64url")))
     return null;
   try {
@@ -283,7 +294,8 @@ function parseEnvelope(
       e.exp - e.iat > config.ttl ||
       e.iat > Math.floor(Date.now() / 1000) + 60 ||
       JSON.stringify(e) !== bytes.toString("utf8") ||
-      Object.keys(e).join(",") !== "v,token,iat,exp,origin"
+      Object.keys(e).join(",") !== (access ? "v,token,iat,exp,origin,order" : "v,token,iat,exp,origin") ||
+      (access && (typeof e.order !== "string" || !UUID.test(e.order)))
     )
       return null;
     return e;
@@ -296,18 +308,19 @@ function identify(
   request: Request,
   config: Config,
   origin: string,
+  access?: OrderAccess,
 ): {
   envelope: Envelope | null;
   cookie: string | null;
   context: string | null;
   invalid: boolean;
 } {
-  const found = cookieValue(request);
+  const found = cookieValue(request, access ? ORDER_COOKIES[access] : COOKIE);
   if (found.kind === "absent")
     return { envelope: null, cookie: null, context: null, invalid: false };
   if (found.kind === "invalid")
     return { envelope: null, cookie: null, context: null, invalid: true };
-  const e = parseEnvelope(config, origin, found.value!);
+  const e = parseEnvelope(config, origin, found.value!, access);
   return e
     ? {
         envelope: e,
@@ -342,6 +355,19 @@ function route(
               session: session[1] ?? "status",
             }
           : undefined,
+    };
+  }
+  const orderSession = /^orders\/([^/]+)\/session(?:\/(logout))?$/.exec(suffix);
+  if (orderSession) {
+    if (!UUID.test(orderSession[1])) return { known: true, invalidID: true };
+    const logout = !!orderSession[2];
+    return {
+      known: true,
+      route: method === (logout ? "POST" : "GET") ? {
+        method, privatePath: "session", body: logout ? "empty" : undefined,
+        session: logout ? "logout" : "status", orderSession: true,
+        orderID: orderSession[1], query: "orderAccess",
+      } : undefined,
     };
   }
   const exact: Record<string, Record<string, Omit<Route, "method">>> = {
@@ -467,7 +493,7 @@ function route(
   if (!UUID.test(item[2])) return { known: true, invalidID: true };
   return {
     known: true,
-    route: method === "GET" ? { method, privatePath: suffix, query: item[1] === "orders" ? undefined : "purchaseCart" } : undefined,
+    route: method === "GET" ? { method, privatePath: suffix, orderID: item[1] === "orders" ? item[2] : undefined, query: item[1] === "orders" ? undefined : "purchaseCart" } : undefined,
   };
 }
 
@@ -884,6 +910,17 @@ function forwardedIP(request: Request): string | undefined {
     : undefined;
 }
 
+function orderAccessReceipt(
+  cfg: Config, origin: string, token: string, order: string, access: OrderAccess,
+): Response {
+  const iat = Math.floor(Date.now() / 1000);
+  const envelope: Envelope = { v: 1, token, iat, exp: iat + cfg.ttl, origin, order };
+  const value = envelopeValue(cfg, envelope, access);
+  return success({ order_id: order }, {
+    "Set-Cookie": `${ORDER_COOKIES[access]}=${value}; Path=/; Max-Age=${cfg.ttl}; Secure; HttpOnly; SameSite=Lax`,
+  });
+}
+
 // POST /api/buyer/orders/lookup. No cookie is needed or read: a fresh capability token is minted exactly like session/prepare, Go registers it
 // for the matched order's owner, and the cookie is set only when Go said 200 (a refusal leaves the visitor's current cookie alone).
 async function lookup(
@@ -919,12 +956,7 @@ async function lookup(
   const data = await upstreamJSON(response);
   if (response.status !== 200 || !validLookupResult(data))
     return failure(503, "unavailable");
-  const iat = Math.floor(Date.now() / 1000);
-  const envelope: Envelope = { v: 1, token, iat, exp: iat + cfg.ttl, origin };
-  const value = envelopeValue(cfg, envelope);
-  return success(data, {
-    "Set-Cookie": `${COOKIE}=${value}; Path=/; Max-Age=${cfg.ttl}; Secure; HttpOnly; SameSite=Lax`,
-  });
+  return orderAccessReceipt(cfg, origin, token, data.order_id, "lookup");
 }
 
 // POST /api/buyer/orders/link. Like lookup(): no cookie is read; the capability token is DERIVED (not random) from the link token and the
@@ -977,12 +1009,7 @@ async function orderLink(
   const data = await upstreamJSON(response);
   if (response.status !== 200 || !validLinkResult(data, named))
     return failure(503, "unavailable");
-  const iat = Math.floor(Date.now() / 1000);
-  const envelope: Envelope = { v: 1, token, iat, exp: iat + cfg.ttl, origin };
-  const value = envelopeValue(cfg, envelope);
-  return success(data, {
-    "Set-Cookie": `${COOKIE}=${value}; Path=/; Max-Age=${cfg.ttl}; Secure; HttpOnly; SameSite=Lax`,
-  });
+  return orderAccessReceipt(cfg, origin, token, named, "link");
 }
 
 function forbiddenHeaders(request: Request): boolean {
@@ -1059,8 +1086,32 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
   if (target.contact) return contactMessage(request, cfg, origin);
   if (target.lookup) return lookup(request, cfg, origin);
   if (target.link) return orderLink(request, cfg, origin);
-  const found = identify(request, cfg, origin);
+  const suppliedContext = request.headers.get("x-buyer-context");
+  let access: OrderAccess | undefined;
+  let found = identify(request, cfg, origin);
+  if (target.orderSession) {
+    const mode = url.searchParams.get("access");
+    if (!isOrderAccess(mode)) return fail(422, "invalid_request");
+    access = mode;
+    found = identify(request, cfg, origin, access);
+  } else if (!target.session && suppliedContext && found.context !== suppliedContext) {
+    for (const mode of ["lookup", "link"] as const) {
+      const candidate = identify(request, cfg, origin, mode);
+      if (candidate.context === suppliedContext) {
+        access = mode;
+        found = candidate;
+        break;
+      }
+    }
+  }
   if (found.invalid) return fail(401, "unauthorized");
+  const scopedOrder = access && found.envelope?.order;
+  if (scopedOrder && target.orderID && scopedOrder !== target.orderID)
+    return fail(403, "forbidden");
+  if (access && !target.orderSession &&
+      ((!target.orderID && !target.returnRequest) ||
+        (access === "lookup" && (isMutation || target.returnRequest))))
+    return fail(403, "forbidden");
   if (
     target.session === "prepare" &&
     !found.envelope &&
@@ -1219,7 +1270,11 @@ export async function handleBuyerRequest(request: Request): Promise<Response> {
   const data = await upstreamJSON(response, !!target.payment || !!target.returnRequest);
   if (request.signal.aborted || data === null || typeof data !== "object")
     return fail(503, "unavailable");
-  if (!validBuyerReturnResponse(target, response.status, data)) return fail(503, "unavailable");
+  if (!validBuyerReturnResponse(scopedOrder ? { ...target, orderID: scopedOrder } : target, response.status, data))
+    return fail(503, "unavailable");
+  if (scopedOrder && target.returnRequest === "list" &&
+      (data as { items: { order_id: string }[] }).items.some(item => item.order_id !== scopedOrder))
+    return fail(503, "unavailable");
   if (
     target.cvs &&
     (![200, 201].includes(response.status) ||
