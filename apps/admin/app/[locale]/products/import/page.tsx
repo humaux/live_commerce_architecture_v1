@@ -12,5 +12,5 @@ export default async function ProductImportPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const page = await loadPage(params, searchParams, ["store"]);
-  return <ProductImport locale={page.locale} stores={page.stores} store={page.store} />;
+  return <ProductImport key={page.store?.id} locale={page.locale} stores={page.stores} store={page.store} />;
 }

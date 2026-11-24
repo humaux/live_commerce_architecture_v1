@@ -2,20 +2,47 @@
  * Depends on: ProductDocument.css and the shared admin semantic tokens.
  * Used by: ProductList and CatalogSimplifiedEditor.
  * Invariants: 44px controls, bounded mobile width, no global shell overrides. */
-.cat-chip-tabs { display:flex; gap:4px; overflow-x:auto; margin-bottom:16px; padding:0 0 1px; }
+.cat-chip-tabs { display:flex; gap:4px; overflow-x:auto; margin-bottom:12px; padding:0 0 1px; }
 .cat-chip-tabs button { flex:0 0 auto; min-height:44px; padding:10px 24px; border:1px solid var(--ui-border); border-radius:5px; background:var(--ui-surface); color:var(--ui-text); font:inherit; }
 .cat-chip-tabs button[aria-pressed="true"] { background:var(--ui-primary-soft); }
-.cat-task-list .cat-list-tools { margin-bottom:16px; padding:0 12px; background:var(--ui-surface); min-height:44px; }
+.cat-list-card, .cat-task-list .cat-import-panel {
+  background:var(--ui-surface); border:1px solid var(--ui-border); border-radius:12px; padding:16px;
+}
+.cat-task-list .cat-import-panel { margin-top:16px; min-height:0; scroll-margin-top:80px; }
+.cat-import-panel > header { margin-bottom:8px; align-items:center; }
+.cat-import-panel > header h2 { margin:0; }
+.cat-import-panel .ops-card { margin-bottom:0; }
+.cat-task-list .cat-list-tools { display:flex; flex-wrap:wrap; gap:8px; }
 .cat-select-all { display:flex; gap:20px; align-items:center; min-height:44px; cursor:pointer; }
 .cat-select-all input { width:20px; height:20px; margin:0; accent-color:var(--ui-primary); }
-.cat-task-list .cat-products-table { border:1px solid var(--ui-border); }
+.cat-products-table thead th {
+  padding:10px 12px; background:var(--ui-surface-muted, var(--ui-primary-soft)); color:var(--ui-muted);
+  font-size:13px; font-weight:600; text-align:left; white-space:normal; overflow-wrap:anywhere;
+}
+.cat-toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-bottom:12px; }
+.cat-task-list .cat-search { display:flex; flex:1; gap:8px; max-width:460px; min-width:0; margin:0 auto 0 0; }
+.cat-search input { flex:1; min-width:0; }
+.cat-search :is(input,button), .cat-import-link, .cat-operations summary {
+  min-height:44px; padding:0 12px; border:1px solid var(--ui-border); border-radius:5px;
+  background:var(--ui-surface); color:var(--ui-text); font:inherit;
+}
+.cat-search button { display:grid; place-items:center; min-width:44px; padding:0; }
+.cat-import-link { display:inline-flex; align-items:center; text-decoration:none; }
 .cat-products-table .pe-product-identity { display:grid; gap:6px; }
-.cat-products-table .cat-row-price { font-weight:600; font-variant-numeric:tabular-nums; }
-.cat-products-table .cat-row-state { color:var(--ui-muted); font-size:13px; }
+.cat-products-table .pe-product-identity small { color:var(--ui-muted); }
+.cat-task-list .cat-products-table :is(.pe-price-cell,.pe-stock-cell) { text-align:left; }
+.cat-products-table .pe-price-cell { font-weight:600; overflow-wrap:anywhere; }
+.cat-products-table .cat-status-active { background:var(--ui-primary-soft); color:var(--ui-primary); }
+/* Keep the card summary within its cell while a viewport resize updates the row. */
+.cat-task-list .cat-products-table .cat-card-facts {
+  display:inline-block; max-inline-size:100%; white-space:normal; overflow-wrap:anywhere;
+}
 .cat-products-table .pe-product-cell { width:100%; }
 .cat-products-table .pe-actions-cell { padding-right:12px; }
 .cat-products-table .product-photo { width:48px; height:48px; flex:0 0 48px; }
 .cat-products-table .pe-row-actions a { border:1px solid var(--ui-border); border-radius:5px; padding:0 12px; text-decoration:none; color:var(--ui-text); }
+.cat-list-footer { display:flex; flex-wrap:wrap; align-items:center; gap:8px; justify-content:space-between; padding-top:12px; color:var(--ui-muted); }
+.cat-list-footer .orders-pager { margin:0; }
 .cat-save-bar { position:sticky; bottom:0; z-index:3; display:flex; gap:8px; padding:12px 16px; border-top:1px solid var(--ui-border); background:var(--ui-surface); }
 .cat-task-list .cat-save-bar { position:fixed; left:var(--admin-sidebar-width, 216px); right:0; bottom:0; }
 .cat-task-list:has(.cat-save-bar) { padding-bottom:84px; }
@@ -30,19 +57,39 @@
 .cat-save-bar > :is(button,a) { display:grid; place-items:center; flex:1; min-height:44px; box-sizing:border-box; text-decoration:none; }
 .cat-task-editor > section { padding:20px 16px; background:var(--ui-surface); }
 .cat-stock-floor { color:var(--ui-muted); font-size:13px; margin:0; }
+@media(min-width:1281px) {
+  .cat-products-table:has(.pe-selection-cell) thead th:first-child { padding-inline-end:0; }
+  /* A pending desktop header leaves the card row sizing all columns. */
+  .cat-products-table:not(:has(thead)) { table-layout:auto; }
+  .cat-products-table:not(:has(thead)) .pe-product-cell { width:auto; }
+}
 @media(max-width:680px) {
-  .cat-chip-tabs button { padding:10px 20px; }
+  .cat-chip-tabs button { padding:10px 12px; }
   .cat-task-list .cat-save-bar { left:0; }
-  .cat-products-table tr { grid-template-columns:44px minmax(0,1fr) auto; padding:12px 0; }
-  .cat-products-table .pe-product-cell { grid-column:2; grid-row:1; }
-  .cat-products-table .pe-actions-cell { grid-column:3; grid-row:1; }
+  .cat-list-card, .cat-task-list .cat-import-panel { padding:12px; }
+  .cat-task-list .cat-search { flex-basis:100%; }
+  .cat-toolbar .cat-operations { margin-left:auto; }
+  .cat-products-table thead { position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); }
+  .cat-products-table tbody tr { grid-template-columns:44px minmax(0,1fr) fit-content(34%); align-items:center; padding:10px 0; }
+  .cat-products-table tbody tr:not(:has(.pe-selection-cell)) { grid-template-columns:0 minmax(0,1fr) fit-content(34%); }
+  .cat-products-table .pe-selection-cell { grid-column:1; grid-row:1; }
+  .cat-products-table .pe-product-cell { grid-column:2; grid-row:1; min-width:0; padding:4px; text-align:left; }
+  .cat-products-table .pe-price-cell { grid-column:3; grid-row:1; justify-self:end; }
+  .cat-products-table .pe-status-cell { grid-column:2; grid-row:2; }
+  .cat-products-table .pe-status-cell:has(.cat-card-facts) { grid-column:2 / -1; }
+  .cat-products-table td.pe-stock-cell { grid-column:3; grid-row:2; }
+  .cat-products-table .pe-actions-cell { grid-column:1 / -1; grid-row:3; padding:4px; }
+  .cat-products-table .pe-row-actions a { width:100%; box-sizing:border-box; }
   .cat-task-editor { padding:0; max-height:calc(100dvh - 140px); }
   .cat-save-bar { margin-left:-16px; margin-right:-16px; }
   .cat-task-editor .cat-save-bar { margin-left:0; margin-right:0; }
 }
 
 /* Signed K2 entry and result use the existing task surface and control tokens. */
-.cat-operations { margin-bottom:16px; }
-.cat-operations summary { min-height:44px; cursor:pointer; }
-.cat-operations > :is(button,a), .cat-task-panel > a { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:0 16px; border:1px solid var(--ui-border); border-radius:5px; background:var(--ui-surface); color:var(--ui-text); text-decoration:none; font:inherit; }
+.cat-operations { position:relative; flex:none; }
+.cat-operations summary { display:flex; align-items:center; gap:8px; cursor:pointer; }
+.cat-operations summary::after { content:"▾"; }
+.cat-operation-menu { position:absolute; right:0; top:100%; z-index:2; display:grid; gap:4px; width:max-content; max-width:calc(100vw - 56px); padding:6px; background:var(--ui-surface); border:1px solid var(--ui-border); border-radius:5px; }
+.cat-operations:not([open]) .cat-operation-menu { display:none; }
+.cat-operation-menu > :is(button,a), .cat-task-panel > a { display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:0 16px; border:1px solid var(--ui-border); border-radius:5px; background:var(--ui-surface); color:var(--ui-text); text-decoration:none; font:inherit; }
 .cat-task-panel { padding:20px 16px; background:var(--ui-surface); }
