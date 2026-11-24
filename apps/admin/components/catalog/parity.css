@@ -58,7 +58,7 @@
 .cat-task-editor > section { padding:20px 16px; background:var(--ui-surface); }
 .cat-stock-floor { color:var(--ui-muted); font-size:13px; margin:0; }
 @media(min-width:1281px) {
-  .cat-products-table:has(.pe-selection-cell) thead th:first-child { width:max(4%, 80px); }
+  .cat-products-table:has(.pe-selection-cell) thead th:first-child { padding-inline-end:0; }
   /* A pending desktop header leaves the card row sizing all columns. */
   .cat-products-table:not(:has(thead)) { table-layout:auto; }
   .cat-products-table:not(:has(thead)) .pe-product-cell { width:auto; }
