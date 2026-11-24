@@ -33,6 +33,10 @@
 .cat-task-list .cat-products-table :is(.pe-price-cell,.pe-stock-cell) { text-align:left; }
 .cat-products-table .pe-price-cell { font-weight:600; overflow-wrap:anywhere; }
 .cat-products-table .cat-status-active { background:var(--ui-primary-soft); color:var(--ui-primary); }
+/* Keep the card summary within its cell while a viewport resize updates the row. */
+.cat-task-list .cat-products-table .cat-card-facts {
+  display:inline-block; max-inline-size:100%; white-space:normal; overflow-wrap:anywhere;
+}
 .cat-products-table .pe-product-cell { width:100%; }
 .cat-products-table .pe-actions-cell { padding-right:12px; }
 .cat-products-table .product-photo { width:48px; height:48px; flex:0 0 48px; }
@@ -65,8 +69,9 @@
   .cat-products-table .pe-selection-cell { grid-column:1; grid-row:1; }
   .cat-products-table .pe-product-cell { grid-column:2; grid-row:1; min-width:0; padding:4px; text-align:left; }
   .cat-products-table .pe-price-cell { grid-column:3; grid-row:1; justify-self:end; }
-  .cat-products-table .pe-status-cell { grid-column:2 / -1; grid-row:2; }
-  .cat-task-list .cat-products-table .cat-card-facts { white-space:normal; overflow-wrap:anywhere; }
+  .cat-products-table .pe-status-cell { grid-column:2; grid-row:2; }
+  .cat-products-table .pe-status-cell:has(.cat-card-facts) { grid-column:2 / -1; }
+  .cat-products-table td.pe-stock-cell { grid-column:3; grid-row:2; }
   .cat-products-table .pe-actions-cell { grid-column:1 / -1; grid-row:3; padding:4px; }
   .cat-products-table .pe-row-actions a { width:100%; box-sizing:border-box; }
   .cat-task-editor { padding:0; max-height:calc(100dvh - 140px); }
