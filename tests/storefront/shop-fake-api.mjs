@@ -295,7 +295,7 @@ export function createFakeApi({ port = 0, origin = "https://shop.example", bffKe
     }
     const quoteGet = /^quotes\/([0-9a-f-]{36})$/.exec(path);
     if (quoteGet) return state.quotes.has(quoteGet[1]) ? json(res, 200, state.quotes.get(quoteGet[1])) : error(res, 404, "not_found");
-    if (path.startsWith("destination")) return error(res, 404, "not_found");
+    if (path === "destination" && req.method === "GET") return json(res, 200, { destination: null });
     return error(res, 404, "not_found");
   });
   return {

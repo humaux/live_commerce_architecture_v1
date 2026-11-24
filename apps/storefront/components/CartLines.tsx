@@ -98,7 +98,7 @@ export function CartNotice({ locale }: { locale: Locale }) {
   );
 }
 
-function Line({ locale, line, currency, readOnly, compact }: { locale: Locale; line: LineView; currency: string; readOnly: boolean; compact: boolean }) {
+function Line({ locale, line, currency, readOnly, compact, page }: { locale: Locale; line: LineView; currency: string; readOnly: boolean; compact: boolean; page: boolean }) {
   const copy = shopCopy[locale];
   const { setQuantity, busy } = useCart();
   const name = line.gone ? copy.lineUnavailable : line.title;
@@ -109,6 +109,13 @@ function Line({ locale, line, currency, readOnly, compact }: { locale: Locale; l
   const unit = formatMoney(locale, line.unitMinor, currency);
   const unitText = line.quantity > 1 ? (readOnly ? `${unit} × ${line.quantity}` : fmt(copy.unitEach, { amount: unit })) : readOnly ? `× ${line.quantity}` : null;
   const onSale = line.compareAtMinor !== null && line.compareAtMinor > line.unitMinor;
+  const label = href ? (
+    <Link className="sf-line__title" href={href}>{title}</Link>
+  ) : (
+    <span className={`sf-line__title${line.gone ? " sf-line__title--gone" : ""}`}>{title}</span>
+  );
+  const variant = !compact && line.variantTitle && <p className="sf-line__variant">{line.variantTitle}</p>;
+  const showInStock = page && line.stock === "in";
   return (
     <li className="sf-line" data-testid="cart-line" data-sku={line.sku_id}>
       <div className="sf-line__media">
@@ -122,28 +129,23 @@ function Line({ locale, line, currency, readOnly, compact }: { locale: Locale; l
       </div>
       <div className="sf-line__body">
         <div className="sf-line__head">
-          {href ? (
-            <Link className="sf-line__title" href={href}>
-              {title}
-            </Link>
-          ) : (
-            <span className={`sf-line__title${line.gone ? " sf-line__title--gone" : ""}`}>{title}</span>
-          )}
+          {page ? <div className="sf-line__label">{label}{variant}</div> : label}
           {!line.gone && (
             <span className="sf-line__total" data-testid="cart-line-total">
               {formatMoney(locale, line.unitMinor * line.quantity, currency)}
             </span>
           )}
         </div>
-        {!compact && line.variantTitle && <p className="sf-line__variant">{line.variantTitle}</p>}
-        {!line.gone && (unitText || onSale || line.liveUnitMinor !== null || line.stock === "low" || line.stock === "out") && (
+        {!page && variant}
+        {!line.gone && (unitText || onSale || line.liveUnitMinor !== null || showInStock || line.stock === "low" || line.stock === "out") && (
           <p className="sf-line__unit">
             {compact && unitText && <span>{copy.quantity}</span>}
             {unitText}
             {onSale && <s>{formatMoney(locale, line.compareAtMinor ?? 0, currency)}</s>}
             {line.liveUnitMinor !== null && <em className="sf-line__live">{copy.livePrice}</em>}
-            {line.stock === "low" && <em>{copy.lowStock}</em>}
-            {line.stock === "out" && <em className="sf-line__out">{copy.outOfStock}</em>}
+            {showInStock && <em className="sf-line__stock sf-line__stock--in">{copy.inStock}</em>}
+            {line.stock === "low" && <em className="sf-line__stock">{copy.lowStock}</em>}
+            {line.stock === "out" && <em className="sf-line__stock sf-line__out">{copy.outOfStock}</em>}
           </p>
         )}
         {!readOnly && (
@@ -162,7 +164,7 @@ function Line({ locale, line, currency, readOnly, compact }: { locale: Locale; l
             </div>
           )}
           <button type="button" className="sf-link-btn" aria-label={fmt(copy.removeLine, { name })} disabled={busy} onClick={() => void setQuantity(line.sku_id, 0)}>
-            <TrashIcon />
+            {!page && <TrashIcon />}
             <span>{copy.remove}</span>
           </button>
         </div>
@@ -172,14 +174,14 @@ function Line({ locale, line, currency, readOnly, compact }: { locale: Locale; l
   );
 }
 
-export function CartLines({ locale, readOnly = false, compact = false }: { locale: Locale; readOnly?: boolean; compact?: boolean }) {
+export function CartLines({ locale, readOnly = false, compact = false, page = false }: { locale: Locale; readOnly?: boolean; compact?: boolean; page?: boolean }) {
   const { cart } = useCart();
   const view = useCartDetails();
   if (!cart || cart.items.length === 0) return null;
-  return <CartLineDetails locale={locale} view={view} readOnly={readOnly} compact={compact} />;
+  return <CartLineDetails locale={locale} view={view} readOnly={readOnly} compact={compact} page={page} />;
 }
 
-export function CartLineDetails({ locale, view, readOnly, compact }: { locale: Locale; view: ReturnType<typeof useCartDetails>; readOnly: boolean; compact: boolean }) {
+export function CartLineDetails({ locale, view, readOnly, compact, page = false }: { locale: Locale; view: ReturnType<typeof useCartDetails>; readOnly: boolean; compact: boolean; page?: boolean }) {
   const copy = shopCopy[locale];
   const { details, failed, loading } = view;
   if (!details)
@@ -191,38 +193,60 @@ export function CartLineDetails({ locale, view, readOnly, compact }: { locale: L
   return (
     <ul className={`sf-lines${loading ? " is-loading" : ""}`} aria-busy={loading}>
       {details.lines.map((line) => (
-        <Line key={line.sku_id} locale={locale} line={line} currency={details.currency} readOnly={readOnly} compact={compact} />
+        <Line key={line.sku_id} locale={locale} line={line} currency={details.currency} readOnly={readOnly} compact={compact} page={page} />
       ))}
     </ul>
   );
 }
 
-export function CartSummary({ locale, onNavigate }: { locale: Locale; onNavigate?: () => void }) {
+export function CartSummary({ locale, onNavigate, page = false }: { locale: Locale; onNavigate?: () => void; page?: boolean }) {
   const copy = shopCopy[locale];
   const { cart, busy } = useCart();
   const { details } = useCartDetails();
   if (!cart || cart.items.length === 0 || !details) return null;
   const progress = freeShippingProgress(details.subtotal, details.threshold);
   const blocked = details.lines.every((l) => l.gone);
+  const subtotal = formatMoney(locale, details.subtotal, details.currency);
+  const freeShipping = progress && (
+    <div className="sf-free" data-testid="free-shipping">
+      <p>{progress.reached ? copy.freeShipReached : fmt(copy.freeShipRemaining, { amount: formatMoney(locale, progress.remaining, details.currency) })}</p>
+      <div className="sf-free__bar" aria-hidden="true">
+        <span style={{ width: `${Math.round(progress.ratio * 100)}%` }} />
+      </div>
+    </div>
+  );
   return (
     <div className="sf-summary" data-testid="cart-summary">
-      {progress && (
-        <div className="sf-free" data-testid="free-shipping">
-          <p>{progress.reached ? copy.freeShipReached : fmt(copy.freeShipRemaining, { amount: formatMoney(locale, progress.remaining, details.currency) })}</p>
-          <div className="sf-free__bar" aria-hidden="true">
-            <span style={{ width: `${Math.round(progress.ratio * 100)}%` }} />
+      {page ? (
+        <dl className="sf-cartpage__amounts">
+          <div className="sf-summary__row">
+            <dt>{copy.cartItemsSubtotal}</dt>
+            <dd data-testid="cart-subtotal">{subtotal}</dd>
           </div>
-        </div>
+          <div className="sf-summary__row">
+            <dt>{copy.cartShipping}</dt>
+            <dd data-testid="cart-shipping">{copy.cartCalculatedAtCheckout}</dd>
+          </div>
+          <div className="sf-summary__row sf-cartpage__total">
+            <dt>{copy.cartMerchandiseTotal}</dt>
+            <dd><strong data-testid="cart-merchandise-total">{subtotal}</strong></dd>
+          </div>
+        </dl>
+      ) : (
+        <>
+          {freeShipping}
+          <p className="sf-summary__row">
+            <span>{copy.subtotal}</span>
+            <strong data-testid="cart-subtotal">{subtotal}</strong>
+          </p>
+          <p className="sf-muted sf-summary__note">{copy.shippingAtCheckout}</p>
+        </>
       )}
-      <p className="sf-summary__row">
-        <span>{copy.subtotal}</span>
-        <strong data-testid="cart-subtotal">{formatMoney(locale, details.subtotal, details.currency)}</strong>
-      </p>
-      <p className="sf-muted sf-summary__note">{copy.shippingAtCheckout}</p>
       <Link className={`sf-btn sf-btn--primary sf-btn--block${blocked || busy ? " is-disabled" : ""}`} aria-disabled={blocked || busy} href={checkoutPath(locale)} onClick={onNavigate} data-testid="cart-checkout">
         {copy.checkout}
-        <ArrowRightIcon />
+        {!page && <ArrowRightIcon />}
       </Link>
+      {page && freeShipping}
     </div>
   );
 }
