@@ -27,7 +27,7 @@
     "tests/admin/catalog-manual-unknown.spec.ts": "d800f1c826b95722636f84efce464714ccde56f1ceab81e3b67ca0dcef56056c",
     "tests/admin/catalog-receipt.test.ts": "972625dffcda9c32dee20554bad573dc842bfdc82887b84f7899579dd8e1c1b4",
     "tests/admin/catalog-v2-model.test.ts": "a358e29e75ddf33ddf20297a33f54fd5e127a0a8e28713e3c0a46ffeb60ca69f",
-    "tests/admin/catalog-v2-simplified.acceptance.ts": "115da90b957ed2b9a31b980e2baa074e22d69494b114bb767870f50c75fc400a",
+    "tests/admin/catalog-v2-simplified.acceptance.ts": "f8b89394374d6285075bd66a43c0f1f3b630431daba0933cf19aaa5d7abc74ce",
     "tests/admin/checkout-offline.spec.ts": "1597b0501e6f65d1a70fd103bf2df5ad299e3afcaf28a93f8973523d5df1435a",
     "tests/admin/claim-source.test.ts": "cde93c642213d3ec5efeb7548e2954673e540a7e03ed7b66908fd8c2ba8b0706",
     "tests/admin/claims-backend-parity.test.ts": "93784882a486c2be5a1cf945437dd818c5a93d290aac7d2140e5ee55dffb0335",
