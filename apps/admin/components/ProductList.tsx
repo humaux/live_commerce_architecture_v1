@@ -85,6 +85,7 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
   const paging = Boolean(after || page?.next_cursor);
   const total = page ? (status === "all" ? page.total : page.status_counts[status as ProductStatus]) : 0;
   const singlePage = cards && !paging && rows.length > 0 && total === rows.length;
+  const range = singlePage ? catalogText(entry.range, { n: total }) : "";
   useEffect(() => { setSelected([]); setReview(null); setResults([]); setResultRows([]); setCopyReview(null); setCopied(null); setImportOpen(false); setImportLocked(false); }, [sid]);
   useEffect(() => {
     // Conceal snapshots during revalidation; a denied scope must not resurrect them after retry.
@@ -122,7 +123,7 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
   const archiveResult = results.length > 0 && results.every(r => r.status === 'archived' || !!r.error);
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? legacy.noStore} active="products" locked={locked}>
     <div className="orders-page product-admin pe-catalog cat-task-list" data-testid="products-page">
-      {!copyReview && !copied && <AdminPageHeader locale={locale} title={entry.title} description={!selected.length && !review && !results.length ? entry.description : undefined} actions={store && (!selected.length || catalogLocked) && <>
+      {!copyReview && !copied && <AdminPageHeader locale={locale} title={entry.title} description={!cards && !selected.length && !review && !results.length ? entry.description : undefined} actions={store && (!selected.length || catalogLocked) && <>
         {canImport && <button ref={importButton} type="button" className="cat-import-link" data-testid="products-import-link" aria-expanded={importOpen}
           aria-controls={importOpen ? "products-csv-preview" : undefined} disabled={locked} onClick={() => {
             if (importOpen) document.getElementById("products-csv-preview")?.focus();
@@ -208,20 +209,21 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
             <ProductCell className="pe-product-cell" scope={cards ? "row" : undefined}><div className="product-cell">
               <ProductPhoto code="" name={row.name} demo={false} imageSrc={row.cover_image_id ? imageURL(sid, row.id, row.cover_image_id) : undefined} />
               <span className="pe-product-identity"><strong>{row.name}</strong>{!cards && row.sku_count > 0 && <small>{legacy.variants(row.sku_count)}</small>}</span></div></ProductCell>
-            {cards ? <td className="pe-status-cell pe-price-cell">
+            <td className="pe-price-cell"><span>{price(row)}</span></td>
+            {cards ? <td className="pe-status-cell">
               <span className="product-status pe-stock-cell cat-card-facts">{
-                [price(row), c[row.status], ...(row.sku_count > 0 ? [stock(row), legacy.variants(row.sku_count)] : [])].join(" · ")
+                [c[row.status], ...(row.sku_count > 0 ? [stock(row), legacy.variants(row.sku_count)] : [])].join(" · ")
               }</span>
             </td> : <>
-              <td className="pe-price-cell"><span>{price(row)}</span></td>
               <td className="pe-status-cell"><span className={`product-status${row.status === "active" ? " cat-status-active" : ""}`}>{c[row.status]}</span></td>
               <td className="pe-stock-cell">{stock(row)}</td>
             </>}
             {canWrite && <td className="pe-actions-cell"><div className="pe-row-actions"><Link href={editHref(locale, sid, row.id)}>{c.edit}</Link></div></td>}
           </tr>)}</tbody></table> : <p role="status">{status === 'archived' ? c.empty : q || status !== 'all' ? legacy.emptySearch : legacy.empty}</p>}
           {(singlePage || (!cards && rows.length > 0) || paging) && <footer className="cat-list-footer">
-            <span data-testid="products-list-summary">{catalogText(singlePage ? entry.range : entry.total, { n: total })}</span>
-            {singlePage && <output className="cat-page-indicator" data-testid="products-page-indicator" aria-label={entry.singlePage}>1 / 1</output>}
+            {singlePage
+              ? <output data-testid="products-page-indicator" aria-label={`${range} · ${entry.singlePage}`}>{`${range} · 1 / 1`}</output>
+              : <span data-testid="products-list-summary">{catalogText(entry.total, { n: total })}</span>}
             {paging && <div className="orders-pager">
               <button type="button" data-testid="products-previous" disabled={locked || (!after && !previous.current.length)} onClick={() => go(status, q, previous.current.pop() ?? '')}>{legacy.previous}</button>
               <button type="button" data-testid="products-next" disabled={locked || !page.next_cursor} onClick={() => { previous.current.push(after); go(status, q, page.next_cursor); }}>{legacy.next}</button>
