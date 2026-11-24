@@ -51,9 +51,13 @@ func registerCatalogV2Routes(mux *http.ServeMux, pool *pgxpool.Pool) {
 		if err != nil {
 			return nil, err
 		}
-		in := catalog.ProductListRequest{Query: values.Get("q"), Status: values.Get("status")}
+		in := catalog.ProductListRequest{Query: values.Get("q"), Status: values.Get("status"), Stock: values.Get("stock")}
+		if in.Stock == "" && values.Has("stock") {
+			return nil, command.ErrInvalid
+		}
 		values.Del("q")
 		values.Del("status")
+		values.Del("stock")
 		if in.Page, err = parsePage(values.Encode()); err != nil {
 			return nil, err
 		}
