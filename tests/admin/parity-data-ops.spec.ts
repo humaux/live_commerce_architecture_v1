@@ -97,7 +97,7 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
       });
       await capture(page, frame("1826:109927", "1826:110045"));
 
-      const search = page.getByRole("searchbox", { name: "搜尋名稱、網址識別或 SKU 編碼" });
+      const search = page.getByRole("searchbox", { name: "搜尋商品名稱或 SKU", exact: true });
       const paging = `${process.env.LC_BROWSER_TAG!} paging`;
       const submitSearch = async (query: string) => {
         await expect(search).toBeVisible();
@@ -150,13 +150,14 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         buffer: Buffer.from(`handle,title,sku,price\n${handle},${name},${handle}-a,100\n${handle}-b,${name}-B,${handle}-b,${secondPrice}\n`),
       });
       await upload("");
-      await click(page, "預覽檔案", "row 3 error blocks the entire batch", async () => {
+      await click(page, "預覽檔案", "second data row error blocks the entire batch", async () => {
         await heading(page, "修正商品匯入資料");
-        await expect(page.getByTestId("import-errors")).toContainText("3");
+        await expect(page.getByTestId("import-errors").getByRole("heading", { name: "第 2 筆資料 · 售價", exact: true })).toBeVisible();
         await expect(page.getByText("本批次未寫入", { exact: true })).toBeVisible();
         await expect(page.getByTestId("import-commit")).toHaveCount(0);
         expect(await lookup(handle)).toEqual([]);
         expect(writes).toEqual(["preview"]);
+        await capture(page, `r07-invalid-${viewport.width}`);
       });
       await click(page, "重新上傳並預覽", "returns to file selection", () => heading(page, "商品匯入與匯出"));
       await upload("120");

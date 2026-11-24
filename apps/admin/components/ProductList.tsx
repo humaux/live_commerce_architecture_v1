@@ -7,7 +7,6 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { catalogTaskCopy, catalogText, type Locale } from "@live-commerce/i18n";
-import { dataOpsCopy } from "../../../packages/i18n/src/data-ops";
 import { TabStrip } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
@@ -27,6 +26,13 @@ import "./orders.css";
 import "./ProductAdmin.css";
 import "./ProductDocument.css";
 import "./catalog/parity.css";
+
+const catalogEntryCopy = {
+  en: { title: "Product catalog", search: "Search product name or SKU", importCSV: "Import CSV" },
+  "zh-CN": { title: "商品目录", search: "搜索商品名称或 SKU", importCSV: "导入 CSV" },
+  "zh-TW": { title: "商品目錄", search: "搜尋商品名稱或 SKU", importCSV: "匯入 CSV" },
+} satisfies Record<Locale, { title: string; search: string; importCSV: string }>;
+
 const href = (locale: Locale, store: string, q: string, status: string, after: string) => {
   const p = new URLSearchParams();
   if (store) p.set('store', store);
@@ -44,6 +50,7 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
   initialError: ReadCode | null; renderKey: string;
 }) {
   const c = catalogTaskCopy[locale], pc = productEditorCopy[locale], legacy = catalogCopy[locale].list;
+  const entry = catalogEntryCopy[locale];
   const router = useRouter(), sid = store?.id ?? '';
   const canWrite = store?.permissions?.includes("catalog:write") ?? false;
   const canImport = canWrite && store?.permissions?.includes("inventory:write");
@@ -96,8 +103,8 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
   const archiveResult = results.length > 0 && results.every(r => r.status === 'archived' || !!r.error);
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? legacy.noStore} active="products" locked={locked}>
     <div className="orders-page product-admin pe-catalog cat-task-list" data-testid="products-page">
-      {!copyReview && !copied && <AdminPageHeader locale={locale} title={c.title} actions={store && !selected.length && !locked && <>
-        {canImport && <Link className="cat-import-link" data-testid="products-import-link" href={`/${locale}/products/import?store=${sid}`}>{dataOpsCopy(locale).productTitle}</Link>}
+      {!copyReview && !copied && <AdminPageHeader locale={locale} title={entry.title} actions={store && !selected.length && !locked && <>
+        {canImport && <Link className="cat-import-link" data-testid="products-import-link" href={`/${locale}/products/import?store=${sid}`}>{entry.importCSV}</Link>}
         {canWrite && <Link className="product-primary" data-testid="product-new" href={`/${locale}/products/new?store=${sid}`}>{legacy.newProduct}</Link>}
       </>} />}
       {write.message && write.message.kind !== 'success' && <div role="status"><p>{write.message.text}</p>
@@ -131,6 +138,11 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
         <button type="button" onClick={() => setResults([])}>{c.view}</button>
       </section> : <>
         {!selected.length && <>
+        <div className="cat-chip-tabs"><TabStrip label={legacy.status} previousLabel={catalogPresentationCopy[locale].previousTabs} nextLabel={catalogPresentationCopy[locale].nextTabs}>
+          {(['all', 'active', 'draft', 'archived'] as const).map(s => <button type="button" key={s} disabled={locked}
+            data-testid={`products-tab-${s}`} aria-pressed={status === s} onClick={() => { previous.current = []; go(s); }}>
+            {c[s]} {page ? s === 'all' ? page.total : page.status_counts[s] : ''}</button>)}
+        </TabStrip></div>
         {store && <form key={`${sid}|${q}`} role="search" className="cat-search" onSubmit={event => {
           event.preventDefault();
           if (locked) return;
@@ -138,16 +150,10 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
           previous.current = [];
           go(status, query);
         }}>
-          <input type="search" name="q" aria-label={legacy.search} placeholder={legacy.search} defaultValue={q}
+          <input type="search" name="q" aria-label={entry.search} placeholder={entry.search} title={legacy.search} defaultValue={q}
             pattern={String.raw`[^\p{C}\p{Zl}\p{Zp}]{0,120}`} disabled={locked} />
           <button type="submit" disabled={locked}>{legacy.searchButton}</button>
         </form>}
-        <div className="cat-chip-tabs"><TabStrip label={legacy.status} previousLabel={catalogPresentationCopy[locale].previousTabs} nextLabel={catalogPresentationCopy[locale].nextTabs}>
-          {(['all', 'active', 'draft', 'archived'] as const).map(s => <button type="button" key={s} disabled={locked}
-            data-testid={`products-tab-${s}`} aria-pressed={status === s} onClick={() => { previous.current = []; go(s); }}>
-            {c[s]} {page ? s === 'all' ? page.total : page.status_counts[s] : ''}</button>)}
-        </TabStrip></div>
-
         </>}
         {(read.status === 'loading' || read.status === 'hidden') && <p role="status">{legacy.loading}</p>}
         {failure && <div role="alert"><p>{failure}</p><button type="button" onClick={read.reload}>{legacy.retry}</button></div>}
