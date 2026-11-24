@@ -1,3 +1,7 @@
+// Purpose: Expose the permission-scoped merchant order reads.
+// Depends on: merchantorders projections and platform store scope.
+// Used by: the merchant API handler and admin BFF.
+
 package httpapi
 
 import (
@@ -20,6 +24,9 @@ func registerOrderRoutes(mux *http.ServeMux, pool *pgxpool.Pool) {
 	mux.HandleFunc("GET "+base+"/{order_id}", orderRoute(pool, true))
 	// Read-only POST keeps recipient/phone/tracking search terms out of URL logs.
 	mux.HandleFunc("POST "+base+"/search", orderSearchRoute(pool))
+	mux.HandleFunc("POST "+base+"/{order_id}/amendment/review", orderAmendmentRoute(pool, http.MethodPost))
+	mux.HandleFunc("PUT "+base+"/{order_id}/amendment", orderAmendmentRoute(pool, http.MethodPut))
+	mux.HandleFunc("POST "+base+"/{order_id}/shipment/document", orderDocumentRoute(pool))
 }
 
 func orderSearchRoute(pool *pgxpool.Pool) http.HandlerFunc {

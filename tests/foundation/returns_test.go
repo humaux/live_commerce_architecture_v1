@@ -14,6 +14,7 @@ package foundation_test
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"sync"
@@ -55,6 +56,22 @@ func (e *tcvEnv) rtShip(order string) {
 	st, _, raw := e.mcall(e.token(), "PUT", e.rtPath("/orders/"+order+"/shipment"), "rt-ship-"+order[:8], mfxShip(0, "black_cat", "RT"+order[:8]))
 	if st != 200 {
 		e.t.Fatalf("ship %s: %d %s", order, st, raw)
+	}
+}
+
+// rtShipFreshHomeCOD prepares an already placed, unamended COD fixture for the returns journey.
+func (e *tcvEnv) rtShipFreshHomeCOD(t *testing.T, token, order string) {
+	t.Helper()
+	path := e.rtPath("/orders/" + order)
+	status, detail, raw := e.mcall(token, "GET", path, "", "")
+	revision, _ := detail["order_revision"].(float64)
+	if status != http.StatusOK || revision != 1 || detail["payment_mode"] != "cash_on_delivery" || detail["shipment"] != nil {
+		t.Fatalf("expected fresh home COD order without a shipment: %d %s", status, raw)
+	}
+	status, _, raw = e.mcall(token, "PUT", path+"/shipment", "rt-ship-"+order[:8],
+		r03ShipmentBody(0, int64(revision), "black_cat", "RT"+order[:8]))
+	if status != http.StatusOK {
+		t.Fatalf("ship home COD fixture %s: %d %s", order, status, raw)
 	}
 }
 
@@ -1008,7 +1025,10 @@ func TestReturnsHelperACLAndGuardBodies(t *testing.T) {
 	for fn, needles := range map[string][]string{
 		"inventory.guard_checkout_ledger()":      {"checkout.merchant_cancel"},
 		"inventory.guard_pay_at_pickup_ledger()": {"fulfillment.pay_at_pickup.cancel", "fulfillment.pay_at_pickup.restock"},
-		"fulfillment.record_manual_shipment(bytea,uuid,uuid,text,bytea,bigint,text,text,text,text,text,text,text)": {"has_returns"},
+		"fulfillment.record_manual_shipment(bytea,uuid,uuid,text,bytea,bigint,text,text,text,text,text,text,text)": {
+			"SELECT fulfillment.record_manual_shipment(p_hash,p_store,p_order,p_key,p_request_hash,p_expected_version,p_status, p_carrier_code,p_carrier_name,p_tracking_number,p_tracking_url,p_note,p_void_reason,NULL)",
+		},
+		"fulfillment.record_manual_shipment(bytea,uuid,uuid,text,bytea,bigint,text,text,text,text,text,text,text,bigint)": {"has_returns"},
 		"inventory.guard_returns_ledger()": {"returns.rma.restock", "checkout.merchant_cancel", "v_alloc<-NEW.delta_allocated", "deallocate exceeds the remaining allocation of the order line", "a.kind IN ('ALLOCATE','DEALLOCATE')"},
 	} {
 		var src string
@@ -1016,7 +1036,7 @@ func TestReturnsHelperACLAndGuardBodies(t *testing.T) {
 			t.Fatalf("%s: %v", fn, err)
 		}
 		for _, n := range needles {
-			if !strings.Contains(src, n) {
+			if !strings.Contains(strings.Join(strings.Fields(src), " "), n) {
 				t.Errorf("%s lost %q", fn, n)
 			}
 		}

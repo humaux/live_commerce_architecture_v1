@@ -5,7 +5,7 @@ package foundation_test
 // the defect; they must not be weakened or deleted to merge. Prefix `hcd`. Tier REAL_PG + HTTP_PG.
 //
 // P1-1 buyer order page never states the cash due (the order DTO has no surcharge)            -> TestHomeCodDefectBuyerOrderAmount
-// P1-2 manual-fulfilment export lists COD orders without payment mode or the collect amount   -> TestHomeCodDefectMerchantExportAmount
+// P1-2 warehouse documents show the COD cash due                                            -> TestHomeCodDefectMerchantExportAmount
 // P1-3 a shipment void/correction after collection breaks the collected-after-shipped rule
 //      and moves the collected cash to another finance day (day = orders.updated_at)         -> TestHomeCodDefectVoidAfterCollected,
 //                                                                                              TestHomeCodDefectFinanceDayDrift,
@@ -68,8 +68,8 @@ func TestHomeCodDefectBuyerOrderAmount(t *testing.T) {
 	}
 }
 
-// HCD-P1-2: the merchant hands the unshipped export to the carrier (黑貓/新竹 are manual: no carrier API). A COD parcel needs the
-// collect amount on its waybill; the export has no payment_mode and its only amount is total_minor (without the surcharge).
+// R03 supersedes the legacy unversioned export for home COD. Preserve P1-2's
+// cash-due assertion through the versioned warehouse document.
 func TestHomeCodDefectMerchantExportAmount(t *testing.T) {
 	e := tcvNew(t)
 	e.grantCreator("orders:read", "fulfillment:write", "orders:export")
@@ -80,33 +80,18 @@ func TestHomeCodDefectMerchantExportAmount(t *testing.T) {
 		t.Fatalf("unshipped export: %d %s", st, raw)
 	}
 	rows, err := csv.NewReader(strings.NewReader(strings.TrimPrefix(string(raw), "\xEF\xBB\xBF"))).ReadAll()
-	if err != nil || len(rows) < 2 {
+	if err != nil || len(rows) < 1 {
 		t.Fatalf("export parse: %v %q", err, raw)
 	}
-	header, row := rows[0], []string(nil)
 	for _, r := range rows[1:] {
 		if r[0] == order {
-			row = r
+			t.Fatal("legacy CSV exposed a revision-controlled order")
 		}
 	}
-	if row == nil {
-		t.Fatalf("the COD order %s is missing from the unshipped export (header %v)", order, header)
-	}
-	hasMode := false
-	for _, h := range header {
-		if h == "payment_mode" || strings.Contains(h, "cod") || strings.Contains(h, "collect") {
-			hasMode = true
-		}
-	}
-	hasAmount := false
-	for _, c := range row {
-		if c == "7500" {
-			hasAmount = true
-		}
-	}
-	if !hasMode || !hasAmount {
-		t.Errorf("P1-2: export header %v has a payment-mode/COD column=%v and the row carries the cash due 7500 (total 2500 + surcharge 5000)=%v; the carrier "+
-			"waybill needs the collect amount and the packer must be able to tell a COD parcel from a prepaid one", header, hasMode, hasAmount)
+	st, doc, raw := e.mcall(e.token(), "POST", e.hcrShipPath(order)+"/document", "", `{"expected_revision":1}`)
+	if st != 200 || doc["order_revision"] != float64(1) || doc["payment_mode"] != "cash_on_delivery" ||
+		doc["cod_collect_minor"] != float64(7500) || doc["total_minor"] != float64(2500) {
+		t.Fatalf("expected versioned COD document with full cash due: %d %s", st, raw)
 	}
 }
 

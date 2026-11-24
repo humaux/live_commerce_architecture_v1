@@ -48,8 +48,8 @@ export default function OrderTerminalView({
         <section className="os-card" aria-labelledby="os-term-items">
           <h2 id="os-term-items">{c.termItems}</h2>
           <ul className="order-lines">
-            {quote.lines.map((line) => (
-              <li key={line.sku_id}>
+            {quote.lines.map((line, index) => (
+              <li key={`${line.sku_id}:${index}`}>
                 <span>{line.name} × {line.quantity}</span>
                 <span>{money(line.unit_price_minor * line.quantity, quote.currency)}</span>
               </li>

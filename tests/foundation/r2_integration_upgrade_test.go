@@ -145,8 +145,9 @@ func TestR2IntegrationUpgradeFromReleaseHead(t *testing.T) {
 	// 0228_manual_order_award_recovery.sql adds original-order award recovery: 152 -> 153.
 	// 0229 records contextual manual order admission and provenance: 153 -> 154.
 	// 0230 adds checkout-only Buy now selections: 154 -> 155.
-	if len(r2) != 155 {
-		t.Fatalf("R2 migration set = %d files %v, want 155", len(r2), r2)
+	// 0231 adds the first revision to original orders: 155 -> 156.
+	if len(r2) != 156 {
+		t.Fatalf("R2 migration set = %d files %v, want 156", len(r2), r2)
 	}
 
 	upgraded := mciStartPG(t)

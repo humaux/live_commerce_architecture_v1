@@ -228,8 +228,8 @@ export function detailPanel(detail: OrderDetail, locale: Locale, c: OrdersCopy, 
               </tr>
             </thead>
             <tbody>
-              {detail.items.map((item) => (
-                <tr key={item.sku_id}>
+              {detail.items.map((item, index) => (
+                <tr key={`${item.sku_id}:${index}`}>
                   <td>
                     <strong>{item.name}</strong>
                     <small>{item.code}</small>

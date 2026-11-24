@@ -10,6 +10,7 @@ import (
 	"context"
 	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -498,47 +499,132 @@ func TestCVSBatchUnknown(t *testing.T) {
 	}
 }
 
-// TestCarrierExportCOD covers P1-1: a cash_on_delivery order's total_minor cell is whole TWD (minor/100)
-// and collect_minor is whole TWD of total + cod_surcharge; a card order's collect cell stays blank (the
-// TestCarrierExport templates already assert the card side). The COD order is AWAITING_COLLECTION, which
-// the 0107-widened manual_shipment_eligible admits to the export.
+// TestCarrierExportCOD exercises the legacy carrier file with and without a
+// supported control order, before and after revision of an R03 home COD order.
 func TestCarrierExportCOD(t *testing.T) {
-	e := tcvNew(t) // home-cod has no payment attempt: no Stripe environment needed
-	e.grantCreator("orders:read", "orders:export")
+	e := tcvNew(t, tcvOpts{stripe: true})
+	e.r.startWorker(t)
+	e.grantCreator("orders:read", "orders:export", "orders:amend", "fulfillment:write")
 	if st, out := e.hcodSettings(0, true, 20000, 50, "black_cat"); st != 200 {
 		t.Fatalf("cod settings: %d %v", st, out)
 	}
-	b := e.newBuyer()
-	res, err := e.hcodPlace(b)
+	controlled, err := e.hcodPlace(e.newBuyer())
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, _, _, _, total, surcharge := e.hcodRow(res.OrderID)
-
-	status, _, raw := e.mcall(e.token(), "POST", "/v1/admin/stores/"+e.store()+"/orders/export?template=generic", "", plPickBody([]string{res.OrderID}))
-	if status != 200 {
-		t.Fatalf("export answered %d: %s", status, raw)
+	control, _ := e.rtPaid() // Synthetic Stripe provider, zero external funds.
+	base := "/v1/admin/stores/" + e.store() + "/orders"
+	document := base + "/" + controlled.OrderID
+	session, onlyCOD := randomUUID(), randomUUID()
+	// Session links only; both order states came through the normal checkout path.
+	for _, id := range []string{session, onlyCOD} {
+		mustExec(t, e.p.f.owner, `INSERT INTO live.sessions(id,tenant_id,store_id,principal_id,title) VALUES($1,$2,$3,$4,'R03 synthetic carrier session')`,
+			id, e.tenant(), e.store(), e.p.f.principalA)
 	}
-	if !strings.HasPrefix(string(raw), "\xEF\xBB\xBF") {
-		t.Fatalf("missing UTF-8 BOM")
+	for _, link := range [][2]string{{controlled.OrderID, session}, {control, session}, {controlled.OrderID, onlyCOD}} {
+		mustExec(t, e.p.f.owner, `INSERT INTO claims.order_origins(tenant_id,store_id,order_id,bundle_id,offer_id,line_version,session_id,occurred_at)
+		 VALUES($1,$2,$3,gen_random_uuid(),gen_random_uuid(),1,$4,clock_timestamp())`, e.tenant(), e.store(), link[0], link[1])
 	}
-	r := csv.NewReader(strings.NewReader(strings.TrimPrefix(string(raw), "\xEF\xBB\xBF")))
-	records, err := r.ReadAll()
-	if err != nil {
-		t.Fatal(err)
+	balance := func() string {
+		return miIsoRows(t, e.p.f, "inventory.balances", "WHERE store_id='"+e.store()+"'")
 	}
-	if len(records) != 2 {
-		t.Fatalf("export rows=%d, want header+1", len(records))
+	facts := func(stage string) string {
+		t.Helper()
+		var data string
+		if err := e.p.f.owner.QueryRow(context.Background(), `SELECT jsonb_build_object(
+		 'order',o.id,'revision',o.order_revision,'fulfillment',o.fulfillment_state,
+		 'collection',o.collection_state,'due',o.total_minor+o.cod_surcharge_minor,
+		 'shipment_count',(SELECT count(*) FROM fulfillment.manual_shipment_versions WHERE order_id=o.id),
+		 'payment_count',(SELECT count(*) FROM checkout.payment_attempts WHERE order_id=o.id),
+		 'allocation_count',(SELECT count(*) FROM inventory.ledger WHERE reservation_id=o.id)
+		)::text FROM checkout.orders o WHERE o.id=$1 AND o.store_id=$2`, controlled.OrderID, e.store()).Scan(&data); err != nil {
+			t.Fatal(err)
+		}
+		t.Logf("%s PG facts %s", stage, data)
+		return data
 	}
-	idx := map[string]int{}
-	for i, h := range records[0] {
-		idx[h] = i
+	call := func(stage, method, path, key, body string, want int) map[string]any {
+		t.Helper()
+		status, out, raw := e.mcall(e.token(), method, path, key, body)
+		t.Logf("%s %s %s %s -> %d %s", stage, method, path, body, status, raw)
+		if status != want {
+			t.Fatalf("%s: got %d want %d", stage, status, want)
+		}
+		return out
 	}
-	if got := records[1][idx["total_minor"]]; got != strconv.FormatInt(total/100, 10) {
-		t.Fatalf("total cell %q, want whole TWD %d", got, total/100)
+	export := func(stage string) {
+		t.Helper()
+		business, stock := facts(stage+" before download"), balance()
+		for _, sel := range []struct{ label, body, want string }{
+			{"explicit-cod", plPickBody([]string{controlled.OrderID}), ""},
+			{"explicit-mixed", plPickBody([]string{controlled.OrderID, control}), control},
+			{"session-cod", fmt.Sprintf(`{"session_id":%q}`, onlyCOD), ""},
+			{"session-mixed", fmt.Sprintf(`{"session_id":%q}`, session), control},
+		} {
+			path := base + "/export?template=generic"
+			status, _, raw := e.mcall(e.token(), "POST", path, "", sel.body)
+			t.Logf("%s %s POST %s %s -> %d %s", stage, sel.label, path, sel.body, status, raw)
+			if status != 200 || !strings.HasPrefix(string(raw), "\xEF\xBB\xBF") {
+				t.Fatalf("%s %s export=%d: %s", stage, sel.label, status, raw)
+			}
+			records, err := csv.NewReader(strings.NewReader(strings.TrimPrefix(string(raw), "\xEF\xBB\xBF"))).ReadAll()
+			if err != nil || len(records) == 0 || records[0][0] != "order_id" {
+				t.Fatalf("export header or CSV error: %v %v", records, err)
+			}
+			want := 1
+			if sel.want != "" {
+				want++
+			}
+			if len(records) != want || (sel.want != "" && records[1][0] != sel.want) ||
+				strings.Contains(string(raw), controlled.OrderID) {
+				t.Errorf("%s %s leaked R03 or omitted control, want=%q record count=%d", stage, sel.label, sel.want, len(records))
+			}
+		}
+		// The older unshipped export already has a separate fence. The SKU-only
+		// pick list remains available for inventory preparation and exposes no recipient.
+		status, _, raw := e.mcall(e.token(), "GET", base+"/unshipped.csv", "", "")
+		t.Logf("%s GET %s/unshipped.csv -> %d %s", stage, base, status, raw)
+		if status != 200 || strings.Contains(string(raw), controlled.OrderID) || !strings.Contains(string(raw), control) {
+			t.Errorf("%s old unshipped export did not retain only the control order", stage)
+		}
+		status, _, raw = e.mcall(e.token(), "POST", base+"/pick-list", "", plPickBody([]string{controlled.OrderID, control}))
+		if status != 200 || !strings.Contains(string(raw), controlled.OrderID) || !strings.Contains(string(raw), control) ||
+			strings.Contains(string(raw), `"recipient_name"`) {
+			t.Errorf("%s SKU-only pick list: %d %s", stage, status, raw)
+		}
+		if facts(stage+" after download") != business || balance() != stock {
+			t.Errorf("%s downloads changed order, logistics, payment or stock", stage)
+		}
 	}
-	if got := records[1][idx["collect_minor"]]; got != strconv.FormatInt((total+surcharge)/100, 10) {
-		t.Fatalf("collect cell %q, want whole TWD %d (total+surcharge)", got, (total+surcharge)/100)
+	call("v1 document", "POST", document+"/shipment/document", "", `{"expected_revision":1}`, 200)
+	export("v1")
+	change := `{"expected_revision":1,"recipient":{"line1":"Synthetic v2 address"}}`
+	quote := call("v2 review", "POST", document+"/amendment/review", "", change, 200)
+	save := strings.TrimSuffix(change, "}") + fmt.Sprintf(`,"proposal":%q}`, quote["proposal"])
+	call("v2 commit", "PUT", document+"/amendment", t04Key("r03-export-amend"), save, 200)
+	export("v2")
+	business, stock := facts("before document and shipment guards"), balance()
+	call("stale document", "POST", document+"/shipment/document", "", `{"expected_revision":1}`, 409)
+	call("current document", "POST", document+"/shipment/document", "", `{"expected_revision":2}`, 200)
+	call("stale shipment", "PUT", document+"/shipment", t04Key("r03-export-stale"), r03ShipmentBody(0, 1, "black_cat", "R03-STALE"), 409)
+	call("revisionless shipment", "PUT", document+"/shipment", t04Key("r03-export-legacy"), mfxShip(0, "black_cat", "R03-LEGACY"), 409)
+	if business != facts("after document and shipment guards") || stock != balance() {
+		t.Error("document reads or rejected writes changed business facts")
+	}
+	if exact := e.count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='orders.carrier_export'
+		AND details='{"template":"generic","rows":1}'`, e.store()); exact != 4 {
+		t.Errorf("carrier audits for four mixed requests with one issued row: got %d", exact)
+	}
+	if empty := e.count(`SELECT count(*) FROM ops.audit_events WHERE store_id=$1 AND action='orders.carrier_export'
+		AND details='{"template":"generic","rows":0}'`, e.store()); empty != 4 {
+		t.Errorf("carrier audits for four blocked requests with zero issued rows: got %d", empty)
+	}
+	call("current shipment", "PUT", document+"/shipment", t04Key("r03-export-current"), r03ShipmentBody(0, 2, "black_cat", "R03-MOCK"), 200)
+	facts("fulfilled without collection")
+	if count := e.count(`SELECT count(*) FROM fulfillment.manual_shipment_versions v JOIN checkout.orders o
+		ON (o.tenant_id,o.store_id,o.id)=(v.tenant_id,v.store_id,v.order_id)
+		WHERE o.id=$1 AND v.version=1 AND v.order_revision=2 AND o.collection_state='PENDING'`, controlled.OrderID); count != 1 {
+		t.Error("the current revision must record exactly one shipment with collection still pending")
 	}
 }
 

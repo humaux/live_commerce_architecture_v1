@@ -8,10 +8,11 @@ import type { Locale } from "@live-commerce/i18n";
 import type { OrderAccess } from "../../lib/buyer-query";
 import { buyerRequest, BuyerClientError, definiteError, readOrderSession } from "../../lib/buyer-client";
 import { readOrder, type Order } from "../../lib/purchase";
+import { formatMoney } from "../../lib/money";
 import { RETURN_REQUEST_CODES, validReturnRequestWithdraw } from "../../lib/return-request-contract";
 import { StorefrontState } from "../state/StorefrontState";
 import ReturnRequestDetail from "./ReturnRequestDetail";
-import { inputProjection, requestProjection, requestListProjection, canWithdraw, resolvesAttempt, type ReturnRequest } from "./return-request-state";
+import { inputProjection, selectedReturnLines, requestProjection, requestListProjection, canWithdraw, resolvesAttempt, type ReturnRequest } from "./return-request-state";
 import { returnRequestCopy } from "./return-request-copy";
 import "../../../../packages/ui/src/tokens.css";
 import styles from "./ReturnRequest.module.css";
@@ -25,8 +26,9 @@ export default function ReturnRequestForm({ locale, orderID, requestID, access }
   const [unknown, setUnknown] = useState(false);
   const [error, setError] = useState("");
   const [choices, setChoices] = useState<ReturnRequest[] | null>(null);
-  const [selected, setSelected] = useState<Record<string, string>>({});
+  const [selected, setSelected] = useState<Record<number, string>>({});
   const [note, setNote] = useState("");
+  const draftScope = useRef("");
   const epoch = useRef(0);
   const working = useRef(false);
   const attempt = useRef<Attempt | null>(null);
@@ -69,6 +71,11 @@ export default function ReturnRequestForm({ locale, orderID, requestID, access }
       }
       await current(session.context);
       if (!mounted.current || mine !== epoch.current) return;
+      const scope = JSON.stringify([session.context, order.snapshot.quote.lines]);
+      if (draftScope.current !== scope) {
+        draftScope.current = scope;
+        setSelected({}); setNote("");
+      }
       // A list or selected request cannot prove which create attempt committed after ACK loss.
       if (detail && attempt.current?.requestID === detail.id && resolvesAttempt(attempt.current.suffix.endsWith("/withdraw") ? "withdraw" : "create", detail)) {
         attempt.current = null; setUnknown(false);
@@ -159,7 +166,9 @@ export default function ReturnRequestForm({ locale, orderID, requestID, access }
   }
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const body = inputProjection({ reason: "damaged", note, lines: Object.entries(selected).map(([sku_id, quantity]) => ({ sku_id, quantity: /^\d+$/.test(quantity) ? Number(quantity) : NaN })) });
+    if (!view) return;
+    const lines = selectedReturnLines(view.order.snapshot.quote.lines, selected);
+    const body = inputProjection({ reason: "damaged", note, lines });
     if (!body) { setError(c.invalid); return; }
     void mutate(body, `orders/${orderID}/return-requests`, 201);
   }
@@ -180,10 +189,27 @@ export default function ReturnRequestForm({ locale, orderID, requestID, access }
           onWithdraw={() => { const body = { expected_version: 1 }; if (view.detail && canWithdraw(view.detail) && validReturnRequestWithdraw(body)) void mutate(body, `return-requests/${view.detail.id}/withdraw`, 200, view.detail.id); }} />
           : <><h1>{c.title}</h1><form className={styles.card} onSubmit={submit}>
             <fieldset disabled={locked}><legend>{c.select}</legend>
-              {view.order.snapshot.quote.lines.map(line => <div className={styles.line} key={line.sku_id}>
-                <label className={styles.selection}><input type="checkbox" checked={Object.hasOwn(selected, line.sku_id)} onChange={event => setSelected(previous => { const next = { ...previous }; if (event.target.checked) next[line.sku_id] = "1"; else delete next[line.sku_id]; return next; })} />{line.name} · {line.code} × {line.quantity}</label>
-                {Object.hasOwn(selected, line.sku_id) && <label>{c.quantity}<input type="number" min="1" step="1" value={selected[line.sku_id]} onChange={event => setSelected(previous => ({ ...previous, [line.sku_id]: event.target.value }))} required /></label>}
-              </div>)}
+              {view.order.snapshot.quote.lines.map((line, index) => {
+                const checked = Object.hasOwn(selected, index);
+                const price = formatMoney(locale, line.unit_price_minor, view.order.snapshot.quote.currency);
+                const label = `${line.name} · ${line.code} · ${price} × ${line.quantity}`;
+                return <div className={styles.line} key={`${line.sku_id}:${index}`}>
+                  <label className={styles.selection}>
+                    <input type="checkbox" checked={checked} onChange={event => {
+                      const nextChecked = event.target.checked;
+                      setSelected(previous => {
+                        const next = { ...previous };
+                        if (nextChecked) next[index] = "1";
+                        else delete next[index];
+                        return next;
+                      });
+                    }} />{label}
+                  </label>
+                  {checked && <label>{c.quantity}<input type="number" min="1" max={line.quantity} step="1"
+                    aria-label={`${c.quantity} · ${label}`} value={selected[index]}
+                    onChange={event => setSelected(previous => ({ ...previous, [index]: event.target.value }))} required /></label>}
+                </div>;
+              })}
               <label>{c.reason}<select defaultValue="damaged"><option value="damaged">{c.damaged}</option></select></label>
               <label>{c.note}<textarea value={note} onChange={event => setNote(event.target.value)} aria-describedby="return-photos" /></label>
               <p id="return-photos">{c.photos}</p><p className={styles.notice}>{c.disclaimer}</p>

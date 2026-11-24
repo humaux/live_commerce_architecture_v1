@@ -14,7 +14,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@live-commerce/i18n";
-import { putShipment, readShipmentHistory } from "@/lib/orders-client";
+import { putShipment, readOrderDocument, readShipmentHistory } from "@/lib/orders-client";
 import {
   carrierCodes,
   displayTime,
@@ -117,6 +117,7 @@ export function OrderShipment({
   onChanged,
   parcelBlock,
   onRefused,
+  inlineReview = false,
 }: {
   store: string;
   detail: OrderDetail;
@@ -131,6 +132,7 @@ export function OrderShipment({
   parcelBlock?: string;
   // Called with the refusal code of a failed submit so the page can re-read the parcel state on in_parcel_group.
   onRefused?: (code: string) => void;
+  inlineReview?: boolean;
 }) {
   const orderID = detail.order_id;
   const head: Shipment | null = detail.shipment;
@@ -150,7 +152,11 @@ export function OrderShipment({
   const [uncertain, setUncertain] = useState(false);
   // The reviewed CAS version must still be current when the merchant confirms.
   const [reviewVersion, setReviewVersion] = useState<number | null>(null);
+  const [reviewOrder, setReviewOrder] = useState<number | undefined>();
+  const homeCOD = detail.payment_mode === "cash_on_delivery" && detail.destination.kind === "home";
+  const orderRevision = homeCOD ? detail.order_revision : undefined;
   // One key per submission; only a byte-identical retry after an unknown outcome reuses it.
+  const submitButton = useRef<HTMLButtonElement>(null);
   const pending = useRef<{ key: string; body: string } | null>(null);
 
   useEffect(() => {
@@ -217,11 +223,12 @@ export function OrderShipment({
         return;
       }
       body = JSON.stringify({
-        expected_version: expectedVersion, status: "SHIPPED", carrier_code: carrier,
+        expected_version: expectedVersion, order_revision: mode === "record" ? reviewOrder : undefined, status: "SHIPPED", carrier_code: carrier,
         carrier_name: carrierName.trim() || null, tracking_number: tracking.trim(),
         tracking_url: url.trim() || null, note: note.trim() || null, void_reason: null,
       });
     }
+    if (uncertain && pending.current) body = pending.current.body;
     if (pending.current?.body !== body) pending.current = { key: `ship-${crypto.randomUUID()}`, body };
     setBusy(true);
     setProblem("");
@@ -264,7 +271,16 @@ export function OrderShipment({
         const bad = invalid();
         if (bad) { setProblem(bad); return; }
         setProblem("");
-        setReviewVersion(expectedVersion);
+        if (!homeCOD) { setReviewVersion(expectedVersion); return; }
+        if (!orderRevision || busy) return;
+        setBusy(true);
+        void readOrderDocument(store, orderID, orderRevision, AbortSignal.timeout(8000)).then(() => {
+          setReviewOrder(orderRevision);
+          setReviewVersion(expectedVersion);
+        }, (error: unknown) => {
+          setProblem(errorText(c, error instanceof Error ? error.message : "unavailable"));
+          void onChanged();
+        }).finally(() => setBusy(false));
       }}
     >
       {mode === "void" ? (
@@ -292,20 +308,25 @@ export function OrderShipment({
       {problem && <p className="orders-bad" role="alert" data-testid="shipment-problem">{problem}</p>}
       <div className="orders-form-actions">
         {mode !== "record" && !uncertain && <button type="button" onClick={() => choose("record")}>{c.cancel}</button>}
-        <button type="submit" className="primary" data-testid="shipment-submit" disabled={busy}>
+        <button type="submit" className="primary" ref={submitButton} data-testid="shipment-submit" disabled={busy}>
           {busy ? c.shipSending : uncertain ? c.shipRetry : mode === "void" ? c.shipVoidConfirm : mode === "correct" ? c.shipCorrectSave : c.shipMark}
         </button>
       </div>
     </form>
   );
 
+  const reviewOpen = reviewVersion === expectedVersion && reviewOrder === orderRevision && canWrite && !head && eligible && !parcelBlock;
   return (
     <section className="orders-section" data-testid="order-shipment" aria-label={c.shipTitle}>
-      <h2>{c.shipTitle}</h2>
-      <ShipmentConfirm open={reviewVersion === expectedVersion && canWrite && !head && eligible && !parcelBlock}
+      <ShipmentConfirm open={reviewOpen} inline={inlineReview}
         order={detail} orderNumber={orderNumber} carrier={carrier ? carrierLabel(c, { carrier_code: carrier, carrier_name: carrierName.trim() || null }) : ""}
-        tracking={tracking.trim()} locale={locale} c={c} onCancel={() => setReviewVersion(null)}
-        onConfirm={() => { if (reviewVersion !== expectedVersion) return; setReviewVersion(null); void send(); }} />
+        tracking={tracking.trim()} locale={locale} c={c} onCancel={() => {
+          setReviewVersion(null);
+          if (inlineReview) requestAnimationFrame(() => submitButton.current?.focus());
+        }}
+        onConfirm={() => { if (reviewVersion !== expectedVersion || reviewOrder !== orderRevision) return; setReviewVersion(null); void send(); }} />
+      {(!inlineReview || !reviewOpen) && <>
+      <h2>{c.shipTitle}</h2>
       {status === "error" && (
         <div role="status">
           <p>{c.sectionUnavailable}</p>
@@ -369,6 +390,7 @@ export function OrderShipment({
           )}
         </details>
       )}
+      </>}
     </section>
   );
 }

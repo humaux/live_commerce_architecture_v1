@@ -126,11 +126,12 @@ type Destination struct {
 
 type Detail struct {
 	Summary
-	Country     string      `json:"country"`
-	ServiceCode string      `json:"service_code"`
-	Items       []Item      `json:"items"`
-	Totals      Totals      `json:"totals"`
-	Destination Destination `json:"destination"`
+	OrderRevision int64       `json:"order_revision,omitempty"`
+	Country       string      `json:"country"`
+	ServiceCode   string      `json:"service_code"`
+	Items         []Item      `json:"items"`
+	Totals        Totals      `json:"totals"`
+	Destination   Destination `json:"destination"`
 	// Shipment is the current SHIPPED head (manual-fulfilment-v1 §4.1); null otherwise.
 	Shipment    *Shipment            `json:"shipment"`
 	Adjustments []pricing.Adjustment `json:"adjustments,omitempty"`
@@ -518,7 +519,15 @@ func captured(state string) bool {
 }
 
 func decodeDetail(raw json.RawMessage) (Detail, error) {
-	fields, err := exactNullable(raw, append([]string{"shipment"}, summaryNullable...), append(append([]string{}, summaryKeys...), "country", "service_code", "items", "totals", "destination", "shipment")...)
+	keys := append(append([]string{}, summaryKeys...), "country", "service_code", "items", "totals", "destination", "shipment")
+	var projected map[string]json.RawMessage
+	if json.Unmarshal(raw, &projected) != nil {
+		return Detail{}, ErrUnavailable
+	}
+	if projected["order_revision"] != nil {
+		keys = append(keys, "order_revision")
+	}
+	fields, err := exactNullable(raw, append([]string{"shipment"}, summaryNullable...), keys...)
 	if err != nil {
 		return Detail{}, err
 	}

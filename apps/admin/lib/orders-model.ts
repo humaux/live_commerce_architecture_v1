@@ -139,9 +139,11 @@ export type ShipmentVersion = Omit<Shipment, "status"> & {
   note: string | null;
   void_reason: VoidReason | null;
   principal_id: string;
+  order_revision?: number;
 };
 export type OrderAdjustment = { kind: "manual_discount"; currency: string; name: string; amount_minor: number };
 export type OrderDetail = OrderSummary & {
+  order_revision?: number;
   country: string;
   service_code: string;
   items: OrderItem[];
@@ -310,7 +312,8 @@ export function parseOrderList(value: unknown): OrderList {
 export function parseOrderDetail(value: unknown, requestedID: string): OrderDetail {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("unavailable");
   const raw = value as Record<string, unknown>;
-  const v = object(raw, [...summaryKeys, "source", "country", "service_code", "items", "totals", "destination", "shipment", ...("adjustments" in raw ? ["adjustments"] : [])]);
+  const v = object(raw, [...summaryKeys, "source", "country", "service_code", "items", "totals", "destination", "shipment", ...("adjustments" in raw ? ["adjustments"] : []), ...("order_revision" in raw ? ["order_revision"] : [])]);
+  if ("order_revision" in v && (!Number.isSafeInteger(v.order_revision) || (v.order_revision as number) < 1)) throw new Error("unavailable");
   const summary = parseSourcedOrderSummary(Object.fromEntries([...summaryKeys, "source"].map((key) => [key, v[key]])));
   if (summary.order_id !== requestedID || !pattern(v.country, /^[A-Z]{2}$/) ||
     !pattern(v.service_code, /^[a-z][a-z0-9_-]{0,39}$/) ||
@@ -374,7 +377,8 @@ export function parseOrderDetail(value: unknown, requestedID: string): OrderDeta
   const shipment = v.shipment === null ? null : parseShipmentVersion(v.shipment, false) as Shipment;
   if ((shipment !== null) !== (summary.fulfillment_state === "MERCHANT_SHIPPED")) throw new Error("unavailable");
   return { ...summary, country: v.country as string, service_code: v.service_code as string,
-    items, totals: t as OrderTotals, destination: { ...d, home_address: h, pickup } as Destination, shipment, ...(adjustments ? { adjustments } : {}) };
+    items, totals: t as OrderTotals, destination: { ...d, home_address: h, pickup } as Destination, shipment,
+    ...(adjustments ? { adjustments } : {}), ...("order_revision" in v ? {order_revision: v.order_revision as number} : {}) };
 }
 
 const shipmentKeys = ["version", "status", "carrier_code", "carrier_name", "tracking_number", "tracking_url", "recorded_at"];
@@ -396,7 +400,8 @@ export function trackingURLHost(value: string): string | null {
 }
 // detail.shipment carries the Shipment keys (head SHIPPED only); history rows add the merchant-only keys.
 export function parseShipmentVersion(value: unknown, merchantFields: boolean): ShipmentVersion | Shipment {
-  const v = object(value, merchantFields ? [...shipmentKeys, "note", "void_reason", "principal_id"] : shipmentKeys);
+  const hasRevision = value !== null && typeof value === "object" && "order_revision" in value;
+  const v = object(value, merchantFields ? [...shipmentKeys, "note", "void_reason", "principal_id", ...(hasRevision ? ["order_revision"] : [])] : shipmentKeys);
   const status = v.status;
   if (!Number.isSafeInteger(v.version) || (v.version as number) < 1 ||
     !(status === "SHIPPED" || (merchantFields && status === "VOIDED")) ||
@@ -408,7 +413,8 @@ export function parseShipmentVersion(value: unknown, merchantFields: boolean): S
   if (merchantFields) {
     if (!(v.note === null || text(v.note, 200, false)) ||
       !(v.void_reason === null || oneOf(v.void_reason, voidReasons)) ||
-      (status === "VOIDED") !== (v.void_reason !== null) || !pattern(v.principal_id, canonicalUUID))
+      (status === "VOIDED") !== (v.void_reason !== null) || !pattern(v.principal_id, canonicalUUID) ||
+      (hasRevision && (!Number.isSafeInteger(v.order_revision) || (v.order_revision as number) < 1)))
       throw new Error("unavailable");
   }
   return v as ShipmentVersion | Shipment;

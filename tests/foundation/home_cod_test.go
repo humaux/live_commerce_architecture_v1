@@ -190,7 +190,7 @@ func TestHomeCodLifecycle(t *testing.T) {
 		if st, _, raw := e.record(writer, order, t04Key("hcod-early-ret"), "PENDING", "returned"); st != 422 || tcvStr(tcvJSON(t, raw), "code") != "not_shipped" {
 			t.Errorf("returned before shipped: want 422 not_shipped, got %d %s", st, raw)
 		}
-		if st, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+order+"/shipment", t04Key("hcod-ms"), mfxShip(0, "sf_express", "TRACKCOD123")); st != 200 {
+		if st, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+order+"/shipment", t04Key("hcod-ms"), r03ShipmentBody(0, 1, "sf_express", "TRACKCOD123")); st != 200 {
 			t.Fatalf("manual shipment: %d %s", st, raw)
 		}
 		if n := e.count(`SELECT count(*) FROM checkout.orders WHERE id=$1 AND fulfillment_state='MERCHANT_SHIPPED'`, order); n != 1 {
@@ -336,7 +336,7 @@ func TestHomeCodReleaseAndACL(t *testing.T) {
 			t.Errorf("release with orders:read only: want 403, got %d", st)
 		}
 		// close the order out so the open count does not leak into the later subtests
-		if st, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+order+"/shipment", t04Key("hcod-acl-ms"), mfxShip(0, "sf_express", "TRACKACL1")); st != 200 {
+		if st, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+order+"/shipment", t04Key("hcod-acl-ms"), r03ShipmentBody(0, 1, "sf_express", "TRACKACL1")); st != 200 {
 			t.Fatalf("manual shipment: %d %s", st, raw)
 		}
 		if st, _, raw := e.record(writer, order, t04Key("hcod-acl-col"), "PENDING", "collected"); st != 200 {
@@ -383,7 +383,7 @@ func TestHomeCodReleaseAndACL(t *testing.T) {
 
 	t.Run("restock: ship -> returned -> RESTOCKED once; a second restock is refused", func(t *testing.T) {
 		order, _ := place()
-		if st, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+order+"/shipment", t04Key("hcod-ms2"), mfxShip(0, "chunghwa_post", "TRACKCOD2")); st != 200 {
+		if st, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+order+"/shipment", t04Key("hcod-ms2"), r03ShipmentBody(0, 1, "chunghwa_post", "TRACKCOD2")); st != 200 {
 			t.Fatalf("manual shipment: %d %s", st, raw)
 		}
 		if st, _, raw := e.record(writer, order, t04Key("hcod-ret"), "PENDING", "returned"); st != 200 {
@@ -450,7 +450,7 @@ func TestHomeCodManualCarrierRoundTrip(t *testing.T) {
 		}
 		order := res.OrderID
 		st, out, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+order+"/shipment",
-			t04Key("hcod-carrier"), mfxShip(0, code, "HCOD"+strings.ToUpper(strings.ReplaceAll(code, "_", ""))))
+			t04Key("hcod-carrier"), r03ShipmentBody(0, 1, code, "HCOD"+strings.ToUpper(strings.ReplaceAll(code, "_", ""))))
 		if st != 200 {
 			t.Fatalf("ship a COD order with %s: %d %s", code, st, raw)
 		}
@@ -489,7 +489,7 @@ func TestHomeCodErasureWaitsForShippedUncollected(t *testing.T) {
 	if _, err := e.hcodPlace(idle); err != nil {
 		t.Fatal(err)
 	}
-	if st, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+res.OrderID+"/shipment", t04Key("hcod-erase-ship"), mfxShip(0, "sf_express", "TRACKERASE1")); st != 200 {
+	if st, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+res.OrderID+"/shipment", t04Key("hcod-erase-ship"), r03ShipmentBody(0, 1, "sf_express", "TRACKERASE1")); st != 200 {
 		t.Fatalf("manual shipment: %d %s", st, raw)
 	}
 	if got := erase(shipped, "hcod-erase-blocked"); got.status != 409 || cofCode(cofJSON(t, got.body)) != "erasure_blocked" {

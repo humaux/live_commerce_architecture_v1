@@ -148,8 +148,12 @@ const sgOrigin = "https://admin.example.test"
 
 func sgSetup(t *testing.T) *sgEnv {
 	t.Helper()
-	s, _, pool := identityFixture(t)
-	f := fixture(t)
+	return sgSetupOn(t, fixture(t))
+}
+
+func sgSetupOn(t *testing.T, f *testFixture) *sgEnv {
+	t.Helper()
+	s, _, pool := identityFixtureOn(t, f)
 	ctx := context.Background()
 	owner := identityLogin(t, s)
 	store, err := s.CreateInitialStore(ctx, owner.Token, "sg-store-"+randomUUID(), firstStoreRequest())
@@ -299,7 +303,7 @@ func (e *sgEnv) universe() []string {
 	return out
 }
 
-// sgBundle is §D transcribed: owner all; admin all but staff management and billing (billing:manage is the only billing
+// sgBundle is §D transcribed: owner all default permissions; admin all default permissions but staff management and billing (billing:manage is the only billing
 // permission; staff management is not a grantable permission); live_operator live:*, catalog:read, orders:read, inventory:read,
 // inbox:read, inbox:reply, inventory:live_adjust; fulfilment orders:read, fulfillment:write, orders:export, inventory:*;
 // viewer every :read except inbox:read (DM text is buyer PII, live-console-v1 §14.8 OPEN-7/17). store:read rides along in all
@@ -307,7 +311,7 @@ func (e *sgEnv) universe() []string {
 func sgBundle(role string, universe []string) map[string]bool {
 	out := map[string]bool{"store:read": true}
 	for _, p := range universe {
-		if p == "store:read" {
+		if p == "store:read" || p == "orders:amend" {
 			continue
 		}
 		switch role {
@@ -618,8 +622,8 @@ func TestStaffGateSG02RoleBundlesExactlyAsContract(t *testing.T) {
 					t.Errorf("%s has unexpected grant row %s", role, g)
 				}
 			}
-			if role == "owner" && len(allowed) != len(universe) {
-				t.Errorf("owner must hold all %d permissions, holds %d", len(universe), len(allowed))
+			if len(allowed) != len(wantRows) {
+				t.Errorf("%s: effective permissions %v, want %v", role, allowed, wantRows)
 			}
 		})
 	}
@@ -627,9 +631,12 @@ func TestStaffGateSG02RoleBundlesExactlyAsContract(t *testing.T) {
 
 func TestStaffGateSG02StoreCreatorIsAnOwnerWithEveryPermission(t *testing.T) {
 	e := sgSetup(t)
-	for _, p := range e.universe() {
-		if err := e.can(e.owner.Token, p); err != nil {
-			t.Errorf("the store creator (owner) must hold %s: %v", p, err)
+	universe := e.universe()
+	want := sgBundle("owner", universe)
+	for _, p := range universe {
+		err := e.can(e.owner.Token, p)
+		if (want[p] && err != nil) || (!want[p] && !errors.Is(err, platform.ErrForbidden)) {
+			t.Errorf("store creator permission %s: allowed=%t, got %v", p, want[p], err)
 		}
 	}
 	team, err := e.svc.List(e.ctx, e.owner.Token, e.store.StoreID)

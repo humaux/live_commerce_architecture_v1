@@ -3,6 +3,7 @@
 // (cookie CSRF + session fence + Idempotency-Key) and never trust their own response body for state (re-GET instead).
 import { csrfCookie, safeError, sessionBoundary, writeSettings } from "./settings-client";
 import { appendOrderFilters, parseOrderListV2, type OrderFilters } from "./orders-v2";
+import { catalogProduct, catalogSKU, parseCatalogPage } from "./claims-model";
 import {
   parseOrderActions,
   parseOrderDetail,
@@ -117,6 +118,47 @@ export const postRefund = (store: string, id: string, key: string, body: string,
 // Go PUT orders/{id}/shipment (fulfillment:write; one command route for record, correct and void).
 export const putShipment = (store: string, id: string, key: string, body: string, boundary: string) =>
   write(store, "PUT", `orders/${id}/shipment`, key, body, boundary);
+export const putOrderAmendment = (store: string, id: string, key: string, body: string, boundary: string) =>
+  write(store, "PUT", `orders/${id}/amendment`, key, body, boundary);
+
+async function reviewOrder(store: string, id: string, resource: string, body: unknown, signal: AbortSignal): Promise<unknown> {
+  const response = await fetch(`${orderPath(store, id)}/${resource}`, {
+    method: "POST", credentials: "same-origin", cache: "no-store", signal,
+    headers: { "Content-Type": "application/json", "X-CSRF-Token": csrfCookie() },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error(safeError(await response.json().catch(() => null)).code);
+  if (response.headers.get("content-type")?.split(";", 1)[0] !== "application/json" ||
+    response.headers.get("cache-control") !== "private, no-store") throw new OrderReadError("unavailable");
+  return response.json();
+}
+
+export async function readOrderDocument(store: string, id: string, revision: number, signal: AbortSignal) {
+  const detail = parseOrderDetail(await reviewOrder(store, id, "shipment/document", { expected_revision: revision }, signal), id);
+  if (detail.order_revision !== revision) throw new OrderReadError("unavailable");
+  return detail;
+}
+
+export const reviewOrderAmendment = (store: string, id: string, draft: unknown, signal: AbortSignal) =>
+  reviewOrder(store, id, "amendment/review", draft, signal);
+
+async function amendmentCatalog(path: string, signal: AbortSignal): Promise<unknown> {
+  const response = await fetch(path, { cache: "no-store", credentials: "same-origin", signal });
+  if (!response.ok) throw new OrderReadError("unavailable");
+  return response.json();
+}
+
+export async function amendmentProducts(store: string, cursor: string, signal: AbortSignal) {
+  const parameters = new URLSearchParams({limit: "100"});
+  if (cursor) parameters.set("cursor", cursor);
+  const page = parseCatalogPage(await amendmentCatalog(`/api/stores/${store}/products?${parameters}`, signal), catalogProduct);
+  return { ...page, items: page.items.filter(product => product.status === "active") };
+}
+
+export async function amendmentSKUs(store: string, product: string, currency: string, signal: AbortSignal) {
+  const page = parseCatalogPage(await amendmentCatalog(`/api/stores/${store}/products/${product}/skus?limit=100`, signal), catalogSKU);
+  return page.items.filter(sku => sku.product_id === product && sku.currency === currency && sku.status === "active");
+}
 
 // Go POST orders/{id}/refunds/{refund}/refresh: keyless and bodyless; throttled in SQL.
 export async function refreshRefund(store: string, id: string, refundId: string, boundary: string): Promise<"scheduled" | "later" | WriteResult & { ok: false }> {

@@ -77,21 +77,25 @@ async function openOrders(page: Page, locale: string) {
   // The order list names its time zone (integration: the stop-bleed M06 label "Taipei time / 台北時間 / 台北时间" replaces "Taipei, UTC+8").
 
 }
-async function expand(page: Page, id: string): Promise<Locator> {
+async function expand(page: Page, id: string, revealFacts = true): Promise<Locator> {
   if(await page.getByTestId("order-detail-back").count())await page.getByTestId("order-detail-back").click();
+  await expect(page.getByTestId("orders-list")).toBeVisible();
   for (let pageNo = 0; pageNo < 5; pageNo++) {
     const button = page.getByTestId(`order-expand-${id}`);
     if (await button.count()) {
       if ((await button.getAttribute("aria-expanded")) !== "true") await button.click();
       const detail = page.getByTestId("order-detail");
       await expect(detail).toHaveAttribute("aria-label", new RegExp(id));
+      if (!revealFacts) return detail;
       const facts=page.getByTestId("order-more-details");
       if(await facts.getAttribute("open")===null) await facts.locator("summary").first().click();
       await expect(detail).toContainText(/Taipei time|台北時間|台北时间/);
       return detail.getByTestId("order-facts");
     }
     await expect(page.getByTestId("orders-next")).toBeEnabled();
+    const previousURL = page.url();
     await page.getByTestId("orders-next").click();
+    await expect(page).not.toHaveURL(previousURL);
     await expect(page.getByTestId("orders-list")).toBeVisible();
   }
   throw new Error("order was absent from the real cursor pages");
@@ -267,3 +271,59 @@ test("finance: the collected cash appears in the COD column, never in captured/n
   await shot(page, "finance", "en", "desktop");
   await context.close();
 });
+
+for (const width of [1440, 390]) {
+  test(`R03 revised warehouse document keeps order, store and revision (${width})`, async ({ browser }) => {
+    test.skip(phase !== "r03");
+    const id = required(width === 390 ? "LC_HCOD_R03_MOBILE" : "LC_HCOD_R03_DESKTOP");
+    const { context, page } = await merchant(browser, false);
+    try {
+      await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+      await page.getByTestId("locale-switch").selectOption("zh-TW");
+      await expect(page).toHaveURL(/\/zh-TW(?:\/|$)/);
+      if (width === 390) await page.locator('button[aria-controls="workspace-navigation"]').click();
+      await page.getByTestId("nav-orders").filter({ visible: true }).click();
+      const selector = page.getByTestId("store-selector");
+      if (await selector.count() && await selector.inputValue() !== store) await selector.selectOption(store);
+      const detail = await expand(page, id, false);
+      const amend = detail.getByTestId("order-amendment");
+      await amend.getByRole("button", { name: "修改原單", exact: true }).click();
+      await amend.getByLabel("地址", { exact: true }).fill("合成測試路 88 號");
+      await amend.getByRole("button", { name: "檢視變更", exact: true }).click();
+      await expect(amend.getByRole("heading", { name: "檢視原單變更" })).toBeVisible();
+      await expect(amend.getByText("NT$75", { exact: true })).toBeVisible();
+      await amend.getByRole("button", { name: "確認並儲存", exact: true }).click();
+      await expect(detail.getByRole("heading", { name: "原單已更新" })).toBeVisible();
+      await detail.getByRole("link", { name: "查看更新後的出貨單", exact: true }).click();
+      const center = page.getByTestId("shipping-center");
+      await expect(center.getByRole("heading", { name: "新版 v2 待交寄" })).toBeVisible();
+      await expect(center.getByTestId("shipping-packing-slip")).toContainText("NT$75");
+      const pinned = new URL(page.url());
+      expect(Object.fromEntries(pinned.searchParams)).toEqual({ store, selected: id, step: "preview", revision: "2" });
+      const stale = await context.newPage();
+      pinned.searchParams.set("revision", "1");
+      const refusal = stale.waitForResponse(response =>
+        response.url().endsWith(`/orders/${id}/shipment/document`) && response.request().method() === "POST");
+      await stale.goto(pinned.toString());
+      expect((await refusal).status()).toBe(409);
+      await expect(stale.getByTestId("shipping-packing-slip")).toHaveCount(0);
+      await expect(stale.getByTestId("shipping-center").getByRole("alert")).toContainText("出貨文件已變更");
+      await stale.close();
+
+      await center.getByRole("button", { name: "填寫運單", exact: true }).click();
+      await center.getByTestId("ship-carrier").selectOption("black_cat");
+      await center.getByTestId("ship-tracking").fill("R03-MOCK-CI");
+      await center.getByTestId("shipment-submit").click();
+      await expect(page.getByRole("heading", { name: "確認登記出貨 v2" })).toBeVisible();
+      const shipment = page.waitForResponse(response =>
+        response.url().endsWith(`/orders/${id}/shipment`) && response.request().method() === "PUT");
+      await page.getByTestId("shipment-confirm").click();
+      const command = await shipment;
+      expect(command.status()).toBe(200);
+      expect(command.request().postDataJSON()).toMatchObject({ expected_version: 0, order_revision: 2 });
+      await expect(center.getByRole("heading", { name: "出貨已登記" })).toBeVisible();
+      await expect(center.getByTestId("shipment-record")).toContainText("R03-MOCK-CI");
+      await expect(center.getByText("未證明物流收件", { exact: true })).toBeVisible();
+    } finally { await context.close(); }
+  });
+}

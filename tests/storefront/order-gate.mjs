@@ -3,7 +3,7 @@
 // Used by: its scripts/dev/test-local.sh browser mode; GATE-PORT acceptance.
 // Purpose: real buyer checkout/order/history gate, including stable locale targets and complete context privacy audits.
 // Depends on: production Next/Go/PG, Playwright, shared Taipei formatting, browser-engine and shop-helpers.
-// Used by: TestBrowserBuyerOrderUI in --browser-order and the WebKit order scenario; only synthetic TLS/fixture faults.
+// Used by: TestBrowserBuyerOrderUI and TestBrowserR03BuyerReturnLine in --browser-order and the WebKit order scenario.
 // Invariants: original acceptance assertions/timeouts stay intact; focus setup never replaces real pointer activation.
 import { startNextWithPortRetry, nextAttemptLog } from "../helpers/next-startup.mjs";
 import assert from "node:assert/strict";
@@ -21,9 +21,11 @@ import { reachCheckout, switchLocale, confirmCheckoutAddress, openCheckoutDetail
 import { isWebkitCancelledFetch, launch, ctxOpts } from "./browser-engine.mjs"; // LC_BROWSER_ENGINE=chromium|webkit; chromium behaviour is unchanged
 import { displayTime } from "../../packages/format/src/index.ts";
 import { createHmac } from "node:crypto";
+import { r03ReturnLineJourney } from "./r03-return-line.mjs";
 import { returnRequestCopy, returnProgressCopy } from "../../apps/storefront/components/order-status/return-request-copy.ts";
 
 const root=process.cwd(), evidence=process.env.LC_ORDER_EVIDENCE;
+const r03Only=process.argv[2]==="r03-return-line";
 assert(evidence && /^http:\/\/127\.0\.0\.1:\d+$/.test(process.env.LC_ORDER_CONTROL));
 const origin="https://buyer.example", checkoutPath="/en/checkout";
 const children=new Set(), sockets=new Set(), logs=[], contexts=[], orders=[], observations=[], storageWrites=[], consoleText=[], requestURLs=[], cartRetries=[], cartRefreshes=[], clickLedger=[];
@@ -508,9 +510,14 @@ async function aftersalesPhase() {
     await act(caseID,"reason",()=>p.getByRole("combobox").selectOption("damaged"),()=>expect(p.getByRole("combobox")).toHaveValue("damaged"));
     await act(caseID,"note",()=>p.getByRole("textbox").fill("Synthetic aftersales note 😀"),()=>expect(p.getByRole("textbox")).toHaveValue("Synthetic aftersales note 😀"));
     if(index===0) {
-      await act(caseID,"excess quantity input",()=>p.getByRole("spinbutton").fill("3"),()=>expect(p.getByRole("spinbutton")).toHaveValue("3"));const denied=p.waitForResponse(r=>requestIs(r,`orders/${world.order}/return-requests`,"POST"));
-      const [deniedResponse]=await Promise.all([denied,act(caseID,"excess quantity refusal",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),()=>expect(p.getByTestId("return-page").getByRole("alert")).toHaveText(c.errors.exceeds_shipped))]);
-      assert.equal(deniedResponse.status(),422);assert.equal((await readFact(world)).requests,0);
+      const quantity=p.getByRole("spinbutton"),before=await readFact(world),posts=postCount();
+      await act(caseID,"excess quantity input",()=>quantity.fill("3"),async()=>{
+        await expect(quantity).toHaveValue("3");
+        assert.equal(await quantity.evaluate(input=>input.validity.rangeOverflow),true);
+      });
+      await act(caseID,"browser blocks excess quantity",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),async()=>{
+        assert.equal(postCount(),posts);assert.deepEqual(await readFact(world),before);
+      });
     }
     await act(caseID,"positive quantity",()=>p.getByRole("spinbutton").fill("1"),()=>expect(p.getByRole("spinbutton")).toHaveValue("1"));
     const item=await submit(p,world,locale,caseID);requestIDs.push(item.id);const before=await readFact(world);
@@ -534,7 +541,21 @@ async function aftersalesPhase() {
       await expect(p.getByTestId("return-rma-state")).toHaveAttribute("data-state",state);
       await expect(p.getByTestId("return-rma-state")).toContainText(returnProgressCopy(locale)[state]);
     }
-    await apply(p,world,locale,caseID,true);const rejected=await submit(p,world,locale,caseID);await terminal(p,rejected,locale,"reject","rejected",caseID);
+    await apply(p,world,locale,caseID,true);
+    if(index===0) {
+      // One unit has already been returned. Two fit the snapshot's input range, while Go sees only one left.
+      const quantity=p.getByRole("spinbutton"),before=await readFact(world);
+      await act(caseID,"quantity above remaining after return",()=>quantity.fill("2"),async()=>{
+        await expect(quantity).toHaveValue("2");
+        assert.equal(await quantity.evaluate(input=>input.validity.valid),true);
+      });
+      const denied=p.waitForResponse(r=>requestIs(r,`orders/${world.order}/return-requests`,"POST"));
+      const [deniedResponse]=await Promise.all([denied,act(caseID,"excess quantity refusal",()=>p.getByRole("button",{name:c.submit,exact:true}).click(),()=>expect(p.getByTestId("return-page").getByRole("alert")).toHaveText(c.errors.exceeds_shipped))]);
+      assert.equal(deniedResponse.status(),422);assert.equal((await deniedResponse.json()).code,"exceeds_shipped");
+      assert.deepEqual(await readFact(world),before);
+      await act(caseID,"quantity within remaining after return",()=>quantity.fill("1"),()=>expect(quantity).toHaveValue("1"));
+    }
+    const rejected=await submit(p,world,locale,caseID);await terminal(p,rejected,locale,"reject","rejected",caseID);
     if(locale==="zh-TW")await capture(p,`aftersales-zh-TW-${mobile?"mobile":"desktop"}-rejected.png`,true,path.join(review,"buyer-aftersales"));
     await apply(p,world,locale,caseID,true);const cancelled=await submit(p,world,locale,caseID);await terminal(p,cancelled,locale,"approve","approved",caseID);await terminal(p,cancelled,locale,"cancel","approved",caseID);
     await expect(p.getByTestId("return-rma-state")).toContainText(returnProgressCopy(locale).CANCELLED);
@@ -645,6 +666,31 @@ try {
   });
   browser=await launch({headless:true,proxy:{server:`http://127.0.0.1:${await listen(proxy)}`}});
 
+  if (r03Only) {
+    await r03ReturnLineJourney({ origin, evidence, control, newContext, calls });
+  } else {
+    await orderJourney();
+  }
+}catch(error){
+  // A failed step leaves what the buyer was looking at (screenshot + visible text of every page), so an intermittent failure is diagnosable from its own run.
+  // Page indexes restart in each context. A global index keeps later contexts
+  // from overwriting the failing locale-history page's evidence (PR #268).
+  let failureIndex=0;
+  if(browser)for(const context of browser.contexts())for(const page of context.pages()){
+    const index=failureIndex++;
+    await page.screenshot({path:path.join(evidence,`failure-${index}.png`),fullPage:true,...(r03Only?{timeout:5000}:{})}).catch(()=>{});
+    await writeFile(path.join(evidence,`failure-${index}.txt`),`${r03Only?new URL(page.url()).pathname:page.url()}\n${await page.locator("body").innerText().catch(()=>"")}`.slice(0,6000)).catch(()=>{});
+  }
+  throw error;
+}finally{
+  if(hook?.release)hook.release.resolve();
+  if(browser)await browser.close();for(const s of sockets)s.destroy();
+  for(const server of [proxy,edge])if(server)await new Promise(r=>server.close(r));
+  for(const child of children){if(child.exitCode===null){const ended=once(child,"exit");child.kill("SIGTERM");await Promise.race([ended,pause(2000)]);if(child.exitCode===null){child.kill("SIGKILL");await ended;}}}
+  await Promise.all(logs.map(log=>new Promise(r=>log.end(r))));await rm(certDir,{recursive:true,force:true});
+}
+
+async function orderJourney() {
   // BC01: first write in a fresh session (product drawer), then an edit on the cart page.
   // All business requests run through production Next -> Go -> PG; only committed edge replies are lost.
   for(const locale of ["en","zh-CN","zh-TW"]){
@@ -1015,21 +1061,4 @@ try {
   pass("BO06 all attempted local/session writes, URLs and console exclude PII/bearer; other owner denied");
   const aftersales=await aftersalesPhase(); // additive result, never counted as an old order case or ledger row
   await writeFile(path.join(evidence,"result.json"),JSON.stringify({cases:observations.length,orders,repeated_orders:[order1,orderB],observations,cart_retries:cartRetries,cart_refreshes:cartRefreshes,click_ledger:clickLedger,aftersales,storage_write_attempts:storageWrites.length,scope:"actual UI/Next/Go/isolated PG; synthetic TLS/buyer data and MOCK Stripe/ECPay; no production",not_run:["full foundation/race/vet and existing browser regression are separate root gates","independent visual review"]},null,2),{mode:0o600});
-}catch(error){
-  // A failed step leaves what the buyer was looking at (screenshot + visible text of every page), so an intermittent failure is diagnosable from its own run.
-  // Page indexes restart in each context. A global index keeps later contexts
-  // from overwriting the failing locale-history page's evidence (PR #268).
-  let failureIndex=0;
-  if(browser)for(const context of browser.contexts())for(const page of context.pages()){
-    const index=failureIndex++;
-    await page.screenshot({path:path.join(evidence,`failure-${index}.png`),fullPage:true}).catch(()=>{});
-    await writeFile(path.join(evidence,`failure-${index}.txt`),`${page.url()}\n${await page.locator("body").innerText().catch(()=>"")}`.slice(0,6000)).catch(()=>{});
-  }
-  throw error;
-}finally{
-  if(hook?.release)hook.release.resolve();
-  if(browser)await browser.close();for(const s of sockets)s.destroy();
-  for(const server of [proxy,edge])if(server)await new Promise(r=>server.close(r));
-  for(const child of children){if(child.exitCode===null){const ended=once(child,"exit");child.kill("SIGTERM");await Promise.race([ended,pause(2000)]);if(child.exitCode===null){child.kill("SIGKILL");await ended;}}}
-  await Promise.all(logs.map(log=>new Promise(r=>log.end(r))));await rm(certDir,{recursive:true,force:true});
 }

@@ -1,7 +1,7 @@
 // Purpose: Validate the authenticated store and non-private shipping flow URL before rendering.
 // Depends on: next/headers, next/navigation, React Suspense, i18n, auth, orders-model and ShippingCenter.
 // Used by: Next.js /[locale]/orders/shipping.
-// Invariants: store membership comes from the server session; URL contains only store/order IDs, cursor and step.
+// Invariants: store membership comes from the server session; URL contains only store/order IDs, document revision, cursor and step.
 import { Suspense } from 'react';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
@@ -20,7 +20,7 @@ export default async function ShippingPage({ params, searchParams }: {
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const query = await searchParams;
-  if (Object.keys(query).some(key => !['store', 'selected', 'step', 'cursor'].includes(key))) notFound();
+  if (Object.keys(query).some(key => !['store', 'selected', 'step', 'cursor', 'revision'].includes(key))) notFound();
   const single = (key: string) => {
     const value = query[key];
     if (value !== undefined && (typeof value !== 'string' || !value)) notFound();
@@ -28,10 +28,13 @@ export default async function ShippingPage({ params, searchParams }: {
   };
   const requested = single('store'), selected = single('selected'), cursor = single('cursor');
   const step = single('step') || 'select';
+  const revision = single('revision');
   const ids = selected ? selected.split(',') : [];
   if ((requested && !canonicalUUID.test(requested)) || ids.length > 100 ||
     ids.some(id => !canonicalUUID.test(id)) || new Set(ids).size !== ids.length ||
-    (cursor && !canonicalCursor.test(cursor)) || !['select', 'review', 'preview', 'done'].includes(step)) notFound();
+    (cursor && !canonicalCursor.test(cursor)) || !['select', 'review', 'preview', 'done'].includes(step) ||
+    (revision && (!requested || ids.length !== 1 || cursor || !['preview', 'done'].includes(step) ||
+      !/^[1-9][0-9]*$/.test(revision) || !Number.isSafeInteger(Number(revision))))) notFound();
   let store: Store | null = null;
   let error: OrderReadCode | null = null;
   const token = authConfig ? exactCookieHeader((await headers()).get('cookie'), SESSION_COOKIE) : null;
@@ -48,7 +51,7 @@ export default async function ShippingPage({ params, searchParams }: {
     }
   }
   return <Suspense fallback={<AdminLoading />}>
-    <ShippingCenter key={`${store?.id ?? ''}:${locale}`} locale={locale} store={store}
-      initialIDs={ids} initialStep={step as ShippingStep} initialCursor={cursor} initialError={error} />
+    <ShippingCenter key={`${store?.id ?? ''}:${locale}:${revision ? selected + ':' + revision : ''}`} locale={locale} store={store}
+      initialIDs={ids} initialStep={step as ShippingStep} initialCursor={cursor} initialError={error} initialRevision={revision ? Number(revision) : undefined} />
   </Suspense>;
 }

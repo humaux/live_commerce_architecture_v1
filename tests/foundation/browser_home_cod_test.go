@@ -253,7 +253,7 @@ func TestBrowserHomeCod(t *testing.T) {
 	}
 	beforeCleanup := openCOD()
 	for _, order := range pendingOrders {
-		if st, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+order.ID+"/shipment", t04Key("rv273-fixture-ship"), mfxShip(0, "black_cat", "RV273SYNTHETIC")); st != 200 {
+		if st, _, raw := e.mcall(e.token(), "PUT", "/v1/admin/stores/"+e.store()+"/orders/"+order.ID+"/shipment", t04Key("rv273-fixture-ship"), r03ShipmentBody(0, 1, "black_cat", "RV273SYNTHETIC")); st != 200 {
 			t.Fatalf("recovered-order fixture shipment: %d %s", st, raw)
 		}
 		_, fulfilment, mode, collection, amount, fee := e.hcodRow(order.ID)
@@ -278,29 +278,29 @@ func TestBrowserHomeCod(t *testing.T) {
 		{"gap-up", 60, false}, {"gap-down", 40, false}, {"gap-zero", 0, false},
 		{"refresh-failed", 60, true}, {"disabled", 50, true}, {"over-cap", 50, true},
 	}
-	setCod255 := func(enabled bool, capTWD, feeTWD int) {
+	setCOD := func(enabled bool, capTWD, feeTWD int) {
 		t.Helper()
 		status, settings, body := e.mcall(e.token(), "GET", "/v1/admin/stores/"+e.store()+"/cash-on-delivery-settings", "", "")
 		if status != 200 {
-			t.Fatalf("COD-255 read settings: %d %s", status, body)
+			t.Fatalf("read fixture COD settings: %d %s", status, body)
 		}
 		status, settings = e.hcodSettings(int64(settings["version"].(float64)), enabled, capTWD, feeTWD, "black_cat")
-		if status != 200 || settings["surcharge_twd"] != float64(feeTWD) || settings["enabled"] != enabled {
-			t.Fatalf("COD-255 real settings mutation: %d %v", status, settings)
+		if status != 200 || settings["max_twd"] != float64(capTWD) || settings["surcharge_twd"] != float64(feeTWD) || settings["enabled"] != enabled {
+			t.Fatalf("set fixture COD settings: %d %v", status, settings)
 		}
 	}
 	wantFees := map[string]int64{}
 	for _, scenario := range cod255Cases {
 		step := "cod255-" + scenario.key
 		wait(step + "-start")
-		setCod255(true, 20000, 50)
+		setCOD(true, 20000, 50)
 		release(step + "-start")
 		wait(step + "-change")
 		capTWD := 20000
 		if scenario.key == "over-cap" {
 			capTWD = 74 // original NT$75 due now exceeds the real merchant cap; fee stays 50
 		}
-		setCod255(scenario.key != "disabled", capTWD, scenario.feeTWD)
+		setCOD(scenario.key != "disabled", capTWD, scenario.feeTWD)
 		release(step + "-change")
 		wait(step + "-verified")
 		if !scenario.blocked {
@@ -368,6 +368,21 @@ func TestBrowserHomeCod(t *testing.T) {
 	if n := e.count(`SELECT count(*) FROM checkout.orders WHERE id=$1 AND commercial_state='AWAITING_COLLECTION' AND collection_state='COLLECTED'`, orders["A"].ID); n != 1 {
 		t.Error("order A must stay AWAITING_COLLECTION after collection (it is never CONFIRMED)")
 	}
+	// Restore the fixture cap after COD-255's NT$74 refusal, then use two original unshipped NT$75 orders.
+	setCOD(true, 20000, 50)
+	e.grantCreator("orders:amend")
+	brfPlaywright(t, ctx, stack, []string{"home-cod.spec.ts"}, adminEnv("r03", map[string]string{
+		"LC_HCOD_R03_DESKTOP": orders["B"].ID, "LC_HCOD_R03_MOBILE": orders["C"].ID,
+	}))
+	for _, id := range []string{orders["B"].ID, orders["C"].ID} {
+		if n := e.count(`SELECT count(*) FROM checkout.orders o JOIN fulfillment.manual_shipment_versions s
+			ON (s.tenant_id,s.store_id,s.order_id)=(o.tenant_id,o.store_id,o.id)
+			WHERE o.id=$1 AND o.order_revision=2 AND s.order_revision=2 AND s.version=1
+			AND o.total_minor=$2 AND o.cod_surcharge_minor=$3 AND o.collection_state='PENDING'`, id, total, surchargeMinor); n != 1 {
+			t.Errorf("R03 order %s: amended revision, shipment CAS, original payable and pending collection must agree", id)
+		}
+	}
+
 	t.Logf("home-cod BROWSER (MOCK) merchant settings -> buyer checkout -> merchant ship/collect -> buyer sees COLLECTED -> finance COD columns; evidence=%s", evidence)
 }
 

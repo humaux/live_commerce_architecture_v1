@@ -87,7 +87,7 @@ func TestManualFulfilmentMF08Guards(t *testing.T) {
 			}
 		}
 		f := fixture(t)
-		for _, sig := range []string{"fulfillment.record_manual_shipment(bytea,uuid,uuid,text,bytea,bigint,text,text,text,text,text,text,text)", "identity.export_unshipped_orders(bytea,uuid,integer)", "fulfillment.read_manual_shipment_history(bytea,uuid,uuid)"} {
+		for _, sig := range []string{"fulfillment.record_manual_shipment(bytea,uuid,uuid,text,bytea,bigint,text,text,text,text,text,text,text)", "fulfillment.record_manual_shipment(bytea,uuid,uuid,text,bytea,bigint,text,text,text,text,text,text,text,bigint)", "identity.export_unshipped_orders(bytea,uuid,integer)", "fulfillment.read_manual_shipment_history(bytea,uuid,uuid)"} {
 			var src string
 			if err := f.owner.QueryRow(ctx, `SELECT prosrc FROM pg_proc WHERE oid=to_regprocedure($1)`, sig).Scan(&src); err != nil {
 				t.Errorf("definer %s missing: %v", sig, err)

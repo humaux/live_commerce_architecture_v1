@@ -1,9 +1,9 @@
 // Purpose: public UI projection controls over frozen buyer return boundaries (synthetic data only).
 // Depends on: node:test and existing direct TS-import suite pattern. Called by: remote Node runner.
-// Invariants: no test execution locally; these controls do not claim browser/persistence acceptance.
+// Covers projection and payload shape; the real form and persistence have their own browser journey.
 import test from "node:test";
 import assert from "node:assert/strict";
-import { requestProjection, requestListProjection, inputProjection, canWithdraw, resolvesAttempt } from "../components/order-status/return-request-state.ts";
+import { requestProjection, requestListProjection, inputProjection, selectedReturnLines, canWithdraw, resolvesAttempt } from "../components/order-status/return-request-state.ts";
 const id = "11111111-1111-4111-8111-111111111111";
 const order = "22222222-2222-4222-8222-222222222222";
 const sku = "33333333-3333-4333-8333-333333333333";
@@ -51,4 +51,16 @@ test("input delegates closed grammar including Unicode codepoints, no controls a
   assert.equal(inputProjection({ ...input, lines: [{ sku_id: sku, quantity: 0 }] }), null);
   assert.equal(inputProjection({ ...input, lines: [{ sku_id: sku, quantity: 1.5 }] }), null);
   assert.equal(inputProjection({ ...input, lines: [] }), null);
+});
+
+test("projects split snapshot rows into one server-resolved SKU quantity", () => {
+  const quote = [{ sku_id: sku, quantity: 2 }, { sku_id: sku, quantity: 1 }, { sku_id: id, quantity: 4 }];
+  assert.deepEqual(selectedReturnLines(quote, { 1: "1" }), [{ sku_id: sku, quantity: 1 }]);
+  assert.deepEqual(selectedReturnLines(quote, { 0: "2", 1: "1", 2: "4" }), [
+    { sku_id: sku, quantity: 3 },
+    { sku_id: id, quantity: 4 },
+  ]);
+  for (const selection of [{ 1: "2" }, { 0: "0" }, { 0: "1.5" }, { 0: "" }, { 0: "1e0" }, { 9: "1" }]) {
+    assert.equal(inputProjection({ reason: "damaged", lines: selectedReturnLines(quote, selection) }), null);
+  }
 });

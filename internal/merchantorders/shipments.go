@@ -74,14 +74,16 @@ type Shipment struct {
 // ShipmentVersion adds the merchant-only fields (never sent to buyers).
 type ShipmentVersion struct {
 	Shipment
-	Note        *string `json:"note"`
-	VoidReason  *string `json:"void_reason"`
-	PrincipalID string  `json:"principal_id"`
+	OrderRevision *int64  `json:"order_revision,omitempty"`
+	Note          *string `json:"note"`
+	VoidReason    *string `json:"void_reason"`
+	PrincipalID   string  `json:"principal_id"`
 }
 
 // ShipmentInput is the exact PUT body: every key present, nullable ones explicit null.
 type ShipmentInput struct {
 	ExpectedVersion int64   `json:"expected_version"`
+	OrderRevision   *int64  `json:"order_revision,omitempty"`
 	Status          string  `json:"status"`
 	CarrierCode     *string `json:"carrier_code"`
 	CarrierName     *string `json:"carrier_name"`
@@ -94,7 +96,7 @@ type ShipmentInput struct {
 // NormalizeShipment applies contract §3 plus the §5.1 void-body rule and returns the canonical
 // input the database receives. It is pure (MF01) and stricter than nothing: SQL re-checks every rule.
 func NormalizeShipment(in ShipmentInput) (ShipmentInput, error) {
-	if in.ExpectedVersion < 0 {
+	if in.ExpectedVersion < 0 || (in.OrderRevision != nil && (*in.OrderRevision < 1 || *in.OrderRevision > 9007199254740991)) {
 		return in, command.ErrInvalid
 	}
 	switch in.Status {
@@ -201,10 +203,15 @@ func RecordShipment(ctx context.Context, tx pgx.Tx, scope platform.Scope, token,
 	digest := sha256.Sum256(append([]byte("fulfillment.manual_shipment.record.v1\n"+orderID+"\n"), body...))
 	auth := sha256.Sum256([]byte(token))
 	var raw []byte
-	err = tx.QueryRow(ctx, `SELECT fulfillment.record_manual_shipment($1,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`,
-		auth[:], scope.StoreID, orderID, key, digest[:], normalized.ExpectedVersion, normalized.Status,
-		normalized.CarrierCode, normalized.CarrierName, normalized.TrackingNumber, normalized.TrackingURL,
-		normalized.Note, normalized.VoidReason).Scan(&raw)
+	args := []any{auth[:], scope.StoreID, orderID, key, digest[:], normalized.ExpectedVersion, normalized.Status,
+		normalized.CarrierCode, normalized.CarrierName, normalized.TrackingNumber, normalized.TrackingURL, normalized.Note, normalized.VoidReason}
+	// Both signatures share fulfillment.record_manual_shipment's locked revision and shipment CAS.
+	if normalized.OrderRevision == nil {
+		err = tx.QueryRow(ctx, `SELECT fulfillment.record_manual_shipment($1,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)`, args...).Scan(&raw)
+	} else {
+		err = tx.QueryRow(ctx, `SELECT fulfillment.record_manual_shipment($1,$2::uuid,$3::uuid,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
+			append(args, normalized.OrderRevision)...).Scan(&raw)
+	}
 	if err != nil {
 		return ShipmentVersion{}, mapShipmentError(err)
 	}
@@ -251,8 +258,16 @@ func ShipmentHistory(ctx context.Context, tx pgx.Tx, scope platform.Scope, token
 var shipmentKeys = []string{"version", "status", "carrier_code", "carrier_name", "tracking_number", "tracking_url", "recorded_at"}
 
 func decodeVersion(raw json.RawMessage) (ShipmentVersion, error) {
+	keys := append(append([]string{}, shipmentKeys...), "note", "void_reason", "principal_id")
+	var fields map[string]json.RawMessage
+	if json.Unmarshal(raw, &fields) != nil {
+		return ShipmentVersion{}, ErrUnavailable
+	}
+	if fields["order_revision"] != nil {
+		keys = append(keys, "order_revision")
+	}
 	if _, err := exactNullable(raw, []string{"carrier_name", "tracking_url", "note", "void_reason"},
-		append(append([]string{}, shipmentKeys...), "note", "void_reason", "principal_id")...); err != nil {
+		keys...); err != nil {
 		return ShipmentVersion{}, err
 	}
 	var v ShipmentVersion

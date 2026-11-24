@@ -400,7 +400,7 @@ func TestBuyerReturnRequests(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			e.rtShip(placed.OrderID)
+			e.rtShipFreshHomeCOD(t, writer, placed.OrderID)
 			st, out, _ := e.record(writer, placed.OrderID, fmt.Sprintf("br-collect-%d", hours), "PENDING", "collected")
 			rtExpect(t, "COD collection", st, out, 200, "")
 			// Fixture-only age of the server's already-recorded collection fact; API never accepts timestamps.

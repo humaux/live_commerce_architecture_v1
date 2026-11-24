@@ -51,7 +51,7 @@ func (x *atReportEnv) r10FinishOrder(t *testing.T, offline *tcvEnv, cap buyer.Ca
 		}
 	case 4:
 		o.kind = "collected_cod"
-		if st, _, raw := offline.mcall(offline.token(), "PUT", "/v1/admin/stores/"+offline.store()+"/orders/"+res.OrderID+"/shipment", t04Key("at-r10-ship"), mfxShip(0, "sf_express", "R10SYNTHETICCOD")); st != 200 {
+		if st, _, raw := offline.mcall(offline.token(), "PUT", "/v1/admin/stores/"+offline.store()+"/orders/"+res.OrderID+"/shipment", t04Key("at-r10-ship"), r03ShipmentBody(0, 1, "sf_express", "R10SYNTHETICCOD")); st != 200 {
 			t.Fatalf("R10 actual COD shipment=%d %s", st, raw)
 		}
 		if st, out, raw := offline.record(offline.token(), res.OrderID, t04Key("at-r10-collect"), "PENDING", "collected"); st != 200 || out["collection_state"] != "COLLECTED" {

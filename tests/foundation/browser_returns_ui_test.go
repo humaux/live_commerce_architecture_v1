@@ -182,7 +182,7 @@ func bruBuyerRequests(t *testing.T) {
 		if err != nil {
 			t.Fatalf("R02 synthetic COD placement %s: %v", aliases[e.store()], err)
 		}
-		e.rtShip(order.OrderID)
+		e.rtShipFreshHomeCOD(t, e.token(), order.OrderID)
 		st, out, _ := e.record(e.token(), order.OrderID, t04Key("r02-collect"), "PENDING", "collected")
 		rtExpect(t, "R02 synthetic COD record", st, out, 200, "")
 		return b, order.OrderID
