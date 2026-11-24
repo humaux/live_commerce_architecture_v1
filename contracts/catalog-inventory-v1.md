@@ -193,3 +193,90 @@ Authority: owner 2026-10-26 「已有SKU归到第一个新规格值」, with SKU
 - CAT-02: OC-Q15 excludes per-SKU delivery eligibility. Weight/size remain; delivery follows store settings. Preserve product-media-v2, including 4 main images, 20 detail images and option-value image rules; do not restore the superseded 12-image cap or bypass existing axis/value/combination bounds.
 
 Acceptance handoff (NOT_RUN): CI regression must start from an existing product/SKU, add an axis, save and reload with the same SKU id/code/price/inventory/image association at its first value; verify new combinations and stale-version/live-window refusals. Browser acceptance must use real clicks/fills and persistent readback. Run the regression RED on old matching logic before the implementation card's GREEN; this contract-only card adds no executable behavior.
+
+## Amendment R07 M03 — merchant catalog stock filter
+
+**Implementation contract effective on merge of PR #821. Runtime acceptance: `NOT_RUN`.**
+The current endpoint accepts `q`, `status`, `cursor` and `limit`. After authorization, it
+rejects `stock` with `invalid_request` (422). The isolated PostgreSQL baseline at
+`2739b19169b9020734049b3fcc8b1009d6a0872c` verified this rejection, the existing aggregate,
+checkout's warehouse boundary, both read permissions and legacy pagination. The R07
+maintainer ruling (`ed070b4d-7c02-4e09-91cd-f3198d55d5fa`) adopts that aggregate.
+
+This section defines the implementation target. When the route adds `stock`, update that
+route's parameter list in [storefront-v2 §A](storefront-v2.md#a-catalog-v2-producer-unit-catalog-core-migration-0086)
+and the `listCatalogProducts` operation in [catalog-inventory-openapi.json](catalog-inventory-openapi.json).
+Bring the operation's strict response schema and its `ProductSummary` reference into line with
+the existing runtime fields (`total`, `status_counts`, `inventory_tracked`, `keyword`, `updated_at`).
+The parameter is additive and the response shape is the same with or without `stock`.
+
+Add one optional `stock=available|sold_out|untracked` query parameter to
+`GET /v1/admin/stores/{store_id}/catalog-products`. Omit `stock` to include all stock buckets.
+Accept only the three exact values, once. Empty, repeated and unknown values return
+`invalid_request` (422). Keep existing query, cursor and page size bounds.
+
+Use the existing `ProductSummary` fields before paging. Sum
+`on_hand - reserved - allocated - unavailable` once per balance row for the product's
+active SKUs across all balance warehouses in the authenticated tenant/store, including
+inactive warehouses. A missing balance contributes zero. An archived SKU contributes
+neither quantity nor tracking state. The product's publication status is a separate filter.
+
+| `stock` | Predicate |
+| --- | --- |
+| `available` | `inventory_tracked=true` and `available > 0` |
+| `sold_out` | `inventory_tracked=true` and `available = 0` (valid balances are nonnegative) |
+| `untracked` | `inventory_tracked=false`: no active SKU, mixed tracking, or every active SKU untracked, regardless of the numeric quantity |
+
+The filter labels describe the merchant catalog aggregate. Use the existing catalog and
+product-editor terminology in [catalog-v2-copy.ts](../apps/admin/lib/catalog-v2-copy.ts)
+and [product-editor-copy.ts](../apps/admin/lib/product-editor-copy.ts):
+
+| `stock` | zh-TW | zh-CN | en |
+| --- | --- | --- | --- |
+| `available` | 有可售庫存 | 有可售库存 | Available stock |
+| `sold_out` | 可售庫存為零 | 可售库存为零 | Zero available stock |
+| `untracked` | 未完整追蹤 | 未完整追踪 | Inventory not fully tracked |
+
+`untracked` includes products with no active variants (無啟用規格 / 无启用规格 / no active variants).
+These option labels are implementation copy. The signed Figma version `2424754435852683752`
+shows the closed 「庫存狀態」 control on both desktop (`1826:109927`) and mobile (`1826:110045`).
+Checkout checks every warehouse assigned to the selected delivery service is active under
+lock and plans tracked line quantities against locked balances in that allocation. Catalog
+stock cannot promise SKU-level availability, checkout eligibility, or buyer fulfillment.
+
+- Use one server-side eligibility predicate for literal `q` and optional `stock` in both
+  counts and rows, within one snapshot per response. `total` counts that set across product
+  statuses and equals the sum of `status_counts.draft/active/archived`. The corresponding
+  status tally gives the selected tab's result count. Counts ignore `status` and `cursor`.
+  Rows apply `status` and the keyset boundary before selecting `limit+1` in
+  `(created_at DESC, id DESC)` order. Emit `next_cursor` from the last returned item only
+  when an extra eligible row exists. Counts describe the request snapshot and can change
+  between page requests as catalog data changes.
+- Preserve the current cursor envelope, position keys and binding to tenant, store and
+  collection. For omitted `stock`, keep the exact existing filter digest
+  `SHA256(status + NUL + q)` in hex, using the current normalization. With `stock` present,
+  use `SHA256(status + NUL + q + NUL + "stock" + NUL + stock)` in hex.
+  A cursor from a different scope or query/filter combination returns
+  `invalid_request` (422). When search, status or stock selection changes, the client starts
+  at the first page and retains the active conditions on forward/back navigation.
+- Require current `catalog:read` and `inventory:read` on every request, including cursor
+  requests. Rows and counts use the same authenticated tenant/store scope. Cursor
+  decoding grants no authority. This read-only extension carries no inventory mutation,
+  reservation or checkout authority.
+
+Acceptance for the implementation card (`NOT_RUN`):
+
+- Retain the existing route's rejection as baseline RED. Prove the three buckets on REAL_PG,
+  including no balance, explicit zero, inactive warehouse, the same SKU across warehouses,
+  mixed tracking, all untracked and no active SKU.
+- Test 25 and 26 eligible rows with interleaved nonmatches across statuses. Assert exact
+  rows, `total`, tab tallies, `next_cursor` termination and no-stock legacy pagination.
+  Prove counts and page rows agree within one snapshot when a balance change moves a
+  product across buckets during a read.
+- Assert 422 for empty, repeated, unknown or wrong-case `stock` and for existing illegal
+  queries (unknown/duplicate keys, malformed query, invalid `q` or `status`, out-of-range
+  limit and oversized or malformed cursor). Assert cursor rejection when entering,
+  leaving or changing `stock`, changing `q` or `status`, or changing tenant/store.
+  Exercise both read grants, each grant alone and scope isolation.
+- Exercise real desktop and mobile directory entry and filter switching while paging,
+  in all three locales.
