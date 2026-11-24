@@ -275,6 +275,8 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         expect(edit.y + 1).toBeGreaterThanOrEqual(stock.y + stock.height);
         expect(edit.height).toBeGreaterThanOrEqual(44);
         expect(edit.width).toBeGreaterThan(product.width);
+        const secondEdit = (await shirt.getByRole("link", { name: "編輯", exact: true }).boundingBox())!;
+        expect(secondEdit.y + secondEdit.height).toBeLessThanOrEqual(viewport.height);
       } else {
         await expect(table.getByRole("columnheader", { name: "商品與規格" })).toBeVisible();
         await expect(table.getByRole("columnheader", { name: "庫存摘要" })).toBeVisible();

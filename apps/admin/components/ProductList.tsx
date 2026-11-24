@@ -108,13 +108,13 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
   const archiveResult = results.length > 0 && results.every(r => r.status === 'archived' || !!r.error);
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? legacy.noStore} active="products" locked={locked}>
     <div className="orders-page product-admin pe-catalog cat-task-list" data-testid="products-page">
-      {!copyReview && !copied && <AdminPageHeader locale={locale} title={entry.title} description={entry.description} actions={store && !selected.length && <>
+      {!copyReview && !copied && <AdminPageHeader locale={locale} title={entry.title} description={entry.description} actions={store && (!selected.length || catalogLocked) && <>
         {canImport && <button ref={importButton} type="button" className="cat-import-link" data-testid="products-import-link" aria-expanded={importOpen}
           aria-controls={importOpen ? "products-csv-preview" : undefined} disabled={locked} onClick={() => {
             if (importOpen) document.getElementById("products-csv-preview")?.focus();
             else setImportOpen(true);
           }}>{entry.importCSV}</button>}
-        {canWrite && !locked && <Link className="product-primary" data-testid="product-new" href={`/${locale}/products/new?store=${sid}`}>{legacy.newProduct}</Link>}
+        {canWrite && <Link className="product-primary" data-testid="product-new" href={`/${locale}/products/new?store=${sid}`}>{legacy.newProduct}</Link>}
       </>} />}
       {write.message && write.message.kind !== 'success' && <div role="status"><p>{write.message.text}</p>
         {write.canRetry && <button type="button" disabled={write.busy} onClick={() => void write.retry()}>{pc.retry}</button>}
@@ -160,6 +160,18 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
             pattern={String.raw`[^\p{C}\p{Zl}\p{Zp}]{0,120}`} disabled={locked} />
           <button type="submit" disabled={locked}>{legacy.searchButton}</button>
         </form>}
+        {read.status === "ready" && page && canWrite && <div className="cat-list-tools">
+          <label className="pe-select cat-select-all"><span aria-hidden="true">{catalogText(selected.length ? c.selected : c.select, { n: selected.length || rows.length })}</span><input type="checkbox" data-testid="products-select-all" aria-label={catalogText(c.select, { n: rows.length })}
+            checked={!!rows.length && rows.every(r => selected.includes(r.id))} disabled={locked || !rows.length}
+            onChange={e => setSelected(e.target.checked ? rows.slice(0, 100).map(r => r.id) : [])} /></label>
+          <div data-testid="product-batch" className="cat-actions">
+            {(selected.length > 0 || catalogLocked) && <button type="button" disabled={locked} onClick={() => setReview(rows.filter(r => selected.includes(r.id)))}>{c.archive}</button>}
+            {selected.length > 0 && <>
+              <button type="button" disabled={locked} onClick={() => void bulk('active')}>{pc.publishSelected}</button>
+              <button type="button" disabled={locked} onClick={() => void bulk('draft')}>{pc.unpublish}</button>
+            </>}
+          </div>
+        </div>}
         {(canWrite || store.permissions?.includes("inventory:read")) && <details className="cat-operations"><summary data-testid="products-operations" aria-label={c.operations}><span aria-hidden="true">{c.operations}</span></summary>
           <div className="cat-operation-menu">
             {canWrite && <button type="button" data-testid="products-copy-entry" disabled={read.status !== 'ready' || locked || selected.length !== 1}
@@ -171,19 +183,6 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
         {(read.status === 'loading' || read.status === 'hidden') && <p role="status">{legacy.loading}</p>}
         {failure && <div role="alert"><p>{failure}</p><button type="button" onClick={read.reload}>{legacy.retry}</button></div>}
         {read.status === 'ready' && page && <>
-          {canWrite && <div className="cat-list-tools">
-            <label className="pe-select cat-select-all"><span aria-hidden="true">{catalogText(selected.length ? c.selected : c.select, { n: selected.length || rows.length })}</span><input type="checkbox" data-testid="products-select-all" aria-label={catalogText(c.select, { n: rows.length })}
-              checked={!!rows.length && rows.every(r => selected.includes(r.id))} disabled={locked || !rows.length}
-              onChange={e => setSelected(e.target.checked ? rows.slice(0, 100).map(r => r.id) : [])} /></label>
-            <div data-testid="product-batch" className="cat-actions">
-              {(selected.length > 0 || catalogLocked) && <button type="button" disabled={locked} onClick={() => setReview(rows.filter(r => selected.includes(r.id)))}>{c.archive}</button>}
-              {selected.length > 0 && <>
-                <button type="button" disabled={locked} onClick={() => void bulk('active')}>{pc.publishSelected}</button>
-                <button type="button" disabled={locked} onClick={() => void bulk('draft')}>{pc.unpublish}</button>
-              </>}
-
-            </div>
-          </div>}
           {rows.length ? <table data-testid="products-table" aria-label={c.title} className="cat-products-table"><thead><tr>
             {canWrite && <th scope="col">{pc.select}</th>}<th scope="col">{entry.product}</th><th scope="col">{legacy.price}</th>
             <th scope="col">{legacy.status}</th><th scope="col">{entry.stock}</th>{canWrite && <th scope="col" aria-label={c.edit} />}
