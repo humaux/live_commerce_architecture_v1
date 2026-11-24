@@ -3,7 +3,7 @@
 // Used by: apps/admin/app/[locale]/products/page.tsx
 // Invariants: product facts require a ready guarded read; selection replaces browse chrome; one Edit action per row; commands are fenced; archive preserves history; no inline editors.
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { catalogTaskCopy, catalogText, type Locale } from "@live-commerce/i18n";
@@ -23,6 +23,7 @@ import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
 import { ProductPhoto } from "./ProductPhoto";
 import { ProductImport } from "./ProductImport";
+import { Icon } from "./Icon";
 import "./orders.css";
 import "./ProductAdmin.css";
 import "./ProductDocument.css";
@@ -33,6 +34,14 @@ const catalogEntryCopy = {
   "zh-CN": { title: "商品目录", description: "查找商品，确认可售量与上架状态。", search: "搜索商品名称或 SKU", importCSV: "导入 CSV", product: "商品与规格", stock: "库存摘要", total: "共 {n} 件商品" },
   "zh-TW": { title: "商品目錄", description: "查找商品、確認可售量與上架狀態。", search: "搜尋商品名稱或 SKU", importCSV: "匯入 CSV", product: "商品與規格", stock: "庫存摘要", total: "共 {n} 件商品" },
 };
+
+const cardQuery = "(max-width: 680px)";
+const cardsOnScreen = () => window.matchMedia(cardQuery).matches;
+function subscribeToCardLayout(notify: () => void) {
+  const query = window.matchMedia(cardQuery);
+  query.addEventListener("change", notify);
+  return () => query.removeEventListener("change", notify);
+}
 
 const href = (locale: Locale, store: string, q: string, status: string, after: string) => {
   const p = new URLSearchParams();
@@ -52,6 +61,8 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
 }) {
   const c = catalogTaskCopy[locale], pc = productEditorCopy[locale], legacy = catalogCopy[locale].list;
   const entry = catalogEntryCopy[locale];
+  const cards = useSyncExternalStore(subscribeToCardLayout, cardsOnScreen, () => false);
+  const ProductCell = cards ? "th" : "td";
   const router = useRouter(), sid = store?.id ?? '';
   const canWrite = store?.permissions?.includes("catalog:write") ?? false;
   const canImport = canWrite && store?.permissions?.includes("inventory:write");
@@ -71,6 +82,7 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
   const locked = importLocked || catalogLocked;
   useProductLeaveGuard({ dirty: false, locked }, pc.leave);
   const page = read.data, rows = page?.items ?? [];
+  const paging = Boolean(after || page?.next_cursor);
   useEffect(() => { setSelected([]); setReview(null); setResults([]); setResultRows([]); setCopyReview(null); setCopied(null); setImportOpen(false); setImportLocked(false); }, [sid]);
   useEffect(() => {
     // Conceal snapshots during revalidation; a denied scope must not resurrect them after retry.
@@ -108,7 +120,7 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
   const archiveResult = results.length > 0 && results.every(r => r.status === 'archived' || !!r.error);
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? legacy.noStore} active="products" locked={locked}>
     <div className="orders-page product-admin pe-catalog cat-task-list" data-testid="products-page">
-      {!copyReview && !copied && <AdminPageHeader locale={locale} title={entry.title} description={entry.description} actions={store && (!selected.length || catalogLocked) && <>
+      {!copyReview && !copied && <AdminPageHeader locale={locale} title={entry.title} description={!selected.length && !review && !results.length ? entry.description : undefined} actions={store && (!selected.length || catalogLocked) && <>
         {canImport && <button ref={importButton} type="button" className="cat-import-link" data-testid="products-import-link" aria-expanded={importOpen}
           aria-controls={importOpen ? "products-csv-preview" : undefined} disabled={locked} onClick={() => {
             if (importOpen) document.getElementById("products-csv-preview")?.focus();
@@ -158,7 +170,7 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
         }}>
           <input type="search" name="q" aria-label={entry.search} placeholder={entry.search} title={legacy.search} defaultValue={q}
             pattern={String.raw`[^\p{C}\p{Zl}\p{Zp}]{0,120}`} disabled={locked} />
-          <button type="submit" disabled={locked}>{legacy.searchButton}</button>
+          <button type="submit" aria-label={legacy.searchButton} disabled={locked}><Icon name="search" size={18} /></button>
         </form>}
         {read.status === "ready" && page && canWrite && <div className="cat-list-tools">
           <label className="pe-select cat-select-all"><span aria-hidden="true">{catalogText(selected.length ? c.selected : c.select, { n: selected.length || rows.length })}</span><input type="checkbox" data-testid="products-select-all" aria-label={catalogText(c.select, { n: rows.length })}
@@ -183,23 +195,29 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
         {(read.status === 'loading' || read.status === 'hidden') && <p role="status">{legacy.loading}</p>}
         {failure && <div role="alert"><p>{failure}</p><button type="button" onClick={read.reload}>{legacy.retry}</button></div>}
         {read.status === 'ready' && page && <>
-          {rows.length ? <table data-testid="products-table" aria-label={c.title} className="cat-products-table"><thead><tr>
+          {rows.length ? <table data-testid="products-table" aria-label={c.title} className="cat-products-table">{!cards && <thead><tr>
             {canWrite && <th scope="col">{pc.select}</th>}<th scope="col">{entry.product}</th><th scope="col">{legacy.price}</th>
             <th scope="col">{legacy.status}</th><th scope="col">{entry.stock}</th>{canWrite && <th scope="col" aria-label={c.edit} />}
-          </tr></thead><tbody>{rows.map(row => <tr data-testid={`product-row-${row.id}`} key={row.id}>
+          </tr></thead>}<tbody>{rows.map(row => <tr data-testid={`product-row-${row.id}`} key={row.id}>
             {canWrite && <td className="pe-selection-cell"><label className="pe-select"><input type="checkbox" aria-label={`${pc.select}: ${row.name}`} checked={selected.includes(row.id)} disabled={locked}
               onChange={() => setSelected(now => now.includes(row.id) ? now.filter(id => id !== row.id) : [...now, row.id].slice(0, 100))} /></label></td>}
-            <td className="pe-product-cell"><div className="product-cell">
+            <ProductCell className="pe-product-cell" scope={cards ? "row" : undefined}><div className="product-cell">
               <ProductPhoto code="" name={row.name} demo={false} imageSrc={row.cover_image_id ? imageURL(sid, row.id, row.cover_image_id) : undefined} />
-              <span className="pe-product-identity"><strong>{row.name}</strong>{row.sku_count > 0 && <small>{legacy.variants(row.sku_count)}</small>}</span></div></td>
+              <span className="pe-product-identity"><strong>{row.name}</strong>{!cards && row.sku_count > 0 && <small>{legacy.variants(row.sku_count)}</small>}</span></div></ProductCell>
             <td className="pe-price-cell"><span>{price(row)}</span></td>
-            <td className="pe-status-cell"><span className={`product-status${row.status === "active" ? " cat-status-active" : ""}`}>{c[row.status]}</span></td>
-            <td className="pe-stock-cell">{stock(row)}</td>
+            {cards ? <td className="pe-status-cell">
+              <span className="product-status pe-stock-cell cat-card-facts">{row.sku_count > 0
+                ? [c[row.status], stock(row), legacy.variants(row.sku_count)].join(" · ")
+                : c[row.status]}</span>
+            </td> : <>
+              <td className="pe-status-cell"><span className={`product-status${row.status === "active" ? " cat-status-active" : ""}`}>{c[row.status]}</span></td>
+              <td className="pe-stock-cell">{stock(row)}</td>
+            </>}
             {canWrite && <td className="pe-actions-cell"><div className="pe-row-actions"><Link href={editHref(locale, sid, row.id)}>{c.edit}</Link></div></td>}
           </tr>)}</tbody></table> : <p role="status">{status === 'archived' ? c.empty : q || status !== 'all' ? legacy.emptySearch : legacy.empty}</p>}
-          {(rows.length > 0 || after || page.next_cursor) && <footer className="cat-list-footer">
+          {(!cards && rows.length > 0 || paging) && <footer className="cat-list-footer">
             <span>{catalogText(entry.total, { n: status === "all" ? page.total : page.status_counts[status as ProductStatus] })}</span>
-            {(after || page.next_cursor) && <div className="orders-pager">
+            {paging && <div className="orders-pager">
               <button type="button" data-testid="products-previous" disabled={locked || (!after && !previous.current.length)} onClick={() => go(status, q, previous.current.pop() ?? '')}>{legacy.previous}</button>
               <button type="button" data-testid="products-next" disabled={locked || !page.next_cursor} onClick={() => { previous.current.push(after); go(status, q, page.next_cursor); }}>{legacy.next}</button>
             </div>}
