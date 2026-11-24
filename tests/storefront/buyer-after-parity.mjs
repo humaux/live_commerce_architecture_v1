@@ -558,7 +558,7 @@ test("payment return · neutral page", async () => {
 });
 
 // ---- privacy / data deletion -----------------------------------------------------------------------------------------------------------------------------------
-const PRIVACY_TEXT = ["隱私與資料請求", "你的同意設定", "購買不代表同意；關閉以下選擇不影響現有訂單。", "Messenger／Instagram 私訊優惠", "Meta 個人化廣告", "目前未開啟", "關閉廣告個人化會停止後續事件；已傳送的事件無法撤回。",
+const PRIVACY_TEXT = ["隱私與資料請求", "你的同意設定", "購買不代表同意；關閉以下選擇不影響現有訂單。", "Messenger／Instagram 私訊優惠", "Meta 個人化廣告", "目前未開啟", "符合條件的刷卡購買事件（含金額、幣別，並關聯瀏覽器訊號）會傳給 Meta", "關閉後停止傳送，已傳送的事件無法撤回。",
   "我的個人資料", "下載本店持有的你的資料副本，包含訂單及目前的隱私選擇。", "抹除我的資料", "抹除會撤回你的選擇並結束購物連線；訂單、付款與出貨紀錄仍會保留。", "若仍有進行中的付款或退款，需先等待該操作結束。",
   "資料如何用於購物", "收件人姓名、電話、地址或取貨門市資料，用於處理訂單與配送。", "可用付款方式與結果，請以結帳及訂單頁顯示為準。"];
 
@@ -579,6 +579,15 @@ test("privacy · overview, consent settings, export", async () => {
     const ads = page.getByRole("button", { name: "Meta 個人化廣告 變更設定", exact: true });
     assert.equal(await marketing.count(), 1);
     assert.equal(await ads.count(), 1);
+    if (dev === "m") {
+      await page.evaluate(() => document.fonts.ready);
+      const { bottom, height, viewportHeight, scroll } = await page.getByTestId("privacy-download").evaluate((button) => {
+        const rect = button.getBoundingClientRect();
+        return { bottom: rect.bottom, height: rect.height, viewportHeight: innerHeight, scroll: scrollY };
+      });
+      assert.equal(scroll, 0);
+      assert.ok(height >= 44 && bottom <= viewportHeight, `download must fit in the initial viewport (${bottom}/${viewportHeight})`);
+    }
     await c.shot(frames.main);
     // consent settings: tick, save, refresh, still ticked (persistence)
     await click(page, marketing, { page: "隱私與資料", control: "變更私訊設定", expected: "隱私與同意設定" });

@@ -319,13 +319,13 @@ export default function PrivacyCenter({
                   {consentPairs.map(({ purpose }) => (
                     <li key={purpose} className={styles.choice} data-testid={`privacy-${purpose}`}>
                       <h3 id={`privacy-label-${purpose}`}>{label(purpose)}</h3>
-                      <p>{purpose === "ads_personalization" ? f.adsNote : f.marketingNote}</p>
+                      <p id={`privacy-note-${purpose}`}>{purpose === "ads_personalization" ? f.adsNote : f.marketingNote}</p>
                       <div className={styles.choiceAction}>
                         <button
                           className="sf-btn sf-btn--ghost"
                           id={`privacy-edit-${purpose}`}
                           aria-labelledby={`privacy-label-${purpose} privacy-edit-${purpose}`}
-                          aria-describedby={`privacy-status-${purpose}`}
+                          aria-describedby={`privacy-status-${purpose} privacy-note-${purpose}`}
                           data-testid={`privacy-manage-${purpose}`}
                           ref={(button) => { overviewButtons.current[purpose] = button; }}
                           disabled={busy !== ""}
@@ -407,6 +407,7 @@ export default function PrivacyCenter({
                   type="checkbox"
                   ref={(input) => { consentInputs.current[purpose] = input; }}
                   data-testid={`privacy-check-${purpose}`}
+                  aria-describedby={purpose === "ads_personalization" ? "privacy-settings-ads-note" : undefined}
                   checked={draft[purpose]}
                   disabled={busy !== ""}
                   onChange={(event) => setDraft((old) => ({ ...old, [purpose]: event.target.checked }))}
@@ -414,8 +415,7 @@ export default function PrivacyCenter({
                 {text}
               </label>
             ))}
-            {/* The O6 disclosure (purchase events go to Meta, sent events cannot be recalled) stays beside the ads choice; the frames do not draw it. */}
-            <p className="claim-note" data-testid="privacy-ads-disclosure">{copy.adsDisclosure}</p>
+            <p className="claim-note" id="privacy-settings-ads-note" data-testid="privacy-ads-disclosure">{f.adsNote}</p>
             <p className="claim-note">{f.settingsNote}</p>
             <div className="claim-actions">
               <button type="submit" className="primary" data-testid="privacy-save" disabled={busy !== ""}>{busy === "save" ? f.saving : f.save}</button>

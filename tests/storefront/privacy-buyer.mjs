@@ -213,11 +213,13 @@ try {
   await expect(p4.getByRole("heading", { level: 1 })).toHaveText(fr.title);
   await expect(p4.getByTestId("privacy-notice")).toContainText(policy);
   for (const purpose of ["marketing_messages", "ads_personalization"]) await expect(p4.getByTestId(`privacy-${purpose}`)).toContainText(fr.off);
+  await expect(p4.getByTestId("privacy-manage-ads_personalization")).toHaveAccessibleDescription(`${fr.off} ${fr.adsNote}`);
   const saveChoice = async (purpose, on) => {
     const entry = p4.getByTestId(`privacy-manage-${purpose}`);
     await entry.press("Enter");
     const choice = p4.getByTestId(`privacy-check-${purpose}`);
     await expect(choice).toBeFocused();
+    if (purpose === "ads_personalization") await expect(choice).toHaveAccessibleDescription(fr.adsNote);
     const before = puts4.length;
     if (on) await choice.check(); else await choice.uncheck();
     assert.equal(puts4.length, before, "editing a choice keeps a local draft until Save");
