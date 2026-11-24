@@ -194,10 +194,21 @@ Authority: owner 2026-10-26 「已有SKU归到第一个新规格值」, with SKU
 
 Acceptance handoff (NOT_RUN): CI regression must start from an existing product/SKU, add an axis, save and reload with the same SKU id/code/price/inventory/image association at its first value; verify new combinations and stale-version/live-window refusals. Browser acceptance must use real clicks/fills and persistent readback. Run the regression RED on old matching logic before the implementation card's GREEN; this contract-only card adds no executable behavior.
 
-## Proposed amendment — R07 M03 merchant catalog stock filter
+## Amendment R07 M03 — merchant catalog stock filter
 
-Status: PROPOSED, pending contract review. The effective endpoint remains as specified in
-[storefront-v2 §A](storefront-v2.md) and [OpenAPI](catalog-inventory-openapi.json).
+**Implementation contract effective on merge of PR #821. Runtime acceptance: `NOT_RUN`.**
+The current endpoint accepts `q`, `status`, `cursor` and `limit`. After authorization, it
+rejects `stock` with `invalid_request` (422). The isolated PostgreSQL baseline at
+`2739b19169b9020734049b3fcc8b1009d6a0872c` verified this rejection, the existing aggregate,
+checkout's warehouse boundary, both read permissions and legacy pagination. The R07
+maintainer ruling (`ed070b4d-7c02-4e09-91cd-f3198d55d5fa`) adopts that aggregate.
+
+This section defines the implementation target. When the route adds `stock`, update that
+route's parameter list in [storefront-v2 §A](storefront-v2.md#a-catalog-v2-producer-unit-catalog-core-migration-0086)
+and the `listCatalogProducts` operation in [catalog-inventory-openapi.json](catalog-inventory-openapi.json).
+Bring the operation's strict response schema and its `ProductSummary` reference into line with
+the existing runtime fields (`total`, `status_counts`, `inventory_tracked`, `keyword`, `updated_at`).
+The parameter is additive and the response shape is the same with or without `stock`.
 
 Add one optional `stock=available|sold_out|untracked` query parameter to
 `GET /v1/admin/stores/{store_id}/catalog-products`. Omit `stock` to include all stock buckets.
@@ -216,11 +227,22 @@ neither quantity nor tracking state. The product's publication status is a separ
 | `sold_out` | `inventory_tracked=true` and `available = 0` (valid balances are nonnegative) |
 | `untracked` | `inventory_tracked=false`: no active SKU, mixed tracking, or every active SKU untracked, regardless of the numeric quantity |
 
-The labels describe the merchant catalog aggregate. Copy for `untracked` must cover
-partial tracking and the absence of active variants. Checkout takes a delivery service's
-assigned warehouses, checks every assigned warehouse is active under lock, and plans tracked
-line quantities against the locked balances in that allocation. Catalog stock cannot promise
-SKU-level availability, checkout eligibility, or fulfillment for the buyer.
+The filter labels describe the merchant catalog aggregate. Use the existing catalog and
+product-editor terminology in [catalog-v2-copy.ts](../apps/admin/lib/catalog-v2-copy.ts)
+and [product-editor-copy.ts](../apps/admin/lib/product-editor-copy.ts):
+
+| `stock` | zh-TW | zh-CN | en |
+| --- | --- | --- | --- |
+| `available` | 有可售庫存 | 有可售库存 | Available stock |
+| `sold_out` | 可售庫存為零 | 可售库存为零 | Zero available stock |
+| `untracked` | 未完整追蹤 | 未完整追踪 | Inventory not fully tracked |
+
+`untracked` includes products with no active variants (無啟用規格 / 无启用规格 / no active variants).
+These option labels are implementation copy. The signed Figma version `2424754435852683752`
+shows the closed 「庫存狀態」 control on both desktop (`1826:109927`) and mobile (`1826:110045`).
+Checkout checks every warehouse assigned to the selected delivery service is active under
+lock and plans tracked line quantities against locked balances in that allocation. Catalog
+stock cannot promise SKU-level availability, checkout eligibility, or buyer fulfillment.
 
 - Use one server-side eligibility predicate for literal `q` and optional `stock` in both
   counts and rows, within one snapshot per response. `total` counts that set across product
@@ -242,12 +264,19 @@ SKU-level availability, checkout eligibility, or fulfillment for the buyer.
   decoding grants no authority. This read-only extension carries no inventory mutation,
   reservation or checkout authority.
 
-Acceptance for the implementation card (NOT_RUN): baseline RED for the new parameter,
-then REAL_PG coverage of all buckets (including no balance, explicit zero, inactive warehouse,
-same SKU across warehouses, mixed tracking and no active SKU), and a search with at least 26
-matching products plus interleaved nonmatches across statuses. Assert exact rows, `total`,
-tab tallies and termination at 25/26 eligible rows, and unchanged pagination for legacy
-unfiltered cursors. Assert cursor rejection on entering/leaving/changing `stock`, changing
-`q` or `status`, and changing tenant/store. Exercise both read grants, each grant alone
-and scope isolation. Browser acceptance covers the real desktop/mobile directory entry
-and switching search, status and stock while paging, using approved copy.
+Acceptance for the implementation card (`NOT_RUN`):
+
+- Retain the existing route's rejection as baseline RED. Prove the three buckets on REAL_PG,
+  including no balance, explicit zero, inactive warehouse, the same SKU across warehouses,
+  mixed tracking, all untracked and no active SKU.
+- Test 25 and 26 eligible rows with interleaved nonmatches across statuses. Assert exact
+  rows, `total`, tab tallies, `next_cursor` termination and no-stock legacy pagination.
+  Prove counts and page rows agree within one snapshot when a balance change moves a
+  product across buckets during a read.
+- Assert 422 for empty, repeated, unknown or wrong-case `stock` and for existing illegal
+  queries (unknown/duplicate keys, malformed query, invalid `q` or `status`, out-of-range
+  limit and oversized or malformed cursor). Assert cursor rejection when entering,
+  leaving or changing `stock`, changing `q` or `status`, or changing tenant/store.
+  Exercise both read grants, each grant alone and scope isolation.
+- Exercise real desktop and mobile directory entry and filter switching while paging,
+  in all three locales.
