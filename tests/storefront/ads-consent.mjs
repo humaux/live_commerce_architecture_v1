@@ -151,11 +151,11 @@ try {
   // PARITY-BUYER-AFTER: choices are changed on the signed 隱私與同意設定 screen; the O6 disclosure sits beside the ads checkbox there.
   const fr = privacyFrameCopy.en;
   const toggle = async (page, purpose) => {
-    await page.getByTestId("privacy-manage").click();
+    await page.getByTestId(`privacy-manage-${purpose}`).click();
     await page.getByTestId(`privacy-check-${purpose}`).click();
     await page.getByTestId("privacy-save").click();
   };
-  await p1.getByTestId("privacy-manage").click();
+  await p1.getByTestId("privacy-manage-ads_personalization").click();
   const disclosure = await p1.getByTestId("privacy-settings").innerText();
   await p1.getByRole("button", { name: fr.cancel, exact: true }).click();
   assert.match(disclosure, /purchase/i, "O6: the ads consent names sending purchase events");
