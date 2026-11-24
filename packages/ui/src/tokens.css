@@ -78,6 +78,9 @@
   --ds-brand: #4492d1;
   --ds-primary: #2a6fb0;
   --ds-primary-hover: #225e96;
+  /* Keep the design action palette available inside themed shells. */
+  --ds-action-primary: var(--ds-primary);
+  --ds-action-primary-hover: var(--ds-primary-hover);
   --ds-primary-soft: #e8f1fa;
   --ds-on-primary: #fff;
   --ds-link: #2a6fb0;

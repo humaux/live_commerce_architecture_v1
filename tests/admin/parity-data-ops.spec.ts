@@ -2,7 +2,7 @@
 // Depends on: signed FRAME-COPY.md, catalog-core's real BFF/Go fixture and parity-data-ops-support.
 // Used by: TestBrowserCatalogCore (one-warehouse phase, then LC_BROWSER_PHASE=multi-warehouse); generated browser ownership routes this spec to catalog-core/product-editor.
 // Invariants: fixture preparation is explicit; UI writes use real clicks; no gallery, client stock math or production access.
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { action, capture, click, heading, login, origin, recordEvidence } from "./parity-data-ops-support";
 
 const store = process.env.LC_BROWSER_STORE!;
@@ -54,6 +54,7 @@ async function prepareCatalogFrames(page: Page, prefix: string) {
     const { items: warehouses } = await json("/warehouses");
     const header = `handle,title,option1_name,option1_value,sku,price,stock:${warehouses[0].name}\n`;
     const ids: string[] = [];
+    let currency = "";
     for (const { key, rows, fill } of [
       { key: "shirt", rows: [["黑色棉T", "黑色 M", "490", "5"]], fill: "#303339" },
       { key: "tote", rows: [["日常帆布提袋", "原色", "680", "8"], ["日常帆布提袋", "橄欖綠", "680", "4"]], fill: "#bf9c6f" },
@@ -66,6 +67,7 @@ async function prepareCatalogFrames(page: Page, prefix: string) {
       const { items } = await json(`/catalog-products?q=${handle}`);
       if (items.length !== 1) throw new Error(`Visual fixture ${key} has no unique product`);
       ids.push(items[0].id);
+      currency = items[0].currency;
       const canvas = document.createElement("canvas");
       canvas.width = canvas.height = 128;
       const ctx = canvas.getContext("2d")!;
@@ -91,8 +93,55 @@ async function prepareCatalogFrames(page: Page, prefix: string) {
     }
     await json("/products/bulk-status", { method: "POST", headers: { "X-CSRF-Token": csrf, "Idempotency-Key": crypto.randomUUID(), "Content-Type": "application/json" }, body: JSON.stringify({ ids, status: "active" }) });
     const { total } = await json("/catalog-products");
-    return total === ids.length;
+    return { onlySamples: total === ids.length, currency };
   }, { store, csrf: csrf!, prefix });
+}
+
+async function expectCatalogPrice(row: Locator, mobile: boolean, name: string, price: string, status: string) {
+  await expect(row.locator(".pe-product-identity strong")).toHaveText(name);
+  const geometry = await row.evaluate(el => {
+    const name = el.querySelector(".pe-product-identity strong")!;
+    const amount = el.querySelector(".pe-price-cell > span")!;
+    const status = el.querySelector(".pe-status-cell")!;
+    const priceCell = amount.parentElement!;
+    const box = (r: DOMRect) => ({ left: r.left, right: r.right, top: r.top, bottom: r.bottom });
+    const lines = (node: Element) => {
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      return Array.from(range.getClientRects()).filter(r => r.width > 0 && r.height > 0).map(box);
+    };
+    const css = getComputedStyle(priceCell);
+    return {
+      separate: priceCell instanceof HTMLTableCellElement && status instanceof HTMLTableCellElement && priceCell !== status,
+      price: amount.textContent, status: status.textContent, weight: Number(getComputedStyle(amount).fontWeight),
+      names: lines(name), prices: lines(amount), nameBox: box(name.getBoundingClientRect()),
+      priceBox: box(priceCell.getBoundingClientRect()), statusBox: box(status.getBoundingClientRect()),
+      rightPadding: parseFloat(css.paddingRight), rowBox: box(el.getBoundingClientRect()),
+    };
+  });
+  await test.info().attach("catalog-price-geometry", { body: JSON.stringify({ name, ...geometry }), contentType: "application/json" });
+  expect.soft(geometry.separate, "price and status are different native cells").toBe(true);
+  expect.soft(geometry.price).toBe(price);
+  expect.soft(geometry.status).toContain(status);
+  expect.soft(geometry.status).not.toContain(price);
+  expect.soft(geometry.weight, "emphasized price").toBeGreaterThanOrEqual(600);
+  const { names, prices, nameBox, priceBox, statusBox, rightPadding, rowBox } = geometry;
+  expect(names.length).toBeGreaterThan(0);
+  expect(prices.length).toBeGreaterThan(0);
+  for (const [lines, bounds] of [[names, nameBox], [prices, priceBox]] as const) {
+    for (const line of lines) {
+      expect.soft(line.left).toBeGreaterThanOrEqual(bounds.left - 1);
+      expect.soft(line.right).toBeLessThanOrEqual(bounds.right + 1);
+      expect.soft(line.bottom).toBeLessThanOrEqual(bounds.bottom + 1);
+    }
+  }
+  expect.soft(Math.min(...prices.map(line => line.left)), "price text does not overlap the name").toBeGreaterThanOrEqual(Math.max(...names.map(line => line.right)) - 1);
+  if (mobile) {
+    expect.soft(Math.abs(prices[0].top - names[0].top), "price starts on the name's first line").toBeLessThanOrEqual(2);
+    expect.soft(Math.abs(priceBox.right - rowBox.right), "the price cell is on the right edge of the row").toBeLessThanOrEqual(1);
+    expect.soft(Math.abs(prices[0].right - (rowBox.right - rightPadding)), "first price text hugs the right edge").toBeLessThanOrEqual(1);
+    expect.soft(statusBox.top, "the independent status summary follows the name and price").toBeGreaterThanOrEqual(Math.max(nameBox.bottom, prices.at(-1)!.bottom) - 1);
+  }
 }
 
 // FIXTURE PREPARATION ONLY: set A12's target on-hand per named warehouse through the real BFF CSV import (same transport as prepare).
@@ -152,6 +201,8 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
       });
       const search = page.getByRole("searchbox", { name: "搜尋商品名稱或 SKU", exact: true });
       const paging = `${process.env.LC_BROWSER_TAG!} paging`;
+      const summary = page.getByTestId("products-list-summary");
+      const indicator = page.getByTestId("products-page-indicator");
       const submitSearch = async (query: string) => {
         await expect(search).toBeVisible();
         await search.fill(query);
@@ -162,6 +213,8 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         await submitSearch(paging);
         await expect(page.getByTestId("products-table").locator("tbody tr")).toHaveCount(25);
         await expect(page.getByTestId("products-table").locator("tbody tr").first()).toContainText(paging);
+        await expect(summary).toHaveText("共 60 件商品");
+        await expect(indicator).toHaveCount(0);
       });
       await action(page, "下一頁", "click", "rows change while query and store stay fixed", async () => {
         const table = page.getByTestId("products-table");
@@ -176,11 +229,31 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         expect(params.get("store")).toBe(store);
         expect(params.get("q")).toBe(paging);
         expect(params.get("after")).toBeTruthy();
+        await expect(summary).toHaveText("共 60 件商品");
+        await expect(indicator).toHaveCount(0);
+      });
+      const secondCursor = new URL(page.url()).searchParams.get("after");
+      await action(page, "下一頁", "click", "partial final cursor page does not imply a single page", async () => {
+        await page.getByTestId("products-next").click();
+        await expect(page.getByTestId("products-table").locator("tbody tr")).toHaveCount(10);
+        await expect(page.getByTestId("products-next")).toBeDisabled();
+        await expect(summary).toHaveText("共 60 件商品");
+        await expect(indicator).toHaveCount(0);
+        await expect(search).toHaveValue(paging);
+      });
+      await action(page, "分頁返回", "click", "second cursor and query are restored", async () => {
+        await page.getByTestId("products-previous").click();
+        await expect.poll(() => new URL(page.url()).searchParams.get("after")).toBe(secondCursor);
+        await expect(page.getByTestId("products-table").locator("tbody tr")).toHaveCount(25);
+        await expect(search).toHaveValue(paging);
+        await expect(indicator).toHaveCount(0);
       });
       await action(page, "分頁返回", "click", "query survives returning to page one", async () => {
         await page.getByTestId("products-previous").click();
         await expect.poll(() => new URL(page.url()).searchParams.has("after")).toBe(false);
         await expect(search).toHaveValue(paging);
+        await expect(summary).toHaveText("共 60 件商品");
+        await expect(indicator).toHaveCount(0);
       });
       const name = `R07 CSV ${viewport.width} ${process.env.LC_BROWSER_TAG!}`;
       const handle = `r07-${viewport.width}-${process.env.LC_BROWSER_TAG!}`;
@@ -235,13 +308,32 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         await expect(page.getByTestId("products-table").locator("tbody tr")).toHaveCount(2);
         await expect(page.getByText(name, { exact: true })).toBeVisible();
         await expect(page.getByText(`${name}-B`, { exact: true })).toBeVisible();
+        if (mobile) await expect(indicator).toHaveText("1–2，共 2 筆 · 1 / 1");
+        else {
+          await expect(summary).toHaveText("共 2 件商品");
+          await expect(indicator).toHaveCount(0);
+        }
         expect(writes).toEqual(["preview", "preview", "commit"]);
+      });
+      await action(page, "商品搜尋", "fill and submit", "single and empty results use only returned page facts", async () => {
+        await submitSearch(`${handle}-b`);
+        if (mobile) await expect(indicator).toHaveText("1–1，共 1 筆 · 1 / 1");
+        else {
+          await expect(summary).toHaveText("共 1 件商品");
+          await expect(indicator).toHaveCount(0);
+        }
+        await submitSearch(`${handle}-missing`);
+        await expect(page.getByTestId("products-table")).toHaveCount(0);
+        await expect(indicator).toHaveCount(0);
       });
     });
     test(`R07 visual ${viewport.width}: two listed products and inline CSV error`, async ({ page }) => {
       await page.setViewportSize(viewport); await login(page);
       const prefix = `r07-visual-${viewport.width}`;
-      const onlySamples = await prepareCatalogFrames(page, prefix);
+      const { onlySamples, currency } = await prepareCatalogFrames(page, prefix);
+      expect(["TWD", "USD"]).toContain(currency);
+      const amount = (locale: string, digits: string) =>
+        `${currency === "TWD" ? "NT$" : locale === "en" ? "$" : "US$"}${digits}`;
       await page.goto(root("zh-TW", "products") + (onlySamples ? "" : `&q=${prefix}`));
       const table = page.getByTestId("products-table");
       const productRows = table.locator("tbody tr");
@@ -262,17 +354,36 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         })).toBe(true);
       }
       await capture(page, frame("1826:109927", "1826:110045"));
+      const create = page.getByRole("link", { name: "新增商品", exact: true });
+      await expect.soft(create).toHaveCSS("background-color", "rgb(42, 111, 176)", { timeout: 1000 });
+      await expect.soft(create.locator("svg")).toBeVisible({ timeout: 1000 });
+      const resting = await create.evaluate(el => getComputedStyle(el).backgroundColor);
+      await create.hover();
+      await expect.soft(create).toHaveCSS("background-color", "rgb(34, 94, 150)", { timeout: 1000 });
+      const hover = await create.evaluate(el => getComputedStyle(el).backgroundColor);
+      await test.info().attach("catalog-action-palette", { body: JSON.stringify({ resting, hover }), contentType: "application/json" });
+      await page.mouse.move(0, 0);
+      const summary = page.getByTestId("products-list-summary");
+      const indicator = page.getByTestId("products-page-indicator");
+      if (mobile) {
+        await expect.soft(indicator).toHaveText("1–2，共 2 筆 · 1 / 1", { timeout: 1000 });
+        await expect.soft(indicator).toHaveAccessibleName("1–2，共 2 筆 · 第 1 頁，共 1 頁", { timeout: 1000 });
+        await expect.soft(indicator).toBeInViewport({ ratio: 1, timeout: 1000 });
+      } else {
+        await expect.soft(summary).toHaveText("共 2 件商品", { timeout: 1000 });
+        await expect.soft(summary).toBeInViewport({ ratio: 1, timeout: 1000 });
+        await expect.soft(indicator).toHaveCount(0);
+      }
       await expect(tote).toContainText("2 個規格");
-      await expect(tote.locator(".pe-price-cell")).toContainText("680");
+      await expectCatalogPrice(tote, mobile, "日常帆布提袋", amount("zh-TW", "680"), "在售");
+      await expectCatalogPrice(shirt, mobile, "黑色棉T", amount("zh-TW", "490"), "在售");
       await expect(tote.locator(".pe-stock-cell")).toContainText("12");
       await expect(shirt.locator(".pe-stock-cell")).toContainText("5");
       if (mobile) {
         const product = (await tote.locator(".pe-product-cell").boundingBox())!;
-        const price = (await tote.locator(".pe-price-cell").boundingBox())!;
         const status = (await tote.locator(".pe-status-cell").boundingBox())!;
         const stock = (await tote.locator(".pe-stock-cell").boundingBox())!;
         const edit = (await tote.getByRole("link", { name: "編輯", exact: true }).boundingBox())!;
-        expect(price.x).toBeGreaterThan(product.x);
         expect(status.y + 1).toBeGreaterThanOrEqual(product.y + product.height);
         expect(edit.y + 1).toBeGreaterThanOrEqual(stock.y + stock.height);
         expect(edit.height).toBeGreaterThanOrEqual(44);
@@ -300,6 +411,53 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         await page.getByRole("heading", { name: "商品目錄", exact: true }).scrollIntoViewIfNeeded();
         await capture(page, `r07-visual-combined-${viewport.width}`);
       });
+      await action(page, "新增商品", "keyboard Enter", "same-store editor opens from the primary link", async () => {
+        await page.getByTestId("products-import-link").focus();
+        await page.keyboard.press("Tab");
+        await expect(create).toBeFocused();
+        await expect(create).toHaveCSS("outline-style", "solid");
+        await page.keyboard.press("Enter");
+        await expect(page).toHaveURL(url => url.pathname === "/zh-TW/products/new" && url.searchParams.get("store") === store);
+      });
+
+      for (const [locale, summaryText, pageLabel, createLabel, active] of [
+        ["zh-CN", mobile ? "1–2，共 2 条" : "共 2 件商品", "第 1 页，共 1 页", "新增商品", "在售"],
+        ["en", mobile ? "1–2 of 2" : "2 products", "Page 1 of 1", "Add product", "Active"],
+      ] as const) {
+        await page.goto(root(locale, "products") + (onlySamples ? "" : `&q=${prefix}`));
+        await expect(productRows).toHaveCount(2);
+        await expect(page.getByRole("link", { name: createLabel, exact: true })).toBeVisible();
+        if (mobile) {
+          await expect(indicator).toHaveText(`${summaryText} · 1 / 1`);
+          await expect(indicator).toHaveAccessibleName(`${summaryText} · ${pageLabel}`);
+          await expect(indicator).toBeInViewport({ ratio: 1 });
+        } else {
+          await expect(summary).toHaveText(summaryText);
+          await expect(summary).toBeInViewport({ ratio: 1 });
+          await expect(indicator).toHaveCount(0);
+        }
+        await expectCatalogPrice(tote, mobile, "日常帆布提袋", amount(locale, "680"), active);
+      }
+
+      // An additional synthetic product exercises native wrapping with two distinct prices from PG.
+      const longName = "LongCatalogProductName".repeat(4);
+      const longHandle = `${prefix}-long`;
+      const csrf = (await page.context().cookies()).find(c => c.name === "__Host-commerce_csrf" || c.name === "commerce_csrf")?.value;
+      expect(csrf).toBeTruthy();
+      const imported = await page.evaluate(async ({ store, csrf, longHandle, longName }) => {
+        const body = `handle,title,option1_name,option1_value,sku,price\n${longHandle},${longName},Size,A,${longHandle}-a,9876543\n${longHandle},${longName},Size,B,${longHandle}-b,19876543\n`;
+        const response = await fetch(`/api/stores/${store}/tools/products/import/commit`, {
+          method: "POST", headers: { "Content-Type": "text/csv", "X-CSRF-Token": csrf }, body,
+        });
+        return { status: response.status, committed: (await response.json()).committed };
+      }, { store, csrf: csrf!, longHandle, longName });
+      expect(imported).toEqual({ status: 200, committed: true });
+      await page.goto(root("zh-TW", "products") + `&q=${longHandle}`);
+      await expect(productRows).toHaveCount(1);
+      const longProduct = productRows.first();
+      await expect(longProduct).toContainText("2 個規格");
+      await capture(page, `r07-visual-long-price-${viewport.width}`);
+      await expectCatalogPrice(longProduct, mobile, longName, `${amount("zh-TW", "9,876,543")} – ${amount("zh-TW", "19,876,543")}`, "草稿");
     });
     for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
       const c = signed[locale];
