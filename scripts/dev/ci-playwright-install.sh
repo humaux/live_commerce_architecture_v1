@@ -28,6 +28,7 @@ dry_run() {
 }
 # Bounded apt call as root: the monitor can terminate the complete apt process group. Never use --foreground.
 apt_bounded() { sudo timeout --kill-after=15s 240s "$@"; }
+missing_version_debs=()
 # P2-3: every cached .deb must match the runner's apt index for its exact package=version.
 # Return 2 for a missing version, and 1 for a cache or index error that a refresh cannot safely resolve.
 verify_debs() {
@@ -45,6 +46,7 @@ verify_debs() {
     index="$(LC_ALL=C apt-cache show "$pkg=$ver" 2>&1)" || rc=$?
     if [[ "$rc" == 0 && -z "$index" || "$rc" == 100 && "$index" == 'E: No packages found' ]]; then
       echo "ci-playwright-install: cached ${f##*/} version absent from apt index" >&2
+      missing_version_debs+=("$f")
       needs_refresh=2
       continue
     fi
@@ -60,10 +62,14 @@ verify_debs_with_refresh() {
   [[ "$rc" == 2 ]] || return "$rc"
   echo 'ci-playwright-install: refreshing apt index once for missing cached versions'
   # 20s + 5s grace leaves the existing offline and network apt bounds intact (885s combined).
-  sudo timeout --kill-after=5s 20s apt-get update --error-on=any -o Acquire::Retries=0 || {
-    echo "ci-playwright-install: apt index refresh failed (exit=$?)" >&2
+  rc=0
+  sudo timeout --kill-after=5s 20s apt-get update --error-on=any -o Acquire::Retries=0 || rc=$?
+  if [[ "$rc" != 0 ]]; then
+    echo "ci-playwright-install: apt index refresh failed (exit=$rc)" >&2
+    [[ "$rc" != 124 ]] || return 3
     return 1
-  }
+  fi
+  missing_version_debs=()
   verify_debs
 }
 
@@ -80,9 +86,15 @@ else
     # Install from verified cached .debs without downloads. A version absent from the index can justify one refresh.
     offline=0
     if [[ -n "$debs" ]] && compgen -G "$debs/*.deb" >/dev/null; then
-      if verify_debs_with_refresh; then
+      verify_rc=0
+      verify_debs_with_refresh || verify_rc=$?
+      if [[ "$verify_rc" == 0 ]]; then
         # No network involved, so a short bound (the whole step stays within its 15 min budget even when this fails).
         if sudo timeout --kill-after=15s 60s apt-get install -y --no-install-recommends --no-download -o "Dir::Cache::archives=$debs" "${missing[@]}"; then offline=1; fi
+      elif [[ "$verify_rc" == 3 ]]; then
+        # The first pass verified every other archive. Let normal apt fetch whatever is still needed.
+        echo 'ci-playwright-install: retaining verified cached .debs after index refresh timeout; using the network path' >&2
+        rm -f -- "${missing_version_debs[@]}"
       else
         echo 'ci-playwright-install: discarding the cached .debs; using the network path' >&2
         rm -f "$debs"/*.deb
