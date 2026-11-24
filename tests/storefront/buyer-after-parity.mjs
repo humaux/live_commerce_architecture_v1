@@ -579,15 +579,6 @@ test("privacy · overview, consent settings, export", async () => {
     const ads = page.getByRole("button", { name: "Meta 個人化廣告 變更設定", exact: true });
     assert.equal(await marketing.count(), 1);
     assert.equal(await ads.count(), 1);
-    if (dev === "m") {
-      await page.evaluate(() => document.fonts.ready);
-      const { bottom, height, viewportHeight, scroll } = await page.getByTestId("privacy-download").evaluate((button) => {
-        const rect = button.getBoundingClientRect();
-        return { bottom: rect.bottom, height: rect.height, viewportHeight: innerHeight, scroll: scrollY };
-      });
-      assert.equal(scroll, 0);
-      assert.ok(height >= 44 && bottom <= viewportHeight, `download must fit in the initial viewport (${bottom}/${viewportHeight})`);
-    }
     await c.shot(frames.main);
     // consent settings: tick, save, refresh, still ticked (persistence)
     await click(page, marketing, { page: "隱私與資料", control: "變更私訊設定", expected: "隱私與同意設定" });

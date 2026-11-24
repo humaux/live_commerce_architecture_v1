@@ -349,6 +349,17 @@ try {
       await expect(p.getByTestId("privacy-choices")).toBeVisible();
       await expect(p.locator("html")).toHaveAttribute("lang", locale);
       await expect(p.getByRole("heading", { level: 1 })).toHaveText(privacyFrameCopy[locale].title);
+      if (viewport === "mobile" && locale === "zh-TW") {
+        // The fixed B11 fixture has no merchant announcement above the shared shop header.
+        await expect(p.locator(".sf-announce")).toHaveCount(0);
+        await p.evaluate(() => document.fonts.ready);
+        const { bottom, height, viewportHeight, scroll } = await p.getByTestId("privacy-download").evaluate((button) => {
+          const rect = button.getBoundingClientRect();
+          return { bottom: rect.bottom, height: rect.height, viewportHeight: innerHeight, scroll: scrollY };
+        });
+        assert.equal(scroll, 0);
+        assert.ok(height >= 44 && bottom <= viewportHeight, `download must fit in the initial viewport (${bottom}/${viewportHeight})`);
+      }
       await shot(p, "privacy", locale, viewport);
       await p.route("**/api/buyer/privacy", (route) => route.request().method() === "GET" ? route.fulfill({ status: 410, contentType: "application/json", body: JSON.stringify({ code: "erased", message: "x", request_id: "", retryable: false, details: {} }) }) : route.continue());
       await p.reload();
