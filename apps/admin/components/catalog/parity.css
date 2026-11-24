@@ -57,6 +57,12 @@
 .cat-save-bar > :is(button,a) { display:grid; place-items:center; flex:1; min-height:44px; box-sizing:border-box; text-decoration:none; }
 .cat-task-editor > section { padding:20px 16px; background:var(--ui-surface); }
 .cat-stock-floor { color:var(--ui-muted); font-size:13px; margin:0; }
+@media(min-width:1281px) {
+  .cat-products-table:has(.pe-selection-cell) thead th:first-child { width:max(4%, 80px); }
+  /* A pending desktop header leaves the card row sizing all columns. */
+  .cat-products-table:not(:has(thead)) { table-layout:auto; }
+  .cat-products-table:not(:has(thead)) .pe-product-cell { width:auto; }
+}
 @media(max-width:680px) {
   .cat-chip-tabs button { padding:10px 12px; }
   .cat-task-list .cat-save-bar { left:0; }
