@@ -32,6 +32,7 @@ import { checkOfflineError } from "./offline-error.spec.ts";
 import { checkContactNative } from "./contact-native.spec.ts";
 import { checkBuyNow } from "./buy-now-gate.mjs";
 import { checkC7DraftCancel, checkC7Matrix } from "./buyer-browse-parity.spec.ts";
+import { checkMobileShopHeader } from "./shop-helpers.mjs";
 import { INIT_SCRIPT, listControls } from "../ui/click-sweep-lib.mjs";
 
 async function checkDeliveryKinds(page) {
@@ -324,7 +325,12 @@ async function checkBrowse(next) {
   await expectCartSummary(p, below);
   await p.setViewportSize({ width: 320, height: 760 });
   await expect.poll(() => p.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
+  await checkMobileShopHeader(p, origin, "en", facts.store_name, engine);
+  await p.getByTestId("header-cart").click();
+  await viewCart(p);
+  await expectCartSummary(p, below);
   await p.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(() => p.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
   const cartHeading = p.locator("header").filter({ has: p.getByRole("heading", { name: COPY.cartTitle, level: 1 }) });
   await expect(cartHeading.getByText(COPY.cartIntro, { exact: true })).toBeVisible();
   await cartHeading.getByRole("link", { name: COPY.continueShopping, exact: true }).click();
