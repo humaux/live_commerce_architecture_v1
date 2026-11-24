@@ -30,9 +30,9 @@ import "./ProductDocument.css";
 import "./catalog/parity.css";
 
 const catalogEntryCopy = {
-  en: { title: "Product catalog", description: "Find products and check their availability and listing status.", search: "Search product name or SKU", importCSV: "Import CSV", product: "Product and variants", stock: "Inventory summary", total: "{n} products" },
-  "zh-CN": { title: "商品目录", description: "查找商品，确认可售量与上架状态。", search: "搜索商品名称或 SKU", importCSV: "导入 CSV", product: "商品与规格", stock: "库存摘要", total: "共 {n} 件商品" },
-  "zh-TW": { title: "商品目錄", description: "查找商品、確認可售量與上架狀態。", search: "搜尋商品名稱或 SKU", importCSV: "匯入 CSV", product: "商品與規格", stock: "庫存摘要", total: "共 {n} 件商品" },
+  en: { title: "Product catalog", description: "Find products and check their availability and listing status.", search: "Search product name or SKU", importCSV: "Import CSV", product: "Product and variants", stock: "Inventory summary", total: "{n} products", range: "1–{n} of {n}", singlePage: "Page 1 of 1" },
+  "zh-CN": { title: "商品目录", description: "查找商品，确认可售量与上架状态。", search: "搜索商品名称或 SKU", importCSV: "导入 CSV", product: "商品与规格", stock: "库存摘要", total: "共 {n} 件商品", range: "1–{n}，共 {n} 条", singlePage: "第 1 页，共 1 页" },
+  "zh-TW": { title: "商品目錄", description: "查找商品、確認可售量與上架狀態。", search: "搜尋商品名稱或 SKU", importCSV: "匯入 CSV", product: "商品與規格", stock: "庫存摘要", total: "共 {n} 件商品", range: "1–{n}，共 {n} 筆", singlePage: "第 1 頁，共 1 頁" },
 };
 
 const cardQuery = "(max-width: 680px)";
@@ -83,6 +83,8 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
   useProductLeaveGuard({ dirty: false, locked }, pc.leave);
   const page = read.data, rows = page?.items ?? [];
   const paging = Boolean(after || page?.next_cursor);
+  const total = page ? (status === "all" ? page.total : page.status_counts[status as ProductStatus]) : 0;
+  const singlePage = cards && !paging && rows.length > 0 && total === rows.length;
   useEffect(() => { setSelected([]); setReview(null); setResults([]); setResultRows([]); setCopyReview(null); setCopied(null); setImportOpen(false); setImportLocked(false); }, [sid]);
   useEffect(() => {
     // Conceal snapshots during revalidation; a denied scope must not resurrect them after retry.
@@ -126,7 +128,9 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
             if (importOpen) document.getElementById("products-csv-preview")?.focus();
             else setImportOpen(true);
           }}>{entry.importCSV}</button>}
-        {canWrite && <Link className="product-primary" data-testid="product-new" href={`/${locale}/products/new?store=${sid}`}>{legacy.newProduct}</Link>}
+        {canWrite && <Link className="product-primary cat-create-product" data-testid="product-new" href={`/${locale}/products/new?store=${sid}`}>
+          <Icon name="plus" size={16} />{legacy.newProduct}
+        </Link>}
       </>} />}
       {write.message && write.message.kind !== 'success' && <div role="status"><p>{write.message.text}</p>
         {write.canRetry && <button type="button" disabled={write.busy} onClick={() => void write.retry()}>{pc.retry}</button>}
@@ -204,19 +208,20 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
             <ProductCell className="pe-product-cell" scope={cards ? "row" : undefined}><div className="product-cell">
               <ProductPhoto code="" name={row.name} demo={false} imageSrc={row.cover_image_id ? imageURL(sid, row.id, row.cover_image_id) : undefined} />
               <span className="pe-product-identity"><strong>{row.name}</strong>{!cards && row.sku_count > 0 && <small>{legacy.variants(row.sku_count)}</small>}</span></div></ProductCell>
-            <td className="pe-price-cell"><span>{price(row)}</span></td>
-            {cards ? <td className="pe-status-cell">
-              <span className="product-status pe-stock-cell cat-card-facts">{row.sku_count > 0
-                ? [c[row.status], stock(row), legacy.variants(row.sku_count)].join(" · ")
-                : c[row.status]}</span>
+            {cards ? <td className="pe-status-cell pe-price-cell">
+              <span className="product-status pe-stock-cell cat-card-facts">{
+                [price(row), c[row.status], ...(row.sku_count > 0 ? [stock(row), legacy.variants(row.sku_count)] : [])].join(" · ")
+              }</span>
             </td> : <>
+              <td className="pe-price-cell"><span>{price(row)}</span></td>
               <td className="pe-status-cell"><span className={`product-status${row.status === "active" ? " cat-status-active" : ""}`}>{c[row.status]}</span></td>
               <td className="pe-stock-cell">{stock(row)}</td>
             </>}
             {canWrite && <td className="pe-actions-cell"><div className="pe-row-actions"><Link href={editHref(locale, sid, row.id)}>{c.edit}</Link></div></td>}
           </tr>)}</tbody></table> : <p role="status">{status === 'archived' ? c.empty : q || status !== 'all' ? legacy.emptySearch : legacy.empty}</p>}
-          {(!cards && rows.length > 0 || paging) && <footer className="cat-list-footer">
-            <span>{catalogText(entry.total, { n: status === "all" ? page.total : page.status_counts[status as ProductStatus] })}</span>
+          {(singlePage || (!cards && rows.length > 0) || paging) && <footer className="cat-list-footer">
+            <span data-testid="products-list-summary">{catalogText(singlePage ? entry.range : entry.total, { n: total })}</span>
+            {singlePage && <output className="cat-page-indicator" data-testid="products-page-indicator" aria-label={entry.singlePage}>1 / 1</output>}
             {paging && <div className="orders-pager">
               <button type="button" data-testid="products-previous" disabled={locked || (!after && !previous.current.length)} onClick={() => go(status, q, previous.current.pop() ?? '')}>{legacy.previous}</button>
               <button type="button" data-testid="products-next" disabled={locked || !page.next_cursor} onClick={() => { previous.current.push(after); go(status, q, page.next_cursor); }}>{legacy.next}</button>

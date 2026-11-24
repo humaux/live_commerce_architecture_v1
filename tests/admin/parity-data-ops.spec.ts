@@ -152,6 +152,8 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
       });
       const search = page.getByRole("searchbox", { name: "搜尋商品名稱或 SKU", exact: true });
       const paging = `${process.env.LC_BROWSER_TAG!} paging`;
+      const summary = page.getByTestId("products-list-summary");
+      const indicator = page.getByTestId("products-page-indicator");
       const submitSearch = async (query: string) => {
         await expect(search).toBeVisible();
         await search.fill(query);
@@ -162,6 +164,8 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         await submitSearch(paging);
         await expect(page.getByTestId("products-table").locator("tbody tr")).toHaveCount(25);
         await expect(page.getByTestId("products-table").locator("tbody tr").first()).toContainText(paging);
+        await expect(summary).toHaveText("共 60 件商品");
+        await expect(indicator).toHaveCount(0);
       });
       await action(page, "下一頁", "click", "rows change while query and store stay fixed", async () => {
         const table = page.getByTestId("products-table");
@@ -176,11 +180,31 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         expect(params.get("store")).toBe(store);
         expect(params.get("q")).toBe(paging);
         expect(params.get("after")).toBeTruthy();
+        await expect(summary).toHaveText("共 60 件商品");
+        await expect(indicator).toHaveCount(0);
+      });
+      const secondCursor = new URL(page.url()).searchParams.get("after");
+      await action(page, "下一頁", "click", "partial final cursor page does not imply a single page", async () => {
+        await page.getByTestId("products-next").click();
+        await expect(page.getByTestId("products-table").locator("tbody tr")).toHaveCount(10);
+        await expect(page.getByTestId("products-next")).toBeDisabled();
+        await expect(summary).toHaveText("共 60 件商品");
+        await expect(indicator).toHaveCount(0);
+        await expect(search).toHaveValue(paging);
+      });
+      await action(page, "分頁返回", "click", "second cursor and query are restored", async () => {
+        await page.getByTestId("products-previous").click();
+        await expect.poll(() => new URL(page.url()).searchParams.get("after")).toBe(secondCursor);
+        await expect(page.getByTestId("products-table").locator("tbody tr")).toHaveCount(25);
+        await expect(search).toHaveValue(paging);
+        await expect(indicator).toHaveCount(0);
       });
       await action(page, "分頁返回", "click", "query survives returning to page one", async () => {
         await page.getByTestId("products-previous").click();
         await expect.poll(() => new URL(page.url()).searchParams.has("after")).toBe(false);
         await expect(search).toHaveValue(paging);
+        await expect(summary).toHaveText("共 60 件商品");
+        await expect(indicator).toHaveCount(0);
       });
       const name = `R07 CSV ${viewport.width} ${process.env.LC_BROWSER_TAG!}`;
       const handle = `r07-${viewport.width}-${process.env.LC_BROWSER_TAG!}`;
@@ -235,7 +259,19 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         await expect(page.getByTestId("products-table").locator("tbody tr")).toHaveCount(2);
         await expect(page.getByText(name, { exact: true })).toBeVisible();
         await expect(page.getByText(`${name}-B`, { exact: true })).toBeVisible();
+        await expect(summary).toHaveText(mobile ? "1–2，共 2 筆" : "共 2 件商品");
+        if (mobile) await expect(indicator).toHaveText("1 / 1");
+        else await expect(indicator).toHaveCount(0);
         expect(writes).toEqual(["preview", "preview", "commit"]);
+      });
+      await action(page, "商品搜尋", "fill and submit", "single and empty results use only returned page facts", async () => {
+        await submitSearch(`${handle}-b`);
+        await expect(summary).toHaveText(mobile ? "1–1，共 1 筆" : "共 1 件商品");
+        if (mobile) await expect(indicator).toHaveText("1 / 1");
+        else await expect(indicator).toHaveCount(0);
+        await submitSearch(`${handle}-missing`);
+        await expect(page.getByTestId("products-table")).toHaveCount(0);
+        await expect(indicator).toHaveCount(0);
       });
     });
     test(`R07 visual ${viewport.width}: two listed products and inline CSV error`, async ({ page }) => {
@@ -262,6 +298,18 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         })).toBe(true);
       }
       await capture(page, frame("1826:109927", "1826:110045"));
+      const create = page.getByRole("link", { name: "新增商品", exact: true });
+      await expect.soft(create).toHaveCSS("background-color", "rgb(42, 111, 176)", { timeout: 1000 });
+      await expect.soft(create.locator("svg")).toBeVisible({ timeout: 1000 });
+      const summary = page.getByTestId("products-list-summary");
+      const indicator = page.getByTestId("products-page-indicator");
+      await expect.soft(summary).toHaveText(mobile ? "1–2，共 2 筆" : "共 2 件商品", { timeout: 1000 });
+      await expect.soft(summary).toBeInViewport({ ratio: 1, timeout: 1000 });
+      if (mobile) {
+        await expect.soft(indicator).toHaveText("1 / 1", { timeout: 1000 });
+        await expect.soft(indicator).toHaveAccessibleName("第 1 頁，共 1 頁", { timeout: 1000 });
+        await expect.soft(indicator).toBeInViewport({ ratio: 1, timeout: 1000 });
+      } else await expect.soft(indicator).toHaveCount(0);
       await expect(tote).toContainText("2 個規格");
       await expect(tote.locator(".pe-price-cell")).toContainText("680");
       await expect(tote.locator(".pe-stock-cell")).toContainText("12");
@@ -299,6 +347,12 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         await capture(page, `r07-visual-csv-error-${viewport.width}`);
         await page.getByRole("heading", { name: "商品目錄", exact: true }).scrollIntoViewIfNeeded();
         await capture(page, `r07-visual-combined-${viewport.width}`);
+      });
+      await action(page, "新增商品", "keyboard Enter", "same-store editor opens from the primary link", async () => {
+        await create.focus();
+        await expect(create).toBeFocused();
+        await create.press("Enter");
+        await expect(page).toHaveURL(url => url.pathname === "/zh-TW/products/new" && url.searchParams.get("store") === store);
       });
     });
     for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
