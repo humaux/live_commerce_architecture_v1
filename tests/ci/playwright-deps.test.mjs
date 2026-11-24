@@ -101,6 +101,7 @@ if(tool==='apt-get'){
     count('refreshed');process.exit(0)}
   if(args.includes('update'))process.exit(0);
   if(args.includes('--no-download'))process.exit(e.OFFLINE_FAILS==='1'?100:0);
+  if(e.REFRESH==='update-times-out' && (!fs.existsSync(e.LC_PLAYWRIGHT_DEBS_DIR+'/libbar_1_amd64.deb') || fs.existsSync(e.LC_PLAYWRIGHT_DEBS_DIR+'/libfoo_1_amd64.deb')))process.exit(42);
   process.exit(count('apt')<=Number(e.EDGE_FAILURES)?17:0)}
 if(tool==='node'&&args[0]==='-p'){console.log(e.FAKE_CLI);process.exit(0)}
 if(tool==='node'&&args.includes('--dry-run')){const mode=e.DRY_FIRST;
@@ -232,7 +233,7 @@ for (const refresh of ['match', 'package-absent']) {
     assert.equal(out, '', 'reused archives do not trigger a cache save');
   });
 }
-for (const refresh of ['still-missing', 'changed-hash', 'update-fails', 'update-times-out']) {
+for (const refresh of ['still-missing', 'changed-hash', 'update-fails']) {
   test(`P2-3 refresh ${refresh}: reject the cache and take the original network path`, () => {
     const { result, events, out, cached } = installer({ debs: true, refresh });
     assert.equal(result.status, 0, result.stderr);
@@ -246,6 +247,16 @@ for (const refresh of ['still-missing', 'changed-hash', 'update-fails', 'update-
     assert.equal(out.trim(), 'debs=downloaded');
   });
 }
+test('P2-3 refresh timeout: discard unverified versions and reuse verified archives through normal apt', () => {
+  const { result, events, out, cached } = installer({ debs: true, refresh: 'update-times-out', browsers: ['chromium', 'webkit'] });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(refreshCalls(events).length, 1);
+  assert.deepEqual(aptCalls(events).map(x => x.args[0]), ['update', 'update', 'install']);
+  assert.ok(aptCalls(events).every(x => !x.args.includes('--no-download')));
+  assert.equal(events.filter(x => x.tool === 'apt-cache').length, 2);
+  assert.deepEqual(cached, ['libbar_1_amd64.deb']);
+  assert.equal(out.trim(), 'debs=downloaded');
+});
 test('P2-3 hash mismatch: a tampered cached deb is never installed; the cache is discarded and the network path runs', () => {
   const { result, events } = installer({ debs: true, indexSha: 'deadbeef' }); assert.equal(result.status, 0, result.stderr);
   assert.ok(!aptCalls(events).some(x => x.args.includes('--no-download')), 'unverified debs were installed');
