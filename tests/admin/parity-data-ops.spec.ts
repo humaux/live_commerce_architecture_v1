@@ -167,6 +167,8 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         const table = page.getByTestId("products-table");
         const first = await table.locator("tbody tr").first().innerText();
         await page.getByTestId("products-next").click();
+        await expect.poll(() => new URL(page.url()).searchParams.get("after")).toBeTruthy();
+        await expect(table.locator("tbody tr")).toHaveCount(25);
         await expect(table.locator("tbody tr").first()).not.toHaveText(first);
         await expect(table.locator("tbody tr").first()).toContainText(paging);
         await expect(search).toHaveValue(paging);
