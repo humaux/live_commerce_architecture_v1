@@ -30,6 +30,32 @@ export async function prepareR04({ page, openCheckout, evidence, viewport }) {
   const close = page.getByTestId("cvs-picker-close");
   const change = page.getByTestId("cvs-change-store");
   const hint = page.getByTestId("cvs-next-step");
+  // RV824 DIAGNOSTIC: de-identified passive observation. No headers, bodies or buyer data.
+  const __rv = { engine: process.env.LC_BROWSER_ENGINE || null, viewport, events: [], brand: null,
+    queryBefore: null, queryAfter: null, dialog: null, loading: null, errors: [],
+    candidates: null, candidateVisible: null, candidateEnabled: null, occlusion: null, clickError: null };
+  const __rvEvent = (name, detail = {}) => { __rv.events.push({ name, at: Date.now(), ...detail }); };
+  const __rvDir = (kind, r) => {
+    try { const u = new URL(r.url()); if (u.pathname.startsWith("/cvs/")) {
+      __rvEvent(kind, { path: u.pathname, status: kind === "response" ? r.status() : null,
+        failed: kind === "requestfailed" ? (r.failure()?.errorText || null) : null });
+    } } catch {}
+  };
+  page.on("request", (r) => __rvDir("request", r));
+  page.on("response", (r) => __rvDir("response", r));
+  page.on("requestfailed", (r) => __rvDir("requestfailed", r));
+  const __rvWrite = async (phase) => {
+    try { const fs = await import("node:fs/promises");
+      await fs.writeFile(path.join(evidence, `rv824-obs-${viewport}.json`),
+        JSON.stringify({ ...__rv, phase }, null, 2)); } catch {}
+  };
+  const __rvState = async () => {
+    __rv.brand = await page.locator('[data-testid^="cvs-brand-"][aria-pressed="true"]').first().getAttribute("data-testid").catch(() => null);
+    __rv.queryBefore = await query.inputValue().catch(() => null);
+    __rv.dialog = await page.evaluate(() => { const d = document.querySelector('[data-testid=cvs-picker]'); return d ? { open: d.open } : null; }).catch(() => null);
+    __rv.loading = await page.locator('[data-testid=cvs-picker] [role=status]').count().catch(() => null);
+    __rv.errors = await page.locator('[data-testid=cvs-picker] [role=alert]').allTextContents().catch(() => []);
+  };
   const [quote] = await Promise.all([page.waitForResponse(responseFor("POST", "quotes")), openCheckout()]);
   assert.equal(quote.status(), 200);
   const originalQuote = await quote.json();
@@ -41,8 +67,32 @@ export async function prepareR04({ page, openCheckout, evidence, viewport }) {
   await page.getByTestId("cvs-recipient-name").fill("王小明");
   await page.getByTestId("cvs-recipient-phone").fill("0912345678");
   await page.getByTestId("cvs-open-picker").click();
+  await __rvState();
+  __rvEvent("picker-opened");
   await query.fill("231196");
-  await page.getByTestId("cvs-candidate-231196").click();
+  await __rvState();
+  __rv.queryAfter = await query.inputValue().catch(() => null);
+  __rv.candidates = await page.locator('[data-testid^="cvs-candidate-"]').count().catch(() => null);
+  const __rvCandidate = page.getByTestId("cvs-candidate-231196");
+  __rv.candidateVisible = await __rvCandidate.isVisible().catch(() => null);
+  __rv.candidateEnabled = await __rvCandidate.isEnabled().catch(() => null);
+  __rv.occlusion = await __rvCandidate.evaluate((el) => {
+    const r = el.getBoundingClientRect(); const top = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return { covered: !!(top && top !== el && !el.contains(top)), topTag: top ? top.tagName : null, topTestid: top?.getAttribute?.("data-testid") || null };
+  }).catch(() => null);
+  __rvEvent("candidate-observed", { candidates: __rv.candidates, visible: __rv.candidateVisible, enabled: __rv.candidateEnabled, occlusion: __rv.occlusion });
+  await __rvWrite("before-click");
+  try {
+    await __rvCandidate.click();
+    __rvEvent("click-ok");
+    await __rvWrite("after-click-ok");
+  } catch (error) {
+    // Playwright's actionability diagnostics live in the original error text; keep it verbatim and rethrow unchanged.
+    __rv.clickError = String(error).slice(0, 2000);
+    __rvEvent("click-failed", { error: __rv.clickError });
+    await __rvWrite("click-failed");
+    throw error;
+  }
   await confirm.click();
   const [storeResponse] = await Promise.all([page.waitForResponse(responseFor("POST", "cvs-stores")), confirm.click()]);
   assert.equal(storeResponse.status(), 200);
