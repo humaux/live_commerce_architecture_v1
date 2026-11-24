@@ -17,7 +17,7 @@ import { spawn, execFileSync } from "node:child_process";
 import { once } from "node:events";
 import { mkdtemp, readFile, rm, mkdir } from "node:fs/promises";
 import { createWriteStream } from "node:fs";
-import { randomBytes } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { expect } from "@playwright/test";
@@ -43,6 +43,57 @@ async function listen(server) { server.listen(0, "127.0.0.1"); await once(server
 const bffKey = key();
 const api = createFakeApi({ bffKey });
 const apiPort = await api.listen();
+
+// SF11 confirms one synthetic home address through the real BFF, then stops at payment review.
+async function confirmMockAddress(pg, quote) {
+  const [serveFixture] = api.server.listeners("request");
+  const recipient = { recipient_name: "Synthetic Recipient", phone: "+886900000091" };
+  const home_address = { region: "", city: "Synthetic City", postal_code: "", line1: "Synthetic Street", line2: "" };
+  let destination;
+  const serveReview = async (req, res) => {
+    const token = /^Bearer (.+)$/.exec(req.headers.authorization ?? "")?.[1];
+    const cart = api.state.carts.get(token);
+    if (req.url !== "/v1/buyer/destination" || req.headers["x-commerce-buyer-bff-key"] !== bffKey ||
+        req.headers["x-commerce-storefront-origin"] !== origin || !api.state.sessions.has(token) ||
+        cart?.id !== quote.cart_id || cart.version !== quote.cart_version ||
+        (req.method !== "PUT" && !(req.method === "GET" && destination))) return serveFixture(req, res);
+
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Cache-Control", "no-store");
+    if (req.method === "GET") return res.end(JSON.stringify({ destination }));
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    try {
+      assert.equal(destination, undefined);
+      assert.ok(req.headers["idempotency-key"]);
+      const submitted = JSON.parse(Buffer.concat(chunks).toString());
+      assert.deepEqual(submitted, { expected_version: 0, cart_version: quote.cart_version, kind: "home", country: quote.country, ...recipient, home_address });
+      const { expected_version, ...details } = submitted;
+      destination = { ...details, id: randomUUID(), cart_id: cart.id, version: expected_version + 1,
+        selected_at: new Date().toISOString(), expires_at: quote.expires_at };
+      res.end(JSON.stringify(destination));
+    } catch {
+      res.statusCode = 422;
+      res.end(JSON.stringify({ code: "invalid_request" }));
+    }
+  };
+  api.server.off("request", serveFixture);
+  api.server.on("request", serveReview);
+  try {
+    for (const [name, value] of Object.entries({ ...recipient, city: home_address.city, line1: home_address.line1 }))
+      await pg.locator(`input[name="${name}"]`).fill(value);
+    const [saved] = await Promise.all([
+      pg.waitForResponse(r => r.request().method() === "PUT" && new URL(r.url()).pathname === "/api/buyer/destination"),
+      pg.getByTestId("checkout-continue").click(),
+    ]);
+    assert.equal(saved.status(), 200);
+    await expect(pg.getByTestId("checkout-payment-review")).toBeVisible();
+    await expect(pg.getByTestId("checkout-review")).toContainText(recipient.recipient_name);
+  } finally {
+    api.server.off("request", serveReview);
+    api.server.on("request", serveFixture);
+  }
+}
 
 async function startNext() {
   return startNextWithPortRetry({}, async ({ port, attempt, track }) => {
@@ -245,7 +296,12 @@ try {
   await expect(p.getByTestId("cart-line")).toHaveCount(1);
   await p.getByRole("button", { name: "選擇配送" }).click();
   await expect(p.getByLabel("配送方式")).toBeVisible();
-  await p.getByRole("button", { name: "取得目前總額" }).click();
+  const [quoteResponse] = await Promise.all([
+    p.waitForResponse(r => r.request().method() === "POST" && new URL(r.url()).pathname === "/api/buyer/quotes"),
+    p.getByRole("button", { name: "取得目前總額" }).click(),
+  ]);
+  assert.equal(quoteResponse.status(), 200);
+  const phoneQuote = await quoteResponse.json();
   await p.getByTestId("checkout-details-toggle").click();
   await expect(p.locator(".quotation")).toBeVisible();
   await shot(p, "m-checkout");
@@ -324,17 +380,55 @@ try {
     });
     assert(r.n >= 10 && r.lastInView && r.bad.length === 0, `footer content under a bottom bar: ${JSON.stringify(r)}`);
   };
-  const checkoutStep = async (pg) => { // cart -> delivery -> quotation, the same clicks as SF05
-    await pg.goto(`${origin}/zh-TW/checkout`);
+  const checkoutStep = async (pg, existingQuote) => {
+    if (existingQuote) {
+      const [restored, destination] = await Promise.all([
+        pg.waitForResponse(r => r.request().method() === "GET" && new URL(r.url()).pathname === `/api/buyer/quotes/${existingQuote.id}`),
+        pg.waitForResponse(r => r.request().method() === "GET" && new URL(r.url()).pathname === "/api/buyer/destination"),
+        pg.goto(`${origin}/zh-TW/checkout`),
+      ]);
+      assert.equal(restored.status(), 200);
+      assert.deepEqual(await restored.json(), existingQuote, "re-entry restores the previously displayed quote");
+      assert.equal(destination.status(), 200);
+      assert.deepEqual(await destination.json(), { destination: null });
+    } else {
+      await pg.goto(`${origin}/zh-TW/checkout`);
+    }
     await pg.getByRole("button", { name: "選擇配送" }).click(); await expect(pg.getByLabel("配送方式")).toBeVisible();
-    await pg.getByRole("button", { name: "取得目前總額" }).click(); await pg.getByTestId("checkout-details-toggle").click(); await expect(pg.locator(".quotation")).toBeVisible();
-    await expect(pg.getByTestId("create-order")).toBeVisible();
+    const getTotal = pg.getByRole("button", { name: "取得目前總額" });
+    if (existingQuote) await expect(getTotal).toHaveCount(0);
+    else {
+      const [posted, destination] = await Promise.all([
+        pg.waitForResponse(r => r.request().method() === "POST" && new URL(r.url()).pathname === "/api/buyer/quotes"),
+        pg.waitForResponse(r => r.request().method() === "GET" && new URL(r.url()).pathname === "/api/buyer/destination"),
+        getTotal.click(),
+      ]);
+      assert.equal(posted.status(), 200);
+      const fresh = await posted.json();
+      assert.notEqual(fresh.id, phoneQuote.id);
+      assert.equal(fresh.cart_id, phoneQuote.cart_id);
+      assert.equal(fresh.cart_version, phoneQuote.cart_version + 2, "the placeholder add/remove advanced the same cart");
+      assert.equal(destination.status(), 200);
+      assert.deepEqual(await destination.json(), { destination: null });
+    }
+    await expect(pg.locator("#checkout-address-form fieldset")).toBeEnabled();
+    await pg.getByTestId("checkout-details-toggle").click();
+    await expect(pg.locator(".quotation")).toBeVisible();
+    if (existingQuote) {
+      await footerCovered(pg);
+      await confirmMockAddress(pg, existingQuote);
+      await expect(pg.getByTestId("checkout-submit")).toBeVisible();
+      await expect(pg.getByTestId("checkout-submit")).toBeEnabled();
+      await pg.getByTestId("checkout-details-toggle").click();
+      await expect(pg.getByTestId("create-order")).toBeVisible();
+      await shot(pg, "m-checkout-review-submission", false);
+    }
   };
   const moneyTexts = (pg) => pg.evaluate(() => [...document.querySelectorAll(".sf-line__total, .sf-line__unit, [data-testid=cart-subtotal], .purchase-footer strong, .quotation li span:last-child, .quotation dd, .sf-summary__row strong")].map((e) => e.textContent.trim()).filter((t) => /\d/.test(t)));
   const noDecimals = async (pg, min, where) => { const t = await moneyTexts(pg); assert(t.length >= min, `${where}: only ${t.length} amounts found`); assert(!t.some((x) => /\d\.\d\d\b/.test(x)), `${where}: whole TWD amounts must not carry .00: ${t.join(" | ")}`); };
 
   await part("1 checkout bar 1280", async () => { await d.goto(`${origin}/zh-TW/checkout`); await d.locator(".purchase-footer").waitFor(); await footerCovered(d); });
-  await part("1 checkout bar 390", async () => { await checkoutStep(p); await footerCovered(p); });
+  await part("1 checkout bar 390", async () => { await checkoutStep(p, phoneQuote); await footerCovered(p); });
   const narrow = await browser.newContext(ctxOpts({ ignoreHTTPSErrors: true, viewport: { width: 320, height: 568 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true, locale: "zh-TW" })), np = await narrow.newPage();
   await part("1 checkout bar 320", async () => {
     await np.goto(`${origin}/zh-TW/products/cedar-fig-candle`); await np.getByTestId("add-to-cart").click(); await np.getByTestId("cart-checkout").waitFor();
@@ -353,12 +447,19 @@ try {
 
   // 2. one header, never repeated mid-page (the repeat in fullPage captures was the sticky header painted at the scroll offset)
   await part("2 one header", async () => {
-    for (const url of ["/zh-TW/products/cedar-fig-candle", "/zh-TW/products", "/zh-TW/checkout"]) {
+    for (const url of ["/zh-TW/products/cedar-fig-candle", "/zh-TW/products"]) {
       await p.goto(`${origin}${url}`); await expect(p.locator("header.sf-header")).toBeVisible();
       assert.equal(await p.locator("header.sf-header").count(), 1, `${url}: exactly one site header`);
       assert.equal(await p.getByTestId("menu-open").count(), 1, `${url}: exactly one menu button`);
       assert.equal(await p.locator(".sf-header").evaluate((e) => getComputedStyle(e).position), "sticky", "the header sticks inside normal flow");
     }
+    await p.goto(`${origin}/zh-TW/checkout`);
+    const checkoutHeader = p.locator("header.checkout-top");
+    await expect(checkoutHeader).toHaveCount(1);
+    await expect(checkoutHeader).toBeVisible();
+    await expect(p.locator("header.sf-header")).toBeHidden();
+    await expect(checkoutHeader.getByRole("link", { name: "返回購物車" })).toBeVisible();
+    assert.equal(await checkoutHeader.evaluate(e => getComputedStyle(e).position), "static", "checkout uses its own header in normal flow");
   });
 
   // 3. a product without a photo shows a recognisable placeholder (icon + localized accessible label) on the card, the gallery and the cart line
@@ -397,16 +498,19 @@ try {
     await expect(p.locator("label.sf-chip")).toHaveCount(2); assert.deepEqual(await small(p.locator("label.sf-chip")), [], "variant chips are at least 44x44");
   });
 
+  // The placeholder add/remove changed the cart version, so the money check obtains a fresh quote.
   await part("4 checkout money", async () => { await checkoutStep(p); await noDecimals(p, 6, "checkout"); });
 
-  // 5. a disabled create-order button is visibly different from the action colour and says why (the pale teal read as an enabled button gone wrong)
+  // 5. the visible disabled checkout action differs from the action colour and says why.
   await part("5 disabled CTA", async () => {
-    const create = p.getByTestId("create-order");
-    await expect(create).toBeDisabled();
-    const look = await create.evaluate((e) => { const s = getComputedStyle(e), hint = document.getElementById(e.getAttribute("aria-describedby") ?? "-"); return { opacity: s.opacity, bg: s.backgroundColor, hint: hint ? hint.textContent.trim() : "", hintShown: !!hint && hint.getBoundingClientRect().height > 0 }; });
+    const continuation = p.getByTestId("checkout-continue");
+    await expect(continuation).toBeVisible();
+    await expect(continuation).toBeDisabled();
+    await expect(continuation).toHaveAttribute("aria-describedby", "create-order-hint");
+    const look = await continuation.evaluate((e) => { const s = getComputedStyle(e), hint = document.getElementById(e.getAttribute("aria-describedby") ?? "-"); return { opacity: s.opacity, bg: s.backgroundColor, hint: hint ? hint.textContent.trim() : "", hintShown: !!hint && hint.getBoundingClientRect().height > 0 }; });
     assert.equal(look.opacity, "1", "disabled is a distinct grey, the action colour is never just faded"); assert.notEqual(look.bg, "rgb(36, 121, 101)", "disabled must not wear the action teal");
     assert(look.hint.length > 6 && look.hintShown, `the disabled create-order button needs a visible description: ${JSON.stringify(look)}`);
-    await create.scrollIntoViewIfNeeded(); await shot(p, "m-checkout-disabled-cta", false);
+    await continuation.scrollIntoViewIfNeeded(); await shot(p, "m-checkout-disabled-cta", false);
   });
 
   // 6. closed store: no shopping chrome, the brand fallback is localized, no unexplained dot
