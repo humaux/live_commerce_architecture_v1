@@ -4,6 +4,52 @@
 // Invariants: native focus only prepares real clicks; expanded details never change server money or consent.
 import { expect } from "@playwright/test";
 
+export async function checkMobileShopHeader(page, origin, locale, storeName, engine) {
+  const header = page.locator("header.sf-header");
+  const menu = header.getByTestId("menu-open");
+  const brand = header.getByRole("link", { name: storeName, exact: true });
+  const search = header.locator(".sf-searchlink");
+  const bag = header.getByTestId("header-cart");
+  const drawer = page.getByTestId("cart-drawer");
+  const sheet = header.locator(".sf-sheet");
+  const shop = `${origin}/${locale}`;
+  // Safari uses Option+Tab for links and controls when the system's ordinary Tab skips them.
+  const next = engine === "webkit" ? "Alt+Tab" : "Tab";
+  await page.reload();
+  await expect(header).toBeVisible();
+  for (let i = 0; i < 7; i++) {
+    await page.keyboard.press(next);
+    if (await header.evaluate(region => region.contains(document.activeElement))) break;
+  }
+  for (const [index, control] of [menu, brand, search, bag].entries()) {
+    if (index > 0) await page.keyboard.press(next);
+    await expect(control).toBeFocused();
+    await expect(control).toHaveCSS("outline-style", "solid");
+    await expect(control).toHaveCSS("outline-width", "3px");
+    const withinViewport = await control.evaluate(element => {
+      const { left, right, width, height } = element.getBoundingClientRect();
+      return left >= 0 && right <= document.documentElement.clientWidth && width >= 44 && height >= 44;
+    });
+    expect(withinViewport).toBe(true);
+  }
+  await page.keyboard.press("Enter");
+  await expect(drawer).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(drawer).not.toBeVisible();
+  await expect(bag).toBeFocused();
+  await page.keyboard.press(`Shift+${next}`);
+  await expect(search).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(`${shop}/search`);
+  await brand.press("Enter");
+  await expect(page).toHaveURL(shop);
+  await menu.press("Enter");
+  await expect(sheet).toBeVisible();
+  await sheet.getByRole("link", { name: "All products", exact: true }).click();
+  await expect(page).toHaveURL(`${shop}/products`);
+  await expect(page.getByTestId("product-card").first()).toBeVisible();
+}
+
 // Shared steps for browser gates that used to start on the old single-product page (/{locale}/products/{id} with its SKU radios and
 // "Choose delivery" button). That page is now the storefront shell: a product is bought through Add to cart, and the delivery, quotation,
 // address, payment and order screens live at /{locale}/checkout (apps/storefront/lib/routes.ts; the CVS map return allowlist accepts exactly
