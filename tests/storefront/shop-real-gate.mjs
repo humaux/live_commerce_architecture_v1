@@ -322,6 +322,9 @@ async function checkBrowse(next) {
   const below = candlePrice + dripperPrice;
   await expect(p.getByTestId("cart-subtotal")).toHaveText(shop$(below));
   await expectCartSummary(p, below);
+  await p.setViewportSize({ width: 320, height: 760 });
+  await expect.poll(() => p.evaluate(() => document.documentElement.scrollWidth)).toBe(320);
+  await p.setViewportSize({ width: 390, height: 844 });
   const cartHeading = p.locator("header").filter({ has: p.getByRole("heading", { name: COPY.cartTitle, level: 1 }) });
   await expect(cartHeading.getByText(COPY.cartIntro, { exact: true })).toBeVisible();
   await cartHeading.getByRole("link", { name: COPY.continueShopping, exact: true }).click();
