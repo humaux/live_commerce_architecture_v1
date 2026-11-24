@@ -379,8 +379,28 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
       await page.setViewportSize(viewport); await login(page);
       await page.goto(root("zh-TW", "inventory")); await heading(page, "庫存");
       await prepare(page); await page.reload();
+      const warehouse = page.getByRole("combobox", { name: "倉庫", exact: true });
+      const warehouseID = await warehouse.inputValue();
+      const query = "焦糖托特包";
+      const filteredInventory = (url: URL) =>
+        url.pathname === "/zh-TW/inventory" && url.searchParams.get("store") === store && url.searchParams.get("q") === query;
+      await click(page, "搜尋貨號", "search form opens", () => heading(page, "搜尋庫存"));
+      await action(page, "貨號或商品名稱", "fill", "search draft identifies the A12 product", async () => {
+        const input = page.getByRole("textbox", { name: "貨號或商品名稱", exact: true });
+        await input.fill(query);
+        await expect(input).toHaveValue(query);
+      });
       const row = inventoryA12Row(page);
-      await expect(row, "exactly one A12 SKU before adjustment").toHaveCount(1);
+      await action(page, "搜尋", "click", "same-store and same-warehouse results contain exactly one A12 SKU", async () => {
+        const [response] = await Promise.all([
+          page.waitForResponse(response => response.request().method() === "GET" && filteredInventory(new URL(response.url()))),
+          page.getByRole("button", { name: "搜尋", exact: true }).click(),
+        ]);
+        expect(response.ok()).toBe(true);
+        await expect(page).toHaveURL(filteredInventory);
+        await expect(warehouse).toHaveValue(warehouseID);
+        await expect(row, "exactly one A12 SKU before adjustment").toHaveCount(1);
+      });
       // Use the product row/card's actual control; no selecting an internal variable or URL-only state.
       await action(page, "A12 / 調整庫存", "click", "selected SKU adjustment opens", async () => {
         await row.getByRole("button", { name: "調整庫存", exact: true }).click(); await heading(page, "調整庫存");
@@ -433,7 +453,11 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         await heading(page, "庫存已調整");
         await capture(page, frame("840:5248", "840:5249"));
         await click(page, "返回庫存", "saved on-hand survives refresh", async () => {
-          await page.reload(); await expect(inventoryA12Row(page), "exactly one persisted A12 SKU").toHaveCount(1); await expect(inventoryA12Row(page)).toContainText("27");
+          await page.reload();
+          await expect(page).toHaveURL(filteredInventory);
+          await expect(warehouse).toHaveValue(warehouseID);
+          await expect(row, "exactly one persisted A12 SKU").toHaveCount(1);
+          await expect(row).toContainText("27");
         });
       }
     });
