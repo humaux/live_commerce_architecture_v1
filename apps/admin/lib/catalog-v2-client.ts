@@ -18,11 +18,14 @@ import {
 
 const base = (store: string) => `/api/stores/${store}`;
 
-export const readProducts = (store: string, q: string, status: string, cursor: string, signal: AbortSignal): Promise<ProductSummaryPage> => {
+export type ProductStockFilter = "available" | "sold_out" | "untracked";
+
+export const readProducts = (store: string, q: string, status: string, cursor: string, signal: AbortSignal, stock?: ProductStockFilter): Promise<ProductSummaryPage> => {
   const params = new URLSearchParams({ limit: "25" });
   if (q) params.set("q", q);
   if (status && status !== "all") params.set("status", status);
   if (cursor) params.set("cursor", cursor);
+  if (stock !== undefined) params.set("stock", stock);
   return get(`${base(store)}/catalog-products?${params}`, parseSummaryPage, signal);
 };
 export const readProduct = (store: string, id: string, signal: AbortSignal): Promise<ProductDetail> =>

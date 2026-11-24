@@ -4639,7 +4639,7 @@
     "/v1/admin/stores/{store_id}/catalog-products": {
       "get": {
         "operationId": "listCatalogProducts",
-        "description": "Requires catalog:read and inventory:read. Merchant product list, newest first: literal case-insensitive q on name, slug or SKU code; status filter; cover image, active price range and stock summed over all warehouses. Opaque keyset cursor bound to the filter (default 50, max 100).",
+        "description": "Requires catalog:read and inventory:read. Merchant product list, newest first. Literal case-insensitive q matches name, slug or SKU code. Active-SKU stock is summed across all store warehouses, including inactive warehouses with balances. The page and its q/stock counts share one snapshot. The opaque keyset cursor binds scope, q, status and stock; omitting stock keeps the legacy binding. Default page size 50, max 100.",
         "security": [
           {
             "merchantBearer": []
@@ -4677,6 +4677,15 @@
             }
           },
           {
+            "name": "stock",
+            "in": "query",
+            "description": "Omit for all stock states. Accepts one exact value. available: fully tracked with positive catalog stock; sold_out: fully tracked with zero catalog stock; untracked: tracking is incomplete or there are no active SKUs.",
+            "schema": {
+              "type": "string",
+              "enum": ["available", "sold_out", "untracked"]
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "schema": {
@@ -4697,7 +4706,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Committed result or exact idempotent replay",
+            "description": "Catalog product page and filter-matched counts",
             "content": {
               "application/json": {
                 "schema": {
@@ -4705,7 +4714,9 @@
                   "additionalProperties": false,
                   "required": [
                     "items",
-                    "next_cursor"
+                    "next_cursor",
+                    "total",
+                    "status_counts"
                   ],
                   "properties": {
                     "items": {
@@ -4718,6 +4729,21 @@
                     "next_cursor": {
                       "type": "string",
                       "maxLength": 1024
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Number matching q and stock across all statuses, before paging."
+                    },
+                    "status_counts": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["draft", "active", "archived"],
+                      "properties": {
+                        "draft": { "type": "integer", "minimum": 0 },
+                        "active": { "type": "integer", "minimum": 0 },
+                        "archived": { "type": "integer", "minimum": 0 }
+                      }
                     }
                   }
                 }
@@ -8365,6 +8391,9 @@
           "currency",
           "sku_count",
           "available",
+          "inventory_tracked",
+          "keyword",
+          "updated_at",
           "cover_image_url"
         ],
         "properties": {
@@ -8423,6 +8452,18 @@
           "available": {
             "type": "integer",
             "format": "int64"
+          },
+          "inventory_tracked": {
+            "type": "boolean",
+            "description": "True when the product has at least one active SKU and all active SKUs track inventory."
+          },
+          "keyword": {
+            "type": "string",
+            "description": "Keyword of the first active SKU with a keyword by SKU id, or an empty string."
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
           },
           "cover_image_url": {
             "type": [

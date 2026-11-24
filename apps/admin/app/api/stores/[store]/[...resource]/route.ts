@@ -61,7 +61,7 @@ const imageItem = `${imagesRoot}/${uuid}`;
 const imageWrites = `${imagesRoot}|${imageItem}/delete|${imagesRoot}/order|${imageItem}/move|products/${uuid}/(?:option-images|image-axis)`;
 const MAX_UPLOAD = 2.5 * 1024 * 1024; // CM3: BFF body cap; Go re-checks 2 MiB for the file itself and is the authority
 // catalog-core (storefront-v2 A, unit catalog-core): product list/detail + collections -> Go internal/httpapi/collections.go.
-// Exactly these resources: GET catalog-products (q,status,cursor,limit), GET products/{id}, collections CRUD, ordered
+// Exactly these resources: GET catalog-products (q,status,stock,cursor,limit), GET products/{id}, collections CRUD, ordered
 // membership (PUT), one collection image (multipart upload, bytes preview, delete).
 // FEAT-AUTO-COLLECTIONS: existing POST/PATCH collection routes also forward membership_mode/rules unchanged.
 // Go validates the closed rule grammar and versions; session-selected store/CSRF/key checks below stay authoritative.
@@ -113,7 +113,7 @@ const imageItemRoute = new RegExp(`^${imageItem}$`);
 const collectionImageRoute = new RegExp(`^${collectionImage}$`);
 // catalog-core: only these two GETs carry a query (Go is the grammar authority; the BFF caps the key set).
 const catalogQueryRoute = new RegExp(`^(?:${catalogProducts}|${collectionsRoot})$`);
-const catalogQueryKeys = new Set(["q", "status", "cursor", "limit"]);
+const catalogQueryKeys = new Set(["q", "status", "stock", "cursor", "limit"]);
 const catalogV2Any = new RegExp(`^(?:${catalogProducts}|${productCommands}|products/${uuid}/document|products/${uuid}|${collectionsRoot}|${collectionItem}|${collectionItem}/(?:delete|products|image|image/delete))$`);
 const imagesAny = new RegExp(`^(?:${imagesRoot}|${imageItem}|${imageItem}/(?:delete|move)|${imagesRoot}/order|products/${uuid}/(?:option-images|image-axis))$`);
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -231,7 +231,7 @@ async function route(request: Request, context: Context) {
     } else if (
       request.url.endsWith("?") ||
       [...url.searchParams.keys()].some((key) => !catalogQueryKeys.has(key)) ||
-      (path === collectionsRoot && (url.searchParams.has("q") || url.searchParams.has("status")))
+      (path === collectionsRoot && (url.searchParams.has("q") || url.searchParams.has("status") || url.searchParams.has("stock")))
     )
       return error(422, "invalid_request");
     if (

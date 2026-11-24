@@ -43,15 +43,14 @@ type ProductSummary struct {
 	UpdatedAt        string  `json:"updated_at"`
 }
 
-// StatusCounts is the per-status product tally that backs the list tabs (draft/active/archived), matching the current
-// search but not the status filter.
+// StatusCounts backs the list tabs for the current search and stock filters across all statuses.
 type StatusCounts struct {
 	Draft    int `json:"draft"`
 	Active   int `json:"active"`
 	Archived int `json:"archived"`
 }
 
-// ProductListResult is the product-list response: the page plus the store-wide tallies (product-editor §f list additions).
+// ProductListResult is the page and its filter-matched tallies.
 type ProductListResult struct {
 	Items        []ProductSummary `json:"items"`
 	NextCursor   string           `json:"next_cursor"`
@@ -65,11 +64,21 @@ type ProductListRequest struct {
 	Page   pagination.Request
 	Query  string
 	Status string
+	Stock  string
 }
 
-// ListProductSummaries lists products newest first (keyset on created_at, id) and returns the store-wide tallies
-// (Total, per-status counts) for the tabs. The tallies match the search but not the status filter, so the tabs stay
-// stable while a tab is selected.
+const productSKUStock = `LEFT JOIN LATERAL (
+	SELECT min(s.price_minor) pmin,max(s.price_minor) pmax,min(s.currency) currency,count(*)::int n,
+		coalesce(sum(b.avail),0)::bigint avail,coalesce(bool_and(s.inventory_tracked),false) tracked
+	FROM catalog.skus s
+	LEFT JOIN LATERAL (
+		SELECT sum(x.on_hand-x.reserved-x.allocated-x.unavailable) avail FROM inventory.balances x
+		WHERE x.tenant_id=s.tenant_id AND x.store_id=s.store_id AND x.sku_id=s.id
+	) b ON true
+	WHERE s.tenant_id=p.tenant_id AND s.store_id=p.store_id AND s.product_id=p.id AND s.status='active'
+) a ON true`
+
+// ListProductSummaries reads the page and all status tallies in one PostgreSQL statement snapshot.
 func ListProductSummaries(ctx context.Context, tx pgx.Tx, scope platform.Scope, in ProductListRequest) (ProductListResult, error) {
 	out := ProductListResult{Items: make([]ProductSummary, 0)}
 	status := strings.ToLower(strings.TrimSpace(in.Status))
@@ -81,37 +90,41 @@ func ListProductSummaries(ctx context.Context, tx pgx.Tx, scope platform.Scope, 
 		(status != "all" && status != StatusDraft && status != StatusActive && status != StatusArchived) {
 		return out, command.ErrInvalid
 	}
-	digest := sha256.Sum256([]byte(status + "\x00" + q))
+	filterKey := status + "\x00" + q
+	stockPredicate := ""
+	switch in.Stock {
+	case "":
+	case "available":
+		stockPredicate = " AND a.tracked AND a.avail>0"
+	case "sold_out":
+		stockPredicate = " AND a.tracked AND a.avail=0"
+	case "untracked":
+		stockPredicate = " AND NOT a.tracked"
+	default:
+		return out, command.ErrInvalid
+	}
+	if in.Stock != "" {
+		filterKey += "\x00stock\x00" + in.Stock
+	}
+	digest := sha256.Sum256([]byte(filterKey))
 	binding := pagination.Binding{TenantID: scope.TenantID, StoreID: scope.StoreID, Collection: "catalog-products", Filter: hex.EncodeToString(digest[:])}
 	limit, after, err := pagination.Decode(in.Page, binding, 2)
 	if err != nil {
 		return out, err
 	}
-	// search is the shared name/slug/SKU-code predicate. The like argument is always $3 (right after tenant/store) in
-	// both the tally and the page query, so the fragment is safe to splice into either.
+	args := []any{scope.TenantID, scope.StoreID}
 	search := ""
 	if q != "" {
+		args = append(args, escapeLike(q))
 		search = ` AND (p.name ILIKE '%' || $3 || '%' ESCAPE '!' OR p.slug ILIKE '%' || $3 || '%' ESCAPE '!'
 			OR EXISTS (SELECT 1 FROM catalog.skus x WHERE x.tenant_id=p.tenant_id AND x.store_id=p.store_id AND x.product_id=p.id AND x.code ILIKE '%' || $3 || '%' ESCAPE '!'))`
 	}
-	tallyArgs := []any{scope.TenantID, scope.StoreID}
-	if q != "" {
-		tallyArgs = append(tallyArgs, escapeLike(q))
+	// Keep the existing keyset index path without stock, and share the stock eligibility work when filtering.
+	materialized, stockJoin := "NOT MATERIALIZED", ""
+	if stockPredicate != "" {
+		materialized, stockJoin = "MATERIALIZED", productSKUStock
 	}
-	if err := tx.QueryRow(ctx, `SELECT count(*) FILTER (WHERE p.status='draft')::int,
-			count(*) FILTER (WHERE p.status='active')::int,
-			count(*) FILTER (WHERE p.status='archived')::int,
-			count(*)::int
-		FROM catalog.products p WHERE p.tenant_id=$1 AND p.store_id=$2`+search, tallyArgs...).
-		Scan(&out.StatusCounts.Draft, &out.StatusCounts.Active, &out.StatusCounts.Archived, &out.Total); err != nil {
-		return out, mapError(err)
-	}
-	args := []any{scope.TenantID, scope.StoreID}
 	filters := ""
-	if q != "" {
-		args = append(args, escapeLike(q))
-		filters += search
-	}
 	if status != "all" {
 		args = append(args, status)
 		filters += ` AND p.status=$` + placeholder(len(args))
@@ -121,50 +134,51 @@ func ListProductSummaries(ctx context.Context, tx pgx.Tx, scope platform.Scope, 
 		filters += ` AND (p.created_at,p.id) < ($` + placeholder(len(args)-1) + `::timestamptz,$` + placeholder(len(args)) + `::uuid)`
 	}
 	args = append(args, limit+1)
-	rows, err := tx.Query(ctx, `SELECT p.id::text,p.slug,p.name,p.status,p.version,
-		(SELECT i.id::text FROM catalog.product_images i WHERE i.tenant_id=p.tenant_id AND i.store_id=p.store_id AND i.product_id=p.id AND i.role='main' ORDER BY i.position LIMIT 1),
-		a.pmin,a.pmax,coalesce(a.currency,''),coalesce(a.n,0),coalesce(a.avail,0),
-		coalesce(k.keyword,''),coalesce(a.tracked,false),
-		to_char(p.updated_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"'),
-		to_char(p.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"')
-		FROM catalog.products p
-		LEFT JOIN LATERAL (SELECT min(s.price_minor) pmin,max(s.price_minor) pmax,min(s.currency) currency,count(*)::int n,
-				coalesce(sum(b.avail),0)::bigint avail,bool_and(s.inventory_tracked) tracked
-			FROM catalog.skus s
-			LEFT JOIN LATERAL (SELECT sum(x.on_hand-x.reserved-x.allocated-x.unavailable) avail FROM inventory.balances x
-				WHERE x.tenant_id=s.tenant_id AND x.store_id=s.store_id AND x.sku_id=s.id) b ON true
-			WHERE s.tenant_id=p.tenant_id AND s.store_id=p.store_id AND s.product_id=p.id AND s.status='active') a ON true
+	var page []struct {
+		ProductSummary
+		CreatedAt string `json:"created_at"`
+	}
+	if err := tx.QueryRow(ctx, `WITH eligible AS `+materialized+` (
+		SELECT p.id,p.status,p.created_at FROM catalog.products p `+stockJoin+`
+		WHERE p.tenant_id=$1 AND p.store_id=$2`+search+stockPredicate+`
+	), page AS (
+		SELECT p.id FROM eligible p WHERE true`+filters+`
+		ORDER BY p.created_at DESC,p.id DESC LIMIT $`+placeholder(len(args))+`
+	), summaries AS (
+		SELECT p.id,p.slug,p.name,p.status,p.version,
+			(SELECT i.id FROM catalog.product_images i WHERE i.tenant_id=p.tenant_id AND i.store_id=p.store_id AND i.product_id=p.id AND i.role='main' ORDER BY i.position LIMIT 1) AS cover_image_id,
+			a.pmin AS price_min_minor,a.pmax AS price_max_minor,coalesce(a.currency,'') AS currency,
+			a.n AS sku_count,a.avail AS available,coalesce(k.keyword,'') AS keyword,a.tracked AS inventory_tracked,
+			to_char(p.updated_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS updated_at,
+			to_char(p.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_at
+		FROM page JOIN catalog.products p ON p.tenant_id=$1 AND p.store_id=$2 AND p.id=page.id
+		`+productSKUStock+`
 		LEFT JOIN LATERAL (SELECT l.keyword FROM catalog.skus s
 			JOIN live.keyword_library l ON l.tenant_id=s.tenant_id AND l.store_id=s.store_id AND l.sku_id=s.id
 			WHERE s.tenant_id=p.tenant_id AND s.store_id=p.store_id AND s.product_id=p.id AND s.status='active'
 			ORDER BY s.id LIMIT 1) k ON true
-		WHERE p.tenant_id=$1 AND p.store_id=$2`+filters+` ORDER BY p.created_at DESC,p.id DESC LIMIT $`+placeholder(len(args)), args...)
-	if err != nil {
+	)
+	SELECT count(*) FILTER (WHERE status='draft')::int,
+		count(*) FILTER (WHERE status='active')::int,
+		count(*) FILTER (WHERE status='archived')::int,
+		count(*)::int,
+		(SELECT coalesce(jsonb_agg(s ORDER BY s.created_at COLLATE "C" DESC,s.id DESC),'[]'::jsonb) FROM summaries s)
+	FROM eligible`, args...).Scan(&out.StatusCounts.Draft, &out.StatusCounts.Active, &out.StatusCounts.Archived, &out.Total, &page); err != nil {
 		return out, mapError(err)
 	}
-	defer rows.Close()
-	stamps := make([]string, 0, limit+1)
-	for rows.Next() {
-		var s ProductSummary
-		var stamp string
-		if err := rows.Scan(&s.ID, &s.Slug, &s.Name, &s.Status, &s.Version, &s.CoverImageID, &s.PriceMinMinor, &s.PriceMaxMinor, &s.Currency, &s.SKUCount, &s.Available, &s.Keyword, &s.InventoryTracked, &s.UpdatedAt, &stamp); err != nil {
-			return out, err
-		}
+	if len(page) > limit {
+		page = page[:limit]
+		last := page[limit-1]
+		out.NextCursor, err = pagination.Encode(binding, []string{last.CreatedAt, last.ID})
+	}
+	for _, row := range page {
+		s := row.ProductSummary
 		if s.CoverImageID != nil {
 			url := "/api/stores/" + scope.StoreID + "/products/" + s.ID + "/images/" + *s.CoverImageID + "?w=360"
 			s.CoverImageURL = &url
 		}
 		out.Items = append(out.Items, s)
-		stamps = append(stamps, stamp)
 	}
-	if err := rows.Err(); err != nil {
-		return out, mapError(err)
-	}
-	if len(out.Items) <= limit {
-		return out, nil
-	}
-	out.Items = out.Items[:limit]
-	out.NextCursor, err = pagination.Encode(binding, []string{stamps[limit-1], out.Items[limit-1].ID})
 	return out, err
 }
 

@@ -1,4 +1,4 @@
-// Purpose: guard PR394 cover_image_url through the actual admin BFF exports, including strict width and scope fences.
+// Purpose: guard catalog stock query and cover-image transport through the actual admin BFF exports.
 // Depends on: existing W6 real-route loader, real auth/backend helpers and native Request; only upstream fetch is MOCK.
 // Used by: CI test-node; synthetic transport bytes prove no Go decoding, rendition dimensions, PG or LIVE behavior.
 // Authority: contracts/storefront-v2.md amendment 2026-11-01 and contracts/media-sizes-v1.md; I01/I11/I15 remain enforced.
@@ -28,10 +28,11 @@ async function mediaBoundary({ cacheControl = "private, max-age=300" } = {}) {
     calls.push({ url, init, headers: new Headers(init.headers) });
     assert.equal(url.origin, auth.authConfig.apiOrigin);
     if (url.pathname === "/v1/admin/stores") return Response.json({ items: [{
-      id: W6_STORE, name: "Synthetic media store", currency: "TWD", permissions: ["catalog:read", "catalog:write"],
+      id: W6_STORE, name: "Synthetic media store", currency: "TWD", permissions: ["catalog:read", "catalog:write", "inventory:read"],
     }] });
     if (url.pathname === `/v1/admin/stores/${W6_STORE}/catalog-products`) return Response.json({
-      items: [{ id: PRODUCT, cover_image_url: COVER_URL }], next_cursor: "",
+      items: url.search ? [] : [{ id: PRODUCT, cover_image_url: COVER_URL }], next_cursor: "",
+      total: 0, status_counts: { draft: 0, active: 0, archived: 0 },
     });
     if (url.pathname === `/v1/admin/stores/${W6_STORE}/${ITEM}` && init.method === "GET") return new Response(BYTES.slice(), {
       headers: { "Content-Type": "image/png", "Cache-Control": cacheControl, "Set-Cookie": "untrusted-upstream=1" },
@@ -61,6 +62,43 @@ function assertPrivateTransport(boundary) {
     assert.equal(call.init.redirect, "error");
   }
 }
+
+test("MOCK actual catalog GET forwards stock with q, status and an opaque cursor", async () => {
+  const boundary = await mediaBoundary();
+  try {
+    const query = "q=shirt%25&status=active&cursor=encoded_cursor&limit=25&stock=available";
+    const response = await boundary.invoke(`catalog-products?${query}`);
+    assert.equal(response.status, 200);
+    assert.equal(boundary.calls.length, 2);
+    assert.equal(boundary.calls[1].url.pathname, `/v1/admin/stores/${W6_STORE}/catalog-products`);
+    assert.equal(boundary.calls[1].url.search, `?${query}`);
+    assertPrivateTransport(boundary);
+    for (const path of ["collections", `products/${PRODUCT}`]) {
+      boundary.calls.length = 0;
+      assert.equal((await boundary.invoke(`${path}?stock=available`)).status, 422);
+      assert.equal(boundary.calls.length, 0, path);
+    }
+  } finally { boundary.restore(); }
+});
+
+test("MOCK catalog client carries stock through the actual BFF and preserves omitted stock", async () => {
+  const boundary = await mediaBoundary();
+  const upstream = globalThis.fetch;
+  globalThis.fetch = (input, init) => String(input).startsWith("/api/")
+    ? boundary.invoke(String(input), { method: init.method }) : upstream(input, init);
+  try {
+    const { readProducts } = await import("../../apps/admin/lib/catalog-v2-client.ts");
+    const signal = new AbortController().signal;
+    const page = await readProducts(W6_STORE, "shirt_%", "active", "opaque_cursor", signal, "sold_out");
+    assert.deepEqual(page, { items: [], next_cursor: "", total: 0, status_counts: { draft: 0, active: 0, archived: 0 } });
+    await readProducts(W6_STORE, "", "all", "", signal);
+    const reads = boundary.calls.filter(call => call.url.pathname.endsWith("/catalog-products"));
+    assert.deepEqual(reads.map(call => call.url.search), [
+      "?limit=25&q=shirt_%25&status=active&cursor=opaque_cursor&stock=sold_out", "?limit=25",
+    ]);
+    assertPrivateTransport(boundary);
+  } finally { boundary.restore(); }
+});
 
 for (const width of [360, 720, 1080]) test(`MOCK actual media GET forwards exact w=${width}; 360 follows catalog cover_image_url`, async () => {
   const boundary = await mediaBoundary();
