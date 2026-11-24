@@ -22,16 +22,17 @@ import { imageURL } from "@/lib/images-client";
 import { WorkspaceFrame } from "./WorkspaceFrame";
 import { AdminPageHeader } from "./AdminPageHeader";
 import { ProductPhoto } from "./ProductPhoto";
+import { ProductImport } from "./ProductImport";
 import "./orders.css";
 import "./ProductAdmin.css";
 import "./ProductDocument.css";
 import "./catalog/parity.css";
 
 const catalogEntryCopy = {
-  en: { title: "Product catalog", search: "Search product name or SKU", importCSV: "Import CSV" },
-  "zh-CN": { title: "商品目录", search: "搜索商品名称或 SKU", importCSV: "导入 CSV" },
-  "zh-TW": { title: "商品目錄", search: "搜尋商品名稱或 SKU", importCSV: "匯入 CSV" },
-} satisfies Record<Locale, { title: string; search: string; importCSV: string }>;
+  en: { title: "Product catalog", description: "Find products and check their availability and listing status.", search: "Search product name or SKU", importCSV: "Import CSV", product: "Product and variants", stock: "Inventory summary", total: "{n} products" },
+  "zh-CN": { title: "商品目录", description: "查找商品，确认可售量与上架状态。", search: "搜索商品名称或 SKU", importCSV: "导入 CSV", product: "商品与规格", stock: "库存摘要", total: "共 {n} 件商品" },
+  "zh-TW": { title: "商品目錄", description: "查找商品、確認可售量與上架狀態。", search: "搜尋商品名稱或 SKU", importCSV: "匯入 CSV", product: "商品與規格", stock: "庫存摘要", total: "共 {n} 件商品" },
+};
 
 const href = (locale: Locale, store: string, q: string, status: string, after: string) => {
   const p = new URLSearchParams();
@@ -60,13 +61,17 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
   const previous = useRef<string[]>([]);
   const [copyReview, setCopyReview] = useState<ProductSummary | null>(null);
   const [copied, setCopied] = useState<{ id: string; name: string; source: string } | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importLocked, setImportLocked] = useState(false);
+  const importButton = useRef<HTMLButtonElement>(null);
   const read = useGuardedRead(`${renderKey}|${locale}|${sid}|${q}|${status}|${after}`,
     store ? signal => readProducts(sid, q, status, after, signal) : null, initialError);
   const write = useWrite(sid, read.boundary, code => code in pc ? pc[code as keyof typeof pc] : pc.failed, pc.uncertain, pc.listRecoveryRequired);
-  const locked = write.busy || write.message?.kind === 'uncertain';
+  const catalogLocked = write.busy || write.message?.kind === 'uncertain';
+  const locked = importLocked || catalogLocked;
   useProductLeaveGuard({ dirty: false, locked }, pc.leave);
   const page = read.data, rows = page?.items ?? [];
-  useEffect(() => { setSelected([]); setReview(null); setResults([]); setResultRows([]); setCopyReview(null); setCopied(null); }, [sid]);
+  useEffect(() => { setSelected([]); setReview(null); setResults([]); setResultRows([]); setCopyReview(null); setCopied(null); setImportOpen(false); setImportLocked(false); }, [sid]);
   useEffect(() => {
     // Conceal snapshots during revalidation; a denied scope must not resurrect them after retry.
     if (read.status === 'signed-out' || read.status === 'forbidden' || read.status === 'not-found') {
@@ -81,7 +86,7 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
     read.status === 'not-found' ? legacy.noStore : read.status === 'unavailable' ? legacy.unavailable : '';
   const price = (r: ProductSummary) => r.price_min_minor === null ? legacy.noVariants :
     money(locale, r.currency, r.price_min_minor) + (r.price_max_minor !== null && r.price_max_minor !== r.price_min_minor ? ` – ${money(locale, r.currency, r.price_max_minor)}` : '');
-  const stock = (r: ProductSummary) => !r.inventory_tracked ? pc.mixedTracking :
+  const stock = (r: ProductSummary) => r.sku_count === 0 ? "—" : !r.inventory_tracked ? pc.mixedTracking :
     r.available <= 0 ? c.soldOut : catalogText(c.available, { n: r.available });
   async function bulk(target: ProductStatus, items = rows.filter(r => selected.includes(r.id))) {
     if (!canWrite || read.status !== 'ready' || locked || !items.length) return;
@@ -103,18 +108,17 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
   const archiveResult = results.length > 0 && results.every(r => r.status === 'archived' || !!r.error);
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? legacy.noStore} active="products" locked={locked}>
     <div className="orders-page product-admin pe-catalog cat-task-list" data-testid="products-page">
-      {!copyReview && !copied && <AdminPageHeader locale={locale} title={entry.title} actions={store && !selected.length && !locked && <>
-        {canImport && <Link className="cat-import-link" data-testid="products-import-link" href={`/${locale}/products/import?store=${sid}`}>{entry.importCSV}</Link>}
-        {canWrite && <Link className="product-primary" data-testid="product-new" href={`/${locale}/products/new?store=${sid}`}>{legacy.newProduct}</Link>}
+      {!copyReview && !copied && <AdminPageHeader locale={locale} title={entry.title} description={entry.description} actions={store && !selected.length && <>
+        {canImport && <button ref={importButton} type="button" className="cat-import-link" data-testid="products-import-link" aria-expanded={importOpen}
+          aria-controls={importOpen ? "products-csv-preview" : undefined} disabled={locked} onClick={() => {
+            if (importOpen) document.getElementById("products-csv-preview")?.focus();
+            else setImportOpen(true);
+          }}>{entry.importCSV}</button>}
+        {canWrite && !locked && <Link className="product-primary" data-testid="product-new" href={`/${locale}/products/new?store=${sid}`}>{legacy.newProduct}</Link>}
       </>} />}
       {write.message && write.message.kind !== 'success' && <div role="status"><p>{write.message.text}</p>
         {write.canRetry && <button type="button" disabled={write.busy} onClick={() => void write.retry()}>{pc.retry}</button>}
       </div>}
-      {!copyReview && !copied && <details className="cat-operations"><summary data-testid="products-operations" aria-label={c.operations}><span aria-hidden="true">{c.operations}</span></summary>
-        {canWrite && <button type="button" data-testid="products-copy-entry" disabled={read.status !== 'ready' || locked || selected.length !== 1}
-          onClick={() => { const row = rows.find(r => selected.includes(r.id)); if (row) { setCopied(null); setReview(null); setResults([]); setCopyReview(row); } }}>{c.copyEntry}</button>}
-        <Link data-testid="products-ledger-link" href={`/${locale}/inventory?store=${sid}`}>{legacy.inventory}</Link>
-      </details>}
       {read.status === 'ready' && copyReview ? <section className="cat-task-panel" data-testid="product-copy-review">
         <h2>{c.copyTitle}</h2><p>{copyReview.name}</p><p>{c.copyKeep}</p><p>{c.copyExclude}</p>
         <div className="cat-actions cat-save-bar"><button type="button" className="product-primary" data-testid="products-copy-selected" disabled={locked} onClick={() => void copySelected()}>{c.copyConfirm}</button>
@@ -136,14 +140,16 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
             <p>{r.error === 'live_window_open' ? c.live : r.error ? (r.error in pc ? pc[r.error as keyof typeof pc] : pc.failed) : r.status === 'archived' ? c.archived : r.status === 'draft' ? c.draft : pc.success}</p></li>;
         })}</ul>
         <button type="button" onClick={() => setResults([])}>{c.view}</button>
-      </section> : <>
+      </section> : <section className="cat-list-card" aria-label={entry.title}>
         {!selected.length && <>
         <div className="cat-chip-tabs"><TabStrip label={legacy.status} previousLabel={catalogPresentationCopy[locale].previousTabs} nextLabel={catalogPresentationCopy[locale].nextTabs}>
           {(['all', 'active', 'draft', 'archived'] as const).map(s => <button type="button" key={s} disabled={locked}
             data-testid={`products-tab-${s}`} aria-pressed={status === s} onClick={() => { previous.current = []; go(s); }}>
             {c[s]} {page ? s === 'all' ? page.total : page.status_counts[s] : ''}</button>)}
         </TabStrip></div>
-        {store && <form key={`${sid}|${q}`} role="search" className="cat-search" onSubmit={event => {
+        </>}
+        {store && <div className="cat-toolbar">
+        {!selected.length && <form key={`${sid}|${q}`} role="search" className="cat-search" onSubmit={event => {
           event.preventDefault();
           if (locked) return;
           const query = String(new FormData(event.currentTarget).get("q") ?? "").trim();
@@ -154,7 +160,14 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
             pattern={String.raw`[^\p{C}\p{Zl}\p{Zp}]{0,120}`} disabled={locked} />
           <button type="submit" disabled={locked}>{legacy.searchButton}</button>
         </form>}
-        </>}
+        {(canWrite || store.permissions?.includes("inventory:read")) && <details className="cat-operations"><summary data-testid="products-operations" aria-label={c.operations}><span aria-hidden="true">{c.operations}</span></summary>
+          <div className="cat-operation-menu">
+            {canWrite && <button type="button" data-testid="products-copy-entry" disabled={read.status !== 'ready' || locked || selected.length !== 1}
+              onClick={() => { const row = rows.find(r => selected.includes(r.id)); if (row) { setCopied(null); setReview(null); setResults([]); setCopyReview(row); } }}>{c.copyEntry}</button>}
+            {store.permissions?.includes("inventory:read") && <Link data-testid="products-ledger-link" href={`/${locale}/inventory?store=${sid}`}>{legacy.inventory}</Link>}
+          </div>
+        </details>}
+        </div>}
         {(read.status === 'loading' || read.status === 'hidden') && <p role="status">{legacy.loading}</p>}
         {failure && <div role="alert"><p>{failure}</p><button type="button" onClick={read.reload}>{legacy.retry}</button></div>}
         {read.status === 'ready' && page && <>
@@ -163,7 +176,7 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
               checked={!!rows.length && rows.every(r => selected.includes(r.id))} disabled={locked || !rows.length}
               onChange={e => setSelected(e.target.checked ? rows.slice(0, 100).map(r => r.id) : [])} /></label>
             <div data-testid="product-batch" className="cat-actions">
-              {(selected.length > 0 || locked) && <button type="button" disabled={locked} onClick={() => setReview(rows.filter(r => selected.includes(r.id)))}>{c.archive}</button>}
+              {(selected.length > 0 || catalogLocked) && <button type="button" disabled={locked} onClick={() => setReview(rows.filter(r => selected.includes(r.id)))}>{c.archive}</button>}
               {selected.length > 0 && <>
                 <button type="button" disabled={locked} onClick={() => void bulk('active')}>{pc.publishSelected}</button>
                 <button type="button" disabled={locked} onClick={() => void bulk('draft')}>{pc.unpublish}</button>
@@ -171,25 +184,34 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
 
             </div>
           </div>}
-          {rows.length ? <table data-testid="products-table" aria-label={c.title} className="cat-products-table"><thead className="cat-sr-only"><tr>
-            {canWrite && <th scope="col" aria-label={pc.select} />}<th scope="col" aria-label={legacy.product} /><th scope="col" aria-label={legacy.status} />
-            <th scope="col" aria-label={`${legacy.price} · ${legacy.stock}`} />{canWrite && <th scope="col" aria-label={c.edit} />}
+          {rows.length ? <table data-testid="products-table" aria-label={c.title} className="cat-products-table"><thead><tr>
+            {canWrite && <th scope="col">{pc.select}</th>}<th scope="col">{entry.product}</th><th scope="col">{legacy.price}</th>
+            <th scope="col">{legacy.status}</th><th scope="col">{entry.stock}</th>{canWrite && <th scope="col" aria-label={c.edit} />}
           </tr></thead><tbody>{rows.map(row => <tr data-testid={`product-row-${row.id}`} key={row.id}>
             {canWrite && <td className="pe-selection-cell"><label className="pe-select"><input type="checkbox" aria-label={`${pc.select}: ${row.name}`} checked={selected.includes(row.id)} disabled={locked}
               onChange={() => setSelected(now => now.includes(row.id) ? now.filter(id => id !== row.id) : [...now, row.id].slice(0, 100))} /></label></td>}
             <td className="pe-product-cell"><div className="product-cell">
               <ProductPhoto code="" name={row.name} demo={false} imageSrc={row.cover_image_id ? imageURL(sid, row.id, row.cover_image_id) : undefined} />
-              <span className="pe-product-identity"><strong>{row.name}</strong></span></div></td>
-            <td className="pe-status-cell"><span className="product-status">{c[row.status]}</span></td>
-            <td className="pe-price-cell pe-stock-cell"><span>{price(row)} · {stock(row)}</span></td>
+              <span className="pe-product-identity"><strong>{row.name}</strong>{row.sku_count > 0 && <small>{legacy.variants(row.sku_count)}</small>}</span></div></td>
+            <td className="pe-price-cell"><span>{price(row)}</span></td>
+            <td className="pe-status-cell"><span className={`product-status${row.status === "active" ? " cat-status-active" : ""}`}>{c[row.status]}</span></td>
+            <td className="pe-stock-cell">{stock(row)}</td>
             {canWrite && <td className="pe-actions-cell"><div className="pe-row-actions"><Link href={editHref(locale, sid, row.id)}>{c.edit}</Link></div></td>}
           </tr>)}</tbody></table> : <p role="status">{status === 'archived' ? c.empty : q || status !== 'all' ? legacy.emptySearch : legacy.empty}</p>}
-          {(after || page.next_cursor) && <footer className="orders-pager">
-            <button type="button" data-testid="products-previous" disabled={locked || (!after && !previous.current.length)} onClick={() => go(status, q, previous.current.pop() ?? '')}>{legacy.previous}</button>
-            <button type="button" data-testid="products-next" disabled={locked || !page.next_cursor} onClick={() => { previous.current.push(after); go(status, q, page.next_cursor); }}>{legacy.next}</button>
+          {(rows.length > 0 || after || page.next_cursor) && <footer className="cat-list-footer">
+            <span>{catalogText(entry.total, { n: status === "all" ? page.total : page.status_counts[status as ProductStatus] })}</span>
+            {(after || page.next_cursor) && <div className="orders-pager">
+              <button type="button" data-testid="products-previous" disabled={locked || (!after && !previous.current.length)} onClick={() => go(status, q, previous.current.pop() ?? '')}>{legacy.previous}</button>
+              <button type="button" data-testid="products-next" disabled={locked || !page.next_cursor} onClick={() => { previous.current.push(after); go(status, q, page.next_cursor); }}>{legacy.next}</button>
+            </div>}
           </footer>}
         </>}
-      </>}
+      </section>}
+      {canImport && importOpen && <ProductImport key={sid} locale={locale} stores={[]} store={store} embedded={{
+        onClose: () => { setImportOpen(false); importButton.current?.focus(); },
+        onLockChange: setImportLocked,
+        onImported: () => { void read.refresh(); },
+      }} />}
     </div>
   </WorkspaceFrame>;
 }

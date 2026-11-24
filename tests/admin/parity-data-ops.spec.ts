@@ -40,6 +40,61 @@ async function prepare(page: Page) {
   expect(response.body.committed).toBe(true);
 }
 
+// Two signed-state witnesses use real CSV, image upload and publishing against the isolated store.
+async function prepareCatalogFrames(page: Page, prefix: string) {
+  const csrf = (await page.context().cookies()).find(c => c.name === "__Host-commerce_csrf" || c.name === "commerce_csrf")?.value;
+  expect(csrf).toBeTruthy();
+  return page.evaluate(async ({ store, csrf, prefix }) => {
+    const base = `/api/stores/${store}`;
+    async function json(path: string, init?: RequestInit) {
+      const response = await fetch(base + path, init);
+      if (!response.ok) throw new Error(`Visual fixture ${path} returned HTTP ${response.status}`);
+      return response.json();
+    }
+    const { items: warehouses } = await json("/warehouses");
+    const header = `handle,title,option1_name,option1_value,sku,price,stock:${warehouses[0].name}\n`;
+    const ids: string[] = [];
+    for (const { key, rows, fill } of [
+      { key: "shirt", rows: [["黑色棉T", "黑色 M", "490", "5"]], fill: "#303339" },
+      { key: "tote", rows: [["日常帆布提袋", "原色", "680", "8"], ["日常帆布提袋", "橄欖綠", "680", "4"]], fill: "#bf9c6f" },
+    ]) {
+      const handle = `${prefix}-${key}`;
+      const body = header + rows.map(([name, variant, price, stock], i) =>
+        `${handle},${name},款式,${variant},${handle}-${i},${price},${stock}\n`).join("");
+      const imported = await json("/tools/products/import/commit", { method: "POST", headers: { "X-CSRF-Token": csrf, "Content-Type": "text/csv" }, body });
+      if (!imported.committed) throw new Error(`Visual fixture ${key} was not committed`);
+      const { items } = await json(`/catalog-products?q=${handle}`);
+      if (items.length !== 1) throw new Error(`Visual fixture ${key} has no unique product`);
+      ids.push(items[0].id);
+      const canvas = document.createElement("canvas");
+      canvas.width = canvas.height = 128;
+      const ctx = canvas.getContext("2d")!;
+      ctx.fillStyle = "#ebe5dc";
+      ctx.fillRect(0, 0, 128, 128);
+      ctx.fillStyle = fill;
+      if (key === "shirt") {
+        ctx.beginPath();
+        for (const [x, y] of [[42, 30], [53, 26], [75, 26], [86, 30], [106, 49], [91, 66], [83, 59], [83, 106], [45, 106], [45, 59], [37, 66], [22, 49]]) ctx.lineTo(x, y);
+        ctx.fill();
+      } else {
+        ctx.fillRect(30, 48, 68, 57);
+        ctx.strokeStyle = fill;
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.ellipse(64, 50, 16, 25, 0, Math.PI, 2 * Math.PI);
+        ctx.stroke();
+      }
+      const image = await new Promise<Blob>((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("PNG encoding failed"))));
+      const form = new FormData();
+      form.append("file", image, `${key}.png`);
+      await json(`/products/${items[0].id}/images`, { method: "POST", headers: { "X-CSRF-Token": csrf, "Idempotency-Key": crypto.randomUUID() }, body: form });
+    }
+    await json("/products/bulk-status", { method: "POST", headers: { "X-CSRF-Token": csrf, "Idempotency-Key": crypto.randomUUID(), "Content-Type": "application/json" }, body: JSON.stringify({ ids, status: "active" }) });
+    const { total } = await json("/catalog-products");
+    return total === ids.length;
+  }, { store, csrf: csrf!, prefix });
+}
+
 // FIXTURE PREPARATION ONLY: set A12's target on-hand per named warehouse through the real BFF CSV import (same transport as prepare).
 // Seeds a deterministic active decoy containing C08 (parity-c08-decoy) as a regression witness: if the empty-result check below
 // ever reverts to the broad query "q=C08", this active decoy immediately violates the retained empty assertion.
@@ -95,8 +150,6 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         await page.getByTestId("nav-products").click();
         await expect(page.getByTestId("products-table")).toBeVisible();
       });
-      await capture(page, frame("1826:109927", "1826:110045"));
-
       const search = page.getByRole("searchbox", { name: "搜尋商品名稱或 SKU", exact: true });
       const paging = `${process.env.LC_BROWSER_TAG!} paging`;
       const submitSearch = async (query: string) => {
@@ -142,7 +195,9 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
       });
       await action(page, "商品 CSV", "click", "same-store importer opens", async () => {
         await page.getByTestId("products-import-link").click();
-        await heading(page, "商品匯入與匯出");
+        await heading(page, "CSV 匯入預覽");
+        await expect(page.getByTestId("products-page").getByTestId("import-page")).toBeVisible();
+        expect(new URL(page.url()).pathname).toBe("/zh-TW/products");
         expect(new URL(page.url()).searchParams.get("store")).toBe(store);
       });
       const upload = (secondPrice: string) => page.getByTestId("import-file").setInputFiles({
@@ -157,9 +212,8 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         await expect(page.getByTestId("import-commit")).toHaveCount(0);
         expect(await lookup(handle)).toEqual([]);
         expect(writes).toEqual(["preview"]);
-        await capture(page, `r07-invalid-${viewport.width}`);
       });
-      await click(page, "重新上傳並預覽", "returns to file selection", () => heading(page, "商品匯入與匯出"));
+      await click(page, "重新上傳並預覽", "returns to file selection", () => expect(page.getByTestId("import-file")).toBeVisible());
       await upload("120");
       await click(page, "預覽檔案", "corrected file is clean and preview still writes zero", async () => {
         await heading(page, "預覽商品匯入");
@@ -171,7 +225,7 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         expect(writes).toEqual(["preview", "preview", "commit"]);
       });
       await action(page, "查看商品", "click", "same store reads each imported row exactly once after reload", async () => {
-        await page.getByRole("link", { name: "查看商品", exact: true }).click();
+        await page.getByRole("button", { name: "查看商品", exact: true }).click();
         await expect(page.getByTestId("products-page")).toBeVisible();
         expect(new URL(page.url()).searchParams.get("store")).toBe(store);
         await submitSearch(handle);
@@ -180,6 +234,67 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         await expect(page.getByText(name, { exact: true })).toBeVisible();
         await expect(page.getByText(`${name}-B`, { exact: true })).toBeVisible();
         expect(writes).toEqual(["preview", "preview", "commit"]);
+      });
+    });
+    test(`R07 visual ${viewport.width}: two listed products and inline CSV error`, async ({ page }) => {
+      await page.setViewportSize(viewport); await login(page);
+      const prefix = `r07-visual-${viewport.width}`;
+      const onlySamples = await prepareCatalogFrames(page, prefix);
+      await page.goto(root("zh-TW", "products") + (onlySamples ? "" : `&q=${prefix}`));
+      const table = page.getByTestId("products-table");
+      const productRows = table.locator("tbody tr");
+      const tote = productRows.filter({ hasText: "日常帆布提袋" });
+      const shirt = productRows.filter({ hasText: "黑色棉T" });
+      await expect(productRows).toHaveCount(2);
+      for (const row of [tote, shirt]) {
+        await expect(row).toContainText("在售");
+        const cover = row.locator('[data-photo="real"]');
+        await expect(cover).toBeVisible();
+        expect(await cover.evaluate(async el => {
+          const url = /url\("?([^")]+)"?\)/.exec(getComputedStyle(el).backgroundImage)?.[1];
+          if (!url) return false;
+          const image = new Image();
+          image.src = url;
+          await image.decode();
+          return image.naturalWidth > 0;
+        })).toBe(true);
+      }
+      await capture(page, frame("1826:109927", "1826:110045"));
+      await expect(tote).toContainText("2 個規格");
+      await expect(tote.locator(".pe-price-cell")).toContainText("680");
+      await expect(tote.locator(".pe-stock-cell")).toContainText("12");
+      await expect(shirt.locator(".pe-stock-cell")).toContainText("5");
+      if (mobile) {
+        const product = (await tote.locator(".pe-product-cell").boundingBox())!;
+        const price = (await tote.locator(".pe-price-cell").boundingBox())!;
+        const status = (await tote.locator(".pe-status-cell").boundingBox())!;
+        const stock = (await tote.locator(".pe-stock-cell").boundingBox())!;
+        const edit = (await tote.getByRole("link", { name: "編輯", exact: true }).boundingBox())!;
+        expect(price.x).toBeGreaterThan(product.x);
+        expect(status.y + 1).toBeGreaterThanOrEqual(product.y + product.height);
+        expect(edit.y + 1).toBeGreaterThanOrEqual(stock.y + stock.height);
+        expect(edit.height).toBeGreaterThanOrEqual(44);
+        expect(edit.width).toBeGreaterThan(product.width);
+      } else {
+        await expect(table.getByRole("columnheader", { name: "商品與規格" })).toBeVisible();
+        await expect(table.getByRole("columnheader", { name: "庫存摘要" })).toBeVisible();
+      }
+      await page.getByTestId("products-import-link").click();
+      await heading(page, "CSV 匯入預覽");
+      await page.getByTestId("import-file").setInputFiles({
+        name: "商品清單.csv", mimeType: "text/csv",
+        buffer: Buffer.from(`handle,title,sku,price\n${prefix}-error,合成樣品,${prefix}-duplicate,680\n${prefix}-other,合成樣品二,${prefix}-duplicate,490\n`),
+      });
+      await click(page, "預覽檔案", "duplicate SKU is shown beneath the directory", async () => {
+        await heading(page, "修正商品匯入資料");
+        await expect(page.getByTestId("import-errors")).toContainText("第 2 筆資料 · sku");
+        await expect(page.getByTestId("import-commit")).toHaveCount(0);
+        await expect(productRows).toHaveCount(2);
+        expect(await page.getByTestId("import-page").evaluate(panel => Boolean(panel.closest('[data-testid="products-page"]')))).toBe(true);
+        await page.getByText("本批次未寫入", { exact: true }).scrollIntoViewIfNeeded();
+        await capture(page, `r07-visual-csv-error-${viewport.width}`);
+        await page.getByRole("heading", { name: "商品目錄", exact: true }).scrollIntoViewIfNeeded();
+        await capture(page, `r07-visual-combined-${viewport.width}`);
       });
     });
     for (const locale of ["zh-TW", "zh-CN", "en"] as const) {

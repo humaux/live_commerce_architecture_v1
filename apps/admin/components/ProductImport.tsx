@@ -32,10 +32,12 @@ export function ProductImport({
   locale,
   stores,
   store,
+  embedded,
 }: {
   locale: Locale;
   stores: Store[];
   store: Store | null;
+  embedded?: { onClose: () => void; onLockChange: (locked: boolean) => void; onImported: () => void };
 }) {
   const c = toolsCopy[locale].importer;
   const d = dataOpsCopy(locale);
@@ -51,6 +53,9 @@ export function ProductImport({
   const [exporting, setExporting] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const sending = useRef(false);
+  const panel = useRef<HTMLElement>(null);
+  const inline = !!embedded;
+  useEffect(() => { if (inline) panel.current?.focus(); }, [inline]);
   useEffect(() => {
     let live = true;
     sessionBoundary().then(
@@ -71,19 +76,27 @@ export function ProductImport({
   async function run(mode: "preview" | "commit") {
     if (!store || !canImport || !file || !boundary || sending.current) return;
     sending.current = true;
+    if (mode === "commit") embedded?.onLockChange(true);
     setProblem("");
     setPhase(mode === "preview" ? "checking" : "committing");
     const outcome = await sendImport(store.id, mode, file, boundary);
     sending.current = false;
     if (!outcome.ok) {
       if (mode === "commit" && outcome.uncertain) { setUnknown(true); setProblem(d.pendingHelp); }
-      else setProblem(errorFor(outcome.code));
+      else {
+        setProblem(errorFor(outcome.code));
+        if (mode === "commit" && !unknown) embedded?.onLockChange(false);
+      }
       setPhase(mode === "preview" ? "idle" : "checked");
       return;
     }
     setUnknown(false);
     setResult(outcome.value);
     setPhase(mode === "commit" && outcome.value.committed ? "done" : "checked");
+    if (mode === "commit") {
+      embedded?.onLockChange(false);
+      if (outcome.value.committed) embedded?.onImported();
+    }
   }
   function pick(next: File | null) {
     setResult(null);
@@ -147,17 +160,25 @@ export function ProductImport({
   const storeQuery = store ? `?store=${encodeURIComponent(store.id)}` : "";
   const errors = !!result?.errors.length;
   const title = phase === "done" ? d.productResult : errors ? d.productErrors : phase === "checked" ? d.previewProduct : d.productTitle;
+  const inlineTitle = { en: "CSV import preview", "zh-CN": "CSV 导入预览", "zh-TW": "CSV 匯入預覽" }[locale];
   const reset = () => { setPhase("idle"); setFile(null); setResult(null); setProblem(""); };
-  return <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="products">
-    <div className="data-ops" data-testid="import-page">
-      <header><h1>{title}</h1>{phase === "idle" && canExport && <button data-testid="import-export" disabled={exporting} onClick={() => void download()}>{exporting ? c.exporting : d.exportProduct}</button>}</header>
-      {store && phase !== "done" && phase !== "committing" && !unknown && <a className="ops-link" href={`/${locale}/products${storeQuery}`}>{d.viewProducts}</a>}
-      {stores.length > 1 && <label>{c.store}<select data-testid="store-selector" value={store?.id ?? ""} onChange={event => window.location.assign(`/${locale}/products/import?store=${encodeURIComponent(event.target.value)}`)}>{stores.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
+  const StepHeading = inline ? "h3" : "h2";
+  const content = <section ref={panel} className={`data-ops${inline ? " cat-import-panel" : ""}`} data-testid="import-page"
+    id={inline ? "products-csv-preview" : undefined} tabIndex={inline ? -1 : undefined} aria-labelledby="product-import-title">
+      <header>{inline ? <h2 id="product-import-title">{inlineTitle}</h2> : <h1 id="product-import-title">{title}</h1>}
+        {phase === "idle" && canExport && <button data-testid="import-export" disabled={exporting} onClick={() => void download()}>{exporting ? c.exporting : d.exportProduct}</button>}
+        {embedded && phase !== "done" && phase !== "committing" && !unknown &&
+          <button type="button" className="ops-link" disabled={phase === "checking"} onClick={embedded.onClose}>{d.viewProducts}</button>}
+      </header>
+      {inline && (phase === "checked" || phase === "done") && <><StepHeading aria-live="polite">{title}</StepHeading><p>{file?.name}</p></>}
+      {!inline && store && phase !== "done" && phase !== "committing" && !unknown &&
+        <a className="ops-link" href={`/${locale}/products${storeQuery}`}>{d.viewProducts}</a>}
+      {!inline && stores.length > 1 && <label>{c.store}<select data-testid="store-selector" value={store?.id ?? ""} onChange={event => window.location.assign(`/${locale}/products/import?store=${encodeURIComponent(event.target.value)}`)}>{stores.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
       {!store && <p role="status">{c.noStore}</p>}
       {store && !canImport && <p role="status">{c.forbidden}</p>}
       {store && canImport && <>
         {(phase === "idle" || phase === "checking") && <section className="ops-card">
-          <h2>{d.productUpload}</h2><p className="ops-callout">{d.productLimits}</p>
+          <StepHeading>{d.productUpload}</StepHeading><p className="ops-callout">{d.productLimits}</p>
           <label className="ops-file">{d.productFile}<input ref={input} type="file" accept=".csv,text/csv" data-testid="import-file" disabled={phase === "checking"} onChange={event => pick(event.target.files?.[0] ?? null)} /></label>
           {file && <p>{file.name}</p>}<p>{d.productRule}</p><p>{d.productStock}</p>
           <button className="primary" data-testid="import-preview" disabled={!!previewReason} onClick={() => void run("preview")}>{phase === "checking" ? c.previewing : d.previewFile}</button>
@@ -167,12 +188,12 @@ export function ProductImport({
           {errors ? <>
             <p>{dataOpsText(d.productInvalidRows, { n: new Set(result.errors.map(error => error.row)).size })}</p><p className="ops-warning">{d.noBatch}</p><p>{d.repairCSV}</p>
             <div data-testid="import-errors">{result.errors.map((error, index) => <section className="ops-row" key={index}>
-              <h2>{dataOpsText(d.row, { n: error.row, field: error.column === "price" ? d.priceField : error.column === "collections" ? d.collectionField : error.column })}</h2>
+              <StepHeading>{dataOpsText(d.row, { n: error.row, field: error.column === "price" ? d.priceField : error.column === "collections" ? d.collectionField : error.column })}</StepHeading>
               <p>{error.code === "required" && error.column === "price" ? d.missingPrice : error.code === "unknown_collection" ? d.missingCollection : c.codes[error.code]}</p>
               {error.column === "price" && <p className="ops-note">{d.priceRepair}</p>}{error.code === "unknown_collection" && <p className="ops-note">{d.collectionRepair}</p>}
             </section>)}</div>
             {result.errors_truncated && <p>{c.truncated}</p>}
-            <button onClick={reset}>{d.reupload}</button>
+            <button className={inline ? "primary" : undefined} onClick={reset}>{d.reupload}</button>
           </> : <>
             <p>{dataOpsText(d.productRows, { file: file?.name ?? "", n: result.rows })}</p><p>{d.productPreviewRule}</p>
             <dl className="ops-stats"><div><dt>{d.newProducts}</dt><dd>{result.created_products}</dd></div><div><dt>{d.updatedProducts}</dt><dd>{result.updated_products}</dd></div><div><dt>{d.stockAdjustments}</dt><dd>{result.stock_adjustments}</dd></div></dl>
@@ -180,14 +201,16 @@ export function ProductImport({
           </>}
         </section>}
         {phase === "done" && result && <section className="ops-card" data-testid="import-result">
-          <h2>{d.importDone}</h2><dl className="ops-stats"><div><dt>{d.newProducts}</dt><dd>{result.created_products}</dd></div><div><dt>{d.updatedProducts}</dt><dd>{result.updated_products}</dd></div><div><dt>{d.stockAdjustments}</dt><dd>{result.stock_adjustments}</dd></div></dl>
+          <StepHeading>{d.importDone}</StepHeading><dl className="ops-stats"><div><dt>{d.newProducts}</dt><dd>{result.created_products}</dd></div><div><dt>{d.updatedProducts}</dt><dd>{result.updated_products}</dd></div><div><dt>{d.stockAdjustments}</dt><dd>{result.stock_adjustments}</dd></div></dl>
           <p>{dataOpsText(d.productTotals, { n: result.rows, failed: result.errors.length, same: result.unchanged_rows })}</p>
           {result.replayed && <p>{c.replayed}</p>}
-          <div className="ops-actions"><button onClick={reset}>{d.importHome}</button><a className="ops-link" href={`/${locale}/products${storeQuery}`}>{d.viewProducts}</a></div>
+          <div className="ops-actions"><button onClick={reset}>{d.importHome}</button>{embedded
+            ? <button type="button" className="ops-link" onClick={embedded.onClose}>{d.viewProducts}</button>
+            : <a className="ops-link" href={`/${locale}/products${storeQuery}`}>{d.viewProducts}</a>}</div>
         </section>}
-        <a className="ops-link" href={`/${locale}/customers/import${storeQuery}`}>{d.customerImport}</a>
+        {!inline && <a className="ops-link" href={`/${locale}/customers/import${storeQuery}`}>{d.customerImport}</a>}
       </>}
       {problem && <p role="alert">{problem}</p>}
-    </div>
-  </WorkspaceFrame>;
+    </section>;
+  return inline ? content : <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="products">{content}</WorkspaceFrame>;
 }
