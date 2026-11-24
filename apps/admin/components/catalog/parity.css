@@ -9,6 +9,13 @@
 .cat-select-all { display:flex; gap:20px; align-items:center; min-height:44px; cursor:pointer; }
 .cat-select-all input { width:20px; height:20px; margin:0; accent-color:var(--ui-primary); }
 .cat-task-list .cat-products-table { border:1px solid var(--ui-border); }
+.cat-search { display:flex; gap:8px; margin-bottom:16px; max-width:520px; }
+.cat-search input { flex:1; min-width:0; }
+.cat-search :is(input,button), .cat-import-link {
+  min-height:44px; padding:0 12px; border:1px solid var(--ui-border); border-radius:5px;
+  background:var(--ui-surface); color:var(--ui-text); font:inherit;
+}
+.cat-import-link { display:inline-flex; align-items:center; text-decoration:none; }
 .cat-products-table .pe-product-identity { display:grid; gap:6px; }
 .cat-products-table .cat-row-price { font-weight:600; font-variant-numeric:tabular-nums; }
 .cat-products-table .cat-row-state { color:var(--ui-muted); font-size:13px; }
@@ -35,6 +42,7 @@
   .cat-task-list .cat-save-bar { left:0; }
   .cat-products-table tr { grid-template-columns:44px minmax(0,1fr) auto; padding:12px 0; }
   .cat-products-table .pe-product-cell { grid-column:2; grid-row:1; }
+  .cat-products-table tr:not(:has(.pe-selection-cell)) > td { grid-column:1 / -1; }
   .cat-products-table .pe-actions-cell { grid-column:3; grid-row:1; }
   .cat-task-editor { padding:0; max-height:calc(100dvh - 140px); }
   .cat-save-bar { margin-left:-16px; margin-right:-16px; }

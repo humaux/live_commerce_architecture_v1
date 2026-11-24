@@ -85,6 +85,102 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
   for (const mobile of [false, true]) {
     const viewport = mobile ? { width: 390, height: 844 } : { width: 1440, height: 900 };
     const frame = (desktop: string, phone: string) => mobile ? phone : desktop;
+    test(`R07 catalog ${viewport.width}: sidebar, paged search and corrected CSV`, async ({ page }) => {
+      await page.setViewportSize(viewport); await login(page);
+      await page.goto(root("zh-TW", ""));
+      const group = page.getByTestId("nav-group-catalog");
+      if (mobile) await page.getByRole("button", { name: "開啟導覽", exact: true }).click();
+      if (!(await page.getByTestId("nav-products").isVisible())) await group.click();
+      await action(page, "商品側欄", "click", "signed store catalog opens", async () => {
+        await page.getByTestId("nav-products").click();
+        await expect(page.getByTestId("products-table")).toBeVisible();
+      });
+      await capture(page, frame("1826:109927", "1826:110045"));
+
+      const search = page.getByRole("searchbox", { name: "搜尋名稱、網址識別或 SKU 編碼" });
+      const paging = `${process.env.LC_BROWSER_TAG!} paging`;
+      const submitSearch = async (query: string) => {
+        await expect(search).toBeVisible();
+        await search.fill(query);
+        await search.press("Enter");
+        await expect.poll(() => new URL(page.url()).searchParams.get("q")).toBe(query);
+      };
+      await action(page, "商品搜尋", "fill and submit", "store and query-scoped rows", async () => {
+        await submitSearch(paging);
+        await expect(page.getByTestId("products-table").locator("tbody tr")).toHaveCount(25);
+        await expect(page.getByTestId("products-table").locator("tbody tr").first()).toContainText(paging);
+      });
+      await action(page, "下一頁", "click", "rows change while query and store stay fixed", async () => {
+        const table = page.getByTestId("products-table");
+        const first = await table.locator("tbody tr").first().innerText();
+        await page.getByTestId("products-next").click();
+        await expect(table.locator("tbody tr").first()).not.toHaveText(first);
+        await expect(table.locator("tbody tr").first()).toContainText(paging);
+        await expect(search).toHaveValue(paging);
+        const params = new URL(page.url()).searchParams;
+        expect(params.get("store")).toBe(store);
+        expect(params.get("q")).toBe(paging);
+        expect(params.get("after")).toBeTruthy();
+      });
+      await action(page, "分頁返回", "click", "query survives returning to page one", async () => {
+        await page.getByTestId("products-previous").click();
+        await expect.poll(() => new URL(page.url()).searchParams.has("after")).toBe(false);
+        await expect(search).toHaveValue(paging);
+      });
+      const name = `R07 CSV ${viewport.width} ${process.env.LC_BROWSER_TAG!}`;
+      const handle = `r07-${viewport.width}-${process.env.LC_BROWSER_TAG!}`;
+      const lookup = async (q: string) => page.evaluate(async ({ store, q }) => {
+        const response = await fetch(`/api/stores/${store}/catalog-products?${new URLSearchParams({ q })}`);
+        if (!response.ok) throw new Error(`Catalog readback HTTP ${response.status}`);
+        return (await response.json()).items.map((row: { name: string }) => row.name);
+      }, { store, q });
+      const writes: string[] = [];
+      page.on("request", request => {
+        if (request.method() === "POST" && request.url().includes(`/api/stores/${store}/tools/products/import/`)) {
+          writes.push(new URL(request.url()).pathname.split("/").at(-1)!);
+        }
+      });
+      await action(page, "商品 CSV", "click", "same-store importer opens", async () => {
+        await page.getByTestId("products-import-link").click();
+        await heading(page, "商品匯入與匯出");
+        expect(new URL(page.url()).searchParams.get("store")).toBe(store);
+      });
+      const upload = (secondPrice: string) => page.getByTestId("import-file").setInputFiles({
+        name: "r07-products.csv", mimeType: "text/csv",
+        buffer: Buffer.from(`handle,title,sku,price\n${handle},${name},${handle}-a,100\n${handle}-b,${name}-B,${handle}-b,${secondPrice}\n`),
+      });
+      await upload("");
+      await click(page, "預覽檔案", "row 3 error blocks the entire batch", async () => {
+        await heading(page, "修正商品匯入資料");
+        await expect(page.getByTestId("import-errors")).toContainText("3");
+        await expect(page.getByText("本批次未寫入", { exact: true })).toBeVisible();
+        await expect(page.getByTestId("import-commit")).toHaveCount(0);
+        expect(await lookup(handle)).toEqual([]);
+        expect(writes).toEqual(["preview"]);
+      });
+      await click(page, "重新上傳並預覽", "returns to file selection", () => heading(page, "商品匯入與匯出"));
+      await upload("120");
+      await click(page, "預覽檔案", "corrected file is clean and preview still writes zero", async () => {
+        await heading(page, "預覽商品匯入");
+        expect(await lookup(handle)).toEqual([]);
+      });
+      await action(page, "匯入", "click", "one commit returns both rows", async () => {
+        await page.getByTestId("import-commit").click();
+        await heading(page, "匯入結果");
+        expect(writes).toEqual(["preview", "preview", "commit"]);
+      });
+      await action(page, "查看商品", "click", "same store reads each imported row exactly once after reload", async () => {
+        await page.getByRole("link", { name: "查看商品", exact: true }).click();
+        await expect(page.getByTestId("products-page")).toBeVisible();
+        expect(new URL(page.url()).searchParams.get("store")).toBe(store);
+        await submitSearch(handle);
+        await page.reload();
+        await expect(page.getByTestId("products-table").locator("tbody tr")).toHaveCount(2);
+        await expect(page.getByText(name, { exact: true })).toBeVisible();
+        await expect(page.getByText(`${name}-B`, { exact: true })).toBeVisible();
+        expect(writes).toEqual(["preview", "preview", "commit"]);
+      });
+    });
     for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
       const c = signed[locale];
       for (const module of ["product", "inventory", "collections"] as const) test(`${module} ${locale} ${viewport.width}: signed entry and no legacy layout`, async ({ page }) => {

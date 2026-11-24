@@ -39,6 +39,9 @@ export function ProductImport({
 }) {
   const c = toolsCopy[locale].importer;
   const d = dataOpsCopy(locale);
+  const permissions = store?.permissions;
+  const canExport = permissions?.includes("catalog:read") && permissions.includes("inventory:read");
+  const canImport = permissions?.includes("catalog:write") && permissions.includes("inventory:write");
   const [boundary, setBoundary] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
@@ -47,6 +50,7 @@ export function ProductImport({
   const [unknown, setUnknown] = useState(false);
   const [exporting, setExporting] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const sending = useRef(false);
   useEffect(() => {
     let live = true;
     sessionBoundary().then(
@@ -65,10 +69,12 @@ export function ProductImport({
         ? c.forbidden
         : c.failed;
   async function run(mode: "preview" | "commit") {
-    if (!store || !file || !boundary) return;
+    if (!store || !canImport || !file || !boundary || sending.current) return;
+    sending.current = true;
     setProblem("");
     setPhase(mode === "preview" ? "checking" : "committing");
     const outcome = await sendImport(store.id, mode, file, boundary);
+    sending.current = false;
     if (!outcome.ok) {
       if (mode === "commit" && outcome.uncertain) { setUnknown(true); setProblem(d.pendingHelp); }
       else setProblem(errorFor(outcome.code));
@@ -100,7 +106,7 @@ export function ProductImport({
     setFile(next);
   }
   async function download() {
-    if (!store) return;
+    if (!store || !canExport) return;
     setExporting(true);
     setProblem("");
     const out = await fetchExport(store.id);
@@ -141,13 +147,15 @@ export function ProductImport({
   const storeQuery = store ? `?store=${encodeURIComponent(store.id)}` : "";
   const errors = !!result?.errors.length;
   const title = phase === "done" ? d.productResult : errors ? d.productErrors : phase === "checked" ? d.previewProduct : d.productTitle;
-  const reset = () => { setPhase("idle"); setResult(null); setProblem(""); };
+  const reset = () => { setPhase("idle"); setFile(null); setResult(null); setProblem(""); };
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? c.noStore} active="products">
     <div className="data-ops" data-testid="import-page">
-      <header><h1>{title}</h1>{phase === "idle" && <button data-testid="import-export" disabled={!store || exporting} onClick={() => void download()}>{exporting ? c.exporting : d.exportProduct}</button>}</header>
+      <header><h1>{title}</h1>{phase === "idle" && canExport && <button data-testid="import-export" disabled={exporting} onClick={() => void download()}>{exporting ? c.exporting : d.exportProduct}</button>}</header>
+      {store && phase !== "done" && phase !== "committing" && !unknown && <a className="ops-link" href={`/${locale}/products${storeQuery}`}>{d.viewProducts}</a>}
       {stores.length > 1 && <label>{c.store}<select data-testid="store-selector" value={store?.id ?? ""} onChange={event => window.location.assign(`/${locale}/products/import?store=${encodeURIComponent(event.target.value)}`)}>{stores.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
       {!store && <p role="status">{c.noStore}</p>}
-      {store && <>
+      {store && !canImport && <p role="status">{c.forbidden}</p>}
+      {store && canImport && <>
         {(phase === "idle" || phase === "checking") && <section className="ops-card">
           <h2>{d.productUpload}</h2><p className="ops-callout">{d.productLimits}</p>
           <label className="ops-file">{d.productFile}<input ref={input} type="file" accept=".csv,text/csv" data-testid="import-file" disabled={phase === "checking"} onChange={event => pick(event.target.files?.[0] ?? null)} /></label>

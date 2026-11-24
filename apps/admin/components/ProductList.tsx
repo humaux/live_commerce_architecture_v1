@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { catalogTaskCopy, catalogText, type Locale } from "@live-commerce/i18n";
+import { dataOpsCopy } from "../../../packages/i18n/src/data-ops";
 import { TabStrip } from "@live-commerce/ui";
 import type { Store } from "@/lib/model";
 import { money } from "@/lib/client";
@@ -44,6 +45,8 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
 }) {
   const c = catalogTaskCopy[locale], pc = productEditorCopy[locale], legacy = catalogCopy[locale].list;
   const router = useRouter(), sid = store?.id ?? '';
+  const canWrite = store?.permissions?.includes("catalog:write") ?? false;
+  const canImport = canWrite && store?.permissions?.includes("inventory:write");
   const [selected, setSelected] = useState<string[]>([]);
   const [review, setReview] = useState<ProductSummary[] | null>(null), [results, setResults] = useState<BulkResult[]>([]);
   const [resultRows, setResultRows] = useState<ProductSummary[]>([]);
@@ -74,14 +77,14 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
   const stock = (r: ProductSummary) => !r.inventory_tracked ? pc.mixedTracking :
     r.available <= 0 ? c.soldOut : catalogText(c.available, { n: r.available });
   async function bulk(target: ProductStatus, items = rows.filter(r => selected.includes(r.id))) {
-    if (read.status !== 'ready' || locked || !items.length) return;
+    if (!canWrite || read.status !== 'ready' || locked || !items.length) return;
     if (target === 'active' && items.some(r => !r.cover_image_id)) { write.fail(pc.imageRequired); return; }
     await write.run(command('POST', 'products/bulk-status', { ids: items.map(r => r.id), status: target }), parseBulk,
       async value => { setResultRows(items); setResults(value); setSelected([]); setReview(null); await read.refresh(); }, pc.success);
   }
   async function copySelected() {
     const row = copyReview;
-    if (read.status !== 'ready' || locked || !row) return;
+    if (!canWrite || read.status !== 'ready' || locked || !row) return;
     // The returned identity/name belongs to the acknowledged new draft; never guess its id from list order.
     await write.run(command('POST', `products/${row.id}/copy`, { expected_version: row.version }), value => {
       const created = parseCreated(value);
@@ -93,13 +96,16 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
   const archiveResult = results.length > 0 && results.every(r => r.status === 'archived' || !!r.error);
   return <WorkspaceFrame locale={locale} storeName={store?.name ?? legacy.noStore} active="products" locked={locked}>
     <div className="orders-page product-admin pe-catalog cat-task-list" data-testid="products-page">
-      {!copyReview && !copied && <AdminPageHeader locale={locale} title={c.title} actions={store && (!selected.length || locked) && <Link className="product-primary" data-testid="product-new" href={`/${locale}/products/new?store=${sid}`}>{legacy.newProduct}</Link>} />}
+      {!copyReview && !copied && <AdminPageHeader locale={locale} title={c.title} actions={store && !selected.length && !locked && <>
+        {canImport && <Link className="cat-import-link" data-testid="products-import-link" href={`/${locale}/products/import?store=${sid}`}>{dataOpsCopy(locale).productTitle}</Link>}
+        {canWrite && <Link className="product-primary" data-testid="product-new" href={`/${locale}/products/new?store=${sid}`}>{legacy.newProduct}</Link>}
+      </>} />}
       {write.message && write.message.kind !== 'success' && <div role="status"><p>{write.message.text}</p>
         {write.canRetry && <button type="button" disabled={write.busy} onClick={() => void write.retry()}>{pc.retry}</button>}
       </div>}
       {!copyReview && !copied && <details className="cat-operations"><summary data-testid="products-operations" aria-label={c.operations}><span aria-hidden="true">{c.operations}</span></summary>
-        <button type="button" data-testid="products-copy-entry" disabled={read.status !== 'ready' || locked || selected.length !== 1}
-          onClick={() => { const row = rows.find(r => selected.includes(r.id)); if (row) { setCopied(null); setReview(null); setResults([]); setCopyReview(row); } }}>{c.copyEntry}</button>
+        {canWrite && <button type="button" data-testid="products-copy-entry" disabled={read.status !== 'ready' || locked || selected.length !== 1}
+          onClick={() => { const row = rows.find(r => selected.includes(r.id)); if (row) { setCopied(null); setReview(null); setResults([]); setCopyReview(row); } }}>{c.copyEntry}</button>}
         <Link data-testid="products-ledger-link" href={`/${locale}/inventory?store=${sid}`}>{legacy.inventory}</Link>
       </details>}
       {read.status === 'ready' && copyReview ? <section className="cat-task-panel" data-testid="product-copy-review">
@@ -125,6 +131,17 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
         <button type="button" onClick={() => setResults([])}>{c.view}</button>
       </section> : <>
         {!selected.length && <>
+        {store && <form key={`${sid}|${q}`} role="search" className="cat-search" onSubmit={event => {
+          event.preventDefault();
+          if (locked) return;
+          const query = String(new FormData(event.currentTarget).get("q") ?? "").trim();
+          previous.current = [];
+          go(status, query);
+        }}>
+          <input type="search" name="q" aria-label={legacy.search} placeholder={legacy.search} defaultValue={q}
+            pattern={String.raw`[^\p{C}\p{Zl}\p{Zp}]{0,120}`} disabled={locked} />
+          <button type="submit" disabled={locked}>{legacy.searchButton}</button>
+        </form>}
         <div className="cat-chip-tabs"><TabStrip label={legacy.status} previousLabel={catalogPresentationCopy[locale].previousTabs} nextLabel={catalogPresentationCopy[locale].nextTabs}>
           {(['all', 'active', 'draft', 'archived'] as const).map(s => <button type="button" key={s} disabled={locked}
             data-testid={`products-tab-${s}`} aria-pressed={status === s} onClick={() => { previous.current = []; go(s); }}>
@@ -135,7 +152,7 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
         {(read.status === 'loading' || read.status === 'hidden') && <p role="status">{legacy.loading}</p>}
         {failure && <div role="alert"><p>{failure}</p><button type="button" onClick={read.reload}>{legacy.retry}</button></div>}
         {read.status === 'ready' && page && <>
-          <div className="cat-list-tools">
+          {canWrite && <div className="cat-list-tools">
             <label className="pe-select cat-select-all"><span aria-hidden="true">{catalogText(selected.length ? c.selected : c.select, { n: selected.length || rows.length })}</span><input type="checkbox" data-testid="products-select-all" aria-label={catalogText(c.select, { n: rows.length })}
               checked={!!rows.length && rows.every(r => selected.includes(r.id))} disabled={locked || !rows.length}
               onChange={e => setSelected(e.target.checked ? rows.slice(0, 100).map(r => r.id) : [])} /></label>
@@ -147,19 +164,19 @@ export function ProductList({ locale, store, q, status, after, initialError, ren
               </>}
 
             </div>
-          </div>
+          </div>}
           {rows.length ? <table data-testid="products-table" aria-label={c.title} className="cat-products-table"><thead className="cat-sr-only"><tr>
-            <th scope="col" aria-label={pc.select} /><th scope="col" aria-label={legacy.product} /><th scope="col" aria-label={legacy.status} />
-            <th scope="col" aria-label={`${legacy.price} · ${legacy.stock}`} /><th scope="col" aria-label={c.edit} />
+            {canWrite && <th scope="col" aria-label={pc.select} />}<th scope="col" aria-label={legacy.product} /><th scope="col" aria-label={legacy.status} />
+            <th scope="col" aria-label={`${legacy.price} · ${legacy.stock}`} />{canWrite && <th scope="col" aria-label={c.edit} />}
           </tr></thead><tbody>{rows.map(row => <tr data-testid={`product-row-${row.id}`} key={row.id}>
-            <td className="pe-selection-cell"><label className="pe-select"><input type="checkbox" aria-label={`${pc.select}: ${row.name}`} checked={selected.includes(row.id)} disabled={locked}
-              onChange={() => setSelected(now => now.includes(row.id) ? now.filter(id => id !== row.id) : [...now, row.id].slice(0, 100))} /></label></td>
+            {canWrite && <td className="pe-selection-cell"><label className="pe-select"><input type="checkbox" aria-label={`${pc.select}: ${row.name}`} checked={selected.includes(row.id)} disabled={locked}
+              onChange={() => setSelected(now => now.includes(row.id) ? now.filter(id => id !== row.id) : [...now, row.id].slice(0, 100))} /></label></td>}
             <td className="pe-product-cell"><div className="product-cell">
               <ProductPhoto code="" name={row.name} demo={false} imageSrc={row.cover_image_id ? imageURL(sid, row.id, row.cover_image_id) : undefined} />
               <span className="pe-product-identity"><strong>{row.name}</strong></span></div></td>
             <td className="pe-status-cell"><span className="product-status">{c[row.status]}</span></td>
             <td className="pe-price-cell pe-stock-cell"><span>{price(row)} · {stock(row)}</span></td>
-            <td className="pe-actions-cell"><div className="pe-row-actions"><Link href={editHref(locale, sid, row.id)}>{c.edit}</Link></div></td>
+            {canWrite && <td className="pe-actions-cell"><div className="pe-row-actions"><Link href={editHref(locale, sid, row.id)}>{c.edit}</Link></div></td>}
           </tr>)}</tbody></table> : <p role="status">{status === 'archived' ? c.empty : q || status !== 'all' ? legacy.emptySearch : legacy.empty}</p>}
           {(after || page.next_cursor) && <footer className="orders-pager">
             <button type="button" data-testid="products-previous" disabled={locked || (!after && !previous.current.length)} onClick={() => go(status, q, previous.current.pop() ?? '')}>{legacy.previous}</button>
