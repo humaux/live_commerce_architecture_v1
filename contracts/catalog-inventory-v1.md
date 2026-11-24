@@ -193,3 +193,61 @@ Authority: owner 2026-10-26 「已有SKU归到第一个新规格值」, with SKU
 - CAT-02: OC-Q15 excludes per-SKU delivery eligibility. Weight/size remain; delivery follows store settings. Preserve product-media-v2, including 4 main images, 20 detail images and option-value image rules; do not restore the superseded 12-image cap or bypass existing axis/value/combination bounds.
 
 Acceptance handoff (NOT_RUN): CI regression must start from an existing product/SKU, add an axis, save and reload with the same SKU id/code/price/inventory/image association at its first value; verify new combinations and stale-version/live-window refusals. Browser acceptance must use real clicks/fills and persistent readback. Run the regression RED on old matching logic before the implementation card's GREEN; this contract-only card adds no executable behavior.
+
+## Proposed amendment — R07 M03 merchant catalog stock filter
+
+Status: PROPOSED, pending contract review. The effective endpoint remains as specified in
+[storefront-v2 §A](storefront-v2.md) and [OpenAPI](catalog-inventory-openapi.json).
+
+Add one optional `stock=available|sold_out|untracked` query parameter to
+`GET /v1/admin/stores/{store_id}/catalog-products`. Omit `stock` to include all stock buckets.
+Accept only the three exact values, once. Empty, repeated and unknown values return
+`invalid_request` (422). Keep existing query, cursor and page size bounds.
+
+Use the existing `ProductSummary` fields before paging. Sum
+`on_hand - reserved - allocated - unavailable` once per balance row for the product's
+active SKUs across all balance warehouses in the authenticated tenant/store, including
+inactive warehouses. A missing balance contributes zero. An archived SKU contributes
+neither quantity nor tracking state. The product's publication status is a separate filter.
+
+| `stock` | Predicate |
+| --- | --- |
+| `available` | `inventory_tracked=true` and `available > 0` |
+| `sold_out` | `inventory_tracked=true` and `available = 0` (valid balances are nonnegative) |
+| `untracked` | `inventory_tracked=false`: no active SKU, mixed tracking, or every active SKU untracked, regardless of the numeric quantity |
+
+The labels describe the merchant catalog aggregate. Copy for `untracked` must cover
+partial tracking and the absence of active variants. Checkout takes a delivery service's
+assigned warehouses, checks every assigned warehouse is active under lock, and plans tracked
+line quantities against the locked balances in that allocation. Catalog stock cannot promise
+SKU-level availability, checkout eligibility, or fulfillment for the buyer.
+
+- Use one server-side eligibility predicate for literal `q` and optional `stock` in both
+  counts and rows, within one snapshot per response. `total` counts that set across product
+  statuses and equals the sum of `status_counts.draft/active/archived`. The corresponding
+  status tally gives the selected tab's result count. Counts ignore `status` and `cursor`.
+  Rows apply `status` and the keyset boundary before selecting `limit+1` in
+  `(created_at DESC, id DESC)` order. Emit `next_cursor` from the last returned item only
+  when an extra eligible row exists. Counts describe the request snapshot and can change
+  between page requests as catalog data changes.
+- Preserve the current cursor envelope, position keys and binding to tenant, store and
+  collection. For omitted `stock`, keep the exact existing filter digest
+  `SHA256(status + NUL + q)` in hex, using the current normalization. With `stock` present,
+  use `SHA256(status + NUL + q + NUL + "stock" + NUL + stock)` in hex.
+  A cursor from a different scope or query/filter combination returns
+  `invalid_request` (422). When search, status or stock selection changes, the client starts
+  at the first page and retains the active conditions on forward/back navigation.
+- Require current `catalog:read` and `inventory:read` on every request, including cursor
+  requests. Rows and counts use the same authenticated tenant/store scope. Cursor
+  decoding grants no authority. This read-only extension carries no inventory mutation,
+  reservation or checkout authority.
+
+Acceptance for the implementation card (NOT_RUN): baseline RED for the new parameter,
+then REAL_PG coverage of all buckets (including no balance, explicit zero, inactive warehouse,
+same SKU across warehouses, mixed tracking and no active SKU), and a search with at least 26
+matching products plus interleaved nonmatches across statuses. Assert exact rows, `total`,
+tab tallies and termination at 25/26 eligible rows, and unchanged pagination for legacy
+unfiltered cursors. Assert cursor rejection on entering/leaving/changing `stock`, changing
+`q` or `status`, and changing tenant/store. Exercise both read grants, each grant alone
+and scope isolation. Browser acceptance covers the real desktop/mobile directory entry
+and switching search, status and stock while paging, using approved copy.
