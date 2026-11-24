@@ -9,7 +9,6 @@
 // lib/cart-details.ts. Empty cart and "still loading the session" are distinct states (no flash of "empty").
 import { useEffect, useState } from "react";
 import { StorefrontState } from "./state/StorefrontState";
-import Link from "next/link";
 import type { Locale } from "@live-commerce/i18n";
 import { useCart } from "./CartProvider";
 import { CartLines, CartNotice, CartSummary } from "./CartLines";
@@ -41,12 +40,10 @@ export default function CartView({ locale }: { locale: Locale }) {
         </div>
       ) : (
         <div className="sf-cartpage__grid">
-          <CartLines locale={locale} />
-          <aside className="sf-cartpage__aside" aria-label={copy.subtotal}>
-            <CartSummary locale={locale} />
-            <Link className="sf-link" href={`/${locale}/products`}>
-              {copy.continueShopping}
-            </Link>
+          <CartLines locale={locale} page />
+          <aside className="sf-cartpage__aside" aria-labelledby="cart-summary-title">
+            <h2 id="cart-summary-title">{copy.cartSummaryTitle}</h2>
+            <CartSummary locale={locale} page />
           </aside>
         </div>
       )}
