@@ -54,6 +54,7 @@ async function prepareCatalogFrames(page: Page, prefix: string) {
     const { items: warehouses } = await json("/warehouses");
     const header = `handle,title,option1_name,option1_value,sku,price,stock:${warehouses[0].name}\n`;
     const ids: string[] = [];
+    let currency = "";
     for (const { key, rows, fill } of [
       { key: "shirt", rows: [["黑色棉T", "黑色 M", "490", "5"]], fill: "#303339" },
       { key: "tote", rows: [["日常帆布提袋", "原色", "680", "8"], ["日常帆布提袋", "橄欖綠", "680", "4"]], fill: "#bf9c6f" },
@@ -66,6 +67,7 @@ async function prepareCatalogFrames(page: Page, prefix: string) {
       const { items } = await json(`/catalog-products?q=${handle}`);
       if (items.length !== 1) throw new Error(`Visual fixture ${key} has no unique product`);
       ids.push(items[0].id);
+      currency = items[0].currency;
       const canvas = document.createElement("canvas");
       canvas.width = canvas.height = 128;
       const ctx = canvas.getContext("2d")!;
@@ -91,7 +93,7 @@ async function prepareCatalogFrames(page: Page, prefix: string) {
     }
     await json("/products/bulk-status", { method: "POST", headers: { "X-CSRF-Token": csrf, "Idempotency-Key": crypto.randomUUID(), "Content-Type": "application/json" }, body: JSON.stringify({ ids, status: "active" }) });
     const { total } = await json("/catalog-products");
-    return total === ids.length;
+    return { onlySamples: total === ids.length, currency };
   }, { store, csrf: csrf!, prefix });
 }
 
@@ -328,7 +330,10 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
     test(`R07 visual ${viewport.width}: two listed products and inline CSV error`, async ({ page }) => {
       await page.setViewportSize(viewport); await login(page);
       const prefix = `r07-visual-${viewport.width}`;
-      const onlySamples = await prepareCatalogFrames(page, prefix);
+      const { onlySamples, currency } = await prepareCatalogFrames(page, prefix);
+      expect(["TWD", "USD"]).toContain(currency);
+      const amount = (locale: string, digits: string) =>
+        `${currency === "TWD" ? "NT$" : locale === "en" ? "$" : "US$"}${digits}`;
       await page.goto(root("zh-TW", "products") + (onlySamples ? "" : `&q=${prefix}`));
       const table = page.getByTestId("products-table");
       const productRows = table.locator("tbody tr");
@@ -370,8 +375,8 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
         await expect.soft(indicator).toHaveCount(0);
       }
       await expect(tote).toContainText("2 個規格");
-      await expectCatalogPrice(tote, mobile, "日常帆布提袋", "NT$680", "在售");
-      await expectCatalogPrice(shirt, mobile, "黑色棉T", "NT$490", "在售");
+      await expectCatalogPrice(tote, mobile, "日常帆布提袋", amount("zh-TW", "680"), "在售");
+      await expectCatalogPrice(shirt, mobile, "黑色棉T", amount("zh-TW", "490"), "在售");
       await expect(tote.locator(".pe-stock-cell")).toContainText("12");
       await expect(shirt.locator(".pe-stock-cell")).toContainText("5");
       if (mobile) {
@@ -431,7 +436,7 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
           await expect(summary).toBeInViewport({ ratio: 1 });
           await expect(indicator).toHaveCount(0);
         }
-        await expectCatalogPrice(tote, mobile, "日常帆布提袋", "NT$680", active);
+        await expectCatalogPrice(tote, mobile, "日常帆布提袋", amount(locale, "680"), active);
       }
 
       // An additional synthetic product exercises native wrapping with two distinct prices from PG.
@@ -452,7 +457,7 @@ test.describe("PARITY-DATA-OPS C6 signed real routes", () => {
       const longProduct = productRows.first();
       await expect(longProduct).toContainText("2 個規格");
       await capture(page, `r07-visual-long-price-${viewport.width}`);
-      await expectCatalogPrice(longProduct, mobile, longName, "NT$9,876,543 – NT$19,876,543", "草稿");
+      await expectCatalogPrice(longProduct, mobile, longName, `${amount("zh-TW", "9,876,543")} – ${amount("zh-TW", "19,876,543")}`, "草稿");
     });
     for (const locale of ["zh-TW", "zh-CN", "en"] as const) {
       const c = signed[locale];
